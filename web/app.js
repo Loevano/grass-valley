@@ -305,6 +305,17 @@ $('find-player-button').onclick=()=>{
 };
 window.addEventListener('keydown',event=>{
   const key=event.key.toLowerCase();
+  if(!event.repeat&&!event.ctrlKey&&!event.metaKey&&!event.altKey&&canControlPlayer()){
+    const actions=[['fish','f',['water'],'no water to fish'],['gather','g',['berry_bush','herb_patch'],'no berries to gather'],['chop','c',['tree'],'no wood to cut'],['mine','m',['rock'],'no stone to mine']];
+    const action=actions.find(([name,fallback])=>key===(keybindings[name] || fallback));
+    if(action){
+      const town=world.towns[identity.town_id],landscape=world.shared_map || town;
+      const nearby=(landscape.map_resources || []).some(r=>action[2].includes(r.kind)&&Math.abs(r.x-town.player.x)+Math.abs(r.y-town.player.y)<=1.8);
+      if(!nearby || action[0]==='mine'){
+        event.preventDefault();clearWalk();notice(nearby?'Mining is not available yet.':action[3]);return;
+      }
+    }
+  }
   if(key===keybindings.camera&&!event.repeat&&!event.ctrlKey&&!event.metaKey&&!event.altKey&&canControlPlayer()){
     event.preventDefault();setCameraLock(!cameraLocked);draw();notice(`Camera lock ${cameraLocked?'on':'off'}.`);
   }
