@@ -45,8 +45,10 @@ encrypted transport; do not expose it through router port forwarding.
   of trees and farms within three steps of water; workers need these nearby sources.
 - Trees and water are renewable. Rock outcrops occupy tiles but cannot be mined yet.
 - Give villagers jobs using the selectors on the right. Their skills increase as they work.
-- Workers appear at their resource spots. If a workplace is out of reach, production
-  and skill growth pause; move it closer to the source to resume.
+- Workers walk around obstacles to their resource spots, chop wood or tend crops,
+  and carry supplies back to their workplace. These animations illustrate work;
+  production still follows the host's three-second rhythm. If a workplace is out
+  of reach, production and skill growth pause; move it closer to the source to resume.
 - Build cottages to attract residents; maintain food and add storage as needed.
 - Click **Move a building**, its grid tile, then an empty tile. Moving costs one coin,
   or is free if you have none, so rearranging is always possible.
@@ -71,3 +73,6 @@ you can answer later.
 ```sh
 python3 -m unittest discover -s tests -v
 ```
+
+With Node.js available, check worker movement and animation transitions with
+`node tests/test_animations.js`.

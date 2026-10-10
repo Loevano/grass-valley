@@ -9,6 +9,8 @@ try {
 let world = {towns:{}}, viewed = null, tool = null, moveIndex = null;
 let catalog = {worlds:[], can_manage:false}, menuStarted = false, refreshing = null, menuBusy = false, deletingWorld = null;
 let tileW = 46, tileH = 23, originX = 0, originY = 0;
+const workers = new Map();
+let workerTown = null, lastFrame = null;
 const labels = {hall:'Town hall',home:'Cottage',woodcutter:'Woodcutter',farm:'Farm',storehouse:'Storehouse'};
 const costs = {home:20,woodcutter:15,farm:15,storehouse:25};
 const colors = {hall:'#a88861',home:'#c5ad80',woodcutter:'#947b55',farm:'#bc9b5c',storehouse:'#8c9b8b'};
@@ -118,9 +120,63 @@ function drawResource(r){
   }
   ctx.restore();
 }
-function draw(){
+function animatedVillagers(town, seconds){
+  const townKey=`${world.world_id}/${viewed}`;
+  if(workerTown!==townKey){workers.clear();workerTown=townKey;}
+  if(!town)return [];
+  const layout=JSON.stringify([town.buildings,town.map_resources]);
+  return town.villagers.map((villager,index)=>{
+    const signature=JSON.stringify([layout,villager.job,villager.work_target]);
+    let state=workers.get(index);
+    if(!state || state.signature!==signature){
+      state=Object.assign(WorkerAnimation.plan(town,villager,index,state),{signature});workers.set(index,state);
+    }
+    const resource=villager.job==='woodcutting'?'wood':'food';
+    const active=town[resource]<100+100*town.buildings.filter(b=>b.kind==='storehouse').length;
+    WorkerAnimation.advance(state,seconds,active);
+    return {kind:'villager',villager,index,x:state.x,y:state.y,state,active};
+  });
+}
+function drawVillager(b){
+  const [px,py]=point(b.x,b.y),s=b.state;
+  const walking=s.path.length>0,working=s.phase==='working'&&b.active;
+  const stride=walking?Math.sin(s.clock*13):0;
+  const swing=working?(Math.sin(s.clock*7)+1)/2:0;
+  ctx.save();ctx.translate(px+(b.index%3-1)*3,py+tileH*.65+Math.floor(b.index/3));ctx.scale(tileW/46,tileW/46);
+  ctx.fillStyle='#223b2966';ctx.beginPath();ctx.ellipse(0,2,7,3,0,0,Math.PI*2);ctx.fill();
+  const towardSource=s.source?(s.source.x-s.x)-(s.source.y-s.y):0;
+  ctx.scale(working&&towardSource!==0?Math.sign(towardSource):s.facing,1);
+  ctx.strokeStyle='#283c38';ctx.lineWidth=2.5;ctx.lineCap='round';
+  ctx.beginPath();ctx.moveTo(-2,-4);ctx.lineTo(-2-stride*3,1);ctx.moveTo(2,-4);ctx.lineTo(2+stride*3,1);ctx.stroke();
+  const bob=walking?Math.abs(stride)*1.2:working?swing:Math.sin(s.clock*2)*.3;
+  ctx.translate(0,-bob);
+  ctx.fillStyle=['#658ca0','#b48065','#9a9862'][b.index%3];ctx.fillRect(-4,-13,8,10);
+  ctx.fillStyle='#e7c68c';ctx.beginPath();ctx.arc(0,-17,4,0,Math.PI*2);ctx.fill();
+  ctx.fillStyle='#584638';ctx.beginPath();ctx.arc(0,-18,4,Math.PI,Math.PI*2);ctx.fill();
+  ctx.strokeStyle='#e7c68c';ctx.lineWidth=2;
+  ctx.beginPath();ctx.moveTo(-3,-11);ctx.lineTo(-5-stride*2,-6);ctx.moveTo(3,-11);ctx.lineTo(7,-9-swing*4);ctx.stroke();
+  if(working){
+    ctx.save();ctx.translate(5,-11);ctx.rotate(-1.4+swing*2);
+    ctx.strokeStyle='#a78454';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(0,3);ctx.lineTo(0,-10);ctx.stroke();
+    ctx.fillStyle='#cbd7d2';
+    if(b.villager.job==='woodcutting')polygon([[0,-11],[7,-10],[6,-5],[0,-6]],'#cbd7d2');
+    else ctx.fillRect(-1,-11,8,2);
+    ctx.restore();
+    if(b.villager.job==='woodcutting'&&swing>.85){
+      ctx.fillStyle='#d7b97a';for(let i=0;i<3;i++)ctx.fillRect(9+i*3,-5-i*3+swing*5,2,2);
+    }
+  }
+  if(s.phase==='returning'||s.phase==='depositing'){
+    ctx.fillStyle=b.villager.job==='woodcutting'?'#997044':'#d6c478';ctx.fillRect(2,-8,11,5);
+    ctx.fillStyle='#e1c593';ctx.beginPath();ctx.arc(13,-5.5,2.5,0,Math.PI*2);ctx.fill();
+  }
+  ctx.restore();
+}
+function draw(seconds=0){
   const rect=canvas.getBoundingClientRect(),dpr=window.devicePixelRatio||1;
-  canvas.width=rect.width*dpr;canvas.height=rect.height*dpr;ctx.scale(dpr,dpr);
+  const width=Math.round(rect.width*dpr),height=Math.round(rect.height*dpr);
+  if(canvas.width!==width||canvas.height!==height){canvas.width=width;canvas.height=height;}
+  ctx.setTransform(dpr,0,0,dpr,0,0);ctx.clearRect(0,0,rect.width,rect.height);
   tileW=Math.min(54,(rect.width-30)/12);tileH=tileW/2;originX=rect.width/2;originY=Math.max(140,(rect.height-12*tileH)/2);
   const town=world.towns[viewed];
   const resources=town?.map_resources || [];
@@ -131,14 +187,12 @@ function draw(){
     if(wet){ctx.strokeStyle='#b4d7ce99';ctx.beginPath();ctx.moveTo(px-tileW*.16,py+tileH*.48);ctx.lineTo(px+tileW*.12,py+tileH*.63);ctx.stroke();}
   }
   const buildings=town?.buildings || [{kind:'hall',x:5,y:5}];
-  const villagers=(town?.villagers || []).map((v,i)=>({kind:'villager',villager:v,index:i,x:v.work_target?.x ?? 3+(i%5),y:v.work_target?.y ?? 8+Math.floor(i/5)}));
+  const villagers=animatedVillagers(town,seconds);
   const objects=[...buildings,...resources.filter(r=>r.kind!=='water'),...villagers];
   for(const b of objects.sort((a,b)=>(a.x+a.y)-(b.x+b.y))){
     if(b.kind==='tree'||b.kind==='rock'){drawResource(b);continue;}
     if(b.kind==='villager'){
-      const [px,py]=point(b.x,b.y),i=b.index,x=px+(i%3-1)*7,y=py+tileH*.7+Math.floor(i/3)*2;
-      ctx.fillStyle=['#e7c68c','#b7cbd2','#d7a48d'][i%3];ctx.beginPath();ctx.arc(x,y-4,3,0,Math.PI*2);ctx.fill();ctx.fillStyle='#344b48';ctx.fillRect(x-3,y,6,8);
-      if(b.villager.work_target){ctx.strokeStyle=b.villager.job==='woodcutting'?'#d4dbcb':'#d6c478';ctx.beginPath();ctx.moveTo(x+3,y+3);ctx.lineTo(x+7,y-4);ctx.stroke();}
+      drawVillager(b);
       continue;
     }
     const [x,y]=point(b.x,b.y),w=tileW*.38,h=b.kind==='hall'?42:27;
@@ -161,6 +215,11 @@ canvas.onclick=async event=>{
   if(tool==='move'){if(moveIndex===null){const index=world.towns[viewed].buildings.findIndex(b=>b.x===x&&b.y===y);if(index<0){notice('Click the tile beneath a building.');return;}moveIndex=index;render();}else{await act({action:'move',index:moveIndex,x,y});moveIndex=null;render();}}
   else await act({action:'build',kind:tool,x,y});
 };
-window.addEventListener('resize',draw);
+window.addEventListener('resize',()=>draw());
+function animate(now){
+  draw(lastFrame===null?0:Math.min((now-lastFrame)/1000,.1));lastFrame=now;
+  requestAnimationFrame(animate);
+}
+requestAnimationFrame(animate);
 refresh().catch(()=>notice('Cannot reach the host. Check the connection.'));
 setInterval(()=>{if(document.activeElement?.tagName!=='SELECT')refresh().catch(()=>notice('Connection lost. Waiting for the host…'));},2000);
