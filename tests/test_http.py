@@ -74,6 +74,7 @@ class LanHost(unittest.TestCase):
         self.assertEqual(self.call('/api/command', build, identities[0]['token'])[0], 200)
         status, body = self.call('/api/world')
         self.assertEqual(status, 200)
+        self.assertEqual(json.loads(body)['hall_upgrades'], server.HALL_UPGRADES)
         towns = json.loads(body)['towns']
         self.assertEqual(len(towns[identities[0]['town_id']]['buildings']), 2)
         self.assertEqual(len(towns[identities[1]['town_id']]['buildings']), 1)

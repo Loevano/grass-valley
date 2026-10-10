@@ -286,13 +286,23 @@ function renderSelection(town){
       $('selection-details').append(fact(town.level,'Hall level'));
       $('selection-details').append(fact(`${buildingRange(town)} tile steps`,'Building range'));
     }
-    p.textContent={hall:'The heart of your settlement. Harvest wood to unlock your first upgrade.',home:'Room for 2 additional villagers, up to 16 in the town. New residents need available housing and sufficient food.',storehouse:`Adds 100 storage for each resource. Town capacity: ${100+100*town.buildings.filter(b=>b.kind==='storehouse').length} wood and food.`,woodcutter:'A workplace for gathering wood from nearby trees.',farm:'A workplace for growing food near water. Build acres nearby for farmers to tend.',acre:'A crop field tended by farmers from its farm. Its farm needs water within 3 tile steps to produce food.'}[item.kind];
+    p.textContent={hall:'The heart of your settlement. Harvest wood to unlock upgrades through level 10. Each completed upgrade awards coins.',home:'Room for 2 additional villagers, up to 16 in the town. New residents need available housing and sufficient food.',storehouse:`Adds 100 storage for each resource. Town capacity: ${100+100*town.buildings.filter(b=>b.kind==='storehouse').length} wood and food.`,woodcutter:'A workplace for gathering wood from nearby trees.',farm:'A workplace for growing food near water. Build acres nearby for farmers to tend.',acre:'A crop field tended by farmers from its farm. Its farm needs water within 3 tile steps to produce food.'}[item.kind];
     if(item.kind==='hall'){
       p.textContent+=` Build within ${buildingRange(town)} horizontal and vertical tile steps of the hall; diagonals count as 2.${town.level<2?' Upgrading expands the range to 15 steps.':''}`;
       $('hall-details').hidden=false;
-      $('hall-progress').value=Math.min(30,town.harvested);
-      $('progress').textContent=`Level ${town.level} · Timber roots: ${Math.min(30,town.harvested)}/30 wood harvested`;
-      $('upgrade').disabled=viewed!==identity?.town_id || town.level>=2 || town.harvested<30 || town.wood<40;
+      const upgrade=world.hall_upgrades?.find(next=>next.level===town.level+1);
+      const target=upgrade?.harvested || 1;
+      $('hall-progress').hidden=!upgrade;
+      $('hall-progress').max=target;
+      $('hall-progress').value=Math.min(target,town.harvested);
+      $('hall-progress').setAttribute('aria-label',`Wood harvested: ${Math.min(target,town.harvested)} out of ${target}`);
+      $('progress').textContent=upgrade
+        ?`Level ${town.level} · ${town.level===1?'Timber roots':'Next level'}: ${Math.min(target,town.harvested)}/${target} wood harvested · Reward: ${upgrade.coins} coins`
+        :`Level ${town.level} · Maximum hall level reached`;
+      $('upgrade').textContent=town.upgrade_remaining
+        ?`Upgrading to level ${town.level+1} · ${town.upgrade_remaining}s remaining`
+        :upgrade?`Upgrade to level ${upgrade.level} · ${upgrade.wood} wood · ${upgrade.seconds} seconds`:'Hall fully upgraded';
+      $('upgrade').disabled=!!town.upgrade_remaining || viewed!==identity?.town_id || !upgrade || town.harvested<target || town.wood<upgrade.wood;
     }
     $('selection-move').hidden=viewed!==identity?.town_id;
     $('selection-move').textContent=town.coins?'Move building · 1 coin':'Move building · Free';

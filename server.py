@@ -19,7 +19,22 @@ LOCK = threading.RLock()
 COSTS = {'home': 20, 'woodcutter': 15, 'farm': 15, 'storehouse': 25, 'acre': 5}
 JOBS = {'idle', 'woodcutting', 'farming'}
 
+TICK_SECONDS = 3
+# Requirements are cumulative harvested wood; costs are paid when upgrading.
+HALL_UPGRADES = [
+    {'level': level, 'harvested': 15 * level * (level - 1),
+     'wood': 40 * (level - 1), 'seconds': 30 * (level - 1),
+     'coins': 30 * (level - 1)}
+    for level in range(2, 11)
+]
+
+
 RESOURCE_REACH = 3
+
+
+def hall_upgrade(town):
+    return next((upgrade for upgrade in HALL_UPGRADES
+                 if upgrade['level'] == town['level'] + 1), None)
 
 
 def walkable(town, x, y, blocked=None):
@@ -146,6 +161,13 @@ def capacity(town):
 def tick(world):
     for town in world['towns'].values():
         ensure_resources(town)
+        if town.get('upgrade_remaining'):
+            town['upgrade_remaining'] = max(0, town['upgrade_remaining'] - TICK_SECONDS)
+            if town['upgrade_remaining'] == 0:
+                upgrade = hall_upgrade(town)
+                if upgrade:
+                    town['level'] = upgrade['level']
+                    town['coins'] += upgrade['coins']
         for index, villager in enumerate(town['villagers']):
             job = villager['job']
             resource = 'wood' if job == 'woodcutting' else 'food'
@@ -261,13 +283,16 @@ def command(town, data):
             raise ValueError('Build a ' + required + ' first.')
         town['villagers'][index]['job'] = job
     elif action == 'upgrade':
-        if town['level'] >= 2:
-            raise ValueError('Your hall is fully upgraded for this prototype.')
-        if 'Timber roots' not in town['achievements'] or town['wood'] < 40:
-            raise ValueError('Harvest 30 wood and save 40 wood to upgrade.')
-        town['wood'] -= 40
-        town['level'] = 2
-        town['coins'] += 30
+        if town.get('upgrade_remaining'):
+            raise ValueError('Your hall upgrade is already underway.')
+        upgrade = hall_upgrade(town)
+        if not upgrade:
+            raise ValueError('Your hall has reached the maximum level of 10.')
+        if town['harvested'] < upgrade['harvested'] or town['wood'] < upgrade['wood']:
+            raise ValueError(f"Harvest {upgrade['harvested']} wood in total and save "
+                             f"{upgrade['wood']} wood to upgrade.")
+        town['wood'] -= upgrade['wood']
+        town['upgrade_remaining'] = upgrade['seconds']
     else:
         raise ValueError('Unknown action.')
     for index, villager in enumerate(town['villagers']):
@@ -294,7 +319,7 @@ class Handler(SimpleHTTPRequestHandler):
                 for town in WORLD['towns'].values():
                     ensure_resources(town)
                     ensure_player(town)
-                self.reply(200, dict(WORLD, world_id=ACTIVE_WORLD,
+                self.reply(200, dict(WORLD, hall_upgrades=HALL_UPGRADES, world_id=ACTIVE_WORLD,
                                      name=WORLDS[ACTIVE_WORLD]['name'] if ACTIVE_WORLD else None))
         elif self.path == '/api/worlds':
             with LOCK:
@@ -417,7 +442,7 @@ def save():
 
 def simulation():
     while True:
-        time.sleep(3)
+        time.sleep(TICK_SECONDS)
         with LOCK:
             tick(WORLD)
             save()

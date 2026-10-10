@@ -92,7 +92,22 @@ encrypted transport; do not expose it through router port forwarding.
 - Click **Move** in a building’s information panel, then an empty tile.
   You can also use **Move a building** in the Build panel. Moving costs one coin,
   or is free if you have none, so rearranging is always possible.
-- Harvest 30 wood to unlock a milestone; save 40 wood and choose the hall upgrade.
+- Upgrade the town hall through level 10. Each upgrade requires a cumulative
+  wood-harvesting milestone, consumes saved wood, and awards coins on completion.
+  Build storehouses to hold the larger costs. Upgrade timers run only in the open
+  world while the host is running.
+
+  | Hall level | Total wood harvested | Wood cost | Time | Coin reward |
+  | --- | --- | --- | --- | --- |
+  | 2 | 30 | 40 | 30 seconds | 30 |
+  | 3 | 90 | 80 | 60 seconds | 60 |
+  | 4 | 180 | 120 | 90 seconds | 90 |
+  | 5 | 300 | 160 | 120 seconds | 120 |
+  | 6 | 450 | 200 | 150 seconds | 150 |
+  | 7 | 630 | 240 | 180 seconds | 180 |
+  | 8 | 840 | 280 | 210 seconds | 210 |
+  | 9 | 1080 | 320 | 240 seconds | 240 |
+  | 10 | 1350 | 360 | 270 seconds | 270 |
 - Open **Valley** and click another town's name to visit. Only its owner can issue commands for it.
 
 The host saves all worlds automatically in `savegame.json`, which is excluded from
@@ -106,6 +121,7 @@ resources gain resource spots on unoccupied tiles when the host restarts;
 existing buildings stay in place. Move older workplaces near trees or water as needed.
 
 Shared wilderness, combat, magic, trading, and cooperative quests are not implemented yet.
+See [ROADMAP.md](ROADMAP.md) for town hall rewards and proposed future unlocks.
 See [DESIGN.md](DESIGN.md) for agreed decisions, provisional values, and questions
 you can answer later.
 

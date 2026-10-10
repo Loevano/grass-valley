@@ -106,7 +106,20 @@ class VillageRules(unittest.TestCase):
         tick({'towns': {'a': self.town}})
         self.assertEqual(self.town['level'], 1)
         command(self.town, {'action': 'upgrade'})
+        self.assertEqual(self.town['level'], 1)
+        self.assertEqual(self.town['upgrade_remaining'], 30)
+        wood, coins = self.town['wood'], self.town['coins']
+        with self.assertRaises(ValueError):
+            command(self.town, {'action': 'upgrade'})
+        self.assertEqual(self.town['wood'], wood)
+        for _ in range(9):
+            tick({'towns': {'a': self.town}})
+        self.assertEqual(self.town['level'], 1)
+        tick({'towns': {'a': self.town}})
         self.assertEqual(self.town['level'], 2)
+        self.assertEqual(self.town['coins'], coins + 30)
+        tick({'towns': {'a': self.town}})
+        self.assertEqual(self.town['coins'], coins + 30)
         with self.assertRaises(ValueError):
             command(self.town, {'action': 'upgrade'})
 
