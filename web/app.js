@@ -81,6 +81,8 @@ window.addEventListener('blur',clearWalk);
 document.addEventListener?.('visibilitychange',clearWalk);
 // Predict only the next host step; never run ahead while waiting for a reply.
 let movementMap=null;
+// Measure screen distance for the 2:1 isometric projection, preserving sideways speed.
+function playerMovementDistance(dx,dy){return Math.hypot(dx-dy,(dx+dy)*.5)/Math.SQRT2;}
 function predictPlayerStep(town,player,dx,dy){
   if(movementMap?.world!==world || movementMap.town!==town){
     const buildings=world.shared_map?Object.values(world.towns).flatMap(t=>t.buildings || []):town.buildings || [];
@@ -98,7 +100,7 @@ function predictPlayerStep(town,player,dx,dy){
     }
     return true;
   };
-  const predicted={...player},length=Math.hypot(dx,dy);
+  const predicted={...player},length=playerMovementDistance(dx,dy);
   if(length){
     for(let step=0;step<5;step++){
       const x=predicted.x+dx/length*.06;if(open(x,predicted.y))predicted.x=x;
@@ -133,7 +135,7 @@ function playerSprite(town,seconds){
     }).catch(error=>{if(playerView===s){s.target={...s.authoritative};clearWalk();notice(error.message);}})
       .finally(()=>{clearTimeout(timeout);walkingRequest=false;});
   }
-  const distance=Math.hypot(s.target.x-s.x,s.target.y-s.y);
+  const distance=playerMovementDistance(s.target.x-s.x,s.target.y-s.y);
   const travel=Math.min(1,distance?seconds*3/distance:0);
   s.x+=(s.target.x-s.x)*travel;s.y+=(s.target.y-s.y)*travel;
   s.facing=s.target.facing;s.clock+=seconds;s.path=distance>.001?[s.target]:[];s.phase='idle';

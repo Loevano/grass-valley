@@ -23,12 +23,18 @@ class PlayerMovement(unittest.TestCase):
         after.pop('player')
         self.assertEqual(before, after)
 
-    def test_diagonal_and_straight_moves_have_equal_speed(self):
-        diagonal = self.walk(1, -1)
-        self.town['player'] = {'x': 5., 'y': 7., 'facing': 1}
-        straight = self.walk(1, 0)
-        self.assertAlmostEqual(math.hypot(diagonal['x'] - 5, diagonal['y'] - 7),
-                               straight['x'] - 5)
+    def test_all_directions_have_equal_screen_speed(self):
+        self.town['buildings'] = []
+        self.town['map_resources'] = []
+        for dx, dy in [(1, -1), (-1, 1), (1, 1), (-1, -1),
+                       (1, 0), (-1, 0), (0, 1), (0, -1)]:
+            with self.subTest(dx=dx, dy=dy):
+                self.town['player'] = {'x': 5., 'y': 7., 'facing': 1}
+                player = self.walk(dx, dy)
+                x, y = player['x'] - 5, player['y'] - 7
+                # Project into pixels using the browser's 46 x 23 tiles.
+                self.assertAlmostEqual(math.hypot((x - y) * 23, (x + y) * 11.5),
+                                       .3 * math.sqrt(2) * 23)
 
     def test_buildings_water_and_rocks_block_walking(self):
         for kind in ['hall', 'water', 'rock']:
@@ -48,7 +54,7 @@ class PlayerMovement(unittest.TestCase):
         self.assertTrue(walkable(self.town, 5, 5))
         for _ in range(10):
             player = self.walk(0, -1)
-        self.assertAlmostEqual(player['y'], 4.)
+        self.assertAlmostEqual(player['y'], 7 - 3 * math.sqrt(8 / 5))
 
     def test_player_in_tree_is_not_relocated(self):
         self.town['buildings'] = []

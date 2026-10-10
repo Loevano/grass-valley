@@ -87,7 +87,8 @@ def move_player(town, data):
     if type(dx) is not int or type(dy) is not int or dx not in (-1, 0, 1) or dy not in (-1, 0, 1):
         raise ValueError('Choose a WASD direction.')
     player = ensure_player(town)
-    length = math.hypot(dx, dy)
+    # Normalize screen distance for the 2:1 isometric projection.
+    length = math.hypot(dx - dy, (dx + dy) * .5) / math.sqrt(2)
     if length:
         blocked = {(b['x'], b['y']) for b in
                    town['buildings'] + town['map_resources']

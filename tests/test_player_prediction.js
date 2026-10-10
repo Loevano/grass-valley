@@ -9,6 +9,17 @@ const run=new Function('document','window','localStorage','setTimeout','clearTim
   return (async()=>{
     const town={player:{x:5,y:7,facing:1},map_size:12,terrain:Array(12).fill('g'.repeat(12)),buildings:[],map_resources:[]};
     world={world_id:'prediction',towns:{own:town}};identity={town_id:'own'};viewed='own';
+    const screenDistance=(x,y)=>Math.hypot(x*23-y*23,x*11.5+y*11.5);
+    for(const [dx,dy] of [[1,-1],[-1,1],[1,1],[-1,-1],[1,0],[-1,0],[0,1],[0,-1]]){
+      const target=predictPlayerStep(town,town.player,dx,dy);
+      assert(Math.abs(screenDistance(target.x-5,target.y-7)-.3*Math.SQRT2*23)<1e-9,
+        'Every predicted direction covers the same screen distance per command');
+      playerView=null;playerSprite(town,0);playerView.target=target;
+      const sprite=playerSprite(town,1/60);
+      assert(Math.abs(screenDistance(sprite.x-5,sprite.y-7)-3/60*Math.SQRT2*23)<1e-9,
+        'Every animated direction covers the same screen distance per frame');
+    }
+    playerView=null;
     playerSprite(town,0);
     let release,calls=0;
     request=()=>{calls++;return new Promise(resolve=>{release=resolve;});};
