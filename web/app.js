@@ -360,6 +360,11 @@ $('settings-panel').addEventListener('close',updateSettingsButton);
 $('close-panel').onclick=()=>{openPanel(null);canvas.focus();};
 window.addEventListener('keydown',event=>{
   const key=event.key.toLowerCase();
+  if(key===','&&event.metaKey&&!event.ctrlKey&&!event.altKey&&!event.shiftKey){
+    event.preventDefault();
+    if(!event.repeat&&!$('settings-panel').open&&!$('world-menu').open&&!$('delete-world-dialog').open)$('settings-button').onclick();
+    return;
+  }
   if(key===keybindings.build&&!event.repeat&&!event.ctrlKey&&!event.metaKey&&!event.altKey&&canControlPlayer(true)){
     event.preventDefault();openPanel(panel==='build'?null:'build');canvas.focus();return;
   }

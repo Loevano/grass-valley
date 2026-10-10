@@ -74,7 +74,7 @@ the Python host, refresh both browsers, and create a new world to use the shared
 - Your gold-clad villager is marked **You**. Click the map and hold **WASD** to
   walk in screen directions. Press **Y** to toggle camera lock: when locked, the
   camera follows your movement; when unlocked, walking leaves the camera in place.
-  Open **Settings** to rebind movement and camera lock keys or restore defaults.
+  Press **⌘,** to open **Settings** and rebind movement and camera lock keys or restore defaults.
   Preferences are saved in this browser. Scroll to pan; pinch on the touchpad or
   Option/Alt-scroll to zoom.
   Buildings, trees, water, and rocks block movement. Your position is saved per

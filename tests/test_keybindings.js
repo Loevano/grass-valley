@@ -55,7 +55,17 @@ function session(saved=null){
   document.activeElement={tagName:'INPUT'};key('y');check(state.locked,'Typing does not toggle camera');
   document.activeElement={isContentEditable:true};key('y');check(state.locked,'Editable content does not toggle camera');
   document.activeElement=null;
-  document.getElementById('settings-button').onclick();
+  key(',');key(',',{ctrlKey:true});key(',',{metaKey:true,shiftKey:true});key(',',{metaKey:true,repeat:true});
+  check(!document.getElementById('settings-panel').open,'Only an unmodified, non-repeated Command-comma opens Settings');
+  for(const id of ['world-menu','delete-world-dialog']){
+    document.getElementById(id).open=true;key(',',{metaKey:true});
+    check(!document.getElementById('settings-panel').open,'Command-comma does not open Settings over a world dialog');
+    document.getElementById(id).open=false;
+  }
+  key('w');let prevented=false;
+  key(',',{metaKey:true,preventDefault(){prevented=true;}});
+  check(prevented&&state.held.length===0,'Command-comma prevents browser handling and releases movement');
+  key(',',{metaKey:true});key(',',{metaKey:true,repeat:true});
   check(state.panel===null&&document.getElementById('settings-panel').open,'Settings opens as a modal without opening a side panel');
   check(document.getElementById('settings-button').attributes['aria-expanded']==='true','Settings button reflects the open popup');
   key('y');key('w');key('f');check(state.actions.length===3,'Settings blocks gathering actions');check(state.locked&&state.held.length===0,'Settings blocks gameplay shortcuts');
