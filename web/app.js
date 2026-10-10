@@ -1495,6 +1495,12 @@ canvas.addEventListener('wheel',event=>{
   camera.x=Math.max(0,Math.min(size-1,camera.x));camera.y=Math.max(0,Math.min(size-1,camera.y));
   buildTile=null;
 },{passive:false});
+if(window.ResizeObserver){
+  const toolbarObserver=new window.ResizeObserver(entries=>{
+    $('game').style.setProperty('--toolbar-height',`${entries[0].target.getBoundingClientRect().height}px`);
+  });
+  toolbarObserver.observe($('toolbar'));
+}
 window.addEventListener('resize',()=>draw());
 function animate(now){
   draw(lastFrame===null?0:Math.min((now-lastFrame)/1000,.1));lastFrame=now;
