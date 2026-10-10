@@ -101,11 +101,20 @@ const run=new Function('document','window','localStorage','setTimeout','clearTim
     check(rosterRows().length===2,'Overview includes every villager');
     for(const row of rosterRows()){
       check(row.tag==='tr'&&row.children[0].attributes.scope==='row','Each villager has a table row header');
-      check(row.children[3].children.length>=3,'Every row includes basic skills');
+      check(row.children[3].children[0].className==='villager-skills','Skills use a compact icon group');
       check(!row.children[1].children[1].disabled,'Every owner row has a job control');
       check(row.children[2].textContent==='Town hall · shared shelter','Housing is visible in the table');
       check(row.children[5].children.length>=1,'Work status is visible in the table');
     }
+    const skillIcons=rosterRows()[0].children[3].children[0].children;
+    check(skillIcons.length===2,'Zero and missing skills are hidden');
+    check(skillIcons[0].attributes['aria-label']==='Woodcutting · 8 practice','Skill icon has an accessible skill name and value');
+    check(skillIcons[0].children[0].children[1].style.clipPath==='inset(20% 0 0)','Skill artwork fills proportionally to its meter scale');
+    town.villagers[1].baking=15;render();
+    const specialist=rosterRows()[1].children[3].children[0].children;
+    check(specialist.some(icon=>icon.title==='Baking · 15 practice'),'Advanced skills have icons too');
+    town.villagers[1].woodcutting=0;town.villagers[1].farming=0;town.villagers[1].baking=0;render();
+    check(rosterRows()[1].children[3].children[0].children.length===0,'An untrained villager shows no skill icons');
     check(rosterRows()[0].children[4].children[0].textContent.includes('Weakness: Farming'),'Table preserves talent strengths and weaknesses');
     check(rosterRows()[1].children[4].children[0].textContent==='No special talent','Empty talents have a readable fallback');
     render();check(rosterRows().length===2,'Refresh keeps every row visible');

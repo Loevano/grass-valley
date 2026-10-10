@@ -257,6 +257,16 @@ const iconPaths = {
   fishing:'<path fill="#7899a2" d="M7 17q7-11 17 0-10 11-17 0z"/><path fill="#cda875" d="m7 17-5-5v10z"/><circle fill="#e8eadb" cx="20" cy="16" r="1.5"/><path d="m12 6 14-3v8q0 4-3 3"/>',
   woodcutting:'<path fill="#94704c" d="m7 27 12-22 3 2-12 22z"/><path fill="#bacac5" d="m18 6 7-3 5 9-8 3z"/>',
   gathering:'<path fill="#719451" d="M16 27V11Q4 2 4 13q0 8 12 8Q28 18 28 8q-12 0-12 9"/><circle fill="#b9866b" cx="9" cy="20" r="4"/><circle fill="#d9bd70" cx="16" cy="23" r="4"/>',
+  farming:'<path d="M16 29V4m0 9-7-5m7 12 7-5"/><path fill="#d9bd70" d="m16 4-5-3-2 5 7 7 7-7-2-5zm-7 4-6 1 2 6 11 5zm14 7 6 1-2 6-11 7z"/>',
+  husbandry:'<ellipse fill="#e8eadb" cx="14" cy="16" rx="10" ry="8"/><path fill="#94704c" d="M21 10h8v10h-8z"/><path d="M8 23v6m10-6v6m6-19 3-5"/>',
+  woodworking:'<path fill="#cda875" d="M3 18h26v10H3z"/><path fill="#bacac5" d="m6 15 17-12 5 6-18 9z"/><path d="m7 22 18 0m-10-9 2 3m3-7 2 3"/>',
+  milling:'<path fill="#cda875" d="m10 13 12 0 4 17H6z"/><path fill="#e8eadb" d="M16 12 3 3h10zm3 3L29 3v10zm-3 4 13 10H19zm-3-3L3 29V19z"/>',
+  preserving:'<path fill="#b9866b" d="M5 18q8-10 18 0-10 10-18 0z"/><path d="m23 18 6-5v10zM9 11q-4-4 0-8m7 6q-4-4 0-8m7 10q-4-4 0-8"/>',
+  crafting:'<path fill="#94704c" d="m7 28 15-23 3 2-15 23z"/><path fill="#bacac5" d="m14 5 5-4 12 8-5 6z"/>',
+  breeding:'<path fill="#6ba2af" d="M2 9q7-4 14 0t14 0v18H2z"/><path fill="#cda875" d="M7 19q6-8 14 0-8 8-14 0z"/><path d="m21 19 6-4v8z"/>',
+  orcharding:'<path fill="#719451" d="M16 10q-7-10-11-3 3 8 11 3z"/><path d="m16 11 3-8"/><path fill="#b9866b" d="M16 12C1 5 1 27 12 29h8c11-2 11-24-4-17z"/>',
+  baking:'<path fill="#d9bd70" d="M3 24v-9C3 2 29 2 29 15v9q-13 9-26 0z"/><path d="m10 11-3 7m10-8-3 8m10-7-3 7"/>',
+  butchery:'<path fill="#94704c" d="m6 29 8-14 3 2-8 14z"/><path fill="#bacac5" d="m12 13 8-11 10 7-9 13z"/><circle fill="#e8eadb" cx="23" cy="9" r="2"/>',
   wood:'<path fill="#94704c" d="M4 9 18 4l9 7-14 6z"/><path fill="#705337" d="M4 9v12l9 7V17z"/><path fill="#cda875" d="M13 17 27 11v12l-14 5z"/><path d="m17 18 6-3m-6 7 6-3"/>',
   food:'<path d="M16 28V5m0 11-7-6m7 12 7-6"/><path fill="#d9bd70" d="m16 7-5-5-2 5 7 7 7-7-2-5zm-7 3-5 1 2 6 10 5zm14 6 5 1-2 6-10 5z"/>',
   coins:'<ellipse fill="#b88d45" cx="16" cy="18" rx="11" ry="12"/><ellipse fill="#e4c980" cx="16" cy="14" rx="11" ry="11"/><path d="M16 7v14m4-11h-6l-2 4 8 2-2 4h-6"/>',
@@ -287,6 +297,17 @@ function skillBar(label,value){
   const caption=document.createElement('small');caption.textContent=`${label} · ${value}`;row.append(caption);
   const meter=document.createElement('meter');meter.min=0;meter.max=Math.max(10,Math.ceil((value+1)/10)*10);meter.value=value;
   meter.setAttribute('aria-label',`${label}: ${value}; scale to ${meter.max}`);row.append(meter);return row;
+}
+function villagerSkillIcon(job,label,value){
+  const tile=document.createElement('span');tile.className='villager-skill';tile.tabIndex=0;
+  const scale=Math.max(10,Math.ceil((value+1)/10)*10);
+  const description=`${label} · ${value} practice`;
+  tile.title=description;tile.setAttribute('aria-label',description);
+  const icon=document.createElement('span');icon.className='villager-skill-art';
+  icon.append(illustration(job));
+  const fill=illustration(job);fill.className='illustration villager-skill-fill';fill.style.clipPath=`inset(${100-value/scale*100}% 0 0)`;icon.append(fill);tile.append(icon);
+  const number=document.createElement('strong');number.textContent=value;number.setAttribute('aria-hidden','true');tile.append(number);
+  return tile;
 }
 function notice(message) { $('notice').textContent=message; $('notice').style.display='block'; clearTimeout(notice.timer); notice.timer=setTimeout(()=>$('notice').style.display='none',4500); }
 async function request(path, data, options={}) {
@@ -439,9 +460,13 @@ function villagerRow(town,v,index){
   housing.textContent=homes.length?`Shared cottages · ${[...new Set(homes.map(buildingLevel))].sort((a,b)=>a-b).map(level=>`level ${level}`).join(', ')}`:'Town hall · shared shelter';row.append(housing);
   const skills=document.createElement('td'),talents=document.createElement('td'),status=document.createElement('td');
   row.append(skills);row.append(talents);row.append(status);
+  const icons=document.createElement('div');icons.className='villager-skills';
+  for(const [job,label] of Object.entries({woodcutting:'Woodcutting',farming:'Farming',fishing:'Fishing',...professionJobs})){
+    if(v[job]>0)icons.append(villagerSkillIcon(job,label,v[job]));
+  }
+  skills.append(icons);
   const card=villagerCard(town,v,index);
   for(const child of Array.from(card.children)){
-    if(child.className==='skill-row')skills.append(child);
     if(child.className==='villager-talents'){if(!child.textContent)child.textContent='No special talent';talents.append(child);}
     if(['villager-output','villager-activity'].includes(child.className))status.append(child);
   }
