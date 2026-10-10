@@ -149,6 +149,10 @@ the Python host, refresh both browsers, and create a new world to use the shared
   Farm and acre bonuses add together on that field. Fishing bonuses increase food
   from successful catches; the 80% catch chance stays the same. Workers still need
   nearby resources. Upgrades survive saving and moving the building.
+  Completed building and settler-capacity upgrades also change the artwork:
+  level 2 adds timber framing and roof trim; level 3 adds stonework and a dormer.
+  Acres gain raised borders and irrigation, halls develop through five visual
+  levels, and profession upgrades add visible tools, nets, boats, or framing.
 - Click a building, then **Destroy building** to remove it without a resource
   refund. The town hall cannot be destroyed. Removing workplaces pauses affected
   workers until another suitable workplace is available; existing residents stay.
@@ -206,3 +210,4 @@ With Node.js available, check worker movement and animation transitions with
 `node tests/test_animations.js`. Check hover previews and click-to-build placement with
 `node tests/test_building_selection.js`. Check contextual panels, object selection,
 keyboard controls, and visitor restrictions with `node tests/test_selection_panels.js`.
+Check upgraded building artwork and selection with `node tests/test_building_visual_upgrades.js`.

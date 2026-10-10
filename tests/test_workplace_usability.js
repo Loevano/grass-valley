@@ -4,6 +4,7 @@ const source=require('fs').readFileSync('web/app.js','utf8');
 const fills=[];
 const ctx=new Proxy({}, {get:()=>()=>{}});
 const {usable,draw}=new Function('ctx','polygon','point','tileW','tileH','colors',
+  source.slice(source.indexOf('function buildingLevel('),source.indexOf('function storageCapacity('))+
   source.slice(source.indexOf('function buildingUsable('),source.indexOf('async function selectTile('))+
   '\nreturn {usable:buildingUsable,draw:drawBuilding};'
 )(ctx,(points,color)=>fills.push(color),()=>[0,0],46,23,

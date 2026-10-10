@@ -78,6 +78,7 @@ const builder=animation.plan(clustered,{job:'farming',construction_target:town.b
 assert(builder.blocked.has('6,3'),'Building assignments keep construction path rules');
 
 const crops=new Function('ctx','polygon','point','tileW','tileH',
+  source.slice(source.indexOf('function buildingLevel('),source.indexOf('function storageCapacity('))+
   source.slice(source.indexOf('function drawFarmCrops('),source.indexOf('function drawBuilding('))+
   '\nreturn drawFarmCrops;'
 )(ctx,(points,color)=>marks.push({method:'polygon',points,color}),

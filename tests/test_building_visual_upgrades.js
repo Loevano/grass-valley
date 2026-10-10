@@ -1,0 +1,52 @@
+// Run with: node tests/test_building_visual_upgrades.js
+const assert=require('assert'),fs=require('fs');
+const source=fs.readFileSync('web/app.js','utf8');
+const elements=new Map(),marks=[];
+function element(){return {children:[],style:{},classList:{toggle(){}},append(child){this.children.push(child);},replaceChildren(){this.children=[];},setAttribute(){},addEventListener(){}};}
+const context=new Proxy({}, {get(target,key){
+  if(key in target)return target[key];
+  return (...args)=>marks.push([key,...args,target.fillStyle,target.strokeStyle,target.lineWidth]);
+}});
+const documentMock={getElementById(id){if(!elements.has(id))elements.set(id,element());return elements.get(id);},createElement:element,querySelectorAll:()=>[]};
+const canvas=documentMock.getElementById('world');canvas.getContext=()=>context;
+canvas.getBoundingClientRect=()=>({left:0,top:0,width:960,height:660});
+const run=new Function('document','window','localStorage','setTimeout','clearTimeout','assert','marks',
+  source.slice(0,source.lastIndexOf('requestAnimationFrame(animate);'))+`
+  const town={level:1,map_size:12,buildings:[],map_resources:[{kind:'tree',x:6,y:5},{kind:'water',x:5,y:6}],villagers:[]};
+  identity={town_id:'own'};viewed='own';world={world_id:'test',towns:{own:town}};
+  function appearance(building,owner=town){
+    marks.length=0;ctx.fillStyle='';ctx.strokeStyle='';ctx.lineWidth=1;
+    drawBuilding(building,owner);return JSON.stringify(marks);
+  }
+  for(const kind of ['home','storehouse','woodcutter','farm','fishing_hut','acre','barn','sawpit','mill','smokehouse','workshop','fish_pond','orchard','market']){
+    const building={kind,x:5,y:5},original=JSON.stringify(building);
+    const base=appearance(building),second=appearance({...building,level:2}),third=appearance({...building,level:3});
+    assert.notStrictEqual(base,second,kind+' changes at level 2');
+    assert.notStrictEqual(second,third,kind+' changes at level 3');
+    assert.strictEqual(JSON.stringify(building),original,'Rendering does not mutate saved buildings');
+    if(kind!=='acre')assert.notStrictEqual(base,appearance({...building,settler_level:2}),kind+' shows upgraded settler capacity');
+    const site={...building,construction:{progress:15,total:30,upgrade:{level:2}}};
+    assert.strictEqual(appearance(site),appearance({...site,construction:{...site.construction,upgrade:{level:3}}}),'Pending target levels do not render as completed');
+    assert.notStrictEqual(appearance(site),second,'Completion replaces scaffolding with upgraded artwork');
+  }
+  const hall={kind:'hall',x:5,y:5};
+  const halls=[1,2,3,4,5].map(level=>appearance(hall,{...town,level}));
+  assert.strictEqual(new Set(halls).size,5,'Each completed hall level has distinct artwork');
+  assert.strictEqual(appearance(hall,{...town,level:1,upgrade_remaining:10}),halls[0],'Hall keeps its completed level while upgrading');
+  assert.notStrictEqual(appearance({...hall,settler_level:2}),halls[0],'Hall capacity upgrades add windows');
+  assert.notStrictEqual(appearance({...hall,settler_level:2}),appearance({...hall,settler_level:3}),'Both hall capacity upgrades are visible');
+  for(const [kind,upgrade] of [['home','timber_frame'],['woodcutter','axe'],['woodcutter','tools'],['sawpit','saw'],['fishing_hut','nets'],['fishing_hut','wool_nets'],['fishing_hut','boat']]){
+    const building={kind,x:5,y:5};
+    assert.notStrictEqual(appearance(building),appearance({...building,profession_upgrades:[upgrade]}),upgrade+' adds visible equipment');
+    assert.notStrictEqual(appearance({...building,level:3}),appearance({...building,level:3,profession_upgrades:[upgrade]}),upgrade+' stays visible on upgraded buildings');
+  }
+  const visitor={...town,level:5,buildings:[hall],map_resources:[]};
+  town.buildings=[{kind:'home',x:4,y:5,level:3}];
+  world={world_id:'test',shared_map:town,town_sites:[{x:5,y:5}],towns:{own:town,visitor}};
+  draw();
+  const target=hitTargets.find(hit=>hit.type==='building'&&hit.townId==='visitor');
+  const [,py]=point(hall.x,hall.y);
+  assert(target&&target.top<=py+tileH/2-(buildingHeight(hall,visitor)+30)*tileW/46,'Visitor hall roof uses its own level and remains selectable');
+  console.log('Building visual upgrade checks passed');
+`);
+run(documentMock,{devicePixelRatio:1,addEventListener(){}},{getItem:()=>null},()=>0,()=>{},assert,marks);
