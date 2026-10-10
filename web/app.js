@@ -409,7 +409,10 @@ function draw(seconds=0){
     const [px,py]=point(x,y),wet=water.has(`${x},${y}`);
     const variation=(x*17+y*31+x*y*7)%7;
     const diamond=[[px,py],[px+tileW/2,py+tileH/2],[px,py+tileH],[px-tileW/2,py+tileH/2]];
-    polygon(diamond,wet?'#518697':['#68865a','#69875b','#668358','#6b885d','#68855b','#6c895d','#678459'][variation],tool?'#91a37455':null);
+    const biome=town?.terrain?.[y]?.[x] || 'g';
+    const palette={g:['#68865a','#69875b','#668358'],f:['#506f4a','#55764c','#5a7b50'],
+      m:['#83945e','#899b65','#80915b'],s:['#b4a575','#bdad7d','#b8a878'],r:['#8b8d7c','#969785','#858978']};
+    polygon(diamond,wet?'#518697':palette[biome][variation%3],tool?'#91a37455':null);
     if(!wet&&variation===0){ctx.fillStyle='#8fa574';ctx.fillRect(px-5*tileW/46,py+tileH*.5,2*tileW/46,2*tileW/46);ctx.fillStyle='#d7c78a';ctx.fillRect(px+4*tileW/46,py+tileH*.65,2*tileW/46,2*tileW/46);}
     if(!wet&&(x===0||y===0||x===terrainSize-1||y===terrainSize-1)&&variation%2===0){ctx.strokeStyle='#9caf77';ctx.lineWidth=tileW/46;ctx.beginPath();ctx.moveTo(px-6*tileW/46,py+tileH*.65);ctx.lineTo(px-9*tileW/46,py+tileH*.4);ctx.moveTo(px-6*tileW/46,py+tileH*.65);ctx.lineTo(px-4*tileW/46,py+tileH*.35);ctx.stroke();}
     if(reachable.has(`${x},${y}`))polygon(diamond,'#b8dcad44','#c6dfaa');

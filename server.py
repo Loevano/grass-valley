@@ -10,6 +10,8 @@ from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from urllib.parse import urlsplit
 
+from terrain import ensure_terrain
+
 ROOT = Path(__file__).resolve().parent
 SAVE = ROOT / 'savegame.json'
 LOCK = threading.RLock()
@@ -91,6 +93,7 @@ def map_resources(buildings):
 def ensure_resources(town):
     if 'map_resources' not in town:
         town['map_resources'] = map_resources(town['buildings'])
+    ensure_terrain(town)
 
 
 def work_source(town, job, worker_index):
@@ -109,7 +112,7 @@ def work_source(town, job, worker_index):
 
 
 def new_town(name):
-    return {'name': name, 'wood': 65, 'food': 40, 'coins': 20, 'level': 1,
+    town = {'name': name, 'wood': 65, 'food': 40, 'coins': 20, 'level': 1,
             'harvested': 0, 'achievements': [],
             'player': {'x': 5., 'y': 7., 'facing': 1},
             'map_resources': map_resources([{'x': 5, 'y': 5}]),
@@ -117,6 +120,8 @@ def new_town(name):
             'villagers': [{'name': n, 'job': 'idle', 'woodcutting': i % 3,
                            'farming': (i + 1) % 3} for i, n in enumerate(
                                ['Ada', 'Rowan', 'Wren', 'Bram', 'Hazel'])]}
+    ensure_terrain(town, new=True)
+    return town
 
 
 def capacity(town):
