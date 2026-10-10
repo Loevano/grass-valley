@@ -148,18 +148,18 @@ function renderSelection(town){
 for(const [kind,cost] of Object.entries(costs)){const button=document.createElement('button');button.textContent=`${labels[kind]} · ${cost} wood`;button.onclick=()=>{panel='build';selection=null;tool=kind;moveIndex=null;buildTile=null;render();};$('buildings').append(button);}
 $('move').onclick=()=>{panel='build';selection=null;tool='move';moveIndex=null;buildTile=null;render();};
 $('cancel').onclick=()=>{tool=null;moveIndex=null;buildTile=null;render();};
-$('confirm-build').onclick=async()=>{
+async function buildAt(x,y){
   const town=world.towns[viewed];
-  if(building || !buildTile || !costs[tool] || viewed!==identity?.town_id || !town || town.wood<costs[tool])return;
-  const selected=buildTile,kind=tool;
+  if(building || !costs[tool] || viewed!==identity?.town_id || !town || town.wood<costs[tool])return;
+  const selected={x,y},kind=tool;
   building=true;render();
   try{
     await request('/api/command',{action:'build',kind,...selected,world_id:world.world_id});
-    if(buildTile===selected)buildTile=null;
+    if(tool===kind&&buildTile?.x===x&&buildTile?.y===y)buildTile=null;
     await refresh();
   }catch(e){notice(e.message);await refresh();}
   finally{building=false;render();}
-};
+}
 $('upgrade').onclick=()=>act({action:'upgrade'});
 async function refresh(){
   if(refreshing)return refreshing;
@@ -191,7 +191,7 @@ function render(){
   $('build-button').disabled=!own || viewed!==identity?.town_id;
   $('villagers-button').disabled=!town;
   $('move').textContent=own?.coins?'Move a building · 1 coin':'Move a building · Free';
-  $('mode-hint').textContent=tool==='move'?(moveIndex===null?'Moving: click a building. Escape to cancel.':'Moving: click open grass to move here. Escape to cancel.'):tool?`Building ${labels[tool].toLowerCase()}: select open grass, then confirm. Escape to cancel.`:'Click a building, villager, or resource to learn more.';
+  $('mode-hint').textContent=tool==='move'?(moveIndex===null?'Moving: click a building. Escape to cancel.':'Moving: click open grass to move here. Escape to cancel.'):tool?`Building ${labels[tool].toLowerCase()}: hover over open grass and left-click to build. Escape to cancel.`:'Click a building, villager, or resource to learn more.';
   $('view-title').textContent=town?.name || 'A place to call home';
   $('resources-empty').hidden=!!own;$('resource-totals').hidden=!own;
   if(own){
@@ -201,11 +201,8 @@ function render(){
     $('resource-villagers').textContent=own.villagers.length;
   }
   if(buildTile && (!town || town.buildings.some(b=>b.x===buildTile.x&&b.y===buildTile.y) || town.map_resources.some(r=>r.x===buildTile.x&&r.y===buildTile.y)))buildTile=null;
-  $('confirm-build').hidden=!buildTile || !costs[tool] || viewed!==identity?.town_id;
-  $('confirm-build').disabled=building || !own || own.wood<costs[tool];
-  $('confirm-build').textContent=building?'Building…':`Build here · ${costs[tool] || 0} wood`;
   for(const button of $('buildings').children)button.classList.toggle('selected',button.textContent===`${labels[tool]} · ${costs[tool]} wood`);
-  if(own){$('town-name').textContent=own.name;$('hint').textContent=tool==='move'?(moveIndex===null?'Click a building to move it.':'Click open grass.'):tool?(buildTile?`Tile selected for a ${labels[tool].toLowerCase()}. ${own.wood<costs[tool]?'Not enough wood.': 'Choose Build here to place it, or select another tile.'}`:`Click open grass to select a tile for a ${labels[tool].toLowerCase()}.`):'Choose a building, then select an open tile.';}
+  if(own){$('town-name').textContent=own.name;$('hint').textContent=tool==='move'?(moveIndex===null?'Click a building to move it.':'Click open grass.'):tool?(building?'Building…':own.wood<costs[tool]?'Not enough wood.':`Hover over open grass, then left-click to build a ${labels[tool].toLowerCase()}.`):'Choose a building, then hover over an open tile.';}
   $('towns').replaceChildren();
   for(const [id,t] of Object.entries(world.towns)){const b=document.createElement('button');b.textContent=t.name+(id===identity?.town_id?' · Yours':'');b.classList.toggle('selected',id===viewed);b.onclick=()=>{viewed=id;tool=null;moveIndex=null;buildTile=null;selection=null;panel=null;keyboardTile=null;render();};$('towns').append(b);}
   $('villagers').replaceChildren();
@@ -364,18 +361,31 @@ async function selectTile(x,y){
   }else{
     if(building)return;
     if(index>=0){notice('Choose open grass, away from existing buildings.');return;}
-    buildTile={x,y};render();
+    if(town.wood<costs[tool]){notice('Not enough wood.');return;}
+    await buildAt(x,y);
   }
 }
+function tileAt(event){
+  const rect=canvas.getBoundingClientRect(),dx=event.clientX-rect.left-originX,dy=event.clientY-rect.top-originY;
+  return {x:Math.floor(dx/tileW+dy/tileH),y:Math.floor(dy/tileH-dx/tileW)};
+}
+canvas.onmousemove=event=>{
+  const town=world.towns[viewed],tile=tileAt(event);
+  buildTile=costs[tool]&&viewed===identity?.town_id&&town&&tile.x>=0&&tile.y>=0&&tile.x<12&&tile.y<12
+    &&!town.buildings.some(b=>b.x===tile.x&&b.y===tile.y)&&!town.map_resources.some(r=>r.x===tile.x&&r.y===tile.y)?tile:null;
+  draw();
+};
+canvas.onmouseleave=()=>{buildTile=null;draw();};
 canvas.onclick=async event=>{
+  if(event.button!==undefined&&event.button!==0)return;
   const rect=canvas.getBoundingClientRect(),px=event.clientX-rect.left,py=event.clientY-rect.top;
   keyboardTile=null;
   if(!tool){
     const hit=[...hitTargets].reverse().find(h=>px>=h.left&&px<=h.right&&py>=h.top&&py<=h.bottom);
     if(hit){inspect(hit.type,hit.index);return;}
   }
-  const dx=px-originX,dy=py-originY;
-  await selectTile(Math.floor(dx/tileW+dy/tileH),Math.floor(dy/tileH-dx/tileW));
+  const tile=tileAt(event);
+  await selectTile(tile.x,tile.y);
 };
 canvas.addEventListener('keydown',event=>{
   const directions={ArrowUp:[-1,0],ArrowDown:[1,0],ArrowLeft:[0,1],ArrowRight:[0,-1]};

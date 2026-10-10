@@ -41,8 +41,8 @@ encrypted transport; do not expose it through router port forwarding.
 
 ## Play
 
-- Open **Build**, choose a building, click open grass to highlight its tile, then click **Build here**
-  to confirm the placement and spend wood. Click another tile to change your selection,
+- Open **Build**, choose a building, hover over open grass to highlight its tile, then left-click
+  to place it and spend wood. Keep clicking open tiles to place more of the selected building,
   or **Cancel selection** to clear it. Place woodcutters within three horizontal/vertical tile steps
   of trees and farms within three steps of water; workers need these nearby sources.
 - Trees and water are renewable. Rock outcrops occupy tiles but cannot be mined yet.
@@ -83,6 +83,6 @@ python3 -m unittest discover -s tests -v
 ```
 
 With Node.js available, check worker movement and animation transitions with
-`node tests/test_animations.js`. Check tile selection and building confirmation with
+`node tests/test_animations.js`. Check hover previews and click-to-build placement with
 `node tests/test_building_selection.js`. Check contextual panels, object selection,
 keyboard controls, and visitor restrictions with `node tests/test_selection_panels.js`.
