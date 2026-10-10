@@ -1,12 +1,19 @@
 import copy
 import unittest
 
-from server import capacity, command, ensure_resources, new_town, tick
+from server import construct, capacity, command, ensure_resources, new_town, tick
 
 
 class VillageRules(unittest.TestCase):
     def setUp(self):
         self.town = new_town('Willowbrook')
+
+    def finish_construction(self):
+        for _ in range(100):
+            if not any('construction' in b for b in self.town['buildings']):
+                return
+            construct(self.town, self.town)
+        self.fail('Construction did not finish')
 
     def test_expanded_map_and_legacy_migration(self):
         self.assertEqual(self.town['map_size'] ** 2, 100 * 12 ** 2)
@@ -26,6 +33,7 @@ class VillageRules(unittest.TestCase):
 
     def test_build_and_move_preserve_building(self):
         command(self.town, {'action': 'build', 'kind': 'farm', 'x': 2, 'y': 3})
+        self.finish_construction()
         self.assertEqual(self.town['wood'], 50)
         command(self.town, {'action': 'move', 'index': 1, 'x': 4, 'y': 4})
         self.assertEqual(self.town['buildings'][1], {'kind': 'farm', 'x': 4, 'y': 4})
@@ -48,6 +56,7 @@ class VillageRules(unittest.TestCase):
         with self.assertRaises(ValueError):
             command(self.town, {'action': 'job', 'index': 0, 'job': 'woodcutting'})
         command(self.town, {'action': 'build', 'kind': 'woodcutter', 'x': 2, 'y': 2})
+        self.finish_construction()
         command(self.town, {'action': 'job', 'index': 0, 'job': 'woodcutting'})
         wood, skill = self.town['wood'], self.town['villagers'][0]['woodcutting']
         tick({'towns': {'absent-owner': self.town}})
@@ -87,6 +96,7 @@ class VillageRules(unittest.TestCase):
 
     def test_destroy_workplace_clears_targets_and_pauses_production(self):
         command(self.town, {'action': 'build', 'kind': 'woodcutter', 'x': 2, 'y': 2})
+        self.finish_construction()
         command(self.town, {'action': 'job', 'index': 0, 'job': 'woodcutting'})
         self.assertIsNotNone(self.town['villagers'][0]['work_target'])
         command(self.town, {'action': 'destroy', 'index': 1})
@@ -99,6 +109,7 @@ class VillageRules(unittest.TestCase):
 
     def test_full_storage_pauses_production_and_skill(self):
         command(self.town, {'action': 'build', 'kind': 'woodcutter', 'x': 1, 'y': 1})
+        self.finish_construction()
         command(self.town, {'action': 'job', 'index': 0, 'job': 'woodcutting'})
         self.town['wood'] = capacity(self.town)
         skill = self.town['villagers'][0]['woodcutting']
@@ -108,6 +119,7 @@ class VillageRules(unittest.TestCase):
 
     def test_food_shortage_pauses_growth_without_losing_villagers(self):
         command(self.town, {'action': 'build', 'kind': 'home', 'x': 1, 'y': 1})
+        self.finish_construction()
         self.town['food'] = 0
         tick({'towns': {'a': self.town}})
         self.assertEqual(len(self.town['villagers']), 5)
@@ -121,6 +133,7 @@ class VillageRules(unittest.TestCase):
         self.town['harvested'] = 30
         tick({'towns': {'a': self.town}})
         self.assertEqual(self.town['level'], 1)
+        self.town['villagers'][0]['construction_position'] = {'x': 5, 'y': 6}
         command(self.town, {'action': 'upgrade'})
         self.assertEqual(self.town['level'], 1)
         self.assertEqual(self.town['upgrade_remaining'], 30)
@@ -150,6 +163,7 @@ class VillageRules(unittest.TestCase):
 
     def test_woodcutting_pauses_outside_forest_reach_and_resumes_after_move(self):
         command(self.town, {'action': 'build', 'kind': 'woodcutter', 'x': 6, 'y': 6})
+        self.finish_construction()
         command(self.town, {'action': 'job', 'index': 0, 'job': 'woodcutting'})
         before = self.town['wood'], self.town['villagers'][0]['woodcutting']
         tick({'towns': {'a': self.town}})
@@ -162,6 +176,7 @@ class VillageRules(unittest.TestCase):
 
     def test_farming_uses_water_at_reach_boundary(self):
         command(self.town, {'action': 'build', 'kind': 'farm', 'x': 6, 'y': 2})
+        self.finish_construction()
         command(self.town, {'action': 'job', 'index': 0, 'job': 'farming'})
         food = self.town['food']
         tick({'towns': {'a': self.town}})

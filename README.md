@@ -86,6 +86,11 @@ the Python host, refresh both browsers, and create a new world to use the shared
   to place it and spend wood. Keep clicking open tiles to place more of the selected building,
   or **Cancel selection** to clear it. Place woodcutters within three horizontal/vertical tile steps
   of trees and farms within three steps of water; workers need these nearby sources.
+- New buildings and acres start as construction sites. Idle villagers automatically
+  help build; assign **Builder** in the villager panel to give a resident priority.
+  Builders walk to reachable sites, then work through foundations, framing, and
+  finishing over 30 seconds. Housing, storage, and workplaces activate only on
+  completion. Progress survives saving, moving a site, and restarting the host.
 - Trees and water are renewable. Rock outcrops occupy tiles but cannot be mined yet.
 - Select a farm and choose **Build acre · 5 wood**, then click open ground within
   three tile steps of that farm. Farmers tend its acres and deliver food back to
@@ -112,7 +117,8 @@ the Python host, refresh both browsers, and create a new world to use the shared
   so a hut on the only accessible bank does not block their fishing spot.
 - Woodcutters produce half as much wood as before. Assigned workers consume
   0.30 food each tick, compared with 0.12 for resting villagers.
-- The first hall upgrade costs 40 wood and takes 30 seconds in the open world; the hall
+- Hall upgrades also require a builder at the hall. The first costs 40 wood and
+  takes 30 seconds of construction after arrival; the hall
   panel shows remaining time. Closing the host pauses the upgrade.
 - Build cottages to attract residents; maintain food and add storage as needed.
 - Click a building, then **Destroy building** to remove it without a resource

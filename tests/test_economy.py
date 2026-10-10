@@ -1,7 +1,7 @@
 import copy
 import unittest
 
-from server import command, new_town, tick
+from server import construct, command, new_town, tick
 
 
 class EconomyRules(unittest.TestCase):
@@ -9,8 +9,16 @@ class EconomyRules(unittest.TestCase):
         self.town = new_town('Economy')
         self.world = {'towns': {'a': self.town}}
 
+    def finish_construction(self):
+        for _ in range(100):
+            if not any('construction' in b for b in self.town['buildings']):
+                return
+            construct(self.town, self.town)
+        self.fail('Construction did not finish')
+
     def test_woodcutting_produces_half_a_unit_per_tick(self):
         command(self.town, {'action': 'build', 'kind': 'woodcutter', 'x': 2, 'y': 2})
+        self.finish_construction()
         command(self.town, {'action': 'job', 'index': 0, 'job': 'woodcutting'})
         wood = self.town['wood']
         tick(self.world)
@@ -20,6 +28,7 @@ class EconomyRules(unittest.TestCase):
     def test_assigned_workers_consume_extra_food(self):
         idle = copy.deepcopy(self.town)
         command(self.town, {'action': 'build', 'kind': 'woodcutter', 'x': 6, 'y': 6})
+        self.finish_construction()
         command(self.town, {'action': 'job', 'index': 0, 'job': 'woodcutting'})
         tick(self.world)
         tick({'towns': {'a': idle}})
@@ -33,6 +42,7 @@ class EconomyRules(unittest.TestCase):
         with self.assertRaises(ValueError):
             command(self.town, {'action': 'job', 'index': 0, 'job': 'fishing'})
         command(self.town, {'action': 'build', 'kind': 'fishing_hut', 'x': 6, 'y': 2})
+        self.finish_construction()
         command(self.town, {'action': 'job', 'index': 0, 'job': 'fishing'})
         del self.town['villagers'][0]['fishing']  # Older saves have no fishing skill.
         food = self.town['food']

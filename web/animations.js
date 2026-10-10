@@ -20,21 +20,21 @@ const WorkerAnimation = (() => {
     return null;
   }
   function plan(town, villager, index, state) {
-    const blocked=new Set([...(town.obstacles || town.buildings),...town.map_resources].map(key));
-    const hall=town.home_hall;
+    const blocked=new Set([...(town.obstacles || town.buildings),...town.map_resources,...(town.npcs || [])].map(key));
+    const hall=town.home_hall || town.buildings.find(b=>b.kind==='hall');
     const preferred=hall?{x:hall.x-2+index%5,y:hall.y+3+Math.floor(index/5)}:{x:3+index%5,y:8+Math.floor(index/5)};
     const open=[];
     const size=town.map_size || 120;
     for(let x=0;x<size;x++)for(let y=0;y<size;y++){if(town.terrain?.[y]?.[x]==='v')blocked.add(`${x},${y}`);else if(!blocked.has(`${x},${y}`))open.push({x,y});}
-    const current=state?{x:Math.round(state.x),y:Math.round(state.y)}:preferred;
+    const current=state?{x:Math.round(state.x),y:Math.round(state.y)}:villager.construction_position || preferred;
     const start=open.sort((a,b)=>distance(a,current)-distance(b,current))[0] || preferred;
-    const source=villager.job==='idle'?null:villager.work_target;
+    const source=villager.construction_target || (villager.job==='idle'?null:villager.work_target);
     const kind=villager.job==='woodcutting'?'woodcutter':villager.job==='fishing'?'fishing_hut':'farm';
     // Match the host's workplace selection, including multiple assigned workers.
-    const workplaces=town.buildings.filter(b=>b.kind===kind&&town.map_resources.some(r=>
+    const workplaces=town.buildings.filter(b=>b.kind===kind&&!b.construction&&town.map_resources.some(r=>
       r.kind===(kind==='woodcutter'?'tree':'water')&&distance(b,r)<=3));
     const workplace=source?.kind==='acre'?town.buildings[source.farm_index]:workplaces[index%workplaces.length];
-    const home=workplace || town.buildings.find(b=>b.kind==='hall');
+    const home=villager.construction_target || workplace || town.buildings.find(b=>b.kind==='hall');
     let pier=[],workSpot=null;
     if(!villager.construction_target&&villager.job==='fishing'&&source&&home?.kind==='fishing_hut'){
       // A hut can occupy the only bank tile; its pier provides access over water.
@@ -52,7 +52,7 @@ const WorkerAnimation = (() => {
     const path=source?route(start,workSpot || source,blocked,size,!workSpot):home?route(start,home,blocked,size):[];
     return {...start,phase:path===null?'waiting':path.length?'walking':source?'working':'idle',
       path:path || [],source,home,pier,workSpot,blocked,size,workDuration:villager.job==='farming'?8:3.2,
-      elapsed:0,clock:state?.clock || index*.37,facing:state?.facing || 1};
+      construction:!!villager.construction_target,elapsed:0,clock:state?.clock || index*.37,facing:state?.facing || 1};
   }
   function advance(state, seconds, active) {
     state.clock+=seconds;
@@ -67,6 +67,7 @@ const WorkerAnimation = (() => {
       if(!state.path.length){state.phase=state.phase==='returning'?'depositing':state.source?'working':'idle';state.elapsed=0;}
       return;
     }
+    if(state.construction){state.elapsed+=seconds;return;}
     if(!active || !state.source || state.phase==='waiting')return;
     state.elapsed+=seconds;
     if(state.phase==='working'&&state.elapsed>=(state.workDuration || 3.2)){

@@ -1,5 +1,6 @@
 """Lantern Vale: a small, authoritative LAN village prototype."""
 import argparse
+from collections import deque
 import ipaddress
 import json
 import math
@@ -18,8 +19,9 @@ ROOT = Path(__file__).resolve().parent
 SAVE = ROOT / 'savegame.json'
 LOCK = threading.RLock()
 COSTS = {'home': 20, 'woodcutter': 15, 'farm': 15, 'storehouse': 25, 'fishing_hut': 15, 'acre': 5}
-JOBS = {'idle', 'woodcutting', 'farming', 'fishing'}
+JOBS = {'idle', 'building', 'woodcutting', 'farming', 'fishing'}
 TICK_SECONDS = 3
+BUILD_SECONDS = 30
 # Requirements are cumulative harvested wood; costs are paid when upgrading.
 HALL_UPGRADES = [
     {'level': level, 'harvested': 15 * level * (level - 1),
@@ -133,18 +135,20 @@ def ensure_resources(town):
 
 
 def work_source(town, job, worker_index):
+    if job == 'building':
+        return None
     building, source = {'woodcutting': ('woodcutter', 'tree'),
                         'farming': ('farm', 'water'),
                         'fishing': ('fishing_hut', 'water')}[job]
     workplaces = []
     for farm_index, b in enumerate(town['buildings']):
-        if b['kind'] != building:
+        if b['kind'] != building or not completed(b):
             continue
         nearby = [r for r in town['map_resources'] if r['kind'] == source
                   and abs(r['x'] - b['x']) + abs(r['y'] - b['y']) <= RESOURCE_REACH]
         if nearby:
             if job == 'farming':
-                acres = [a for a in town['buildings'] if a['kind'] == 'acre'
+                acres = [a for a in town['buildings'] if a['kind'] == 'acre' and completed(a)
                          and a.get('farm_index') == farm_index
                          and abs(a['x'] - b['x']) + abs(a['y'] - b['y']) <= RESOURCE_REACH]
                 if acres:
@@ -176,19 +180,106 @@ def new_town(name, world=None):
 
 
 def capacity(town):
-    return 100 + 100 * sum(b['kind'] == 'storehouse' for b in town['buildings'])
+    return 100 + 100 * sum(b['kind'] == 'storehouse' and completed(b) for b in town['buildings'])
+
+
+def completed(building):
+    # Buildings from older saves are already finished.
+    return 'construction' not in building
+
+
+def construction_route(town, start, target):
+    size = town.get('map_size', MAP_SIZE)
+    blocked = {(b['x'], b['y']) for b in town['buildings'] + town['map_resources']}
+    blocked.update((n['x'], n['y']) for n in town.get('npcs', []))
+    terrain = town.get('terrain', [])
+
+    def open_tile(p):
+        x, y = p
+        return (0 <= x < size and 0 <= y < size and p not in blocked
+                and (not terrain or terrain[y][x] != 'v'))
+
+    if not open_tile(start):
+        start = min(((x, y) for x in range(size) for y in range(size)
+                     if open_tile((x, y))), default=None,
+                    key=lambda p: abs(p[0] - start[0]) + abs(p[1] - start[1]))
+    if start is None:
+        return None
+    queue, previous = deque([start]), {start: None}
+    while queue:
+        p = queue.popleft()
+        if abs(p[0] - target['x']) + abs(p[1] - target['y']) == 1:
+            path = [p]
+            while previous[p] is not None:
+                p = previous[p]
+                path.append(p)
+            return list(reversed(path))
+        for next_tile in [(p[0]+1, p[1]), (p[0], p[1]+1),
+                          (p[0]-1, p[1]), (p[0], p[1]-1)]:
+            if next_tile not in previous and open_tile(next_tile):
+                previous[next_tile] = p
+                queue.append(next_tile)
+    return None
+
+
+def construct(town, landscape, workers=None, elapsed=TICK_SECONDS):
+    if workers is None:
+        workers = {i for i, v in enumerate(town['villagers'])
+                   if v['job'] in {'idle', 'building'}}
+    claimed = set()
+    hall = next(b for b in town['buildings'] if b['kind'] == 'hall')
+    for index, villager in enumerate(town['villagers']):
+        villager.pop('construction_target', None)
+        villager.pop('construction_arrived', None)
+    # Dedicated builders claim sites before residents who are helping while idle.
+    for index in sorted(workers, key=lambda i: town['villagers'][i]['job'] != 'building'):
+        villager = town['villagers'][index]
+        position = villager.get('construction_position',
+                                {'x': hall['x'] - 2 + index % 5,
+                                 'y': hall['y'] + 3 + index // 5})
+        start = (position['x'], position['y'])
+        for site_index, site in enumerate(town['buildings']):
+            if completed(site) or site_index in claimed:
+                continue
+            path = construction_route(landscape, start, site)
+            if path is None:
+                continue
+            claimed.add(site_index)
+            # A stable coordinate target avoids stale indices after destruction.
+            villager['construction_target'] = {key: site[key] for key in ('kind', 'x', 'y')}
+            step = path[min(len(path) - 1, int(elapsed * 1.8))]
+            villager['construction_position'] = {'x': step[0], 'y': step[1]}
+            if len(path) > 1:
+                break
+            villager['construction_arrived'] = True
+            construction = site['construction']
+            construction['progress'] = min(construction['total'],
+                                           construction['progress'] + elapsed)
+            if site['kind'] == 'hall':
+                town['upgrade_remaining'] = construction['total'] - construction['progress']
+            if construction['progress'] == construction['total']:
+                del site['construction']
+                if site['kind'] == 'hall':
+                    upgrade = hall_upgrade(town)
+                    if upgrade:
+                        town['level'] = upgrade['level']
+                        town['coins'] += upgrade['coins']
+                villager.pop('construction_target', None)
+                villager.pop('construction_arrived', None)
+            break
 
 
 def tick(world):
     for town in world['towns'].values():
         ensure_resources(town)
         if town.get('upgrade_remaining'):
-            town['upgrade_remaining'] = max(0, town['upgrade_remaining'] - TICK_SECONDS)
-            if town['upgrade_remaining'] == 0:
-                upgrade = hall_upgrade(town)
-                if upgrade:
-                    town['level'] = upgrade['level']
-                    town['coins'] += upgrade['coins']
+            # Resume upgrades from saves made before construction required builders.
+            hall = next(b for b in town['buildings'] if b['kind'] == 'hall')
+            upgrade = hall_upgrade(town)
+            if upgrade and completed(hall):
+                hall['construction'] = {'total': upgrade['seconds'],
+                                        'progress': upgrade['seconds'] - town['upgrade_remaining']}
+        construct(town, walking_map(world, town) if 'shared_map' in world else town)
         for index, villager in enumerate(town['villagers']):
             job = villager['job']
             resource = 'wood' if job == 'woodcutting' else 'food'
@@ -204,8 +295,9 @@ def tick(world):
                     town['harvested'] += amount
         # Shortages pause population growth; residents never leave.
         town['food'] = max(0, town['food'] - len(town['villagers']) * 0.12
-                           - WORKER_FOOD * sum(v['job'] != 'idle' for v in town['villagers']))
-        homes = sum(b['kind'] == 'home' for b in town['buildings'])
+                           - WORKER_FOOD * sum(v['job'] != 'idle' or bool(v.get('construction_target'))
+                                               for v in town['villagers']))
+        homes = sum(b['kind'] == 'home' and completed(b) for b in town['buildings'])
         if len(town['villagers']) < min(5 + homes * 2, 16) and town['food'] >= 20:
             town['food'] -= 10
             town['villagers'].append({'name': 'Settler ' + str(len(town['villagers']) + 1),
@@ -216,7 +308,8 @@ def tick(world):
 
 def validate_acre(town, farm_index, x, y):
     if (type(farm_index) is not int or not 0 <= farm_index < len(town['buildings'])
-            or town['buildings'][farm_index]['kind'] != 'farm'):
+            or town['buildings'][farm_index]['kind'] != 'farm'
+            or not completed(town['buildings'][farm_index])):
         raise ValueError('Select a farm before building an acre.')
     farm = town['buildings'][farm_index]
     if abs(x - farm['x']) + abs(y - farm['y']) > RESOURCE_REACH:
@@ -269,7 +362,8 @@ def command(town, data, world=None):
         if kind == 'acre':
             validate_acre(town, data.get('farm_index'), x, y)
         town['wood'] -= COSTS[kind]
-        building = {'kind': kind, 'x': x, 'y': y}
+        building = {'kind': kind, 'x': x, 'y': y,
+                    'construction': {'progress': 0, 'total': BUILD_SECONDS}}
         if kind == 'acre':
             building['farm_index'] = data['farm_index']
         town['buildings'].append(building)
@@ -308,7 +402,7 @@ def command(town, data, world=None):
         if type(index) is not int or not 0 <= index < len(town['villagers']) or job not in JOBS:
             raise ValueError('Choose a villager and a valid job.')
         required = {'woodcutting': 'woodcutter', 'farming': 'farm', 'fishing': 'fishing_hut'}.get(job)
-        if required and not any(b['kind'] == required for b in town['buildings']):
+        if required and not any(b['kind'] == required and completed(b) for b in town['buildings']):
             raise ValueError('Build a ' + required + ' first.')
         town['villagers'][index]['job'] = job
     elif action == 'upgrade':
@@ -322,11 +416,15 @@ def command(town, data, world=None):
                              f"{upgrade['wood']} wood to upgrade.")
         town['wood'] -= upgrade['wood']
         town['upgrade_remaining'] = upgrade['seconds']
+        hall = next(b for b in town['buildings'] if b['kind'] == 'hall')
+        hall['construction'] = {'progress': 0, 'total': upgrade['seconds']}
     else:
         raise ValueError('Unknown action.')
     for index, villager in enumerate(town['villagers']):
         villager['work_target'] = (work_source(town, villager['job'], index)
                                    if villager['job'] != 'idle' else None)
+    construct(town, walking_map(world, town) if world and 'shared_map' in world else town,
+              elapsed=0)
 
 
 class Handler(SimpleHTTPRequestHandler):

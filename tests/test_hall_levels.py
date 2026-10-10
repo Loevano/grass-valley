@@ -8,6 +8,7 @@ from server import HALL_UPGRADES, command, new_town, tick
 class HallLevels(unittest.TestCase):
     def setUp(self):
         self.town = new_town('Hall levels')
+        self.town['villagers'][0]['construction_position'] = {'x': 5, 'y': 6}
         self.world = {'towns': {'a': self.town}}
 
     def test_all_levels_require_choice_and_finish_once(self):
@@ -58,6 +59,7 @@ class HallLevels(unittest.TestCase):
         self.town.update(level=2, harvested=90, wood=80)
         command(self.town, {'action': 'upgrade'})
         self.assertEqual(self.town['upgrade_remaining'], 60)
+        del self.town['buildings'][0]['construction']
         self.town.update(level=1, upgrade_remaining=3)
         coins = self.town['coins']
         tick(self.world)

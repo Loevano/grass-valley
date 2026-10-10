@@ -20,6 +20,7 @@ class BuildingRange(unittest.TestCase):
 
     def test_upgrade_expands_range_only_when_finished(self):
         self.town['buildings'][0].update(x=1, y=1)
+        self.town['villagers'][0]['construction_position'] = {'x': 1, 'y': 2}
         self.town['harvested'] = 30
         tick({'towns': {'owner': self.town}})
         command(self.town, {'action': 'upgrade'})

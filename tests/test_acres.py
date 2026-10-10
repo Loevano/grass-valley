@@ -2,17 +2,26 @@ import copy
 import json
 import unittest
 
-from server import command, new_town, tick, work_source
+from server import construct, command, new_town, tick, work_source
 
 
 class FarmAcres(unittest.TestCase):
     def setUp(self):
         self.town = new_town('Fields')
         command(self.town, {'action': 'build', 'kind': 'farm', 'x': 6, 'y': 2})
+        self.finish_construction()
+
+    def finish_construction(self):
+        for _ in range(100):
+            if not any('construction' in b for b in self.town['buildings']):
+                return
+            construct(self.town, self.town)
+        self.fail('Construction did not finish')
 
     def build(self, **changes):
         data = {'action': 'build', 'kind': 'acre', 'farm_index': 1, 'x': 6, 'y': 3}
         command(self.town, {**data, **changes})
+        self.finish_construction()
 
     def test_build_save_and_produce_food_at_acre(self):
         wood = self.town['wood']
@@ -40,6 +49,7 @@ class FarmAcres(unittest.TestCase):
     def test_acres_need_water_and_follow_their_own_farm(self):
         self.build()
         command(self.town, {'action': 'build', 'kind': 'farm', 'x': 7, 'y': 3})
+        self.finish_construction()
         self.assertEqual(work_source(self.town, 'farming', 0)['kind'], 'acre')
         self.assertEqual(work_source(self.town, 'farming', 1)['kind'], 'water')
         self.town['map_resources'] = [r for r in self.town['map_resources'] if r['kind'] != 'water']
