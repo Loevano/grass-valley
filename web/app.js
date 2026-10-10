@@ -442,7 +442,7 @@ function villagerCard(town,v,index,withLink=false){
   div.append(skillBar('Woodcutting',v.woodcutting));div.append(skillBar('Farming',v.farming));div.append(skillBar('Fishing',v.fishing || 0));
   for(const [job,label] of Object.entries(professionJobs))if(v[job] || v.job===job)div.append(skillBar(label,v[job] || 0));
   const traits=document.createElement('small');traits.className='villager-talents';
-  traits.textContent=Object.entries(v.talents || {}).map(([job,value])=>`${value>0?'Strength':'Weakness'}: ${goodName(job)} (${value>0?'+':'−'}25% output and learning, including related professions)`).join(' · ');div.append(traits);
+  traits.textContent=Object.entries(v.talents || {}).map(([job,value])=>`${value>0?'Strength':'Weakness'}: ${goodName(job)} (${value>0?'+':'−'}25%)`).join(' · ');div.append(traits);
   if(!['idle','building'].includes(v.job)){const output=document.createElement('small');output.className='villager-output';output.textContent=`Work output: ${workerEfficiency(v,v.job).toFixed(2)}× base before workplace bonuses`;div.append(output);}
   const resource=v.job==='woodcutting'?'wood':'food';
   const full=town[resource]>=storageCapacity(town);
