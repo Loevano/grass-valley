@@ -14,63 +14,11 @@ let tileW = 46, tileH = 23, originX = 0, originY = 0;
 const workers = new Map();
 let workerTown = null, lastFrame = null;
 const walkKeys = new Set();
-const defaultBindings={up:'w',left:'a',down:'s',right:'d',camera:'y'};
-const bindingLabels={up:'Walk up',left:'Walk left',down:'Walk down',right:'Walk right',camera:'Toggle camera lock'};
-let keybindings={...defaultBindings}, cameraLocked=true;
-try{
-  const saved=JSON.parse(localStorage.getItem('lantern-settings') || 'null');
-  if(saved?.keybindings && Object.keys(defaultBindings).every(action=>/^[a-z0-9]$/.test(saved.keybindings[action]))
-    && new Set(Object.values(saved.keybindings)).size===Object.keys(defaultBindings).length){
-    keybindings=Object.fromEntries(Object.keys(defaultBindings).map(action=>[action,saved.keybindings[action]]));
-  }
-  if(typeof saved?.cameraLocked==='boolean')cameraLocked=saved.cameraLocked;
-}catch{}
-function saveSettings(){
-  try{localStorage.setItem('lantern-settings',JSON.stringify({keybindings,cameraLocked}));}
-  catch{notice('Settings apply for this session. Browser storage is unavailable.');}
-}
-function setCameraLock(locked){
-  cameraLocked=locked;
-  if(playerView && viewed===identity?.town_id){
-    playerView.following=locked;
-    if(locked&&typeof camera!=='undefined'){camera.x=playerView.x;camera.y=playerView.y;}
-  }
-  saveSettings();renderSettings();
-}
-function renderSettings(){
-  $('camera-lock-button').textContent=`Camera lock: ${cameraLocked?'On':'Off'}`;
-  $('camera-lock-button').setAttribute('aria-pressed',String(cameraLocked));
-  for(const action of Object.keys(defaultBindings))$('binding-'+action).value=keybindings[action].toUpperCase();
-  $('world').setAttribute('aria-label',`Town grid. Use ${['up','left','down','right'].map(action=>keybindings[action].toUpperCase()).join(', ')} to walk. Press ${keybindings.camera.toUpperCase()} to toggle camera lock. Use arrow keys and Enter to inspect tiles.`);
-  $('movement-hint').textContent=`Click map · ${['up','left','down','right'].map(action=>keybindings[action].toUpperCase()).join('/')} to walk · ${keybindings.camera.toUpperCase()} camera lock`;
-}
-for(const action of Object.keys(defaultBindings)){
-  const label=document.createElement('label');label.textContent=bindingLabels[action];label.setAttribute('for','binding-'+action);
-  const input=document.createElement('input');input.id='binding-'+action;input.readOnly=true;
-  input.setAttribute('aria-describedby','keybindings-help');
-  input.onkeydown=event=>{
-    if(event.key==='Tab'||event.key==='Escape')return;
-    event.preventDefault();event.stopPropagation();
-    const key=event.key.toLowerCase();
-    if(event.ctrlKey||event.metaKey||event.altKey||!/^[a-z0-9]$/.test(key)){
-      $('settings-message').textContent='Choose a letter or number without modifier keys.';return;
-    }
-    if(Object.keys(keybindings).some(other=>other!==action&&keybindings[other]===key)){
-      $('settings-message').textContent='That key is already assigned. Choose another key.';return;
-    }
-    clearWalk();keybindings[action]=key;saveSettings();renderSettings();$('settings-message').textContent='Keybinding saved.';
-  };
-  $('keybindings').append(label,input);
-}
-$('camera-lock-button').onclick=()=>setCameraLock(!cameraLocked);
-$('reset-keybindings').onclick=()=>{clearWalk();keybindings={...defaultBindings};saveSettings();renderSettings();$('settings-message').textContent='Default keybindings restored.';};
-renderSettings();
 let playerView = null, walkingRequest = false, walkCooldown = 0;
 function clearWalk(){walkKeys.clear();walkCooldown=0;}
 function canControlPlayer(){
   return viewed===identity?.town_id && !!world.towns[viewed]?.player && !tool
     && !$('world-menu').open && !$('delete-world-dialog').open
-    && panel!=='settings' && !document.activeElement?.isContentEditable
     && !['INPUT','TEXTAREA','SELECT','BUTTON'].includes(document.activeElement?.tagName);
 }
 window.addEventListener('keyup',event=>walkKeys.delete(event.key.toLowerCase()));
@@ -80,14 +28,14 @@ function playerSprite(town,seconds){
   if(!town?.player)return null;
   const key=`${world.world_id}/${viewed}`;
   if(playerView?.key!==key){
-    playerView={...town.player,key,target:{...town.player},clock:0,following:cameraLocked&&viewed===identity?.town_id};clearWalk();
+    playerView={...town.player,key,target:{...town.player},clock:0,following:viewed===identity?.town_id};clearWalk();
     if(playerView.following&&typeof camera!=='undefined'){camera.x=playerView.x;camera.y=playerView.y;}
   }
   const s=playerView;
   if(viewed!==identity?.town_id)s.target={...town.player};
   if(!canControlPlayer())clearWalk();
-  const horizontal=Number(walkKeys.has(keybindings.right))-Number(walkKeys.has(keybindings.left));
-  const vertical=Number(walkKeys.has(keybindings.down))-Number(walkKeys.has(keybindings.up));
+  const horizontal=Number(walkKeys.has('d'))-Number(walkKeys.has('a'));
+  const vertical=Number(walkKeys.has('s'))-Number(walkKeys.has('w'));
   const dx=Math.sign(horizontal+vertical),dy=Math.sign(vertical-horizontal);
   walkCooldown=Math.max(0,walkCooldown-seconds);
   if((dx||dy)&&!walkingRequest&&walkCooldown===0){
@@ -100,7 +48,8 @@ function playerSprite(town,seconds){
   const travel=Math.min(1,distance?seconds*3.6/distance:0);
   s.x+=(s.target.x-s.x)*travel;s.y+=(s.target.y-s.y)*travel;
   s.facing=s.target.facing;s.clock+=seconds;s.path=distance>.001?[s.target]:[];s.phase='idle';
-  if(viewed===identity?.town_id&&s.following&&(dx||dy||distance>.001)){
+  if(viewed===identity?.town_id&&(dx||dy||distance>.001)){
+    s.following=true;
     if(typeof camera!=='undefined'){camera.x=s.x;camera.y=s.y;}
   }
   return {kind:'player',x:s.x,y:s.y,index:1,state:s,villager:{job:'idle'},active:false};
@@ -194,7 +143,7 @@ function openPanel(next){
   panel=next;selection=null;tool=null;moveIndex=null;buildTile=null;hoverTile=null;
   render();
 }
-for(const name of ['build','villagers','valley','help','settings']){
+for(const name of ['build','villagers','valley','help']){
   $(name+'-button').onclick=()=>openPanel(panel===name?null:name);
 }
 $('close-panel').onclick=()=>{openPanel(null);canvas.focus();};
@@ -203,16 +152,13 @@ $('find-player-button').onclick=()=>{
   if(!town)return;
   if(!town.player){notice('Restart the Python host, then refresh this page to load your character.');return;}
   viewed=identity.town_id;keyboardTile=null;openPanel(null);
-  setCameraLock(true);
+  playerView.following=true;
   if(typeof camera!=='undefined'){camera.x=playerView.x;camera.y=playerView.y;camera.zoom=1;}
-  draw();canvas.focus();notice(`Your gold-clad villager is marked You. Use ${['up','left','down','right'].map(action=>keybindings[action].toUpperCase()).join('/')} to walk.`);
+  draw();canvas.focus();notice('Your gold-clad villager is marked You. Hold WASD to walk.');
 };
 window.addEventListener('keydown',event=>{
   const key=event.key.toLowerCase();
-  if(key===keybindings.camera&&!event.repeat&&!event.ctrlKey&&!event.metaKey&&!event.altKey&&canControlPlayer()){
-    event.preventDefault();setCameraLock(!cameraLocked);draw();notice(`Camera lock ${cameraLocked?'on':'off'}.`);
-  }
-  if(['up','left','down','right'].some(action=>keybindings[action]===key)&&!event.ctrlKey&&!event.metaKey&&!event.altKey&&canControlPlayer()){
+  if(['w','a','s','d'].includes(key)&&!event.ctrlKey&&!event.metaKey&&!event.altKey&&canControlPlayer()){
     event.preventDefault();walkKeys.add(key);
   }
   if(event.key==='Escape' && !$('world-menu').open && !$('delete-world-dialog').open){
@@ -256,7 +202,7 @@ function renderSelection(town){
   if(selection.type==='player'){
     $('selection-title').textContent=viewed===identity?.town_id?'You':'Town founder';
     const p=document.createElement('p');
-    p.textContent=viewed===identity?.town_id?'Your adventuring villager. Click the map and use your movement keys to explore. Open Settings to change keybindings. Your position is saved with this world.':'This is the town owner’s adventuring villager.';
+    p.textContent=viewed===identity?.town_id?'Your adventuring villager. Click the map and hold WASD to walk and explore. Your position is saved with this world.':'This is the town owner’s adventuring villager.';
     $('selection-details').append(p);return;
   }
   const item=selection.type==='villager'?town.villagers[selection.index]:selection.type==='building'?town.buildings[selection.index]:town.map_resources[selection.index];
@@ -331,11 +277,11 @@ function render(){
   renderSelection(town);
   $('join').hidden=!!own || !world.world_id || !!panel;
   $('controls').hidden=panel!=='build' || !own || viewed!==identity?.town_id;
-  for(const name of ['selection','villagers','valley','help','settings'])$(name+'-panel').hidden=panel!==name;
+  for(const name of ['selection','villagers','valley','help'])$(name+'-panel').hidden=panel!==name;
   $('side-panel').hidden=!panel && $('join').hidden;
   $('close-panel').hidden=!panel;
   $('game').classList.toggle('panel-open',!$('side-panel').hidden);
-  for(const name of ['build','villagers','valley','help','settings']){
+  for(const name of ['build','villagers','valley','help']){
     $(name+'-button').setAttribute('aria-expanded',String(panel===name));
     $(name+'-button').classList.toggle('selected',panel===name);
   }

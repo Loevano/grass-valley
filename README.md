@@ -47,10 +47,7 @@ encrypted transport; do not expose it through router port forwarding.
   so returning to a town keeps the same landscape. Open ground can be built on;
   trees, water, and rocks still reserve their tiles.
 - Your gold-clad villager is marked **You**. Click the map and hold **WASD** to
-  walk in screen directions. Press **Y** to toggle camera lock: when locked, the
-  camera follows your movement; when unlocked, walking leaves the camera in place.
-  Open **Settings** to rebind movement and camera lock keys or restore defaults.
-  Preferences are saved in this browser. Scroll to pan; Option/Alt-scroll to zoom.
+  walk in screen directions; the camera follows as you explore your town.
   Click **Find me** to return to your town, center your character, and start walking.
   Buildings, trees, water, and rocks block movement. Your position is saved per
   world. Movement pauses while typing, placing buildings, or using world menus.

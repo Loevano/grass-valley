@@ -29,7 +29,8 @@ def walkable(town, x, y, blocked=None):
         return False
     if blocked is None:
         blocked = {(b['x'], b['y']) for b in
-                   town['buildings'] + town['map_resources']}
+                   town['buildings'] + town['map_resources']
+                   if b['kind'] != 'tree'}
     terrain = town.get('terrain')
     for tx in range(math.floor(x + .5) - 1, math.floor(x + .5) + 2):
         for ty in range(math.floor(y + .5) - 1, math.floor(y + .5) + 2):
@@ -46,7 +47,8 @@ def ensure_player(town):
     if not walkable(town, player['x'], player['y']):
         size = town.get('map_size', 12)
         blocked = {(b['x'], b['y']) for b in
-                   town['buildings'] + town['map_resources']}
+                   town['buildings'] + town['map_resources']
+                   if b['kind'] != 'tree'}
         tiles = ((x, y) for x in range(size) for y in range(size))
         for x, y in sorted(tiles, key=lambda p:
                            abs(p[0] - player['x']) + abs(p[1] - player['y'])):
@@ -64,7 +66,8 @@ def move_player(town, data):
     length = math.hypot(dx, dy)
     if length:
         blocked = {(b['x'], b['y']) for b in
-                   town['buildings'] + town['map_resources']}
+                   town['buildings'] + town['map_resources']
+                   if b['kind'] != 'tree'}
         # Small steps prevent tunnelling through obstacles; slide along walls.
         for _ in range(5):
             x = player['x'] + dx / length * .06
