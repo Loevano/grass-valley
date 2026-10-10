@@ -7,6 +7,7 @@ try {
   if(legacy && !identities.legacy) identities.legacy = legacy;
 } catch { identities = {}; }
 let world = {towns:{}}, viewed = null, tool = null, moveIndex = null;
+let buildTile = null, building = false;
 let catalog = {worlds:[], can_manage:false}, menuStarted = false, refreshing = null, menuBusy = false, deletingWorld = null;
 let tileW = 46, tileH = 23, originX = 0, originY = 0;
 const workers = new Map();
@@ -64,15 +65,27 @@ function renderWorldMenu(){
     $('world-list').append(row);
   }
 }
-for(const [kind,cost] of Object.entries(costs)){const button=document.createElement('button');button.textContent=`${labels[kind]} · ${cost} wood`;button.onclick=()=>{tool=kind;moveIndex=null;render();};$('buildings').append(button);}
-$('move').onclick=()=>{tool='move';moveIndex=null;render();};
-$('cancel').onclick=()=>{tool=null;moveIndex=null;render();};
+for(const [kind,cost] of Object.entries(costs)){const button=document.createElement('button');button.textContent=`${labels[kind]} · ${cost} wood`;button.onclick=()=>{tool=kind;moveIndex=null;buildTile=null;render();};$('buildings').append(button);}
+$('move').onclick=()=>{tool='move';moveIndex=null;buildTile=null;render();};
+$('cancel').onclick=()=>{tool=null;moveIndex=null;buildTile=null;render();};
+$('confirm-build').onclick=async()=>{
+  const town=world.towns[viewed];
+  if(building || !buildTile || !costs[tool] || viewed!==identity?.town_id || !town || town.wood<costs[tool])return;
+  const selected=buildTile,kind=tool;
+  building=true;render();
+  try{
+    await request('/api/command',{action:'build',kind,...selected,world_id:world.world_id});
+    if(buildTile===selected)buildTile=null;
+    await refresh();
+  }catch(e){notice(e.message);await refresh();}
+  finally{building=false;render();}
+};
 $('upgrade').onclick=()=>act({action:'upgrade'});
 async function refresh(){
   if(refreshing)return refreshing;
   refreshing=(async()=>{
     const next=await request('/api/world');
-    if(next.world_id!==world.world_id){tool=null;moveIndex=null;viewed=null;}
+    if(next.world_id!==world.world_id){tool=null;moveIndex=null;buildTile=null;viewed=null;}
     world=next;identity=identities[world.world_id] || null;
     catalog=await request('/api/worlds');
     if(!world.towns[viewed])viewed=identity?.town_id || Object.keys(world.towns)[0];
@@ -198,6 +211,11 @@ function draw(seconds=0){
   for(let x=0;x<12;x++)for(let y=0;y<12;y++){
     const [px,py]=point(x,y),wet=water.has(`${x},${y}`);
     polygon([[px,py],[px+tileW/2,py+tileH/2],[px,py+tileH],[px-tileW/2,py+tileH/2]],wet?((x+y)%2?'#467f91':'#518d9d'):((x+y)%2?'#638457':'#6a8b5c'),wet?'#76a9ac':'#789766');
+    if(buildTile?.x===x&&buildTile?.y===y&&costs[tool]&&viewed===identity?.town_id){
+      ctx.save();ctx.lineWidth=3;
+      polygon([[px,py],[px+tileW/2,py+tileH/2],[px,py+tileH],[px-tileW/2,py+tileH/2]],'#e5d58a88','#fff0b1');
+      ctx.restore();
+    }
     if(wet){ctx.strokeStyle='#b4d7ce99';ctx.beginPath();ctx.moveTo(px-tileW*.16,py+tileH*.48);ctx.lineTo(px+tileW*.12,py+tileH*.63);ctx.stroke();}
   }
   const buildings=town?.buildings || [{kind:'hall',x:5,y:5}];
@@ -236,7 +254,11 @@ canvas.onclick=async event=>{
   const resource=world.towns[viewed].map_resources?.find(r=>r.x===x&&r.y===y);
   if(resource){notice(resource.kind==='tree'?'Forest: place a woodcutter within 3 tile steps to gather wood.':resource.kind==='water'?'Water: place a farm within 3 tile steps to grow food.':'Rock outcrop: choose open grass for buildings.');return;}
   if(tool==='move'){if(moveIndex===null){const index=world.towns[viewed].buildings.findIndex(b=>b.x===x&&b.y===y);if(index<0){notice('Click the tile beneath a building.');return;}moveIndex=index;render();}else{await act({action:'move',index:moveIndex,x,y});moveIndex=null;render();}}
-  else await act({action:'build',kind:tool,x,y});
+  else{
+    if(building)return;
+    if(world.towns[viewed].buildings.some(b=>b.x===x&&b.y===y)){notice('Choose open grass, away from existing buildings.');return;}
+    buildTile={x,y};render();
+  }
 };
 window.addEventListener('resize',()=>draw());
 function animate(now){

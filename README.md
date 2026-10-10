@@ -41,7 +41,9 @@ encrypted transport; do not expose it through router port forwarding.
 
 ## Play
 
-- Build on open grass. Place woodcutters within three horizontal/vertical tile steps
+- Choose a building, click open grass to highlight its tile, then click **Build here**
+  to confirm the placement and spend wood. Click another tile to change your selection,
+  or **Cancel selection** to clear it. Place woodcutters within three horizontal/vertical tile steps
   of trees and farms within three steps of water; workers need these nearby sources.
 - Trees and water are renewable. Rock outcrops occupy tiles but cannot be mined yet.
 - Give villagers jobs using the selectors on the right. Their skills increase as they work.
@@ -75,4 +77,5 @@ python3 -m unittest discover -s tests -v
 ```
 
 With Node.js available, check worker movement and animation transitions with
-`node tests/test_animations.js`.
+`node tests/test_animations.js`. Check tile selection and building confirmation with
+`node tests/test_building_selection.js`.
