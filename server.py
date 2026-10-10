@@ -11,6 +11,8 @@ from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from urllib.parse import urlsplit
 
+import progression as economy
+
 from terrain import ensure_terrain
 from npcs import ensure_npcs
 from shared_world import bind_map, export_world, new_world, validate_placement, walking_map
@@ -26,13 +28,12 @@ BUILDING_JOBS = {'woodcutter': 'woodcutting', 'farm': 'farming',
                  'fishing_hut': 'fishing', 'acre': 'farming'}
 TICK_SECONDS = 3
 BUILD_SECONDS = 30
-# Requirements are cumulative harvested wood; costs are paid when upgrading.
-HALL_UPGRADES = [
-    {'level': level, 'harvested': 15 * level * (level - 1),
-     'wood': 40 * (level - 1), 'seconds': 30 * (level - 1),
-     'coins': 30 * (level - 1)}
-    for level in range(2, 11)
-]
+# New towns develop professions instead of repeating wood-only upgrades.
+HALL_UPGRADES = economy.HALL_UPGRADES
+COSTS.update({k: v['wood'] for k, v in economy.BUILDINGS.items()})
+JOBS.update(economy.JOB_BUILDINGS)
+SETTLER_SPACES.update({k: v['slots'] for k, v in economy.BUILDINGS.items()})
+BUILDING_JOBS.update({k: v['job'] for k, v in economy.BUILDINGS.items() if 'job' in v})
 
 WORKER_FOOD = .18
 
@@ -41,8 +42,11 @@ RESOURCE_REACH = 3
 
 
 def hall_upgrade(town):
-    return next((upgrade for upgrade in HALL_UPGRADES
-                 if upgrade['level'] == town['level'] + 1), None)
+    upgrade = next((u for u in HALL_UPGRADES if u['level'] == town['level'] + 1), None)
+    if upgrade is None and town.get('upgrade_remaining') and town['level'] < 10:
+        level = town['level'] + 1
+        return {'level': level, 'seconds': 30 * (level - 1), 'coins': 30 * (level - 1)}
+    return upgrade
 
 
 def walkable(town, x, y, blocked=None):
@@ -90,6 +94,8 @@ def move_player(town, data):
     # Normalize screen distance for the 2:1 isometric projection.
     length = math.hypot(dx - dy, (dx + dy) * .5) / math.sqrt(2)
     if length:
+        player.pop('activity', None)
+        player.pop('activity_status', None)
         blocked = {(b['x'], b['y']) for b in
                    town['buildings'] + town['map_resources']
                    if b['kind'] != 'tree'}
@@ -149,12 +155,13 @@ def settler_building(town, worker_index):
         return villager['building_index']
     # Preserve workplace selection in older saves until explicitly reassigned.
     kind = {'woodcutting': 'woodcutter', 'farming': 'farm',
-            'fishing': 'fishing_hut'}.get(villager['job'])
+            'fishing': 'fishing_hut', **economy.JOB_BUILDINGS}.get(villager['job'])
     source = 'tree' if kind == 'woodcutter' else 'water'
     workplaces = [i for i, b in enumerate(town['buildings'])
                   if b['kind'] == kind and completed(b)
                   and any(r['kind'] == source and
-                          abs(r['x'] - b['x']) + abs(r['y'] - b['y']) <= RESOURCE_REACH
+                          abs(r['x'] - b['x']) + abs(r['y'] - b['y']) <=
+                          (6 if kind == 'fishing_hut' and 'boat' in b.get('profession_upgrades', []) else RESOURCE_REACH)
                           for r in town['map_resources'])]
     return workplaces[worker_index % len(workplaces)] if workplaces else None
 
@@ -181,6 +188,15 @@ def assign_settler(town, worker_index, building_index):
 
 
 def work_assignment(town, job, worker_index):
+    if job in economy.JOB_BUILDINGS:
+        index = town['villagers'][worker_index].get('building_index')
+        if type(index) is int and 0 <= index < len(town['buildings']):
+            b = town['buildings'][index]
+            if b['kind'] == economy.JOB_BUILDINGS[job] and completed(b):
+                assigned = assigned_settlers(town, index)
+                if worker_index in assigned and assigned.index(worker_index) < settler_capacity(b):
+                    return b, b
+        return None
     if job == 'building':
         return None
     building, source = {'woodcutting': ('woodcutter', 'tree'),
@@ -201,8 +217,9 @@ def work_assignment(town, job, worker_index):
     for farm_index, b in enumerate(town['buildings']):
         if b['kind'] != building or not completed(b) or (explicit is not None and farm_index != explicit):
             continue
+        reach = 6 if job == 'fishing' and 'boat' in b.get('profession_upgrades', []) else RESOURCE_REACH
         nearby = [r for r in town['map_resources'] if r['kind'] == source
-                  and abs(r['x'] - b['x']) + abs(r['y'] - b['y']) <= RESOURCE_REACH]
+                  and abs(r['x'] - b['x']) + abs(r['y'] - b['y']) <= reach]
         if nearby:
             if job == 'farming':
                 acres = [a for a in town['buildings'] if a['kind'] == 'acre' and completed(a)
@@ -215,8 +232,16 @@ def work_assignment(town, job, worker_index):
                 if acres:
                     nearby = [acres[worker_index % len(acres)]]
             workplaces.append((b, min(nearby, key=lambda r:
-                                      abs(r['x'] - b['x']) + abs(r['y'] - b['y']))))
-    return workplaces[worker_index % len(workplaces)] if workplaces else None
+                                      (r.get('supply', 1) <= 0, abs(r['x'] - b['x']) + abs(r['y'] - b['y'])))))
+    if not workplaces:
+        return None
+    assignment = workplaces[worker_index % len(workplaces)]
+    owner_index = next(i for i, b in enumerate(town['buildings']) if b is assignment[0])
+    slot_index = town['villagers'][worker_index].get('building_index') if assigned_acre is not None else owner_index
+    assigned = assigned_settlers(town, slot_index)
+    if worker_index in assigned and assigned.index(worker_index) >= settler_capacity(assigned_acre or assignment[0]):
+        return None
+    return assignment
 
 
 def work_source(town, job, worker_index):
@@ -331,12 +356,14 @@ def construct(town, landscape, workers=None, elapsed=TICK_SECONDS):
             construction = site['construction']
             construction['progress'] = min(construction['total'],
                                            construction['progress'] + elapsed)
-            if site['kind'] == 'hall':
+            if site['kind'] == 'hall' and 'upgrade' not in construction:
+                upgrade = hall_upgrade(town)
                 town['upgrade_remaining'] = construction['total'] - construction['progress']
             if construction['progress'] == construction['total']:
                 del site['construction']
-                if site['kind'] == 'hall':
-                    upgrade = hall_upgrade(town)
+                if 'upgrade' in construction:
+                    site.update(construction['upgrade'])
+                elif site['kind'] == 'hall':
                     if upgrade:
                         town['level'] = upgrade['level']
                         town['coins'] += upgrade['coins']
@@ -345,7 +372,27 @@ def construct(town, landscape, workers=None, elapsed=TICK_SECONDS):
             break
 
 
+def prepare_landscapes(world, regenerate=False):
+    buildings = [b for t in world['towns'].values() for b in t['buildings']]
+    landscapes = [world['shared_map']] if 'shared_map' in world else list(world['towns'].values())
+    for landscape in landscapes:
+        if 'shared_map' not in world:
+            ensure_resources(landscape)
+        economy.ensure_forage(landscape, buildings if 'shared_map' in world else landscape['buildings'])
+        if regenerate:
+            economy.renew(landscape)
+        else:
+            for _, _, members in economy.supply_groups(landscape):
+                maximum, regeneration = economy.SUPPLIES[members[0]['kind']]
+                for resource in members:
+                    resource.setdefault('supply', maximum)
+                    resource.update(supply_max=maximum, regeneration=regeneration)
+    if 'shared_map' in world:
+        bind_map(world)
+
+
 def tick(world):
+    prepare_landscapes(world, regenerate=True)
     for town in world['towns'].values():
         ensure_resources(town)
         if town.get('upgrade_remaining'):
@@ -356,40 +403,75 @@ def tick(world):
                 hall['construction'] = {'total': upgrade['seconds'],
                                         'progress': upgrade['seconds'] - town['upgrade_remaining']}
         construct(town, walking_map(world, town) if 'shared_map' in world else town)
+        landscape = world.get('shared_map', town)
+        economy.player_tick(town, landscape, capacity(town))
+        barn_cycles = set()
+        field_cycles = {}
         for index, villager in enumerate(town['villagers']):
             job = villager['job']
-            resource = 'wood' if job == 'woodcutting' else 'food'
             assignment = work_assignment(town, job, index) if job != 'idle' else None
             source = assignment[1] if assignment else None
             villager['work_target'] = source
-            if source and town[resource] < capacity(town):
-                caught = True
-                if job == 'fishing':
-                    caught = secrets.randbelow(5) != 0
-                    villager['fishing_catch'] = {
-                        'attempt': villager.get('fishing_catch', {}).get('attempt', 0) + 1,
-                        'caught': caught,
-                    }
-                rate = .5 if job == 'woodcutting' else 1
-                bonus = production_bonus(assignment[0])
-                if source['kind'] == 'acre':
-                    bonus += production_bonus(source)
-                rate *= 1 + bonus
-                amount = min(rate * (1 + villager.get(job, 0) // 20),
-                             capacity(town) - town[resource])
-                if caught:
-                    town[resource] += amount
-                villager[job] = villager.get(job, 0) + 1
-                if resource == 'wood':
-                    town['harvested'] += amount
+            villager.pop('production_status', None)
+            if not source:
+                continue
+            building = assignment[0]
+            if job in economy.JOB_BUILDINGS:
+                if building['kind'] == 'barn':
+                    marker = id(building)
+                    if marker in barn_cycles:
+                        villager['production_status'] = 'Barn already tended this cycle'
+                        continue
+                    barn_cycles.add(marker)
+                villager['production_status'] = economy.extra_worker(town, villager, building, capacity(town))
+                continue
+            output = 'wood' if job == 'woodcutting' else 'fish' if job == 'fishing' else source.get('crop', 'vegetables')
+            room = capacity(town) - economy.quantity(town, output)
+            if output in economy.EDIBLE:
+                room = min(room, (capacity(town) - town['food']) / economy.EDIBLE[output])
+            if room <= 0:
+                villager['production_status'] = 'Storage full'
+                continue
+            if job == 'farming':
+                marker = id(source) if source['kind'] == 'acre' else id(building)
+                remaining = (1 if source['kind'] == 'acre' else 1) - field_cycles.get(marker, 0)
+                if remaining <= 0:
+                    villager['production_status'] = 'Field already tended this cycle'
+                    continue
+            caught = True
+            if job == 'fishing':
+                caught = secrets.randbelow(5) != 0
+                villager['fishing_catch'] = {'attempt': villager.get('fishing_catch', {}).get('attempt', 0) + 1, 'caught': caught}
+            rate = .5 if job == 'woodcutting' else 1
+            bonus = production_bonus(building)
+            if source['kind'] == 'acre':
+                bonus += production_bonus(source)
+            upgrades = building.get('profession_upgrades', [])
+            bonus += .25 * sum(u in upgrades for u in ('axe', 'nets', 'wool_nets', 'tools'))
+            amount = min(room, rate * (1 + bonus) * (1 + villager.get(job, 0) // 20))
+            if job == 'farming':
+                # Acres bound farming output; manure improves each field's yield.
+                amount = min(amount, remaining * (1 + bonus))
+                field_cycles[marker] = field_cycles.get(marker, 0) + amount / (1 + bonus)
+                if economy.quantity(town, 'manure') >= .1:
+                    economy.spend(town, {'manure': .1})
+                    amount = min(room, amount * 1.25)
+            else:
+                amount = economy.take_supply(landscape, source, amount)
+            if amount <= 0:
+                villager['production_status'] = 'Waiting for supply to regenerate'
+                continue
+            if caught:
+                economy.deliver(town, output, amount, capacity(town))
+            villager[job] = villager.get(job, 0) + 1
+            villager['production_status'] = 'Working' if caught else 'No catch — trying again'
         # Shortages pause population growth; residents never leave.
-        town['food'] = max(0, town['food'] - len(town['villagers']) * 0.12
-                           - WORKER_FOOD * sum(v['job'] != 'idle' or bool(v.get('construction_target'))
-                                               for v in town['villagers']))
-        homes = sum(building_level(b) for b in town['buildings']
+        economy.eat(town, len(town['villagers']) * .12 + WORKER_FOOD * sum(
+            v['job'] != 'idle' or bool(v.get('construction_target')) for v in town['villagers']))
+        homes = sum(building_level(b) + ('timber_frame' in b.get('profession_upgrades', [])) for b in town['buildings']
                     if b['kind'] == 'home' and completed(b))
         if len(town['villagers']) < min(5 + homes * 2, 16) and town['food'] >= 20:
-            town['food'] -= 10
+            economy.eat(town, 10)
             town['villagers'].append({'name': 'Settler ' + str(len(town['villagers']) + 1),
                                      'job': 'idle', 'woodcutting': 0, 'farming': 0, 'fishing': 0})
         if town['harvested'] >= 30 and 'Timber roots' not in town['achievements']:
@@ -427,6 +509,11 @@ def command(town, data, world=None):
             validate_placement(world, town, data)
     if action == 'walk':
         return move_player(town, data)
+    if action in {'fish', 'chop', 'gather', 'stop_activity'}:
+        landscape = world.get('shared_map', town) if world else town
+        ensure_player(walking_map(world, town) if world and 'shared_map' in world else town)
+        economy.start_activity(town, landscape, action)
+        return {'player': dict(town['player'])}
     if action in {'build', 'move'}:
         x, y = data.get('x'), data.get('y')
         if any(n['x'] == x and n['y'] == y for n in town['npcs']):
@@ -447,11 +534,15 @@ def command(town, data, world=None):
         if abs(player['x'] - x) < .68 and abs(player['y'] - y) < .68:
             raise ValueError('Walk away from this tile before building here.')
         validate_building_range(town, x, y)
-        if town['wood'] < COSTS[kind]:
-            raise ValueError('Gather more wood first.')
+        spec = economy.BUILDINGS.get(kind, {'wood': COSTS[kind]})
+        if town['level'] < spec.get('level', 1):
+            raise ValueError(f"Requires town hall level {spec['level']}.")
+        costs = economy.costs_of(spec)
+        if not economy.afford(town, costs):
+            raise ValueError('Missing building materials: ' + ', '.join(costs))
         if kind == 'acre':
             validate_acre(town, data.get('farm_index'), x, y)
-        town['wood'] -= COSTS[kind]
+        economy.spend(town, costs)
         building = {'kind': kind, 'x': x, 'y': y,
                     'construction': {'progress': 0, 'total': BUILD_SECONDS}}
         if kind == 'acre':
@@ -515,12 +606,13 @@ def command(town, data, world=None):
         if town['wood'] < cost:
             raise ValueError('Gather more wood first.')
         town['wood'] -= cost
-        building['settler_level'] = level + 1
+        building['construction'] = {'progress': 0, 'total': BUILD_SECONDS * level,
+                                    'upgrade': {'settler_level': level + 1}}
     elif action == 'job':
         index, job = data.get('index'), data.get('job')
         if type(index) is not int or not 0 <= index < len(town['villagers']) or job not in JOBS:
             raise ValueError('Choose a villager and a valid job.')
-        required = {'woodcutting': 'woodcutter', 'farming': 'farm', 'fishing': 'fishing_hut'}.get(job)
+        required = {'woodcutting': 'woodcutter', 'farming': 'farm', 'fishing': 'fishing_hut', **economy.JOB_BUILDINGS}.get(job)
         if required and not any(b['kind'] == required and completed(b) for b in town['buildings']):
             raise ValueError('Build a ' + required + ' first.')
         if required:
@@ -550,17 +642,75 @@ def command(town, data, world=None):
         if town['wood'] < cost:
             raise ValueError(f'Gather {cost} wood to upgrade this building.')
         town['wood'] -= cost
-        building['level'] = level + 1
+        building['construction'] = {'progress': 0, 'total': BUILD_SECONDS * level,
+                                    'upgrade': {'level': level + 1}}
+    elif action in {'set_crop', 'buy_animal', 'breed_animal', 'profession_upgrade'}:
+        index = data.get('index')
+        if type(index) is not int or not 0 <= index < len(town['buildings']):
+            raise ValueError('Choose a building first.')
+        building = town['buildings'][index]
+        if not completed(building):
+            raise ValueError('Finish construction first.')
+        if action == 'set_crop':
+            crop = data.get('crop')
+            if building['kind'] != 'acre' or crop not in economy.CROPS:
+                raise ValueError('Choose an acre and a crop.')
+            if town['level'] < economy.CROPS[crop]:
+                raise ValueError('Upgrade the hall to unlock this crop.')
+            building['crop'] = crop
+        elif action in {'buy_animal', 'breed_animal'}:
+            animal = data.get('animal')
+            spec = economy.ANIMALS.get(animal)
+            if building['kind'] != 'barn' or spec is None or town['level'] < spec['level']:
+                raise ValueError('Choose an unlocked animal and a barn.')
+            animals = building.get('animals', {})
+            if sum(animals.values()) >= 4 * building_level(building):
+                raise ValueError('Barn full. Upgrade it for more animal spaces.')
+            costs = {'coins': spec['coins']} if action == 'buy_animal' else {'fodder': 3, 'herbs': 1}
+            if action == 'breed_animal' and animals.get(animal, 0) < 2:
+                raise ValueError('Breeding requires two animals of the same kind.')
+            if not economy.afford(town, costs):
+                raise ValueError('Missing animal purchase or breeding supplies.')
+            economy.spend(town, costs)
+            building.setdefault('animals', {})[animal] = animals.get(animal, 0) + 1
+        else:
+            key = data.get('upgrade')
+            spec = economy.PROFESSION_UPGRADES.get(key)
+            if spec is None or spec['building'] != building['kind']:
+                raise ValueError('Choose a matching profession upgrade.')
+            if town['level'] < spec['level'] or economy.skill(town, spec.get('skill', '')) < spec.get('xp', 0):
+                raise ValueError('Develop the profession and upgrade the town hall first.')
+            if key in building.get('profession_upgrades', []):
+                raise ValueError('Already unlocked.')
+            if not economy.afford(town, economy.costs_of(spec)):
+                raise ValueError('Missing profession upgrade materials.')
+            economy.spend(town, economy.costs_of(spec))
+            building['construction'] = {'progress': 0, 'total': BUILD_SECONDS,
+                                        'upgrade': {'profession_upgrades':
+                                                    building.get('profession_upgrades', []) + [key]}}
+    elif action == 'sell_goods':
+        key, amount = data.get('resource'), data.get('amount')
+        if not any(b['kind'] == 'market' and completed(b) for b in town['buildings']):
+            raise ValueError('Build a market stall first.')
+        if key not in {'planks', 'wool', 'flour', 'smoked_fish', 'tools', 'herbs', 'fruit', 'milk', 'eggs', 'meat'} or type(amount) is not int or not 1 <= amount <= 10:
+            raise ValueError('Choose goods and a quantity from 1 to 10.')
+        if not economy.afford(town, {key: amount}):
+            raise ValueError('Not enough goods to sell.')
+        economy.spend(town, {key: amount})
+        town['coins'] += amount * (3 if key == 'tools' else 1)
     elif action == 'upgrade':
-        if town.get('upgrade_remaining'):
+        hall = next(b for b in town['buildings'] if b['kind'] == 'hall')
+        if town.get('upgrade_remaining') or not completed(hall):
             raise ValueError('Your hall upgrade is already underway.')
         upgrade = hall_upgrade(town)
         if not upgrade:
-            raise ValueError('Your hall has reached the maximum level of 10.')
-        if town['harvested'] < upgrade['harvested'] or town['wood'] < upgrade['wood']:
-            raise ValueError(f"Harvest {upgrade['harvested']} wood in total and save "
-                             f"{upgrade['wood']} wood to upgrade.")
-        town['wood'] -= upgrade['wood']
+            raise ValueError('Hall levels above 5 are planned; existing higher-level towns keep their level.')
+        if not economy.milestone(town, upgrade['level']):
+            raise ValueError(upgrade['milestone'] + ' required to upgrade.')
+        costs = {k: upgrade[k] for k in ('wood', 'planks') if k in upgrade}
+        if not economy.afford(town, costs):
+            raise ValueError('Save the hall upgrade materials: ' + ', '.join(costs))
+        economy.spend(town, costs)
         town['upgrade_remaining'] = upgrade['seconds']
         hall = next(b for b in town['buildings'] if b['kind'] == 'hall')
         hall['construction'] = {'progress': 0, 'total': upgrade['seconds']}
@@ -594,10 +744,12 @@ class Handler(SimpleHTTPRequestHandler):
     def do_GET(self):
         if self.path == '/api/world':
             with LOCK:
+                prepare_landscapes(WORLD)
                 for town in WORLD['towns'].values():
                     ensure_resources(town)
                     ensure_player(walking_map(WORLD, town) if 'shared_map' in WORLD else town)
-                self.reply(200, dict(export_world(WORLD), hall_upgrades=HALL_UPGRADES, world_id=ACTIVE_WORLD,
+                self.reply(200, dict(export_world(WORLD), hall_upgrades=HALL_UPGRADES, progression=economy.public_catalog(),
+                                     hall_ready={k: economy.milestone(t, t['level'] + 1) for k, t in WORLD['towns'].items()}, world_id=ACTIVE_WORLD,
                                      name=WORLDS[ACTIVE_WORLD]['name'] if ACTIVE_WORLD else None,
                                      players_sampled_at=time.monotonic()))
         elif self.path == '/api/players':
@@ -682,6 +834,7 @@ class Handler(SimpleHTTPRequestHandler):
                     town_id = secrets.token_hex(8)
                     WORLD['towns'][town_id] = new_town(name, WORLD)
                     TOKENS[token] = town_id
+                    prepare_landscapes(WORLD)
                     save()
                     self.reply(200, {'token': token, 'town_id': town_id})
                 else:

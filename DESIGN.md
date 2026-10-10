@@ -59,9 +59,9 @@ the conversation and practical details needed for later development.
 | What should moving a building cost? You wanted a small loss; a coin fee was suggested but not confirmed. | |
 | Should roads be freely placed and movable? Do buildings need road access? | |
 | Which services matter first: market, tavern, well, healer, or something else? | |
-| Which town upgrades can players choose between? | |
+| Which town upgrades can players choose between? | Hall levels 1–5 unlock profession branches; individual profession improvements require practice and materials. See ROADMAP.md. |
 | How do individual villager skills contribute to town achievements? | |
-| How should better resource types and recipes unlock? | |
+| How should better resource types and recipes unlock? | Hall-gated crops, animals, and workplaces, with profession practice gates for tools. Earlier resources remain useful. |
 | Are skills tied to a job, or also to tools and buildings? | |
 | Should villagers have names, personalities, and preferences? | |
 | What happens to completed quest progress for absent players? Shared world progress was asked about but not settled. | |
@@ -96,8 +96,8 @@ These are starting values to make the prototype playable, **not final design dec
 - Food is consumed over time. Shortages pause arrivals; nobody dies or leaves.
 - Each cottage adds room for two villagers, up to 16 in the prototype.
 - New villagers arrive when housing and sufficient food are available.
-- Harvesting 30 wood unlocks “Timber roots”; the player chooses a hall upgrade for 40 wood.
-- The hall upgrade provides coins. Other upgrade choices and trading come later.
+- Harvesting 30 wood still records “Timber roots”; hall upgrades now use housing, food, profession, and processing milestones. See ROADMAP.md.
+- Hall levels 2–5 provide coins and unlock profession branches. Levels 6–10 and player trading remain planned.
 - Simulation runs only while the host is running; no catch-up production while it is closed.
 - Each browser keeps a private ownership token. Other players can view, but cannot edit, its town through the supported interface.
 
@@ -134,3 +134,12 @@ worlds; workers keep their assigned jobs.
 - Add subtle ambient activity later: water ripples, chimney smoke, crop movement,
   and brief resource-delivery effects. These remain deferred; preserve the existing
   worker animations while refining the static village presentation.
+
+## Confirmed progression and founder gathering
+
+Implement hall levels 1–5 first and retain the level 6–10 design in ROADMAP.md.
+Prevent production spam through shared renewable forest/fishing supplies, worker
+slots, field output, and animal capacity rather than arbitrary building counts.
+The founder fishes with F, chops with C, and gathers berries/herbs with G,
+learning separate saved skills. Current materials, milestones, and production
+rules are documented in ROADMAP.md; balance values remain adjustable.

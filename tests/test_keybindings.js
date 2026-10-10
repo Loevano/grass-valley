@@ -14,10 +14,11 @@ function session(saved=null){
   const run=new Function('document','window','localStorage','setTimeout','clearTimeout',
     source.slice(0,source.lastIndexOf('requestAnimationFrame(animate);'))+`
     draw=()=>{};
-    const town={name:'Home',wood:50,food:30,coins:5,villagers:[],buildings:[],map_resources:[],player:{x:5,y:7,facing:1}};
+    const town={name:'Home',wood:50,food:30,coins:5,villagers:[],buildings:[],map_resources:[{kind:'water',x:5,y:6},{kind:'tree',x:6,y:7},{kind:'berry_bush',x:4,y:7}],player:{x:5,y:7,facing:1}};
     world={world_id:'test',towns:{own:town}};identity={town_id:'own'};viewed='own';playerSprite(town,0);
     request=async()=>({player:{x:5.2,y:6.8,facing:1}});
-    return {get bindings(){return keybindings;},get locked(){return cameraLocked;},get following(){return playerView.following;},
+    const actions=[];playerAction=action=>actions.push(action);
+    return {get actions(){return actions;},get bindings(){return keybindings;},get locked(){return cameraLocked;},get following(){return playerView.following;},
       get camera(){return typeof camera==='undefined'?null:{...camera};},get held(){return [...walkKeys];},step:seconds=>playerSprite(town,seconds),
       pan(){if(typeof camera!=='undefined'){camera.x=30;camera.y=30;}},get panel(){return panel;}};
   `);
@@ -29,6 +30,8 @@ function session(saved=null){
 }
 (async()=>{
   const {state,document,storage,key,rebind,listeners}=session();
+  key('f');key('c');key('g');check(state.actions.join(',')==='fish,chop,gather','F/C/G start the matching character activities');
+  key('f',{repeat:true});key('g',{ctrlKey:true});check(state.actions.length===3,'Held actions and modified shortcuts do not repeat requests');
   check(state.locked&&state.bindings.camera==='y','Camera starts locked with Y binding');
   key('Y');check(!state.locked&&!state.following,'Y unlocks camera');
   key('y',{repeat:true});check(!state.locked,'Held Y does not toggle repeatedly');
@@ -43,22 +46,25 @@ function session(saved=null){
   document.activeElement=null;
   document.getElementById('settings-button').onclick();
   check(state.panel==='settings'&&!document.getElementById('settings-panel').hidden,'Settings opens as a panel');
-  key('y');key('w');check(state.locked&&state.held.length===0,'Settings blocks gameplay shortcuts');
+  key('y');key('w');key('f');check(state.actions.length===3,'Settings blocks gathering actions');check(state.locked&&state.held.length===0,'Settings blocks gameplay shortcuts');
   rebind('right','L');check(state.bindings.right==='l','Settings captures and normalizes a custom key');
   rebind('up','l');check(state.bindings.up==='w','Duplicate bindings are rejected');
   rebind('up','ArrowUp');check(state.bindings.up==='w','Tile navigation keys stay reserved');
   rebind('up','k',{metaKey:true});check(state.bindings.up==='w','Modified shortcuts cannot become bindings');
-  rebind('camera','c');
+  rebind('camera','c');check(state.bindings.camera==='y','Gathering keys cannot be assigned twice');
+  rebind('camera','v');
   document.getElementById('settings-button').onclick();
   key('d');check(state.held.length===0,'Old movement binding stops working');
   key('l');check(state.held.includes('l'),'Custom movement binding works');
   key('y');check(state.locked,'Old camera binding stops working');
-  key('c');check(!state.locked,'Custom camera binding works');
+  key('v');check(!state.locked,'Custom camera binding works');
   const restored=session(storage.get('lantern-settings'));
-  check(restored.state.bindings.right==='l'&&restored.state.bindings.camera==='c'&&!restored.state.locked,'Bindings and camera lock survive reload');
+  check(restored.state.bindings.right==='l'&&restored.state.bindings.camera==='v'&&!restored.state.locked,'Bindings and camera lock survive reload');
   document.getElementById('reset-keybindings').onclick();
   check(state.bindings.right==='d'&&state.bindings.camera==='y'&&state.held.length===0,'Reset restores defaults and releases held keys');
   document.getElementById('world-menu').open=true;key('y');check(!state.locked,'World menus block camera toggling');
+  const oldCustom=session(JSON.stringify({keybindings:{up:'i',left:'j',down:'k',right:'l',camera:'c'}}));
+  check(oldCustom.state.bindings.camera==='c'&&oldCustom.state.bindings.chop!=='c'&&oldCustom.state.bindings.fish==='f','Older custom settings retain their bindings and get unique activity keys');
   const malformed=session('{broken');check(malformed.state.bindings.camera==='y','Malformed storage falls back to defaults');
   const invalid=session(JSON.stringify({keybindings:{up:'w',left:'a',down:'s',right:'d',camera:'d'}}));
   check(invalid.state.bindings.camera==='y','Invalid stored duplicates fall back to defaults');

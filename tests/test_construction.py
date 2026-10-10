@@ -24,6 +24,7 @@ class Construction(unittest.TestCase):
 
     def test_every_placeable_kind_starts_as_a_site_and_costs_wood(self):
         self.town['buildings'].append({'kind': 'farm', 'x': 7, 'y': 6})
+        self.town.update(level=5, goods={'planks': 100})
         for index, kind in enumerate(COSTS):
             with self.subTest(kind=kind):
                 wood = self.town['wood']
@@ -152,7 +153,9 @@ class Construction(unittest.TestCase):
         self.assertTrue(any(t and t['kind'] == 'storehouse' for t in targets))
 
     def test_hall_upgrade_waits_for_worker_and_rewards_once(self):
-        self.town.update(harvested=30)
+        self.town.update(harvested=30, food=100)
+        self.town['buildings'].extend([{'kind':'home','x':3,'y':5},{'kind':'farm','x':6,'y':4}])
+        self.town['map_resources'].append({'kind':'water','x':7,'y':4})
         for v in self.town['villagers']:
             v['job'] = 'farming'
         command(self.town, dict(action='upgrade'))
