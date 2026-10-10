@@ -27,7 +27,12 @@ const WorkerAnimation = (() => {
     const size=town.map_size || 120;
     for(let x=0;x<size;x++)for(let y=0;y<size;y++){if(town.terrain?.[y]?.[x]==='v')blocked.add(`${x},${y}`);else if(!blocked.has(`${x},${y}`))open.push({x,y});}
     const current=state?{x:Math.round(state.x),y:Math.round(state.y)}:villager.construction_position || preferred;
-    const start=open.sort((a,b)=>distance(a,current)-distance(b,current))[0] || preferred;
+    // Preserve the first closest tile without sorting the whole map.
+    let start=preferred,best=Infinity;
+    for(const tile of open){
+      const delta=distance(tile,current);
+      if(delta<best){start=tile;best=delta;if(delta===0)break;}
+    }
     const source=villager.construction_target || (villager.job==='idle'?null:villager.work_target);
     const kind=villager.job==='woodcutting'?'woodcutter':villager.job==='fishing'?'fishing_hut':'farm';
     // Match the host's workplace selection, including multiple assigned workers.

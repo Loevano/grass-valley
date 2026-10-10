@@ -33,7 +33,7 @@ const run=new Function('document','window','localStorage','setTimeout','clearTim
     refresh=async()=>render();
     function pointer(x,y,button=0){const [px,py]=point(x,y);return {clientX:px,clientY:py+tileH/2,button};}
     function click(x,y,button=0){return canvas.onclick(pointer(x,y,button));}
-    function hover(x,y){canvas.onmousemove(pointer(x,y));}
+    function hover(x,y){canvas.onmousemove(pointer(x,y));draw();} // Paint the next animation frame.
     $('buildings').children[0].onclick();
     check(tool==='home','Choosing a cottage activates its tool');
     fills.length=0;hover(11,10);
