@@ -31,6 +31,9 @@ const run=new Function('document','window','localStorage','setTimeout','clearTim
  town.player.activity={job:'woodcutting',kind:'tree',x:6,y:7};town.player.activity_status='Working';
  let hero=playerSprite(town,0);check(hero.active&&hero.state.phase==='working'&&hero.villager.job==='woodcutting','Founder action uses the woodcutting animation');
  town.player.activity_status='Waiting for supply to regenerate';hero=playerSprite(town,0);check(!hero.active&&hero.state.phase==='idle','Paused founder stops the working animation');
+ check(buildingUsable({map_resources:[{kind:'water',x:5,y:0}]},{kind:'fishing_hut',x:0,y:0,profession_upgrades:['boat']}),'Boat extends usability beyond the original three steps');
+ town.buildings.push({kind:'home',x:2,y:5,profession_upgrades:['timber_frame']});inspect('building',4);
+ check($('selection-details').children.some(c=>c.children?.[0]?.textContent==='+4'),'Timber framing increases displayed housing');
  viewed='friend';inspect('building',1);check(!buy('Buy chicken'),'Visitors cannot purchase animals');
  `);
 run(document,{devicePixelRatio:1,addEventListener(k,v){listeners[k]=v;}},{getItem:()=>null},()=>0,()=>{},animation);

@@ -534,13 +534,13 @@ function renderSelection(town){
     if(item.supply_max){$('selection-details').append(fact(`${(item.supply || 0).toFixed(1)} / ${item.supply_max}`,'Shared supply'));$('selection-details').append(fact(`${item.regeneration} per 3 seconds`,'Regeneration'));}
   }else{
     $('selection-title').textContent=labels[item.kind];
-    if(item.kind==='home'&&!item.construction)$('selection-details').append(fact(`+${2*buildingLevel(item)}`,'Villager spaces'));
+    if(item.kind==='home'&&!item.construction)$('selection-details').append(fact(`+${2*(buildingLevel(item)+(item.profession_upgrades?.includes('timber_frame')?1:0))}`,'Villager spaces'));
     if(item.kind==='storehouse')$('selection-details').append(fact(storageCapacity(town),'Capacity per resource'));
     if(item.kind==='hall'){
       $('selection-details').append(fact(town.level,'Hall level'));
       $('selection-details').append(fact(`${buildingRange(town)} tile steps`,'Building range'));
     }
-    p.textContent={hall:'The heart of your settlement. Develop housing, food, and professions to unlock hall levels 2–5. Each completed upgrade awards coins.',home:`Room for ${2*buildingLevel(item)} additional villagers, up to 16 in the town. New residents need available housing and sufficient food.`,storehouse:`Adds ${100*buildingLevel(item)} storage for each resource. Town capacity: ${storageCapacity(town)} wood and food.`,woodcutter:'A workplace for gathering wood from nearby trees.',farm:'A workplace for growing food near water. Build acres nearby for farmers to tend.',fishing_hut:'A workplace for catching fish for food near water.',acre:'A crop field tended by farmers from its farm. Its farm needs water within 3 tile steps to produce food.'}[item.kind];
+    p.textContent={hall:'The heart of your settlement. Develop housing, food, and professions to unlock hall levels 2–5. Each completed upgrade awards coins.',home:`Room for ${2*(buildingLevel(item)+(item.profession_upgrades?.includes('timber_frame')?1:0))} additional villagers, up to 16 in the town. New residents need available housing and sufficient food.`,storehouse:`Adds ${100*buildingLevel(item)} storage for each resource. Town capacity: ${storageCapacity(town)} wood and food.`,woodcutter:'A workplace for gathering wood from nearby trees.',farm:'A workplace for growing food near water. Build acres nearby for farmers to tend.',fishing_hut:'A workplace for catching fish for food near water.',acre:'A crop field tended by farmers from its farm. Its farm needs water within 3 tile steps to produce food.'}[item.kind];
     if(item.kind==='hall'){
       p.textContent+=` Build within ${buildingRange(town)} horizontal and vertical tile steps of the hall; diagonals count as 2.${town.level<2?' Upgrading expands the range to 15 steps.':''}`;
       $('hall-details').hidden=false;
@@ -1144,7 +1144,8 @@ function placementValid(town,tile,kind){
 }
 function buildingUsable(town,b){
   const source={woodcutter:'tree',farm:'water',fishing_hut:'water'}[b.kind];
-  return !source || !!town?.map_resources.some(r=>r.kind===source&&Math.abs(r.x-b.x)+Math.abs(r.y-b.y)<=3);
+  const reach=b.kind==='fishing_hut'&&b.profession_upgrades?.includes('boat')?6:3;
+  return !source || !!town?.map_resources.some(r=>r.kind===source&&Math.abs(r.x-b.x)+Math.abs(r.y-b.y)<=reach);
 }
 function drawFarmCrops(b,state,collectCrop=null){
   const elapsed=state?.elapsed ?? 6;
