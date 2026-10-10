@@ -81,7 +81,7 @@ These are starting values to make the prototype playable, **not final design dec
 - Browser client and Python host using the standard library; no installed dependencies.
 - Generated geometric art to try the angled perspective before choosing an art style.
 - Five villagers, a town hall, 65 wood, 40 food, 20 coins.
-- New worlds share one 120×120 landscape, with randomized hall sites at least 40 tiles apart. Construction stays near the owner's hall and within 15 steps of its original site. Existing worlds keep their separate town maps.
+- New worlds share one 120×120 landscape, with randomized hall sites at least 40 tiles apart. Construction stays within 10 steps of the owner's hall, adding 5 steps per completed hall upgrade, and within the greater of 15 steps or the hall's range of its original site. Existing worlds keep their separate town maps.
 - Cottages, woodcutters, farms, and storehouses occupy one tile each.
 - Move a building instantly for one coin, preserving its identity. If you have no coins, moving is free so rearranging never becomes locked.
 - Every three seconds, assigned workers produce resources and gain skill if storage has room.

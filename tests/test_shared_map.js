@@ -41,6 +41,17 @@ const run=new Function('document','window','localStorage','setTimeout','clearTim
     assert(insideBuildingRange(world.towns.own,{x:45,y:30}),'Upgraded hall supports 15 steps');
     world.towns.own.buildings[0].x=35;
     assert(!insideBuildingRange(world.towns.own,{x:50,y:30}),'Moving a hall cannot expand original territory');
+    for(const [level,reach] of [[3,20],[4,25],[5,30]]){
+      const own=world.towns.own;own.level=level;own.buildings[0].x=30;
+      assert.equal(buildingRange(own),reach);
+      assert(placementValid(own,{x:30+reach,y:30},'home'),'Upgrades expand shared-map construction territory');
+      own.buildings[0].x=31;
+      assert(!insideBuildingRange(own,{x:31+reach,y:30}),'Moved halls remain bounded by upgraded original territory');
+      own.buildings[0].x=30;
+      assert(!insideBuildingRange(own,{x:30+reach,y:31}),'Diagonals count both axes at every level');
+    }
+    inspect('building',0,'own');
+    assert($('selection-details').children.some(child=>child.textContent?.includes('Each completed hall upgrade adds 5 steps')),'Hall explains range growth');
     draw();const friendWorker=workers.get('friend/0');
     draw();draw();assert.equal(workers.get('friend/0'),friendWorker,'Friend animation state survives rendering');
     const wire={world_id:'wire',name:'Wire world',shared_map:landscape,town_sites:[{x:30,y:30}],towns:{own:{...world.towns.own}}};

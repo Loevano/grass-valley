@@ -47,9 +47,10 @@ same terrain, buildings, workers, and player characters, and can walk between
 towns. Town halls start at randomized locations at least 40 tiles apart, with
 nearby wood, water, and clear paths connecting the towns.
 
-Build within 10 horizontal/vertical tile steps of your hall, expanding to 15 after
-its first upgrade. Construction also stays within 15 steps of your original town
-site, so moving a hall cannot claim another town's land. Halls must stay at least
+Build within 10 horizontal/vertical tile steps of your hall, adding 5 steps with
+each completed upgrade (10, 15, 20, 25, 30 at levels 1–5). Construction also stays
+within the greater of 15 steps or the hall's range of your original town site,
+so moving a hall cannot extend that territory. Halls must stay at least
 40 tiles apart when moved. Only a town's owner can build or manage its workers.
 The building area is highlighted when building or inspecting a hall.
 
@@ -80,7 +81,7 @@ the Python host, refresh both browsers, and create a new world to use the shared
   Buildings, trees, water, and rocks block movement. Your position is saved per
   world. Movement pauses while typing, placing buildings, or using world menus.
 - The town hall allows new buildings and moves within 10 horizontal/vertical tile
-  steps (a diagonal counts as two). Completing its upgrade expands the range to 15.
+  steps (a diagonal counts as two). Each completed upgrade adds 5 steps to the range.
   Click the hall to see its range; the map highlights it while inspecting the hall
   or opening Build. Existing buildings outside the range keep working. Moving the
   hall within its current range shifts the building area to its new location.

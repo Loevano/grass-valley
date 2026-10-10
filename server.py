@@ -15,7 +15,7 @@ import progression as economy
 
 from terrain import ensure_terrain
 from npcs import ensure_npcs
-from shared_world import bind_map, export_world, new_world, validate_placement, walking_map
+from shared_world import bind_map, building_range, export_world, new_world, validate_placement, walking_map
 
 ROOT = Path(__file__).resolve().parent
 SAVE = ROOT / 'savegame.json'
@@ -486,10 +486,6 @@ def validate_acre(town, farm_index, x, y):
     farm = town['buildings'][farm_index]
     if abs(x - farm['x']) + abs(y - farm['y']) > RESOURCE_REACH:
         raise ValueError('Place acres within 3 tile steps of their farm.')
-
-
-def building_range(town):
-    return 15 if town['level'] >= 2 else 10
 
 
 def validate_building_range(town, x, y):

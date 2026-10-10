@@ -117,6 +117,28 @@ class SharedMap(unittest.TestCase):
             self.assertEqual(server.WORLD['towns']['0']['buildings'], world['towns']['0']['buildings'])
             self.assertIs(server.WORLD['towns']['0']['terrain'], server.WORLD['towns']['1']['terrain'])
 
+    def test_upgrades_expand_shared_territory_without_hall_moves_extending_it(self):
+        world = self.make_world(1)
+        world['shared_map'].update(terrain=['g' * 120 for _ in range(120)],
+                                   map_resources=[], npcs=[])
+        bind_map(world)
+        town = world['towns']['0']
+        town['town_origin'] = {'x': 30, 'y': 30}
+        town['buildings'] = [{'kind': 'hall', 'x': 30, 'y': 30}]
+        town['player'].update(x=30., y=32.)
+        for level, reach in ((3, 20), (4, 25), (5, 30)):
+            with self.subTest(level=level):
+                town.update(level=level, wood=100)
+                town['buildings'][0]['x'] = 30
+                server.command(town, {'action': 'build', 'kind': 'home',
+                                      'x': 30 + reach, 'y': 30}, world)
+                server.command(town, {'action': 'move', 'index': 0, 'x': 31, 'y': 30}, world)
+                before = copy.deepcopy(world)
+                with self.assertRaisesRegex(ValueError, 'territory'):
+                    server.command(town, {'action': 'build', 'kind': 'home',
+                                          'x': 31 + reach, 'y': 30}, world)
+                self.assertEqual(world, before)
+
     def test_old_world_is_not_converted(self):
         town = server.new_town('Legacy')
         world = {'towns': {'old': town}}

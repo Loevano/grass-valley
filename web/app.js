@@ -555,7 +555,7 @@ function renderSelection(town){
     }
     p.textContent={hall:'The heart of your settlement. Develop housing, food, and professions to unlock hall levels 2–5. Each completed upgrade awards coins.',home:`Room for ${2*(buildingLevel(item)+(item.profession_upgrades?.includes('timber_frame')?1:0))} additional villagers, up to 16 in the town. New residents need available housing and sufficient food.`,storehouse:`Adds ${100*buildingLevel(item)} storage for each resource. Town capacity: ${storageCapacity(town)} wood and food.`,woodcutter:'A workplace for gathering wood from nearby trees.',farm:'A workplace for growing food near water. Build acres nearby for farmers to tend.',fishing_hut:'A workplace for catching fish for food near water.',acre:'A crop field tended by farmers from its farm. Its farm needs water within 3 tile steps to produce food.'}[item.kind];
     if(item.kind==='hall'){
-      p.textContent+=` Build within ${buildingRange(town)} horizontal and vertical tile steps of the hall; diagonals count as 2.${town.level<2?' Upgrading expands the range to 15 steps.':''}`;
+      p.textContent+=` Build within ${buildingRange(town)} horizontal and vertical tile steps of the hall; diagonals count as 2. Each completed hall upgrade adds 5 steps to the range.`;
       $('hall-details').hidden=false;
       const upgrade=world.hall_upgrades?.find(next=>next.level===town.level+1);
       $('hall-progress').hidden=true;
@@ -1141,12 +1141,12 @@ function acrePlacementValid(town,tile,index){
   const farm=town.buildings[index];
   return farm?.kind==='farm'&&!farm.construction&&Math.abs(tile.x-farm.x)+Math.abs(tile.y-farm.y)<=3;
 }
-function buildingRange(town){return town.level>=2?15:10;}
+function buildingRange(town){return 10+5*(town.level-1);}
 function insideBuildingRange(town,tile){
   const hall=town.buildings.find(b=>b.kind==='hall');
   const origin=town.town_origin;
   return !!hall && Math.abs(tile.x-hall.x)+Math.abs(tile.y-hall.y)<=buildingRange(town)
-    && (!origin || Math.abs(tile.x-origin.x)+Math.abs(tile.y-origin.y)<=15);
+    && (!origin || Math.abs(tile.x-origin.x)+Math.abs(tile.y-origin.y)<=Math.max(15,buildingRange(town)));
 }
 function placementValid(town,tile,kind){
   return insideBuildingRange(town,tile) && town.terrain?.[tile.y]?.[tile.x]!=='v'

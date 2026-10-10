@@ -46,6 +46,21 @@ class BuildingRange(unittest.TestCase):
         command(self.town, {'action': 'move', 'index': 1, 'x': 10, 'y': 10})
         self.assertEqual(self.town['buildings'][1]['x'], 10)
 
+    def test_each_hall_level_expands_build_and_move_boundaries(self):
+        self.town['buildings'][0].update(x=30, y=30)
+        for level, reach in enumerate((10, 15, 20, 25, 30), start=1):
+            with self.subTest(level=level):
+                self.town.update(level=level, wood=100)
+                self.assertEqual(building_range(self.town), reach)
+                command(self.town, {'action': 'build', 'kind': 'home', 'x': 30 + reach, 'y': 30})
+                before = copy.deepcopy(self.town)
+                for action in ('build', 'move'):
+                    with self.assertRaisesRegex(ValueError, f'within {reach} tile steps'):
+                        command(self.town, {'action': action, 'kind': 'home', 'index': 1,
+                                            'x': 30 + reach, 'y': 31})
+                    self.assertEqual(self.town, before)
+                command(self.town, {'action': 'move', 'index': 1, 'x': 30, 'y': 30 + reach})
+
     def test_hall_move_shifts_range_and_keeps_existing_buildings(self):
         self.town['buildings'].append({'kind': 'woodcutter', 'x': 40, 'y': 40})
         self.town['map_resources'].append({'kind': 'tree', 'x': 40, 'y': 41})

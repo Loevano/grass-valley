@@ -10,6 +10,10 @@ TOWN_RADIUS = 15
 HALL_SEPARATION = 40
 
 
+def building_range(town):
+    return 10 + 5 * (town['level'] - 1)
+
+
 def new_world(seed=None):
     seed = secrets.randbits(64) if seed is None else seed
     rng = random.Random(seed)
@@ -74,7 +78,7 @@ def validate_placement(world, town, data):
     if type(x) is not int or type(y) is not int:
         raise ValueError('Choose a tile inside your town.')
     origin = town['town_origin']
-    if abs(x - origin['x']) + abs(y - origin['y']) > TOWN_RADIUS:
+    if abs(x - origin['x']) + abs(y - origin['y']) > max(TOWN_RADIUS, building_range(town)):
         raise ValueError('Build inside your town territory.')
     for other in world['towns'].values():
         if other is not town and any(b['x'] == x and b['y'] == y for b in other['buildings']):
