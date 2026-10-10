@@ -2,7 +2,21 @@
 <html lang="en">
 <head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Lantern Vale</title><link rel="stylesheet" href="style.css"></head>
 <body>
-<header><div><span class="eyebrow">A LITTLE WORLD, TOGETHER</span><h1>Lantern Vale</h1></div><div id="resources" aria-live="polite">Your village awaits</div></header>
+<header><div><span class="eyebrow">A LITTLE WORLD, TOGETHER</span><h1>Lantern Vale</h1></div><div><button id="world-menu-button">Worlds</button><div id="resources" aria-live="polite">Your village awaits</div></div></header>
+<dialog id="world-menu" aria-labelledby="world-menu-title">
+<span class="eyebrow">A NEW CHAPTER</span><h2 id="world-menu-title">Your worlds</h2>
+<p id="world-menu-description">Choose a saved world or start a new one.</p>
+<div id="world-list"></div>
+<form id="new-world-form" hidden><label for="world-name">New world name</label><input id="world-name" maxlength="24" placeholder="Lantern Vale" required><button>Start a new world</button></form>
+<button id="close-world-menu" class="quiet">Return to game</button>
+<p id="world-menu-error" role="alert"></p>
+</dialog>
+<dialog id="delete-world-dialog" aria-labelledby="delete-world-title">
+<h2 id="delete-world-title">Destroy world?</h2><p id="delete-world-description"></p>
+<p>This permanently deletes every town and all progress in this world, including your friends’ towns.</p>
+<form id="delete-world-form"><label for="delete-world-name">Type the world name to confirm</label><input id="delete-world-name" autocomplete="off" required><button class="danger">Destroy world permanently</button></form>
+<button id="cancel-delete-world" class="quiet">Keep this world</button><p id="delete-world-error" role="alert"></p>
+</dialog>
 <main>
 <aside>
 <section id="join"><h2>Put down roots</h2><p>A quiet medieval valley. A town of your own. Room for friends.</p><form id="join-form"><label for="name">Town name</label><input id="name" maxlength="24" placeholder="Willowbrook" required><button>Found your town</button></form></section>

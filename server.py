@@ -1,11 +1,13 @@
 """Lantern Vale: a small, authoritative LAN village prototype."""
 import argparse
+import ipaddress
 import json
 import secrets
 import threading
 import time
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
+from urllib.parse import urlsplit
 
 ROOT = Path(__file__).resolve().parent
 SAVE = ROOT / 'savegame.json'
@@ -159,9 +161,26 @@ class Handler(SimpleHTTPRequestHandler):
             with LOCK:
                 for town in WORLD['towns'].values():
                     ensure_resources(town)
-                self.reply(200, WORLD)
+                self.reply(200, dict(WORLD, world_id=ACTIVE_WORLD,
+                                     name=WORLDS[ACTIVE_WORLD]['name'] if ACTIVE_WORLD else None))
+        elif self.path == '/api/worlds':
+            with LOCK:
+                self.reply(200, {'active_world': ACTIVE_WORLD, 'can_manage': self.is_host(),
+                                 'worlds': [{'id': key, 'name': value['name'],
+                                             'town_count': len(value['world']['towns'])}
+                                            for key, value in WORLDS.items()]})
         else:
             super().do_GET()
+
+    def is_host(self):
+        try:
+            hostname = urlsplit('http://' + self.headers.get('Host', '')).hostname
+            local_host = hostname == 'localhost' or ipaddress.ip_address(hostname).is_loopback
+        except ValueError:
+            local_host = False
+        origin = self.headers.get('Origin')
+        same_origin = not origin or origin == 'http://' + self.headers.get('Host', '')
+        return ipaddress.ip_address(self.client_address[0]).is_loopback and local_host and same_origin
 
     def do_POST(self):
         try:
@@ -172,7 +191,44 @@ class Handler(SimpleHTTPRequestHandler):
             if not isinstance(data, dict):
                 raise ValueError('Invalid request.')
             with LOCK:
-                if self.path == '/api/join':
+                if self.path in {'/api/worlds/create', '/api/worlds/open', '/api/worlds/delete'}:
+                    if not self.is_host():
+                        self.reply(403, {'error': 'Only the host at localhost can manage worlds.'})
+                        return
+                    if self.path == '/api/worlds/create':
+                        name = data.get('name')
+                        if not isinstance(name, str) or not name.strip() or len(name.strip()) > 24:
+                            raise ValueError('Enter a world name of 1–24 characters.')
+                        world_id = secrets.token_hex(8)
+                        WORLDS[world_id] = {'name': name.strip(), 'world': {'towns': {}}, 'tokens': {}}
+                        activate(world_id)
+                    else:
+                        world_id = data.get('world_id')
+                        if not isinstance(world_id, str) or world_id not in WORLDS:
+                            raise ValueError('That world no longer exists.')
+                        if self.path == '/api/worlds/open':
+                            activate(world_id)
+                        else:
+                            if data.get('confirmation') != WORLDS[world_id]['name']:
+                                raise ValueError('Type the world name to confirm deletion.')
+                            del WORLDS[world_id]
+                            if ACTIVE_WORLD == world_id:
+                                activate(None)
+                    save()
+                    self.reply(200, {'ok': True})
+                elif self.path in {'/api/join', '/api/command'}:
+                    if not ACTIVE_WORLD or data.get('world_id') != ACTIVE_WORLD:
+                        self.reply(409, {'error': 'The host changed worlds. Refresh and try again.'})
+                        return
+                    if self.path == '/api/command':
+                        town_id = TOKENS.get(self.headers.get('Authorization', ''))
+                        if town_id not in WORLD['towns']:
+                            self.reply(401, {'error': 'Join this world first.'})
+                            return
+                        command(WORLD['towns'][town_id], data)
+                        save()
+                        self.reply(200, {'ok': True})
+                        return
                     name = str(data.get('name', '')).strip()[:24]
                     if not name:
                         raise ValueError('Enter your town name.')
@@ -184,23 +240,38 @@ class Handler(SimpleHTTPRequestHandler):
                     TOKENS[token] = town_id
                     save()
                     self.reply(200, {'token': token, 'town_id': town_id})
-                elif self.path == '/api/command':
-                    town_id = TOKENS.get(self.headers.get('Authorization', ''))
-                    if town_id not in WORLD['towns']:
-                        self.reply(401, {'error': 'Join this world first.'})
-                        return
-                    command(WORLD['towns'][town_id], data)
-                    save()
-                    self.reply(200, {'ok': True})
                 else:
                     self.reply(404, {'error': 'Unknown endpoint.'})
         except (ValueError, TypeError) as error:
             self.reply(400, {'error': str(error) or 'Invalid request.'})
 
 
+def activate(world_id):
+    global ACTIVE_WORLD, WORLD, TOKENS
+    ACTIVE_WORLD = world_id
+    entry = WORLDS.get(world_id)
+    WORLD, TOKENS = (entry['world'], entry['tokens']) if entry else ({'towns': {}}, {})
+
+
+def load():
+    global WORLDS
+    if not SAVE.exists():
+        WORLDS = {}
+        activate(None)
+        return
+    stored = json.loads(SAVE.read_text())
+    if 'worlds' in stored:
+        WORLDS = stored['worlds']
+        activate(stored['active_world'] if stored['active_world'] in WORLDS else None)
+    else:
+        WORLDS = {'legacy': {'name': 'My first world', 'world': stored['world'],
+                             'tokens': stored['tokens']}}
+        activate('legacy')
+
+
 def save():
     temporary = SAVE.with_suffix('.json.tmp')
-    temporary.write_text(json.dumps({'world': WORLD, 'tokens': TOKENS}))
+    temporary.write_text(json.dumps({'worlds': WORLDS, 'active_world': ACTIVE_WORLD}))
     temporary.replace(SAVE)
 
 
@@ -213,13 +284,12 @@ def simulation():
 
 
 WORLD, TOKENS = {'towns': {}}, {}
+WORLDS, ACTIVE_WORLD = {}, None
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--port', type=int, default=8000)
     args = parser.parse_args()
-    if SAVE.exists():
-        stored = json.loads(SAVE.read_text())
-        WORLD, TOKENS = stored['world'], stored['tokens']
+    load()
     server = ThreadingHTTPServer(('0.0.0.0', args.port), Handler)
     threading.Thread(target=simulation, daemon=True).start()
     print('Lantern Vale running at http://localhost:' + str(args.port), flush=True)

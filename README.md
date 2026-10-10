@@ -11,9 +11,22 @@ Requires Python 3.9 or newer. From this folder:
 python3 server.py
 ```
 
-Open **http://localhost:8000** in a browser. Name your town to begin.
+Open **http://localhost:8000** in a browser. Use the Worlds menu to start a named
+world or open a saved one, then name your town.
 Keep the server running while playing; stop it with Control-C.
 Choose another port with `python3 server.py --port 8080` if needed.
+
+## Manage worlds
+
+Click **Worlds** to return to the world menu. Only the host using `localhost`
+or `127.0.0.1` on this Mac can create, open, or destroy worlds. Friends join
+whichever world the host opens; each world has its own towns and ownership tokens.
+Inactive worlds stay saved and their production pauses.
+
+To destroy an old world, click **Destroy world** and type its name to confirm.
+This permanently removes all its towns and progress. Deleting the current world
+returns everyone to the menu until the host opens or creates another world.
+Your existing save appears as **My first world**, keeping its towns and ownership.
 
 ## Join from another Mac
 
@@ -40,12 +53,12 @@ encrypted transport; do not expose it through router port forwarding.
 - Harvest 30 wood to unlock a milestone; save 40 wood and choose the hall upgrade.
 - Click another town's name to visit. Only its owner can issue commands for it.
 
-The host saves all towns automatically in `savegame.json`, which is excluded from
+The host saves all worlds automatically in `savegame.json`, which is excluded from
 Git. Your browser stores your town's ownership token. Use the same browser and
 host address to return to your town; clearing site storage loses that association.
 There is no recovery screen yet. Back up the save file while the server is stopped.
-Towns keep producing while owners are away if the host is running. No production
-occurs while the host is stopped.
+Towns in the open world keep producing while owners are away if the host is running.
+No production occurs while the host is stopped or for worlds that are not open.
 Existing saves gain resource spots on unoccupied tiles when the host restarts;
 existing buildings stay in place. Move older workplaces near trees or water as needed.
 

@@ -1,8 +1,13 @@
 const $ = id => document.getElementById(id);
 const canvas = $('world'), ctx = canvas.getContext('2d');
-let identity;
-try { identity = JSON.parse(localStorage.getItem('lantern-identity') || 'null'); } catch { identity = null; }
-let world = {towns:{}}, viewed = identity?.town_id, tool = null, moveIndex = null;
+let identities = {}, identity = null;
+try {
+  identities = JSON.parse(localStorage.getItem('lantern-identities') || '{}') || {};
+  const legacy = JSON.parse(localStorage.getItem('lantern-identity') || 'null');
+  if(legacy && !identities.legacy) identities.legacy = legacy;
+} catch { identities = {}; }
+let world = {towns:{}}, viewed = null, tool = null, moveIndex = null;
+let catalog = {worlds:[], can_manage:false}, menuStarted = false, refreshing = null, menuBusy = false, deletingWorld = null;
 let tileW = 46, tileH = 23, originX = 0, originY = 0;
 const labels = {hall:'Town hall',home:'Cottage',woodcutter:'Woodcutter',farm:'Farm',storehouse:'Storehouse'};
 const costs = {home:20,woodcutter:15,farm:15,storehouse:25};
@@ -12,16 +17,71 @@ async function request(path, data) {
   const response = await fetch(path,{method:data?'POST':'GET',headers:{'Content-Type':'application/json','Authorization':identity?.token || ''},body:data?JSON.stringify(data):undefined});
   const result = await response.json(); if(!response.ok) throw Error(result.error || 'Connection failed'); return result;
 }
-async function act(data) { try { await request('/api/command',data); await refresh(); } catch(e) {notice(e.message);} }
-$('join-form').onsubmit=async event=>{event.preventDefault();try{identity=await request('/api/join',{name:$('name').value});localStorage.setItem('lantern-identity',JSON.stringify(identity));viewed=identity.town_id;await refresh();}catch(e){notice(e.message);}};
+async function act(data) { try { await request('/api/command',{...data,world_id:world.world_id}); await refresh(); } catch(e) {notice(e.message);await refresh();} }
+$('join-form').onsubmit=async event=>{event.preventDefault();const worldId=world.world_id;try{identity=await request('/api/join',{name:$('name').value,world_id:worldId});identities[worldId]=identity;localStorage.setItem('lantern-identities',JSON.stringify(identities));viewed=identity.town_id;await refresh();}catch(e){notice(e.message);}};
+$('world-menu-button').onclick=()=>{$('world-menu-error').textContent='';$('world-menu').showModal();};
+$('close-world-menu').onclick=()=>{if(world.world_id)$('world-menu').close();};
+$('world-menu').addEventListener('cancel',event=>{if(!world.world_id)event.preventDefault();});
+$('cancel-delete-world').onclick=()=>{$('delete-world-dialog').close();deletingWorld=null;};
+$('delete-world-dialog').addEventListener('close',()=>{deletingWorld=null;});
+async function manageWorld(path,data,closeMenu=false){
+  if(menuBusy)return;
+  menuBusy=true;
+  $('world-menu-error').textContent='';$('delete-world-error').textContent='';
+  for(const button of document.querySelectorAll('dialog button'))button.disabled=true;
+  try{
+    await request(path,data);
+    if(path==='/api/worlds/delete'){
+      delete identities[data.world_id];localStorage.setItem('lantern-identities',JSON.stringify(identities));
+      if(data.world_id==='legacy')localStorage.removeItem('lantern-identity');
+      $('delete-world-dialog').close();deletingWorld=null;
+    }
+    if(refreshing)await refreshing;
+    await refresh();
+    if(closeMenu)$('world-menu').close();
+  }catch(e){$(deletingWorld?'delete-world-error':'world-menu-error').textContent=e.message;}
+  finally{menuBusy=false;for(const button of document.querySelectorAll('dialog button'))button.disabled=false;$('close-world-menu').disabled=!world.world_id;}
+}
+$('new-world-form').onsubmit=event=>{event.preventDefault();manageWorld('/api/worlds/create',{name:$('world-name').value},true);};
+$('delete-world-form').onsubmit=event=>{event.preventDefault();if(deletingWorld)manageWorld('/api/worlds/delete',{world_id:deletingWorld.id,confirmation:$('delete-world-name').value});};
+function renderWorldMenu(){
+  $('new-world-form').hidden=!catalog.can_manage;
+  $('close-world-menu').disabled=!world.world_id;
+  $('world-menu-description').textContent=catalog.can_manage?'Open a saved world or start a new one. Other worlds pause while you play.':'The host chooses the world. Join the current world below, or wait for the host to open one.';
+  const signature=JSON.stringify(catalog);
+  if(renderWorldMenu.signature===signature)return;
+  renderWorldMenu.signature=signature;
+  $('world-list').replaceChildren();
+  if(!catalog.worlds.length){const p=document.createElement('p');p.textContent=catalog.can_manage?'No worlds yet. Name your first world below.':'Waiting for the host to start a world…';$('world-list').append(p);}
+  for(const entry of catalog.worlds){
+    const row=document.createElement('div');row.className='world-entry';
+    const name=document.createElement('strong');name.textContent=entry.name;row.append(name);
+    const details=document.createElement('small');details.textContent=`${entry.town_count}/4 towns · ${entry.id===catalog.active_world?'Playing now':'Saved'}`;row.append(details);
+    if(catalog.can_manage || entry.id===catalog.active_world){const open=document.createElement('button');open.textContent=entry.id===catalog.active_world?'Continue playing':'Open world';open.onclick=()=>catalog.can_manage?manageWorld('/api/worlds/open',{world_id:entry.id},true):$('world-menu').close();row.append(open);}
+    if(catalog.can_manage){const remove=document.createElement('button');remove.className='danger quiet';remove.textContent='Destroy world';remove.onclick=()=>{deletingWorld=entry;$('delete-world-description').textContent=`Destroy “${entry.name}”?`;$('delete-world-name').value='';$('delete-world-error').textContent='';$('delete-world-dialog').showModal();};row.append(remove);}
+    $('world-list').append(row);
+  }
+}
 for(const [kind,cost] of Object.entries(costs)){const button=document.createElement('button');button.textContent=`${labels[kind]} · ${cost} wood`;button.onclick=()=>{tool=kind;moveIndex=null;render();};$('buildings').append(button);}
 $('move').onclick=()=>{tool='move';moveIndex=null;render();};
 $('cancel').onclick=()=>{tool=null;moveIndex=null;render();};
 $('upgrade').onclick=()=>act({action:'upgrade'});
-async function refresh(){world=await request('/api/world');if(!world.towns[viewed])viewed=identity?.town_id || Object.keys(world.towns)[0];render();}
+async function refresh(){
+  if(refreshing)return refreshing;
+  refreshing=(async()=>{
+    const next=await request('/api/world');
+    if(next.world_id!==world.world_id){tool=null;moveIndex=null;viewed=null;}
+    world=next;identity=identities[world.world_id] || null;
+    catalog=await request('/api/worlds');
+    if(!world.towns[viewed])viewed=identity?.town_id || Object.keys(world.towns)[0];
+    render();renderWorldMenu();
+    if(!menuStarted || !world.world_id){if(!$('world-menu').open)$('world-menu').showModal();menuStarted=true;}
+  })();
+  try{await refreshing;}finally{refreshing=null;}
+}
 function render(){
   const own=world.towns[identity?.town_id], town=world.towns[viewed];
-  $('join').hidden=!!own;$('controls').hidden=!own;
+  $('join').hidden=!!own || !world.world_id;$('controls').hidden=!own;
   $('view-title').textContent=town?.name || 'A place to call home';
   $('resources').textContent=own?`Wood ${Math.floor(own.wood)} · Food ${Math.floor(own.food)} · Coins ${own.coins} · Villagers ${own.villagers.length}`:'Your village awaits';
   if(own){$('town-name').textContent=own.name;$('hint').textContent=tool==='move'?(moveIndex===null?'Click a building to move it.':'Click open grass.'):tool?`Click open grass to place a ${labels[tool].toLowerCase()}.`:'Choose a building, then click open grass.';$('progress').textContent=`Level ${own.level} · Timber roots: ${Math.min(30,own.harvested)}/30 wood harvested`;$('upgrade').disabled=own.level>=2;}
