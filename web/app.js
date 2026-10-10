@@ -442,10 +442,11 @@ function npcSprites(town,seconds){
     state:{path:[],phase:'idle',clock:npcClock+index*.7,facing:index%2?1:-1}}));
 }
 function villagerAccessories(b){
-  // Earned gear stays visible across jobs: basic tools at 1, clothing at 5.
+  // Earned gear stays visible across jobs: tools at 5, clothing at 10, gold accents at 20.
   const v=b.kind==='villager'?b.villager:{};
-  return {axe:v.woodcutting>=1,blouse:v.woodcutting>=5,
-    sickle:v.farming>=1,hat:v.farming>=5,pouch:v.fishing>=1,scarf:v.fishing>=5};
+  return {axe:v.woodcutting>=5,blouse:v.woodcutting>=10,woodcuttingMaster:v.woodcutting>=20,
+    sickle:v.farming>=5,hat:v.farming>=10,farmingMaster:v.farming>=20,
+    pouch:v.fishing>=5,scarf:v.fishing>=10,fishingMaster:v.fishing>=20};
 }
 function drawVillager(b){
   const accessories=villagerAccessories(b);
@@ -467,11 +468,15 @@ function drawVillager(b){
     polygon([[-4,-13],[4,-13],[7,-9],[5,-7],[3,-10],[4,-3],[-4,-3],[-3,-10],[-5,-7],[-7,-9]],'#b8c6ad');
     polygon([[-3,-13],[0,-10],[3,-13]],'#eee0bd');
     ctx.strokeStyle='#6c8068';ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(0,-10);ctx.lineTo(0,-4);ctx.stroke();
+    if(accessories.woodcuttingMaster){
+      ctx.fillStyle='#e8bd55';ctx.fillRect(-4,-4,8,1);ctx.fillRect(-1,-9,2,2);
+    }
   }
   ctx.fillStyle=['#e7c68c','#c99f79','#ad795c'][b.index%3];ctx.beginPath();ctx.arc(0,-17,4,0,Math.PI*2);ctx.fill();
   ctx.fillStyle=['#584638','#aa7846','#363c36','#d3bc8c'][b.index%4];ctx.beginPath();ctx.arc(0,-18,4,Math.PI,Math.PI*2);ctx.fill();
   if(b.index%2)ctx.fillRect(-4,-18,2,7);
   if(accessories.hat){polygon([[-6,-19],[0,-23],[6,-19]],'#ccb779');ctx.fillStyle='#ccb779';ctx.fillRect(-7,-19,14,2);}
+  if(accessories.farmingMaster){ctx.fillStyle='#e8bd55';ctx.fillRect(-5,-20,10,1);}
   if(b.kind==='npc'){
     const accent=npcColors[b.biome][1];
     if(b.biome==='b'||b.biome==='f')polygon([[-5,-18],[0,-25],[5,-18]],accent);
@@ -491,6 +496,7 @@ function drawVillager(b){
   if(accessories.pouch){
     ctx.fillStyle='#806448';ctx.fillRect(-3,-5,6,5);
     ctx.strokeStyle='#d5dfd8';ctx.lineWidth=1;ctx.beginPath();ctx.arc(0,-3,1.5,0,Math.PI);ctx.stroke();
+    if(accessories.fishingMaster){ctx.fillStyle='#e8bd55';ctx.fillRect(-1,-4,2,2);}
   }
   if(accessories.scarf){
     ctx.fillStyle='#6baeb5';ctx.fillRect(-4,-14,8,2);ctx.fillRect(2,-12,2,5);
