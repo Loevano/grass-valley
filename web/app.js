@@ -1047,7 +1047,8 @@ canvas.addEventListener('wheel',event=>{
     const px=event.clientX-rect.left,py=event.clientY-rect.top;
     const x=(px-originX)/tileW+(py-originY)/tileH,y=(py-originY)/tileH-(px-originX)/tileW;
     const previous=camera.zoom;
-    camera.zoom=Math.max(.35,Math.min(2.5,previous*Math.exp(-dy*.002)));
+    const sensitivity=event.ctrlKey?.01:.002;
+    camera.zoom=Math.max(.35,Math.min(2.5,previous*Math.exp(-dy*sensitivity)));
     camera.x=x-.5+(camera.x+.5-x)*previous/camera.zoom;
     camera.y=y-.5+(camera.y+.5-y)*previous/camera.zoom;
   }else{
