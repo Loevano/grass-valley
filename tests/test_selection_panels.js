@@ -22,7 +22,7 @@ const run=new Function('document','window','localStorage','setTimeout','clearTim
       map_resources:[{kind:'tree',x:0,y:0},{kind:'water',x:3,y:8},{kind:'rock',x:0,y:2}],
       villagers:[{name:'Ada',job:'woodcutting',woodcutting:8,farming:2,work_target:{kind:'tree',x:0,y:0}}]};
     const friend=JSON.parse(JSON.stringify(town));friend.name='Friend';friend.level=2;friend.harvested=12;
-    world={world_id:'test',hall_ready:{own:true,friend:false},hall_upgrades:[{level:2,harvested:30,wood:40,seconds:30,coins:30},{level:3,harvested:90,wood:80,seconds:60,coins:60}],towns:{own:town,friend}};identity={town_id:'own'};viewed='own';
+    world={world_id:'test',hall_upgrades:[{level:2,harvested:30,wood:40,seconds:30,coins:30},{level:3,harvested:90,wood:80,seconds:60,coins:60}],towns:{own:town,friend}};identity={town_id:'own'};viewed='own';
     const commands=[];act=async data=>{commands.push(data);};
     function clickTile(x,y){const [px,py]=point(x,y);return canvas.onclick({clientX:px,clientY:py+tileH/2});}
     async function clickSprite(type,index){const hit=hitTargets.find(h=>h.type===type&&h.index===index);await canvas.onclick({clientX:(hit.left+hit.right)/2,clientY:hit.top+3});}
@@ -47,15 +47,15 @@ const run=new Function('document','window','localStorage','setTimeout','clearTim
     town.wood=0;render();check($('upgrade').disabled,'Hall upgrade requires enough wood');town.wood=65;
     town.level=2;town.harvested=90;town.wood=80;render();
     check(!$('upgrade').disabled&&$('upgrade').textContent.includes('level 3'),'Level 2 owners can upgrade again');
-    check($('hall-progress').hidden&&$('progress').textContent.includes('60 coins'),'Next milestone and reward use host requirements');
-    world.hall_ready.own=false;render();check($('upgrade').disabled,'Later levels require their own milestone');
-    world.hall_ready.own=true;town.wood=79;render();check($('upgrade').disabled,'Later levels require their own wood cost');
+    check($('hall-progress').max===90&&$('progress').textContent.includes('60 coins'),'Next milestone and reward use host requirements');
+    town.harvested=89;render();check($('upgrade').disabled,'Later levels require their own milestone');
+    town.harvested=90;town.wood=79;render();check($('upgrade').disabled,'Later levels require their own wood cost');
     town.wood=80;town.upgrade_remaining=57;render();
     check($('upgrade').disabled&&$('upgrade').textContent.includes('57s remaining'),'Pending upgrade shows timer and prevents repeat clicks');
     town.upgrade_remaining=0;town.level=10;render();
-    check($('upgrade').disabled&&$('hall-progress').hidden&&$('progress').textContent.includes('planned'),'Maximum level hides milestone and disables upgrade');
+    check($('upgrade').disabled&&$('hall-progress').hidden&&$('progress').textContent.includes('Maximum'),'Maximum level hides milestone and disables upgrade');
     town.level=1;town.harvested=30;town.wood=65;render();
-    check($('progress').textContent.includes('Level 1'),'Returning to a hall restores its development requirements');
+    check(!$('hall-progress').hidden,'Returning to an upgradeable hall restores progress');
     await clickTile(3,8);
     check(selection.type==='resource'&&$('selection-title').textContent==='Water','Water tile opens resource information');
     await clickSprite('resource',0);
@@ -85,7 +85,7 @@ const run=new Function('document','window','localStorage','setTimeout','clearTim
     $('valley-button').onclick();$('towns').children[1].onclick();
     check(viewed==='friend'&&panel===null&&$('build-button').disabled,'Visiting resets panels and disables Build');
     await clickSprite('building',0);
-    check($('progress').textContent.includes('Level 2')&&$('progress').textContent.includes('Still needed'),'Visitor sees the visited hall progress');
+    check($('progress').textContent.includes('Level 2')&&$('progress').textContent.includes('12/90'),'Visitor sees the visited hall progress');
     check($('upgrade').disabled&&$('selection-move').hidden,'Visitor cannot upgrade or move buildings');
     inspect('building',1);check($('selection-destroy').hidden,'Visitor cannot destroy buildings');
     await clickSprite('villager',0);

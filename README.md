@@ -93,7 +93,7 @@ the Python host, refresh both browsers, and create a new world to use the shared
   Builders walk to reachable sites, then work through foundations, framing, and
   finishing over 30 seconds. Housing, storage, and workplaces activate only on
   completion. Progress survives saving, moving a site, and restarting the host.
-- Trees and water regenerate finite shared supplies. Rock outcrops cannot be mined yet.
+- Trees and water are renewable. Rock outcrops occupy tiles but cannot be mined yet.
 - Select a farm and choose **Build acre · 5 wood**, then click open ground within
   three tile steps of that farm. Farmers tend its acres and deliver food back to
   the farm; water must still be within three steps of the farm. Farms without
@@ -106,8 +106,7 @@ the Python host, refresh both browsers, and create a new world to use the shared
   removal controls. Woodcutters, fishing huts, halls, storehouses, and acres start
   with 1 space, cottages with 2, and farms with 4. Upgrade settler capacity twice
   for 20 then 40 wood to reach twice then three times the initial spaces. Capacity
-  upgrades take 30 then 60 seconds of builder work and do not increase housing,
-  storage, or the town population limit.
+  upgrades do not increase housing, storage, or the town population limit.
   Assignment transfers an existing resident; it does not create a new settler.
   Workplaces set the appropriate job; acres assign farmers to that specific field.
   Settlers assigned to halls, cottages, or storehouses rest and help construction
@@ -132,17 +131,13 @@ the Python host, refresh both browsers, and create a new world to use the shared
   yields no food, but still builds skill. Empty casts reel in and try again.
 - Woodcutters produce half as much wood as before. Assigned workers consume
   0.30 food each tick, compared with 0.12 for resting villagers.
-- Hall upgrades also require a builder at the hall. The first requires housing and reliable food, costs 40 wood, and
+- Hall upgrades also require a builder at the hall. The first costs 40 wood and
   takes 30 seconds of construction after arrival; the hall
   panel shows remaining time. Closing the host pauses the upgrade.
 - Build cottages to attract residents; maintain food and add storage as needed.
 - Select any completed cottage, storehouse, woodcutter, farm, fishing hut, or acre
-  to upgrade it through level 3. Builders work for 30 seconds to reach level 2
-  and 60 seconds to reach level 3 after arriving. Each upgrade costs its original
+  to upgrade it immediately through level 3. Each upgrade costs its original
   building price multiplied by its current level; the panel previews the benefit.
-  Profession upgrades take 30 seconds of builder work. Materials are paid when
-  starting; buildings pause their benefits and production until work finishes.
-  Upgrade progress survives saving, moving, and restarting the host.
   Cottages provide 2/4/6 housing spaces (the town limit stays 16), and storehouses
   add 100/200/300 capacity for both wood and food. Woodcutters, farms, fishing huts,
   and acres gain 25% production per worker at level 2 and 50% at level 3.
@@ -155,30 +150,22 @@ the Python host, refresh both browsers, and create a new world to use the shared
 - Click **Move** in a building’s information panel, then an empty tile.
   You can also use **Move a building** in the Build panel. Moving costs one coin,
   or is free if you have none, so rearranging is always possible.
-- Town hall levels 1–5 now unlock profession branches. Level 2 brings nets, wheat,
-  barns/chickens, and improved axes; level 3 adds boats, sheep, carrots/fodder, and
-  sawpits/planks; level 4 adds mills, smokehouses, pigs, and workshops/tools;
-  level 5 adds fish breeding ponds, orchards, cows, improved saws, timber framing,
-  and market stalls. Each upgrade has a development milestone and material cost
-  shown in the hall panel. Levels 6–10 remain documented plans.
-- Select an acre to choose its crop, a barn to buy/breed animals, or a workplace
-  to unlock profession improvements. Assign settlers to new production buildings.
-  Sawpits use wood; mills use wheat; smokehouses use fish and wood; workshops use
-  planks and wood; breeding ponds use fodder. The Build panel shows stored goods.
-- Forest trees and connected fishing waters have limited, regenerating supplies
-  shared by workers and players. Additional huts cannot duplicate a pond's supply.
-  Worker slots, field output, barn animal capacity, and storage bound production.
-  Source and worker panels show supply and pauses. Barns use fodder or vegetables;
-  manure improves field yield and wool makes durable nets.
-- Your character can fish with **F**, chop with **C**, and gather berries or herbs
-  with **G** while standing beside the source. Actions repeat every three seconds
-  until you move, press the same key again, or press Escape. Select **You** to see
-  fishing, woodcutting, and gathering levels. Every 20 practice raises a level;
-  work and practice pause when storage is full or supplies are empty. These keys
-  can be changed in Settings without losing older movement preferences.
-- Edible goods are included in the Food total. Eating, recipes, and sales consume
-  the same stock; goods are not an extra copy of the pantry. Existing saved wood,
-  food, buildings, and hall levels remain; paid hall upgrades still finish.
+- Upgrade the town hall through level 10. Each upgrade requires a cumulative
+  wood-harvesting milestone, consumes saved wood, and awards coins on completion.
+  Build storehouses to hold the larger costs. Upgrade timers run only in the open
+  world while the host is running.
+
+  | Hall level | Total wood harvested | Wood cost | Time | Coin reward |
+  | --- | --- | --- | --- | --- |
+  | 2 | 30 | 40 | 30 seconds | 30 |
+  | 3 | 90 | 80 | 60 seconds | 60 |
+  | 4 | 180 | 120 | 90 seconds | 90 |
+  | 5 | 300 | 160 | 120 seconds | 120 |
+  | 6 | 450 | 200 | 150 seconds | 150 |
+  | 7 | 630 | 240 | 180 seconds | 180 |
+  | 8 | 840 | 280 | 210 seconds | 210 |
+  | 9 | 1080 | 320 | 240 seconds | 240 |
+  | 10 | 1350 | 360 | 270 seconds | 270 |
 - Open **Valley** and click another town's name to find it. Only its owner can issue commands for it.
 
 The host saves all worlds automatically in `savegame.json`, which is excluded from

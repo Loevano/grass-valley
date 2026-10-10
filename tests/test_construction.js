@@ -41,13 +41,6 @@ const run=new Function('document','window','localStorage','setTimeout','clearTim
   site.kind='farm';inspect('building',1);
   assert(!$('selection-details').children.some(c=>c.textContent==='Build acre · 5 wood'),'Unfinished farms cannot add acres');
   assert(!acrePlacementValid(town,{x:6,y:7},1));
-  site.kind='home';site.level=1;site.construction={progress:12,total:30,upgrade:{level:2}};
-  inspect('building',1);
-  assert($('selection-details').children.some(c=>c.textContent?.includes('Upgrading · 40% complete · 18s remaining')));
-  assert($('selection-details').children.some(c=>c.className==='upgrade-button'&&c.disabled),'Repeated upgrades are disabled');
-  site.kind='workshop';world.progression={buildings:{workshop:{}},recipes:{},upgrades:{}};
-  inspect('building',1);
-  assert($('selection-details').children.some(c=>c.textContent?.includes('18s remaining')),'Profession buildings retain upgrade progress');
   console.log('Construction UI and animation checks passed');
 `);
 run(documentMock,{devicePixelRatio:1,addEventListener(){}},{getItem:()=>null},()=>0,()=>{},animation,assert,fills);

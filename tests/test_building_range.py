@@ -22,8 +22,6 @@ class BuildingRange(unittest.TestCase):
         self.town['buildings'][0].update(x=1, y=1)
         self.town['villagers'][0]['construction_position'] = {'x': 1, 'y': 2}
         self.town['harvested'] = 30
-        self.town['buildings'].extend([{'kind':'home','x':3,'y':5},{'kind':'farm','x':6,'y':2}])
-        self.town['map_resources'].append({'kind':'water','x':7,'y':2})
         tick({'towns': {'owner': self.town}})
         command(self.town, {'action': 'upgrade'})
         if self.town.get('upgrade_remaining'):

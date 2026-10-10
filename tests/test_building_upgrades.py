@@ -3,7 +3,7 @@ import json
 import unittest
 from unittest.mock import patch
 
-from server import BUILD_SECONDS, capacity, command, construct, new_town, tick
+from server import capacity, command, new_town, tick
 
 
 class BuildingUpgrades(unittest.TestCase):
@@ -17,11 +17,6 @@ class BuildingUpgrades(unittest.TestCase):
 
     def upgrade(self, index):
         command(self.town, {'action': 'upgrade_building', 'index': index})
-        for _ in range(100):
-            if 'construction' not in self.town['buildings'][index]:
-                break
-            construct(self.town, self.town)
-        self.assertNotIn('construction', self.town['buildings'][index])
 
     def test_cost_levels_save_and_move(self):
         index = self.add('home')
@@ -36,39 +31,6 @@ class BuildingUpgrades(unittest.TestCase):
         with self.assertRaises(ValueError):
             self.upgrade(index)
         self.assertEqual(self.town, before)
-
-    def test_upgrade_waits_for_builder_and_completion_after_save_and_move(self):
-        index = self.add('storehouse')
-        site = self.town['buildings'][index]
-        command(self.town, {'action': 'upgrade_building', 'index': index})
-        self.assertEqual(self.town['wood'], 75)
-        self.assertEqual(site.get('level', 1), 1)
-        self.assertEqual(capacity(self.town), 100)
-        self.assertEqual(site['construction']['total'], BUILD_SECONDS)
-        before = copy.deepcopy(self.town)
-        for action in ['upgrade_building', 'upgrade_capacity']:
-            with self.assertRaises(ValueError):
-                command(self.town, {'action': action, 'index': index})
-            self.assertEqual(self.town, before)
-        construct(self.town, self.town, workers=set())
-        self.assertEqual(site['construction']['progress'], 0)
-        self.town['villagers'][0]['construction_position'] = {'x': 5, 'y': 2}
-        construct(self.town, self.town, workers={0}, elapsed=12)
-        self.assertEqual(site['construction']['progress'], 12)
-        self.assertEqual(site.get('level', 1), 1)
-        self.town = json.loads(json.dumps(self.town))
-        command(self.town, {'action': 'move', 'index': index, 'x': 6, 'y': 3})
-        site = self.town['buildings'][index]
-        self.assertEqual(site['construction']['progress'], 12)
-        self.town['villagers'][0]['construction_position'] = {'x': 5, 'y': 3}
-        construct(self.town, self.town, workers={0}, elapsed=17)
-        self.assertEqual(site.get('level', 1), 1)
-        construct(self.town, self.town, workers={0}, elapsed=1)
-        self.assertEqual(site['level'], 2)
-        self.assertEqual(capacity(self.town), 300)
-        self.assertEqual(self.town['wood'], 75)
-        command(self.town, {'action': 'upgrade_building', 'index': index})
-        self.assertEqual(site['construction']['total'], 2 * BUILD_SECONDS)
 
     def test_rejected_upgrades_do_not_change_town(self):
         index = self.add('home', construction={'progress': 0, 'total': 30})

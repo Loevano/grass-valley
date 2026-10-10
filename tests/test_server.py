@@ -131,7 +131,6 @@ class VillageRules(unittest.TestCase):
         with self.assertRaises(ValueError):
             command(self.town, {'action': 'upgrade'})
         self.town['harvested'] = 30
-        self.town['buildings'].extend([{'kind':'home','x':3,'y':5},{'kind':'farm','x':6,'y':2}])
         tick({'towns': {'a': self.town}})
         self.assertEqual(self.town['level'], 1)
         self.town['villagers'][0]['construction_position'] = {'x': 5, 'y': 6}
