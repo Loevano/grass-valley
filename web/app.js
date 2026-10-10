@@ -1043,7 +1043,7 @@ canvas.addEventListener('wheel',event=>{
   const rect=canvas.getBoundingClientRect();
   const unit=event.deltaMode===1?16:event.deltaMode===2?rect.height:1;
   const dx=event.deltaX*unit,dy=event.deltaY*unit;
-  if(event.altKey){
+  if(event.altKey||event.ctrlKey){
     const px=event.clientX-rect.left,py=event.clientY-rect.top;
     const x=(px-originX)/tileW+(py-originY)/tileH,y=(py-originY)/tileH-(px-originX)/tileW;
     const previous=camera.zoom;
