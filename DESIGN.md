@@ -21,7 +21,7 @@ continue the conversation. An unanswered question is not an agreed requirement.
 | How does a town improve? | A mix of homes, food, services, and resource-funded upgrades. |
 | Building placement? | Freely on a grid; buildings must remain movable. |
 | What happens when needs are unmet? | Growth pauses. |
-| Choose town location? | No; preset town locations. |
+| Choose town location? | No; randomized, separated town sites in new worlds. |
 | Town specialties? | Develop through activities over time, rather than choosing a fixed class. |
 | Who gains skills? | Villagers have individual skills; the town unlocks achievements. |
 | What raises woodcutting skill? | Assign villagers to woodcutting; skill rises as they work. |
@@ -81,7 +81,7 @@ These are starting values to make the prototype playable, **not final design dec
 - Browser client and Python host using the standard library; no installed dependencies.
 - Generated geometric art to try the angled perspective before choosing an art style.
 - Five villagers, a town hall, 65 wood, 40 food, 20 coins.
-- Separate fixed 12×12 town grids; switch views to visit friends. Shared wilderness comes later.
+- New worlds share one 120×120 landscape, with randomized hall sites at least 40 tiles apart. Construction stays near the owner's hall and within 15 steps of its original site. Existing worlds keep their separate town maps.
 - Cottages, woodcutters, farms, and storehouses occupy one tile each.
 - Move a building instantly for one coin, preserving its identity. If you have no coins, moving is free so rearranging never becomes locked.
 - Every three seconds, assigned workers produce resources and gain skill if storage has room.
@@ -109,13 +109,18 @@ storage, a town milestone and a chosen upgrade, view other towns, automatic savi
 Visible map resources, source-dependent production, and animated workers walking,
 woodcutting, farming, and carrying supplies back to workplaces.
 
-**Planned:** roads, richer upgrade choices, trading, shared explorable wilderness,
+**Shared map:** new worlds show all towns and founders on one landscape, with
+walkable paths connecting randomized town sites. Valley centers the camera on a
+town; ownership remains separate. Existing saves retain separate town maps.
+
+**Planned:** roads, richer upgrade choices, trading, wilderness resource gathering,
 equipment and magic, instanced cooperative quests,
 personal loot, character progression, defeat/return-home flow, richer art and sound.
 
 **Player character:** each town founder has a separate persistent villager, marked
 “You”, with WASD movement in screen directions, obstacle collision, and a following
-camera. The character explores the town map; workers keep their assigned jobs.
+camera. The character explores the shared map in new worlds, or its town map in existing
+worlds; workers keep their assigned jobs.
 
 ## Suggested development stages
 

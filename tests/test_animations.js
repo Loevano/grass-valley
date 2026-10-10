@@ -37,3 +37,8 @@ state=animation.plan(shaped,{job:'idle'},0);
 check(state.x>=4,'Workers spawn inside the irregular outline');
 check(state.blocked.has('3,8'),'Tiles outside the outline block worker paths');
 check(state.path.every(p=>shaped.terrain[p.y][p.x]!=='v'),'Workers stay inside the outline');
+
+const fishingTown={buildings:[{kind:'fishing_hut',x:6,y:2}],map_resources:[{kind:'water',x:9,y:2}]};
+state=animation.plan(fishingTown,{job:'fishing',work_target:fishingTown.map_resources[0]},0);
+for(let i=0;i<300&&state.path.length;i++)animation.advance(state,.1,true);
+check(state.phase==='working'&&state.home.kind==='fishing_hut','Fishers walk to water and deliver to the fishing hut');

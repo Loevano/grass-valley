@@ -12,13 +12,13 @@ from urllib.parse import urlsplit
 
 from terrain import ensure_terrain
 from npcs import ensure_npcs
+from shared_world import bind_map, export_world, new_world, validate_placement, walking_map
 
 ROOT = Path(__file__).resolve().parent
 SAVE = ROOT / 'savegame.json'
 LOCK = threading.RLock()
-COSTS = {'home': 20, 'woodcutter': 15, 'farm': 15, 'storehouse': 25, 'acre': 5}
-JOBS = {'idle', 'woodcutting', 'farming'}
-
+COSTS = {'home': 20, 'woodcutter': 15, 'farm': 15, 'storehouse': 25, 'fishing_hut': 15, 'acre': 5}
+JOBS = {'idle', 'woodcutting', 'farming', 'fishing'}
 TICK_SECONDS = 3
 # Requirements are cumulative harvested wood; costs are paid when upgrading.
 HALL_UPGRADES = [
@@ -28,7 +28,9 @@ HALL_UPGRADES = [
     for level in range(2, 11)
 ]
 
+WORKER_FOOD = .18
 
+MAP_SIZE = 120
 RESOURCE_REACH = 3
 
 
@@ -108,20 +110,32 @@ def map_resources(buildings):
         'rock': [(10, 3), (11, 4), (0, 10)],
     }
     return [{'kind': kind, 'x': x, 'y': y}
-            for kind, tiles in locations.items() for x, y in tiles
+            for bx in range(0, MAP_SIZE, 12) for by in range(0, MAP_SIZE, 12)
+            for kind, tiles in locations.items() for tx, ty in tiles
+            for x, y in [(bx + tx, by + ty)]
             if (x, y) not in occupied]
 
 
 def ensure_resources(town):
+    if 'town_origin' in town:
+        return
     if 'map_resources' not in town:
         town['map_resources'] = map_resources(town['buildings'])
+    if town.get('map_size') != MAP_SIZE:
+        occupied = {(b['x'], b['y']) for b in town['buildings']}
+        occupied.update((r['x'], r['y']) for r in town['map_resources'])
+        town['map_resources'].extend(r for r in map_resources(town['buildings'])
+                                     if (r['x'] >= 12 or r['y'] >= 12)
+                                     and (r['x'], r['y']) not in occupied)
+        town['map_size'] = MAP_SIZE
     ensure_terrain(town)
     ensure_npcs(town)
 
 
 def work_source(town, job, worker_index):
     building, source = {'woodcutting': ('woodcutter', 'tree'),
-                        'farming': ('farm', 'water')}[job]
+                        'farming': ('farm', 'water'),
+                        'fishing': ('fishing_hut', 'water')}[job]
     workplaces = []
     for farm_index, b in enumerate(town['buildings']):
         if b['kind'] != building:
@@ -140,17 +154,24 @@ def work_source(town, job, worker_index):
     return workplaces[worker_index % len(workplaces)][1] if workplaces else None
 
 
-def new_town(name):
-    town = {'name': name, 'wood': 65, 'food': 40, 'coins': 20, 'level': 1,
+def new_town(name, world=None):
+    town = {'map_size': MAP_SIZE, 'name': name, 'wood': 65, 'food': 40, 'coins': 20, 'level': 1,
             'harvested': 0, 'achievements': [],
             'player': {'x': 5., 'y': 7., 'facing': 1},
             'map_resources': map_resources([{'x': 5, 'y': 5}]),
             'buildings': [{'kind': 'hall', 'x': 5, 'y': 5}],
             'villagers': [{'name': n, 'job': 'idle', 'woodcutting': i % 3,
-                           'farming': (i + 1) % 3} for i, n in enumerate(
+                           'farming': (i + 1) % 3, 'fishing': 0} for i, n in enumerate(
                                ['Ada', 'Rowan', 'Wren', 'Bram', 'Hazel'])]}
-    ensure_terrain(town, new=True)
-    ensure_npcs(town)
+    if world and 'shared_map' in world:
+        site = dict(world['town_sites'][len(world['towns'])])
+        town.update(world['shared_map'])
+        town['town_origin'] = site
+        town['buildings'] = [{'kind': 'hall', **site}]
+        town['player'] = {'x': float(site['x']), 'y': float(site['y'] + 2), 'facing': 1}
+    else:
+        ensure_terrain(town, new=True)
+        ensure_npcs(town)
     return town
 
 
@@ -174,18 +195,21 @@ def tick(world):
             source = work_source(town, job, index) if job != 'idle' else None
             villager['work_target'] = source
             if source and town[resource] < capacity(town):
-                amount = min(1 + villager[job] // 20, capacity(town) - town[resource])
+                rate = .5 if job == 'woodcutting' else 1
+                amount = min(rate * (1 + villager.get(job, 0) // 20),
+                             capacity(town) - town[resource])
                 town[resource] += amount
-                villager[job] += 1
+                villager[job] = villager.get(job, 0) + 1
                 if resource == 'wood':
                     town['harvested'] += amount
         # Shortages pause population growth; residents never leave.
-        town['food'] = max(0, town['food'] - len(town['villagers']) * 0.12)
+        town['food'] = max(0, town['food'] - len(town['villagers']) * 0.12
+                           - WORKER_FOOD * sum(v['job'] != 'idle' for v in town['villagers']))
         homes = sum(b['kind'] == 'home' for b in town['buildings'])
         if len(town['villagers']) < min(5 + homes * 2, 16) and town['food'] >= 20:
             town['food'] -= 10
             town['villagers'].append({'name': 'Settler ' + str(len(town['villagers']) + 1),
-                                     'job': 'idle', 'woodcutting': 0, 'farming': 0})
+                                     'job': 'idle', 'woodcutting': 0, 'farming': 0, 'fishing': 0})
         if town['harvested'] >= 30 and 'Timber roots' not in town['achievements']:
             town['achievements'].append('Timber roots')
 
@@ -210,9 +234,14 @@ def validate_building_range(town, x, y):
         raise ValueError(f'Build within {reach} tile steps of your town hall.')
 
 
-def command(town, data):
+def command(town, data, world=None):
     ensure_resources(town)
     action = data.get('action')
+    if world and 'shared_map' in world:
+        if action == 'walk':
+            return move_player(walking_map(world, town), data)
+        if action in {'build', 'move'}:
+            validate_placement(world, town, data)
     if action == 'walk':
         return move_player(town, data)
     if action in {'build', 'move'}:
@@ -225,7 +254,7 @@ def command(town, data):
             raise ValueError('Choose a tile inside the valley boundary.')
     if action == 'build':
         kind, x, y = data.get('kind'), data.get('x'), data.get('y')
-        if kind not in COSTS or type(x) is not int or type(y) is not int or not (0 <= x < 12 and 0 <= y < 12):
+        if kind not in COSTS or type(x) is not int or type(y) is not int or not (0 <= x < MAP_SIZE and 0 <= y < MAP_SIZE):
             raise ValueError('Choose a building and a tile inside your town.')
         if any(b['x'] == x and b['y'] == y for b in town['buildings']):
             raise ValueError('That tile is already occupied.')
@@ -248,7 +277,7 @@ def command(town, data):
         index, x, y = data.get('index'), data.get('x'), data.get('y')
         if type(index) is not int or not 0 <= index < len(town['buildings']):
             raise ValueError('Select a building first.')
-        if type(x) is not int or type(y) is not int or not (0 <= x < 12 and 0 <= y < 12):
+        if type(x) is not int or type(y) is not int or not (0 <= x < MAP_SIZE and 0 <= y < MAP_SIZE):
             raise ValueError('Choose a tile inside your town.')
         if any(b['x'] == x and b['y'] == y for b in town['buildings']):
             raise ValueError('That tile is already occupied.')
@@ -278,7 +307,7 @@ def command(town, data):
         index, job = data.get('index'), data.get('job')
         if type(index) is not int or not 0 <= index < len(town['villagers']) or job not in JOBS:
             raise ValueError('Choose a villager and a valid job.')
-        required = {'woodcutting': 'woodcutter', 'farming': 'farm'}.get(job)
+        required = {'woodcutting': 'woodcutter', 'farming': 'farm', 'fishing': 'fishing_hut'}.get(job)
         if required and not any(b['kind'] == required for b in town['buildings']):
             raise ValueError('Build a ' + required + ' first.')
         town['villagers'][index]['job'] = job
@@ -318,8 +347,8 @@ class Handler(SimpleHTTPRequestHandler):
             with LOCK:
                 for town in WORLD['towns'].values():
                     ensure_resources(town)
-                    ensure_player(town)
-                self.reply(200, dict(WORLD, hall_upgrades=HALL_UPGRADES, world_id=ACTIVE_WORLD,
+                    ensure_player(walking_map(WORLD, town) if 'shared_map' in WORLD else town)
+                self.reply(200, dict(export_world(WORLD), hall_upgrades=HALL_UPGRADES, world_id=ACTIVE_WORLD,
                                      name=WORLDS[ACTIVE_WORLD]['name'] if ACTIVE_WORLD else None))
         elif self.path == '/api/worlds':
             with LOCK:
@@ -358,7 +387,7 @@ class Handler(SimpleHTTPRequestHandler):
                         if not isinstance(name, str) or not name.strip() or len(name.strip()) > 24:
                             raise ValueError('Enter a world name of 1–24 characters.')
                         world_id = secrets.token_hex(8)
-                        WORLDS[world_id] = {'name': name.strip(), 'world': {'towns': {}}, 'tokens': {}}
+                        WORLDS[world_id] = {'name': name.strip(), 'world': new_world(), 'tokens': {}}
                         activate(world_id)
                     else:
                         world_id = data.get('world_id')
@@ -390,7 +419,7 @@ class Handler(SimpleHTTPRequestHandler):
                                 self.reply(429, {'error': 'Walking too quickly. Try again.'})
                                 return
                             MOVE_TIMES[move_key] = now
-                        result = command(WORLD['towns'][town_id], data)
+                        result = command(WORLD['towns'][town_id], data, WORLD)
                         save()
                         self.reply(200, dict(result or {}, ok=True))
                         return
@@ -401,7 +430,7 @@ class Handler(SimpleHTTPRequestHandler):
                         raise ValueError('This world already has four towns.')
                     token = secrets.token_urlsafe(24)
                     town_id = secrets.token_hex(8)
-                    WORLD['towns'][town_id] = new_town(name)
+                    WORLD['towns'][town_id] = new_town(name, WORLD)
                     TOKENS[token] = town_id
                     save()
                     self.reply(200, {'token': token, 'town_id': town_id})
@@ -416,6 +445,7 @@ def activate(world_id):
     ACTIVE_WORLD = world_id
     entry = WORLDS.get(world_id)
     WORLD, TOKENS = (entry['world'], entry['tokens']) if entry else ({'towns': {}}, {})
+    bind_map(WORLD)
 
 
 def load():
@@ -436,7 +466,9 @@ def load():
 
 def save():
     temporary = SAVE.with_suffix('.json.tmp')
-    temporary.write_text(json.dumps({'worlds': WORLDS, 'active_world': ACTIVE_WORLD}))
+    temporary.write_text(json.dumps({'worlds': {key: dict(entry, world=export_world(entry['world']))
+                                                for key, entry in WORLDS.items()},
+                                     'active_world': ACTIVE_WORLD}))
     temporary.replace(SAVE)
 
 

@@ -39,6 +39,23 @@ may prevent devices from reaching one another.
 This prototype is intended for a trusted LAN. It has no public account system or
 encrypted transport; do not expose it through router port forwarding.
 
+## Shared map in new worlds
+
+Worlds created after this update use one shared 120×120 map. Everyone sees the
+same terrain, buildings, workers, and player characters, and can walk between
+towns. Town halls start at randomized locations at least 40 tiles apart, with
+nearby wood, water, and clear paths connecting the towns.
+
+Build within 10 horizontal/vertical tile steps of your hall, expanding to 15 after
+its first upgrade. Construction also stays within 15 steps of your original town
+site, so moving a hall cannot claim another town's land. Halls must stay at least
+40 tiles apart when moved. Only a town's owner can build or manage its workers.
+The building area is highlighted when building or inspecting a hall.
+
+**Valley** centers the camera on a town without changing maps. **Find me** centers
+on your character. Existing saved worlds keep their separate town maps. Restart
+the Python host, refresh both browsers, and create a new world to use the shared map.
+
 ## Play
 
 - Each new town has an irregular outline and random forests, ponds, meadows,
@@ -85,6 +102,12 @@ encrypted transport; do not expose it through router port forwarding.
   and carry supplies back to their workplace. These animations illustrate work;
   production still follows the host's three-second rhythm. If a workplace is out
   of reach, production and skill growth pause; move it closer to the source to resume.
+- Build a fishing hut within three tile steps of water and assign Fishing to
+  produce food and learn fishing skill. Farms now appear as buildings.
+- Woodcutters produce half as much wood as before. Assigned workers consume
+  0.30 food each tick, compared with 0.12 for resting villagers.
+- The first hall upgrade costs 40 wood and takes 30 seconds in the open world; the hall
+  panel shows remaining time. Closing the host pauses the upgrade.
 - Build cottages to attract residents; maintain food and add storage as needed.
 - Click a building, then **Destroy building** to remove it without a resource
   refund. The town hall cannot be destroyed. Removing workplaces pauses affected
@@ -108,7 +131,7 @@ encrypted transport; do not expose it through router port forwarding.
   | 8 | 840 | 280 | 210 seconds | 210 |
   | 9 | 1080 | 320 | 240 seconds | 240 |
   | 10 | 1350 | 360 | 270 seconds | 270 |
-- Open **Valley** and click another town's name to visit. Only its owner can issue commands for it.
+- Open **Valley** and click another town's name to find it. Only its owner can issue commands for it.
 
 The host saves all worlds automatically in `savegame.json`, which is excluded from
 Git. Your browser stores your town's ownership token. Use the same browser and
@@ -120,7 +143,7 @@ Existing saves keep their resource layout and gain varied ground. Saves without
 resources gain resource spots on unoccupied tiles when the host restarts;
 existing buildings stay in place. Move older workplaces near trees or water as needed.
 
-Shared wilderness, combat, magic, trading, and cooperative quests are not implemented yet.
+Combat, magic, trading, and cooperative quests are not implemented yet.
 See [ROADMAP.md](ROADMAP.md) for town hall rewards and proposed future unlocks.
 See [DESIGN.md](DESIGN.md) for agreed decisions, provisional values, and questions
 you can answer later.

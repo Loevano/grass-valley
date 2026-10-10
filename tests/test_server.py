@@ -8,6 +8,22 @@ class VillageRules(unittest.TestCase):
     def setUp(self):
         self.town = new_town('Willowbrook')
 
+    def test_expanded_map_and_legacy_migration(self):
+        self.assertEqual(self.town['map_size'] ** 2, 100 * 12 ** 2)
+        self.assertTrue(any(r['x'] > 100 for r in self.town['map_resources']))
+        legacy = copy.deepcopy(self.town)
+        del legacy['map_size']
+        legacy['map_resources'] = [r for r in legacy['map_resources']
+                                   if r['x'] < 12 and r['y'] < 12]
+        original = copy.deepcopy(legacy)
+        ensure_resources(legacy)
+        self.assertEqual(legacy['buildings'], original['buildings'])
+        self.assertEqual([r for r in legacy['map_resources'] if r['x'] < 12 and r['y'] < 12],
+                         original['map_resources'])
+        migrated = copy.deepcopy(legacy)
+        ensure_resources(legacy)
+        self.assertEqual(legacy, migrated)
+
     def test_build_and_move_preserve_building(self):
         command(self.town, {'action': 'build', 'kind': 'farm', 'x': 2, 'y': 3})
         self.assertEqual(self.town['wood'], 50)
@@ -16,7 +32,7 @@ class VillageRules(unittest.TestCase):
         self.assertEqual(self.town['coins'], 19)
 
     def test_rejected_build_does_not_spend_resources(self):
-        for x, y in [(5, 5), (-1, 3), (12, 2)]:
+        for x, y in [(5, 5), (-1, 3), (120, 2)]:
             before = copy.deepcopy(self.town)
             with self.assertRaises(ValueError):
                 command(self.town, {'action': 'build', 'kind': 'home', 'x': x, 'y': y})
