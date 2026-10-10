@@ -2,6 +2,7 @@
 import argparse
 import ipaddress
 import json
+import math
 import secrets
 import threading
 import time
@@ -16,6 +17,60 @@ COSTS = {'home': 20, 'woodcutter': 15, 'farm': 15, 'storehouse': 25}
 JOBS = {'idle', 'woodcutting', 'farming'}
 
 RESOURCE_REACH = 3
+
+
+def walkable(town, x, y, blocked=None):
+    size = town.get('map_size', 12)
+    radius = .18
+    if not (radius - .5 <= x <= size - .5 - radius
+            and radius - .5 <= y <= size - .5 - radius):
+        return False
+    if blocked is None:
+        blocked = {(b['x'], b['y']) for b in
+                   town['buildings'] + town['map_resources']}
+    for tx in range(math.floor(x + .5) - 1, math.floor(x + .5) + 2):
+        for ty in range(math.floor(y + .5) - 1, math.floor(y + .5) + 2):
+            if (tx, ty) in blocked and (abs(x - tx) < .5 + radius
+                                       and abs(y - ty) < .5 + radius):
+                return False
+    return True
+
+
+def ensure_player(town):
+    player = town.setdefault('player', {'x': 5., 'y': 7., 'facing': 1})
+    if not walkable(town, player['x'], player['y']):
+        size = town.get('map_size', 12)
+        blocked = {(b['x'], b['y']) for b in
+                   town['buildings'] + town['map_resources']}
+        tiles = ((x, y) for x in range(size) for y in range(size))
+        for x, y in sorted(tiles, key=lambda p:
+                           abs(p[0] - player['x']) + abs(p[1] - player['y'])):
+            if walkable(town, x, y, blocked):
+                player.update(x=float(x), y=float(y))
+                break
+    return player
+
+
+def move_player(town, data):
+    dx, dy = data.get('dx'), data.get('dy')
+    if type(dx) is not int or type(dy) is not int or dx not in (-1, 0, 1) or dy not in (-1, 0, 1):
+        raise ValueError('Choose a WASD direction.')
+    player = ensure_player(town)
+    length = math.hypot(dx, dy)
+    if length:
+        blocked = {(b['x'], b['y']) for b in
+                   town['buildings'] + town['map_resources']}
+        # Small steps prevent tunnelling through obstacles; slide along walls.
+        for _ in range(5):
+            x = player['x'] + dx / length * .06
+            if walkable(town, x, player['y'], blocked):
+                player['x'] = x
+            y = player['y'] + dy / length * .06
+            if walkable(town, player['x'], y, blocked):
+                player['y'] = y
+        if dx != dy:
+            player['facing'] = 1 if dx > dy else -1
+    return {'player': dict(player)}
 
 
 def map_resources(buildings):
@@ -56,6 +111,7 @@ def work_source(town, job, worker_index):
 def new_town(name):
     return {'name': name, 'wood': 65, 'food': 40, 'coins': 20, 'level': 1,
             'harvested': 0, 'achievements': [],
+            'player': {'x': 5., 'y': 7., 'facing': 1},
             'map_resources': map_resources([{'x': 5, 'y': 5}]),
             'buildings': [{'kind': 'hall', 'x': 5, 'y': 5}],
             'villagers': [{'name': n, 'job': 'idle', 'woodcutting': i % 3,
@@ -95,6 +151,8 @@ def tick(world):
 def command(town, data):
     ensure_resources(town)
     action = data.get('action')
+    if action == 'walk':
+        return move_player(town, data)
     if action == 'build':
         kind, x, y = data.get('kind'), data.get('x'), data.get('y')
         if kind not in COSTS or type(x) is not int or type(y) is not int or not (0 <= x < 12 and 0 <= y < 12):
@@ -103,6 +161,9 @@ def command(town, data):
             raise ValueError('That tile is already occupied.')
         if any(r['x'] == x and r['y'] == y for r in town['map_resources']):
             raise ValueError('Choose open grass; trees, water, and rocks occupy this tile.')
+        player = ensure_player(town)
+        if abs(player['x'] - x) < .68 and abs(player['y'] - y) < .68:
+            raise ValueError('Walk away from this tile before building here.')
         if town['wood'] < COSTS[kind]:
             raise ValueError('Gather more wood first.')
         town['wood'] -= COSTS[kind]
@@ -117,6 +178,9 @@ def command(town, data):
             raise ValueError('That tile is already occupied.')
         if any(r['x'] == x and r['y'] == y for r in town['map_resources']):
             raise ValueError('Choose open grass; trees, water, and rocks occupy this tile.')
+        player = ensure_player(town)
+        if abs(player['x'] - x) < .68 and abs(player['y'] - y) < .68:
+            raise ValueError('Walk away from this tile before moving a building here.')
         # Rearranging must remain possible even after spending the starting coins.
         town['coins'] = max(0, town['coins'] - 1)
         town['buildings'][index].update(x=x, y=y)
@@ -161,6 +225,7 @@ class Handler(SimpleHTTPRequestHandler):
             with LOCK:
                 for town in WORLD['towns'].values():
                     ensure_resources(town)
+                    ensure_player(town)
                 self.reply(200, dict(WORLD, world_id=ACTIVE_WORLD,
                                      name=WORLDS[ACTIVE_WORLD]['name'] if ACTIVE_WORLD else None))
         elif self.path == '/api/worlds':
@@ -225,9 +290,16 @@ class Handler(SimpleHTTPRequestHandler):
                         if town_id not in WORLD['towns']:
                             self.reply(401, {'error': 'Join this world first.'})
                             return
-                        command(WORLD['towns'][town_id], data)
+                        if data.get('action') == 'walk':
+                            move_key = (ACTIVE_WORLD, town_id)
+                            now = time.monotonic()
+                            if move_key in MOVE_TIMES and now - MOVE_TIMES[move_key] < .09:
+                                self.reply(429, {'error': 'Walking too quickly. Try again.'})
+                                return
+                            MOVE_TIMES[move_key] = now
+                        result = command(WORLD['towns'][town_id], data)
                         save()
-                        self.reply(200, {'ok': True})
+                        self.reply(200, dict(result or {}, ok=True))
                         return
                     name = str(data.get('name', '')).strip()[:24]
                     if not name:
@@ -284,6 +356,7 @@ def simulation():
 
 
 WORLD, TOKENS = {'towns': {}}, {}
+MOVE_TIMES = {}
 WORLDS, ACTIVE_WORLD = {}, None
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()

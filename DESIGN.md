@@ -110,8 +110,12 @@ Visible map resources, source-dependent production, and animated workers walking
 woodcutting, farming, and carrying supplies back to workplaces.
 
 **Planned:** roads, richer upgrade choices, trading, shared explorable wilderness,
-WASD character controls, equipment and magic, instanced cooperative quests,
+equipment and magic, instanced cooperative quests,
 personal loot, character progression, defeat/return-home flow, richer art and sound.
+
+**Player character:** each town founder has a separate persistent villager, marked
+“You”, with WASD movement in screen directions, obstacle collision, and a following
+camera. The character explores the town map; workers keep their assigned jobs.
 
 ## Suggested development stages
 

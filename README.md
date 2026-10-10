@@ -41,6 +41,10 @@ encrypted transport; do not expose it through router port forwarding.
 
 ## Play
 
+- Your gold-clad villager is marked **You**. Click the map and hold **WASD** to
+  walk in screen directions; the camera follows as you explore your town.
+  Buildings, trees, water, and rocks block movement. Your position is saved per
+  world. Movement pauses while typing, placing buildings, or using world menus.
 - Open **Build**, choose a building, hover over open grass to highlight its tile, then left-click
   to place it and spend wood. Keep clicking open tiles to place more of the selected building,
   or **Cancel selection** to clear it. Place woodcutters within three horizontal/vertical tile steps
@@ -72,7 +76,7 @@ No production occurs while the host is stopped or for worlds that are not open.
 Existing saves gain resource spots on unoccupied tiles when the host restarts;
 existing buildings stay in place. Move older workplaces near trees or water as needed.
 
-Explore mode, combat, magic, trading, and cooperative quests are not implemented yet.
+Shared wilderness, combat, magic, trading, and cooperative quests are not implemented yet.
 See [DESIGN.md](DESIGN.md) for agreed decisions, provisional values, and questions
 you can answer later.
 

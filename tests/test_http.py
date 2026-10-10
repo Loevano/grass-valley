@@ -11,6 +11,25 @@ import server
 
 
 class LanHost(unittest.TestCase):
+    def test_character_movement_is_owned_rate_limited_and_saved(self):
+        _, owner = self.call('/api/join', {'name': 'Home'})
+        _, friend = self.call('/api/join', {'name': 'Friend'})
+        owner, friend = json.loads(owner), json.loads(friend)
+        move = {'action': 'walk', 'dx': 1, 'dy': -1,
+                'town_id': friend['town_id']}
+        status, _ = self.call('/api/command', move)
+        self.assertEqual(status, 401)
+        status, result = self.call('/api/command', move, owner['token'])
+        self.assertEqual(status, 200)
+        result = json.loads(result)
+        self.assertGreater(result['player']['x'], 5)
+        friend_player = server.WORLD['towns'][friend['town_id']]['player']
+        self.assertEqual(friend_player['x'], 5)
+        status, _ = self.call('/api/command', move, owner['token'])
+        self.assertEqual(status, 429)
+        server.load()
+        self.assertEqual(server.WORLD['towns'][owner['town_id']]['player'], result['player'])
+
     def setUp(self):
         self.previous = server.WORLD, server.TOKENS, server.SAVE, server.WORLDS, server.ACTIVE_WORLD
         self.directory = tempfile.TemporaryDirectory()
