@@ -4,7 +4,7 @@ const source=read('web/app.js');
 const animation=new Function(read('web/animations.js')+';return WorkerAnimation;')();
 const elements=new Map(),listeners={};
 function element(tag){
-  return {tag,children:[],style:{},attributes:{},events:{},classList:{toggle(){}},
+  return {tag,children:[],style:{},attributes:{},events:{},classList:{toggle(name,enabled){this[name]=enabled;}},
     append(child){this.children.push(child);},replaceChildren(){this.children=[];},
     setAttribute(key,value){this.attributes[key]=value;},
     addEventListener(key,callback){this.events[key]=callback;},focus(){},showModal(){},close(){}};
@@ -92,21 +92,25 @@ const run=new Function('document','window','localStorage','setTimeout','clearTim
     check($('selection-details').children[0].children.find(child=>child.tag==='select').disabled,'Visitor job controls are disabled');
     $('towns').children[0].onclick();$('villagers-button').onclick();
     town.villagers.push({name:'Bea',job:'idle',woodcutting:1,farming:3});render();
-    check($('villagers').children.length===2,'Compact overview includes every villager');
-    check($('villagers').children.every(row=>row.children[1].hidden),'Roster starts with collapsed details');
-    $('villagers').children[0].children[0].onclick();
-    check(selection.type==='villager'&&panel==='villagers','Roster selection expands in place');
-    check(!$('villagers').children[0].children[1].hidden&&$('villagers').children[1].children[1].hidden,'Only selected villager expands');
-    render();check(!$('villagers').children[0].children[1].hidden,'Refresh preserves expanded villager');
-    const rosterJob=$('villagers').children[0].children[1].children[0].children.find(child=>child.tag==='select');
-    rosterJob.value='idle';rosterJob.onchange();check(commands.at(-1).index===0&&commands.at(-1).job==='idle','Expanded roster assigns the correct job');
-    $('villagers').children[1].children[0].onclick();
-    check($('villagers').children[0].children[1].hidden&&!$('villagers').children[1].children[1].hidden,'Selecting another villager collapses the previous one');
-    $('villagers').children[1].children[0].onclick();check(selection===null&&$('villagers').children.every(row=>row.children[1].hidden),'Clicking selected row collapses it');
-    viewed='friend';render();$('villagers').children[0].children[0].onclick();
-    check($('villagers').children[0].children[1].children[0].children.find(child=>child.tag==='select').disabled,'Expanded roster respects visitor restrictions');
+    check($('side-panel').classList['villagers-overview'],'Villagers uses the wide popup layout');
+    check($('villagers').children.length===2,'Overview includes every villager');
+    check($('villagers').children.every(row=>row.children[1].className==='villager'&&!row.children[1].hidden),'Every villager profile is visible without expanding');
+    for(const row of $('villagers').children){
+      const card=row.children[1];
+      check(card.children.filter(child=>child.className==='skill-row').length>=3,'Every profile includes basic skills');
+      check(card.children.some(child=>child.tag==='select'&&!child.disabled),'Every owner profile has a job control');
+    }
+    render();check($('villagers').children.every(row=>!row.children[1].hidden),'Refresh keeps every profile visible');
+    const rosterJob=$('villagers').children[1].children[1].children.find(child=>child.tag==='select');
+    rosterJob.value='woodcutting';rosterJob.onchange();check(commands.at(-1).index===1&&commands.at(-1).job==='woodcutting','Overview assigns the correct villager job');
+    viewed='friend';render();
+    check($('villagers').children.every(row=>row.children[1].children.find(child=>child.tag==='select').disabled),'Overview respects visitor restrictions');
     viewed='own';town.villagers.pop();render();
     $('close-panel').onclick();check($('side-panel').hidden,'Close button closes inspector');
+    check(!$('side-panel').classList['villagers-overview'],'Closing clears the wide layout');
+    const residents=town.villagers;town.villagers=[];openPanel('villagers');
+    check($('villagers').children[0].textContent.includes('No villagers yet'),'Empty roster explains how to welcome residents');
+    town.villagers=residents;openPanel(null);
     canvas.events.keydown({key:'Enter',preventDefault(){}});
     check(selection.type==='building'&&selection.index===0,'Keyboard Enter inspects the default tile');
     canvas.events.keydown({key:'ArrowUp',preventDefault(){}});

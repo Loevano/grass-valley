@@ -133,7 +133,9 @@ the Python host, refresh both browsers, and create a new world to use the shared
   be sold at a market. Processing skill increases batch size and ingredient use
   together. Farmers' skill improves field yields; animals still limit barn output,
   and only one keeper tends a barn each cycle.
-- Open **Villagers** for the full roster, or select one villager to assign a job.
+- Open **Villagers** for a screen-wide roster with every resident’s details and job
+  controls visible together. The roster scrolls when needed and stacks on smaller
+  screens. You can also select one villager on the map to assign a job.
   Their skills increase as they work. **Help** contains the basic instructions.
 - A minute of consecutive missed meals puts settlers at risk of leaving (5% per
   three-second tick before housing benefits). Departures permanently remove their

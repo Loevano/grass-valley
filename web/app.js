@@ -430,18 +430,13 @@ function villagerCard(town,v,index,withLink=false){
   return div;
 }
 function villagerRow(town,v,index){
-  const expanded=panel==='villagers'&&selection?.type==='villager'&&selection.index===index;
-  const row=document.createElement('div');row.className='villager-row';
-  const button=document.createElement('button');button.className='villager-summary';
-  button.setAttribute('aria-expanded',String(expanded));button.setAttribute('aria-controls',`villager-details-${index}`);
-  const name=document.createElement('strong');name.textContent=v.name;button.append(name);
-  const job=document.createElement('span');job.className='muted';job.textContent=v.job==='idle'&&v.construction_target?'Builder (automatic)':{idle:'Resting',building:'Builder',woodcutting:'Woodcutting',farming:'Farming',fishing:'Fishing',...professionJobs}[v.job];button.append(job);
-  const arrow=document.createElement('span');arrow.setAttribute('aria-hidden','true');arrow.textContent=expanded?'▾':'▸';button.append(arrow);
-  button.onclick=()=>{selection=expanded?null:{type:'villager',index};render();$('villagers').children[index].children[0].focus();};
-  row.append(button);
-  const details=document.createElement('div');details.id=`villager-details-${index}`;details.hidden=!expanded;
-  if(expanded){const card=villagerCard(town,v,index);card.children[0].hidden=true;details.append(card);}
-  row.append(details);return row;
+  const row=document.createElement('article');row.className='villager-row';
+  const heading=document.createElement('h3');heading.className='villager-summary';
+  const name=document.createElement('strong');name.textContent=v.name;heading.append(name);
+  const job=document.createElement('span');job.className='muted';job.textContent=v.job==='idle'&&v.construction_target?'Builder (automatic)':{idle:'Resting',building:'Builder',woodcutting:'Woodcutting',farming:'Farming',fishing:'Fishing',...professionJobs}[v.job] || goodName(v.job);heading.append(job);
+  row.append(heading);
+  const card=villagerCard(town,v,index);card.children[0].hidden=true;row.append(card);
+  return row;
 }
 const settlerSpaces={hall:1,home:2,storehouse:1,woodcutter:1,fishing_hut:1,farm:4,acre:1,barn:2,sawpit:2,mill:2,smokehouse:2,workshop:2,fish_pond:2,orchard:2,market:1,bakery:2,butcher:2};
 function settlerBuilding(town,v,index){
@@ -736,6 +731,7 @@ function render(){
   for(const name of ['selection','villagers','valley','help'])$(name+'-panel').hidden=panel!==name;
   $('side-panel').hidden=!panel && $('join').hidden;
   $('close-panel').hidden=!panel;
+  $('side-panel').classList.toggle('villagers-overview',panel==='villagers');
   $('game').classList.toggle('panel-open',!$('side-panel').hidden);
   for(const name of ['build','villagers','valley','help']){
     $(name+'-button').setAttribute('aria-expanded',String(panel===name));
@@ -771,6 +767,7 @@ function render(){
   $('towns').replaceChildren();
   for(const [id,t] of Object.entries(world.towns)){const b=document.createElement('button');b.textContent=t.name+(id===identity?.town_id?' · Yours':'');b.classList.toggle('selected',id===viewed);b.onclick=()=>{viewed=id;if(world.shared_map){const hall=t.buildings.find(b=>b.kind==='hall');camera.x=hall.x;camera.y=hall.y;}tool=null;moveIndex=null;buildTile=null;hoverTile=null;selection=null;panel=null;keyboardTile=null;render();};$('towns').append(b);}
   $('villagers').replaceChildren();
+  if(town&&!town.villagers.length){const empty=document.createElement('p');empty.textContent='No villagers yet. Build housing and keep food available to welcome new residents.';$('villagers').append(empty);}
   if(town)for(const [i,v] of town.villagers.entries())$('villagers').append(villagerRow(town,v,i));
   if(town?.food_shortage_seconds){
     const warning=document.createElement('p');warning.textContent=`Food shortage · ${town.food_shortage_seconds}s without enough food. After 60 seconds, settlers may leave with all their skills. Upgrade cottages to reduce the risk.`;$('villagers').append(warning);
