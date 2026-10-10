@@ -1,0 +1,11 @@
+const assert=require('assert');
+const source=require('fs').readFileSync('web/app.js','utf8');
+const world={progression:{job_requirements:{breeding:{fishing:20},baking:{milling:10}},talent_roots:{breeding:'fishing',baking:'farming'}}};
+const {requirement,efficiency}=new Function('world','goodName',source.slice(source.indexOf('function jobRequirement('),source.indexOf('async function playerAction('))+'return {requirement:jobRequirement,efficiency:workerEfficiency};')(world,key=>key);
+assert(requirement({fishing:19},'breeding').includes('20 fishing'));
+assert.strictEqual(requirement({fishing:20},'breeding'),'');
+assert(requirement({farming:100},'baking').includes('10 milling'));
+assert.strictEqual(requirement({},'fishing'),'');
+assert.strictEqual(efficiency({breeding:20,talents:{fishing:1}},'breeding'),2.5);
+assert.strictEqual(efficiency({talents:{farming:-1}},'baking'),.75);
+console.log('Settler qualification and output display checks passed');

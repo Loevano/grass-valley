@@ -54,8 +54,8 @@ so moving a hall cannot extend that territory. Halls must stay at least
 40 tiles apart when moved. Only a town's owner can build or manage its workers.
 The building area is highlighted when building or inspecting a hall.
 
-**Valley** centers the camera on a town without changing maps. **Find me** centers
-on your character. Existing saved worlds keep their separate town maps. Restart
+**Valley** centers the camera on a town without changing maps. Existing saved
+worlds keep their separate town maps. Restart
 the Python host, refresh both browsers, and create a new world to use the shared map.
 
 ## Play
@@ -77,7 +77,6 @@ the Python host, refresh both browsers, and create a new world to use the shared
   Open **Settings** to rebind movement and camera lock keys or restore defaults.
   Preferences are saved in this browser. Scroll to pan; pinch on the touchpad or
   Option/Alt-scroll to zoom.
-  Click **Find me** to return to your town, center your character, and start walking.
   Buildings, trees, water, and rocks block movement. Your position is saved per
   world. Movement pauses while typing, placing buildings, or using world menus.
 - The town hall allows new buildings and moves within 10 horizontal/vertical tile
@@ -113,6 +112,24 @@ the Python host, refresh both browsers, and create a new world to use the shared
   Workplaces set the appropriate job; acres assign farmers to that specific field.
   Settlers assigned to halls, cottages, or storehouses rest and help construction
   automatically. Moving preserves assignments; destroying a building releases them.
+- Settlers have permanent natural strengths and weaknesses: +25% or −25%
+  output and practice gained in one profession family. Every 20 practice in
+  their current job adds another base output multiplier. Their panel shows talents
+  and current output; workplace selectors show qualifications and output too.
+  Basic woodcutting, farming, fishing, and husbandry train anyone. Advanced roles
+  require that settler's own practice: sawpit workers need 10 woodcutting,
+  millers 10 farming, preservers 10 fishing, crafters 10 woodworking,
+  fish breeders 20 fishing, orchard workers 20 farming, bakers 10 milling,
+  and butchers 10 husbandry. Another settler or the player's skill cannot qualify them.
+  Existing settlers gain saved talents when loading; unqualified advanced workers
+  pause until trained in the prerequisite job.
+- Hall level 4 unlocks bakeries (30 wood + 5 planks) and butcher shops
+  (25 wood + 5 planks), each with two initial worker spaces. Bakeries use
+  2 flour + 0.5 wood to make 2 bread; butcher shops use 2 meat from barns
+  to make 2 prepared meat. Both foods supply 1.5 pantry food per unit and can
+  be sold at a market. Processing skill increases batch size and ingredient use
+  together. Farmers' skill improves field yields; animals still limit barn output,
+  and only one keeper tends a barn each cycle.
 - Open **Villagers** for the full roster, or select one villager to assign a job.
   Their skills increase as they work. **Help** contains the basic instructions.
 - Use arrow keys and Enter on the focused map to inspect tiles or choose build locations.

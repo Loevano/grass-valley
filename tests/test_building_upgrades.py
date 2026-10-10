@@ -9,6 +9,9 @@ from server import BUILD_SECONDS, capacity, command, construct, new_town, tick
 class BuildingUpgrades(unittest.TestCase):
     def setUp(self):
         self.town = new_town('Upgrades')
+        # These tests isolate base rates; talent effects have dedicated coverage.
+        for villager in self.town['villagers']:
+            villager['talents'] = {}
         self.town['wood'] = 100
 
     def add(self, kind, **extra):

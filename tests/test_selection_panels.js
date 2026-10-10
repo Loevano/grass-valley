@@ -115,15 +115,11 @@ const run=new Function('document','window','localStorage','setTimeout','clearTim
     check(panel===null&&$('side-panel').hidden,'Missing selected object closes inspector safely');
     identity=null;panel=null;render();check(!$('join').hidden,'New settlers see the join form');
     $('help-button').onclick();check($('join').hidden&&!$('help-panel').hidden,'Join form gives way to requested panel');
-    identity={town_id:'own'};town.player={x:9,y:9,facing:1};viewed='friend';render();
-    check(!$('find-player-button').disabled,'Owners can find their character while visiting');
-    $('find-player-button').onclick();
-    check(viewed==='own'&&panel===null&&playerView.following,'Find me returns home and centers the player');
+    identity={town_id:'own'};town.player={x:9,y:9,facing:1};viewed='own';render();
     const [playerX,playerY]=point(playerView.x,playerView.y);
     check(Math.abs(playerX-480)<1&&Math.abs(playerY+tileH/2-330)<1,'Player appears at the center of the map');
     check(hitTargets.some(hit=>hit.type==='player'),'Centered player is drawn and selectable');
-    delete town.player;$('find-player-button').onclick();
-    check($('notice').textContent.includes('Restart the Python host'),'Older running hosts explain how to load the character');
+    delete town.player;
     identity={town_id:'own'};viewed='own';
     let release,fail=false;
     request=async(path,data)=>{
@@ -160,7 +156,7 @@ const run=new Function('document','window','localStorage','setTimeout','clearTim
     delete town.buildings[1].construction;town.buildings[1].level=3;render();check(buildingUpgrade().disabled&&buildingUpgrade().textContent.includes('Fully upgraded'),'Level 3 is the building limit');
     friend.buildings[1].level=1;viewed='friend';inspect('building',1);check(buildingUpgrade().disabled,'Visitor cannot upgrade buildings');
     town.buildings.push({kind:'storehouse',level:3,x:7,y:3});check(storageCapacity(town)===400,'Client storage reflects upgraded storehouses');
-    identity=null;render();check($('find-player-button').disabled,'Players must own a town to use Find me');
+    identity=null;render();
   })();`);
 run(documentMock,{devicePixelRatio:1,addEventListener(key,callback){listeners[key]=callback;}},{getItem:()=>null},()=>0,()=>{},animation,listeners)
   .then(()=>{if(typeof print==='function')print('Selection panel checks passed');else console.log('Selection panel checks passed');})

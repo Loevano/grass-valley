@@ -10,6 +10,8 @@ BUILDINGS = {
     'workshop': {'label': 'Workshop', 'level': 4, 'wood': 30, 'planks': 5, 'job': 'crafting', 'slots': 2},
     'fish_pond': {'label': 'Fish pond', 'level': 5, 'wood': 25, 'planks': 10, 'job': 'breeding', 'slots': 2},
     'orchard': {'label': 'Orchard', 'level': 5, 'wood': 25, 'job': 'orcharding', 'slots': 2},
+    'bakery': {'label': 'Bakery', 'level': 4, 'wood': 30, 'planks': 5, 'job': 'baking', 'slots': 2},
+    'butcher': {'label': 'Butcher shop', 'level': 4, 'wood': 25, 'planks': 5, 'job': 'butchery', 'slots': 2},
     'market': {'label': 'Market stall', 'level': 5, 'wood': 20, 'planks': 5, 'slots': 1},
 }
 CROPS = {'vegetables': 1, 'wheat': 2, 'carrots': 3, 'fodder': 3}
@@ -36,8 +38,10 @@ HALL_UPGRADES = [
 ]
 # Food is the aggregate pantry, including these goods and legacy untyped provisions.
 EDIBLE = {'vegetables': 1, 'carrots': 1, 'fish': 1, 'berries': 1, 'eggs': 1,
-          'meat': 1, 'milk': 1, 'fruit': 1, 'smoked_fish': 1.5}
+          'meat': 1, 'milk': 1, 'fruit': 1, 'smoked_fish': 1.5, 'bread': 1.5, 'prepared_meat': 1.5}
 RECIPES = {
+    'bakery': ({'flour': 2, 'wood': .5}, 'bread', 2),
+    'butcher': ({'meat': 2}, 'prepared_meat', 2),
     'sawpit': ({'wood': 2}, 'planks', 1),
     'mill': ({'wheat': 2}, 'flour', 1),
     'smokehouse': ({'fish': 2, 'wood': .5}, 'smoked_fish', 2),
@@ -48,6 +52,44 @@ SUPPLIES = {'tree': (8, .5), 'water': (12, 1.6), 'berry_bush': (6, .3), 'herb_pa
 _supply_cache = None
 
 JOB_BUILDINGS = {v['job']: k for k, v in BUILDINGS.items() if 'job' in v}
+
+
+# Practice belongs to the individual; town/player skill cannot qualify a worker.
+JOB_REQUIREMENTS = {
+    'woodworking': {'woodcutting': 10}, 'milling': {'farming': 10},
+    'preserving': {'fishing': 10}, 'crafting': {'woodworking': 10},
+    'breeding': {'fishing': 20}, 'orcharding': {'farming': 20},
+    'baking': {'milling': 10}, 'butchery': {'husbandry': 10},
+}
+TALENT_ROOTS = {'woodworking': 'woodcutting', 'crafting': 'woodcutting',
+                'milling': 'farming', 'orcharding': 'farming', 'baking': 'farming',
+                'preserving': 'fishing', 'breeding': 'fishing', 'butchery': 'husbandry'}
+TALENTS = ('woodcutting', 'farming', 'fishing', 'husbandry')
+
+
+def ensure_talents(villager, index):
+    # Deterministic defaults for older saves; persisted traits never change on reload.
+    villager.setdefault('talents', {TALENTS[index % len(TALENTS)]: 1,
+                                    TALENTS[(index + 2) % len(TALENTS)]: -1})
+
+
+def aptitude(villager, job):
+    return villager.get('talents', {}).get(TALENT_ROOTS.get(job, job), 0)
+
+
+def efficiency(villager, job):
+    return (1 + villager.get(job, 0) // 20) * (1 + .25 * aptitude(villager, job))
+
+
+def practice(villager, job):
+    villager[job] = villager.get(job, 0) + 1 + .25 * aptitude(villager, job)
+
+
+def qualification(villager, job):
+    missing = [f"{amount} {skill} practice (has {villager.get(skill, 0):g})"
+               for skill, amount in JOB_REQUIREMENTS.get(job, {}).items()
+               if villager.get(skill, 0) < amount]
+    return 'Requires ' + ', '.join(missing) if missing else None
 
 
 def goods(town):
@@ -254,9 +296,12 @@ def player_tick(town, landscape, capacity):
 
 def extra_worker(town, villager, building, capacity):
     """One worker cycle, bounded by materials, field/barn size, and storage."""
+    reason = qualification(villager, villager['job'])
+    if reason:
+        return reason
     kind = building['kind']
     upgrades = building.get('profession_upgrades', [])
-    speed = 1.25 if 'saw' in upgrades else 1
+    speed = (1.25 if 'saw' in upgrades else 1) * efficiency(villager, villager['job'])
     if kind in RECIPES:
         inputs, output, amount = RECIPES[kind]
         amount *= speed
@@ -268,14 +313,14 @@ def extra_worker(town, villager, building, capacity):
         spend(town, costs)
         deliver(town, output, amount, capacity)
     elif kind == 'orchard':
-        if deliver(town, 'fruit', 1, capacity) == 0:
+        if deliver(town, 'fruit', speed, capacity) == 0:
             return 'Storage full'
     elif kind == 'barn':
         animals = building.get('animals', {})
         output_amounts = {}
         for animal, count in animals.items():
             if count:
-                key = ANIMALS[animal]['output']; output_amounts[key] = output_amounts.get(key, 0) + count * .25
+                key = ANIMALS[animal]['output']; output_amounts[key] = output_amounts.get(key, 0) + count * .25 * speed
         if not output_amounts:
             return 'Buy animals first'
         # One barn cycle per tick regardless of the number of assigned workers.
@@ -294,10 +339,11 @@ def extra_worker(town, villager, building, capacity):
         deliver(town, 'manure', .1 * sum(animals.values()), capacity)
     else:
         return 'Resting'
-    villager[villager['job']] = villager.get(villager['job'], 0) + 1
+    practice(villager, villager['job'])
     return 'Working'
 
 
 def public_catalog():
     return {'buildings': BUILDINGS, 'crops': CROPS, 'animals': ANIMALS,
+            'job_requirements': JOB_REQUIREMENTS, 'talent_roots': TALENT_ROOTS,
             'upgrades': PROFESSION_UPGRADES, 'recipes': RECIPES, 'edible': EDIBLE}

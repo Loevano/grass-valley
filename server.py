@@ -183,11 +183,16 @@ def assign_settler(town, worker_index, building_index):
     if len(others) >= settler_capacity(building):
         raise ValueError('This building has no free settler spaces. Upgrade its capacity first.')
     villager = town['villagers'][worker_index]
+    reason = economy.qualification(villager, BUILDING_JOBS.get(building['kind'], 'idle'))
+    if reason:
+        raise ValueError(reason)
     villager['building_index'] = building_index
     villager['job'] = BUILDING_JOBS.get(building['kind'], 'idle')
 
 
 def work_assignment(town, job, worker_index):
+    if economy.qualification(town['villagers'][worker_index], job):
+        return None
     if job in economy.JOB_BUILDINGS:
         index = town['villagers'][worker_index].get('building_index')
         if type(index) is int and 0 <= index < len(town['buildings']):
@@ -276,6 +281,8 @@ def new_town(name, world=None):
     else:
         ensure_terrain(town, new=True)
         ensure_npcs(town)
+    for index, villager in enumerate(town['villagers']):
+        economy.ensure_talents(villager, index)
     return town
 
 
@@ -414,6 +421,9 @@ def tick(world):
             villager['work_target'] = source
             villager.pop('production_status', None)
             if not source:
+                reason = economy.qualification(villager, job)
+                if reason:
+                    villager['production_status'] = reason
                 continue
             building = assignment[0]
             if job in economy.JOB_BUILDINGS:
@@ -448,11 +458,11 @@ def tick(world):
                 bonus += production_bonus(source)
             upgrades = building.get('profession_upgrades', [])
             bonus += .25 * sum(u in upgrades for u in ('axe', 'nets', 'wool_nets', 'tools'))
-            amount = min(room, rate * (1 + bonus) * (1 + villager.get(job, 0) // 20))
+            amount = min(room, rate * (1 + bonus) * economy.efficiency(villager, job))
             if job == 'farming':
                 # Acres bound farming output; manure improves each field's yield.
-                amount = min(amount, remaining * (1 + bonus))
-                field_cycles[marker] = field_cycles.get(marker, 0) + amount / (1 + bonus)
+                amount = min(amount, remaining * (1 + bonus) * economy.efficiency(villager, job))
+                field_cycles[marker] = field_cycles.get(marker, 0) + amount / ((1 + bonus) * economy.efficiency(villager, job))
                 if economy.quantity(town, 'manure') >= .1:
                     economy.spend(town, {'manure': .1})
                     amount = min(room, amount * 1.25)
@@ -463,7 +473,7 @@ def tick(world):
                 continue
             if caught:
                 economy.deliver(town, output, amount, capacity(town))
-            villager[job] = villager.get(job, 0) + 1
+            economy.practice(villager, job)
             villager['production_status'] = 'Working' if caught else 'No catch — trying again'
         # Shortages pause population growth; residents never leave.
         economy.eat(town, len(town['villagers']) * .12 + WORKER_FOOD * sum(
@@ -474,6 +484,7 @@ def tick(world):
             economy.eat(town, 10)
             town['villagers'].append({'name': 'Settler ' + str(len(town['villagers']) + 1),
                                      'job': 'idle', 'woodcutting': 0, 'farming': 0, 'fishing': 0})
+            economy.ensure_talents(town['villagers'][-1], len(town['villagers']) - 1)
         if town['harvested'] >= 30 and 'Timber roots' not in town['achievements']:
             town['achievements'].append('Timber roots')
 
@@ -688,7 +699,7 @@ def command(town, data, world=None):
         key, amount = data.get('resource'), data.get('amount')
         if not any(b['kind'] == 'market' and completed(b) for b in town['buildings']):
             raise ValueError('Build a market stall first.')
-        if key not in {'planks', 'wool', 'flour', 'smoked_fish', 'tools', 'herbs', 'fruit', 'milk', 'eggs', 'meat'} or type(amount) is not int or not 1 <= amount <= 10:
+        if key not in {'planks', 'wool', 'flour', 'smoked_fish', 'tools', 'herbs', 'fruit', 'milk', 'eggs', 'meat', 'bread', 'prepared_meat'} or type(amount) is not int or not 1 <= amount <= 10:
             raise ValueError('Choose goods and a quantity from 1 to 10.')
         if not economy.afford(town, {key: amount}):
             raise ValueError('Not enough goods to sell.')
@@ -861,6 +872,10 @@ def load():
         WORLDS = {'legacy': {'name': 'My first world', 'world': stored['world'],
                              'tokens': stored['tokens']}}
         activate('legacy')
+    for entry in WORLDS.values():
+        for town in entry['world']['towns'].values():
+            for index, villager in enumerate(town['villagers']):
+                economy.ensure_talents(villager, index)
 
 
 def save():

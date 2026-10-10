@@ -2,6 +2,8 @@ import copy
 import json
 import unittest
 
+import progression as economy
+
 from server import (SETTLER_SPACES, assigned_settlers, command, new_town,
                     construct, settler_capacity, tick)
 
@@ -25,6 +27,8 @@ class BuildingSettlers(unittest.TestCase):
             with self.subTest(kind=kind):
                 self.town['buildings'].append({'kind': kind, 'x': 4, 'y': 4})
                 index = len(self.town['buildings']) - 1
+                job = economy.BUILDINGS.get(kind, {}).get('job')
+                self.town['villagers'][0].update(economy.JOB_REQUIREMENTS.get(job, {}))
                 self.assign(0, index)
                 self.assertEqual(assigned_settlers(self.town, index), [0])
                 self.assertEqual(settler_capacity(self.town['buildings'][index]), spaces)

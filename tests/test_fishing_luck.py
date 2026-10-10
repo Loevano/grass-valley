@@ -7,6 +7,9 @@ from server import WORKER_FOOD, capacity, new_town, tick
 class FishingLuck(unittest.TestCase):
     def setUp(self):
         self.town = new_town('Fishing luck')
+        # These tests isolate base rates; talent effects have dedicated coverage.
+        for villager in self.town['villagers']:
+            villager['talents'] = {}
         # Completed workplaces also cover saved towns from before construction.
         self.town['buildings'].append({'kind': 'fishing_hut', 'x': 6, 'y': 2})
         self.fisher = self.town['villagers'][0]

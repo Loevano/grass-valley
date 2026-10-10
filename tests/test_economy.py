@@ -8,6 +8,9 @@ from server import construct, command, new_town, tick
 class EconomyRules(unittest.TestCase):
     def setUp(self):
         self.town = new_town('Economy')
+        # These tests isolate base rates; talent effects have dedicated coverage.
+        for villager in self.town['villagers']:
+            villager['talents'] = {}
         self.world = {'towns': {'a': self.town}}
 
     def finish_construction(self):

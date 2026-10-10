@@ -7,6 +7,9 @@ from server import construct, capacity, command, ensure_resources, new_town, tic
 class VillageRules(unittest.TestCase):
     def setUp(self):
         self.town = new_town('Willowbrook')
+        # These tests isolate base rates; talent effects have dedicated coverage.
+        for villager in self.town['villagers']:
+            villager['talents'] = {}
 
     def finish_construction(self):
         for _ in range(100):

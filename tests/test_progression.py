@@ -10,6 +10,9 @@ from server import command, construct, new_town, prepare_landscapes, tick
 class Progression(unittest.TestCase):
     def setUp(self):
         self.town = new_town('Progression')
+        # These tests isolate base rates; talent effects have dedicated coverage.
+        for villager in self.town['villagers']:
+            villager['talents'] = {}
         self.town.update(terrain=['g' * 120] * 120, npcs=[], forage_version=1,
                          forage_halls=[[5, 5]], goods={}, food=40)
         self.town['map_resources'] = [
@@ -26,6 +29,8 @@ class Progression(unittest.TestCase):
         building = {'kind': kind, 'x': 3, 'y': 6, **extra}
         self.town['buildings'].append(building)
         index = len(self.town['buildings']) - 1
+        job = economy.BUILDINGS.get(kind, {}).get('job')
+        self.town['villagers'][worker].update(economy.JOB_REQUIREMENTS.get(job, {}))
         command(self.town, {'action': 'assign_settler', 'index': worker, 'building_index': index})
         return building, index
 
