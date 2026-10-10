@@ -81,6 +81,27 @@ class SharedMap(unittest.TestCase):
         server.command(town, {'action': 'walk', 'dx': 1, 'dy': 0}, world)
         self.assertGreater(town['player']['x'], x)
 
+    def test_hall_moves_preserve_spacing_and_cannot_claim_more_land(self):
+        world = self.make_world(2)
+        world['shared_map'].update(terrain=['g' * 120 for _ in range(120)],
+                                   map_resources=[], npcs=[])
+        bind_map(world)
+        town, friend = world['towns'].values()
+        for t, x in ((town, 30), (friend, 74)):
+            t['town_origin'] = {'x': x, 'y': 30}
+            t['buildings'] = [{'kind': 'hall', 'x': x, 'y': 30}]
+            t['player'].update(x=float(x), y=32.)
+        before = copy.deepcopy(world)
+        with self.assertRaisesRegex(ValueError, '40 tiles'):
+            server.command(town, {'action': 'move', 'index': 0, 'x': 35, 'y': 30}, world)
+        self.assertEqual(world, before)
+        server.command(town, {'action': 'move', 'index': 0, 'x': 34, 'y': 30}, world)
+        town['level'] = 2
+        before = copy.deepcopy(world)
+        with self.assertRaisesRegex(ValueError, 'territory'):
+            server.command(town, {'action': 'build', 'kind': 'home', 'x': 46, 'y': 30}, world)
+        self.assertEqual(world, before)
+
     def test_save_reload_stores_map_once_and_restores_shared_references(self):
         world = self.make_world(2)
         entries = {'new': {'name': 'New', 'world': world, 'tokens': {'private': '0'}}}
