@@ -111,9 +111,9 @@ function playerSprite(town,seconds){
 }
 // Remote founders use small, frequent snapshots instead of the map refresh.
 const remotePlayers=new Map();
-let remoteWorld=null,refreshingPlayers=false;
+let remoteWorld=null,remoteSample=-Infinity,refreshingPlayers=false;
 function remotePlayerState(townId,player){
-  if(remoteWorld!==world.world_id){remotePlayers.clear();remoteWorld=world.world_id;}
+  if(remoteWorld!==world.world_id){remotePlayers.clear();remoteWorld=world.world_id;remoteSample=-Infinity;}
   let state=remotePlayers.get(townId);
   if(!state){
     state={...player,from:{...player},target:{...player},elapsed:.12,clock:0,path:[],phase:'idle'};
@@ -121,24 +121,32 @@ function remotePlayerState(townId,player){
   }
   return state;
 }
+function updateRemotePlayers(snapshot){
+  if(snapshot.world_id!==world.world_id)return;
+  if(remoteWorld!==world.world_id){remotePlayers.clear();remoteWorld=world.world_id;remoteSample=-Infinity;}
+  const sampledAt=snapshot.sampled_at ?? 0;
+  if(sampledAt<remoteSample)return;
+  for(const [id,player] of Object.entries(snapshot.players)){
+    const town=world.towns[id];
+    if(!town || id===identity?.town_id)continue;
+    const state=remotePlayerState(id,town.player || player);
+    if(player.x!==state.target.x || player.y!==state.target.y){
+      state.from={x:state.x,y:state.y};state.target={...player};state.elapsed=0;
+    }
+    state.facing=player.facing;town.player={...player};
+  }
+  remoteSample=sampledAt;
+}
 async function refreshPlayers(){
   if(refreshingPlayers || !world.world_id || document.hidden)return;
   refreshingPlayers=true;
-  const current=world;
+  const worldId=world.world_id,controller=new AbortController();
+  const timeout=setTimeout(()=>controller.abort(),1000);
   try{
-    const snapshot=await request('/api/players');
-    // A world refresh can replace the town objects while this request is in flight.
-    if(world!==current || snapshot.world_id!==world.world_id)return;
-    for(const [id,player] of Object.entries(snapshot.players)){
-      const town=world.towns[id];
-      if(!town || id===identity?.town_id)continue;
-      const state=remotePlayerState(id,town.player || player);
-      if(player.x!==state.target.x || player.y!==state.target.y){
-        state.from={x:state.x,y:state.y};state.target={...player};state.elapsed=0;
-      }
-      state.facing=player.facing;town.player={...player};
-    }
-  }finally{refreshingPlayers=false;}
+    const snapshot=await request('/api/players',undefined,{signal:controller.signal});
+    // Same-world refreshes replace objects; update the current towns using sample order.
+    if(world.world_id===worldId)updateRemotePlayers(snapshot);
+  }finally{clearTimeout(timeout);refreshingPlayers=false;}
 }
 function remotePlayerSprite(townId,town,seconds){
   const state=remotePlayerState(townId,town.player);
@@ -186,8 +194,8 @@ function skillBar(label,value){
   meter.setAttribute('aria-label',`${label}: ${value}; scale to ${meter.max}`);row.append(meter);return row;
 }
 function notice(message) { $('notice').textContent=message; $('notice').style.display='block'; clearTimeout(notice.timer); notice.timer=setTimeout(()=>$('notice').style.display='none',4500); }
-async function request(path, data) {
-  const response = await fetch(path,{method:data?'POST':'GET',headers:{'Content-Type':'application/json','Authorization':identity?.token || ''},body:data?JSON.stringify(data):undefined});
+async function request(path, data, options={}) {
+  const response = await fetch(path,{...options,method:data?'POST':'GET',headers:{'Content-Type':'application/json','Authorization':identity?.token || ''},body:data?JSON.stringify(data):undefined});
   const result = await response.json(); if(!response.ok) throw Error(result.error || 'Connection failed'); return result;
 }
 async function act(data) { try { await request('/api/command',{...data,world_id:world.world_id}); await refresh(); } catch(e) {notice(e.message);await refresh();} }
@@ -413,6 +421,9 @@ async function refresh(){
     if(next.world_id!==world.world_id){tool=null;moveIndex=null;buildTile=null;hoverTile=null;viewed=null;selection=null;panel=null;keyboardTile=null;}
     if(next.shared_map)for(const town of Object.values(next.towns))Object.assign(town,next.shared_map);
     world=next;identity=identities[world.world_id] || null;
+    // Keep characters moving even if the lightweight endpoint is unavailable.
+    updateRemotePlayers({world_id:world.world_id,sampled_at:world.players_sampled_at,
+      players:Object.fromEntries(Object.entries(world.towns).filter(([,town])=>town.player).map(([id,town])=>[id,town.player]))});
     catalog=await request('/api/worlds');
     if(!world.towns[viewed]){viewed=identity?.town_id || Object.keys(world.towns)[0];selection=null;panel=null;tool=null;moveIndex=null;buildTile=null;hoverTile=null;keyboardTile=null;}
     render();renderWorldMenu();

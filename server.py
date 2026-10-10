@@ -460,10 +460,11 @@ class Handler(SimpleHTTPRequestHandler):
                     ensure_resources(town)
                     ensure_player(walking_map(WORLD, town) if 'shared_map' in WORLD else town)
                 self.reply(200, dict(export_world(WORLD), hall_upgrades=HALL_UPGRADES, world_id=ACTIVE_WORLD,
-                                     name=WORLDS[ACTIVE_WORLD]['name'] if ACTIVE_WORLD else None))
+                                     name=WORLDS[ACTIVE_WORLD]['name'] if ACTIVE_WORLD else None,
+                                     players_sampled_at=time.monotonic()))
         elif self.path == '/api/players':
             with LOCK:
-                snapshot = {'world_id': ACTIVE_WORLD,
+                snapshot = {'world_id': ACTIVE_WORLD, 'sampled_at': time.monotonic(),
                             'players': {key: dict(town['player'])
                                         for key, town in WORLD['towns'].items()
                                         if 'player' in town}}

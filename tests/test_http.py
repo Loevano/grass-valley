@@ -46,8 +46,12 @@ class LanHost(unittest.TestCase):
         self.assertEqual(status, 200)
         self.assertEqual(json.loads(self.call('/api/players')[1])['players'][owner['town_id']],
                          json.loads(result)['player'])
+        full = json.loads(self.call('/api/world')[1])
+        self.assertGreaterEqual(full['players_sampled_at'], snapshot['sampled_at'])
         server.activate(None)
-        self.assertEqual(json.loads(self.call('/api/players')[1]), {'world_id': None, 'players': {}})
+        empty = json.loads(self.call('/api/players')[1])
+        self.assertIsNone(empty['world_id'])
+        self.assertEqual(empty['players'], {})
 
     def setUp(self):
         self.previous = server.WORLD, server.TOKENS, server.SAVE, server.WORLDS, server.ACTIVE_WORLD

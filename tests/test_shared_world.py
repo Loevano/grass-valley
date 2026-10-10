@@ -138,6 +138,7 @@ class SharedMapHTTP(unittest.TestCase):
         friend = json.loads(self.call('/api/join', {'name': 'Friend'})[1])
         first = json.loads(self.call('/api/world')[1])
         second = json.loads(self.call('/api/world', token=friend['token'])[1])
+        self.assertGreaterEqual(second.pop('players_sampled_at'), first.pop('players_sampled_at'))
         self.assertEqual(first, second)
         self.assertNotIn('terrain', first['towns'][owner['town_id']])
         friend_hall = first['towns'][friend['town_id']]['buildings'][0]
