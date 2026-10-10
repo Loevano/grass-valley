@@ -105,9 +105,14 @@ function render(){
     $('resource-coins').textContent=own.coins;
     $('resource-villagers').textContent=own.villagers.length;
   }
-  if(own){$('town-name').textContent=own.name;$('hint').textContent=tool==='move'?(moveIndex===null?'Click a building to move it.':'Click open grass.'):tool?`Click open grass to place a ${labels[tool].toLowerCase()}.`:'Choose a building, then click open grass.';$('progress').textContent=`Level ${own.level} · Timber roots: ${Math.min(30,own.harvested)}/30 wood harvested`;$('upgrade').disabled=own.level>=2;}
+  if(buildTile && (!town || town.buildings.some(b=>b.x===buildTile.x&&b.y===buildTile.y) || town.map_resources.some(r=>r.x===buildTile.x&&r.y===buildTile.y)))buildTile=null;
+  $('confirm-build').hidden=!buildTile || !costs[tool] || viewed!==identity?.town_id;
+  $('confirm-build').disabled=building || !own || own.wood<costs[tool];
+  $('confirm-build').textContent=building?'Building…':`Build here · ${costs[tool] || 0} wood`;
+  for(const button of $('buildings').children)button.classList.toggle('selected',button.textContent===`${labels[tool]} · ${costs[tool]} wood`);
+  if(own){$('town-name').textContent=own.name;$('hint').textContent=tool==='move'?(moveIndex===null?'Click a building to move it.':'Click open grass.'):tool?(buildTile?`Tile selected for a ${labels[tool].toLowerCase()}. ${own.wood<costs[tool]?'Not enough wood.': 'Choose Build here to place it, or select another tile.'}`:`Click open grass to select a tile for a ${labels[tool].toLowerCase()}.`):'Choose a building, then select an open tile.';$('progress').textContent=`Level ${own.level} · Timber roots: ${Math.min(30,own.harvested)}/30 wood harvested`;$('upgrade').disabled=own.level>=2;}
   $('towns').replaceChildren();
-  for(const [id,t] of Object.entries(world.towns)){const b=document.createElement('button');b.textContent=t.name+(id===identity?.town_id?' · Yours':'');b.classList.toggle('selected',id===viewed);b.onclick=()=>{viewed=id;tool=null;moveIndex=null;render();};$('towns').append(b);}
+  for(const [id,t] of Object.entries(world.towns)){const b=document.createElement('button');b.textContent=t.name+(id===identity?.town_id?' · Yours':'');b.classList.toggle('selected',id===viewed);b.onclick=()=>{viewed=id;tool=null;moveIndex=null;buildTile=null;render();};$('towns').append(b);}
   $('villagers').replaceChildren();
   if(town)for(const [i,v] of town.villagers.entries()){
     const div=document.createElement('div');div.className='villager';
