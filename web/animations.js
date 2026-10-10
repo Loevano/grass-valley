@@ -37,7 +37,8 @@ const WorkerAnimation = (() => {
     const home=workplace || town.buildings.find(b=>b.kind==='hall');
     const path=source?route(start,source,blocked,size):home?route(start,home,blocked,size):[];
     return {...start,phase:path===null?'waiting':path.length?'walking':source?'working':'idle',
-      path:path || [],source,home,blocked,size,elapsed:0,clock:state?.clock || index*.37,facing:state?.facing || 1};
+      path:path || [],source,home,blocked,size,workDuration:villager.job==='farming'?8:3.2,
+      elapsed:0,clock:state?.clock || index*.37,facing:state?.facing || 1};
   }
   function advance(state, seconds, active) {
     state.clock+=seconds;
@@ -54,7 +55,7 @@ const WorkerAnimation = (() => {
     }
     if(!active || !state.source || state.phase==='waiting')return;
     state.elapsed+=seconds;
-    if(state.phase==='working'&&state.elapsed>=3.2){
+    if(state.phase==='working'&&state.elapsed>=(state.workDuration || 3.2)){
       const path=state.home?route(state,state.home,state.blocked,state.size):null;
       if(path===null)return;
       state.path=path;state.phase=path.length?'returning':'depositing';state.elapsed=0;

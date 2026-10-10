@@ -102,6 +102,9 @@ the Python host, refresh both browsers, and create a new world to use the shared
   and carry supplies back to their workplace. These animations illustrate work;
   production still follows the host's three-second rhythm. If a workplace is out
   of reach, production and skill growth pause; move it closer to the source to resume.
+- Farmers plow with a hoe, sow seeds, water with a can, and harvest with a sickle,
+  then carry grain back to the farm. Each action lasts two seconds; full food
+  storage pauses the animation until there is room again.
 - Build a fishing hut within three tile steps of water and assign Fishing to
   produce food and learn fishing skill. Fishers cast into the water, wait by a
   rippling float, reel in a fish, and carry their catch back to the hut.

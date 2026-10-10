@@ -1,0 +1,63 @@
+// Run with: node tests/test_farming_animation.js
+const assert=require('assert');
+const source=require('fs').readFileSync('web/app.js','utf8');
+const animation=require('../web/animations.js');
+const marks=[];
+const ctx=new Proxy({}, {get(target,key){
+  if(key in target)return target[key];
+  return (...args)=>marks.push({method:key,args,color:key==='fillRect'?target.fillStyle:target.strokeStyle});
+}});
+const draw=new Function('ctx','polygon','point','tileW','tileH','npcColors',
+  source.slice(source.indexOf('function villagerAccessories('),source.indexOf('function draw(seconds=0)'))+
+  '\nreturn drawVillager;'
+)(ctx,(points,color)=>marks.push({method:'polygon',points,color}),
+  (x,y)=>[(x-y)*23,(x+y)*11.5],46,23,{});
+function render(state,job='farming',active=true){
+  marks.length=0;ctx.strokeStyle=undefined;ctx.fillStyle=undefined;
+  draw({kind:'villager',index:0,x:state.x,y:state.y,state,active,villager:{job}});
+  return marks.slice();
+}
+const stages=[['plowing','#aab9b4'],['sowing','#efd59a'],['watering','#9fd8e5'],['harvesting','#e5c77f']];
+const town={map_size:12,buildings:[{kind:'farm',x:6,y:2},{kind:'acre',x:6,y:3,farm_index:0}],
+  map_resources:[{kind:'water',x:9,y:2}]};
+for(const target of [town.buildings[1],town.map_resources[0]]){
+  const state=animation.plan(town,{job:'farming',work_target:target},0);
+  for(let i=0;i<300&&state.path.length;i++)animation.advance(state,.1,true);
+  assert.strictEqual(state.phase,'working');
+  for(const [index,[name,color]] of stages.entries()){
+    const output=render(state);
+    assert(output.some(mark=>mark.color===color),`Arrival at stage ${index} shows ${name}`);
+    for(const [,other] of stages.filter((_,i)=>i!==index)){
+      assert(!output.some(mark=>mark.color===other),`${name} has its own tools and effects`);
+    }
+    animation.advance(state,.25,true);
+    assert.notDeepStrictEqual(render(state),output,`${name} moves over time`);
+    const elapsed=state.elapsed,paused=render(state,'farming',false);
+    animation.advance(state,5,false);
+    assert.strictEqual(state.elapsed,elapsed,`Full storage pauses ${name}`);
+    assert.deepStrictEqual(render(state,'farming',false),paused,`${name} holds its pose while paused`);
+    animation.advance(state,1.75,true);
+  }
+  assert(['returning','depositing'].includes(state.phase),'Delivery starts after all four actions');
+  assert(render(state).some(mark=>mark.color==='#e5c77f'),'Farmer carries harvested grain');
+  for(let i=0;i<300&&state.path.length;i++)animation.advance(state,.1,true);
+  assert.strictEqual(state.phase,'depositing');
+  assert.strictEqual(state.home,town.buildings[0],'Harvest is delivered to the assigned farm');
+  animation.advance(state,.7,true);
+  for(let i=0;i<300&&state.path.length;i++)animation.advance(state,.1,true);
+  assert.strictEqual(state.phase,'working');
+  assert.strictEqual(state.elapsed,0);
+  assert(render(state).some(mark=>mark.color===stages[0][1]),'Next cycle restarts with plowing');
+  const resting=animation.plan(town,{job:'idle'},0,state);
+  assert(!render(resting,'idle').some(mark=>stages.some(([,color])=>mark.color===color)),
+    'Changing jobs removes farming actions');
+}
+for(const job of ['woodcutting','fishing']){
+  const target={kind:job==='fishing'?'water':'tree',x:8,y:2};
+  const workplace={kind:job==='fishing'?'fishing_hut':'woodcutter',x:6,y:2};
+  const state=animation.plan({...town,buildings:[workplace],map_resources:[target]}, {job,work_target:target},0);
+  for(let i=0;i<300&&state.path.length;i++)animation.advance(state,.1,true);
+  animation.advance(state,3.3,true);
+  assert.notStrictEqual(state.phase,'working',`${job} keeps its shorter work cycle`);
+}
+console.log('Farming animation checks passed');
