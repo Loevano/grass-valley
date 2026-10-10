@@ -796,14 +796,26 @@ function draw(seconds=0){
       }
     }
   }
+  const cropObjects=[];
+  for(const field of buildings){
+    if(field.kind!=='acre'||field.construction)continue;
+    const [px,py]=point(field.x,field.y);
+    if(px < -tileW || px > rect.width+tileW || py < -tileH || py > rect.height+80*tileW/46)continue;
+    const farmer=villagers.find(worker=>worker.villager.job==='farming'&&!worker.state.construction
+      &&worker.state.phase==='working'&&worker.state.source?.kind==='acre'
+      &&worker.state.source.x===field.x&&worker.state.source.y===field.y);
+    // Soil and furrows stay below every character; stalks use their own depth.
+    drawFarmCrops(field,farmer?.state,crop=>cropObjects.push(crop));
+  }
   const otherPlayers=world.shared_map?entries.filter(([id,t])=>t.player&&id!==hero?.townId).map(([id,t])=>({kind:'player',townId:id,...t.player,index:1,villager:{job:'idle'},active:false,state:{path:[],phase:'idle',clock:0,facing:t.player.facing}})):[];
-  const objects=[...buildings,...resourceData.objects,...villagers,...npcSprites(world.shared_map || town,seconds),...otherPlayers,...(hero?[hero]:[])].filter(b=>{
+  const objects=[...buildings,...cropObjects,...resourceData.objects,...villagers,...npcSprites(world.shared_map || town,seconds),...otherPlayers,...(hero?[hero]:[])].filter(b=>{
     const [px,py]=point(b.x,b.y);
     return px>=-tileW&&px<=rect.width+tileW&&py>=-tileH&&py<=rect.height+80*tileW/46;
   });
-  for(const b of objects.sort((a,b)=>(a.x+a.y)-(b.x+b.y))){
+  for(const b of objects.sort((a,b)=>(a.depth ?? a.x+a.y)-(b.depth ?? b.x+b.y))){
     const [px,py]=point(b.x,b.y),scale=tileW/46;
     if(px < -tileW || px > rect.width+tileW || py < -tileH || py > rect.height+80*scale)continue;
+    if(b.kind==='crop'){drawFarmCrop(b);continue;}
     if(b.kind==='player'){
       const baseY=py+tileH*.65;
       ctx.strokeStyle='#ffe8a0';ctx.lineWidth=2;ctx.beginPath();ctx.ellipse(px,baseY,10*scale,5*scale,0,0,Math.PI*2);ctx.stroke();
@@ -827,10 +839,8 @@ function draw(seconds=0){
       drawVillager(b);
       continue;
     }
-    const farmer=b.kind==='acre'?villagers.find(worker=>worker.villager.job==='farming'&&!worker.state.construction
-      &&worker.state.phase==='working'&&worker.state.source?.kind==='acre'
-      &&worker.state.source.x===b.x&&worker.state.source.y===b.y):null;
-    drawBuilding(b,world.towns[b.townId] || town,farmer?.state);
+    if(b.kind==='acre'&&!b.construction)continue;
+    drawBuilding(b,world.towns[b.townId] || town);
     if(world.shared_map && b.kind==='hall'){ctx.fillStyle='#fff0b1';ctx.font=`bold ${12*scale}px sans-serif`;ctx.textAlign='center';ctx.fillText(world.towns[b.townId].name,px,py-80*scale);}
   }
   if(preview && previewKind && town && town.terrain?.[preview.y]?.[preview.x]!=='v' && viewed===identity?.town_id){
@@ -863,7 +873,7 @@ function buildingUsable(town,b){
   const source={woodcutter:'tree',farm:'water',fishing_hut:'water'}[b.kind];
   return !source || !!town?.map_resources.some(r=>r.kind===source&&Math.abs(r.x-b.x)+Math.abs(r.y-b.y)<=3);
 }
-function drawFarmCrops(b,state){
+function drawFarmCrops(b,state,collectCrop=null){
   const elapsed=state?.elapsed ?? 6;
   const stage=Math.min(3,Math.floor(elapsed/2)),progress=(elapsed%2)/2;
   const [x,y]=point(b.x,b.y),scale=tileW/46;
@@ -874,17 +884,25 @@ function drawFarmCrops(b,state){
     ctx.beginPath();ctx.moveTo(ax,ay+tileH/2);ctx.lineTo(bx,by+tileH/2);ctx.stroke();
     for(let crop=0;crop<4;crop++){
       const order=row*4+crop;
-      const [px,py]=point(b.x-.3+row*.2,b.y-.3+crop*.2);
       if(stage===0 || (stage===1&&order>=progress*16) || (state&&stage===3&&order<progress*16))continue;
-      if(stage===1){
-        ctx.fillStyle='#efd59a';ctx.fillRect(px-scale,py+tileH/2-scale,2*scale,2*scale);
-      }else{
-        const height=(stage===2?2+progress*4:6)*scale;
-        const sway=state?Math.sin(elapsed*4+order)*scale:0;
-        ctx.strokeStyle=stage===2?'#8db568':(row+crop)%2?'#d9bd70':'#b8b458';ctx.lineWidth=2*scale;
-        ctx.beginPath();ctx.moveTo(px,py+tileH/2);ctx.lineTo(px+sway,py+tileH/2-height);ctx.stroke();
-      }
+      const x=b.x-.3+row*.2,y=b.y-.3+crop*.2;
+      // Characters' feet sit .15 tile heights ahead of a crop's ground anchor.
+      const stalk={kind:'crop',x,y,depth:x+y-.3,stage,
+        height:stage===2?2+progress*4:6,
+        sway:state?Math.sin(elapsed*4+order):0,
+        color:stage===2?'#8db568':(row+crop)%2?'#d9bd70':'#b8b458'};
+      if(collectCrop)collectCrop(stalk);else drawFarmCrop(stalk);
     }
+  }
+}
+function drawFarmCrop(crop){
+  const [px,py]=point(crop.x,crop.y),scale=tileW/46;
+  if(crop.stage===1){
+    ctx.fillStyle='#efd59a';ctx.fillRect(px-scale,py+tileH/2-scale,2*scale,2*scale);
+  }else{
+    ctx.strokeStyle=crop.color;ctx.lineWidth=2*scale;
+    ctx.beginPath();ctx.moveTo(px,py+tileH/2);
+    ctx.lineTo(px+crop.sway*scale,py+tileH/2-crop.height*scale);ctx.stroke();
   }
 }
 function drawBuilding(b,town=world.towns[viewed],farmState=null){
