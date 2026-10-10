@@ -433,7 +433,14 @@ function npcSprites(town,seconds){
   return (town?.npcs || []).map((npc,index)=>({...npc,kind:'npc',index,villager:{job:'idle'},active:false,
     state:{path:[],phase:'idle',clock:npcClock+index*.7,facing:index%2?1:-1}}));
 }
+function villagerAccessories(b){
+  // Earned gear stays visible across jobs: basic tools at 1, clothing at 5.
+  const v=b.kind==='villager'?b.villager:{};
+  return {axe:v.woodcutting>=1,blouse:v.woodcutting>=5,
+    sickle:v.farming>=1,hat:v.farming>=5,pouch:v.fishing>=1,scarf:v.fishing>=5};
+}
 function drawVillager(b){
+  const accessories=villagerAccessories(b);
   const [px,py]=point(b.x,b.y),s=b.state;
   const walking=s.path.length>0,working=s.phase==='working'&&b.active;
   const stride=walking?Math.sin(s.clock*13):0;
@@ -448,10 +455,15 @@ function drawVillager(b){
   const bob=walking?Math.abs(stride)*1.2:chopping?swing*2.5:working?swing:Math.sin(s.clock*2)*.3;
   ctx.translate(0,-bob);
   ctx.fillStyle=b.kind==='npc'?npcColors[b.biome][0]:b.kind==='player'?'#d6b85d':['#7899a2','#b9866b','#a0a16b','#947ca0','#c6aa62'][b.index%5];ctx.fillRect(-4,-13,8,10);
+  if(accessories.blouse){
+    polygon([[-4,-13],[4,-13],[7,-9],[5,-7],[3,-10],[4,-3],[-4,-3],[-3,-10],[-5,-7],[-7,-9]],'#b8c6ad');
+    polygon([[-3,-13],[0,-10],[3,-13]],'#eee0bd');
+    ctx.strokeStyle='#6c8068';ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(0,-10);ctx.lineTo(0,-4);ctx.stroke();
+  }
   ctx.fillStyle=['#e7c68c','#c99f79','#ad795c'][b.index%3];ctx.beginPath();ctx.arc(0,-17,4,0,Math.PI*2);ctx.fill();
   ctx.fillStyle=['#584638','#aa7846','#363c36','#d3bc8c'][b.index%4];ctx.beginPath();ctx.arc(0,-18,4,Math.PI,Math.PI*2);ctx.fill();
   if(b.index%2)ctx.fillRect(-4,-18,2,7);
-  if(b.villager.job==='farming'){polygon([[-6,-19],[0,-23],[6,-19]],'#ccb779');ctx.fillStyle='#ccb779';ctx.fillRect(-7,-19,14,2);}
+  if(accessories.hat){polygon([[-6,-19],[0,-23],[6,-19]],'#ccb779');ctx.fillStyle='#ccb779';ctx.fillRect(-7,-19,14,2);}
   if(b.kind==='npc'){
     const accent=npcColors[b.biome][1];
     if(b.biome==='b'||b.biome==='f')polygon([[-5,-18],[0,-25],[5,-18]],accent);
@@ -460,6 +472,21 @@ function drawVillager(b){
     ctx.fillStyle='#8b704b';ctx.fillRect(5,-7,5,6);
   }
   ctx.fillStyle='#ded2a6';ctx.fillRect(-4,-6,8,1);
+  if(accessories.axe){
+    ctx.strokeStyle='#a78454';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(-6,0);ctx.lineTo(-8,-10);ctx.stroke();
+    polygon([[-8,-11],[-13,-12],[-14,-7],[-7,-7]],'#e4ece7','#6b7d79');
+  }
+  if(accessories.sickle){
+    ctx.strokeStyle='#a78454';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(6,0);ctx.lineTo(7,-6);ctx.stroke();
+    ctx.strokeStyle='#dce5df';ctx.lineWidth=1.8;ctx.beginPath();ctx.arc(7,-9,4,-Math.PI/2,Math.PI/2);ctx.stroke();
+  }
+  if(accessories.pouch){
+    ctx.fillStyle='#806448';ctx.fillRect(-3,-5,6,5);
+    ctx.strokeStyle='#d5dfd8';ctx.lineWidth=1;ctx.beginPath();ctx.arc(0,-3,1.5,0,Math.PI);ctx.stroke();
+  }
+  if(accessories.scarf){
+    ctx.fillStyle='#6baeb5';ctx.fillRect(-4,-14,8,2);ctx.fillRect(2,-12,2,5);
+  }
   ctx.strokeStyle='#e7c68c';ctx.lineWidth=2;
   ctx.beginPath();ctx.moveTo(-3,-11);ctx.lineTo(chopping?6:-5-stride*2,chopping?-14+swing*5:-6);ctx.moveTo(3,-11);ctx.lineTo(7,chopping?-14+swing*5:-9-swing*4);ctx.stroke();
   if(working){
