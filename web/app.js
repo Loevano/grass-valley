@@ -360,10 +360,24 @@ function renderSettlers(town,item,buildingIndex){
     ['hall','home','storehouse'].includes(item.kind)?'Assigned settlers rest here and can still help with construction. Housing and storage benefits are automatic.':
     'Assign settlers here to work at this building.';
   $('selection-details').append(note);
+  const roster=document.createElement('div');roster.className='building-workers';
   for(const {v,i} of assigned){
-    $('selection-details').append(villagerCard(town,v,i,true));
-    if(owner){const remove=document.createElement('button');remove.textContent=`Remove ${v.name}`;remove.onclick=()=>act({action:'remove_settler',index:i});$('selection-details').append(remove);}
+    const row=document.createElement('div');row.className='building-worker';
+    const summary=document.createElement('button');summary.className='worker-summary';
+    const name=document.createElement('strong');name.textContent=v.name;summary.append(name);
+    const skills=document.createElement('small');
+    const skill={woodcutter:'woodcutting',farm:'farming',acre:'farming',fishing_hut:'fishing'}[item.kind];
+    const skillLabels={woodcutting:'Woodcutting',farming:'Farming',fishing:'Fishing'};
+    skills.textContent=(skill?[skill]:Object.keys(skillLabels)).map(key=>`${skillLabels[key]} · Lv ${v[key] || 0}`).join(' / ');
+    summary.append(skills);summary.onclick=()=>inspect('villager',i);row.append(summary);
+    if(owner){
+      const kick=document.createElement('button');kick.className='worker-kick danger';kick.textContent='Kick';
+      kick.setAttribute('aria-label',`Kick ${v.name} from ${labels[item.kind] || 'this building'}`);
+      kick.onclick=()=>{if(viewed===identity?.town_id)act({action:'remove_settler',index:i});};row.append(kick);
+    }
+    roster.append(row);
   }
+  $('selection-details').append(roster);
   if(!owner)return;
   const chooser=document.createElement('select');chooser.setAttribute('aria-label','Settler to add');
   const available=town.villagers.map((v,i)=>({v,i})).filter(({v,i})=>settlerBuilding(town,v,i)!==buildingIndex);
@@ -373,7 +387,7 @@ function renderSettlers(town,item,buildingIndex){
   chooser.disabled=add.disabled;
   add.onclick=()=>{if(!add.disabled)act({action:'assign_settler',index:Number(chooser.value),building_index:buildingIndex});};
   $('selection-details').append(chooser);$('selection-details').append(add);
-  const upgrade=document.createElement('button');upgrade.textContent=level>=3?'Settler capacity fully upgraded':`Upgrade to ${settlerSpaces[item.kind]*(level+1)} spaces · ${20*level} wood`;
+  const upgrade=document.createElement('button');upgrade.className='upgrade-button';upgrade.textContent=level>=3?'Settler capacity fully upgraded':`Upgrade to ${settlerSpaces[item.kind]*(level+1)} spaces · ${20*level} wood`;
   upgrade.disabled=level>=3||town.wood<20*level;
   upgrade.onclick=()=>{if(!upgrade.disabled)act({action:'upgrade_capacity',index:buildingIndex});};
   $('selection-details').append(upgrade);
@@ -449,6 +463,7 @@ function renderSelection(town){
         const note=document.createElement('p');note.textContent='Farm and acre production bonuses add together when tending that field.';$('selection-details').append(note);
       }
       const button=document.createElement('button');
+      button.className='upgrade-button';
       button.textContent=level>=3?'Fully upgraded · Level 3':`Upgrade to level ${level+1} · ${cost} wood · ${upgradeBenefit(item.kind,level+1)}`;
       button.disabled=!!item.construction||level>=3||town.wood<cost||viewed!==identity?.town_id;
       const index=selection.index;
