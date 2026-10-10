@@ -3,7 +3,7 @@
 
 /* The map stays central; only the requested information panel takes space. */
 main.panel-open{grid-template-columns:minmax(0,1fr) 300px}
-#toolbar{display:flex;align-items:center;flex-wrap:wrap;gap:8px;padding:10px 24px;background:#1c302a;border-bottom:1px solid #ffffff15}
+#toolbar{position:sticky;top:0;z-index:6;display:flex;align-items:center;flex-wrap:wrap;gap:8px;padding:10px 24px;background:#1c302a;border-bottom:1px solid #ffffff15}
 #toolbar #resources{margin-left:auto}#toolbar button{width:auto;margin:0}#mode-hint{margin-left:12px;color:#b8c999;font-size:12px}
 #side-panel{padding:18px 20px;max-height:calc(100vh - 64px);overflow:auto}
 #side-panel section{margin:0;border:0;padding:0}#close-panel{text-align:right;margin:0 0 18px}
