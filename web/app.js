@@ -80,7 +80,7 @@ window.addEventListener('keydown',event=>{
   }
 });
 function inspect(type,index){
-  panel='selection';selection={type,index};tool=null;moveIndex=null;buildTile=null;render();
+  panel=type==='villager'&&panel==='villagers'?'villagers':'selection';selection={type,index};tool=null;moveIndex=null;buildTile=null;render();
 }
 function villagerCard(town,v,index,withLink=false){
   const div=document.createElement('div');div.className='villager';
@@ -94,6 +94,20 @@ function villagerCard(town,v,index,withLink=false){
   for(const [job,label] of [['idle','Resting'],['woodcutting','Woodcutting'],['farming','Farming']]){const option=document.createElement('option');option.value=job;option.textContent=label;select.append(option);}
   select.value=v.job;select.disabled=viewed!==identity?.town_id;select.onchange=()=>act({action:'job',index,job:select.value});div.append(select);
   return div;
+}
+function villagerRow(town,v,index){
+  const expanded=panel==='villagers'&&selection?.type==='villager'&&selection.index===index;
+  const row=document.createElement('div');row.className='villager-row';
+  const button=document.createElement('button');button.className='villager-summary';
+  button.setAttribute('aria-expanded',String(expanded));button.setAttribute('aria-controls',`villager-details-${index}`);
+  const name=document.createElement('strong');name.textContent=v.name;button.append(name);
+  const job=document.createElement('span');job.className='muted';job.textContent={idle:'Resting',woodcutting:'Woodcutting',farming:'Farming'}[v.job];button.append(job);
+  const arrow=document.createElement('span');arrow.setAttribute('aria-hidden','true');arrow.textContent=expanded?'▾':'▸';button.append(arrow);
+  button.onclick=()=>{selection=expanded?null:{type:'villager',index};render();$('villagers').children[index].children[0].focus();};
+  row.append(button);
+  const details=document.createElement('div');details.id=`villager-details-${index}`;details.hidden=!expanded;
+  if(expanded){const card=villagerCard(town,v,index);card.children[0].hidden=true;details.append(card);}
+  row.append(details);return row;
 }
 function renderSelection(town){
   $('selection-details').replaceChildren();$('hall-details').hidden=true;$('selection-move').hidden=true;
@@ -195,7 +209,7 @@ function render(){
   $('towns').replaceChildren();
   for(const [id,t] of Object.entries(world.towns)){const b=document.createElement('button');b.textContent=t.name+(id===identity?.town_id?' · Yours':'');b.classList.toggle('selected',id===viewed);b.onclick=()=>{viewed=id;tool=null;moveIndex=null;buildTile=null;selection=null;panel=null;keyboardTile=null;render();};$('towns').append(b);}
   $('villagers').replaceChildren();
-  if(town)for(const [i,v] of town.villagers.entries())$('villagers').append(villagerCard(town,v,i,true));
+  if(town)for(const [i,v] of town.villagers.entries())$('villagers').append(villagerRow(town,v,i));
   draw();
 }
 function point(x,y){return [originX+(x-y)*tileW/2,originY+(x+y)*tileH/2];}

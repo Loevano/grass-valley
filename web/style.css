@@ -8,5 +8,6 @@ main.panel-open{grid-template-columns:minmax(0,1fr) 300px}
 #side-panel{padding:18px 20px;max-height:calc(100vh - 180px);overflow:auto}
 #side-panel section{margin:0;border:0;padding:0}#close-panel{text-align:right;margin:0 0 18px}
 #villagers{display:block}.villager-name{background:transparent;border:0;padding:0;font-weight:600}
+.villager-row{border-bottom:1px solid #ffffff13}.villager-summary{display:flex;align-items:center;gap:8px;margin:0;padding:9px 6px;background:transparent;border-color:transparent}.villager-summary strong{flex:1;min-width:0;overflow-wrap:anywhere}.villager-summary .muted{white-space:nowrap}.villager-summary[aria-expanded="true"]{background:#2b4538}.villager-row .villager{padding:4px 6px 12px;border:0}
 canvas{cursor:pointer}button:focus-visible,canvas:focus-visible,select:focus-visible{outline:2px solid #fff0b1;outline-offset:3px}
 @media(max-width:760px){main,main.panel-open{display:block}.scene,canvas{min-height:500px}#toolbar{padding:10px 16px}#mode-hint{width:100%;margin:4px 0}#side-panel{position:fixed;bottom:0;left:0;right:0;z-index:5;max-height:48vh;border-top:1px solid #b8c99966;border-radius:14px 14px 0 0;box-shadow:0 -8px 30px #12241f66}.scene-footer{bottom:14px}}
