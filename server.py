@@ -11,6 +11,7 @@ from pathlib import Path
 from urllib.parse import urlsplit
 
 from terrain import ensure_terrain
+from npcs import ensure_npcs
 
 ROOT = Path(__file__).resolve().parent
 SAVE = ROOT / 'savegame.json'
@@ -100,6 +101,7 @@ def ensure_resources(town):
     if 'map_resources' not in town:
         town['map_resources'] = map_resources(town['buildings'])
     ensure_terrain(town)
+    ensure_npcs(town)
 
 
 def work_source(town, job, worker_index):
@@ -127,6 +129,7 @@ def new_town(name):
                            'farming': (i + 1) % 3} for i, n in enumerate(
                                ['Ada', 'Rowan', 'Wren', 'Bram', 'Hazel'])]}
     ensure_terrain(town, new=True)
+    ensure_npcs(town)
     return town
 
 
@@ -166,6 +169,8 @@ def command(town, data):
         return move_player(town, data)
     if action in {'build', 'move'}:
         x, y = data.get('x'), data.get('y')
+        if any(n['x'] == x and n['y'] == y for n in town['npcs']):
+            raise ValueError('A local is standing here. Choose another tile.')
         terrain = town.get('terrain', [])
         if (type(x) is int and type(y) is int and 0 <= y < len(terrain)
                 and 0 <= x < len(terrain[y]) and terrain[y][x] == 'v'):

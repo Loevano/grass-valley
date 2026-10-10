@@ -259,8 +259,14 @@ function renderSelection(town){
     p.textContent=viewed===identity?.town_id?'Your adventuring villager. Click the map and use your movement keys to explore. Open Settings to change keybindings. Your position is saved with this world.':'This is the town owner’s adventuring villager.';
     $('selection-details').append(p);return;
   }
-  const item=selection.type==='villager'?town.villagers[selection.index]:selection.type==='building'?town.buildings[selection.index]:town.map_resources[selection.index];
+  const item=selection.type==='npc'?town.npcs?.[selection.index]:selection.type==='villager'?town.villagers[selection.index]:selection.type==='building'?town.buildings[selection.index]:town.map_resources[selection.index];
   if(!item){selection=null;panel=null;return;}
+  if(selection.type==='npc'){
+    $('selection-title').textContent=item.name;
+    const role=document.createElement('p');role.textContent=item.role;
+    const dialogue=document.createElement('p');dialogue.textContent='“'+item.dialogue+'”';
+    $('selection-details').append(illustration('villagers'));$('selection-details').append(role);$('selection-details').append(dialogue);return;
+  }
   if(selection.type==='villager'){
     $('selection-title').textContent=item.name;$('selection-details').append(villagerCard(town,item,selection.index));return;
   }
@@ -406,6 +412,14 @@ function animatedVillagers(town, seconds){
     return {kind:'villager',villager,index,x:state.x,y:state.y,state,active};
   });
 }
+let npcClock=0;
+const npcColors={g:['#a97b58','#c7a06d'],f:['#416951','#70906a'],m:['#b29b4a','#e2cc80'],
+  s:['#be986a','#e6c79a'],r:['#717b88','#acb4bd'],b:['#586b4b','#a1a474']};
+function npcSprites(town,seconds){
+  npcClock+=seconds;
+  return (town?.npcs || []).map((npc,index)=>({...npc,kind:'npc',index,villager:{job:'idle'},active:false,
+    state:{path:[],phase:'idle',clock:npcClock+index*.7,facing:index%2?1:-1}}));
+}
 function drawVillager(b){
   const [px,py]=point(b.x,b.y),s=b.state;
   const walking=s.path.length>0,working=s.phase==='working'&&b.active;
@@ -420,11 +434,18 @@ function drawVillager(b){
   ctx.beginPath();ctx.moveTo(-2,-4);ctx.lineTo(-2-stride*3,1);ctx.moveTo(2,-4);ctx.lineTo(2+stride*3,1);ctx.stroke();
   const bob=walking?Math.abs(stride)*1.2:chopping?swing*2.5:working?swing:Math.sin(s.clock*2)*.3;
   ctx.translate(0,-bob);
-  ctx.fillStyle=b.kind==='player'?'#d6b85d':['#7899a2','#b9866b','#a0a16b','#947ca0','#c6aa62'][b.index%5];ctx.fillRect(-4,-13,8,10);
+  ctx.fillStyle=b.kind==='npc'?npcColors[b.biome][0]:b.kind==='player'?'#d6b85d':['#7899a2','#b9866b','#a0a16b','#947ca0','#c6aa62'][b.index%5];ctx.fillRect(-4,-13,8,10);
   ctx.fillStyle=['#e7c68c','#c99f79','#ad795c'][b.index%3];ctx.beginPath();ctx.arc(0,-17,4,0,Math.PI*2);ctx.fill();
   ctx.fillStyle=['#584638','#aa7846','#363c36','#d3bc8c'][b.index%4];ctx.beginPath();ctx.arc(0,-18,4,Math.PI,Math.PI*2);ctx.fill();
   if(b.index%2)ctx.fillRect(-4,-18,2,7);
   if(b.villager.job==='farming'){polygon([[-6,-19],[0,-23],[6,-19]],'#ccb779');ctx.fillStyle='#ccb779';ctx.fillRect(-7,-19,14,2);}
+  if(b.kind==='npc'){
+    const accent=npcColors[b.biome][1];
+    if(b.biome==='b'||b.biome==='f')polygon([[-5,-18],[0,-25],[5,-18]],accent);
+    else{ctx.fillStyle=accent;ctx.fillRect(-7,-21,14,2);ctx.fillRect(-4,-25,8,4);}
+    ctx.fillStyle=accent;ctx.fillRect(-4,-12,8,2);
+    ctx.fillStyle='#8b704b';ctx.fillRect(5,-7,5,6);
+  }
   ctx.fillStyle='#ded2a6';ctx.fillRect(-4,-6,8,1);
   ctx.strokeStyle='#e7c68c';ctx.lineWidth=2;
   ctx.beginPath();ctx.moveTo(-3,-11);ctx.lineTo(chopping?6:-5-stride*2,chopping?-14+swing*5:-6);ctx.moveTo(3,-11);ctx.lineTo(7,chopping?-14+swing*5:-9-swing*4);ctx.stroke();
@@ -509,7 +530,7 @@ function draw(seconds=0){
   }
   const buildings=town?.buildings || [{kind:'hall',x:5,y:5}];
   const villagers=animatedVillagers(town,seconds);
-  const objects=[...buildings,...resources.filter(r=>r.kind!=='water'),...villagers,...(hero?[hero]:[])];
+  const objects=[...buildings,...resources.filter(r=>r.kind!=='water'),...villagers,...npcSprites(town,seconds),...(hero?[hero]:[])];
   for(const b of objects.sort((a,b)=>(a.x+a.y)-(b.x+b.y))){
     const [px,py]=point(b.x,b.y),scale=tileW/46;
     if(b.kind==='player'){
@@ -521,16 +542,17 @@ function draw(seconds=0){
       hitTargets.push({type:'player',index:0,left:px-10*scale,right:px+10*scale,top:baseY-27*scale,bottom:baseY+5*scale});
       continue;
     }
-    const type=b.kind==='villager'?'villager':resources.includes(b)?'resource':'building';
-    const index=type==='villager'?b.index:type==='resource'?resources.indexOf(b):buildings.indexOf(b);
-    const centerX=px+(type==='villager'?(b.index%3-1)*3:0);
-    const baseY=py+(type==='villager'?tileH*.65+Math.floor(b.index/3):tileH/2);
-    hitTargets.push({type,index,left:centerX-(type==='villager'?9*scale:tileW*.45),right:centerX+(type==='villager'?9*scale:tileW*.45),top:baseY-(b.kind==='tree'?70:b.kind==='hall'?75:type==='villager'?26:b.kind==='farm'?0:45)*scale,bottom:baseY+(type==='villager'?5*scale:tileH/2)});
-    if(type==='villager'&&selection?.type==='villager'&&selection.index===b.index){
+    const character=b.kind==='villager'||b.kind==='npc';
+    const type=b.kind==='npc'?'npc':b.kind==='villager'?'villager':resources.includes(b)?'resource':'building';
+    const index=character?b.index:type==='resource'?resources.indexOf(b):buildings.indexOf(b);
+    const centerX=px+(character?(b.index%3-1)*3:0);
+    const baseY=py+(character?tileH*.65+Math.floor(b.index/3):tileH/2);
+    hitTargets.push({type,index,left:centerX-(character?9*scale:tileW*.45),right:centerX+(character?9*scale:tileW*.45),top:baseY-(b.kind==='tree'?70:b.kind==='hall'?75:character?26:b.kind==='farm'?0:45)*scale,bottom:baseY+(character?5*scale:tileH/2)});
+    if(character&&selection?.type===type&&selection.index===b.index){
       ctx.fillStyle='#fff0b144';ctx.strokeStyle='#fff0b1';ctx.lineWidth=2;ctx.beginPath();ctx.ellipse(centerX,baseY,12*scale,6*scale,0,0,Math.PI*2);ctx.fill();ctx.stroke();
     }
     if(b.kind==='tree'||b.kind==='rock'){drawResource(b);continue;}
-    if(b.kind==='villager'){
+    if(character){
       drawVillager(b);
       continue;
     }
@@ -544,6 +566,7 @@ function draw(seconds=0){
 function placementValid(town,tile,kind){
   return town.terrain?.[tile.y]?.[tile.x]!=='v'
     && !town.buildings.some(b=>b.x===tile.x&&b.y===tile.y)
+    && !(town.npcs || []).some(n=>n.x===tile.x&&n.y===tile.y)
     && !town.map_resources.some(r=>r.x===tile.x&&r.y===tile.y)
     && (tool==='move' || town.wood>=costs[kind]);
 }
@@ -590,15 +613,18 @@ async function selectTile(x,y){
   const town=world.towns[viewed];
   if(!town || x<0||y<0||x>=12||y>=12)return;
   if(town.terrain?.[y]?.[x]==='v')return;
+  const npc=(town.npcs || []).findIndex(n=>n.x===x&&n.y===y);
   const resource=town.map_resources.findIndex(r=>r.x===x&&r.y===y);
   const index=town.buildings.findIndex(b=>b.x===x&&b.y===y);
   if(!tool){
-    if(index>=0)inspect('building',index);
+    if(npc>=0)inspect('npc',npc);
+    else if(index>=0)inspect('building',index);
     else if(resource>=0)inspect('resource',resource);
     else openPanel(null);
     return;
   }
   if(viewed!==identity?.town_id)return;
+  if(npc>=0){notice('A local is standing here. Choose another tile.');return;}
   if(resource>=0){notice('Choose open grass, away from resources.');return;}
   if(tool==='move'){
     if(moveIndex===null){if(index<0){notice('Click the tile beneath a building.');return;}moveIndex=index;render();}
@@ -617,7 +643,7 @@ function tileAt(event){
 canvas.onmousemove=event=>{
   const town=world.towns[viewed],tile=tileAt(event);
   buildTile=costs[tool]&&viewed===identity?.town_id&&town&&tile.x>=0&&tile.y>=0&&tile.x<12&&tile.y<12
-    &&town.terrain?.[tile.y]?.[tile.x]!=='v'&&!town.buildings.some(b=>b.x===tile.x&&b.y===tile.y)&&!town.map_resources.some(r=>r.x===tile.x&&r.y===tile.y)?tile:null;
+    &&town.terrain?.[tile.y]?.[tile.x]!=='v'&&!(town.npcs || []).some(n=>n.x===tile.x&&n.y===tile.y)&&!town.buildings.some(b=>b.x===tile.x&&b.y===tile.y)&&!town.map_resources.some(r=>r.x===tile.x&&r.y===tile.y)?tile:null;
   hoverTile=(costs[tool]||tool==='move'&&moveIndex!==null)&&viewed===identity?.town_id&&town&&tile.x>=0&&tile.y>=0&&tile.x<(town.map_size || 12)&&tile.y<(town.map_size || 12)?tile:null;
   draw();
 };

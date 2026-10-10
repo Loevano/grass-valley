@@ -49,6 +49,9 @@ encrypted transport; do not expose it through router port forwarding.
 - Swamp regions in new towns have muddy ground, green pools, reeds, lily pads,
   and willow trees. Swamp trees supply wood and swamp water supports farming.
   Open swamp ground can be walked on and built on. Existing saved terrain stays as it is.
+- Friendly locals live in each biome, with matching outfits and dialogue. Look for
+  Moss the swamp herbalist and Reed the marsh fisher. Click a local to read their
+  introduction. Locals are separate from town workers; their positions are saved.
 - Your gold-clad villager is marked **You**. Click the map and hold **WASD** to
   walk in screen directions. Press **Y** to toggle camera lock: when locked, the
   camera follows your movement; when unlocked, walking leaves the camera in place.
