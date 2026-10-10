@@ -60,6 +60,9 @@ the Python host, refresh both browsers, and create a new world to use the shared
 
 ## Play
 
+- Window shortcuts: **1** Build, **2** Villagers, **3** Valley, **4** Help,
+  **5** Worlds, and **⌘,** Settings. Press a panel's number again to close it.
+  **6–9** are reserved for future windows. Gameplay bindings can use letters or **0**.
 - Each new town has an irregular outline and random forests, ponds, meadows,
   sandy ground, and rocky areas. Ponds have shallow shores and deeper centers.
   The starting clearing has nearby wood and water. Terrain and resources are saved,

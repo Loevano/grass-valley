@@ -29,7 +29,7 @@ try{
       const used=new Set();
       for(const action of Object.keys(defaultBindings)){
         let key=saved.keybindings[action] || defaultBindings[action];
-        if(!/^[a-z0-9]$/.test(key)||used.has(key))key=[defaultBindings[action],...'1234567890'].find(k=>!used.has(k));
+        if(!/^[a-z0]$/.test(key)||used.has(key))key=[defaultBindings[action],...'abcdefghijklmnopqrstuvwxyz0'].find(k=>!used.has(k));
         keybindings[action]=key;used.add(key);
       }
     }
@@ -64,7 +64,10 @@ for(const action of Object.keys(defaultBindings)){
     event.preventDefault();event.stopPropagation();
     const key=event.key.toLowerCase();
     if(event.ctrlKey||event.metaKey||event.altKey||!/^[a-z0-9]$/.test(key)){
-      $('settings-message').textContent='Choose a letter or number without modifier keys.';return;
+      $('settings-message').textContent='Choose a letter or 0 without modifier keys.';return;
+    }
+    if(/^[1-9]$/.test(key)){
+      $('settings-message').textContent='Keys 1–9 are reserved for windows. Choose a letter or 0.';return;
     }
     if(Object.keys(keybindings).some(other=>other!==action&&keybindings[other]===key)){
       $('settings-message').textContent='That key is already assigned. Choose another key.';return;
@@ -363,6 +366,17 @@ window.addEventListener('keydown',event=>{
   if(key===','&&event.metaKey&&!event.ctrlKey&&!event.altKey&&!event.shiftKey){
     event.preventDefault();
     if(!event.repeat&&!$('settings-panel').open&&!$('world-menu').open&&!$('delete-world-dialog').open)$('settings-button').onclick();
+    return;
+  }
+  if(/^[1-9]$/.test(key)&&!event.ctrlKey&&!event.metaKey&&!event.altKey&&!event.shiftKey){
+    if(!event.repeat&&!$('settings-panel').open&&!$('world-menu').open&&!$('delete-world-dialog').open
+      &&!document.activeElement?.isContentEditable&&!['INPUT','TEXTAREA','SELECT'].includes(document.activeElement?.tagName)){
+      const name=['build','villagers','valley','help','world-menu'][Number(key)-1];
+      if(name&&!$(name+'-button').disabled){
+        event.preventDefault();clearWalk();$(name+'-button').onclick();
+        if(name!=='world-menu')canvas.focus();
+      }
+    }
     return;
   }
   if(key===keybindings.build&&!event.repeat&&!event.ctrlKey&&!event.metaKey&&!event.altKey&&canControlPlayer(true)){

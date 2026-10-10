@@ -106,6 +106,40 @@ function session(saved=null){
   check(oldCustom.state.bindings.build==='b','Older settings receive the default build binding');
   const occupiedBuildKey=session(JSON.stringify({keybindings:{up:'b',left:'a',down:'s',right:'d',camera:'y'}}));
   check(occupiedBuildKey.state.bindings.up==='b'&&occupiedBuildKey.state.bindings.build!=='b','Existing custom bindings keep their keys when adding building mode');
+  const windows=session();
+  windows.key('w');windows.key('1');
+  check(windows.state.panel==='build'&&windows.state.held.length===0,'1 opens Build and releases movement');
+  windows.state.place();windows.key('1');
+  check(windows.state.panel===null&&windows.state.tool===null&&!windows.state.placement,'1 closes Build and cancels placement');
+  for(const [number,name] of [['2','villagers'],['3','valley'],['4','help']]){
+    windows.key(number);check(windows.state.panel===name,number+' opens '+name);
+    windows.key(number,{repeat:true});windows.key(number,{ctrlKey:true});windows.key(number,{metaKey:true});windows.key(number,{altKey:true});windows.key(number,{shiftKey:true});
+    check(windows.state.panel===name,'Held or modified number shortcuts do not toggle panels');
+    windows.key(number);check(windows.state.panel===null,number+' closes '+name);
+  }
+  for(const activeElement of [{tagName:'INPUT'},{tagName:'TEXTAREA'},{tagName:'SELECT'},{isContentEditable:true}]){
+    windows.document.activeElement=activeElement;windows.key('2');windows.key('5');
+    check(windows.state.panel===null&&!windows.document.getElementById('world-menu').open,'Typing blocks window shortcuts');
+  }
+  windows.document.activeElement={tagName:'BUTTON'};windows.key('2');
+  check(windows.state.panel==='villagers','Window shortcuts work with a focused button');
+  windows.document.activeElement=null;
+  for(const id of ['settings-panel','world-menu','delete-world-dialog']){
+    windows.document.getElementById(id).open=true;windows.key('4');
+    check(windows.state.panel==='villagers','Dialogs block number shortcuts');
+    windows.document.getElementById(id).open=false;
+  }
+  windows.document.getElementById('build-button').disabled=true;windows.key('1');
+  check(windows.state.panel==='villagers','Number shortcuts respect disabled toolbar buttons');
+  for(const number of ['6','7','8','9'])windows.key(number);
+  check(windows.state.panel==='villagers','Reserved future shortcuts do not change the current panel');
+  windows.key('5');check(windows.document.getElementById('world-menu').open,'5 opens Worlds');
+  windows.rebind('up','1');windows.rebind('up','9');
+  check(windows.state.bindings.up==='w','Reserved window keys cannot be gameplay bindings');
+  windows.rebind('up','0');check(windows.state.bindings.up==='0','0 remains available for gameplay bindings');
+  const numericBindings=session(JSON.stringify({keybindings:{up:'1',left:'2',down:'3',right:'4',camera:'5',fish:'6',chop:'7',gather:'8',build:'9'}}));
+  check(Object.values(numericBindings.state.bindings).every(key=>!/^[1-9]$/.test(key)),'Saved bindings release reserved window keys');
+  check(new Set(Object.values(numericBindings.state.bindings)).size===9,'Migrated bindings remain unique');
   const malformed=session('{broken');check(malformed.state.bindings.camera==='y','Malformed storage falls back to defaults');
   const invalid=session(JSON.stringify({keybindings:{up:'w',left:'a',down:'s',right:'d',camera:'d'}}));
   check(invalid.state.bindings.camera==='y','Invalid stored duplicates fall back to defaults');
