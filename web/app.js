@@ -8,6 +8,7 @@ try {
 } catch { identities = {}; }
 let world = {towns:{}}, viewed = null, tool = null, moveIndex = null;
 let buildTile = null, building = false;
+let panel = null, selection = null, hitTargets = [], keyboardTile = null;
 let catalog = {worlds:[], can_manage:false}, menuStarted = false, refreshing = null, menuBusy = false, deletingWorld = null;
 let tileW = 46, tileH = 23, originX = 0, originY = 0;
 const workers = new Map();
@@ -65,8 +66,73 @@ function renderWorldMenu(){
     $('world-list').append(row);
   }
 }
-for(const [kind,cost] of Object.entries(costs)){const button=document.createElement('button');button.textContent=`${labels[kind]} · ${cost} wood`;button.onclick=()=>{tool=kind;moveIndex=null;buildTile=null;render();};$('buildings').append(button);}
-$('move').onclick=()=>{tool='move';moveIndex=null;buildTile=null;render();};
+function openPanel(next){
+  panel=next;selection=null;tool=null;moveIndex=null;buildTile=null;
+  render();
+}
+for(const name of ['build','villagers','valley','help']){
+  $(name+'-button').onclick=()=>openPanel(panel===name?null:name);
+}
+$('close-panel').onclick=()=>{openPanel(null);canvas.focus();};
+window.addEventListener('keydown',event=>{
+  if(event.key==='Escape' && !$('world-menu').open && !$('delete-world-dialog').open){
+    openPanel(null);canvas.focus();
+  }
+});
+function inspect(type,index){
+  panel='selection';selection={type,index};tool=null;moveIndex=null;buildTile=null;render();
+}
+function villagerCard(town,v,index,withLink=false){
+  const div=document.createElement('div');div.className='villager';
+  const name=document.createElement(withLink?'button':'strong');name.textContent=v.name;
+  if(withLink){name.className='villager-name';name.onclick=()=>inspect('villager',index);}div.append(name);
+  const skills=document.createElement('small');skills.textContent=`Woodcutting ${v.woodcutting} · Farming ${v.farming}`;div.append(skills);
+  const resource=v.job==='woodcutting'?'wood':'food';
+  const full=town[resource]>=100+100*town.buildings.filter(b=>b.kind==='storehouse').length;
+  const activity=document.createElement('small');activity.textContent=v.job==='idle'?'Resting':v.work_target?(full?`Paused: ${resource} storage full. Spend ${resource} or build a storehouse.`:v.job==='woodcutting'?'Gathering at the forest':'Tending crops by the water'):'Waiting for a workplace near '+(v.job==='woodcutting'?'trees':'water');div.append(activity);
+  const select=document.createElement('select');select.setAttribute('aria-label',`Job for ${v.name}`);
+  for(const [job,label] of [['idle','Resting'],['woodcutting','Woodcutting'],['farming','Farming']]){const option=document.createElement('option');option.value=job;option.textContent=label;select.append(option);}
+  select.value=v.job;select.disabled=viewed!==identity?.town_id;select.onchange=()=>act({action:'job',index,job:select.value});div.append(select);
+  return div;
+}
+function renderSelection(town){
+  $('selection-details').replaceChildren();$('hall-details').hidden=true;$('selection-move').hidden=true;
+  if(!selection)return;
+  if(!town){selection=null;panel=null;return;}
+  const item=selection.type==='villager'?town.villagers[selection.index]:selection.type==='building'?town.buildings[selection.index]:town.map_resources[selection.index];
+  if(!item){selection=null;panel=null;return;}
+  if(selection.type==='villager'){
+    $('selection-title').textContent=item.name;$('selection-details').append(villagerCard(town,item,selection.index));return;
+  }
+  const p=document.createElement('p');
+  if(selection.type==='resource'){
+    $('selection-title').textContent={tree:'Forest',water:'Water',rock:'Rock outcrop'}[item.kind];
+    p.textContent={tree:'Renewable wood source. Place a woodcutter within 3 horizontal or vertical tile steps, then assign a villager to woodcutting.',water:'Renewable source for farming. Place a farm within 3 horizontal or vertical tile steps, then assign a villager to farming.',rock:'This outcrop occupies its tile. Mining is not available yet.'}[item.kind];
+  }else{
+    $('selection-title').textContent=labels[item.kind];
+    p.textContent={hall:'The heart of your settlement. Harvest wood to unlock your first upgrade.',home:'Room for 2 additional villagers, up to 16 in the town. New residents need available housing and sufficient food.',storehouse:`Adds 100 storage for each resource. Town capacity: ${100+100*town.buildings.filter(b=>b.kind==='storehouse').length} wood and food.`,woodcutter:'A workplace for gathering wood from nearby trees.',farm:'A workplace for growing food near water.'}[item.kind];
+    if(item.kind==='hall'){
+      $('hall-details').hidden=false;
+      $('progress').textContent=`Level ${town.level} · Timber roots: ${Math.min(30,town.harvested)}/30 wood harvested`;
+      $('upgrade').disabled=viewed!==identity?.town_id || town.level>=2 || town.harvested<30 || town.wood<40;
+    }
+    $('selection-move').hidden=viewed!==identity?.town_id;
+    $('selection-move').textContent=town.coins?'Move building · 1 coin':'Move building · Free';
+    $('selection-move').onclick=()=>{const index=selection.index;openPanel('build');tool='move';moveIndex=index;render();};
+    $('selection-details').append(p);
+    if(item.kind==='woodcutter'||item.kind==='farm'){
+      const assigned=town.villagers.map((v,i)=>({v,i,state:workers.get(i)})).filter(w=>w.v.job===(item.kind==='woodcutter'?'woodcutting':'farming')&&w.state?.home?.x===item.x&&w.state?.home?.y===item.y);
+      const status=document.createElement('p');
+      const nearby=town.map_resources.some(r=>r.kind===(item.kind==='woodcutter'?'tree':'water')&&Math.abs(r.x-item.x)+Math.abs(r.y-item.y)<=3);
+      status.textContent=!nearby?'Needs a source within 3 tile steps.':!assigned.length?'Source nearby. Assign villagers to start work.':`${assigned.length} assigned worker${assigned.length===1?'':'s'}.`;
+      $('selection-details').append(status);
+      for(const w of assigned)$('selection-details').append(villagerCard(town,w.v,w.i,true));
+    }
+  }
+  if(selection.type==='resource')$('selection-details').append(p);
+}
+for(const [kind,cost] of Object.entries(costs)){const button=document.createElement('button');button.textContent=`${labels[kind]} · ${cost} wood`;button.onclick=()=>{panel='build';selection=null;tool=kind;moveIndex=null;buildTile=null;render();};$('buildings').append(button);}
+$('move').onclick=()=>{panel='build';selection=null;tool='move';moveIndex=null;buildTile=null;render();};
 $('cancel').onclick=()=>{tool=null;moveIndex=null;buildTile=null;render();};
 $('confirm-build').onclick=async()=>{
   const town=world.towns[viewed];
@@ -85,10 +151,10 @@ async function refresh(){
   if(refreshing)return refreshing;
   refreshing=(async()=>{
     const next=await request('/api/world');
-    if(next.world_id!==world.world_id){tool=null;moveIndex=null;buildTile=null;viewed=null;}
+    if(next.world_id!==world.world_id){tool=null;moveIndex=null;buildTile=null;viewed=null;selection=null;panel=null;keyboardTile=null;}
     world=next;identity=identities[world.world_id] || null;
     catalog=await request('/api/worlds');
-    if(!world.towns[viewed])viewed=identity?.town_id || Object.keys(world.towns)[0];
+    if(!world.towns[viewed]){viewed=identity?.town_id || Object.keys(world.towns)[0];selection=null;panel=null;tool=null;moveIndex=null;buildTile=null;keyboardTile=null;}
     render();renderWorldMenu();
     if(!menuStarted || !world.world_id){if(!$('world-menu').open)$('world-menu').showModal();menuStarted=true;}
   })();
@@ -96,7 +162,22 @@ async function refresh(){
 }
 function render(){
   const own=world.towns[identity?.town_id], town=world.towns[viewed];
-  $('join').hidden=!!own || !world.world_id;$('controls').hidden=!own;
+  draw();
+  renderSelection(town);
+  $('join').hidden=!!own || !world.world_id || !!panel;
+  $('controls').hidden=panel!=='build' || !own || viewed!==identity?.town_id;
+  for(const name of ['selection','villagers','valley','help'])$(name+'-panel').hidden=panel!==name;
+  $('side-panel').hidden=!panel && $('join').hidden;
+  $('close-panel').hidden=!panel;
+  $('game').classList.toggle('panel-open',!$('side-panel').hidden);
+  for(const name of ['build','villagers','valley','help']){
+    $(name+'-button').setAttribute('aria-expanded',String(panel===name));
+    $(name+'-button').classList.toggle('selected',panel===name);
+  }
+  $('build-button').disabled=!own || viewed!==identity?.town_id;
+  $('villagers-button').disabled=!town;
+  $('move').textContent=own?.coins?'Move a building · 1 coin':'Move a building · Free';
+  $('mode-hint').textContent=tool==='move'?(moveIndex===null?'Moving: click a building. Escape to cancel.':'Moving: click open grass to move here. Escape to cancel.'):tool?`Building ${labels[tool].toLowerCase()}: select open grass, then confirm. Escape to cancel.`:'Click a building, villager, or resource to learn more.';
   $('view-title').textContent=town?.name || 'A place to call home';
   $('resources-empty').hidden=!!own;$('resource-totals').hidden=!own;
   if(own){
@@ -110,21 +191,11 @@ function render(){
   $('confirm-build').disabled=building || !own || own.wood<costs[tool];
   $('confirm-build').textContent=building?'Building…':`Build here · ${costs[tool] || 0} wood`;
   for(const button of $('buildings').children)button.classList.toggle('selected',button.textContent===`${labels[tool]} · ${costs[tool]} wood`);
-  if(own){$('town-name').textContent=own.name;$('hint').textContent=tool==='move'?(moveIndex===null?'Click a building to move it.':'Click open grass.'):tool?(buildTile?`Tile selected for a ${labels[tool].toLowerCase()}. ${own.wood<costs[tool]?'Not enough wood.': 'Choose Build here to place it, or select another tile.'}`:`Click open grass to select a tile for a ${labels[tool].toLowerCase()}.`):'Choose a building, then select an open tile.';$('progress').textContent=`Level ${own.level} · Timber roots: ${Math.min(30,own.harvested)}/30 wood harvested`;$('upgrade').disabled=own.level>=2;}
+  if(own){$('town-name').textContent=own.name;$('hint').textContent=tool==='move'?(moveIndex===null?'Click a building to move it.':'Click open grass.'):tool?(buildTile?`Tile selected for a ${labels[tool].toLowerCase()}. ${own.wood<costs[tool]?'Not enough wood.': 'Choose Build here to place it, or select another tile.'}`:`Click open grass to select a tile for a ${labels[tool].toLowerCase()}.`):'Choose a building, then select an open tile.';}
   $('towns').replaceChildren();
-  for(const [id,t] of Object.entries(world.towns)){const b=document.createElement('button');b.textContent=t.name+(id===identity?.town_id?' · Yours':'');b.classList.toggle('selected',id===viewed);b.onclick=()=>{viewed=id;tool=null;moveIndex=null;buildTile=null;render();};$('towns').append(b);}
+  for(const [id,t] of Object.entries(world.towns)){const b=document.createElement('button');b.textContent=t.name+(id===identity?.town_id?' · Yours':'');b.classList.toggle('selected',id===viewed);b.onclick=()=>{viewed=id;tool=null;moveIndex=null;buildTile=null;selection=null;panel=null;keyboardTile=null;render();};$('towns').append(b);}
   $('villagers').replaceChildren();
-  if(town)for(const [i,v] of town.villagers.entries()){
-    const div=document.createElement('div');div.className='villager';
-    const name=document.createElement('strong');name.textContent=v.name;div.append(name);
-    const skills=document.createElement('small');skills.textContent=`Woodcutting ${v.woodcutting} · Farming ${v.farming}`;div.append(skills);
-    const resource=v.job==='woodcutting'?'wood':'food';
-    const full=town[resource]>=100+100*town.buildings.filter(b=>b.kind==='storehouse').length;
-    const activity=document.createElement('small');activity.textContent=v.job==='idle'?'Resting':v.work_target?(full?`Paused: ${resource} storage full. Spend ${resource} or build a storehouse.`:v.job==='woodcutting'?'Gathering at the forest':'Tending crops by the water'):'Waiting for a workplace near '+(v.job==='woodcutting'?'trees':'water');div.append(activity);
-    const select=document.createElement('select');select.setAttribute('aria-label',`Job for ${v.name}`);
-    for(const [job,label] of [['idle','Resting'],['woodcutting','Woodcutting'],['farming','Farming']]){const option=document.createElement('option');option.value=job;option.textContent=label;select.append(option);}
-    select.value=v.job;select.disabled=viewed!==identity?.town_id;select.onchange=()=>act({action:'job',index:i,job:select.value});div.append(select);$('villagers').append(div);
-  }
+  if(town)for(const [i,v] of town.villagers.entries())$('villagers').append(villagerCard(town,v,i,true));
   draw();
 }
 function point(x,y){return [originX+(x-y)*tileW/2,originY+(x+y)*tileH/2];}
@@ -205,6 +276,7 @@ function draw(seconds=0){
   if(canvas.width!==width||canvas.height!==height){canvas.width=width;canvas.height=height;}
   ctx.setTransform(dpr,0,0,dpr,0,0);ctx.clearRect(0,0,rect.width,rect.height);
   tileW=Math.min(54,(rect.width-30)/12);tileH=tileW/2;originX=rect.width/2;originY=Math.max(140,(rect.height-12*tileH)/2);
+  hitTargets=[];
   const town=world.towns[viewed];
   const resources=town?.map_resources || [];
   const water=new Set(resources.filter(r=>r.kind==='water').map(r=>`${r.x},${r.y}`));
@@ -216,12 +288,25 @@ function draw(seconds=0){
       polygon([[px,py],[px+tileW/2,py+tileH/2],[px,py+tileH],[px-tileW/2,py+tileH/2]],'#e5d58a88','#fff0b1');
       ctx.restore();
     }
+    const selected=selection?.type==='building'?town?.buildings[selection.index]:selection?.type==='resource'?resources[selection.index]:null;
+    if((selected?.x===x&&selected?.y===y)||(keyboardTile?.x===x&&keyboardTile?.y===y)){
+      ctx.save();ctx.lineWidth=3;polygon([[px,py],[px+tileW/2,py+tileH/2],[px,py+tileH],[px-tileW/2,py+tileH/2]],'#fff0b133','#fff0b1');ctx.restore();
+    }
     if(wet){ctx.strokeStyle='#b4d7ce99';ctx.beginPath();ctx.moveTo(px-tileW*.16,py+tileH*.48);ctx.lineTo(px+tileW*.12,py+tileH*.63);ctx.stroke();}
   }
   const buildings=town?.buildings || [{kind:'hall',x:5,y:5}];
   const villagers=animatedVillagers(town,seconds);
   const objects=[...buildings,...resources.filter(r=>r.kind!=='water'),...villagers];
   for(const b of objects.sort((a,b)=>(a.x+a.y)-(b.x+b.y))){
+    const [px,py]=point(b.x,b.y),scale=tileW/46;
+    const type=b.kind==='villager'?'villager':resources.includes(b)?'resource':'building';
+    const index=type==='villager'?b.index:type==='resource'?resources.indexOf(b):buildings.indexOf(b);
+    const centerX=px+(type==='villager'?(b.index%3-1)*3:0);
+    const baseY=py+(type==='villager'?tileH*.65+Math.floor(b.index/3):tileH/2);
+    hitTargets.push({type,index,left:centerX-(type==='villager'?9*scale:tileW*.45),right:centerX+(type==='villager'?9*scale:tileW*.45),top:baseY-(b.kind==='tree'?70:b.kind==='hall'?75:type==='villager'?26:b.kind==='farm'?0:45)*scale,bottom:baseY+(type==='villager'?5*scale:tileH/2)});
+    if(type==='villager'&&selection?.type==='villager'&&selection.index===b.index){
+      ctx.strokeStyle='#fff0b1';ctx.lineWidth=2;ctx.beginPath();ctx.ellipse(centerX,baseY,10*scale,5*scale,0,0,Math.PI*2);ctx.stroke();
+    }
     if(b.kind==='tree'||b.kind==='rock'){drawResource(b);continue;}
     if(b.kind==='villager'){
       drawVillager(b);
@@ -246,20 +331,46 @@ function draw(seconds=0){
     if(b.kind==='hall'){ctx.fillStyle='#d6c478';ctx.fillRect(x,y-h-30*s,2*s,17*s);polygon([[x+2*s,y-h-30*s],[x+16*s,y-h-26*s],[x+2*s,y-h-21*s]],'#d6c478');}
   }
 }
-canvas.onclick=async event=>{
-  if(!tool || viewed!==identity?.town_id)return;
-  const rect=canvas.getBoundingClientRect(),dx=event.clientX-rect.left-originX,dy=event.clientY-rect.top-originY;
-  const x=Math.floor(dx/tileW+dy/tileH),y=Math.floor(dy/tileH-dx/tileW);
-  if(x<0||y<0||x>=12||y>=12)return;
-  const resource=world.towns[viewed].map_resources?.find(r=>r.x===x&&r.y===y);
-  if(resource){notice(resource.kind==='tree'?'Forest: place a woodcutter within 3 tile steps to gather wood.':resource.kind==='water'?'Water: place a farm within 3 tile steps to grow food.':'Rock outcrop: choose open grass for buildings.');return;}
-  if(tool==='move'){if(moveIndex===null){const index=world.towns[viewed].buildings.findIndex(b=>b.x===x&&b.y===y);if(index<0){notice('Click the tile beneath a building.');return;}moveIndex=index;render();}else{await act({action:'move',index:moveIndex,x,y});moveIndex=null;render();}}
-  else{
+async function selectTile(x,y){
+  const town=world.towns[viewed];
+  if(!town || x<0||y<0||x>=12||y>=12)return;
+  const resource=town.map_resources.findIndex(r=>r.x===x&&r.y===y);
+  const index=town.buildings.findIndex(b=>b.x===x&&b.y===y);
+  if(!tool){
+    if(index>=0)inspect('building',index);
+    else if(resource>=0)inspect('resource',resource);
+    else openPanel(null);
+    return;
+  }
+  if(viewed!==identity?.town_id)return;
+  if(resource>=0){notice('Choose open grass, away from resources.');return;}
+  if(tool==='move'){
+    if(moveIndex===null){if(index<0){notice('Click the tile beneath a building.');return;}moveIndex=index;render();}
+    else{await act({action:'move',index:moveIndex,x,y});moveIndex=null;render();}
+  }else{
     if(building)return;
-    if(world.towns[viewed].buildings.some(b=>b.x===x&&b.y===y)){notice('Choose open grass, away from existing buildings.');return;}
+    if(index>=0){notice('Choose open grass, away from existing buildings.');return;}
     buildTile={x,y};render();
   }
+}
+canvas.onclick=async event=>{
+  const rect=canvas.getBoundingClientRect(),px=event.clientX-rect.left,py=event.clientY-rect.top;
+  keyboardTile=null;
+  if(!tool){
+    const hit=[...hitTargets].reverse().find(h=>px>=h.left&&px<=h.right&&py>=h.top&&py<=h.bottom);
+    if(hit){inspect(hit.type,hit.index);return;}
+  }
+  const dx=px-originX,dy=py-originY;
+  await selectTile(Math.floor(dx/tileW+dy/tileH),Math.floor(dy/tileH-dx/tileW));
 };
+canvas.addEventListener('keydown',event=>{
+  const directions={ArrowUp:[-1,0],ArrowDown:[1,0],ArrowLeft:[0,1],ArrowRight:[0,-1]};
+  if(directions[event.key]){
+    event.preventDefault();const [dx,dy]=directions[event.key];
+    keyboardTile=keyboardTile || {x:5,y:5};
+    keyboardTile={x:Math.max(0,Math.min(11,keyboardTile.x+dx)),y:Math.max(0,Math.min(11,keyboardTile.y+dy))};draw();
+  }else if(event.key==='Enter'||event.key===' '){event.preventDefault();const tile=keyboardTile || {x:5,y:5};selectTile(tile.x,tile.y);}
+});
 window.addEventListener('resize',()=>draw());
 function animate(now){
   draw(lastFrame===null?0:Math.min((now-lastFrame)/1000,.1));lastFrame=now;

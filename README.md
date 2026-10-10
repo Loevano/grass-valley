@@ -41,21 +41,27 @@ encrypted transport; do not expose it through router port forwarding.
 
 ## Play
 
-- Choose a building, click open grass to highlight its tile, then click **Build here**
+- Open **Build**, choose a building, click open grass to highlight its tile, then click **Build here**
   to confirm the placement and spend wood. Click another tile to change your selection,
   or **Cancel selection** to clear it. Place woodcutters within three horizontal/vertical tile steps
   of trees and farms within three steps of water; workers need these nearby sources.
 - Trees and water are renewable. Rock outcrops occupy tiles but cannot be mined yet.
-- Give villagers jobs using the selectors on the right. Their skills increase as they work.
+- Click a building, moving villager, or resource to open its information panel.
+  Click the town hall for milestone progress and its upgrade. Close panels with
+  **Close panel** or Escape. On small screens, panels appear as a bottom drawer.
+- Open **Villagers** for the full roster, or select one villager to assign a job.
+  Their skills increase as they work. **Help** contains the basic instructions.
+- Use arrow keys and Enter on the focused map to inspect tiles or choose build locations.
 - Workers walk around obstacles to their resource spots, chop wood or tend crops,
   and carry supplies back to their workplace. These animations illustrate work;
   production still follows the host's three-second rhythm. If a workplace is out
   of reach, production and skill growth pause; move it closer to the source to resume.
 - Build cottages to attract residents; maintain food and add storage as needed.
-- Click **Move a building**, its grid tile, then an empty tile. Moving costs one coin,
+- Click **Move** in a building’s information panel, then an empty tile.
+  You can also use **Move a building** in the Build panel. Moving costs one coin,
   or is free if you have none, so rearranging is always possible.
 - Harvest 30 wood to unlock a milestone; save 40 wood and choose the hall upgrade.
-- Click another town's name to visit. Only its owner can issue commands for it.
+- Open **Valley** and click another town's name to visit. Only its owner can issue commands for it.
 
 The host saves all worlds automatically in `savegame.json`, which is excluded from
 Git. Your browser stores your town's ownership token. Use the same browser and
@@ -78,4 +84,5 @@ python3 -m unittest discover -s tests -v
 
 With Node.js available, check worker movement and animation transitions with
 `node tests/test_animations.js`. Check tile selection and building confirmation with
-`node tests/test_building_selection.js`.
+`node tests/test_building_selection.js`. Check contextual panels, object selection,
+keyboard controls, and visitor restrictions with `node tests/test_selection_panels.js`.

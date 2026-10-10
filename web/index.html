@@ -29,14 +29,24 @@
 <form id="delete-world-form"><label for="delete-world-name">Type the world name to confirm</label><input id="delete-world-name" autocomplete="off" required><button class="danger">Destroy world permanently</button></form>
 <button id="cancel-delete-world" class="quiet">Keep this world</button><p id="delete-world-error" role="alert"></p>
 </dialog>
-<main>
-<aside>
-<section id="join"><h2>Put down roots</h2><p>A quiet medieval valley. A town of your own. Room for friends.</p><form id="join-form"><label for="name">Town name</label><input id="name" maxlength="24" placeholder="Willowbrook" required><button>Found your town</button></form></section>
-<section id="controls" hidden><span class="eyebrow">YOUR SETTLEMENT</span><h2 id="town-name"></h2><p id="hint">Choose a building, then select an open tile.</p><div id="buildings"></div><button id="confirm-build" hidden>Build here</button><button id="move">Move a building · 1 coin</button><button id="cancel" class="quiet">Cancel selection</button><h3>Town hall</h3><p id="progress"></p><button id="upgrade">Choose hall upgrade · 40 wood</button></section>
-<section><h3>Across the valley</h3><div id="towns">Waiting for settlers…</div><p class="muted">Visit a friend's town to see it grow. Each town belongs to its founder.</p></section>
+<nav id="toolbar" aria-label="Village controls">
+<button id="build-button" aria-controls="controls" aria-expanded="false">Build</button>
+<button id="villagers-button" aria-controls="villagers-panel" aria-expanded="false">Villagers</button>
+<button id="valley-button" aria-controls="valley-panel" aria-expanded="false">Valley</button>
+<button id="help-button" aria-controls="help-panel" aria-expanded="false">Help</button>
+<span id="mode-hint" role="status">Click a building, villager, or resource to learn more.</span>
+</nav>
+<main id="game">
+<div class="scene"><div class="scene-label"><span class="eyebrow">THE GREEN VALLEY</span><h2 id="view-title">A place to call home</h2></div><canvas id="world" tabindex="0" aria-label="Town grid. Click an object to inspect it. Use arrow keys to choose a tile and Enter to select it."></canvas><div class="scene-footer">Safe towns · Shared world · No rush</div></div>
+<aside id="side-panel" hidden aria-label="Village information">
+<button id="close-panel" class="quiet">Close panel · Esc</button>
+<section id="join" hidden><h2>Put down roots</h2><p>A quiet medieval valley. A town of your own. Room for friends.</p><form id="join-form"><label for="name">Town name</label><input id="name" maxlength="24" placeholder="Willowbrook" required><button>Found your town</button></form></section>
+<section id="controls" hidden><span class="eyebrow">YOUR SETTLEMENT</span><h2 id="town-name"></h2><p id="hint">Choose a building, then select an open tile.</p><div id="buildings"></div><button id="confirm-build" hidden>Build here</button><button id="move">Move a building · 1 coin</button><button id="cancel" class="quiet">Cancel selection</button></section>
+<section id="selection-panel" hidden aria-labelledby="selection-title"><span class="eyebrow">A CLOSER LOOK</span><h2 id="selection-title"></h2><div id="selection-details"></div><div id="hall-details" hidden><p id="progress"></p><button id="upgrade">Choose hall upgrade · 40 wood</button></div><button id="selection-move" hidden>Move building · 1 coin</button></section>
+<section id="villagers-panel" hidden><span class="eyebrow">THE HEART OF YOUR TOWN</span><h2>Villagers</h2><p class="muted">Select a villager to see their details, or assign jobs here.</p><div id="villagers"></div></section>
+<section id="valley-panel" hidden><h2>Across the valley</h2><div id="towns">Waiting for settlers…</div><p class="muted">Visit a friend's town to see it grow. Each town belongs to its founder.</p></section>
+<section id="help-panel" hidden><h2>A gentle beginning</h2><p>Click a building, villager, tree, water tile, or rock to inspect it. Close panels with Escape. You can also focus the map and use arrow keys and Enter to select tiles.</p><p>Open Build, choose a building, select open grass, then confirm with Build here. Place woodcutters within 3 horizontal or vertical tile steps of trees, and farms within 3 steps of water.</p><p>Assign jobs through Villagers or a villager's information box. Build cottages for more residents and storehouses for more storage.</p><p>Click the town hall to see milestone progress and upgrade it. Open Valley to visit another town; visitors can inspect but only owners can make changes.</p><p class="muted">Trees and water are renewable. Rocks cannot be mined yet. Adventures and magic are planned for a later version.</p></section>
 </aside>
-<div class="scene"><div class="scene-label"><span class="eyebrow">THE GREEN VALLEY</span><h2 id="view-title">A place to call home</h2></div><canvas id="world" aria-label="Angled town grid. Choose a building, click an open tile to select it, then choose Build here."></canvas><div class="scene-footer">Safe towns · Shared world · No rush</div></div>
-<aside><span class="eyebrow">THE HEART OF YOUR TOWN</span><h2>Villagers</h2><p class="muted">Give everyone a purpose. Skills grow as they work.</p><div id="villagers">Found a town to meet your villagers.</div><section><h3>A gentle beginning</h3><p>Place a woodcutter near trees and a farm near water, within 3 horizontal or vertical tile steps. Assign workers to gather wood and grow food.</p><p class="muted">Trees and water are renewable. Build on open grass; rock outcrops reserve their tiles. Add homes to welcome new neighbors.</p><p class="muted">Adventures and magic are planned for a later version.</p></section></aside>
 </main>
 <div id="notice" role="status" aria-live="polite"></div>
 <script src="animations.js"></script><script src="app.js"></script>
