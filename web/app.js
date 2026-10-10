@@ -343,6 +343,41 @@ function villagerRow(town,v,index){
   if(expanded){const card=villagerCard(town,v,index);card.children[0].hidden=true;details.append(card);}
   row.append(details);return row;
 }
+const settlerSpaces={hall:1,home:2,storehouse:1,woodcutter:1,fishing_hut:1,farm:4,acre:1};
+function settlerBuilding(town,v,index){
+  if(Number.isInteger(v.building_index))return v.building_index;
+  const kind={woodcutting:'woodcutter',farming:'farm',fishing:'fishing_hut'}[v.job];
+  const places=town.buildings.map((b,i)=>({b,i})).filter(({b})=>b.kind===kind&&!b.construction&&buildingUsable(town,b));
+  return places.length?places[index%places.length].i:null;
+}
+function renderSettlers(town,item,buildingIndex){
+  const owner=viewed===identity?.town_id;
+  const level=item.settler_level || 1,capacity=settlerSpaces[item.kind]*level;
+  const assigned=town.villagers.map((v,i)=>({v,i})).filter(({v,i})=>settlerBuilding(town,v,i)===buildingIndex);
+  $('selection-details').append(fact(`${assigned.length} / ${capacity}`,'Settler spaces'));
+  const note=document.createElement('p');
+  note.textContent=item.kind==='acre'?'Assigned settlers tend this acre using its farm’s water supply.':
+    ['hall','home','storehouse'].includes(item.kind)?'Assigned settlers rest here and can still help with construction. Housing and storage benefits are automatic.':
+    'Assign settlers here to work at this building.';
+  $('selection-details').append(note);
+  for(const {v,i} of assigned){
+    $('selection-details').append(villagerCard(town,v,i,true));
+    if(owner){const remove=document.createElement('button');remove.textContent=`Remove ${v.name}`;remove.onclick=()=>act({action:'remove_settler',index:i});$('selection-details').append(remove);}
+  }
+  if(!owner)return;
+  const chooser=document.createElement('select');chooser.setAttribute('aria-label','Settler to add');
+  const available=town.villagers.map((v,i)=>({v,i})).filter(({v,i})=>settlerBuilding(town,v,i)!==buildingIndex);
+  for(const {v,i} of available){const option=document.createElement('option');option.value=i;option.textContent=v.name+(settlerBuilding(town,v,i)!==null?' · reassign':'');chooser.append(option);}
+  chooser.value=available.length?String(available[0].i):'';
+  const add=document.createElement('button');add.textContent='Add settler';add.disabled=assigned.length>=capacity||!available.length;
+  chooser.disabled=add.disabled;
+  add.onclick=()=>{if(!add.disabled)act({action:'assign_settler',index:Number(chooser.value),building_index:buildingIndex});};
+  $('selection-details').append(chooser);$('selection-details').append(add);
+  const upgrade=document.createElement('button');upgrade.textContent=level>=3?'Settler capacity fully upgraded':`Upgrade to ${settlerSpaces[item.kind]*(level+1)} spaces · ${20*level} wood`;
+  upgrade.disabled=level>=3||town.wood<20*level;
+  upgrade.onclick=()=>{if(!upgrade.disabled)act({action:'upgrade_capacity',index:buildingIndex});};
+  $('selection-details').append(upgrade);
+}
 function renderSelection(town){
   $('selection-details').replaceChildren();$('hall-details').hidden=true;$('selection-move').hidden=true;$('selection-destroy').hidden=true;
   if(!selection)return;
@@ -426,13 +461,13 @@ function renderSelection(town){
       $('selection-details').append(button);
     }
     if(!item.construction&&(item.kind==='woodcutter'||item.kind==='farm'||item.kind==='fishing_hut')){
-      const assigned=town.villagers.map((v,i)=>({v,i,state:workers.get(world.shared_map?`${viewed}/${i}`:i)})).filter(w=>w.v.job===(item.kind==='woodcutter'?'woodcutting':item.kind==='farm'?'farming':'fishing')&&w.state?.home?.x===item.x&&w.state?.home?.y===item.y);
+      const assigned=town.villagers.filter((v,i)=>settlerBuilding(town,v,i)===selection.index);
       const status=document.createElement('p');status.className='workplace-status';
-      const nearby=town.map_resources.some(r=>r.kind===(item.kind==='woodcutter'?'tree':'water')&&Math.abs(r.x-item.x)+Math.abs(r.y-item.y)<=3);
+      const nearby=buildingUsable(town,item);
       status.textContent=!nearby?'Needs a source within 3 tile steps.':!assigned.length?'Source nearby. Assign villagers to start work.':`${assigned.length} assigned worker${assigned.length===1?'':'s'}.`;
       $('selection-details').append(status);
-      for(const w of assigned)$('selection-details').append(villagerCard(town,w.v,w.i,true));
     }
+    if(!item.construction)renderSettlers(town,item,selection.index);
   }
   if(selection.type==='resource')$('selection-details').append(p);
 }
@@ -553,7 +588,7 @@ function animatedVillagers(town, seconds, townId=viewed, frameLayout=null){
   const tiles=items=>items.map(({kind,x,y,farm_index,construction})=>[kind,x,y,farm_index,!!construction]);
   const layout=frameLayout ?? JSON.stringify([tiles(world.shared_map?Object.values(world.towns).flatMap(t=>t.buildings):town.buildings),tiles(town.map_resources)]);
   return town.villagers.map((villager,index)=>{
-    const signature=JSON.stringify([villager.job,villager.work_target?tiles([villager.work_target]):null,
+    const signature=JSON.stringify([villager.job,villager.building_index,villager.work_target?tiles([villager.work_target]):null,
       villager.construction_target?tiles([villager.construction_target]):null]);
     const workerKey=world.shared_map?`${townId}/${index}`:index;
     let state=workers.get(workerKey);

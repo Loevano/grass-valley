@@ -20,6 +20,10 @@ SAVE = ROOT / 'savegame.json'
 LOCK = threading.RLock()
 COSTS = {'home': 20, 'woodcutter': 15, 'farm': 15, 'storehouse': 25, 'fishing_hut': 15, 'acre': 5}
 JOBS = {'idle', 'building', 'woodcutting', 'farming', 'fishing'}
+SETTLER_SPACES = {'hall': 1, 'home': 2, 'storehouse': 1, 'woodcutter': 1,
+                  'fishing_hut': 1, 'farm': 4, 'acre': 1}
+BUILDING_JOBS = {'woodcutter': 'woodcutting', 'farm': 'farming',
+                 'fishing_hut': 'fishing', 'acre': 'farming'}
 TICK_SECONDS = 3
 BUILD_SECONDS = 30
 # Requirements are cumulative harvested wood; costs are paid when upgrading.
@@ -134,15 +138,67 @@ def ensure_resources(town):
     ensure_npcs(town)
 
 
+def settler_capacity(building):
+    return SETTLER_SPACES[building['kind']] * building.get('settler_level', 1)
+
+
+def settler_building(town, worker_index):
+    villager = town['villagers'][worker_index]
+    if 'building_index' in villager:
+        return villager['building_index']
+    # Preserve workplace selection in older saves until explicitly reassigned.
+    kind = {'woodcutting': 'woodcutter', 'farming': 'farm',
+            'fishing': 'fishing_hut'}.get(villager['job'])
+    source = 'tree' if kind == 'woodcutter' else 'water'
+    workplaces = [i for i, b in enumerate(town['buildings'])
+                  if b['kind'] == kind and completed(b)
+                  and any(r['kind'] == source and
+                          abs(r['x'] - b['x']) + abs(r['y'] - b['y']) <= RESOURCE_REACH
+                          for r in town['map_resources'])]
+    return workplaces[worker_index % len(workplaces)] if workplaces else None
+
+
+def assigned_settlers(town, building_index):
+    return [i for i in range(len(town['villagers']))
+            if settler_building(town, i) == building_index]
+
+
+def assign_settler(town, worker_index, building_index):
+    if type(worker_index) is not int or not 0 <= worker_index < len(town['villagers']):
+        raise ValueError('Choose a settler first.')
+    if type(building_index) is not int or not 0 <= building_index < len(town['buildings']):
+        raise ValueError('Choose a building first.')
+    building = town['buildings'][building_index]
+    if not completed(building):
+        raise ValueError('Finish construction before assigning settlers.')
+    others = [i for i in assigned_settlers(town, building_index) if i != worker_index]
+    if len(others) >= settler_capacity(building):
+        raise ValueError('This building has no free settler spaces. Upgrade its capacity first.')
+    villager = town['villagers'][worker_index]
+    villager['building_index'] = building_index
+    villager['job'] = BUILDING_JOBS.get(building['kind'], 'idle')
+
+
 def work_assignment(town, job, worker_index):
     if job == 'building':
         return None
     building, source = {'woodcutting': ('woodcutter', 'tree'),
                         'farming': ('farm', 'water'),
                         'fishing': ('fishing_hut', 'water')}[job]
+    explicit = town['villagers'][worker_index].get('building_index')
+    assigned_acre = None
+    if explicit is not None:
+        assigned = town['buildings'][explicit]
+        if assigned['kind'] == 'acre' and job == 'farming':
+            assigned_acre = assigned
+            explicit = assigned.get('farm_index')
+            if explicit is None or not completed(assigned):
+                return None
+        elif assigned['kind'] != building:
+            return None
     workplaces = []
     for farm_index, b in enumerate(town['buildings']):
-        if b['kind'] != building or not completed(b):
+        if b['kind'] != building or not completed(b) or (explicit is not None and farm_index != explicit):
             continue
         nearby = [r for r in town['map_resources'] if r['kind'] == source
                   and abs(r['x'] - b['x']) + abs(r['y'] - b['y']) <= RESOURCE_REACH]
@@ -151,6 +207,10 @@ def work_assignment(town, job, worker_index):
                 acres = [a for a in town['buildings'] if a['kind'] == 'acre' and completed(a)
                          and a.get('farm_index') == farm_index
                          and abs(a['x'] - b['x']) + abs(a['y'] - b['y']) <= RESOURCE_REACH]
+                if assigned_acre is not None:
+                    if assigned_acre not in acres:
+                        return None
+                    acres = [assigned_acre]
                 if acres:
                     nearby = [acres[worker_index % len(acres)]]
             workplaces.append((b, min(nearby, key=lambda r:
@@ -422,10 +482,39 @@ def command(town, data, world=None):
         if town['buildings'][index]['kind'] == 'hall':
             raise ValueError('The town hall cannot be destroyed.')
         town['buildings'].pop(index)
+        for villager in town['villagers']:
+            assigned = villager.get('building_index')
+            if type(assigned) is int and assigned >= index:
+                if assigned == index:
+                    villager.pop('building_index')
+                    villager['job'] = 'idle'
+                else:
+                    villager['building_index'] = assigned - 1
         for building in town['buildings']:
             farm_index = building.get('farm_index')
             if type(farm_index) is int and farm_index >= index:
                 building['farm_index'] = None if farm_index == index else farm_index - 1
+    elif action == 'assign_settler':
+        assign_settler(town, data.get('index'), data.get('building_index'))
+    elif action == 'remove_settler':
+        index = data.get('index')
+        if type(index) is not int or not 0 <= index < len(town['villagers']):
+            raise ValueError('Choose a settler first.')
+        town['villagers'][index].pop('building_index', None)
+        town['villagers'][index]['job'] = 'idle'
+    elif action == 'upgrade_capacity':
+        index = data.get('index')
+        if type(index) is not int or not 0 <= index < len(town['buildings']):
+            raise ValueError('Choose a building first.')
+        building = town['buildings'][index]
+        level = building.get('settler_level', 1)
+        if not completed(building) or level >= 3:
+            raise ValueError('Capacity cannot be upgraded at this time.')
+        cost = 20 * level
+        if town['wood'] < cost:
+            raise ValueError('Gather more wood first.')
+        town['wood'] -= cost
+        building['settler_level'] = level + 1
     elif action == 'job':
         index, job = data.get('index'), data.get('job')
         if type(index) is not int or not 0 <= index < len(town['villagers']) or job not in JOBS:
@@ -433,6 +522,16 @@ def command(town, data, world=None):
         required = {'woodcutting': 'woodcutter', 'farming': 'farm', 'fishing': 'fishing_hut'}.get(job)
         if required and not any(b['kind'] == required and completed(b) for b in town['buildings']):
             raise ValueError('Build a ' + required + ' first.')
+        if required:
+            current = town['villagers'][index].get('building_index')
+            choices = [i for i, b in enumerate(town['buildings'])
+                       if b['kind'] == required and completed(b)
+                       and len([v for v in assigned_settlers(town, i) if v != index]) < settler_capacity(b)]
+            if not choices:
+                raise ValueError('No free settler spaces. Upgrade a building or remove a settler first.')
+            assign_settler(town, index, current if current in choices else choices[0])
+        else:
+            town['villagers'][index].pop('building_index', None)
         town['villagers'][index]['job'] = job
     elif action == 'upgrade_building':
         index = data.get('index')
