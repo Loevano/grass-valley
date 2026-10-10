@@ -18,7 +18,7 @@ const run=new Function('document','window','localStorage','setTimeout','clearTim
     marks.length=0;ctx.fillStyle='';ctx.strokeStyle='';ctx.lineWidth=1;
     drawBuilding(building,owner);return JSON.stringify(marks);
   }
-  for(const kind of ['home','storehouse','woodcutter','farm','fishing_hut','acre','barn','sawpit','mill','smokehouse','workshop','fish_pond','orchard','market']){
+  for(const kind of ['home','storehouse','woodcutter','farm','fishing_hut','acre','barn','sawpit','mill','smokehouse','workshop','fish_pond','orchard','market','bakery','butcher']){
     const building={kind,x:5,y:5},original=JSON.stringify(building);
     const base=appearance(building),second=appearance({...building,level:2}),third=appearance({...building,level:3});
     assert.notStrictEqual(base,second,kind+' changes at level 2');
@@ -29,6 +29,10 @@ const run=new Function('document','window','localStorage','setTimeout','clearTim
     assert.strictEqual(appearance(site),appearance({...site,construction:{...site.construction,upgrade:{level:3}}}),'Pending target levels do not render as completed');
     assert.notStrictEqual(appearance(site),second,'Completion replaces scaffolding with upgraded artwork');
   }
+  assert.strictEqual(buildingHeight({kind:'home',settler_level:3},town),buildingHeight({kind:'home'},town),'Capacity markers do not masquerade as structural upgrades');
+  const silhouettes=['barn','sawpit','mill','smokehouse','workshop','fish_pond','orchard','market','bakery','butcher'].map(kind=>appearance({kind,x:5,y:5}));
+  assert.strictEqual(new Set(silhouettes).size,10,'Advanced workplaces have distinct artwork');
+  assert.notStrictEqual(appearance({kind:'mill',x:5,y:5}),(()=>{marks.length=0;drawBuilding({kind:'mill',x:5,y:5},town,{elapsed:1});return JSON.stringify(marks);})(),'Active mill sails rotate');
   const hall={kind:'hall',x:5,y:5};
   const halls=[1,2,3,4,5].map(level=>appearance(hall,{...town,level}));
   assert.strictEqual(new Set(halls).size,5,'Each completed hall level has distinct artwork');
@@ -47,6 +51,22 @@ const run=new Function('document','window','localStorage','setTimeout','clearTim
   const target=hitTargets.find(hit=>hit.type==='building'&&hit.townId==='visitor');
   const [,py]=point(hall.x,hall.y);
   assert(target&&target.top<=py+tileH/2-(buildingHeight(hall,visitor)+30)*tileW/46,'Visitor hall roof uses its own level and remains selectable');
+  buildingEffects.length=0;
+  commandEffect({action:'upgrade_capacity',index:0});
+  assert.strictEqual(buildingEffects[0].kind,'build','Capacity upgrades trigger construction feedback');
+  buildingEffects.length=0;
+  commandEffect({action:'move',index:0,x:6,y:6});
+  assert.deepStrictEqual(buildingEffects.map(e=>e.kind),['dust','move'],'Moves mark the old and new sites');
+  assert.strictEqual(buildingEffects[1].x,6);
+  drawBuildingEffects(.4);const effectAge=buildingEffects[0].age;
+  drawBuildingEffects(0);assert.strictEqual(buildingEffects[0].age,effectAge,'UI redraws do not advance effects');
+  drawBuildingEffects(1);assert.strictEqual(buildingEffects.length,0,'Effects expire');
+  town.buildings[0].construction={progress:29,total:30};
+  const finished={...town,buildings:[{kind:'home',x:4,y:5,level:3}]};
+  updateBuildingEffects({world_id:'test',towns:{own:finished}});
+  assert.strictEqual(buildingEffects[0].kind,'complete','Polled construction completion triggers feedback');
+  updateBuildingEffects({world_id:'other',towns:{}});
+  assert.strictEqual(buildingEffects.length,0,'Switching worlds clears feedback');
   console.log('Building visual upgrade checks passed');
 `);
 run(documentMock,{devicePixelRatio:1,addEventListener(){}},{getItem:()=>null},()=>0,()=>{},assert,marks);

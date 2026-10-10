@@ -77,10 +77,11 @@ const WorkerAnimation = (() => {
     }
     return {...start,phase:path===null?'waiting':path.length?'walking':source?'working':'idle',
       path:path || [],source,home,pier,workSpot,castTarget,fishingCaught:null,blocked,size,workDuration:villager.job==='farming'?8:3.2,
+      stationary:!!source&&source.kind===workplace?.kind&&distance(source,workplace)===0&&!villager.construction_target,
       construction:!!villager.construction_target,elapsed:0,clock:state?.clock || index*.37,facing:state?.facing || 1};
   }
   function advance(state, seconds, active) {
-    state.clock+=seconds;
+    if(active || state.path.length || !state.source)state.clock+=seconds;
     if(state.path.length){
       let travel=seconds*1.8;
       while(state.path.length&&travel>0){
@@ -100,7 +101,7 @@ const WorkerAnimation = (() => {
     }
     if(state.phase==='working'&&state.elapsed>=(state.workDuration || 3.2)){
       if(state.fishingCaught===false){state.elapsed=0;state.fishingCaught=null;return;}
-      const path=state.home?route(state,state.home,state.blocked,state.size):null;
+      const path=state.stationary?[]:state.home?route(state,state.home,state.blocked,state.size):null;
       if(path===null)return;
       state.path=path;state.phase=path.length?'returning':'depositing';state.elapsed=0;
     }else if(state.phase==='depositing'&&state.elapsed>=.65){

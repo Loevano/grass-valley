@@ -181,10 +181,18 @@ the Python host, refresh both browsers, and create a new world to use the shared
   Farm and acre bonuses add together on that field. Fishing bonuses increase food
   from successful catches; the 80% catch chance stays the same. Workers still need
   nearby resources. Upgrades survive saving and moving the building.
-  Completed building and settler-capacity upgrades also change the artwork:
+  Completed building upgrades change the artwork; settler-capacity upgrades add
+  separate blue markers:
   level 2 adds timber framing and roof trim; level 3 adds stonework and a dormer.
   Acres gain raised borders and irrigation, halls develop through five visual
   levels, and profession upgrades add visible tools, nets, boats, or framing.
+  Each workplace has its own roof color and equipment. Wall plaques show building
+  level. Hover over or select a building to read its level, capacity tier, and
+  profession improvements. Advanced workers saw, grind, smoke fish, hammer, feed
+  animals and fish, pick fruit, knead dough, or prepare meat at their assigned
+  workplace, then deposit their goods. Work animations pause with production.
+  Building, moving, demolition, animal purchases, crop changes, assignments, sales,
+  and completed upgrades have brief visual feedback.
 - Click a building, then **Destroy building** to remove it without a resource
   refund. The town hall cannot be destroyed. Removing workplaces pauses affected
   workers until another suitable workplace is available; existing residents stay.

@@ -154,7 +154,7 @@ function playerSprite(town,seconds){
   s.facing=s.target.facing;s.clock+=seconds;s.path=distance>.001?[s.target]:[];s.phase='idle';
   const activity=town.player.activity;
   s.source=activity;s.castTarget=activity;s.elapsed=s.clock%3;
-  const working=!!activity&&!town.player.activity_status?.includes('full')&&!town.player.activity_status?.includes('Waiting');
+  const working=!s.path.length&&!!activity&&!town.player.activity_status?.includes('full')&&!town.player.activity_status?.includes('Waiting');
   if(working&&!s.path.length)s.phase='working';
   if(activity)s.facing=town.player.facing;
   if(playerTown===identity?.town_id&&s.following&&(dx||dy||distance>.001)){
@@ -216,10 +216,10 @@ function remotePlayerSprite(townId,town,seconds){
 const labels = {hall:'Town hall',home:'Cottage',woodcutter:'Woodcutter',farm:'Farm',storehouse:'Storehouse',fishing_hut:'Fishing hut',acre:'Acre'};
 function buildingLevel(building){return building.level || 1;}
 function buildingVisualLevel(building,town){
-  return building.kind==='hall'?Math.min(5,town?.level || 1):Math.min(3,Math.max(buildingLevel(building),building.settler_level || 1));
+  return building.kind==='hall'?Math.min(5,town?.level || 1):Math.min(3,buildingLevel(building));
 }
 function buildingHeight(building,town){
-  return (building.kind==='hall'?42:building.kind==='woodcutter'?23:27)+4*(buildingVisualLevel(building,town)-1);
+  return ({hall:42,woodcutter:23,barn:34,mill:40,smokehouse:32,workshop:25,sawpit:16,market:17,fish_pond:18,orchard:20,bakery:30,butcher:25}[building.kind] || 27)+4*(buildingVisualLevel(building,town)-1);
 }
 function storageCapacity(town){return 100+100*town.buildings.filter(b=>b.kind==='storehouse'&&!b.construction).reduce((sum,b)=>sum+buildingLevel(b),0);}
 function upgradeBenefit(kind,level){
@@ -314,7 +314,7 @@ async function request(path, data, options={}) {
   const response = await fetch(path,{...options,method:data?'POST':'GET',headers:{'Content-Type':'application/json','Authorization':identity?.token || ''},body:data?JSON.stringify(data):undefined});
   const result = await response.json(); if(!response.ok) throw Error(result.error || 'Connection failed'); return result;
 }
-async function act(data) { try { await request('/api/command',{...data,world_id:world.world_id}); await refresh(); } catch(e) {notice(e.message);await refresh();} }
+async function act(data) { try { await request('/api/command',{...data,world_id:world.world_id}); commandEffect(data); await refresh(); } catch(e) {notice(e.message);await refresh();} }
 $('join-form').onsubmit=async event=>{event.preventDefault();const worldId=world.world_id;try{identity=await request('/api/join',{name:$('name').value,world_id:worldId});identities[worldId]=identity;localStorage.setItem('lantern-identities',JSON.stringify(identities));viewed=identity.town_id;await refresh();}catch(e){notice(e.message);}};
 $('world-menu-button').onclick=()=>{$('world-menu-error').textContent='';$('world-menu').showModal();};
 $('close-world-menu').onclick=()=>{if(world.world_id)$('world-menu').close();};
@@ -715,6 +715,7 @@ async function buildAt(x,y){
   building=true;render();
   try{
     await request('/api/command',{action:'build',kind,...selected,...(kind==='acre'?{farm_index:acreFarmIndex}:{}),world_id:world.world_id});
+    commandEffect({action:'build',...selected});
     if(tool===kind&&buildTile?.x===x&&buildTile?.y===y){buildTile=null;hoverTile=null;}
     await refresh();
   }catch(e){notice(e.message);await refresh();}
@@ -728,11 +729,61 @@ $('selection-destroy').onclick=async()=>{
   button.disabled=true;
   try{
     await request('/api/command',{action:'destroy',index:selected.index,world_id:world.world_id});
+    commandEffect({action:'destroy',index:selected.index});
     if(selection===selected)openPanel(null);
     await refresh();
   }catch(e){notice(e.message);await refresh();}
   finally{button.disabled=false;}
 };
+// Short lived feedback follows successful commands; completed upgrades also reach visitors.
+const buildingEffects=[];
+let buildingHover=null;
+function addBuildingEffect(tile,kind,townId=identity?.town_id){
+  if(tile)buildingEffects.push({x:tile.x,y:tile.y,kind,townId,age:0});
+}
+function commandEffect(data){
+  const town=world.towns[identity?.town_id];
+  const index=['assign_settler','remove_settler','job'].includes(data.action)?data.building_index ?? town?.villagers[data.index]?.building_index:data.index;
+  const tile=town?.buildings[index] || town?.buildings.find(b=>b.kind===(data.action==='sell_goods'?'market':'hall'));
+  const kind={build:'build',destroy:'dust',move:'move',upgrade:'build',upgrade_building:'build',upgrade_capacity:'build',profession_upgrade:'build',sell_goods:'coins',buy_animal:'heart',breed_animal:'heart',set_crop:'leaf',assign_settler:'people',remove_settler:'people',job:'people'}[data.action];
+  if(!kind)return;
+  if(data.action==='move')addBuildingEffect(tile,'dust');
+  addBuildingEffect(data.action==='build'||data.action==='move'?data:tile,kind);
+}
+function updateBuildingEffects(next){
+  if(next.world_id!==world.world_id){buildingEffects.length=0;buildingHover=null;return;}
+  for(const [id,town] of Object.entries(next.towns)){
+    const before=world.towns[id]?.buildings || [];
+    for(const building of town.buildings || []){
+      const old=before.find(b=>b.kind===building.kind&&b.x===building.x&&b.y===building.y);
+      if(old?.construction&&!building.construction)addBuildingEffect(building,'complete',id);
+    }
+  }
+}
+function drawBuildingEffects(seconds){
+  for(let i=buildingEffects.length-1;i>=0;i--){
+    const effect=buildingEffects[i];effect.age+=seconds;
+    if(effect.age>=1.2){buildingEffects.splice(i,1);continue;}
+    if(!world.shared_map&&effect.townId!==viewed)continue;
+    const [x,y]=point(effect.x,effect.y),scale=tileW/46,t=effect.age/1.2;
+    ctx.save();ctx.translate(x,y+tileH/2);ctx.scale(scale,scale);ctx.globalAlpha=1-t;
+    if(['build','move','complete'].includes(effect.kind)){
+      ctx.strokeStyle=effect.kind==='complete'?'#fff0b1':'#9fd8e5';ctx.lineWidth=2;
+      ctx.beginPath();ctx.ellipse(0,0,10+t*18,5+t*9,0,0,Math.PI*2);ctx.stroke();
+    }
+    ctx.fillStyle=effect.kind==='dust'?'#b69a70':effect.kind==='leaf'?'#8db568':'#efd59a';
+    for(let n=0;n<6;n++){
+      const dx=Math.cos(n*Math.PI/3)*(5+t*15),dy=-t*24+Math.sin(n*Math.PI/3)*5;
+      if(effect.kind==='coins'){ctx.beginPath();ctx.arc(dx,dy,3,0,Math.PI*2);ctx.fill();}
+      else if(effect.kind==='heart'){polygon([[dx,dy+3],[dx-3,dy],[dx-3,dy-2],[dx,dy-1],[dx+3,dy-2],[dx+3,dy]],'#df927c');}
+      else if(effect.kind==='people'){ctx.beginPath();ctx.arc(dx,dy-2,2,0,Math.PI*2);ctx.fill();ctx.fillRect(dx-2,dy,4,4);}
+      else ctx.fillRect(dx,dy,3,3);
+    }
+    const caption={build:'Building',move:'Moved',complete:'Complete',coins:'Sold',heart:'Animals',leaf:'Crop changed',people:'Workers updated'}[effect.kind];
+    if(caption){ctx.font='bold 10px sans-serif';ctx.textAlign='center';ctx.fillText(caption,0,-30-t*12);}
+    ctx.restore();
+  }
+}
 function departureMessage(town){
   const departed=town.last_departure;
   if(!departed)return '';
@@ -756,6 +807,7 @@ async function refresh(){
     const next=await request('/api/world');
     if(next.world_id!==world.world_id){tool=null;moveIndex=null;buildTile=null;hoverTile=null;viewed=null;selection=null;panel=null;keyboardTile=null;}
     if(next.shared_map)for(const town of Object.values(next.towns))Object.assign(town,next.shared_map);
+    updateBuildingEffects(next);
     updateDepartures(next);
     world=next;identity=identities[world.world_id] || null;
     // Keep characters moving even if the lightweight endpoint is unavailable.
@@ -893,14 +945,14 @@ function drawVillager(b){
   const walking=s.path.length>0,working=s.phase==='working'&&b.active;
   const stride=walking?Math.sin(s.clock*13):0;
   const chopping=working&&b.villager.job==='woodcutting';
-  const fishing=s.phase==='working'&&b.villager.job==='fishing';
-  const farming=s.phase==='working'&&b.villager.job==='farming';
+  const fishing=s.phase==='working'&&!walking&&b.villager.job==='fishing';
+  const farming=s.phase==='working'&&!walking&&b.villager.job==='farming';
   const constructing=working&&!!b.villager.construction_target;
   const farmStage=Math.min(3,Math.floor((s.elapsed || 0)/2));
   const farmSwing=(Math.sin((s.elapsed || 0)*Math.PI*3)+1)/2;
   const fishingTime=s.activityElapsed ?? s.elapsed ?? 0;
   const cast=Math.min(fishingTime/.55,1),reel=Math.max(0,Math.min((fishingTime-2.35)/.85,1));
-  const swing=working?(Math.sin(s.clock*(chopping?5:7))+1)/2:0;
+  const swing=working?(Math.sin((s.elapsed || 0)*(chopping?5:7))+1)/2:0;
   ctx.save();ctx.translate(px+(b.index%3-1)*3,py+tileH*.65+Math.floor(b.index/3));ctx.scale(tileW/46,tileW/46);
   ctx.fillStyle='#223b2966';ctx.beginPath();ctx.ellipse(0,2,7,3,0,0,Math.PI*2);ctx.fill();
   const facingTarget=fishing?(s.castTarget || s.source):s.source;
@@ -978,6 +1030,7 @@ function drawVillager(b){
       polygon([[floatX,floatY+9],[floatX-3,floatY+12],[floatX+3,floatY+12]],'#7899a2');
     }
   }else if(working&&b.villager.job==='gathering'){
+    ctx.translate(swing*4,swing*3);
     ctx.fillStyle='#ac895d';ctx.fillRect(5,-7,10,8);ctx.fillStyle='#b35b69';ctx.beginPath();ctx.arc(10,-8,3,0,Math.PI*2);ctx.fill();
   }else if(farming){
     if(farmStage===0){
@@ -1014,6 +1067,8 @@ function drawVillager(b){
       ctx.strokeStyle='#a78454';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(0,3);ctx.lineTo(0,-5);ctx.stroke();
       ctx.strokeStyle='#dce5df';ctx.lineWidth=2;ctx.beginPath();ctx.arc(1,-8,5,-Math.PI/2,Math.PI/2);ctx.stroke();ctx.restore();
     }
+  }else if(working&&['husbandry','woodworking','milling','preserving','crafting','breeding','orcharding','baking','butchery'].includes(b.villager.job)){
+    drawProfessionAction(b.villager.job,s.elapsed || 0);
   }else if(working){
     ctx.save();ctx.translate(chopping?6:5,chopping?-13+swing*4:-11);ctx.rotate(chopping?-1+swing*2.5:-1.4+swing*2);
     ctx.strokeStyle='#a78454';ctx.lineWidth=chopping?2.5:2;ctx.beginPath();ctx.moveTo(0,chopping?4:3);ctx.lineTo(0,chopping?-16:-10);ctx.stroke();
@@ -1026,15 +1081,59 @@ function drawVillager(b){
     }
   }
   if(s.phase==='returning'||s.phase==='depositing'){
+    ctx.save();
+    if(s.phase==='depositing'){const progress=Math.min(1,(s.elapsed || 0)/.65);ctx.translate(progress*8,progress*3);ctx.globalAlpha=1-progress;}
     ctx.fillStyle=b.villager.job==='woodcutting'?'#997044':b.villager.job==='fishing'?'#7899a2':'#d6c478';ctx.fillRect(2,-8,11,5);
     ctx.fillStyle='#e1c593';ctx.beginPath();ctx.arc(13,-5.5,2.5,0,Math.PI*2);ctx.fill();
     if(b.villager.job==='fishing')polygon([[5,-10],[9,-12],[13,-10],[9,-8]],'#b8d8d5','#527f86');
+    if(['woodworking','crafting'].includes(b.villager.job)){ctx.fillStyle='#b78b57';ctx.fillRect(2,-11,14,3);}
+    if(['baking','butchery','preserving','orcharding','husbandry','breeding','milling'].includes(b.villager.job)){ctx.fillStyle='#ac895d';ctx.fillRect(3,-9,12,7);ctx.fillStyle={baking:'#d3ab69',butchery:'#b66e65',preserving:'#8ebbbd',orcharding:'#cc8962',husbandry:'#eee0bd',breeding:'#8ebbbd',milling:'#eee0bd'}[b.villager.job];ctx.beginPath();ctx.ellipse(9,-9,5,2,0,0,Math.PI*2);ctx.fill();}
     if(b.villager.job==='farming'){
       ctx.strokeStyle='#e5c77f';ctx.lineWidth=2;ctx.beginPath();
       for(let i=0;i<4;i++){ctx.moveTo(5+i*2,-4);ctx.lineTo(4+i*2,-12);}ctx.stroke();
     }
+    ctx.restore();
   }
   ctx.restore();
+}
+// Tools and materials are drawn in character coordinates; elapsed freezes on pauses.
+function drawProfessionAction(job,time){
+  const motion=(Math.sin(time*7)+1)/2;
+  ctx.fillStyle='#806448';ctx.fillRect(5,-3,17,3);
+  ctx.strokeStyle='#d5dfd8';ctx.lineWidth=2;
+  if(job==='woodworking'){
+    ctx.fillStyle='#b78b57';ctx.fillRect(6,-7,17,4);
+    polygon([[5+motion*7,-11],[19+motion*7,-11],[18+motion*7,-7],[6+motion*7,-7]],'#c4d2ce');
+    ctx.fillStyle='#e4c98a';for(let i=0;i<3;i++)ctx.fillRect(15+i*3,-3+((time*4+i)%1)*6,2,2);
+  }else if(job==='crafting'||job==='butchery'){
+    ctx.fillStyle=job==='crafting'?'#7c8985':'#b66e65';ctx.fillRect(8,-7,12,4);
+    ctx.save();ctx.translate(9,-9-motion*6);ctx.rotate(-motion*.8);
+    ctx.strokeStyle='#a78454';ctx.beginPath();ctx.moveTo(0,2);ctx.lineTo(0,-7);ctx.stroke();
+    ctx.fillStyle='#d5dfd8';ctx.fillRect(-3,-9,job==='crafting'?9:7,job==='crafting'?4:7);ctx.restore();
+    if(job==='crafting'&&motion>.8){ctx.fillStyle='#efd59a';ctx.fillRect(21,-10,2,2);ctx.fillRect(24,-7,2,2);}
+  }else if(job==='milling'){
+    ctx.fillStyle='#92978b';ctx.beginPath();ctx.ellipse(13,-6,9,4,0,0,Math.PI*2);ctx.fill();
+    ctx.beginPath();ctx.moveTo(13,-6);ctx.lineTo(13+Math.cos(time*4)*7,-6+Math.sin(time*4)*3);ctx.stroke();
+    ctx.fillStyle='#eee0bd';ctx.fillRect(20,-3,5,5);
+  }else if(job==='baking'){
+    ctx.fillStyle='#eee0bd';ctx.beginPath();ctx.ellipse(13,-6,7+motion*2,3-motion,0,0,Math.PI*2);ctx.fill();
+    ctx.strokeStyle='#a78454';ctx.lineWidth=3;ctx.beginPath();ctx.moveTo(7+motion*5,-8);ctx.lineTo(18+motion*5,-8);ctx.stroke();
+  }else if(job==='preserving'){
+    polygon([[8,-9],[16,-12],[23,-9],[16,-6]],'#8ebbbd');
+    ctx.strokeStyle='#a78454';ctx.beginPath();ctx.moveTo(7,-13-motion*4);ctx.lineTo(23,-13-motion*4);ctx.stroke();
+    ctx.fillStyle='#c7c6af88';for(let i=0;i<3;i++){ctx.beginPath();ctx.arc(12+i*4,-17-((time+i*.3)%1)*10,2,0,Math.PI*2);ctx.fill();}
+  }else if(job==='orcharding'){
+    ctx.fillStyle='#719451';ctx.beginPath();ctx.arc(18,-18,9,0,Math.PI*2);ctx.fill();
+    ctx.fillStyle='#cc8962';ctx.beginPath();ctx.arc(15,-17+motion*12,3,0,Math.PI*2);ctx.fill();
+    ctx.fillStyle='#ac895d';ctx.fillRect(7,-4,13,6);
+    ctx.strokeStyle='#e7c68c';ctx.beginPath();ctx.moveTo(3,-11);ctx.lineTo(15,-17+motion*12);ctx.stroke();
+  }else{
+    // Keepers scatter feed; pond breeders scatter it over a rippling basin.
+    ctx.fillStyle=job==='breeding'?'#6ba2af':'#ac895d';ctx.beginPath();ctx.ellipse(16,1,10,4,0,0,Math.PI*2);ctx.fill();
+    ctx.fillStyle='#efd59a';for(let i=0;i<5;i++){const fall=(time*1.5+i*.2)%1;ctx.fillRect(7+fall*14,-10+fall*fall*12,2,2);}
+    if(job==='breeding'){ctx.strokeStyle='#b8d8d5';ctx.beginPath();ctx.ellipse(16,1,3+motion*5,1+motion*2,0,0,Math.PI*2);ctx.stroke();}
+    else{ctx.fillStyle='#eee0bd';ctx.beginPath();ctx.ellipse(19+motion*2,-3,4,3,0,0,Math.PI*2);ctx.fill();}
+  }
 }
 // A padded viewport keeps static ground reusable during walking and panning.
 // One canvas bounds memory usage even on Retina displays.
@@ -1254,8 +1353,21 @@ function draw(seconds=0){
       continue;
     }
     if(b.kind==='acre'&&!b.construction)continue;
-    drawBuilding(b,world.towns[b.townId] || town);
+    const worker=villagers.find(v=>v.active&&v.state.phase==='working'&&v.state.source?.x===b.x&&v.state.source?.y===b.y);
+    drawBuilding(b,world.towns[b.townId] || town,worker?.state);
     if(world.shared_map && b.kind==='hall'){ctx.fillStyle='#fff0b1';ctx.font=`bold ${12*scale}px sans-serif`;ctx.textAlign='center';ctx.fillText(world.towns[b.townId].name,px,py-(buildingHeight(b,owner)+38)*scale);}
+  }
+  drawBuildingEffects(seconds);
+  const hover=buildingHover || (selection?.type==='building'?{index:selection.index,townId:viewed}:null);
+  const hoverTown=world.towns[hover?.townId],hoverBuilding=hoverTown?.buildings[hover?.index];
+  if(!tool&&hoverBuilding){
+    const [px,py]=point(hoverBuilding.x,hoverBuilding.y),scale=tileW/46;
+    const level=hoverBuilding.kind==='hall'?hoverTown.level:buildingLevel(hoverBuilding);
+    const upgrades=(hoverBuilding.profession_upgrades || []).map(key=>world.progression?.upgrades?.[key]?.label || goodName(key));
+    const lines=[`${labels[hoverBuilding.kind]} · Level ${level} · Capacity tier ${hoverBuilding.settler_level || 1}`,upgrades.join(' · ')].filter(Boolean);
+    if(hoverBuilding.construction)lines.push('Under construction');
+    ctx.save();ctx.font=`bold ${11*scale}px sans-serif`;ctx.textAlign='center';ctx.fillStyle='#fff0b1';
+    lines.forEach((line,i)=>{ctx.strokeStyle='#233b30';ctx.lineWidth=3*scale;const y=py-(buildingHeight(hoverBuilding,hoverTown)+45+i*14)*scale;ctx.strokeText(line,px,y);ctx.fillText(line,px,y);});ctx.restore();
   }
   if(preview && previewKind && town && town.terrain?.[preview.y]?.[preview.x]!=='v' && viewed===identity?.town_id){
     const valid=placementValid(town,preview,previewKind);
@@ -1377,7 +1489,8 @@ function drawBuilding(b,town=world.towns[viewed],farmState=null){
   }
   polygon([[x-w,y],[x,y+depth],[x,y+depth-3*s],[x-w,y-3*s]],'#797665');
   polygon([[x,y+depth],[x+w,y],[x+w,y-3*s],[x,y+depth-3*s]],'#5e6255');
-  const roof=b.kind==='hall'?['#5a747b','#52767b','#476975','#405c70','#374e65'][level-1]:['#80574b','#97634d','#526c69'][level-1];
+  const roofColors={home:'#98634f',woodcutter:'#7b714d',farm:'#af8e4f',storehouse:'#596e68',fishing_hut:'#537f91',barn:'#a4594d',sawpit:'#8e7752',mill:'#c2ac76',smokehouse:'#666c72',workshop:'#638078',fish_pond:'#497f85',orchard:'#65854e',market:'#bd8b59',bakery:'#aa744d',butcher:'#995d67'};
+  const roof=b.kind==='hall'?['#5a747b','#52767b','#476975','#405c70','#374e65'][level-1]:roofColors[b.kind] || '#80574b';
   polygon([[x-w-3*s,y-h],[x,y-h-15*s],[x+w+3*s,y-h],[x,y-h+depth+1*s]],usable?roof:'#a34f49');
   if(level>=2){
     ctx.strokeStyle=level>=3?'#c0bd9d':'#c9a579';ctx.lineWidth=2*s;
@@ -1389,7 +1502,7 @@ function drawBuilding(b,town=world.towns[viewed],farmState=null){
     ctx.fillStyle='#edc77d';ctx.fillRect(x-5*s,y-h,4*s,4*s);
   }
   ctx.fillStyle='#3d4438';ctx.fillRect(x-6*s,y-h+13*s,5*s,9*s);
-  // Warm windows and a hanging lantern; no new ambient animation.
+  // Warm windows and a hanging lantern.
   ctx.save();ctx.shadowColor='#f1c779';ctx.shadowBlur=7*s;ctx.fillStyle='#edc77d';
   ctx.fillRect(x+5*s,y-h+12*s,5*s,6*s);ctx.fillRect(x-12*s,y-h+9*s,3*s,4*s);ctx.restore();
   ctx.fillStyle='#594d38';ctx.fillRect(x-12*s,y-h+10*s,3*s,s);
@@ -1400,7 +1513,7 @@ function drawBuilding(b,town=world.towns[viewed],farmState=null){
     if(b.kind==='barn'){ctx.fillStyle='#f0e3bc';for(let i=0;i<Math.min(4,Object.values(b.animals || {}).reduce((a,n)=>a+n,0));i++){ctx.beginPath();ctx.ellipse(x-12*s+i*7*s,y+4*s,4*s,3*s,0,0,Math.PI*2);ctx.fill();}}
     if(b.kind==='bakery'){ctx.fillStyle='#d3ab69';ctx.beginPath();ctx.ellipse(x,y-8*s,9*s,5*s,0,0,Math.PI*2);ctx.fill();}
     if(b.kind==='butcher'){ctx.fillStyle='#b66e65';ctx.fillRect(x-7*s,y-14*s,14*s,10*s);ctx.fillStyle='#eadac1';ctx.fillRect(x-2*s,y-12*s,4*s,6*s);}
-    if(b.kind==='mill'){ctx.strokeStyle='#e0ce97';ctx.lineWidth=3*s;for(let i=0;i<4;i++){const a=i*Math.PI/2+Math.PI/4;ctx.beginPath();ctx.moveTo(x,y-h);ctx.lineTo(x+Math.cos(a)*17*s,y-h+Math.sin(a)*17*s);ctx.stroke();}}
+    if(b.kind==='mill'){ctx.strokeStyle='#e0ce97';ctx.lineWidth=3*s;for(let i=0;i<4;i++){const a=i*Math.PI/2+Math.PI/4+(farmState?.elapsed || 0)*2;ctx.beginPath();ctx.moveTo(x,y-h);ctx.lineTo(x+Math.cos(a)*17*s,y-h+Math.sin(a)*17*s);ctx.stroke();}}
     if(b.kind==='fish_pond'){ctx.fillStyle='#6ba2af';ctx.beginPath();ctx.ellipse(x,y+5*s,16*s,6*s,0,0,Math.PI*2);ctx.fill();}
     if(b.kind==='orchard'){ctx.fillStyle='#719451';ctx.beginPath();ctx.arc(x+10*s,y-8*s,9*s,0,Math.PI*2);ctx.fill();ctx.fillStyle='#cc8962';ctx.fillRect(x+7*s,y-12*s,3*s,3*s);}
   }
@@ -1456,6 +1569,54 @@ function drawBuilding(b,town=world.towns[viewed],farmState=null){
     polygon([[x+2*s,y+8*s],[x+9*s,y+13*s],[x+21*s,y+7*s],[x+15*s,y+5*s]],'#b08a59','#644f3b');
     ctx.strokeStyle='#e0ce97';ctx.lineWidth=2*s;ctx.beginPath();ctx.moveTo(x+9*s,y+6*s);ctx.lineTo(x+19*s,y+15*s);ctx.stroke();
   }
+
+  ctx.save();ctx.translate(x,y);ctx.scale(s,s);
+  drawBuildingFeatures(b,h/s,farmState?.elapsed || 0);
+  // Wall plaques separate structural level from the independently purchased slots.
+  ctx.fillStyle='#344b42';ctx.fillRect(-15,-h/s+17,10,6);
+  ctx.fillStyle='#fff0b1';ctx.font='bold 5px sans-serif';ctx.textAlign='center';
+  ctx.fillText(String(b.kind==='hall'?town?.level || 1:buildingLevel(b)),-10,-h/s+22);
+  if((b.settler_level || 1)>1){
+    ctx.fillStyle='#6baeb5';ctx.fillRect(5,-h/s+22,10,5);
+    ctx.fillStyle='#eee0bd';for(let i=0;i<b.settler_level;i++){ctx.beginPath();ctx.arc(7+i*3,-h/s+24,1,0,Math.PI*2);ctx.fill();}
+  }
+  ctx.restore();
+}
+function drawBuildingFeatures(b,height,time){
+  if(b.kind==='barn'){
+    ctx.fillStyle='#633f34';ctx.fillRect(-12,-23,12,23);
+    ctx.strokeStyle='#e3cba1';ctx.lineWidth=2;ctx.strokeRect(-12,-23,12,23);
+    ctx.beginPath();ctx.moveTo(-12,-23);ctx.lineTo(0,0);ctx.moveTo(0,-23);ctx.lineTo(-12,0);ctx.stroke();
+    for(let i=0;i<3;i++){ctx.fillStyle='#d6b765';ctx.fillRect(5+i*4,3,3,7);}
+  }else if(b.kind==='sawpit'){
+    polygon([[-19,4],[0,13],[19,4],[0,-5]],'#4e4134','#b28c5d');
+    ctx.fillStyle='#b78b57';ctx.fillRect(-17,-1,33,5);
+    ctx.fillStyle='#cda875';ctx.beginPath();ctx.arc(16,1,3,0,Math.PI*2);ctx.fill();
+    polygon([[-14,-9],[15,-9],[12,-5],[-11,-5]],'#c4d2ce');
+  }else if(b.kind==='smokehouse'||b.kind==='bakery'){
+    ctx.fillStyle='#7b8075';ctx.fillRect(9,-height-16,7,18);
+    ctx.fillStyle='#b1b3a2';ctx.fillRect(8,-height-18,9,3);
+    if(time){ctx.fillStyle='#c7c6af66';for(let i=0;i<3;i++){const rise=(time*.4+i/3)%1;ctx.beginPath();ctx.arc(12+Math.sin(rise*5)*3,-height-20-rise*12,2+rise*3,0,Math.PI*2);ctx.fill();}}
+    if(b.kind==='bakery'){polygon([[-15,0],[-15,-9],[-9,-14],[-3,-9],[-3,0]],'#b59878');ctx.fillStyle='#463b32';ctx.fillRect(-12,-8,6,8);ctx.fillStyle='#e7af5d';ctx.fillRect(-11,-3,4,2);}
+    else{ctx.strokeStyle='#a78454';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(-17,-17);ctx.lineTo(-2,-17);ctx.stroke();for(let i=0;i<3;i++)polygon([[-15+i*5,-16],[-12+i*5,-12],[-15+i*5,-7],[-18+i*5,-12]],'#b28c75');}
+  }else if(b.kind==='workshop'){
+    ctx.fillStyle='#ac895d';ctx.fillRect(-15,-5,30,5);ctx.fillRect(-12,0,3,7);ctx.fillRect(10,0,3,7);
+    polygon([[-5,-10],[8,-10],[4,-6],[-2,-6]],'#84958e');
+    ctx.strokeStyle='#d5dfd8';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(9,-height+8);ctx.lineTo(9,-height+18);ctx.moveTo(5,-height+8);ctx.lineTo(13,-height+8);ctx.stroke();
+  }else if(b.kind==='market'){
+    for(let i=0;i<5;i++)polygon([[-22+i*9,-height],[-13+i*9,-height],[-9+i*9,-height+13],[-18+i*9,-height+13]],i%2?'#eee0bd':'#698a72');
+    ctx.fillStyle='#ac895d';ctx.fillRect(-18,-2,36,5);
+    for(let i=0;i<5;i++){ctx.fillStyle=i%2?'#cc8962':'#d9bd70';ctx.beginPath();ctx.arc(-13+i*6,-4,3,0,Math.PI*2);ctx.fill();}
+  }else if(b.kind==='fish_pond'){
+    ctx.strokeStyle='#b1b3a2';ctx.lineWidth=3;ctx.beginPath();ctx.ellipse(0,5,18,7,0,0,Math.PI*2);ctx.stroke();
+    ctx.strokeStyle='#b8d8d5';ctx.lineWidth=1;ctx.beginPath();ctx.ellipse(0,5,4+Math.sin(time*4),2,0,0,Math.PI*2);ctx.stroke();
+    polygon([[-8,5],[-3,3],[2,5],[-3,7]],'#d5dfd8');
+  }else if(b.kind==='orchard'){
+    for(const cx of [-13,12]){ctx.fillStyle='#806448';ctx.fillRect(cx-1,-12,3,17);ctx.fillStyle='#719451';ctx.beginPath();ctx.arc(cx,-17,9,0,Math.PI*2);ctx.fill();ctx.fillStyle='#cc8962';for(let i=0;i<3;i++){ctx.beginPath();ctx.arc(cx-5+i*4,-18+i%2*5,2,0,Math.PI*2);ctx.fill();}}
+  }else if(b.kind==='butcher'){
+    polygon([[-22,-height+2],[17,-height+2],[22,-height+12],[-17,-height+12]],'#b66e65');
+    ctx.fillStyle='#eadac1';ctx.fillRect(-5,-height+3,3,8);ctx.fillRect(-9,-height+6,11,2);
+  }
 }
 async function selectTile(x,y){
   const town=world.towns[viewed];
@@ -1495,12 +1656,15 @@ function tileAt(event){
   return {x:Math.floor(dx/tileW+dy/tileH),y:Math.floor(dy/tileH-dx/tileW)};
 }
 canvas.onmousemove=event=>{
+  const rect=canvas.getBoundingClientRect(),px=event.clientX-rect.left,py=event.clientY-rect.top;
+  const hit=[...hitTargets].reverse().find(h=>px>=h.left&&px<=h.right&&py>=h.top&&py<=h.bottom);
+  buildingHover=!tool&&hit?.type==='building'?{index:hit.index,townId:hit.townId}:null;
   const town=world.towns[viewed],tile=tileAt(event);
   buildTile=costs[tool]&&viewed===identity?.town_id&&town&&insideBuildingRange(town,tile)&&tile.x>=0&&tile.y>=0&&tile.x<mapSize(town)&&tile.y<mapSize(town)
     &&(tool!=='acre'||acrePlacementValid(town,tile,acreFarmIndex))&&town.terrain?.[tile.y]?.[tile.x]!=='v'&&!(town.npcs || []).some(n=>n.x===tile.x&&n.y===tile.y)&&!town.buildings.some(b=>b.x===tile.x&&b.y===tile.y)&&!town.map_resources.some(r=>r.x===tile.x&&r.y===tile.y)?tile:null;
   hoverTile=(costs[tool]||tool==='move'&&moveIndex!==null)&&viewed===identity?.town_id&&town&&tile.x>=0&&tile.y>=0&&tile.x<(town.map_size || 12)&&tile.y<(town.map_size || 12)?tile:null;
 };
-canvas.onmouseleave=()=>{buildTile=null;hoverTile=null;};
+canvas.onmouseleave=()=>{buildTile=null;hoverTile=null;buildingHover=null;};
 canvas.onclick=async event=>{
   if(event.button!==undefined&&event.button!==0)return;
   canvas.focus?.();
