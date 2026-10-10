@@ -519,7 +519,9 @@ function renderSelection(town){
       skills.append(tile);
     }
     $('selection-details').append(skills);
-    const state=document.createElement('p');state.textContent=town.player?.activity?`${goodName(town.player.activity.job)} · ${town.player.activity_status || 'Working'}`:'Walk next to water, trees, berry bushes, or herbs. F/C/G starts work; press the same key, Escape, or move to stop.';$('selection-details').append(state);
+    if(town.player?.activity){
+      const state=document.createElement('p');state.textContent=`${goodName(town.player.activity.job)} · ${town.player.activity_status || 'Working'}`;$('selection-details').append(state);
+    }
     if(viewed===identity?.town_id)for(const [action,label] of [['fish','Fish'],['chop','Cut wood'],['gather','Gather'],['stop_activity','Stop working']]){
       const button=document.createElement('button');button.textContent=label;button.onclick=()=>playerAction(action);$('selection-details').append(button);
     }
