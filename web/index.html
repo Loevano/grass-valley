@@ -4,15 +4,6 @@
 <body>
 <header>
 <div><span class="eyebrow">A LITTLE WORLD, TOGETHER</span><h1>Lantern Vale</h1></div>
-<div id="resources" aria-live="polite">
-<span id="resources-empty">Your village awaits</span>
-<div id="resource-totals" hidden>
-<span class="resource"><span class="resource-icon" aria-hidden="true">🪵</span><span><small>Wood</small><strong id="resource-wood">0</strong></span></span>
-<span class="resource"><span class="resource-icon" aria-hidden="true">🌾</span><span><small>Food</small><strong id="resource-food">0</strong></span></span>
-<span class="resource"><span class="resource-icon" aria-hidden="true">🪙</span><span><small>Coins</small><strong id="resource-coins">0</strong></span></span>
-<span class="resource"><span class="resource-icon" aria-hidden="true">👥</span><span><small>Villagers</small><strong id="resource-villagers">0</strong></span></span>
-</div>
-</div>
 <button id="world-menu-button">Worlds</button>
 </header>
 <dialog id="world-menu" aria-labelledby="world-menu-title">
@@ -35,6 +26,15 @@
 <button id="valley-button" aria-controls="valley-panel" aria-expanded="false">Valley</button>
 <button id="help-button" aria-controls="help-panel" aria-expanded="false">Help</button>
 <span id="mode-hint" role="status">Click a building, villager, or resource to learn more.</span>
+<div id="resources" aria-live="polite">
+<span id="resources-empty">Your village awaits</span>
+<div id="resource-totals" hidden>
+<span class="resource"><span class="resource-icon" aria-hidden="true">🪵</span><span><small>Wood</small><strong id="resource-wood">0</strong></span></span>
+<span class="resource"><span class="resource-icon" aria-hidden="true">🌾</span><span><small>Food</small><strong id="resource-food">0</strong></span></span>
+<span class="resource"><span class="resource-icon" aria-hidden="true">🪙</span><span><small>Coins</small><strong id="resource-coins">0</strong></span></span>
+<span class="resource"><span class="resource-icon" aria-hidden="true">👥</span><span><small>Villagers</small><strong id="resource-villagers">0</strong></span></span>
+</div>
+</div>
 </nav>
 <main id="game">
 <div class="scene"><div class="scene-label"><span class="eyebrow">THE GREEN VALLEY</span><h2 id="view-title">A place to call home</h2></div><canvas id="world" tabindex="0" aria-label="Town grid. Use WASD to walk your villager. Click an object to inspect it. Use arrow keys to choose a tile and Enter to select it."></canvas><div class="scene-footer">Click map · WASD to walk · Safe towns</div></div>
