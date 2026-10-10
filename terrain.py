@@ -46,7 +46,7 @@ def generate_map(size, seed):
                 kind, biome = 'water', 'b' if swamp else 's'
             elif swamp and rng.random() < .22:
                 kind = 'tree'
-            elif biome == 'f' and rng.random() < .7:
+            elif biome == 'f' and rng.random() < .38:
                 kind = 'tree'
             elif biome == 'r' and rng.random() < .18:
                 kind = 'rock'

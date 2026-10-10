@@ -117,46 +117,20 @@ def costs_of(spec):
     return {k: v for k, v in spec.items() if k in {'wood', 'coins', 'planks', 'wool', 'tools'}}
 
 
-STORAGE_KEYS = ('wood', 'food', 'planks', 'wheat', 'fodder', 'flour', 'wool', 'tools', 'manure', 'herbs')
-
-
-def storage_size(building):
-    return 200 if building['kind'] == 'hall' else 100 * building.get('level', 1)
-
-
-def storage_allocations(building):
-    return building.get('storage_allocations', {'wood': 100, 'food': 100} if building['kind'] == 'hall' else {})
-
-
-def storage_limit(town, key):
-    key = 'food' if key in EDIBLE else key
-    return sum(storage_allocations(b).get(key, 0) for b in town['buildings']
-               if b['kind'] in {'hall', 'storehouse'} and 'construction' not in b)
-
-
-def storage_room(town, key):
-    group = 'food' if key in EDIBLE else key
-    room = storage_limit(town, group) - quantity(town, group)
-    return max(0, room / EDIBLE.get(key, 1))
-
-
-def deliver(town, key, amount, capacity, record=True):
-    room = (storage_room(town, key) if not town.get('_local_production')
-            else capacity - quantity(town, key))
+def deliver(town, key, amount, capacity):
+    room = capacity - quantity(town, key)
     if key in EDIBLE:
         room = min(room, (capacity - town['food']) / EDIBLE[key])
     amount = max(0, min(amount, room))
     if key == 'wood':
         town['wood'] += amount
-        if record:
-            town['harvested'] += amount
+        town['harvested'] += amount
     else:
         town.setdefault('goods', {})[key] = quantity(town, key) + amount
         if key in EDIBLE:
             town['food'] += amount * EDIBLE[key]
-    if record:
-        totals = town.setdefault('produced', {})
-        totals[key] = totals.get(key, 0) + amount
+    totals = town.setdefault('produced', {})
+    totals[key] = totals.get(key, 0) + amount
     return amount
 
 
@@ -303,7 +277,7 @@ def player_tick(town, landscape, capacity):
     if source is None or distance(player, source) > 1.8:
         player.pop('activity', None); return
     key = {'tree': 'wood', 'water': 'fish', 'berry_bush': 'berries', 'herb_patch': 'herbs'}[source['kind']]
-    room = storage_room(town, key)
+    room = capacity - quantity(town, key)
     if key in EDIBLE:
         room = min(room, (capacity - town['food']) / EDIBLE[key])
     if room <= 0:

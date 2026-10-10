@@ -63,8 +63,7 @@ class VillageRules(unittest.TestCase):
         command(self.town, {'action': 'job', 'index': 0, 'job': 'woodcutting'})
         wood, skill = self.town['wood'], self.town['villagers'][0]['woodcutting']
         tick({'towns': {'absent-owner': self.town}})
-        self.assertEqual(self.town['wood'], wood)
-        self.assertGreater(self.town['buildings'][1]['output_buffer']['wood'], 0)
+        self.assertGreater(self.town['wood'], wood)
         self.assertEqual(self.town['villagers'][0]['woodcutting'], skill + 1)
 
     def test_destroy_removes_each_building_kind_without_refund(self):
@@ -76,7 +75,7 @@ class VillageRules(unittest.TestCase):
                 command(town, {'action': 'destroy', 'index': 1})
                 self.assertEqual(town['buildings'], [{'kind': 'hall', 'x': 5, 'y': 5}])
                 self.assertEqual([town[key] for key in ['wood', 'food', 'coins']], resources)
-                self.assertEqual(capacity(town), 200)
+                self.assertEqual(capacity(town), 100)
                 command(town, {'action': 'build', 'kind': kind, 'x': 2, 'y': 3})
 
     def test_destroy_rejects_town_hall_and_invalid_indices(self):
@@ -116,7 +115,6 @@ class VillageRules(unittest.TestCase):
         self.finish_construction()
         command(self.town, {'action': 'job', 'index': 0, 'job': 'woodcutting'})
         self.town['wood'] = capacity(self.town)
-        self.town['buildings'][1]['output_buffer'] = {'wood': 50}
         skill = self.town['villagers'][0]['woodcutting']
         tick({'towns': {'a': self.town}})
         self.assertEqual(self.town['wood'], capacity(self.town))
@@ -177,8 +175,7 @@ class VillageRules(unittest.TestCase):
         self.assertIsNone(self.town['villagers'][0]['work_target'])
         command(self.town, {'action': 'move', 'index': 1, 'x': 2, 'y': 2})
         tick({'towns': {'a': self.town}})
-        self.assertEqual(self.town['wood'], before[0])
-        self.assertGreater(self.town['buildings'][1]['output_buffer']['wood'], 0)
+        self.assertGreater(self.town['wood'], before[0])
         self.assertEqual(self.town['villagers'][0]['work_target']['kind'], 'tree')
 
     def test_farming_uses_water_at_reach_boundary(self):
@@ -187,8 +184,7 @@ class VillageRules(unittest.TestCase):
         command(self.town, {'action': 'job', 'index': 0, 'job': 'farming'})
         food = self.town['food']
         tick({'towns': {'a': self.town}})
-        self.assertLess(self.town['food'], food)
-        self.assertGreater(self.town['buildings'][1]['output_buffer']['vegetables'], 0)
+        self.assertGreater(self.town['food'], food)
         self.assertEqual(self.town['villagers'][0]['work_target']['kind'], 'water')
         command(self.town, {'action': 'move', 'index': 1, 'x': 5, 'y': 2})
         food, skill = self.town['food'], self.town['villagers'][0]['farming']

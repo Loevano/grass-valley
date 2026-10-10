@@ -46,7 +46,7 @@ class BuildingUpgrades(unittest.TestCase):
         command(self.town, {'action': 'upgrade_building', 'index': index})
         self.assertEqual(self.town['wood'], 75)
         self.assertEqual(site.get('level', 1), 1)
-        self.assertEqual(capacity(self.town), 200)
+        self.assertEqual(capacity(self.town), 100)
         self.assertEqual(site['construction']['total'], BUILD_SECONDS)
         before = copy.deepcopy(self.town)
         for action in ['upgrade_building', 'upgrade_capacity']:
@@ -68,7 +68,7 @@ class BuildingUpgrades(unittest.TestCase):
         self.assertEqual(site.get('level', 1), 1)
         construct(self.town, self.town, workers={0}, elapsed=1)
         self.assertEqual(site['level'], 2)
-        self.assertEqual(capacity(self.town), 400)
+        self.assertEqual(capacity(self.town), 300)
         self.assertEqual(self.town['wood'], 75)
         command(self.town, {'action': 'upgrade_building', 'index': index})
         self.assertEqual(site['construction']['total'], 2 * BUILD_SECONDS)
@@ -95,11 +95,11 @@ class BuildingUpgrades(unittest.TestCase):
             tick({'towns': {'a': self.town}})
         self.assertEqual(len(self.town['villagers']), 9)
         storage = self.add('storehouse')
+        self.assertEqual(capacity(self.town), 200)
+        self.upgrade(storage)
         self.assertEqual(capacity(self.town), 300)
         self.upgrade(storage)
         self.assertEqual(capacity(self.town), 400)
-        self.upgrade(storage)
-        self.assertEqual(capacity(self.town), 500)
 
     @patch('server.secrets.randbelow', return_value=1)
     def test_each_workplace_boosts_only_its_workers(self, _roll):
@@ -118,9 +118,7 @@ class BuildingUpgrades(unittest.TestCase):
                 self.town['wood'] = self.town['food'] = 30
                 tick({'towns': {'a': self.town}})
                 upkeep = 5 * .12 + 2 * .18 if resource == 'food' else 0
-                self.assertAlmostEqual(self.town[resource], 30 - upkeep)
-                output = 'wood' if resource == 'wood' else 'fish' if job == 'fishing' else 'vegetables'
-                self.assertAlmostEqual(sum(b.get('output_buffer', {}).get(output, 0) for b in self.town['buildings']), base * 2.25)
+                self.assertAlmostEqual(self.town[resource], 30 + base * 2.25 - upkeep)
 
     @patch('server.secrets.randbelow', return_value=0)
     def test_failed_catches_and_full_storage_do_not_gain_bonus_food(self, _roll):
@@ -143,12 +141,10 @@ class BuildingUpgrades(unittest.TestCase):
         command(self.town, {'action': 'job', 'index': 0, 'job': 'farming'})
         self.town['food'] = 30
         tick({'towns': {'a': self.town}})
-        self.assertAlmostEqual(self.town['food'], 30 - .78)
-        self.assertEqual(self.town['buildings'][farm]['output_buffer']['vegetables'], 1.5)
+        self.assertAlmostEqual(self.town['food'], 30 + 1.5 - .78)
         self.town['food'] = 99.9
         tick({'towns': {'a': self.town}})
-        self.assertAlmostEqual(self.town['food'], 99.9 - .78)
-        self.assertEqual(self.town['buildings'][farm]['output_buffer']['vegetables'], 3)
+        self.assertAlmostEqual(self.town['food'], 100 - .78)
         self.town['map_resources'] = []
         tick({'towns': {'a': self.town}})
         self.assertIsNone(self.town['villagers'][0]['work_target'])

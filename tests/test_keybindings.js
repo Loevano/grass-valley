@@ -131,7 +131,17 @@ function session(saved=null){
   }
   windows.document.getElementById('build-button').disabled=true;windows.key('1');
   check(windows.state.panel==='villagers','Number shortcuts respect disabled toolbar buttons');
-  for(const number of ['6','7','8','9'])windows.key(number);
+  windows.key('6');
+  check(windows.state.panel==='resources'&&!windows.document.getElementById('resources-panel').hidden,'6 opens Resources');
+  const resources=windows.document.getElementById('resources-list').children;
+  const resource=label=>resources.find(row=>row.children[1].textContent===label)?.children[0].textContent;
+  check(resource('Wood')==='50.0 / 0'&&resource('Food')==='30.0 / 0','Resources show stored amounts and allocated capacity');
+  check(resource('Coins')==='5.0','Coins do not have a storage limit');
+  check(resource('Fish')==='0.0 / 0'&&resource('Prepared meat')==='0.0 / 0'&&resource('Herbs')==='0.0 / 0','Unproduced resources remain visible');
+  check(resources.length===22,'Resources include all storage categories, edible goods, and coins');
+  windows.key('6');check(windows.state.panel===null,'6 closes Resources');
+  windows.key('2');
+  for(const number of ['7','8','9'])windows.key(number);
   check(windows.state.panel==='villagers','Reserved future shortcuts do not change the current panel');
   windows.key('5');check(windows.document.getElementById('world-menu').open,'5 opens Worlds');
   windows.rebind('up','1');windows.rebind('up','9');

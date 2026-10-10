@@ -5,6 +5,7 @@
 main{position:relative}
 #toolbar{position:sticky;top:0;z-index:6;display:flex;align-items:center;flex-wrap:wrap;gap:8px;padding:10px 24px;background:#1c302a;border-bottom:1px solid #ffffff15}
 #toolbar #resources{margin-left:auto}#toolbar button{width:auto;margin:0}#mode-hint{margin-left:12px;color:#b8c999;font-size:12px}
+#resources-list .selection-fact{justify-content:space-between;gap:10px;padding:8px 0}#resources-list .selection-fact strong{order:2;font-size:14px;text-align:right}#resources-list .selection-fact small{font-size:12px}
 #side-panel{position:absolute;top:0;right:0;bottom:0;z-index:5;width:300px;padding:18px 20px;max-height:calc(100vh - 64px);overflow:auto;box-shadow:-8px 0 30px #12241f66}
 #side-panel section{margin:0;border:0;padding:0}#close-panel{text-align:right;margin:0 0 18px}
 #villagers{overflow-x:auto}.villager-name{background:transparent;border:0;padding:0;font-weight:600}
