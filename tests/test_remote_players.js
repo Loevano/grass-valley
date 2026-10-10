@@ -16,11 +16,11 @@ const run=new Function('document','window','localStorage','setTimeout','clearTim
     await refreshPlayers();
     assert.equal(friend.player.x,10.3,'Remote position arrives without a full-world refresh');
     assert.equal(world.towns.own.player.x,5,'Position polling preserves own movement authority');
-    let sprite=remotePlayerSprite('friend',friend,.06);
+    let sprite=remotePlayerSprite('friend',friend,.05);
     assert(Math.abs(sprite.x-10.15)<1e-9,'Movement interpolates halfway instead of teleporting');
     assert(sprite.state.path.length,'Walking animates between samples');
     await refreshPlayers();
-    sprite=remotePlayerSprite('friend',friend,.06);
+    sprite=remotePlayerSprite('friend',friend,.05);
     assert.equal(sprite.x,10.3,'Repeated identical samples do not restart interpolation');
     assert.equal(sprite.state.path.length,0,'Walking animation stops when position settles');
     // Continuous 10 Hz movement stays continuous on each display frame.

@@ -79,12 +79,41 @@ function canControlPlayer(){
 window.addEventListener('keyup',event=>walkKeys.delete(event.key.toLowerCase()));
 window.addEventListener('blur',clearWalk);
 document.addEventListener?.('visibilitychange',clearWalk);
+// Predict only the next host step; never run ahead while waiting for a reply.
+let movementMap=null;
+function predictPlayerStep(town,player,dx,dy){
+  if(movementMap?.world!==world || movementMap.town!==town){
+    const buildings=world.shared_map?Object.values(world.towns).flatMap(t=>t.buildings || []):town.buildings || [];
+    movementMap={world,town,blocked:new Set([...buildings,...(town.map_resources || [])]
+      .filter(b=>b.kind!=='tree').map(b=>`${b.x},${b.y}`))};
+  }
+  const size=town.map_size || 12,terrain=town.terrain;
+  const open=(x,y)=>{
+    if(x<-.32 || y<-.32 || x>size-.68 || y>size-.68)return false;
+    for(let tx=Math.floor(x+.5)-1;tx<=Math.floor(x+.5)+1;tx++){
+      for(let ty=Math.floor(y+.5)-1;ty<=Math.floor(y+.5)+1;ty++){
+        const outside=tx>=0&&ty>=0&&tx<size&&ty<size&&terrain?.[ty]?.[tx]==='v';
+        if((movementMap.blocked.has(`${tx},${ty}`)||outside)&&Math.abs(x-tx)<.68&&Math.abs(y-ty)<.68)return false;
+      }
+    }
+    return true;
+  };
+  const predicted={...player},length=Math.hypot(dx,dy);
+  if(length){
+    for(let step=0;step<5;step++){
+      const x=predicted.x+dx/length*.06;if(open(x,predicted.y))predicted.x=x;
+      const y=predicted.y+dy/length*.06;if(open(predicted.x,y))predicted.y=y;
+    }
+    if(dx!==dy)predicted.facing=dx>dy?1:-1;
+  }
+  return predicted;
+}
 function playerSprite(town,seconds){
   if(!town?.player)return null;
   const playerTown=world.shared_map&&world.towns[identity?.town_id]?identity.town_id:viewed;
   const key=`${world.world_id}/${playerTown}`;
   if(playerView?.key!==key){
-    playerView={...town.player,key,target:{...town.player},clock:0,following:cameraLocked&&playerTown===identity?.town_id};clearWalk();
+    playerView={...town.player,key,authoritative:{...town.player},target:{...town.player},clock:0,following:cameraLocked&&playerTown===identity?.town_id};clearWalk();
     if(playerView.following&&typeof camera!=='undefined'){camera.x=playerView.x;camera.y=playerView.y;}
   }
   const s=playerView;
@@ -94,14 +123,18 @@ function playerSprite(town,seconds){
   const vertical=Number(walkKeys.has(keybindings.down))-Number(walkKeys.has(keybindings.up));
   const dx=Math.sign(horizontal+vertical),dy=Math.sign(vertical-horizontal);
   walkCooldown=Math.max(0,walkCooldown-seconds);
-  if((dx||dy)&&!walkingRequest&&walkCooldown===0){
+  if((dx||dy)&&!walkingRequest&&walkCooldown<=1e-6){
     walkingRequest=true;walkCooldown=.1;
-    request('/api/command',{action:'walk',dx,dy,world_id:world.world_id}).then(result=>{
-      if(playerView===s){s.target=result.player;town.player={...result.player};}
-    }).catch(error=>{clearWalk();notice(error.message);}).finally(()=>{walkingRequest=false;});
+    s.target=predictPlayerStep(town,s.authoritative,dx,dy);
+    const controller=new AbortController(),timeout=setTimeout(()=>controller.abort(),1000);
+    request('/api/command',{action:'walk',dx,dy,world_id:world.world_id},{signal:controller.signal}).then(result=>{
+      if(playerView===s){s.authoritative={...result.player};s.target=result.player;
+        const current=world.towns[playerTown];if(current)current.player={...result.player};}
+    }).catch(error=>{if(playerView===s){s.target={...s.authoritative};clearWalk();notice(error.message);}})
+      .finally(()=>{clearTimeout(timeout);walkingRequest=false;});
   }
   const distance=Math.hypot(s.target.x-s.x,s.target.y-s.y);
-  const travel=Math.min(1,distance?seconds*3.6/distance:0);
+  const travel=Math.min(1,distance?seconds*3/distance:0);
   s.x+=(s.target.x-s.x)*travel;s.y+=(s.target.y-s.y)*travel;
   s.facing=s.target.facing;s.clock+=seconds;s.path=distance>.001?[s.target]:[];s.phase='idle';
   if(playerTown===identity?.town_id&&s.following&&(dx||dy||distance>.001)){
@@ -116,7 +149,7 @@ function remotePlayerState(townId,player){
   if(remoteWorld!==world.world_id){remotePlayers.clear();remoteWorld=world.world_id;remoteSample=-Infinity;}
   let state=remotePlayers.get(townId);
   if(!state){
-    state={...player,from:{...player},target:{...player},elapsed:.12,clock:0,path:[],phase:'idle'};
+    state={...player,from:{...player},target:{...player},elapsed:.1,clock:0,path:[],phase:'idle'};
     remotePlayers.set(townId,state);
   }
   return state;
@@ -150,8 +183,8 @@ async function refreshPlayers(){
 }
 function remotePlayerSprite(townId,town,seconds){
   const state=remotePlayerState(townId,town.player);
-  state.elapsed=Math.min(.12,state.elapsed+seconds);state.clock+=seconds;
-  const progress=state.elapsed/.12;
+  state.elapsed=Math.min(.1,state.elapsed+seconds);state.clock+=seconds;
+  const progress=state.elapsed/.1;
   state.x=state.from.x+(state.target.x-state.from.x)*progress;
   state.y=state.from.y+(state.target.y-state.from.y)*progress;
   state.path=progress<1?[state.target]:[];
@@ -1118,4 +1151,4 @@ requestAnimationFrame(animate);
 refresh().catch(()=>notice('Cannot reach the host. Check the connection.'));
 setInterval(()=>{if(document.activeElement?.tagName!=='SELECT')refresh().catch(()=>notice('Connection lost. Waiting for the host…'));},2000);
 
-setInterval(()=>refreshPlayers().catch(()=>{}),100);
+setInterval(()=>refreshPlayers().catch(()=>{}),50);
