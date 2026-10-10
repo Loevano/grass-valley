@@ -132,9 +132,10 @@ function playerSprite(town,seconds){
   const horizontal=Number(walkKeys.has(keybindings.right))-Number(walkKeys.has(keybindings.left));
   const vertical=Number(walkKeys.has(keybindings.down))-Number(walkKeys.has(keybindings.up));
   const dx=Math.sign(horizontal+vertical),dy=Math.sign(vertical-horizontal);
-  walkCooldown=Math.max(0,walkCooldown-seconds);
+  // Carry frame overshoot into the next step without accumulating delayed-request debt.
+  walkCooldown=(dx||dy)?Math.max(-seconds,walkCooldown-seconds):0;
   if((dx||dy)&&!walkingRequest&&walkCooldown<=1e-6){
-    walkingRequest=true;walkCooldown=.1;
+    walkingRequest=true;walkCooldown+=.1;
     s.target=predictPlayerStep(town,s.authoritative,dx,dy);
     const controller=new AbortController(),timeout=setTimeout(()=>controller.abort(),1000);
     request('/api/command',{action:'walk',dx,dy,world_id:world.world_id},{signal:controller.signal}).then(result=>{

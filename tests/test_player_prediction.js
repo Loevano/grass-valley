@@ -44,8 +44,28 @@ const run=new Function('document','window','localStorage','setTimeout','clearTim
       hero=playerSprite(town,1/60);assert(hero.x>previous,'Walking does not pause between acknowledged steps');previous=hero.x;
       for(let i=0;i<6;i++)await Promise.resolve();
     }
-    assert.equal(calls,10,'Floating-point cooldown residue does not drop movement commands');
+    assert.equal(calls,11,'Movement sends immediately and at each 100 ms boundary');
     clearWalk();
+    // Uneven display frames must not introduce pauses between movement commands.
+    for(const keys of [['w'],['s'],['d'],['w','d']]){
+      town.player={x:5,y:7,facing:1};playerView=null;playerSprite(town,0);
+      let host={...town.player},elapsed=0,previous={...town.player};calls=0;
+      request=async(path,data)=>{calls++;host=predictPlayerStep(town,host,data.dx,data.dy);return {player:{...host}};};
+      keys.forEach(key=>walkKeys.add(key));
+      for(let frame=0;frame<45;frame++){
+        const seconds=[.016,.023,.014,.019][frame%4];elapsed+=seconds;
+        const sprite=playerSprite(town,seconds);
+        const distance=screenDistance(sprite.x-previous.x,sprite.y-previous.y);
+        assert(Math.abs(distance-seconds*3*Math.SQRT2*23)<1e-8,
+          'Uneven frames keep a steady walking speed for '+keys.join('+')+' at frame '+frame);
+        assert(Math.abs(camera.x-sprite.x)<1e-9&&Math.abs(camera.y-sprite.y)<1e-9,
+          'The locked camera follows every movement frame');
+        previous={x:sprite.x,y:sprite.y};
+        for(let i=0;i<6;i++)await Promise.resolve();
+      }
+      assert.equal(calls,Math.floor((elapsed+1e-6)/.1)+1,'Uneven frames preserve the 10 Hz movement cadence');
+      clearWalk();
+    }
     const blockedTown={...town,map_resources:[{kind:'water',x:4,y:3}]};
     world={world_id:'obstacles',towns:{own:blockedTown}};
     assert.equal(predictPlayerStep(blockedTown,{x:3.3,y:3,facing:1},1,0).x,3.3,'Prediction respects water collision radius');
