@@ -143,3 +143,37 @@ slots, field output, and animal capacity rather than arbitrary building counts.
 The founder fishes with F, chops with C, and gathers berries/herbs with G,
 learning separate saved skills. Current materials, milestones, and production
 rules are documented in ROADMAP.md; balance values remain adjustable.
+
+## Confirmed settler talents and professional training
+
+Settlers combine learned experience with permanent natural strengths and weaknesses.
+One profession family gains 25% output and practice; another loses 25%. Related jobs
+inherit the family's talent. Weaknesses slow training but never prohibit a career.
+Each 20 practice in the current job adds one base output multiplier. Traits persist
+through saves and reassignment; older residents receive deterministic traits on load.
+
+Basic gathering jobs and husbandry accept beginners. Advanced jobs require the
+assigned settler's own practice, never the founder's or another resident's skill:
+
+| Role | Required personal practice |
+| --- | --- |
+| Woodworking | 10 woodcutting |
+| Milling | 10 farming |
+| Preserving | 10 fishing |
+| Crafting | 10 woodworking |
+| Fish breeding | 20 fishing |
+| Orcharding | 20 farming |
+| Baking | 10 milling |
+| Butchery | 10 husbandry |
+
+Hall level 4 adds bakeries and butcher shops with two initial worker spaces each.
+Bakeries cost 30 wood and 5 planks, processing 2 flour and 0.5 wood into 2 bread.
+Butcher shops cost 25 wood and 5 planks, processing 2 barn-produced meat into
+2 prepared meat. Both goods contribute 1.5 pantry food per unit and can be sold.
+Processing expertise increases batch sizes and ingredient consumption together.
+Farming expertise improves a field's yield while retaining its shared cycle limit;
+barns still have one animal-limited production cycle regardless of worker count.
+
+Both assignment controls show missing qualifications and prevent untrained workers
+from taking advanced roles. Saved advanced assignments without prerequisites pause
+until the resident trains in the required job. Balance values remain provisional.
