@@ -30,6 +30,25 @@ class LanHost(unittest.TestCase):
         server.load()
         self.assertEqual(server.WORLD['towns'][owner['town_id']]['player'], result['player'])
 
+    def test_player_snapshot_is_small_current_and_has_no_ownership_tokens(self):
+        _, owner = self.call('/api/join', {'name': 'Home'})
+        owner = json.loads(owner)
+        status, body = self.call('/api/players')
+        self.assertEqual(status, 200)
+        snapshot = json.loads(body)
+        self.assertEqual(snapshot['world_id'], server.ACTIVE_WORLD)
+        self.assertEqual(snapshot['players'][owner['town_id']],
+                         server.WORLD['towns'][owner['town_id']]['player'])
+        self.assertNotIn(owner['token'].encode(), body)
+        self.assertNotIn(b'terrain', body)
+        self.assertLess(len(body), 1000)
+        status, result = self.call('/api/command', {'action': 'walk', 'dx': 1, 'dy': -1}, owner['token'])
+        self.assertEqual(status, 200)
+        self.assertEqual(json.loads(self.call('/api/players')[1])['players'][owner['town_id']],
+                         json.loads(result)['player'])
+        server.activate(None)
+        self.assertEqual(json.loads(self.call('/api/players')[1]), {'world_id': None, 'players': {}})
+
     def setUp(self):
         self.previous = server.WORLD, server.TOKENS, server.SAVE, server.WORLDS, server.ACTIVE_WORLD
         self.directory = tempfile.TemporaryDirectory()

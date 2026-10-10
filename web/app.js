@@ -109,6 +109,46 @@ function playerSprite(town,seconds){
   }
   return {kind:'player',townId:playerTown,x:s.x,y:s.y,index:1,state:s,villager:{job:'idle'},active:false};
 }
+// Remote founders use small, frequent snapshots instead of the map refresh.
+const remotePlayers=new Map();
+let remoteWorld=null,refreshingPlayers=false;
+function remotePlayerState(townId,player){
+  if(remoteWorld!==world.world_id){remotePlayers.clear();remoteWorld=world.world_id;}
+  let state=remotePlayers.get(townId);
+  if(!state){
+    state={...player,from:{...player},target:{...player},elapsed:.12,clock:0,path:[],phase:'idle'};
+    remotePlayers.set(townId,state);
+  }
+  return state;
+}
+async function refreshPlayers(){
+  if(refreshingPlayers || !world.world_id || document.hidden)return;
+  refreshingPlayers=true;
+  const current=world;
+  try{
+    const snapshot=await request('/api/players');
+    // A world refresh can replace the town objects while this request is in flight.
+    if(world!==current || snapshot.world_id!==world.world_id)return;
+    for(const [id,player] of Object.entries(snapshot.players)){
+      const town=world.towns[id];
+      if(!town || id===identity?.town_id)continue;
+      const state=remotePlayerState(id,town.player || player);
+      if(player.x!==state.target.x || player.y!==state.target.y){
+        state.from={x:state.x,y:state.y};state.target={...player};state.elapsed=0;
+      }
+      state.facing=player.facing;town.player={...player};
+    }
+  }finally{refreshingPlayers=false;}
+}
+function remotePlayerSprite(townId,town,seconds){
+  const state=remotePlayerState(townId,town.player);
+  state.elapsed=Math.min(.12,state.elapsed+seconds);state.clock+=seconds;
+  const progress=state.elapsed/.12;
+  state.x=state.from.x+(state.target.x-state.from.x)*progress;
+  state.y=state.from.y+(state.target.y-state.from.y)*progress;
+  state.path=progress<1?[state.target]:[];
+  return {kind:'player',townId,x:state.x,y:state.y,index:1,villager:{job:'idle'},active:false,state};
+}
 const labels = {hall:'Town hall',home:'Cottage',woodcutter:'Woodcutter',farm:'Farm',storehouse:'Storehouse',fishing_hut:'Fishing hut',acre:'Acre'};
 const costs = {home:20,woodcutter:15,farm:15,storehouse:25,fishing_hut:15,acre:5};
 const colors = {hall:'#a88861',home:'#c5ad80',woodcutter:'#947b55',farm:'#bc9b5c',storehouse:'#8c9b8b',fishing_hut:'#7899a2'};
@@ -807,7 +847,7 @@ function draw(seconds=0){
     // Soil and furrows stay below every character; stalks use their own depth.
     drawFarmCrops(field,farmer?.state,crop=>cropObjects.push(crop));
   }
-  const otherPlayers=world.shared_map?entries.filter(([id,t])=>t.player&&id!==hero?.townId).map(([id,t])=>({kind:'player',townId:id,...t.player,index:1,villager:{job:'idle'},active:false,state:{path:[],phase:'idle',clock:0,facing:t.player.facing}})):[];
+  const otherPlayers=world.shared_map?entries.filter(([id,t])=>t.player&&id!==hero?.townId).map(([id,t])=>remotePlayerSprite(id,t,seconds)):[];
   const objects=[...buildings,...cropObjects,...resourceData.objects,...villagers,...npcSprites(world.shared_map || town,seconds),...otherPlayers,...(hero?[hero]:[])].filter(b=>{
     const [px,py]=point(b.x,b.y);
     return px>=-tileW&&px<=rect.width+tileW&&py>=-tileH&&py<=rect.height+80*tileW/46;
@@ -1066,3 +1106,5 @@ function animate(now){
 requestAnimationFrame(animate);
 refresh().catch(()=>notice('Cannot reach the host. Check the connection.'));
 setInterval(()=>{if(document.activeElement?.tagName!=='SELECT')refresh().catch(()=>notice('Connection lost. Waiting for the host…'));},2000);
+
+setInterval(()=>refreshPlayers().catch(()=>{}),100);
