@@ -2,10 +2,6 @@
 <html lang="en">
 <head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Lantern Vale</title><link rel="stylesheet" href="style.css"></head>
 <body>
-<header>
-<div><span class="eyebrow">A LITTLE WORLD, TOGETHER</span><h1>Lantern Vale</h1></div>
-<button id="world-menu-button">Worlds</button>
-</header>
 <dialog id="world-menu" aria-labelledby="world-menu-title">
 <span class="eyebrow">A NEW CHAPTER</span><h2 id="world-menu-title">Your worlds</h2>
 <p id="world-menu-description">Choose a saved world or start a new one.</p>
@@ -21,6 +17,7 @@
 <button id="cancel-delete-world" class="quiet">Keep this world</button><p id="delete-world-error" role="alert"></p>
 </dialog>
 <nav id="toolbar" aria-label="Village controls">
+<button id="world-menu-button" aria-haspopup="dialog" aria-controls="world-menu">Worlds</button>
 <button id="build-button" aria-controls="controls" aria-expanded="false">Build</button>
 <button id="villagers-button" aria-controls="villagers-panel" aria-expanded="false">Villagers</button>
 <button id="find-player-button">Find me</button>
