@@ -103,7 +103,8 @@ the Python host, refresh both browsers, and create a new world to use the shared
   production still follows the host's three-second rhythm. If a workplace is out
   of reach, production and skill growth pause; move it closer to the source to resume.
 - Build a fishing hut within three tile steps of water and assign Fishing to
-  produce food and learn fishing skill. Farms now appear as buildings.
+  produce food and learn fishing skill. Fishers cast into the water, wait by a
+  rippling float, reel in a fish, and carry their catch back to the hut.
 - Woodcutters produce half as much wood as before. Assigned workers consume
   0.30 food each tick, compared with 0.12 for resting villagers.
 - The first hall upgrade costs 40 wood and takes 30 seconds in the open world; the hall

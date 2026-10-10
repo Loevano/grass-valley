@@ -477,15 +477,18 @@ function drawVillager(b){
   const walking=s.path.length>0,working=s.phase==='working'&&b.active;
   const stride=walking?Math.sin(s.clock*13):0;
   const chopping=working&&b.villager.job==='woodcutting';
-  const fishing=working&&b.villager.job==='fishing';
+  const fishing=s.phase==='working'&&b.villager.job==='fishing';
+  const fishingTime=s.elapsed || 0;
+  const cast=Math.min(fishingTime/.55,1),reel=Math.max(0,Math.min((fishingTime-2.35)/.85,1));
   const swing=working?(Math.sin(s.clock*(chopping?5:7))+1)/2:0;
   ctx.save();ctx.translate(px+(b.index%3-1)*3,py+tileH*.65+Math.floor(b.index/3));ctx.scale(tileW/46,tileW/46);
   ctx.fillStyle='#223b2966';ctx.beginPath();ctx.ellipse(0,2,7,3,0,0,Math.PI*2);ctx.fill();
   const towardSource=s.source?(s.source.x-s.x)-(s.source.y-s.y):0;
-  ctx.scale(working&&towardSource!==0?Math.sign(towardSource):s.facing,1);
+  const facing=(working||fishing)&&towardSource!==0?Math.sign(towardSource):s.facing;
+  ctx.scale(facing,1);
   ctx.strokeStyle='#283c38';ctx.lineWidth=2.5;ctx.lineCap='round';
   ctx.beginPath();ctx.moveTo(-2,-4);ctx.lineTo(-2-stride*3,1);ctx.moveTo(2,-4);ctx.lineTo(2+stride*3,1);ctx.stroke();
-  const bob=walking?Math.abs(stride)*1.2:chopping?swing*2.5:working?swing:Math.sin(s.clock*2)*.3;
+  const bob=walking?Math.abs(stride)*1.2:fishing?reel*1.5:chopping?swing*2.5:working?swing:Math.sin(s.clock*2)*.3;
   ctx.translate(0,-bob);
   ctx.fillStyle=b.kind==='npc'?npcColors[b.biome][0]:b.kind==='player'?'#d6b85d':['#7899a2','#b9866b','#a0a16b','#947ca0','#c6aa62'][b.index%5];ctx.fillRect(-4,-13,8,10);
   if(accessories.blouse){
@@ -526,11 +529,26 @@ function drawVillager(b){
     ctx.fillStyle='#6baeb5';ctx.fillRect(-4,-14,8,2);ctx.fillRect(2,-12,2,5);
   }
   ctx.strokeStyle='#e7c68c';ctx.lineWidth=2;
-  ctx.beginPath();ctx.moveTo(-3,-11);ctx.lineTo(chopping?6:-5-stride*2,chopping?-14+swing*5:-6);ctx.moveTo(3,-11);ctx.lineTo(7,chopping?-14+swing*5:-9-swing*4);ctx.stroke();
+  ctx.beginPath();ctx.moveTo(-3,-11);ctx.lineTo(chopping?6:-5-stride*2,chopping?-14+swing*5:-6);ctx.moveTo(3,-11);ctx.lineTo(7,chopping?-14+swing*5:fishing?-10-reel*3:-9-swing*4);ctx.stroke();
   if(fishing){
-    ctx.strokeStyle='#a78454';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(6,-10);ctx.lineTo(20,-28);ctx.stroke();
-    ctx.strokeStyle='#d5dfd8';ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(20,-28);ctx.lineTo(27,-2+Math.sin(s.clock)*2);ctx.stroke();
-    ctx.fillStyle='#d6b85d';ctx.fillRect(25,-3+Math.sin(s.clock)*2,3,3);
+    // Cast into the selected water tile, then lift the catch before delivery.
+    const [waterX,waterY]=s.source?point(s.source.x,s.source.y):[px+tileW*.6,py+tileH*.65];
+    const surfaceX=(waterX-px-(b.index%3-1)*3)/(tileW/46)*facing;
+    const surfaceY=(waterY-py-tileH*.65-Math.floor(b.index/3))/(tileW/46)+bob;
+    const tipX=7+cast*13-reel*8,tipY=-34+cast*9-reel*9;
+    const floatX=tipX+(surfaceX-tipX)*cast*(1-reel);
+    const floatY=tipY+(surfaceY-tipY)*cast*(1-reel)+Math.sin(fishingTime*9)*cast*(1-reel);
+    ctx.strokeStyle='#a78454';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(7,-10-reel*3);ctx.lineTo(tipX,tipY);ctx.stroke();
+    ctx.strokeStyle='#d5dfd8';ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(tipX,tipY);ctx.lineTo(floatX,floatY);ctx.stroke();
+    if(cast===1&&reel===0){
+      ctx.strokeStyle='#c3e1dc';ctx.beginPath();ctx.ellipse(surfaceX,surfaceY,4+Math.sin(fishingTime*6)*1.5,2,0,0,Math.PI*2);ctx.stroke();
+    }
+    ctx.fillStyle='#df785e';ctx.fillRect(floatX-2,floatY-2,4,3);
+    ctx.fillStyle='#f3e5bc';ctx.fillRect(floatX-2,floatY+1,4,2);
+    if(reel>0){
+      polygon([[floatX,floatY+3],[floatX+5,floatY+6],[floatX,floatY+9],[floatX-4,floatY+6]],'#b8d8d5','#527f86');
+      polygon([[floatX,floatY+9],[floatX-3,floatY+12],[floatX+3,floatY+12]],'#7899a2');
+    }
   }else if(working){
     ctx.save();ctx.translate(chopping?6:5,chopping?-13+swing*4:-11);ctx.rotate(chopping?-1+swing*2.5:-1.4+swing*2);
     ctx.strokeStyle='#a78454';ctx.lineWidth=chopping?2.5:2;ctx.beginPath();ctx.moveTo(0,chopping?4:3);ctx.lineTo(0,chopping?-16:-10);ctx.stroke();
@@ -545,6 +563,7 @@ function drawVillager(b){
   if(s.phase==='returning'||s.phase==='depositing'){
     ctx.fillStyle=b.villager.job==='woodcutting'?'#997044':b.villager.job==='fishing'?'#7899a2':'#d6c478';ctx.fillRect(2,-8,11,5);
     ctx.fillStyle='#e1c593';ctx.beginPath();ctx.arc(13,-5.5,2.5,0,Math.PI*2);ctx.fill();
+    if(b.villager.job==='fishing')polygon([[5,-10],[9,-12],[13,-10],[9,-8]],'#b8d8d5','#527f86');
   }
   ctx.restore();
 }
