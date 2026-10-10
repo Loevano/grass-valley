@@ -7,6 +7,7 @@ try {
   if(legacy && !identities.legacy) identities.legacy = legacy;
 } catch { identities = {}; }
 let world = {towns:{}}, viewed = null, tool = null, moveIndex = null;
+let buildTile = null, building = false;
 let catalog = {worlds:[], can_manage:false}, menuStarted = false, refreshing = null, menuBusy = false, deletingWorld = null;
 let tileW = 46, tileH = 23, originX = 0, originY = 0;
 const workers = new Map();
@@ -64,15 +65,27 @@ function renderWorldMenu(){
     $('world-list').append(row);
   }
 }
-for(const [kind,cost] of Object.entries(costs)){const button=document.createElement('button');button.textContent=`${labels[kind]} · ${cost} wood`;button.onclick=()=>{tool=kind;moveIndex=null;render();};$('buildings').append(button);}
-$('move').onclick=()=>{tool='move';moveIndex=null;render();};
-$('cancel').onclick=()=>{tool=null;moveIndex=null;render();};
+for(const [kind,cost] of Object.entries(costs)){const button=document.createElement('button');button.textContent=`${labels[kind]} · ${cost} wood`;button.onclick=()=>{tool=kind;moveIndex=null;buildTile=null;render();};$('buildings').append(button);}
+$('move').onclick=()=>{tool='move';moveIndex=null;buildTile=null;render();};
+$('cancel').onclick=()=>{tool=null;moveIndex=null;buildTile=null;render();};
+$('confirm-build').onclick=async()=>{
+  const town=world.towns[viewed];
+  if(building || !buildTile || !costs[tool] || viewed!==identity?.town_id || !town || town.wood<costs[tool])return;
+  const selected=buildTile,kind=tool;
+  building=true;render();
+  try{
+    await request('/api/command',{action:'build',kind,...selected,world_id:world.world_id});
+    if(buildTile===selected)buildTile=null;
+    await refresh();
+  }catch(e){notice(e.message);await refresh();}
+  finally{building=false;render();}
+};
 $('upgrade').onclick=()=>act({action:'upgrade'});
 async function refresh(){
   if(refreshing)return refreshing;
   refreshing=(async()=>{
     const next=await request('/api/world');
-    if(next.world_id!==world.world_id){tool=null;moveIndex=null;viewed=null;}
+    if(next.world_id!==world.world_id){tool=null;moveIndex=null;buildTile=null;viewed=null;}
     world=next;identity=identities[world.world_id] || null;
     catalog=await request('/api/worlds');
     if(!world.towns[viewed])viewed=identity?.town_id || Object.keys(world.towns)[0];
@@ -92,15 +105,22 @@ function render(){
     $('resource-coins').textContent=own.coins;
     $('resource-villagers').textContent=own.villagers.length;
   }
-  if(own){$('town-name').textContent=own.name;$('hint').textContent=tool==='move'?(moveIndex===null?'Click a building to move it.':'Click open grass.'):tool?`Click open grass to place a ${labels[tool].toLowerCase()}.`:'Choose a building, then click open grass.';$('progress').textContent=`Level ${own.level} · Timber roots: ${Math.min(30,own.harvested)}/30 wood harvested`;$('upgrade').disabled=own.level>=2;}
+  if(buildTile && (!town || town.buildings.some(b=>b.x===buildTile.x&&b.y===buildTile.y) || town.map_resources.some(r=>r.x===buildTile.x&&r.y===buildTile.y)))buildTile=null;
+  $('confirm-build').hidden=!buildTile || !costs[tool] || viewed!==identity?.town_id;
+  $('confirm-build').disabled=building || !own || own.wood<costs[tool];
+  $('confirm-build').textContent=building?'Building…':`Build here · ${costs[tool] || 0} wood`;
+  for(const button of $('buildings').children)button.classList.toggle('selected',button.textContent===`${labels[tool]} · ${costs[tool]} wood`);
+  if(own){$('town-name').textContent=own.name;$('hint').textContent=tool==='move'?(moveIndex===null?'Click a building to move it.':'Click open grass.'):tool?(buildTile?`Tile selected for a ${labels[tool].toLowerCase()}. ${own.wood<costs[tool]?'Not enough wood.': 'Choose Build here to place it, or select another tile.'}`:`Click open grass to select a tile for a ${labels[tool].toLowerCase()}.`):'Choose a building, then select an open tile.';$('progress').textContent=`Level ${own.level} · Timber roots: ${Math.min(30,own.harvested)}/30 wood harvested`;$('upgrade').disabled=own.level>=2;}
   $('towns').replaceChildren();
-  for(const [id,t] of Object.entries(world.towns)){const b=document.createElement('button');b.textContent=t.name+(id===identity?.town_id?' · Yours':'');b.classList.toggle('selected',id===viewed);b.onclick=()=>{viewed=id;tool=null;moveIndex=null;render();};$('towns').append(b);}
+  for(const [id,t] of Object.entries(world.towns)){const b=document.createElement('button');b.textContent=t.name+(id===identity?.town_id?' · Yours':'');b.classList.toggle('selected',id===viewed);b.onclick=()=>{viewed=id;tool=null;moveIndex=null;buildTile=null;render();};$('towns').append(b);}
   $('villagers').replaceChildren();
   if(town)for(const [i,v] of town.villagers.entries()){
     const div=document.createElement('div');div.className='villager';
     const name=document.createElement('strong');name.textContent=v.name;div.append(name);
     const skills=document.createElement('small');skills.textContent=`Woodcutting ${v.woodcutting} · Farming ${v.farming}`;div.append(skills);
-    const activity=document.createElement('small');activity.textContent=v.job==='idle'?'Resting':v.work_target?(v.job==='woodcutting'?'Gathering at the forest':'Tending crops by the water'):'Waiting for a workplace near '+(v.job==='woodcutting'?'trees':'water');div.append(activity);
+    const resource=v.job==='woodcutting'?'wood':'food';
+    const full=town[resource]>=100+100*town.buildings.filter(b=>b.kind==='storehouse').length;
+    const activity=document.createElement('small');activity.textContent=v.job==='idle'?'Resting':v.work_target?(full?`Paused: ${resource} storage full. Spend ${resource} or build a storehouse.`:v.job==='woodcutting'?'Gathering at the forest':'Tending crops by the water'):'Waiting for a workplace near '+(v.job==='woodcutting'?'trees':'water');div.append(activity);
     const select=document.createElement('select');select.setAttribute('aria-label',`Job for ${v.name}`);
     for(const [job,label] of [['idle','Resting'],['woodcutting','Woodcutting'],['farming','Farming']]){const option=document.createElement('option');option.value=job;option.textContent=label;select.append(option);}
     select.value=v.job;select.disabled=viewed!==identity?.town_id;select.onchange=()=>act({action:'job',index:i,job:select.value});div.append(select);$('villagers').append(div);
@@ -147,29 +167,30 @@ function drawVillager(b){
   const [px,py]=point(b.x,b.y),s=b.state;
   const walking=s.path.length>0,working=s.phase==='working'&&b.active;
   const stride=walking?Math.sin(s.clock*13):0;
-  const swing=working?(Math.sin(s.clock*7)+1)/2:0;
+  const chopping=working&&b.villager.job==='woodcutting';
+  const swing=working?(Math.sin(s.clock*(chopping?5:7))+1)/2:0;
   ctx.save();ctx.translate(px+(b.index%3-1)*3,py+tileH*.65+Math.floor(b.index/3));ctx.scale(tileW/46,tileW/46);
   ctx.fillStyle='#223b2966';ctx.beginPath();ctx.ellipse(0,2,7,3,0,0,Math.PI*2);ctx.fill();
   const towardSource=s.source?(s.source.x-s.x)-(s.source.y-s.y):0;
   ctx.scale(working&&towardSource!==0?Math.sign(towardSource):s.facing,1);
   ctx.strokeStyle='#283c38';ctx.lineWidth=2.5;ctx.lineCap='round';
   ctx.beginPath();ctx.moveTo(-2,-4);ctx.lineTo(-2-stride*3,1);ctx.moveTo(2,-4);ctx.lineTo(2+stride*3,1);ctx.stroke();
-  const bob=walking?Math.abs(stride)*1.2:working?swing:Math.sin(s.clock*2)*.3;
+  const bob=walking?Math.abs(stride)*1.2:chopping?swing*2.5:working?swing:Math.sin(s.clock*2)*.3;
   ctx.translate(0,-bob);
   ctx.fillStyle=['#658ca0','#b48065','#9a9862'][b.index%3];ctx.fillRect(-4,-13,8,10);
   ctx.fillStyle='#e7c68c';ctx.beginPath();ctx.arc(0,-17,4,0,Math.PI*2);ctx.fill();
   ctx.fillStyle='#584638';ctx.beginPath();ctx.arc(0,-18,4,Math.PI,Math.PI*2);ctx.fill();
   ctx.strokeStyle='#e7c68c';ctx.lineWidth=2;
-  ctx.beginPath();ctx.moveTo(-3,-11);ctx.lineTo(-5-stride*2,-6);ctx.moveTo(3,-11);ctx.lineTo(7,-9-swing*4);ctx.stroke();
+  ctx.beginPath();ctx.moveTo(-3,-11);ctx.lineTo(chopping?6:-5-stride*2,chopping?-14+swing*5:-6);ctx.moveTo(3,-11);ctx.lineTo(7,chopping?-14+swing*5:-9-swing*4);ctx.stroke();
   if(working){
-    ctx.save();ctx.translate(5,-11);ctx.rotate(-1.4+swing*2);
-    ctx.strokeStyle='#a78454';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(0,3);ctx.lineTo(0,-10);ctx.stroke();
+    ctx.save();ctx.translate(chopping?6:5,chopping?-13+swing*4:-11);ctx.rotate(chopping?-1+swing*2.5:-1.4+swing*2);
+    ctx.strokeStyle='#a78454';ctx.lineWidth=chopping?2.5:2;ctx.beginPath();ctx.moveTo(0,chopping?4:3);ctx.lineTo(0,chopping?-16:-10);ctx.stroke();
     ctx.fillStyle='#cbd7d2';
-    if(b.villager.job==='woodcutting')polygon([[0,-11],[7,-10],[6,-5],[0,-6]],'#cbd7d2');
+    if(chopping)polygon([[-1,-17],[10,-18],[11,-10],[-1,-11]],'#e4ece7','#6b7d79');
     else ctx.fillRect(-1,-11,8,2);
     ctx.restore();
-    if(b.villager.job==='woodcutting'&&swing>.85){
-      ctx.fillStyle='#d7b97a';for(let i=0;i<3;i++)ctx.fillRect(9+i*3,-5-i*3+swing*5,2,2);
+    if(chopping&&swing>.85){
+      ctx.fillStyle='#e4c98a';for(let i=0;i<4;i++)ctx.fillRect(13+i*3,-6-i*3+swing*7,3,2);
     }
   }
   if(s.phase==='returning'||s.phase==='depositing'){
@@ -190,6 +211,11 @@ function draw(seconds=0){
   for(let x=0;x<12;x++)for(let y=0;y<12;y++){
     const [px,py]=point(x,y),wet=water.has(`${x},${y}`);
     polygon([[px,py],[px+tileW/2,py+tileH/2],[px,py+tileH],[px-tileW/2,py+tileH/2]],wet?((x+y)%2?'#467f91':'#518d9d'):((x+y)%2?'#638457':'#6a8b5c'),wet?'#76a9ac':'#789766');
+    if(buildTile?.x===x&&buildTile?.y===y&&costs[tool]&&viewed===identity?.town_id){
+      ctx.save();ctx.lineWidth=3;
+      polygon([[px,py],[px+tileW/2,py+tileH/2],[px,py+tileH],[px-tileW/2,py+tileH/2]],'#e5d58a88','#fff0b1');
+      ctx.restore();
+    }
     if(wet){ctx.strokeStyle='#b4d7ce99';ctx.beginPath();ctx.moveTo(px-tileW*.16,py+tileH*.48);ctx.lineTo(px+tileW*.12,py+tileH*.63);ctx.stroke();}
   }
   const buildings=town?.buildings || [{kind:'hall',x:5,y:5}];
@@ -228,7 +254,11 @@ canvas.onclick=async event=>{
   const resource=world.towns[viewed].map_resources?.find(r=>r.x===x&&r.y===y);
   if(resource){notice(resource.kind==='tree'?'Forest: place a woodcutter within 3 tile steps to gather wood.':resource.kind==='water'?'Water: place a farm within 3 tile steps to grow food.':'Rock outcrop: choose open grass for buildings.');return;}
   if(tool==='move'){if(moveIndex===null){const index=world.towns[viewed].buildings.findIndex(b=>b.x===x&&b.y===y);if(index<0){notice('Click the tile beneath a building.');return;}moveIndex=index;render();}else{await act({action:'move',index:moveIndex,x,y});moveIndex=null;render();}}
-  else await act({action:'build',kind:tool,x,y});
+  else{
+    if(building)return;
+    if(world.towns[viewed].buildings.some(b=>b.x===x&&b.y===y)){notice('Choose open grass, away from existing buildings.');return;}
+    buildTile={x,y};render();
+  }
 };
 window.addEventListener('resize',()=>draw());
 function animate(now){
