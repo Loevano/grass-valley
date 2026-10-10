@@ -628,7 +628,18 @@ function renderSelection(town){
   }
   if(selection.type==='resource')$('selection-details').append(p);
 }
-for(const [kind,cost] of Object.entries(costs).filter(([kind])=>kind!=='acre')){const button=document.createElement('button');button.buildingKind=kind;button.textContent=`${labels[kind]} · ${cost} wood`;button.append(illustration(kind));button.onclick=()=>{panel='build';selection=null;tool=kind;moveIndex=null;buildTile=null;hoverTile=null;render();};$('buildings').append(button);}
+const buildingCategories=[
+  ['Housing & storage',['home','storehouse']],
+  ['Food & farming',['farm','fishing_hut','barn','fish_pond','orchard','mill','smokehouse','bakery','butcher']],
+  ['Crafting',['woodcutter','sawpit','workshop']],
+  ['Trade',['market']],
+];
+for(const [index,[label,kinds]] of buildingCategories.entries()){
+  const group=document.createElement('div');group.className='building-category';group.setAttribute('role','group');group.setAttribute('aria-labelledby',`building-category-${index}`);
+  const heading=document.createElement('h3');heading.id=`building-category-${index}`;heading.textContent=label;group.append(heading);
+  for(const [kind,cost] of Object.entries(costs).filter(([kind])=>kinds.includes(kind))){const button=document.createElement('button');button.buildingKind=kind;button.textContent=`${labels[kind]} · ${cost} wood`;button.append(illustration(kind));button.onclick=()=>{panel='build';selection=null;tool=kind;moveIndex=null;buildTile=null;hoverTile=null;render();};group.append(button);}
+  $('buildings').append(group);
+}
 $('move').onclick=()=>{panel='build';selection=null;tool='move';moveIndex=null;buildTile=null;hoverTile=null;render();};
 $('cancel').onclick=()=>{tool=null;moveIndex=null;buildTile=null;hoverTile=null;render();};
 async function buildAt(x,y){
@@ -704,11 +715,15 @@ function render(){
     for(const [key,value] of Object.entries(own.goods || {}))if(value>0)$('goods-list').append(fact(`${value.toFixed(1)} / ${storageCapacity(own)}`,goodName(key)));
   }
   if(buildTile && (!town || !insideBuildingRange(town,buildTile) || town.buildings.some(b=>b.x===buildTile.x&&b.y===buildTile.y) || town.map_resources.some(r=>r.x===buildTile.x&&r.y===buildTile.y)))buildTile=null;
-  for(const button of $('buildings').children){
-    const kind=button.buildingKind,spec=world.progression?.buildings[kind] || {wood:costs[kind],level:1};
-    button.hidden=!own || own.level<spec.level;
-    button.classList.toggle('selected',kind===tool);button.disabled=!own || own.level<spec.level || !canAfford(own,materialCosts(spec));
-    button.textContent=`${labels[kind]} · ${costText(materialCosts(spec))}${own&&own.level<spec.level?` · Hall ${spec.level}`:''}`;button.append(illustration(kind));
+  for(const group of $('buildings').children){
+    for(const button of group.children){
+      if(!button.buildingKind)continue;
+      const kind=button.buildingKind,spec=world.progression?.buildings[kind] || {wood:costs[kind],level:1};
+      button.hidden=!own || own.level<spec.level;
+      button.classList.toggle('selected',kind===tool);button.disabled=!own || own.level<spec.level || !canAfford(own,materialCosts(spec));
+      button.textContent=`${labels[kind]} · ${costText(materialCosts(spec))}${own&&own.level<spec.level?` · Hall ${spec.level}`:''}`;button.append(illustration(kind));
+    }
+    group.hidden=![...group.children].some(button=>button.buildingKind&&!button.hidden);
   }
   if(own){$('town-name').textContent=own.name;$('hint').textContent=tool==='move'?(moveIndex===null?'Click a building to move it.':'Click open grass.'):tool?(building?'Building…':own.wood<costs[tool]?'Not enough wood.':`Hover over open grass, then left-click to build a ${labels[tool].toLowerCase()}.`):'Choose a building, then hover over an open tile.';}
   $('towns').replaceChildren();

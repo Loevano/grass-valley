@@ -77,7 +77,7 @@ const run=new Function('document','window','localStorage','setTimeout','clearTim
     check(moveIndex===1&&commands.length===1&&$('notice').textContent.includes('within 10 tile steps'),'Out-of-range moves keep selection and show the limit');
     await clickTile(8,8);
     check(commands[1].action==='move'&&commands[1].index===1&&commands[1].x===8,'Movement sends the selected building and destination');
-    $('buildings').children[0].onclick();const [hoverX,hoverY]=point(8,8);canvas.onmousemove({clientX:hoverX,clientY:hoverY+tileH/2});
+    [...$('buildings').children].flatMap(group=>[...group.children]).filter(button=>button.buildingKind)[0].onclick();const [hoverX,hoverY]=point(8,8);canvas.onmousemove({clientX:hoverX,clientY:hoverY+tileH/2});
     listeners.keydown({key:'Escape'});
     check(panel===null&&tool===null&&buildTile===null&&$('side-panel').hidden,'Escape closes panels and cancels placement');
     $('world-menu').open=true;$('help-button').onclick();listeners.keydown({key:'Escape'});

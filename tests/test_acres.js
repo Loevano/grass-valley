@@ -22,7 +22,7 @@ const run=new Function('document','window','localStorage','setTimeout','clearTim
       map_resources:[{kind:'water',x:9,y:2}],villagers:[]};
     world={world_id:'test',towns:{own:town,friend:JSON.parse(JSON.stringify(town))}};
     identity={town_id:'own'};viewed='own';render();
-    check(!$('buildings').children.some(b=>b.textContent.startsWith('Acre')),'Acres are built through a farm');
+    check(![...$('buildings').children].flatMap(group=>[...group.children]).filter(button=>button.buildingKind).some(b=>b.textContent.startsWith('Acre')),'Acres are built through a farm');
     inspect('building',1);
     const button=$('selection-details').children.find(b=>b.textContent==='Build acre · 5 wood');
     check(button&&!button.disabled,'Farm provides acre construction');

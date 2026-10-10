@@ -14,7 +14,7 @@ canvas{cursor:pointer}button:focus-visible,canvas:focus-visible,select:focus-vis
 
 /* Illustrated village details and readable contextual information. */
 .resource-icon svg{display:block;width:30px;height:30px}.illustration{display:block;width:64px;height:64px;padding:8px;border:1px solid #c9ba7e33;border-radius:12px;background:#d9c28b12;margin:8px 0 16px}.illustration svg{width:100%;height:100%}
-#buildings button{position:relative;padding:16px 48px 16px 12px}#buildings .illustration{position:absolute;right:8px;top:50%;transform:translateY(-50%);width:32px;height:32px;padding:0;margin:0;border:0;background:none}
+#buildings .building-category{margin-top:20px}#buildings h3{font-size:17px;color:#d7d0a1;margin:0 0 8px}#buildings button{position:relative;padding:16px 48px 16px 12px}#buildings .illustration{position:absolute;right:8px;top:50%;transform:translateY(-50%);width:32px;height:32px;padding:0;margin:0;border:0;background:none}
 #selection-details>p{margin:12px 0 20px}#selection-details .workplace-status{padding:12px;border:1px solid #b8c99933;border-radius:8px;background:#b8c9990a;color:#e0dfbd;font-weight:600}
 .skill-row{margin:12px 0}.skill-row small{margin-bottom:5px;color:#ccd5c3}meter,progress{display:block;width:100%;height:9px;accent-color:#c8bd79;border:0;border-radius:8px;overflow:hidden}meter::-webkit-meter-bar{background:#12241f;border:0}meter::-webkit-meter-optimum-value{background:#b6bc7b}progress::-webkit-progress-bar{background:#12241f}progress::-webkit-progress-value{background:#c8bd79}
 #hall-details{padding:16px 0;margin-top:18px;border-top:1px solid #c9ba7e33}#hall-progress{margin:12px 0 20px}#selection-move{margin-top:24px}.villager select{margin-top:14px}.scene{background:radial-gradient(ellipse at center,#516c4c,#2a4438)}

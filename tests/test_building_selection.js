@@ -34,7 +34,7 @@ const run=new Function('document','window','localStorage','setTimeout','clearTim
     function pointer(x,y,button=0){const [px,py]=point(x,y);return {clientX:px,clientY:py+tileH/2,button};}
     function click(x,y,button=0){return canvas.onclick(pointer(x,y,button));}
     function hover(x,y){canvas.onmousemove(pointer(x,y));draw();} // Paint the next animation frame.
-    $('buildings').children[0].onclick();
+    [...$('buildings').children].flatMap(group=>[...group.children]).filter(button=>button.buildingKind)[0].onclick();
     check(tool==='home','Choosing a cottage activates its tool');
     fills.length=0;hover(11,10);
     check(buildTile===null&&fills.includes('#c76d6455'),'Beyond the hall range previews red');
@@ -49,7 +49,7 @@ const run=new Function('document','window','localStorage','setTimeout','clearTim
     check(fills.includes('#e4c98022'),'Inspecting the hall highlights its building range');
     fills.length=0;openPanel(null);
     check(!fills.includes('#e4c98022'),'Closing the panel clears the range overlay');
-    $('buildings').children[0].onclick();
+    [...$('buildings').children].flatMap(group=>[...group.children]).filter(button=>button.buildingKind)[0].onclick();
     hover(2,3);
     check(buildTile.x===2&&buildTile.y===3,'Hover previews the tile under the cursor');
     check(commands.length===0&&town.wood===65,'Hover does not build or spend wood');
@@ -88,11 +88,11 @@ const run=new Function('document','window','localStorage','setTimeout','clearTim
     hover(3,2);$('cancel').onclick();
     check(buildTile===null&&tool===null,'Cancel clears the preview and building type');
     hover(3,2);check(buildTile===null,'Hover without a building type has no build preview');
-    $('buildings').children[0].onclick();hover(3,2);$('buildings').children[1].onclick();
+    [...$('buildings').children].flatMap(group=>[...group.children]).filter(button=>button.buildingKind)[0].onclick();hover(3,2);[...$('buildings').children].flatMap(group=>[...group.children]).filter(button=>button.buildingKind)[1].onclick();
     check(buildTile===null,'Changing building types clears the preview');
     hover(3,2);$('move').onclick();
     check(buildTile===null&&tool==='move','Move clears construction preview');
-    $('buildings').children[0].onclick();hover(3,2);$('towns').children[1].onclick();
+    [...$('buildings').children].flatMap(group=>[...group.children]).filter(button=>button.buildingKind)[0].onclick();hover(3,2);$('towns').children[1].onclick();
     check(viewed==='friend'&&buildTile===null,'Visiting another town clears the preview');
     tool='home';hover(3,3);await click(3,3);
     check(buildTile===null&&commands.length===3,'Visiting another town cannot preview or build');
