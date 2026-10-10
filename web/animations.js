@@ -33,6 +33,11 @@ const WorkerAnimation = (() => {
       const delta=distance(tile,current);
       if(delta<best){start=tile;best=delta;if(delta===0)break;}
     }
+    if(villager.logistics_target){
+      const target=villager.logistics_target,position=villager.logistics_position || start;
+      const path=route(position,target,blocked,size,false);
+      return {...position,path:path || [],phase:'walking',source:target,home:null,blocked,size,transport:true,elapsed:0,clock:state?.clock || index*.37,facing:state?.facing || 1};
+    }
     const source=villager.construction_target || (villager.job==='idle'?null:villager.work_target);
     const kind=villager.job==='woodcutting'?'woodcutter':villager.job==='fishing'?'fishing_hut':'farm';
     // Match the host's workplace selection, including multiple assigned workers.
@@ -96,6 +101,7 @@ const WorkerAnimation = (() => {
       if(!state.path.length){state.phase=state.phase==='returning'?'depositing':state.source?'working':'idle';state.elapsed=0;}
       return;
     }
+    if(state.transport){state.phase='waiting';return;}
     if(state.construction){state.elapsed+=seconds;return;}
     if(!active || !state.source || state.phase==='waiting')return;
     state.elapsed+=seconds;

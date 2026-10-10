@@ -12,6 +12,7 @@ from pathlib import Path
 from urllib.parse import urlsplit
 
 import progression as economy
+import logistics
 
 from terrain import ensure_terrain
 from npcs import ensure_npcs
@@ -21,10 +22,10 @@ ROOT = Path(__file__).resolve().parent
 SAVE = ROOT / 'savegame.json'
 LOCK = threading.RLock()
 COSTS = {'home': 20, 'woodcutter': 15, 'farm': 15, 'storehouse': 25, 'fishing_hut': 15, 'acre': 5}
-JOBS = {'idle', 'building', 'woodcutting', 'farming', 'fishing'}
+JOBS = {'idle', 'building', 'woodcutting', 'farming', 'fishing', 'hauling'}
 SETTLER_SPACES = {'hall': 1, 'home': 2, 'storehouse': 1, 'woodcutter': 1,
                   'fishing_hut': 1, 'farm': 4, 'acre': 1}
-BUILDING_JOBS = {'woodcutter': 'woodcutting', 'farm': 'farming',
+BUILDING_JOBS = {'storehouse': 'hauling', 'woodcutter': 'woodcutting', 'farm': 'farming',
                  'fishing_hut': 'fishing', 'acre': 'farming'}
 TICK_SECONDS = 3
 BUILD_SECONDS = 30
@@ -232,9 +233,18 @@ def assign_settler(town, worker_index, building_index):
         raise ValueError(reason)
     villager['building_index'] = building_index
     villager['job'] = BUILDING_JOBS.get(building['kind'], 'idle')
+    villager.pop('logistics_trip', None)
+    villager.pop('logistics_target', None)
 
 
 def work_assignment(town, job, worker_index):
+    if job == 'hauling':
+        index = town['villagers'][worker_index].get('building_index')
+        if type(index) is int and 0 <= index < len(town['buildings']):
+            building = town['buildings'][index]
+            if building['kind'] == 'storehouse' and completed(building):
+                return building, building
+        return None
     if economy.qualification(town['villagers'][worker_index], job):
         return None
     if job in economy.JOB_BUILDINGS:
@@ -331,7 +341,7 @@ def new_town(name, world=None):
 
 
 def capacity(town):
-    return 100 + 100 * sum(building_level(b) for b in town['buildings']
+    return 200 + 100 * sum(building_level(b) for b in town['buildings']
                            if b['kind'] == 'storehouse' and completed(b))
 
 
@@ -461,23 +471,33 @@ def tick(world):
             if upgrade and completed(hall):
                 hall['construction'] = {'total': upgrade['seconds'],
                                         'progress': upgrade['seconds'] - town['upgrade_remaining']}
-        construct(town, walking_map(world, town) if 'shared_map' in world else town)
+        walking = walking_map(world, town) if 'shared_map' in world else town
+        construct(town, walking)
         landscape = world.get('shared_map', town)
         economy.player_tick(town, landscape, capacity(town))
         barn_cycles = set()
         field_cycles = {}
-        for index, villager in enumerate(town['villagers']):
+        # Haulers supply workplaces before this cycle's production consumes inputs.
+        for index in sorted(range(len(town['villagers'])), key=lambda i: town['villagers'][i]['job'] != 'hauling'):
+            villager = town['villagers'][index]
             job = villager['job']
             assignment = work_assignment(town, job, index) if job != 'idle' else None
             source = assignment[1] if assignment else None
             villager['work_target'] = source
             villager.pop('production_status', None)
             if not source:
+                villager.pop('logistics_trip', None)
+                villager.pop('logistics_target', None)
                 reason = economy.qualification(villager, job)
                 if reason:
                     villager['production_status'] = reason
                 continue
             building = assignment[0]
+            if job == 'hauling':
+                logistics.haul(town, walking, villager, building, construction_route, TICK_SECONDS)
+                continue
+            if logistics.worker(town, walking, villager, building, construction_route, TICK_SECONDS):
+                continue
             if job in economy.JOB_BUILDINGS:
                 if building['kind'] == 'barn':
                     marker = id(building)
@@ -485,14 +505,12 @@ def tick(world):
                         villager['production_status'] = 'Barn already tended this cycle'
                         continue
                     barn_cycles.add(marker)
-                villager['production_status'] = economy.extra_worker(town, villager, building, capacity(town))
+                villager['production_status'] = logistics.produce(town, building, villager)
                 continue
             output = 'wood' if job == 'woodcutting' else 'fish' if job == 'fishing' else source.get('crop', 'vegetables')
-            room = capacity(town) - economy.quantity(town, output)
-            if output in economy.EDIBLE:
-                room = min(room, (capacity(town) - town['food']) / economy.EDIBLE[output])
+            room = logistics.BUFFER_SIZE - logistics.buffered(building)
             if room <= 0:
-                villager['production_status'] = 'Storage full'
+                villager['production_status'] = 'Workplace buffer full'
                 continue
             if job == 'farming':
                 marker = id(source) if source['kind'] == 'acre' else id(building)
@@ -524,7 +542,7 @@ def tick(world):
                 villager['production_status'] = 'Waiting for supply to regenerate'
                 continue
             if caught:
-                economy.deliver(town, output, amount, capacity(town))
+                logistics.record_output(town, building, output, amount)
             economy.practice(villager, job)
             villager['production_status'] = 'Working' if caught else 'No catch — trying again'
         feed_settlers(town)
@@ -671,6 +689,25 @@ def command(town, data, world=None):
             raise ValueError('Choose a settler first.')
         town['villagers'][index].pop('building_index', None)
         town['villagers'][index]['job'] = 'idle'
+        town['villagers'][index].pop('logistics_trip', None)
+        town['villagers'][index].pop('logistics_target', None)
+    elif action == 'allocate_storage':
+        index, allocations = data.get('index'), data.get('allocations')
+        if type(index) is not int or not 0 <= index < len(town['buildings']):
+            raise ValueError('Choose a storage room first.')
+        building = town['buildings'][index]
+        if building['kind'] not in {'hall', 'storehouse'} or not completed(building):
+            raise ValueError('Choose a completed storage room.')
+        if (not isinstance(allocations, dict) or any(k not in economy.STORAGE_KEYS or type(n) is not int or n < 0
+                                                   for k, n in allocations.items())):
+            raise ValueError('Allocate whole, non-negative spaces to valid resources.')
+        if sum(allocations.values()) > economy.storage_size(building):
+            raise ValueError('Allocations exceed this storage room’s capacity.')
+        for key in economy.STORAGE_KEYS:
+            limit = economy.storage_limit(town, key) - economy.storage_allocations(building).get(key, 0) + allocations.get(key, 0)
+            if economy.quantity(town, key) > limit + 1e-9:
+                raise ValueError('Spend or move stored goods before reducing their allocation.')
+        building['storage_allocations'] = dict(allocations)
     elif action == 'upgrade_capacity':
         index = data.get('index')
         if type(index) is not int or not 0 <= index < len(town['buildings']):
@@ -689,7 +726,7 @@ def command(town, data, world=None):
         index, job = data.get('index'), data.get('job')
         if type(index) is not int or not 0 <= index < len(town['villagers']) or job not in JOBS:
             raise ValueError('Choose a villager and a valid job.')
-        required = {'woodcutting': 'woodcutter', 'farming': 'farm', 'fishing': 'fishing_hut', **economy.JOB_BUILDINGS}.get(job)
+        required = {'hauling': 'storehouse', 'woodcutting': 'woodcutter', 'farming': 'farm', 'fishing': 'fishing_hut', **economy.JOB_BUILDINGS}.get(job)
         if required and not any(b['kind'] == required and completed(b) for b in town['buildings']):
             raise ValueError('Build a ' + required + ' first.')
         if required:
@@ -702,6 +739,8 @@ def command(town, data, world=None):
             assign_settler(town, index, current if current in choices else choices[0])
         else:
             town['villagers'][index].pop('building_index', None)
+            town['villagers'][index].pop('logistics_trip', None)
+            town['villagers'][index].pop('logistics_target', None)
         town['villagers'][index]['job'] = job
     elif action == 'upgrade_building':
         index = data.get('index')
@@ -713,7 +752,7 @@ def command(town, data, world=None):
         if not completed(building):
             raise ValueError('Finish construction before upgrading.')
         level = building_level(building)
-        if level >= 3:
+        if level >= (5 if building['kind'] == 'storehouse' else 3):
             raise ValueError('This building is fully upgraded.')
         cost = COSTS[building['kind']] * level
         if town['wood'] < cost:

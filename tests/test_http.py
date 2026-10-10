@@ -118,7 +118,12 @@ class LanHost(unittest.TestCase):
         self.assertEqual(self.call('/api/worlds/create', {'name': 'Second world'})[0], 200)
         second_id = server.ACTIVE_WORLD
         second = json.loads(self.call('/api/join', {'name': 'Second town'})[1])
-        build = {'action': 'build', 'kind': 'farm', 'x': 1, 'y': 2}
+        # Generated terrain and locals vary; isolate ownership using a valid clearing tile.
+        town = server.WORLDS['legacy']['world']['towns'][first['town_id']]
+        occupied = {(b['x'], b['y']) for b in town['buildings'] + town['map_resources'] + town['npcs']}
+        x, y = next((x, y) for x in range(2, 8) for y in range(2, 9)
+                    if (x, y) not in occupied and (x, y) != (5, 7))
+        build = {'action': 'build', 'kind': 'farm', 'x': x, 'y': y}
         self.assertEqual(self.call('/api/command', build, first['token'])[0], 401)
         self.assertEqual(self.call('/api/command', dict(build, world_id='legacy'), second['token'])[0], 409)
         self.assertEqual(self.call('/api/join', {'name': 'Stale', 'world_id': 'legacy'})[0], 409)

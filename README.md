@@ -171,16 +171,39 @@ the Python host, refresh both browsers, and create a new world to use the shared
 - Hall upgrades also require a builder at the hall. The first requires housing and reliable food, costs 40 wood, and
   takes 30 seconds of construction after arrival; the hall
   panel shows remaining time. Closing the host pauses the upgrade.
+- Workplaces hold up to **50 output units** locally. Wood, planks, crops, fish,
+  food, wool, and other products only enter the shared town stock after delivery.
+  Processors and barns also keep up to 50 input units locally. Buffered food is
+  unavailable for meals until delivered; milestones count goods when produced.
+- Select the town hall or a completed **Storehouse** to allocate storage spaces
+  between wood, food, planks, wheat, fodder, flour, wool, tools, manure, and herbs.
+  Food spaces cover all edible goods, using their pantry value. The hall starts
+  with 100 wood and 100 food spaces. Each storehouse level adds 100 shared spaces;
+  new and upgraded spaces remain unallocated until you assign them. Allocations
+  cannot exceed a room's capacity or remove space needed by existing town stock.
+  Town stock is shared between storage rooms; allocations determine which rooms
+  can accept or supply each resource. Older saved stocks remain intact, including
+  goods above their new allocations; spend them or allocate more space to resume deliveries.
+- Assign settlers to a **Storehouse** as haulers. They collect small batches and
+  distribute recipe ingredients and animal feed so producers can keep working.
+  Without hauling support, producers fetch their own inputs and deliver outputs
+  once their 50-unit buffer fills. Transport takes time and follows open paths;
+  roads speed it up. Full, unallocated, or unreachable storage leaves outputs at
+  their workplace and pauses production when the buffer fills. Moving, upgrading,
+  or reassigning during transport preserves goods and cancels affected deliveries.
+- Storehouses upgrade through level 5, becoming a **Warehouse** with 500 spaces.
+  Building upgrades increase storage; settler-capacity upgrades add hauler slots.
+- New landscapes contain denser forests, including timber patches beside towns.
 - Build cottages to attract residents; maintain food and add storage as needed.
 - Select any completed cottage, storehouse, woodcutter, farm, fishing hut, or acre
-  to upgrade it through level 3. Builders work for 30 seconds to reach level 2
+  to upgrade it through level 3 (storehouses through level 5). Builders work for 30 seconds to reach level 2
   and 60 seconds to reach level 3 after arriving. Each upgrade costs its original
   building price multiplied by its current level; the panel previews the benefit.
   Profession upgrades take 30 seconds of builder work. Materials are paid when
   starting; buildings pause their benefits and production until work finishes.
   Upgrade progress survives saving, moving, and restarting the host.
   Cottages provide 2/4/6 housing spaces (the town limit stays 16), and storehouses
-  add 100/200/300 capacity for both wood and food. Woodcutters, farms, fishing huts,
+  add 100/200/300/400/500 shared storage spaces. Level 5 becomes a Warehouse. Woodcutters, farms, fishing huts,
   and acres gain 25% production per worker at level 2 and 50% at level 3.
   Farm and acre bonuses add together on that field. Fishing bonuses increase food
   from successful catches; the 80% catch chance stays the same. Workers still need
@@ -194,7 +217,7 @@ the Python host, refresh both browsers, and create a new world to use the shared
   level. Hover over or select a building to read its level, capacity tier, and
   profession improvements. Advanced workers saw, grind, smoke fish, hammer, feed
   animals and fish, pick fruit, knead dough, or prepare meat at their assigned
-  workplace, then deposit their goods. Work animations pause with production.
+  workplace, then leave goods in its output buffer for collection. Work animations pause with production.
   Building, moving, demolition, animal purchases, crop changes, assignments, sales,
   and completed upgrades have brief visual feedback.
 - Click a building, then **Destroy building** to remove it without a resource
