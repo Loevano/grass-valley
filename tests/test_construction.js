@@ -22,7 +22,7 @@ const run=new Function('document','window','localStorage','setTimeout','clearTim
   const card=$('selection-details').children[0];
   assert(card.children.some(c=>c.textContent==='Walking to the construction site'));
   assert(card.children.some(c=>c.children.some(o=>o.value==='building')),'Builder job is selectable');
-  assert(villagerRow(town,town.villagers[0],0).children[0].children.some(c=>c.textContent==='Builder (automatic)'));
+  assert(villagerRow(town,town.villagers[0],0).children[1].children.some(c=>c.textContent==='Builder (automatic)'));
   polygon=(_,color)=>fills.push(color);
   for(const progress of [0,12,24]){
     site.construction.progress=progress;fills.length=0;drawBuilding(site,town);

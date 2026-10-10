@@ -91,20 +91,28 @@ const run=new Function('document','window','localStorage','setTimeout','clearTim
     await clickSprite('villager',0);
     check($('selection-details').children[0].children.find(child=>child.tag==='select').disabled,'Visitor job controls are disabled');
     $('towns').children[0].onclick();$('villagers-button').onclick();
+    town.villagers[0].talents={woodcutting:1,farming:-1};
     town.villagers.push({name:'Bea',job:'idle',woodcutting:1,farming:3});render();
     check($('side-panel').classList['villagers-overview'],'Villagers uses the wide popup layout');
-    check($('villagers').children.length===2,'Overview includes every villager');
-    check($('villagers').children.every(row=>row.children[1].className==='villager'&&!row.children[1].hidden),'Every villager profile is visible without expanding');
-    for(const row of $('villagers').children){
-      const card=row.children[1];
-      check(card.children.filter(child=>child.className==='skill-row').length>=3,'Every profile includes basic skills');
-      check(card.children.some(child=>child.tag==='select'&&!child.disabled),'Every owner profile has a job control');
+    const rosterRows=()=>$('villagers').children[0].children[1].children;
+    const table=$('villagers').children[0];
+    check(table.tag==='table'&&table.attributes['aria-label']==='Villagers overview','Overview uses an accessible table');
+    check(table.children[0].children[0].children.map(cell=>cell.textContent).join(',')==='Name,Job,Housing,Skills,Talents,Work status','Table labels comparison columns');
+    check(rosterRows().length===2,'Overview includes every villager');
+    for(const row of rosterRows()){
+      check(row.tag==='tr'&&row.children[0].attributes.scope==='row','Each villager has a table row header');
+      check(row.children[3].children.length>=3,'Every row includes basic skills');
+      check(!row.children[1].children[1].disabled,'Every owner row has a job control');
+      check(row.children[2].textContent==='Town hall · shared shelter','Housing is visible in the table');
+      check(row.children[5].children.length>=1,'Work status is visible in the table');
     }
-    render();check($('villagers').children.every(row=>!row.children[1].hidden),'Refresh keeps every profile visible');
-    const rosterJob=$('villagers').children[1].children[1].children.find(child=>child.tag==='select');
+    check(rosterRows()[0].children[4].children[0].textContent.includes('Weakness: Farming'),'Table preserves talent strengths and weaknesses');
+    check(rosterRows()[1].children[4].children[0].textContent==='No special talent','Empty talents have a readable fallback');
+    render();check(rosterRows().length===2,'Refresh keeps every row visible');
+    const rosterJob=rosterRows()[1].children[1].children[1];
     rosterJob.value='woodcutting';rosterJob.onchange();check(commands.at(-1).index===1&&commands.at(-1).job==='woodcutting','Overview assigns the correct villager job');
     viewed='friend';render();
-    check($('villagers').children.every(row=>row.children[1].children.find(child=>child.tag==='select').disabled),'Overview respects visitor restrictions');
+    check(rosterRows().every(row=>row.children[1].children[1].disabled),'Overview respects visitor restrictions');
     viewed='own';town.villagers.pop();render();
     $('close-panel').onclick();check($('side-panel').hidden,'Close button closes inspector');
     check(!$('side-panel').classList['villagers-overview'],'Closing clears the wide layout');
