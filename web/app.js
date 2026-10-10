@@ -1036,11 +1036,13 @@ function draw(seconds=0){
   ctx.setTransform(dpr,0,0,dpr,0,0);ctx.clearRect(0,0,rect.width,rect.height);
   const townKey=`${world.world_id}/${world.shared_map?'shared':viewed}`;
   const town=world.towns[viewed], own=world.towns[identity?.town_id];
+  const hero=playerSprite(world.shared_map?(own || town):town,seconds);
   if(cameraTown!==townKey){
-    const center=world.shared_map?(own?.player || town?.player || world.town_sites[0]):{x:5.5,y:5.5};
+    const home=world.shared_map?(own || town):town;
+    const center=home?.buildings?.find(b=>b.kind==='hall')
+      || (world.shared_map?(home?.player || world.town_sites?.[0]):null) || {x:5.5,y:5.5};
     camera={x:center.x,y:center.y,zoom:1};cameraTown=townKey;
   }
-  const hero=playerSprite(world.shared_map?(own || town):town,seconds);
   tileW=Math.min(54,(rect.width-30)/12)*camera.zoom;tileH=tileW/2;
   originX=rect.width/2-(camera.x-camera.y)*tileW/2;
   originY=rect.height/2-(camera.x+camera.y)*tileH/2-tileH/2;
