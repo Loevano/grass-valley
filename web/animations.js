@@ -3,11 +3,11 @@ const WorkerAnimation = (() => {
   const key = p => `${p.x},${p.y}`;
   const distance = (a,b) => Math.abs(a.x-b.x)+Math.abs(a.y-b.y);
   const neighbors = p => [{x:p.x+1,y:p.y},{x:p.x,y:p.y+1},{x:p.x-1,y:p.y},{x:p.x,y:p.y-1}];
-  function route(start, target, blocked, size=120) {
+  function route(start, target, blocked, size=120, adjacent=true) {
     const queue = [start], previous = new Map([[key(start),null]]);
     for(let i=0;i<queue.length;i++){
       const p=queue[i];
-      if(distance(p,target)===1){
+      if(distance(p,target)===(adjacent?1:0)){
         const path=[];
         for(let step=p;previous.get(key(step));step=previous.get(key(step)))path.unshift(step);
         return path;
@@ -35,9 +35,23 @@ const WorkerAnimation = (() => {
       r.kind===(kind==='woodcutter'?'tree':'water')&&distance(b,r)<=3));
     const workplace=source?.kind==='acre'?town.buildings[source.farm_index]:workplaces[index%workplaces.length];
     const home=workplace || town.buildings.find(b=>b.kind==='hall');
-    const path=source?route(start,source,blocked,size):home?route(start,home,blocked,size):[];
+    let pier=[],workSpot=null;
+    if(!villager.construction_target&&villager.job==='fishing'&&source&&home?.kind==='fishing_hut'){
+      // A hut can occupy the only bank tile; its pier provides access over water.
+      const pierBlocked=new Set(blocked);
+      pierBlocked.delete(key(home));
+      for(const water of town.map_resources.filter(r=>r.kind==='water'&&distance(home,r)<=3)){
+        if(town.terrain?.[water.y]?.[water.x]!=='v')pierBlocked.delete(key(water));
+      }
+      const deck=route(home,source,pierBlocked,size,false);
+      if(deck&&deck.length<=3){
+        pier=[home,...deck];workSpot=source;
+        for(const tile of pier)blocked.delete(key(tile));
+      }
+    }
+    const path=source?route(start,workSpot || source,blocked,size,!workSpot):home?route(start,home,blocked,size):[];
     return {...start,phase:path===null?'waiting':path.length?'walking':source?'working':'idle',
-      path:path || [],source,home,blocked,size,workDuration:villager.job==='farming'?8:3.2,
+      path:path || [],source,home,pier,workSpot,blocked,size,workDuration:villager.job==='farming'?8:3.2,
       elapsed:0,clock:state?.clock || index*.37,facing:state?.facing || 1};
   }
   function advance(state, seconds, active) {
@@ -60,7 +74,7 @@ const WorkerAnimation = (() => {
       if(path===null)return;
       state.path=path;state.phase=path.length?'returning':'depositing';state.elapsed=0;
     }else if(state.phase==='depositing'&&state.elapsed>=.65){
-      const path=route(state,state.source,state.blocked,state.size);
+      const path=route(state,state.workSpot || state.source,state.blocked,state.size,!state.workSpot);
       state.path=path || [];state.phase=path===null?'waiting':path.length?'walking':'working';state.elapsed=0;
     }
   }

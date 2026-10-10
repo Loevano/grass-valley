@@ -442,9 +442,11 @@ function animatedVillagers(town, seconds, townId=viewed){
   const townKey=`${world.world_id}/${world.shared_map?'shared':viewed}`;
   if(workerTown!==townKey){workers.clear();workerTown=townKey;}
   if(!town)return [];
-  const layout=JSON.stringify([world.shared_map?Object.values(world.towns).map(t=>t.buildings):town.buildings,town.map_resources.length]);
+  const tiles=items=>items.map(({kind,x,y,farm_index,construction})=>[kind,x,y,farm_index,!!construction]);
+  const layout=JSON.stringify([tiles(world.shared_map?Object.values(world.towns).flatMap(t=>t.buildings):town.buildings),tiles(town.map_resources)]);
   return town.villagers.map((villager,index)=>{
-    const signature=JSON.stringify([layout,villager.job,villager.work_target]);
+    const signature=JSON.stringify([layout,villager.job,villager.work_target?tiles([villager.work_target]):null,
+      villager.construction_target?tiles([villager.construction_target]):null]);
     const workerKey=world.shared_map?`${townId}/${index}`:index;
     let state=workers.get(workerKey);
     if(!state || state.signature!==signature){
@@ -537,7 +539,7 @@ function drawVillager(b){
   ctx.beginPath();ctx.moveTo(-3,-11);ctx.lineTo(chopping?6:-5-stride*2,chopping?-14+swing*5:-6);ctx.moveTo(3,-11);ctx.lineTo(farming?farmHandX:7,chopping?-14+swing*5:fishing?-10-reel*3:farming?farmHandY:-9-swing*4);ctx.stroke();
   if(fishing){
     // Cast into the selected water tile, then lift the catch before delivery.
-    const [waterX,waterY]=s.source?point(s.source.x,s.source.y):[px+tileW*.6,py+tileH*.65];
+    const [waterX,waterY]=s.workSpot?point(s.source.x+.35,s.source.y+.35):s.source?point(s.source.x,s.source.y):[px+tileW*.6,py+tileH*.65];
     const surfaceX=(waterX-px-(b.index%3-1)*3)/(tileW/46)*facing;
     const surfaceY=(waterY-py-tileH*.65-Math.floor(b.index/3))/(tileW/46)+bob;
     const tipX=7+cast*13-reel*8,tipY=-34+cast*9-reel*9;
@@ -690,6 +692,26 @@ function draw(seconds=0){
   const entries=world.shared_map?Object.entries(world.towns):[[viewed,town]];
   const buildings=world.shared_map?entries.flatMap(([id,t])=>t.buildings.map((b,index)=>({...b,townId:id,objectIndex:index}))):town?.buildings || [{kind:'hall',x:5,y:5}];
   const villagers=entries.flatMap(([id,t])=>animatedVillagers(t,seconds,id));
+  const drawnPiers=new Set();
+  for(const worker of villagers){
+    const pier=worker.state.pier;
+    if(!pier?.length)continue;
+    const id=JSON.stringify(pier);
+    if(drawnPiers.has(id))continue;
+    drawnPiers.add(id);
+    // Decks sit on the ground plane, under buildings and the fishing worker.
+    for(const tile of pier.slice(1)){
+      const [px,py]=point(tile.x,tile.y);
+      polygon([[px,py+tileH*.15],[px+tileW*.32,py+tileH*.5],
+        [px,py+tileH*.85],[px-tileW*.32,py+tileH*.5]],'#ac895d','#624e38');
+      ctx.strokeStyle='#71583d';ctx.lineWidth=tileW/46;
+      for(let plank=0;plank<3;plank++){
+        const offset=(plank-1)*tileH*.16;
+        ctx.beginPath();ctx.moveTo(px-tileW*.2,py+tileH*.5+offset);
+        ctx.lineTo(px+tileW*.2,py+tileH*.5+offset);ctx.stroke();
+      }
+    }
+  }
   const otherPlayers=world.shared_map?entries.filter(([id,t])=>t.player&&id!==hero?.townId).map(([id,t])=>({kind:'player',townId:id,...t.player,index:1,villager:{job:'idle'},active:false,state:{path:[],phase:'idle',clock:0,facing:t.player.facing}})):[];
   const objects=[...buildings,...resources.filter(r=>r.kind!=='water'),...villagers,...npcSprites(world.shared_map || town,seconds),...otherPlayers,...(hero?[hero]:[])].filter(b=>{
     const [px,py]=point(b.x,b.y);
