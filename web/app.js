@@ -200,6 +200,9 @@ const costs = {home:20,woodcutter:15,farm:15,storehouse:25,fishing_hut:15,acre:5
 const colors = {hall:'#a88861',home:'#c5ad80',woodcutter:'#947b55',farm:'#bc9b5c',storehouse:'#8c9b8b',fishing_hut:'#7899a2'};
 // Small vector illustrations share the map's earth, sage, and amber palette.
 const iconPaths = {
+  fishing:'<path fill="#7899a2" d="M7 17q7-11 17 0-10 11-17 0z"/><path fill="#cda875" d="m7 17-5-5v10z"/><circle fill="#e8eadb" cx="20" cy="16" r="1.5"/><path d="m12 6 14-3v8q0 4-3 3"/>',
+  woodcutting:'<path fill="#94704c" d="m7 27 12-22 3 2-12 22z"/><path fill="#bacac5" d="m18 6 7-3 5 9-8 3z"/>',
+  gathering:'<path fill="#719451" d="M16 27V11Q4 2 4 13q0 8 12 8Q28 18 28 8q-12 0-12 9"/><circle fill="#b9866b" cx="9" cy="20" r="4"/><circle fill="#d9bd70" cx="16" cy="23" r="4"/>',
   wood:'<path fill="#94704c" d="M4 9 18 4l9 7-14 6z"/><path fill="#705337" d="M4 9v12l9 7V17z"/><path fill="#cda875" d="M13 17 27 11v12l-14 5z"/><path d="m17 18 6-3m-6 7 6-3"/>',
   food:'<path d="M16 28V5m0 11-7-6m7 12 7-6"/><path fill="#d9bd70" d="m16 7-5-5-2 5 7 7 7-7-2-5zm-7 3-5 1 2 6 10 5zm14 6 5 1-2 6-10 5z"/>',
   coins:'<ellipse fill="#b88d45" cx="16" cy="18" rx="11" ry="12"/><ellipse fill="#e4c980" cx="16" cy="14" rx="11" ry="11"/><path d="M16 7v14m4-11h-6l-2 4 8 2-2 4h-6"/>',
@@ -400,7 +403,20 @@ function renderSelection(town){
     $('selection-title').textContent=viewed===identity?.town_id?'You':'Town founder';
     const p=document.createElement('p');
     p.textContent=viewed===identity?.town_id?'Your adventuring villager. Click the map and use your movement keys to explore. Open Settings to change keybindings. Your position is saved with this world.':'This is the town owner’s adventuring villager.';
-    $('selection-details').append(p);return;
+    $('selection-details').append(p);
+    const skills=document.createElement('div');skills.className='player-skills';skills.setAttribute('role','group');skills.setAttribute('aria-label','Player skills');
+    for(const job of ['fishing','woodcutting','gathering']){
+      const xp=town.player?.[job] || 0,level=1+Math.floor(xp/20);
+      const tile=document.createElement('div');tile.className='player-skill';tile.tabIndex=0;
+      const description=`${job[0].toUpperCase()+job.slice(1)} · Level ${level} · ${xp%20}/20 practice`;
+      tile.title=description;tile.setAttribute('aria-label',description);
+      tile.append(illustration(job));
+      const number=document.createElement('strong');number.textContent=level;number.setAttribute('aria-hidden','true');tile.append(number);
+      const tooltip=document.createElement('span');tooltip.className='skill-tooltip';tooltip.textContent=description;tooltip.setAttribute('aria-hidden','true');tile.append(tooltip);
+      skills.append(tile);
+    }
+    $('selection-details').append(skills);
+    return;
   }
   const item=selection.type==='npc'?town.npcs?.[selection.index]:selection.type==='villager'?town.villagers[selection.index]:selection.type==='building'?town.buildings[selection.index]:town.map_resources[selection.index];
   if(!item){selection=null;panel=null;return;}
