@@ -123,3 +123,9 @@ camera. The character explores the town map; workers keep their assigned jobs.
 2. Add a shared valley with town entrances, movement, and resource gathering.
 3. Add trading and one cooperative quest area with active combat and individual loot.
 4. Expand villagers, services, specializations, quest variety, and presentation.
+
+## Planned visual polish
+
+- Add subtle ambient activity later: water ripples, chimney smoke, crop movement,
+  and brief resource-delivery effects. These remain deferred; preserve the existing
+  worker animations while refining the static village presentation.

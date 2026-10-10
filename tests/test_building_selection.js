@@ -5,7 +5,8 @@ function element(){
   return {children:[],style:{},classList:{toggle(){}},append(child){this.children.push(child);},
     replaceChildren(){this.children=[];},setAttribute(){},addEventListener(){},showModal(){},close(){}};
 }
-const context=new Proxy({}, {get:()=>()=>{}});
+const fills=[];
+const context=new Proxy({fill(){fills.push(this.fillStyle);}}, {get:(target,key)=>key in target?target[key]:()=>{}});
 const documentMock={getElementById(id){
   if(!elements.has(id))elements.set(id,element());
   return elements.get(id);
@@ -50,12 +51,16 @@ const run=new Function('document','window','localStorage','setTimeout','clearTim
     release();await pending;
     check(commands[0].action==='build'&&commands[0].kind==='home'&&commands[0].x===2&&commands[0].y===3,'Click builds on the clicked tile rather than the previous hover');
     check(town.wood===45&&tool==='home','Success spends wood and keeps the building type selected');
-    hover(5,5);check(buildTile===null,'Existing buildings cannot be previewed');
+    fills.length=0;hover(5,5);check(buildTile===null,'Existing buildings cannot be previewed');
+    check(hoverTile.x===5&&fills.includes('#c76d6455'),'Occupied buildings show a red placement preview');
+    render();check(hoverTile.x===5,'Refresh preserves blocked preview under a stationary pointer');
     hover(0,0);check(buildTile===null,'Resources cannot be previewed');
     hover(-1,2);check(buildTile===null,'Tiles outside the map cannot be previewed');
     await click(5,5);await click(0,0);await click(-1,2);
     check(commands.length===1,'Occupied and out-of-bounds clicks send no command');
-    town.wood=0;await click(1,2);
+    town.wood=0;fills.length=0;hover(1,2);
+    check(fills.includes('#c76d6455'),'Unaffordable placements show a red preview');
+    await click(1,2);
     check(commands.length===1,'Insufficient wood sends no command');
     check($('notice').textContent==='Not enough wood.','Insufficient wood displays a useful message');
     town.wood=45;render();fail=true;hover(1,2);
