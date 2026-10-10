@@ -81,7 +81,7 @@ function clearWalk(){walkKeys.clear();walkCooldown=0;}
 function canControlPlayer(){
   return (world.shared_map || viewed===identity?.town_id) && !!world.towns[identity?.town_id]?.player && !tool
     && !$('world-menu').open && !$('delete-world-dialog').open
-    && panel!=='settings' && !document.activeElement?.isContentEditable
+    && !$('settings-panel').open && !document.activeElement?.isContentEditable
     && !['INPUT','TEXTAREA','SELECT','BUTTON'].includes(document.activeElement?.tagName);
 }
 window.addEventListener('keyup',event=>walkKeys.delete(event.key.toLowerCase()));
@@ -331,9 +331,22 @@ function openPanel(next){
   panel=next;selection=null;tool=null;moveIndex=null;buildTile=null;hoverTile=null;
   render();
 }
-for(const name of ['build','villagers','valley','help','settings']){
+for(const name of ['build','villagers','valley','help']){
   $(name+'-button').onclick=()=>openPanel(panel===name?null:name);
 }
+function updateSettingsButton(){
+  const open=$('settings-panel').open;
+  $('settings-button').setAttribute('aria-expanded',String(open));
+  $('settings-button').classList.toggle('selected',open);
+}
+$('settings-button').onclick=()=>{
+  clearWalk();
+  if($('settings-panel').open)$('settings-panel').close();
+  else $('settings-panel').showModal();
+  updateSettingsButton();
+};
+$('close-settings').onclick=()=>{ $('settings-panel').close();updateSettingsButton(); };
+$('settings-panel').addEventListener('close',updateSettingsButton);
 $('close-panel').onclick=()=>{openPanel(null);canvas.focus();};
 $('find-player-button').onclick=()=>{
   const town=world.towns[identity?.town_id];
@@ -366,7 +379,7 @@ window.addEventListener('keydown',event=>{
   for(const action of ['fish','chop','gather'])if(key===keybindings[action]&&!event.repeat&&!event.ctrlKey&&!event.metaKey&&!event.altKey&&canControlPlayer()){
     event.preventDefault();clearWalk();playerAction(action);
   }
-  if(event.key==='Escape' && !$('world-menu').open && !$('delete-world-dialog').open){
+  if(event.key==='Escape' && !$('settings-panel').open && !$('world-menu').open && !$('delete-world-dialog').open){
     if(world.towns[identity?.town_id]?.player?.activity)playerAction('stop_activity');
     openPanel(null);canvas.focus();
   }
@@ -661,11 +674,11 @@ function render(){
   renderSelection(town);
   $('join').hidden=!!own || !world.world_id || !!panel;
   $('controls').hidden=panel!=='build' || !own || viewed!==identity?.town_id;
-  for(const name of ['selection','villagers','valley','help','settings'])$(name+'-panel').hidden=panel!==name;
+  for(const name of ['selection','villagers','valley','help'])$(name+'-panel').hidden=panel!==name;
   $('side-panel').hidden=!panel && $('join').hidden;
   $('close-panel').hidden=!panel;
   $('game').classList.toggle('panel-open',!$('side-panel').hidden);
-  for(const name of ['build','villagers','valley','help','settings']){
+  for(const name of ['build','villagers','valley','help']){
     $(name+'-button').setAttribute('aria-expanded',String(panel===name));
     $(name+'-button').classList.toggle('selected',panel===name);
   }

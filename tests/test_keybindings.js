@@ -4,10 +4,10 @@ const source=read('web/app.js');
 function check(condition,message){if(!condition)throw Error(message);}
 function session(saved=null){
   const elements=new Map(),listeners={},storage=new Map([['lantern-settings',saved]]);
-  function element(tagName){return {tagName,children:[],style:{},attributes:{},classList:{toggle(){}},
+  function element(tagName){return {tagName,events:{},children:[],style:{},attributes:{},classList:{toggle(){}},
     append(...children){this.children.push(...children);for(const child of children)if(child.id)elements.set(child.id,child);},
     replaceChildren(){this.children=[];},setAttribute(key,value){this.attributes[key]=value;},
-    addEventListener(){},focus(){},showModal(){},close(){}};}
+    addEventListener(type,callback){this.events[type]=callback;},focus(){},showModal(){this.open=true;},close(){this.open=false;this.events.close?.();}};}
   const document={getElementById(id){if(!elements.has(id))elements.set(id,element());return elements.get(id);},createElement:element,querySelectorAll:()=>[]};
   const canvas=document.getElementById('world');
   canvas.getContext=()=>new Proxy({}, {get:()=>()=>{}});
@@ -45,7 +45,8 @@ function session(saved=null){
   document.activeElement={isContentEditable:true};key('y');check(state.locked,'Editable content does not toggle camera');
   document.activeElement=null;
   document.getElementById('settings-button').onclick();
-  check(state.panel==='settings'&&!document.getElementById('settings-panel').hidden,'Settings opens as a panel');
+  check(state.panel===null&&document.getElementById('settings-panel').open,'Settings opens as a modal without opening a side panel');
+  check(document.getElementById('settings-button').attributes['aria-expanded']==='true','Settings button reflects the open popup');
   key('y');key('w');key('f');check(state.actions.length===3,'Settings blocks gathering actions');check(state.locked&&state.held.length===0,'Settings blocks gameplay shortcuts');
   rebind('right','L');check(state.bindings.right==='l','Settings captures and normalizes a custom key');
   rebind('up','l');check(state.bindings.up==='w','Duplicate bindings are rejected');
@@ -53,7 +54,17 @@ function session(saved=null){
   rebind('up','k',{metaKey:true});check(state.bindings.up==='w','Modified shortcuts cannot become bindings');
   rebind('camera','c');check(state.bindings.camera==='y','Gathering keys cannot be assigned twice');
   rebind('camera','v');
+  document.getElementById('close-settings').onclick();
+  check(!document.getElementById('settings-panel').open&&document.getElementById('settings-button').attributes['aria-expanded']==='false','Close button dismisses the popup and updates the toolbar');
+  document.getElementById('help-button').onclick();
   document.getElementById('settings-button').onclick();
+  key('Escape');check(state.panel==='help','Escape in Settings leaves the underlying panel intact');
+  document.getElementById('settings-panel').close();
+  check(document.getElementById('settings-button').attributes['aria-expanded']==='false','Native dialog dismissal updates the toolbar');
+  document.getElementById('settings-button').onclick();
+  document.getElementById('settings-button').onclick();
+  check(!document.getElementById('settings-panel').open&&state.panel==='help','Settings toggles without changing the underlying panel');
+  document.getElementById('close-panel').onclick();
   key('d');check(state.held.length===0,'Old movement binding stops working');
   key('l');check(state.held.includes('l'),'Custom movement binding works');
   key('y');check(state.locked,'Old camera binding stops working');
