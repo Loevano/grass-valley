@@ -267,7 +267,8 @@ function renderSelection(town){
   $('selection-details').append(illustration(item.kind));
   const p=document.createElement('p');
   if(selection.type==='resource'){
-    $('selection-title').textContent={tree:'Forest',water:'Water',rock:'Rock outcrop'}[item.kind];
+    const swamp=town.terrain?.[item.y]?.[item.x]==='b';
+    $('selection-title').textContent=(swamp?{tree:'Swamp willow',water:'Swamp water',rock:'Rock outcrop'}:{tree:'Forest',water:'Water',rock:'Rock outcrop'})[item.kind];
     p.textContent={tree:'Renewable wood source. Place a woodcutter within 3 horizontal or vertical tile steps, then assign a villager to woodcutting.',water:'Renewable source for farming. Place a farm within 3 horizontal or vertical tile steps, then assign a villager to farming.',rock:'This outcrop occupies its tile. Mining is not available yet.'}[item.kind];
   }else{
     $('selection-title').textContent=labels[item.kind];
@@ -369,6 +370,14 @@ function drawResource(r){
   ctx.fillStyle='#223b2955';ctx.beginPath();ctx.ellipse(0,12,16,6,0,0,Math.PI*2);ctx.fill();
   if(r.kind==='tree'){
     ctx.fillStyle='#775b3e';ctx.fillRect(-3,-14,6,27);
+    if(world.towns[viewed]?.terrain?.[r.y]?.[r.x]==='b'){
+      ctx.strokeStyle='#665f40';ctx.lineWidth=3;ctx.beginPath();ctx.moveTo(0,-7);ctx.lineTo(-10,-29);ctx.moveTo(0,-12);ctx.lineTo(10,-34);ctx.stroke();
+      ctx.fillStyle='#64784c';ctx.beginPath();ctx.ellipse(0,-34,20,14,0,0,Math.PI*2);ctx.fill();
+      ctx.fillStyle='#819064';ctx.beginPath();ctx.ellipse(-5,-38,13,9,0,0,Math.PI*2);ctx.fill();
+      ctx.strokeStyle='#728459';ctx.lineWidth=2;
+      for(let branch=-16;branch<=16;branch+=8){ctx.beginPath();ctx.moveTo(branch,-34);ctx.quadraticCurveTo(branch-4,-19,branch+2,-8+Math.abs(branch)/3);ctx.stroke();}
+      ctx.restore();return;
+    }
     const shade=(r.x+r.y)%2;
     polygon([[-17,-7],[0,-39],[17,-7],[0,0]],shade?'#355b3e':'#3e6642');
     polygon([[-14,-20],[0,-49],[14,-20],[0,-13]],shade?'#4e7847':'#56814c');
@@ -466,11 +475,17 @@ function draw(seconds=0){
     if(!land(x+1,y))polygon([diamond[1],diamond[2],[diamond[2][0],diamond[2][1]+12],[diamond[1][0],diamond[1][1]+12]],'#344b35');
     if(!land(x,y+1))polygon([diamond[2],diamond[3],[diamond[3][0],diamond[3][1]+12],[diamond[2][0],diamond[2][1]+12]],'#405438');
     const palette={g:['#68865a','#69875b','#668358'],f:['#506f4a','#55764c','#5a7b50'],
-      m:['#83945e','#899b65','#80915b'],s:['#b4a575','#bdad7d','#b8a878'],r:['#8b8d7c','#969785','#858978']};
+      m:['#83945e','#899b65','#80915b'],s:['#b4a575','#bdad7d','#b8a878'],r:['#8b8d7c','#969785','#858978'],b:['#59674b','#626f50','#536247']};
     const neighbors=[[x,y-1],[x+1,y],[x,y+1],[x-1,y]];
     const shores=neighbors.map(([tx,ty])=>!water.has(`${tx},${ty}`));
     const depth=shores.filter(Boolean).length;
-    polygon(diamond,wet?(depth?'#6299a1':'#447d91'):palette[biome][variation%3],tool?'#91a37455':null);
+    const waterColor=biome==='b'?(depth?'#718565':'#4e6857'):(depth?'#6299a1':'#447d91');
+    polygon(diamond,wet?waterColor:palette[biome][variation%3],tool?'#91a37455':null);
+    if(biome==='b'&&variation%3===0){
+      ctx.strokeStyle='#9b9f69';ctx.lineWidth=tileW/46;
+      for(let reed=0;reed<3;reed++){const rx=px+(reed-1)*tileW*.07,ry=py+tileH*.7;ctx.beginPath();ctx.moveTo(rx,ry);ctx.lineTo(rx+(reed-1)*tileW*.025,ry-tileH*.4);ctx.stroke();}
+      if(wet){ctx.fillStyle='#a3ad74';ctx.beginPath();ctx.ellipse(px+tileW*.17,py+tileH*.55,tileW*.065,tileH*.075,0,0,Math.PI*2);ctx.fill();}
+    }
     if(!wet&&variation===0){ctx.fillStyle='#8fa574';ctx.fillRect(px-5*tileW/46,py+tileH*.5,2*tileW/46,2*tileW/46);ctx.fillStyle='#d7c78a';ctx.fillRect(px+4*tileW/46,py+tileH*.65,2*tileW/46,2*tileW/46);}
     if(!wet&&(x===0||y===0||x===terrainSize-1||y===terrainSize-1)&&variation%2===0){ctx.strokeStyle='#9caf77';ctx.lineWidth=tileW/46;ctx.beginPath();ctx.moveTo(px-6*tileW/46,py+tileH*.65);ctx.lineTo(px-9*tileW/46,py+tileH*.4);ctx.moveTo(px-6*tileW/46,py+tileH*.65);ctx.lineTo(px-4*tileW/46,py+tileH*.35);ctx.stroke();}
     if(reachable.has(`${x},${y}`))polygon(diamond,'#b8dcad44','#c6dfaa');

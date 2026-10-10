@@ -46,6 +46,9 @@ encrypted transport; do not expose it through router port forwarding.
   The starting clearing has nearby wood and water. Terrain and resources are saved,
   so returning to a town keeps the same landscape. Open ground can be built on;
   trees, water, and rocks still reserve their tiles.
+- Swamp regions in new towns have muddy ground, green pools, reeds, lily pads,
+  and willow trees. Swamp trees supply wood and swamp water supports farming.
+  Open swamp ground can be walked on and built on. Existing saved terrain stays as it is.
 - Your gold-clad villager is marked **You**. Click the map and hold **WASD** to
   walk in screen directions. Press **Y** to toggle camera lock: when locked, the
   camera follows your movement; when unlocked, walking leaves the camera in place.

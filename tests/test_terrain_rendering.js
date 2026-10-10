@@ -22,6 +22,13 @@ const run=new Function('document','window','localStorage','setTimeout','clearTim
   town.map_resources=[{kind:'water',x:2,y:2},{kind:'water',x:1,y:2},
     {kind:'water',x:3,y:2},{kind:'water',x:2,y:1},{kind:'water',x:2,y:3}];fills.length=0;draw();
   check(fills.includes('#447d91'),'Interior water has a deeper color');
+  town.terrain=Array(12).fill('bbbbbbbbbbbb');fills.length=0;draw();
+  check(fills.includes('#59674b'),'Swamp ground has its own palette');
+  check(fills.includes('#718565')&&fills.includes('#4e6857'),'Swamp water has shallow and deep green colors');
+  town.map_resources.push({kind:'water',x:0,y:0});fills.length=0;draw();
+  check(fills.includes('#a3ad74'),'Swamp water contains lily pads');
+  fills.length=0;drawResource({kind:'tree',x:5,y:5});
+  check(fills.includes('#64784c'),'Swamp trees render as willows');
   town.terrain=Array(12).fill('vvvvvvvvvvvv');fills.length=0;draw();
   check(!fills.includes('#68865a')&&!fills.includes('#6299a1'),'Tiles outside the outline are not rendered');
   check(!placementValid(town,{x:5,y:5},'home'),'Cannot preview a building outside the outline');

@@ -25,6 +25,8 @@ def generate_map(size, seed):
     lakes, lake_detail, coast = field(23), field(6), field(17)
     center_x, center_y = rng.uniform(.45, .55), rng.uniform(.45, .55)
     radius_x, radius_y = rng.uniform(.49, .55), rng.uniform(.49, .55)
+    swamp_x, swamp_y = rng.uniform(.3, .7) * size, rng.uniform(.3, .7) * size
+    swamp_rx, swamp_ry = rng.uniform(.12, .18) * size, rng.uniform(.12, .18) * size
     terrain, resources = [], []
     for y in range(size):
         row = []
@@ -35,9 +37,15 @@ def generate_map(size, seed):
                 continue
             wet, soil = moisture(x, y), ground(x, y)
             biome = 'f' if wet > .58 else 's' if soil < .3 else 'r' if soil > .75 else 'm' if wet > .4 else 'g'
+            marsh = ((x - swamp_x) / swamp_rx) ** 2 + ((y - swamp_y) / swamp_ry) ** 2
+            swamp = size > 12 and not (x < 12 and y < 12) and marsh < .8 + wet * .5
+            if swamp:
+                biome = 'b'
             kind = None
-            if lakes(x, y) * .75 + lake_detail(x, y) * .25 < .28:
-                kind, biome = 'water', 's'
+            if lakes(x, y) * .75 + lake_detail(x, y) * .25 < (.48 if swamp else .28):
+                kind, biome = 'water', 'b' if swamp else 's'
+            elif swamp and rng.random() < .22:
+                kind = 'tree'
             elif biome == 'f' and rng.random() < .38:
                 kind = 'tree'
             elif biome == 'r' and rng.random() < .18:
