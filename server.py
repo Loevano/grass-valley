@@ -160,8 +160,7 @@ def settler_building(town, worker_index):
     workplaces = [i for i, b in enumerate(town['buildings'])
                   if b['kind'] == kind and completed(b)
                   and any(r['kind'] == source and
-                          abs(r['x'] - b['x']) + abs(r['y'] - b['y']) <=
-                          (6 if kind == 'fishing_hut' and 'boat' in b.get('profession_upgrades', []) else RESOURCE_REACH)
+                          abs(r['x'] - b['x']) + abs(r['y'] - b['y']) <= RESOURCE_REACH
                           for r in town['map_resources'])]
     return workplaces[worker_index % len(workplaces)] if workplaces else None
 
