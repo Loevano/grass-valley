@@ -15,6 +15,7 @@ Open **http://localhost:8000** in a browser. Use the Worlds menu to start a name
 world or open a saved one, then name your town.
 Keep the server running while playing; stop it with Control-C.
 Choose another port with `python3 server.py --port 8080` if needed.
+Successful requests stay quiet in the terminal; failed requests are still logged.
 
 ## Manage worlds
 
