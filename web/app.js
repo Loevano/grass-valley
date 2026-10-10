@@ -201,14 +201,23 @@ function draw(seconds=0){
       drawVillager(b);
       continue;
     }
-    const [x,y]=point(b.x,b.y),w=tileW*.38,h=b.kind==='hall'?42:27;
-    ctx.fillStyle='#223b2944';ctx.beginPath();ctx.ellipse(x,y+tileH*.7,w+6,9,0,0,Math.PI*2);ctx.fill();
-    if(b.kind==='farm'){for(let r=0;r<4;r++){const [px,py]=point(b.x+r*.18,b.y+.1);polygon([[px,py+4],[px+10,py+9],[px-7,py+17],[px-17,py+12]],r%2?'#b8b458':'#80764a');}continue;}
-    polygon([[x-w,y],[x,y+10],[x,y+10-h],[x-w,y-h]],colors[b.kind]);
-    polygon([[x,y+10],[x+w,y],[x+w,y-h],[x,y+10-h]],'#857659');
-    polygon([[x-w-3,y-h],[x,y-h-15],[x+w+3,y-h],[x,y-h+11]],b.kind==='hall'?'#5a747b':'#80574b');
-    ctx.fillStyle='#3d4438';ctx.fillRect(x-6,y-h+13,5,9);
-    if(b.kind==='hall'){ctx.fillStyle='#d6c478';ctx.fillRect(x,y-h-30,2,17);polygon([[x+2,y-h-30],[x+16,y-h-26],[x+2,y-h-21]],'#d6c478');}
+    if(b.kind==='farm'){
+      const [x,y]=point(b.x,b.y),w=tileW*.38;
+      ctx.fillStyle='#223b2944';ctx.beginPath();ctx.ellipse(x,y+tileH*.7,w+6,9,0,0,Math.PI*2);ctx.fill();
+      for(let r=0;r<4;r++){const [px,py]=point(b.x+r*.18,b.y+.1);polygon([[px,py+4],[px+10,py+9],[px-7,py+17],[px-17,py+12]],r%2?'#b8b458':'#80764a');}
+      continue;
+    }
+    const [x,top]=point(b.x,b.y),y=top+tileH/2,s=tileW/46;
+    const w=tileW*.38,depth=w*tileH/tileW,h=(b.kind==='hall'?42:27)*s;
+    // Wall bases share the tile's ground plane and its isometric slope.
+    ctx.fillStyle='#223b2944';ctx.beginPath();ctx.ellipse(x,y+depth*.25,w+3*s,depth+s,0,0,Math.PI*2);ctx.fill();
+    polygon([[x-w,y],[x,y+depth],[x,y+depth-h],[x-w,y-h]],colors[b.kind]);
+    polygon([[x,y+depth],[x+w,y],[x+w,y-h],[x,y+depth-h]],'#857659');
+    polygon([[x-w,y],[x,y+depth],[x,y+depth-3*s],[x-w,y-3*s]],'#797665');
+    polygon([[x,y+depth],[x+w,y],[x+w,y-3*s],[x,y+depth-3*s]],'#5e6255');
+    polygon([[x-w-3*s,y-h],[x,y-h-15*s],[x+w+3*s,y-h],[x,y-h+depth+1*s]],b.kind==='hall'?'#5a747b':'#80574b');
+    ctx.fillStyle='#3d4438';ctx.fillRect(x-6*s,y-h+13*s,5*s,9*s);
+    if(b.kind==='hall'){ctx.fillStyle='#d6c478';ctx.fillRect(x,y-h-30*s,2*s,17*s);polygon([[x+2*s,y-h-30*s],[x+16*s,y-h-26*s],[x+2*s,y-h-21*s]],'#d6c478');}
   }
 }
 canvas.onclick=async event=>{
