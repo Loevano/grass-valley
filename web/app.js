@@ -93,6 +93,8 @@ window.addEventListener('blur',clearWalk);
 document.addEventListener?.('visibilitychange',clearWalk);
 // Predict only the next host step; never run ahead while waiting for a reply.
 let movementMap=null;
+function mapRoads(town){return world.shared_map?Object.values(world.towns).flatMap(t=>t.roads || []):town?.roads || [];}
+function roadSpeed(town,position){return mapRoads(town).some(r=>r.x===Math.floor(position.x+.5)&&r.y===Math.floor(position.y+.5))?1.5:1;}
 // Measure screen distance for the 2:1 isometric projection, preserving sideways speed.
 function playerMovementDistance(dx,dy){return Math.hypot(dx-dy,(dx+dy)*.5)/Math.SQRT2;}
 function predictPlayerStep(town,player,dx,dy){
@@ -115,8 +117,9 @@ function predictPlayerStep(town,player,dx,dy){
   const predicted={...player},length=playerMovementDistance(dx,dy);
   if(length){
     for(let step=0;step<5;step++){
-      const x=predicted.x+dx/length*.06;if(open(x,predicted.y))predicted.x=x;
-      const y=predicted.y+dy/length*.06;if(open(predicted.x,y))predicted.y=y;
+      const speed=roadSpeed(town,predicted);
+      const x=predicted.x+dx/length*.06*speed;if(open(x,predicted.y))predicted.x=x;
+      const y=predicted.y+dy/length*.06*speed;if(open(predicted.x,y))predicted.y=y;
     }
     if(dx!==dy)predicted.facing=dx>dy?1:-1;
   }
@@ -149,7 +152,7 @@ function playerSprite(town,seconds){
       .finally(()=>{clearTimeout(timeout);walkingRequest=false;});
   }
   const distance=playerMovementDistance(s.target.x-s.x,s.target.y-s.y);
-  const travel=Math.min(1,distance?seconds*3/distance:0);
+  const travel=Math.min(1,distance?seconds*3*roadSpeed(town,s)/distance:0);
   s.x+=(s.target.x-s.x)*travel;s.y+=(s.target.y-s.y)*travel;
   s.facing=s.target.facing;s.clock+=seconds;s.path=distance>.001?[s.target]:[];s.phase='idle';
   const activity=town.player.activity;
@@ -213,7 +216,7 @@ function remotePlayerSprite(townId,town,seconds){
   state.phase=active&&!state.path.length?'working':'idle';
   return {kind:'player',townId,x:state.x,y:state.y,index:1,villager:{job:activity?.job || 'idle'},active,state};
 }
-const labels = {hall:'Town hall',home:'Cottage',woodcutter:'Woodcutter',farm:'Farm',storehouse:'Storehouse',fishing_hut:'Fishing hut',acre:'Acre'};
+const labels = {road:'Dirt road',hall:'Town hall',home:'Cottage',woodcutter:'Woodcutter',farm:'Farm',storehouse:'Storehouse',fishing_hut:'Fishing hut',acre:'Acre'};
 function buildingLevel(building){return building.level || 1;}
 function buildingVisualLevel(building,town){
   return building.kind==='hall'?Math.min(5,town?.level || 1):Math.min(3,buildingLevel(building));
@@ -225,7 +228,7 @@ function storageCapacity(town){return 100+100*town.buildings.filter(b=>b.kind===
 function upgradeBenefit(kind,level){
   return kind==='barn'?`${4*level} animal spaces`:['sawpit','mill','smokehouse','workshop','fish_pond','orchard','market','bakery','butcher'].includes(kind)?'Worker capacity upgraded separately':kind==='home'?`${2*level} villager spaces · ${25*(level-1)}% lower departure risk for housed settlers`:kind==='storehouse'?`${100*level} storage per resource`:`+${25*(level-1)}% ${kind==='woodcutter'?'wood':kind==='fishing_hut'?'food per successful catch':kind==='acre'?'food from this field':'food'} per worker`;
 }
-const costs = {home:20,woodcutter:15,farm:15,storehouse:25,fishing_hut:15,acre:5};
+const costs = {road:0,home:20,woodcutter:15,farm:15,storehouse:25,fishing_hut:15,acre:5};
 const colors = {hall:'#a88861',home:'#c5ad80',woodcutter:'#947b55',farm:'#bc9b5c',storehouse:'#8c9b8b',fishing_hut:'#7899a2'};
 // Small vector illustrations share the map's earth, sage, and amber palette.
 Object.assign(labels,{barn:'Barn',sawpit:'Sawpit',mill:'Mill',smokehouse:'Smokehouse',workshop:'Workshop',fish_pond:'Fish pond',orchard:'Orchard',market:'Market stall',bakery:'Bakery',butcher:'Butcher shop'});
@@ -586,6 +589,14 @@ function renderSelection(town){
   $('selection-details').replaceChildren();$('hall-details').hidden=true;$('selection-move').hidden=true;$('selection-destroy').hidden=true;
   if(!selection)return;
   if(!town){selection=null;panel=null;return;}
+  if(selection.type==='road'){
+    const road=town.roads?.[selection.index];
+    if(!road){selection=null;panel=null;return;}
+    $('selection-title').textContent='Dirt road';
+    const p=document.createElement('p');p.textContent='Players and settlers walk 50% faster here. Roads are free and placed instantly.';$('selection-details').append(p);
+    if(viewed===identity?.town_id){const button=document.createElement('button');button.textContent='Remove road · Free';button.onclick=async()=>{await act({action:'remove_road',x:road.x,y:road.y});openPanel(null);};$('selection-details').append(button);}
+    return;
+  }
   if(selection.type==='player'){
     $('selection-title').textContent=viewed===identity?.town_id?'You':'Town founder';
     const p=document.createElement('p');
@@ -697,6 +708,7 @@ const buildingCategories=[
   ['Food & farming',['farm','fishing_hut','barn','fish_pond','orchard','mill','smokehouse','bakery','butcher']],
   ['Crafting',['woodcutter','sawpit','workshop']],
   ['Trade',['market']],
+  ['Paths',['road']],
 ];
 for(const [index,[label,kinds]] of buildingCategories.entries()){
   const group=document.createElement('div');group.className='building-category';group.setAttribute('role','group');group.setAttribute('aria-labelledby',`building-category-${index}`);
@@ -708,13 +720,13 @@ $('move').onclick=()=>{panel='build';selection=null;tool='move';moveIndex=null;b
 $('cancel').onclick=()=>{tool=null;moveIndex=null;buildTile=null;hoverTile=null;render();};
 async function buildAt(x,y){
   const town=world.towns[viewed];
-  if(building || !costs[tool] || viewed!==identity?.town_id || !town || town.wood<costs[tool])return;
+  if(building || !(tool in costs) || viewed!==identity?.town_id || !town || town.wood<costs[tool])return;
   const selected={x,y},kind=tool;
   if(!insideBuildingRange(town,selected)){notice(`Build within ${buildingRange(town)} tile steps of your town hall.`);return;}
   if(kind==='acre'&&!acrePlacementValid(town,selected,acreFarmIndex)){notice('Place acres within 3 tile steps of their farm.');return;}
   building=true;render();
   try{
-    await request('/api/command',{action:'build',kind,...selected,...(kind==='acre'?{farm_index:acreFarmIndex}:{}),world_id:world.world_id});
+    await request('/api/command',{action:kind==='road'?'build_road':'build',kind,...selected,...(kind==='acre'?{farm_index:acreFarmIndex}:{}),world_id:world.world_id});
     commandEffect({action:'build',...selected});
     if(tool===kind&&buildTile?.x===x&&buildTile?.y===y){buildTile=null;hoverTile=null;}
     await refresh();
@@ -857,7 +869,7 @@ function render(){
       const kind=button.buildingKind,spec=world.progression?.buildings[kind] || {wood:costs[kind],level:1};
       button.hidden=!own || own.level<spec.level;
       button.classList.toggle('selected',kind===tool);button.disabled=!own || own.level<spec.level || !canAfford(own,materialCosts(spec));
-      button.textContent=`${labels[kind]} · ${costText(materialCosts(spec))}${own&&own.level<spec.level?` · Hall ${spec.level}`:''}`;button.append(illustration(kind));
+      button.textContent=`${labels[kind]} · ${kind==='road'?'Free · Instant · +50% walking':costText(materialCosts(spec))}${own&&own.level<spec.level?` · Hall ${spec.level}`:''}`;button.append(illustration(kind));
     }
     group.hidden=![...group.children].some(button=>button.buildingKind&&!button.hidden);
   }
@@ -917,6 +929,7 @@ function animatedVillagers(town, seconds, townId=viewed, frameLayout=null){
     if(!state || state.layout!==layout || state.signature!==signature){
       state=Object.assign(WorkerAnimation.plan(world.shared_map?{...town,obstacles:Object.values(world.towns).flatMap(t=>t.buildings),home_hall:town.buildings.find(b=>b.kind==='hall')}:town,villager,index,state),{signature,layout});workers.set(workerKey,state);
     }
+    state.roads=new Set((world.shared_map?Object.values(world.towns).flatMap(t=>t.roads || []):town.roads || []).map(r=>`${r.x},${r.y}`));
     const resource=villager.job==='woodcutting'?'wood':'food';
     state.latestFishingCatch=villager.fishing_catch;
     const active=!!villager.construction_target || (villager.production_status==='Working' || villager.production_status?.startsWith('No catch') || (!villager.production_status&&town[resource]<storageCapacity(town)));
@@ -1262,10 +1275,16 @@ function draw(seconds=0){
   const minY=Math.max(0,Math.floor(Math.min(...corners.map(p=>p.y)))),maxY=Math.min(size-1,Math.ceil(Math.max(...corners.map(p=>p.y))));
   const showBuildingRange=town && (panel==='build' || (selection?.type==='building' && town.buildings[selection.index]?.kind==='hall'));
   const preview=hoverTile || keyboardTile;
-  const previewKind=costs[tool]?tool:tool==='move'&&moveIndex!==null?town?.buildings[moveIndex]?.kind:null;
+  const previewKind=tool in costs?tool:tool==='move'&&moveIndex!==null?town?.buildings[moveIndex]?.kind:null;
   const sourceKind=previewKind==='woodcutter'?'tree':(previewKind==='farm'||previewKind==='fishing_hut')?'water':null;
   const reachable=new Set(preview&&sourceKind?resources.filter(r=>r.kind===sourceKind&&Math.abs(r.x-preview.x)+Math.abs(r.y-preview.y)<=3).map(r=>`${r.x},${r.y}`):[]);
   drawGround(rect,dpr,world.shared_map || town,water,{minX,maxX,minY,maxY});
+  for(const road of mapRoads(town)){
+    if(road.x<minX||road.x>maxX||road.y<minY||road.y>maxY)continue;
+    const [px,py]=point(road.x,road.y);
+    polygon([[px,py],[px+tileW/2,py+tileH/2],[px,py+tileH],[px-tileW/2,py+tileH/2]],'#b99c70','#a58b63');
+    polygon([[px,py+tileH*.2],[px+tileW*.3,py+tileH*.5],[px,py+tileH*.8],[px-tileW*.3,py+tileH*.5]],'#c6aa7e');
+  }
   // Selection and construction overlays remain live above the cached ground.
   if(tool || showBuildingRange || reachable.size || selection || keyboardTile){
     for(let x=minX;x<=maxX;x++)for(let y=minY;y<=maxY;y++){
@@ -1277,7 +1296,7 @@ function draw(seconds=0){
       if(showBuildingRange && insideBuildingRange(town,{x,y}))polygon(diamond,'#e4c98022','#e4c98088');
       if(reachable.has(`${x},${y}`))polygon(diamond,'#b8dcad44','#c6dfaa');
       if(preview?.x===x&&preview?.y===y&&previewKind&&town){const valid=placementValid(town,preview,previewKind)&&buildingUsable(town,{...preview,kind:previewKind});ctx.save();ctx.lineWidth=2;polygon(diamond,valid?'#d6d8a366':'#c76d6455',valid?'#eee5ab':'#f3a295');ctx.restore();}
-      const selected=selection?.type==='building'?town?.buildings[selection.index]:selection?.type==='resource'?resources[selection.index]:null;
+      const selected=selection?.type==='building'?town?.buildings[selection.index]:selection?.type==='road'?town?.roads?.[selection.index]:selection?.type==='resource'?resources[selection.index]:null;
       if((selected?.x===x&&selected?.y===y)||(!previewKind&&keyboardTile?.x===x&&keyboardTile?.y===y)){
         ctx.save();ctx.lineWidth=3;polygon([[px,py],[px+tileW/2,py+tileH/2],[px,py+tileH],[px-tileW/2,py+tileH/2]],'#fff0b133','#fff0b1');ctx.restore();
       }
@@ -1632,7 +1651,11 @@ async function selectTile(x,y){
     if(npc>=0)inspect('npc',npc);
     else if(index>=0)inspect('building',index);
     else if(resource>=0)inspect('resource',resource);
-    else openPanel(null);
+    else {
+      const towns=world.shared_map?Object.entries(world.towns):[[viewed,town]];
+      for(const [id,t] of towns){const i=(t.roads || []).findIndex(r=>r.x===x&&r.y===y);if(i>=0){inspect('road',i,id);return;}}
+      openPanel(null);
+    }
     return;
   }
   if(viewed!==identity?.town_id)return;
@@ -1660,9 +1683,9 @@ canvas.onmousemove=event=>{
   const hit=[...hitTargets].reverse().find(h=>px>=h.left&&px<=h.right&&py>=h.top&&py<=h.bottom);
   buildingHover=!tool&&hit?.type==='building'?{index:hit.index,townId:hit.townId}:null;
   const town=world.towns[viewed],tile=tileAt(event);
-  buildTile=costs[tool]&&viewed===identity?.town_id&&town&&insideBuildingRange(town,tile)&&tile.x>=0&&tile.y>=0&&tile.x<mapSize(town)&&tile.y<mapSize(town)
+  buildTile=(tool in costs)&&viewed===identity?.town_id&&town&&insideBuildingRange(town,tile)&&tile.x>=0&&tile.y>=0&&tile.x<mapSize(town)&&tile.y<mapSize(town)
     &&(tool!=='acre'||acrePlacementValid(town,tile,acreFarmIndex))&&town.terrain?.[tile.y]?.[tile.x]!=='v'&&!(town.npcs || []).some(n=>n.x===tile.x&&n.y===tile.y)&&!town.buildings.some(b=>b.x===tile.x&&b.y===tile.y)&&!town.map_resources.some(r=>r.x===tile.x&&r.y===tile.y)?tile:null;
-  hoverTile=(costs[tool]||tool==='move'&&moveIndex!==null)&&viewed===identity?.town_id&&town&&tile.x>=0&&tile.y>=0&&tile.x<(town.map_size || 12)&&tile.y<(town.map_size || 12)?tile:null;
+  hoverTile=((tool in costs)||tool==='move'&&moveIndex!==null)&&viewed===identity?.town_id&&town&&tile.x>=0&&tile.y>=0&&tile.x<(town.map_size || 12)&&tile.y<(town.map_size || 12)?tile:null;
 };
 canvas.onmouseleave=()=>{buildTile=null;hoverTile=null;buildingHover=null;};
 canvas.onclick=async event=>{

@@ -83,12 +83,15 @@ const WorkerAnimation = (() => {
   function advance(state, seconds, active) {
     if(active || state.path.length || !state.source)state.clock+=seconds;
     if(state.path.length){
-      let travel=seconds*1.8;
-      while(state.path.length&&travel>0){
+      let remaining=seconds;
+      while(state.path.length&&remaining>0){
         const next=state.path[0],dx=next.x-state.x,dy=next.y-state.y,length=Math.hypot(dx,dy);
         if(dx-dy!==0)state.facing=dx-dy>0?1:-1;
-        if(length<=travel){state.x=next.x;state.y=next.y;state.path.shift();travel-=length;}
-        else{state.x+=dx/length*travel;state.y+=dy/length*travel;travel=0;}
+        const speed=1.8*(state.roads?.has(`${Math.floor(state.x+.5)},${Math.floor(state.y+.5)}`)?1.5:1);
+        const travel=Math.min(remaining*speed,.05,length);
+        remaining-=travel/speed;
+        if(length<=travel+1e-9){state.x=next.x;state.y=next.y;state.path.shift();}
+        else{state.x+=dx/length*travel;state.y+=dy/length*travel;}
       }
       if(!state.path.length){state.phase=state.phase==='returning'?'depositing':state.source?'working':'idle';state.elapsed=0;}
       return;

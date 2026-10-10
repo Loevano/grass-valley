@@ -136,6 +136,7 @@ def move_player(town, data):
     # Normalize screen distance for the 2:1 isometric projection.
     length = math.hypot(dx - dy, (dx + dy) * .5) / math.sqrt(2)
     if length:
+        roads = {(r['x'], r['y']) for r in town.get('roads', [])}
         player.pop('activity', None)
         player.pop('activity_status', None)
         blocked = {(b['x'], b['y']) for b in
@@ -143,10 +144,11 @@ def move_player(town, data):
                    if b['kind'] != 'tree'}
         # Small steps prevent tunnelling through obstacles; slide along walls.
         for _ in range(5):
-            x = player['x'] + dx / length * .06
+            speed = 1.5 if (math.floor(player['x'] + .5), math.floor(player['y'] + .5)) in roads else 1
+            x = player['x'] + dx / length * .06 * speed
             if walkable(town, x, player['y'], blocked):
                 player['x'] = x
-            y = player['y'] + dy / length * .06
+            y = player['y'] + dy / length * .06 * speed
             if walkable(town, player['x'], y, blocked):
                 player['y'] = y
         if dx != dy:
@@ -397,7 +399,15 @@ def construct(town, landscape, workers=None, elapsed=TICK_SECONDS):
             claimed.add(site_index)
             # A stable coordinate target avoids stale indices after destruction.
             villager['construction_target'] = {key: site[key] for key in ('kind', 'x', 'y')}
-            step = path[min(len(path) - 1, int(elapsed * 1.8))]
+            roads = {(r['x'], r['y']) for r in landscape.get('roads', [])}
+            remaining, reached = elapsed, 0
+            for tile in path[:-1]:
+                duration = 1 / (1.8 * (1.5 if tile in roads else 1))
+                if remaining < duration:
+                    break
+                remaining -= duration
+                reached += 1
+            step = path[reached]
             villager['construction_position'] = {'x': step[0], 'y': step[1]}
             if len(path) > 1:
                 break
@@ -551,6 +561,24 @@ def validate_building_range(town, x, y):
 def command(town, data, world=None):
     ensure_resources(town)
     action = data.get('action')
+    if action in {'build_road', 'remove_road'}:
+        x, y = data.get('x'), data.get('y')
+        size = town.get('map_size', MAP_SIZE)
+        if type(x) is not int or type(y) is not int or not (0 <= x < size and 0 <= y < size):
+            raise ValueError('Choose a tile inside your town.')
+        if action == 'remove_road':
+            town['roads'] = [r for r in town.get('roads', []) if (r['x'], r['y']) != (x, y)]
+            return {}
+        validate_building_range(town, x, y)
+        if world and 'shared_map' in world:
+            validate_placement(world, town, data)
+        terrain = town.get('terrain', [])
+        obstacles = town['buildings'] + town['map_resources'] + town.get('npcs', [])
+        if (terrain and terrain[y][x] == 'v') or any(r['x'] == x and r['y'] == y for r in obstacles):
+            raise ValueError('Place roads on open ground.')
+        if not any(r['x'] == x and r['y'] == y for r in town.get('roads', [])):
+            town.setdefault('roads', []).append({'x': x, 'y': y})
+        return {}
     if world and 'shared_map' in world:
         if action == 'walk':
             return move_player(walking_map(world, town), data)

@@ -91,6 +91,10 @@ the Python host, refresh both browsers, and create a new world to use the shared
   to place it and spend wood. Keep clicking open tiles to place more of the selected building,
   or **Cancel selection** to clear it. Place woodcutters within three horizontal/vertical tile steps
   of trees and farms within three steps of water; workers need these nearby sources.
+- Choose **Dirt road** in Build to place free roads instantly on open ground within
+  your town’s building area. Players and settlers walk 50% faster on road tiles.
+  Everyone can use roads in the shared valley. Click a road to inspect it; its
+  owner can remove it for free. Roads are saved with the town.
 - New buildings and acres start as construction sites. Idle villagers automatically
   help build; assign **Builder** in the villager panel to give a resident priority.
   Builders walk to reachable sites, then work through foundations, framing, and

@@ -18,7 +18,7 @@ const run=new Function('document','window','localStorage','setTimeout','clearTim
  const barnButton=[...$('buildings').children].flatMap(group=>[...group.children]).filter(button=>button.buildingKind).find(b=>b.buildingKind==='barn');
  check(barnButton.hidden,'Locked buildings are hidden');
  const groups=[...$('buildings').children];
- check(groups.map(group=>group.children[0].textContent).join('|')==='Housing & storage|Food & farming|Crafting|Trade','Build menu has labeled categories');
+ check(groups.map(group=>group.children[0].textContent).join('|')==='Housing & storage|Food & farming|Crafting|Trade|Paths','Build menu has labeled categories');
  const buttons=groups.flatMap(group=>[...group.children]).filter(button=>button.buildingKind);
  check(buttons.length===Object.keys(costs).length-1&&new Set(buttons.map(button=>button.buildingKind)).size===buttons.length,'Every standalone building appears exactly once');
  check(groups.every(group=>group.attributes['aria-labelledby']===group.children[0].id),'Category headings label their groups');

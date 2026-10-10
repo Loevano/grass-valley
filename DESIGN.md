@@ -57,7 +57,7 @@ the conversation and practical details needed for later development.
 | Should production pause when storage fills? | |
 | Pixel art or soft storybook illustration? | |
 | What should moving a building cost? You wanted a small loss; a coin fee was suggested but not confirmed. | |
-| Should roads be freely placed and movable? Do buildings need road access? | |
+| Should roads be freely placed and movable? Do buildings need road access? | Dirt roads are free and instant, removable by their owner, and give players and settlers +50% walking speed. Buildings do not require roads. |
 | Which services matter first: market, tavern, well, healer, or something else? | |
 | Which town upgrades can players choose between? | Hall levels 1–5 unlock profession branches; individual profession improvements require practice and materials. See ROADMAP.md. |
 | How do individual villager skills contribute to town achievements? | |
@@ -115,7 +115,7 @@ woodcutting, farming, and carrying supplies back to workplaces.
 walkable paths connecting randomized town sites. Valley centers the camera on a
 town; ownership remains separate. Existing saves retain separate town maps.
 
-**Planned:** roads, richer upgrade choices, trading, wilderness resource gathering,
+**Planned:** richer upgrade choices, trading, wilderness resource gathering,
 equipment and magic, instanced cooperative quests,
 personal loot, character progression, defeat/return-home flow, richer art and sound.
 
@@ -179,3 +179,11 @@ barns still have one animal-limited production cycle regardless of worker count.
 Both assignment controls show missing qualifications and prevent untrained workers
 from taking advanced roles. Saved advanced assignments without prerequisites pause
 until the resident trains in the required job. Balance values remain provisional.
+
+## Confirmed next additions
+
+Start with free, instant dirt roads that make players and settlers walk 50% faster.
+Roads use the town building area, remain walkable, and can be removed by their owner.
+NPC requests, stone mining, a tavern, and a first cooperative adventure are approved
+future additions. Player-to-player trading requires a market; its exchange rules
+still need design before implementation.

@@ -70,7 +70,8 @@ def export_world(world):
 
 
 def walking_map(world, town):
-    return dict(town, buildings=[b for t in world['towns'].values() for b in t['buildings']])
+    return dict(town, buildings=[b for t in world['towns'].values() for b in t['buildings']],
+                roads=[r for t in world['towns'].values() for r in t.get('roads', [])])
 
 
 def validate_placement(world, town, data):
