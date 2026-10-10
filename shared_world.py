@@ -5,7 +5,7 @@ import secrets
 from npcs import ensure_npcs
 from terrain import generate_map
 
-MAP_FIELDS = ('map_size', 'terrain_seed', 'terrain', 'map_resources', 'npcs')
+MAP_FIELDS = ('map_size', 'terrain_seed', 'terrain', 'map_resources', 'npcs', 'forage_version', 'forage_halls')
 TOWN_RADIUS = 15
 HALL_SEPARATION = 40
 

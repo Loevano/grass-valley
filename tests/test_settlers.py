@@ -3,7 +3,7 @@ import json
 import unittest
 
 from server import (SETTLER_SPACES, assigned_settlers, command, new_town,
-                    settler_capacity, tick)
+                    construct, settler_capacity, tick)
 
 
 class BuildingSettlers(unittest.TestCase):
@@ -53,6 +53,12 @@ class BuildingSettlers(unittest.TestCase):
         self.town['wood'] = 60
         for expected in [8, 12]:
             command(self.town, {'action': 'upgrade_capacity', 'index': 1})
+            self.assertEqual(settler_capacity(self.town['buildings'][1]), expected - 4)
+            for _ in range(100):
+                construct(self.town, self.town)
+                if 'construction' not in self.town['buildings'][1]:
+                    break
+            self.assertNotIn('construction', self.town['buildings'][1])
             self.assertEqual(settler_capacity(self.town['buildings'][1]), expected)
         self.assertEqual(self.town['wood'], 0)
         with self.assertRaises(ValueError):
@@ -60,6 +66,21 @@ class BuildingSettlers(unittest.TestCase):
         with self.assertRaises(ValueError):
             command(self.town, {'action': 'upgrade_capacity', 'index': 4})
         self.assertEqual(self.town['wood'], 0)
+
+    def test_hall_capacity_upgrade_does_not_award_hall_level_or_coins(self):
+        self.town['wood'] = 100
+        coins = self.town['coins']
+        command(self.town, {'action': 'upgrade_capacity', 'index': 0})
+        with self.assertRaises(ValueError):
+            command(self.town, {'action': 'upgrade'})
+        for _ in range(100):
+            construct(self.town, self.town)
+            if 'construction' not in self.town['buildings'][0]:
+                break
+        self.assertEqual(self.town['level'], 1)
+        self.assertEqual(self.town['coins'], coins)
+        self.assertEqual(settler_capacity(self.town['buildings'][0]), 2)
+        self.assertEqual(self.town.get('upgrade_remaining', 0), 0)
 
     def test_assignment_and_production_follow_selected_farm_after_save_and_move(self):
         self.assign(0, 2)
