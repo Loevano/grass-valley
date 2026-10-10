@@ -54,4 +54,33 @@ animation.advance(worker,.7,true);
 for(let i=0;i<300&&worker.path.length;i++)animation.advance(worker,.1,true);
 assert.strictEqual(worker.phase,'working');
 assert.strictEqual(worker.elapsed,0,'Returning to the water starts a fresh cast');
+
+const pond={map_size:16,buildings:[{kind:'fishing_hut',x:6,y:2}],
+  map_resources:Array.from({length:5},(_,i)=>({kind:'water',x:9+i,y:2}))};
+const deep=animation.plan(pond,{job:'fishing',work_target:pond.map_resources[0]},0);
+assert.deepStrictEqual(deep.castTarget,{x:12,y:2},'A connected pond allows casts three tiles beyond the pier');
+for(let i=0;i<300&&deep.path.length;i++)animation.advance(deep,.1,true);
+deep.latestFishingCatch={attempt:1,caught:false};
+animation.advance(deep,1,true);
+const deepRipple=render(deep).find(mark=>mark.method==='ellipse'&&mark.color==='#c3e1dc');
+assert.strictEqual(deepRipple.args[0],72,'Float is rendered beyond the end of the pier');
+animation.advance(deep,1.7,true);
+assert(!render(deep).some(mark=>mark.color==='#b8d8d5'),'An unsuccessful host attempt reels in an empty line');
+deep.latestFishingCatch={attempt:2,caught:true};
+animation.advance(deep,.1,true);
+assert.strictEqual(deep.fishingCaught,false,'New host results do not change a catch during reeling');
+animation.advance(deep,.5,true);
+assert.strictEqual(deep.phase,'working','An unsuccessful cast retries without a delivery');
+assert.strictEqual(deep.elapsed,0);
+animation.advance(deep,2.7,true);
+assert(render(deep).some(mark=>mark.color==='#b8d8d5'),'A successful host attempt shows a caught fish');
+animation.advance(deep,.6,true);
+assert(['returning','depositing'].includes(deep.phase),'Successful catches are delivered');
+
+const separated={...pond,map_resources:[pond.map_resources[0],pond.map_resources[1],pond.map_resources[3]]};
+assert.deepStrictEqual(animation.plan(separated,{job:'fishing',work_target:separated.map_resources[0]},0).castTarget,
+  {x:10,y:2},'Casts stop before a strip of land rather than jumping to a separate pond');
+const narrow=animation.plan({...pond,map_resources:[pond.map_resources[0]]},
+  {job:'fishing',work_target:pond.map_resources[0]},0);
+assert.deepStrictEqual(narrow.castTarget,pond.map_resources[0],'A small pool keeps the float in the available water');
 console.log('Fishing animation checks passed');

@@ -55,8 +55,22 @@ const WorkerAnimation = (() => {
       }
     }
     const path=source?route(start,workSpot || source,blocked,size,!workSpot):home?route(start,home,blocked,size):[];
+    let castTarget=villager.job==='fishing'?source:null;
+    if(villager.job==='fishing'&&source){
+      const water=new Set(town.map_resources.filter(r=>r.kind==='water').map(key));
+      const occupied=new Set([...(town.obstacles || town.buildings),...(town.npcs || [])].map(key));
+      // Keep the entire cast over connected water, preferring farther water away from the hut.
+      for(const direction of neighbors({x:0,y:0})){
+        for(let reach=1;reach<=3;reach++){
+          const tile={x:source.x+direction.x*reach,y:source.y+direction.y*reach};
+          if(!water.has(key(tile))||occupied.has(key(tile))||town.terrain?.[tile.y]?.[tile.x]==='v')break;
+          if(distance(tile,source)>distance(castTarget,source)||
+            (distance(tile,source)===distance(castTarget,source)&&home&&distance(tile,home)>distance(castTarget,home)))castTarget=tile;
+        }
+      }
+    }
     return {...start,phase:path===null?'waiting':path.length?'walking':source?'working':'idle',
-      path:path || [],source,home,pier,workSpot,blocked,size,workDuration:villager.job==='farming'?8:3.2,
+      path:path || [],source,home,pier,workSpot,castTarget,fishingCaught:null,blocked,size,workDuration:villager.job==='farming'?8:3.2,
       construction:!!villager.construction_target,elapsed:0,clock:state?.clock || index*.37,facing:state?.facing || 1};
   }
   function advance(state, seconds, active) {
@@ -75,13 +89,17 @@ const WorkerAnimation = (() => {
     if(state.construction){state.elapsed+=seconds;return;}
     if(!active || !state.source || state.phase==='waiting')return;
     state.elapsed+=seconds;
+    if(state.phase==='working'&&state.castTarget&&state.elapsed>=2.35&&state.fishingCaught===null){
+      state.fishingCaught=state.latestFishingCatch?.caught ?? true;
+    }
     if(state.phase==='working'&&state.elapsed>=(state.workDuration || 3.2)){
+      if(state.fishingCaught===false){state.elapsed=0;state.fishingCaught=null;return;}
       const path=state.home?route(state,state.home,state.blocked,state.size):null;
       if(path===null)return;
       state.path=path;state.phase=path.length?'returning':'depositing';state.elapsed=0;
     }else if(state.phase==='depositing'&&state.elapsed>=.65){
       const path=route(state,state.workSpot || state.source,state.blocked,state.size,!state.workSpot);
-      state.path=path || [];state.phase=path===null?'waiting':path.length?'walking':'working';state.elapsed=0;
+      state.path=path || [];state.phase=path===null?'waiting':path.length?'walking':'working';state.elapsed=0;state.fishingCaught=null;
     }
   }
   return {route,plan,advance};

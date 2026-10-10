@@ -115,6 +115,9 @@ the Python host, refresh both browsers, and create a new world to use the shared
   rippling float, reel in a fish, and carry their catch back to the hut.
   Assigned fishers use a wooden pier extending from their hut to nearby water,
   so a hut on the only accessible bank does not block their fishing spot.
+  Casts reach up to three more tiles into connected water when space allows.
+  Fishing attempts have an 80% chance of catching food; an unlucky attempt
+  yields no food, but still builds skill. Empty casts reel in and try again.
 - Woodcutters produce half as much wood as before. Assigned workers consume
   0.30 food each tick, compared with 0.12 for resting villagers.
 - Hall upgrades also require a builder at the hall. The first costs 40 wood and

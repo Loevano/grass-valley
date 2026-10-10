@@ -458,6 +458,7 @@ function animatedVillagers(town, seconds, townId=viewed){
       state=Object.assign(WorkerAnimation.plan(world.shared_map?{...town,obstacles:Object.values(world.towns).flatMap(t=>t.buildings),home_hall:town.buildings.find(b=>b.kind==='hall')}:town,villager,index,state),{signature});workers.set(workerKey,state);
     }
     const resource=villager.job==='woodcutting'?'wood':'food';
+    state.latestFishingCatch=villager.fishing_catch;
     const active=!!villager.construction_target || town[resource]<100+100*town.buildings.filter(b=>b.kind==='storehouse'&&!b.construction).length;
     WorkerAnimation.advance(state,seconds,active);
     return {kind:'villager',townId,villager,index,x:state.x,y:state.y,state,active};
@@ -494,7 +495,8 @@ function drawVillager(b){
   const swing=working?(Math.sin(s.clock*(chopping?5:7))+1)/2:0;
   ctx.save();ctx.translate(px+(b.index%3-1)*3,py+tileH*.65+Math.floor(b.index/3));ctx.scale(tileW/46,tileW/46);
   ctx.fillStyle='#223b2966';ctx.beginPath();ctx.ellipse(0,2,7,3,0,0,Math.PI*2);ctx.fill();
-  const towardSource=s.source?(s.source.x-s.x)-(s.source.y-s.y):0;
+  const facingTarget=fishing?(s.castTarget || s.source):s.source;
+  const towardSource=facingTarget?(facingTarget.x-s.x)-(facingTarget.y-s.y):0;
   const facing=(working||fishing||farming)&&towardSource!==0?Math.sign(towardSource):s.facing;
   ctx.scale(facing,1);
   ctx.strokeStyle='#283c38';ctx.lineWidth=2.5;ctx.lineCap='round';
@@ -550,7 +552,7 @@ function drawVillager(b){
     ctx.fillStyle='#b9c3bd';ctx.fillRect(6,handY-11,9,4);
   }else if(fishing){
     // Cast into the selected water tile, then lift the catch before delivery.
-    const [waterX,waterY]=s.workSpot?point(s.source.x+.35,s.source.y+.35):s.source?point(s.source.x,s.source.y):[px+tileW*.6,py+tileH*.65];
+    const [waterX,waterY]=s.castTarget?point(s.castTarget.x+.5,s.castTarget.y+.5):s.workSpot?point(s.source.x+.35,s.source.y+.35):s.source?point(s.source.x,s.source.y):[px+tileW*.6,py+tileH*.65];
     const surfaceX=(waterX-px-(b.index%3-1)*3)/(tileW/46)*facing;
     const surfaceY=(waterY-py-tileH*.65-Math.floor(b.index/3))/(tileW/46)+bob;
     const tipX=7+cast*13-reel*8,tipY=-34+cast*9-reel*9;
@@ -563,7 +565,7 @@ function drawVillager(b){
     }
     ctx.fillStyle='#df785e';ctx.fillRect(floatX-2,floatY-2,4,3);
     ctx.fillStyle='#f3e5bc';ctx.fillRect(floatX-2,floatY+1,4,2);
-    if(reel>0){
+    if(reel>0&&s.fishingCaught!==false){
       polygon([[floatX,floatY+3],[floatX+5,floatY+6],[floatX,floatY+9],[floatX-4,floatY+6]],'#b8d8d5','#527f86');
       polygon([[floatX,floatY+9],[floatX-3,floatY+12],[floatX+3,floatY+12]],'#7899a2');
     }

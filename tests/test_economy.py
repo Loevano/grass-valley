@@ -1,5 +1,6 @@
 import copy
 import unittest
+from unittest.mock import patch
 
 from server import construct, command, new_town, tick
 
@@ -38,7 +39,8 @@ class EconomyRules(unittest.TestCase):
         tick(self.world)
         self.assertAlmostEqual(before - self.town['food'], .6)
 
-    def test_fishing_requires_hut_and_water_and_learns_skill(self):
+    @patch('server.secrets.randbelow', return_value=1)
+    def test_fishing_requires_hut_and_water_and_learns_skill(self, _roll):
         with self.assertRaises(ValueError):
             command(self.town, {'action': 'job', 'index': 0, 'job': 'fishing'})
         command(self.town, {'action': 'build', 'kind': 'fishing_hut', 'x': 6, 'y': 2})

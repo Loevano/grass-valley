@@ -286,10 +286,18 @@ def tick(world):
             source = work_source(town, job, index) if job != 'idle' else None
             villager['work_target'] = source
             if source and town[resource] < capacity(town):
+                caught = True
+                if job == 'fishing':
+                    caught = secrets.randbelow(5) != 0
+                    villager['fishing_catch'] = {
+                        'attempt': villager.get('fishing_catch', {}).get('attempt', 0) + 1,
+                        'caught': caught,
+                    }
                 rate = .5 if job == 'woodcutting' else 1
                 amount = min(rate * (1 + villager.get(job, 0) // 20),
                              capacity(town) - town[resource])
-                town[resource] += amount
+                if caught:
+                    town[resource] += amount
                 villager[job] = villager.get(job, 0) + 1
                 if resource == 'wood':
                     town['harvested'] += amount
