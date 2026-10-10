@@ -36,6 +36,11 @@ const WorkerAnimation = (() => {
     const workplace=source?.kind==='acre'?town.buildings[source.farm_index]:workplaces[index%workplaces.length];
     const home=villager.construction_target || workplace || town.buildings.find(b=>b.kind==='hall');
     let pier=[],workSpot=null;
+    if(!villager.construction_target&&villager.job==='farming'&&source?.kind==='acre'){
+      // Farmers tend the field itself rather than working outside its boundary.
+      for(const acre of town.buildings.filter(b=>b.kind==='acre'&&!b.construction))blocked.delete(key(acre));
+      workSpot=source;
+    }
     if(!villager.construction_target&&villager.job==='fishing'&&source&&home?.kind==='fishing_hut'){
       // A hut can occupy the only bank tile; its pier provides access over water.
       const pierBlocked=new Set(blocked);

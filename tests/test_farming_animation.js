@@ -24,6 +24,10 @@ for(const target of [town.buildings[1],town.map_resources[0]]){
   const state=animation.plan(town,{job:'farming',work_target:target},0);
   for(let i=0;i<300&&state.path.length;i++)animation.advance(state,.1,true);
   assert.strictEqual(state.phase,'working');
+  if(target.kind==='acre'){
+    assert.strictEqual(state.x,target.x,'Farmer works inside the acre');
+    assert.strictEqual(state.y,target.y,'Farmer works inside the acre');
+  }
   for(const [index,[name,color]] of stages.entries()){
     const output=render(state);
     assert(output.some(mark=>mark.color===color),`Arrival at stage ${index} shows ${name}`);
@@ -60,4 +64,34 @@ for(const job of ['woodcutting','fishing']){
   animation.advance(state,3.3,true);
   assert.notStrictEqual(state.phase,'working',`${job} keeps its shorter work cycle`);
 }
+// Connected acres remain accessible even when a field has no empty neighbor.
+const fields=[{kind:'acre',x:6,y:3,farm_index:0},
+  ...[{x:5,y:3},{x:7,y:3},{x:6,y:4}].map(tile=>({kind:'acre',...tile,farm_index:0}))];
+const clustered={...town,buildings:[town.buildings[0],...fields]};
+const farmer=animation.plan(clustered,{job:'farming',work_target:fields[0]},0);
+for(let i=0;i<300&&farmer.path.length;i++)animation.advance(farmer,.1,true);
+assert.strictEqual(farmer.phase,'working','Farmer can enter a field surrounded by other acres');
+assert.strictEqual(farmer.x,6);assert.strictEqual(farmer.y,3);
+animation.advance(farmer,8,true);
+assert(['returning','depositing'].includes(farmer.phase),'Farmer can leave the cluster to deliver grain');
+const builder=animation.plan(clustered,{job:'farming',construction_target:town.buildings[0]},0);
+assert(builder.blocked.has('6,3'),'Building assignments keep construction path rules');
+
+const crops=new Function('ctx','polygon','point','tileW','tileH',
+  source.slice(source.indexOf('function drawFarmCrops('),source.indexOf('function drawBuilding('))+
+  '\nreturn drawFarmCrops;'
+)(ctx,(points,color)=>marks.push({method:'polygon',points,color}),
+  (x,y)=>[(x-y)*23,(x+y)*11.5],46,23);
+function fieldAt(elapsed){
+  marks.length=0;crops(fields[0],elapsed===null?null:{elapsed});return marks.slice();
+}
+const soil=fieldAt(0),sown=fieldAt(3),growing=fieldAt(5),ripe=fieldAt(6),cut=fieldAt(7);
+assert(!soil.some(mark=>mark.color==='#efd59a'||mark.color==='#8db568'),'Plowing leaves bare furrows');
+assert.strictEqual(sown.filter(mark=>mark.color==='#efd59a').length,8,'Sowing gradually fills the field');
+assert(growing.some(mark=>mark.color==='#8db568'),'Watering grows green shoots');
+assert.notDeepStrictEqual(growing,fieldAt(5.25),'Growing crops move with the work cycle');
+const grain=output=>output.filter(mark=>mark.method==='stroke'&&['#d9bd70','#b8b458'].includes(mark.color));
+assert.strictEqual(grain(ripe).length,16,'Harvest starts with ripe grain');
+assert.strictEqual(grain(cut).length,8,'Harvest gradually cuts the grain');
+assert.strictEqual(grain(fieldAt(null)).length,16,'Unattended fields keep their normal ripe appearance');
 console.log('Farming animation checks passed');

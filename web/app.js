@@ -754,7 +754,10 @@ function draw(seconds=0){
       drawVillager(b);
       continue;
     }
-    drawBuilding(b,world.towns[b.townId] || town);
+    const farmer=b.kind==='acre'?villagers.find(worker=>worker.villager.job==='farming'&&!worker.state.construction
+      &&worker.state.phase==='working'&&worker.state.source?.kind==='acre'
+      &&worker.state.source.x===b.x&&worker.state.source.y===b.y):null;
+    drawBuilding(b,world.towns[b.townId] || town,farmer?.state);
     if(world.shared_map && b.kind==='hall'){ctx.fillStyle='#fff0b1';ctx.font=`bold ${12*scale}px sans-serif`;ctx.textAlign='center';ctx.fillText(world.towns[b.townId].name,px,py-80*scale);}
   }
   if(preview && previewKind && town && town.terrain?.[preview.y]?.[preview.x]!=='v' && viewed===identity?.town_id){
@@ -787,6 +790,30 @@ function buildingUsable(town,b){
   const source={woodcutter:'tree',farm:'water',fishing_hut:'water'}[b.kind];
   return !source || !!town?.map_resources.some(r=>r.kind===source&&Math.abs(r.x-b.x)+Math.abs(r.y-b.y)<=3);
 }
+function drawFarmCrops(b,state){
+  const elapsed=state?.elapsed ?? 6;
+  const stage=Math.min(3,Math.floor(elapsed/2)),progress=(elapsed%2)/2;
+  const [x,y]=point(b.x,b.y),scale=tileW/46;
+  polygon([[x,y+tileH*.1],[x+tileW*.4,y+tileH*.5],[x,y+tileH*.9],[x-tileW*.4,y+tileH*.5]],'#80764a','#ab9561');
+  for(let row=0;row<4;row++){
+    const [ax,ay]=point(b.x-.3+row*.2,b.y-.35),[bx,by]=point(b.x-.3+row*.2,b.y+.35);
+    ctx.strokeStyle='#655638';ctx.lineWidth=scale;
+    ctx.beginPath();ctx.moveTo(ax,ay+tileH/2);ctx.lineTo(bx,by+tileH/2);ctx.stroke();
+    for(let crop=0;crop<4;crop++){
+      const order=row*4+crop;
+      const [px,py]=point(b.x-.3+row*.2,b.y-.3+crop*.2);
+      if(stage===0 || (stage===1&&order>=progress*16) || (state&&stage===3&&order<progress*16))continue;
+      if(stage===1){
+        ctx.fillStyle='#efd59a';ctx.fillRect(px-scale,py+tileH/2-scale,2*scale,2*scale);
+      }else{
+        const height=(stage===2?2+progress*4:6)*scale;
+        const sway=state?Math.sin(elapsed*4+order)*scale:0;
+        ctx.strokeStyle=stage===2?'#8db568':(row+crop)%2?'#d9bd70':'#b8b458';ctx.lineWidth=2*scale;
+        ctx.beginPath();ctx.moveTo(px,py+tileH/2);ctx.lineTo(px+sway,py+tileH/2-height);ctx.stroke();
+      }
+    }
+  }
+}
 function drawBuilding(b,town=world.towns[viewed],farmState=null){
   if(b.construction){
     const [x,top]=point(b.x,b.y),y=top+tileH/2,s=tileW/46;
@@ -809,13 +836,7 @@ function drawBuilding(b,town=world.towns[viewed],farmState=null){
     return;
   }
   if(b.kind==='acre'){
-    const [x,y]=point(b.x,b.y);
-    polygon([[x,y+tileH*.1],[x+tileW*.4,y+tileH*.5],[x,y+tileH*.9],[x-tileW*.4,y+tileH*.5]],'#80764a','#ab9561');
-    for(let row=0;row<4;row++)for(let crop=0;crop<4;crop++){
-      const [px,py]=point(b.x-.3+row*.2,b.y-.3+crop*.2);
-      ctx.strokeStyle=(row+crop)%2?'#d9bd70':'#b8b458';ctx.lineWidth=2*tileW/46;
-      ctx.beginPath();ctx.moveTo(px,py+tileH/2);ctx.lineTo(px,py+tileH/2-5*tileW/46);ctx.stroke();
-    }
+    drawFarmCrops(b,farmState);
     return;
   }
   const [x,top]=point(b.x,b.y),y=top+tileH/2,s=tileW/46;
