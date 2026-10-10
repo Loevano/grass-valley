@@ -2,7 +2,7 @@ import copy
 import json
 import unittest
 
-from server import ensure_resources, new_town, walkable
+from server import command, ensure_resources, new_town, walkable
 from terrain import generate_map
 
 
@@ -20,16 +20,38 @@ class RandomTerrain(unittest.TestCase):
                 terrain, resources = generate_map(120, seed)
                 self.assertEqual(len(terrain), 120)
                 self.assertTrue(all(len(row) == 120 for row in terrain))
-                self.assertEqual(set(''.join(terrain)), set('gfmsr'))
+                self.assertEqual(set(''.join(terrain)), set('gfmsrv'))
                 positions = {(r['x'], r['y']) for r in resources}
                 self.assertEqual(len(positions), len(resources))
                 self.assertTrue(all(0 <= x < 120 and 0 <= y < 120 for x, y in positions))
                 for kind in ('tree', 'water', 'rock'):
                     self.assertTrue(any(r['kind'] == kind and r['x'] > 12 for r in resources))
                 self.assertNotIn((5, 5), positions)
+                self.assertTrue(all(terrain[y][x] != 'v' for x, y in positions))
                 town = {'map_size': 120, 'buildings': [], 'map_resources': resources}
                 self.assertTrue(walkable(town, 5, 7))
                 self.assertTrue(walkable(town, 5.3, 6.7))
+
+    def test_outline_and_starting_pond_vary_with_seed(self):
+        maps = [generate_map(120, seed) for seed in range(10)]
+        outlines = {tuple(row.replace('g', '.').replace('f', '.').replace('m', '.').replace('s', '.').replace('r', '.')
+                          for row in terrain) for terrain, _ in maps}
+        ponds = {tuple((r['x'], r['y']) for r in resources
+                       if r['kind'] == 'water' and r['x'] < 12 and r['y'] < 12)
+                 for _, resources in maps}
+        self.assertGreater(len(outlines), 5)
+        self.assertGreater(len(ponds), 5)
+
+    def test_irregular_boundary_blocks_walking_building_and_relocation(self):
+        town = new_town('Boundary')
+        x, y = next((x, y) for y, row in enumerate(town['terrain'])
+                    for x, tile in enumerate(row) if tile == 'v')
+        self.assertFalse(walkable(town, x, y))
+        before = copy.deepcopy(town)
+        for action in ('build', 'move'):
+            with self.assertRaisesRegex(ValueError, 'boundary'):
+                command(town, {'action': action, 'kind': 'home', 'index': 0, 'x': x, 'y': y})
+            self.assertEqual(town, before)
 
     def test_new_towns_are_different_and_survive_save_round_trip(self):
         town = new_town('First')

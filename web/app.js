@@ -398,9 +398,6 @@ function draw(seconds=0){
   const water=new Set(resources.filter(r=>r.kind==='water').map(r=>`${r.x},${r.y}`));
   // Ground thickness appears only at the actual valley boundary.
   const terrainSize=town?.map_size || 12;
-  const edge=[point(0,0),point(terrainSize,0),point(terrainSize,terrainSize),point(0,terrainSize)];
-  polygon([edge[1],edge[2],[edge[2][0],edge[2][1]+12],[edge[1][0],edge[1][1]+12]],'#344b35');
-  polygon([edge[2],edge[3],[edge[3][0],edge[3][1]+12],[edge[2][0],edge[2][1]+12]],'#405438');
   const preview=hoverTile || keyboardTile;
   const previewKind=costs[tool]?tool:tool==='move'&&moveIndex!==null?town?.buildings[moveIndex]?.kind:null;
   const sourceKind=previewKind==='woodcutter'?'tree':previewKind==='farm'?'water':null;
@@ -410,9 +407,16 @@ function draw(seconds=0){
     const variation=(x*17+y*31+x*y*7)%7;
     const diamond=[[px,py],[px+tileW/2,py+tileH/2],[px,py+tileH],[px-tileW/2,py+tileH/2]];
     const biome=town?.terrain?.[y]?.[x] || 'g';
+    if(biome==='v')continue;
+    const land=(tx,ty)=>tx>=0&&ty>=0&&tx<terrainSize&&ty<terrainSize&&town?.terrain?.[ty]?.[tx]!=='v';
+    if(!land(x+1,y))polygon([diamond[1],diamond[2],[diamond[2][0],diamond[2][1]+12],[diamond[1][0],diamond[1][1]+12]],'#344b35');
+    if(!land(x,y+1))polygon([diamond[2],diamond[3],[diamond[3][0],diamond[3][1]+12],[diamond[2][0],diamond[2][1]+12]],'#405438');
     const palette={g:['#68865a','#69875b','#668358'],f:['#506f4a','#55764c','#5a7b50'],
       m:['#83945e','#899b65','#80915b'],s:['#b4a575','#bdad7d','#b8a878'],r:['#8b8d7c','#969785','#858978']};
-    polygon(diamond,wet?'#518697':palette[biome][variation%3],tool?'#91a37455':null);
+    const neighbors=[[x,y-1],[x+1,y],[x,y+1],[x-1,y]];
+    const shores=neighbors.map(([tx,ty])=>!water.has(`${tx},${ty}`));
+    const depth=shores.filter(Boolean).length;
+    polygon(diamond,wet?(depth?'#6299a1':'#447d91'):palette[biome][variation%3],tool?'#91a37455':null);
     if(!wet&&variation===0){ctx.fillStyle='#8fa574';ctx.fillRect(px-5*tileW/46,py+tileH*.5,2*tileW/46,2*tileW/46);ctx.fillStyle='#d7c78a';ctx.fillRect(px+4*tileW/46,py+tileH*.65,2*tileW/46,2*tileW/46);}
     if(!wet&&(x===0||y===0||x===terrainSize-1||y===terrainSize-1)&&variation%2===0){ctx.strokeStyle='#9caf77';ctx.lineWidth=tileW/46;ctx.beginPath();ctx.moveTo(px-6*tileW/46,py+tileH*.65);ctx.lineTo(px-9*tileW/46,py+tileH*.4);ctx.moveTo(px-6*tileW/46,py+tileH*.65);ctx.lineTo(px-4*tileW/46,py+tileH*.35);ctx.stroke();}
     if(reachable.has(`${x},${y}`))polygon(diamond,'#b8dcad44','#c6dfaa');
@@ -421,7 +425,18 @@ function draw(seconds=0){
     if((selected?.x===x&&selected?.y===y)||(!previewKind&&keyboardTile?.x===x&&keyboardTile?.y===y)){
       ctx.save();ctx.lineWidth=3;polygon([[px,py],[px+tileW/2,py+tileH/2],[px,py+tileH],[px-tileW/2,py+tileH/2]],'#fff0b133','#fff0b1');ctx.restore();
     }
-    if(wet){ctx.strokeStyle='#b4d7ce99';ctx.beginPath();ctx.moveTo(px-tileW*.16,py+tileH*.48);ctx.lineTo(px+tileW*.12,py+tileH*.63);ctx.stroke();}
+    if(wet){
+      ctx.strokeStyle='#b4d7ce99';ctx.lineWidth=tileW/46;
+      for(let edge=0;edge<4;edge++)if(shores[edge]){
+        ctx.beginPath();ctx.moveTo(...diamond[edge]);ctx.lineTo(...diamond[(edge+1)%4]);ctx.stroke();
+      }
+      const ripple=((x*73856093)^(y*19349663)^(town?.terrain_seed || 0))>>>0;
+      if(ripple%5===0){
+        const offset=(ripple%13-6)*tileW/70;
+        ctx.beginPath();ctx.moveTo(px-tileW*.14+offset,py+tileH*.5);
+        ctx.quadraticCurveTo(px+offset,py+tileH*.38,px+tileW*.12+offset,py+tileH*.55);ctx.stroke();
+      }
+    }
   }
   const buildings=town?.buildings || [{kind:'hall',x:5,y:5}];
   const villagers=animatedVillagers(town,seconds);
@@ -452,13 +467,14 @@ function draw(seconds=0){
     }
     drawBuilding(b);
   }
-  if(preview && previewKind && town && viewed===identity?.town_id){
+  if(preview && previewKind && town && town.terrain?.[preview.y]?.[preview.x]!=='v' && viewed===identity?.town_id){
     const valid=placementValid(town,preview,previewKind);
     ctx.save();ctx.globalAlpha=valid ? .65 : .35;drawBuilding({...preview,kind:previewKind});ctx.restore();
   }
 }
 function placementValid(town,tile,kind){
-  return !town.buildings.some(b=>b.x===tile.x&&b.y===tile.y)
+  return town.terrain?.[tile.y]?.[tile.x]!=='v'
+    && !town.buildings.some(b=>b.x===tile.x&&b.y===tile.y)
     && !town.map_resources.some(r=>r.x===tile.x&&r.y===tile.y)
     && (tool==='move' || town.wood>=costs[kind]);
 }
@@ -504,6 +520,7 @@ function drawBuilding(b){
 async function selectTile(x,y){
   const town=world.towns[viewed];
   if(!town || x<0||y<0||x>=12||y>=12)return;
+  if(town.terrain?.[y]?.[x]==='v')return;
   const resource=town.map_resources.findIndex(r=>r.x===x&&r.y===y);
   const index=town.buildings.findIndex(b=>b.x===x&&b.y===y);
   if(!tool){
@@ -531,7 +548,7 @@ function tileAt(event){
 canvas.onmousemove=event=>{
   const town=world.towns[viewed],tile=tileAt(event);
   buildTile=costs[tool]&&viewed===identity?.town_id&&town&&tile.x>=0&&tile.y>=0&&tile.x<12&&tile.y<12
-    &&!town.buildings.some(b=>b.x===tile.x&&b.y===tile.y)&&!town.map_resources.some(r=>r.x===tile.x&&r.y===tile.y)?tile:null;
+    &&town.terrain?.[tile.y]?.[tile.x]!=='v'&&!town.buildings.some(b=>b.x===tile.x&&b.y===tile.y)&&!town.map_resources.some(r=>r.x===tile.x&&r.y===tile.y)?tile:null;
   hoverTile=(costs[tool]||tool==='move'&&moveIndex!==null)&&viewed===identity?.town_id&&town&&tile.x>=0&&tile.y>=0&&tile.x<(town.map_size || 12)&&tile.y<(town.map_size || 12)?tile:null;
   draw();
 };

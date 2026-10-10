@@ -31,3 +31,9 @@ const farm={buildings:[{kind:'farm',x:6,y:2}],map_resources:[{kind:'water',x:9,y
 state=animation.plan(farm,{job:'farming',work_target:farm.map_resources[0]},0);
 for(let i=0;i<300&&state.path.length;i++)animation.advance(state,.1,true);
 check(state.phase==='working'&&state.home.kind==='farm','Farmers walk to water and use the matching farm');
+const shaped={map_size:12,buildings:[{kind:'hall',x:5,y:5}],map_resources:[],
+  terrain:Array(12).fill('vvvvgggggggg')};
+state=animation.plan(shaped,{job:'idle'},0);
+check(state.x>=4,'Workers spawn inside the irregular outline');
+check(state.blocked.has('3,8'),'Tiles outside the outline block worker paths');
+check(state.path.every(p=>shaped.terrain[p.y][p.x]!=='v'),'Workers stay inside the outline');

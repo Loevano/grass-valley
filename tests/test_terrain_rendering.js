@@ -18,7 +18,13 @@ const run=new Function('document','window','localStorage','setTimeout','clearTim
     check(palette.some(color=>fills.includes(color)),'Each ground type has a visible palette');
   }
   town.map_resources=[{kind:'water',x:2,y:2}];fills.length=0;draw();
-  check(fills.includes('#518697'),'Water is rendered over its ground type');
+  check(fills.includes('#6299a1'),'Shallow water is rendered along shores');
+  town.map_resources=[{kind:'water',x:2,y:2},{kind:'water',x:1,y:2},
+    {kind:'water',x:3,y:2},{kind:'water',x:2,y:1},{kind:'water',x:2,y:3}];fills.length=0;draw();
+  check(fills.includes('#447d91'),'Interior water has a deeper color');
+  town.terrain=Array(12).fill('vvvvvvvvvvvv');fills.length=0;draw();
+  check(!fills.includes('#68865a')&&!fills.includes('#6299a1'),'Tiles outside the outline are not rendered');
+  check(!placementValid(town,{x:5,y:5},'home'),'Cannot preview a building outside the outline');
   delete town.terrain;fills.length=0;draw();
   check(fills.includes('#68865a'),'Maps without terrain still render grass');
 `);

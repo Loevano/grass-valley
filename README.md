@@ -41,7 +41,8 @@ encrypted transport; do not expose it through router port forwarding.
 
 ## Play
 
-- Each new town has random forests, ponds, meadows, sandy ground, and rocky areas.
+- Each new town has an irregular outline and random forests, ponds, meadows,
+  sandy ground, and rocky areas. Ponds have shallow shores and deeper centers.
   The starting clearing has nearby wood and water. Terrain and resources are saved,
   so returning to a town keeps the same landscape. Open ground can be built on;
   trees, water, and rocks still reserve their tiles.

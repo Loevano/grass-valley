@@ -30,9 +30,12 @@ def walkable(town, x, y, blocked=None):
     if blocked is None:
         blocked = {(b['x'], b['y']) for b in
                    town['buildings'] + town['map_resources']}
+    terrain = town.get('terrain')
     for tx in range(math.floor(x + .5) - 1, math.floor(x + .5) + 2):
         for ty in range(math.floor(y + .5) - 1, math.floor(y + .5) + 2):
-            if (tx, ty) in blocked and (abs(x - tx) < .5 + radius
+            outside = (terrain and 0 <= tx < size and 0 <= ty < size
+                       and terrain[ty][tx] == 'v')
+            if ((tx, ty) in blocked or outside) and (abs(x - tx) < .5 + radius
                                        and abs(y - ty) < .5 + radius):
                 return False
     return True
@@ -158,6 +161,12 @@ def command(town, data):
     action = data.get('action')
     if action == 'walk':
         return move_player(town, data)
+    if action in {'build', 'move'}:
+        x, y = data.get('x'), data.get('y')
+        terrain = town.get('terrain', [])
+        if (type(x) is int and type(y) is int and 0 <= y < len(terrain)
+                and 0 <= x < len(terrain[y]) and terrain[y][x] == 'v'):
+            raise ValueError('Choose a tile inside the valley boundary.')
     if action == 'build':
         kind, x, y = data.get('kind'), data.get('x'), data.get('y')
         if kind not in COSTS or type(x) is not int or type(y) is not int or not (0 <= x < 12 and 0 <= y < 12):

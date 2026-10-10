@@ -23,7 +23,7 @@ const WorkerAnimation = (() => {
     const blocked=new Set([...town.buildings,...town.map_resources].map(key));
     const preferred={x:3+index%5,y:8+Math.floor(index/5)};
     const open=[];
-    for(let x=0;x<12;x++)for(let y=0;y<12;y++)if(!blocked.has(`${x},${y}`))open.push({x,y});
+    for(let x=0;x<12;x++)for(let y=0;y<12;y++){if(town.terrain?.[y]?.[x]==='v')blocked.add(`${x},${y}`);else if(!blocked.has(`${x},${y}`))open.push({x,y});}
     const current=state?{x:Math.round(state.x),y:Math.round(state.y)}:preferred;
     const start=open.sort((a,b)=>distance(a,current)-distance(b,current))[0] || preferred;
     const source=villager.job==='idle'?null:villager.work_target;

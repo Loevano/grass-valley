@@ -22,14 +22,21 @@ def generate_map(size, seed):
         return sample
 
     moisture, ground = field(8), field(11)
+    lakes, lake_detail, coast = field(23), field(6), field(17)
+    center_x, center_y = rng.uniform(.45, .55), rng.uniform(.45, .55)
+    radius_x, radius_y = rng.uniform(.49, .55), rng.uniform(.49, .55)
     terrain, resources = [], []
     for y in range(size):
         row = []
         for x in range(size):
+            outline = (abs(x / size - center_x) / radius_x) ** 4 + (abs(y / size - center_y) / radius_y) ** 4
+            if size > 12 and not (x < 12 and y < 12) and outline > .8 + coast(x, y) * .5:
+                row.append('v')
+                continue
             wet, soil = moisture(x, y), ground(x, y)
             biome = 'f' if wet > .58 else 's' if soil < .3 else 'r' if soil > .75 else 'm' if wet > .4 else 'g'
             kind = None
-            if wet < .22:
+            if lakes(x, y) * .75 + lake_detail(x, y) * .25 < .28:
                 kind, biome = 'water', 's'
             elif biome == 'f' and rng.random() < .38:
                 kind = 'tree'
@@ -50,7 +57,7 @@ def generate_map(size, seed):
         'tree': [(0, 2), (0, 3), (1, 4), (2, 0), (3, 0), (3, 1),
                  (0, 7), (1, 8), (2, 9), (3, 10), (7, 0), (8, 1),
                  (8, 2), (10, 6), (11, 7), (10, 9), (9, 10), (11, 11)],
-        'water': [(9, 0), (10, 0), (11, 0), (9, 1), (10, 1), (11, 1), (9, 2), (10, 2)],
+        'water': [(x, y) for y in range(3) for x in range(9, 9 + rng.randint(1, 3))],
         'rock': [(10, 3), (11, 4), (0, 10)],
     }
     resources.extend({'kind': kind, 'x': x, 'y': y}
@@ -68,6 +75,9 @@ def ensure_terrain(town, new=False):
     if 'terrain_seed' not in town:
         town['terrain_seed'] = secrets.randbits(64)
     town['terrain'], resources = generate_map(size, town['terrain_seed'])
+    if not new:
+        # Adding ground to old saves must keep their playable area intact.
+        town['terrain'] = [row.replace('v', 'g') for row in town['terrain']]
     if new:
         occupied = {(b['x'], b['y']) for b in town['buildings']}
         town['map_resources'] = [r for r in resources if (r['x'], r['y']) not in occupied]
