@@ -24,7 +24,7 @@ function render(){
   $('join').hidden=!!own;$('controls').hidden=!own;
   $('view-title').textContent=town?.name || 'A place to call home';
   $('resources').textContent=own?`Wood ${Math.floor(own.wood)} · Food ${Math.floor(own.food)} · Coins ${own.coins} · Villagers ${own.villagers.length}`:'Your village awaits';
-  if(own){$('town-name').textContent=own.name;$('hint').textContent=tool==='move'?(moveIndex===null?'Click a building to move it.':'Click an empty tile.'):tool?`Click a tile to place a ${labels[tool].toLowerCase()}.`:'Choose a building, then click a tile.';$('progress').textContent=`Level ${own.level} · Timber roots: ${Math.min(30,own.harvested)}/30 wood harvested`;$('upgrade').disabled=own.level>=2;}
+  if(own){$('town-name').textContent=own.name;$('hint').textContent=tool==='move'?(moveIndex===null?'Click a building to move it.':'Click open grass.'):tool?`Click open grass to place a ${labels[tool].toLowerCase()}.`:'Choose a building, then click open grass.';$('progress').textContent=`Level ${own.level} · Timber roots: ${Math.min(30,own.harvested)}/30 wood harvested`;$('upgrade').disabled=own.level>=2;}
   $('towns').replaceChildren();
   for(const [id,t] of Object.entries(world.towns)){const b=document.createElement('button');b.textContent=t.name+(id===identity?.town_id?' · Yours':'');b.classList.toggle('selected',id===viewed);b.onclick=()=>{viewed=id;tool=null;moveIndex=null;render();};$('towns').append(b);}
   $('villagers').replaceChildren();
@@ -32,6 +32,7 @@ function render(){
     const div=document.createElement('div');div.className='villager';
     const name=document.createElement('strong');name.textContent=v.name;div.append(name);
     const skills=document.createElement('small');skills.textContent=`Woodcutting ${v.woodcutting} · Farming ${v.farming}`;div.append(skills);
+    const activity=document.createElement('small');activity.textContent=v.job==='idle'?'Resting':v.work_target?(v.job==='woodcutting'?'Gathering at the forest':'Tending crops by the water'):'Waiting for a workplace near '+(v.job==='woodcutting'?'trees':'water');div.append(activity);
     const select=document.createElement('select');select.setAttribute('aria-label',`Job for ${v.name}`);
     for(const [job,label] of [['idle','Resting'],['woodcutting','Woodcutting'],['farming','Farming']]){const option=document.createElement('option');option.value=job;option.textContent=label;select.append(option);}
     select.value=v.job;select.disabled=viewed!==identity?.town_id;select.onchange=()=>act({action:'job',index:i,job:select.value});div.append(select);$('villagers').append(div);
@@ -40,14 +41,46 @@ function render(){
 }
 function point(x,y){return [originX+(x-y)*tileW/2,originY+(x+y)*tileH/2];}
 function polygon(points,fill,stroke){ctx.beginPath();points.forEach(([x,y],i)=>i?ctx.lineTo(x,y):ctx.moveTo(x,y));ctx.closePath();ctx.fillStyle=fill;ctx.fill();if(stroke){ctx.strokeStyle=stroke;ctx.stroke();}}
+function drawResource(r){
+  const [x,y]=point(r.x,r.y),s=tileW/46;
+  ctx.save();ctx.translate(x,y);ctx.scale(s,s);
+  ctx.fillStyle='#223b2955';ctx.beginPath();ctx.ellipse(0,12,16,6,0,0,Math.PI*2);ctx.fill();
+  if(r.kind==='tree'){
+    ctx.fillStyle='#775b3e';ctx.fillRect(-3,-14,6,27);
+    const shade=(r.x+r.y)%2;
+    polygon([[-17,-7],[0,-39],[17,-7],[0,0]],shade?'#355b3e':'#3e6642');
+    polygon([[-14,-20],[0,-49],[14,-20],[0,-13]],shade?'#4e7847':'#56814c');
+    polygon([[-10,-32],[0,-57],[10,-32],[0,-26]],'#719451');
+  }else{
+    polygon([[-16,10],[-11,-4],[2,-10],[16,0],[13,12],[0,17]],'#89928a','#a0aaa0');
+    polygon([[-11,-4],[2,-10],[16,0],[0,5]],'#aab3a4');
+    polygon([[0,5],[16,0],[13,12],[0,17]],'#707e78');
+  }
+  ctx.restore();
+}
 function draw(){
   const rect=canvas.getBoundingClientRect(),dpr=window.devicePixelRatio||1;
   canvas.width=rect.width*dpr;canvas.height=rect.height*dpr;ctx.scale(dpr,dpr);
   tileW=Math.min(54,(rect.width-30)/12);tileH=tileW/2;originX=rect.width/2;originY=Math.max(140,(rect.height-12*tileH)/2);
-  for(let x=0;x<12;x++)for(let y=0;y<12;y++){const [px,py]=point(x,y);polygon([[px,py],[px+tileW/2,py+tileH/2],[px,py+tileH],[px-tileW/2,py+tileH/2]],(x+y)%2?'#638457':'#6a8b5c','#789766');}
   const town=world.towns[viewed];
+  const resources=town?.map_resources || [];
+  const water=new Set(resources.filter(r=>r.kind==='water').map(r=>`${r.x},${r.y}`));
+  for(let x=0;x<12;x++)for(let y=0;y<12;y++){
+    const [px,py]=point(x,y),wet=water.has(`${x},${y}`);
+    polygon([[px,py],[px+tileW/2,py+tileH/2],[px,py+tileH],[px-tileW/2,py+tileH/2]],wet?((x+y)%2?'#467f91':'#518d9d'):((x+y)%2?'#638457':'#6a8b5c'),wet?'#76a9ac':'#789766');
+    if(wet){ctx.strokeStyle='#b4d7ce99';ctx.beginPath();ctx.moveTo(px-tileW*.16,py+tileH*.48);ctx.lineTo(px+tileW*.12,py+tileH*.63);ctx.stroke();}
+  }
   const buildings=town?.buildings || [{kind:'hall',x:5,y:5}];
-  for(const b of [...buildings].sort((a,b)=>(a.x+a.y)-(b.x+b.y))){
+  const villagers=(town?.villagers || []).map((v,i)=>({kind:'villager',villager:v,index:i,x:v.work_target?.x ?? 3+(i%5),y:v.work_target?.y ?? 8+Math.floor(i/5)}));
+  const objects=[...buildings,...resources.filter(r=>r.kind!=='water'),...villagers];
+  for(const b of objects.sort((a,b)=>(a.x+a.y)-(b.x+b.y))){
+    if(b.kind==='tree'||b.kind==='rock'){drawResource(b);continue;}
+    if(b.kind==='villager'){
+      const [px,py]=point(b.x,b.y),i=b.index,x=px+(i%3-1)*7,y=py+tileH*.7+Math.floor(i/3)*2;
+      ctx.fillStyle=['#e7c68c','#b7cbd2','#d7a48d'][i%3];ctx.beginPath();ctx.arc(x,y-4,3,0,Math.PI*2);ctx.fill();ctx.fillStyle='#344b48';ctx.fillRect(x-3,y,6,8);
+      if(b.villager.work_target){ctx.strokeStyle=b.villager.job==='woodcutting'?'#d4dbcb':'#d6c478';ctx.beginPath();ctx.moveTo(x+3,y+3);ctx.lineTo(x+7,y-4);ctx.stroke();}
+      continue;
+    }
     const [x,y]=point(b.x,b.y),w=tileW*.38,h=b.kind==='hall'?42:27;
     ctx.fillStyle='#223b2944';ctx.beginPath();ctx.ellipse(x,y+tileH*.7,w+6,9,0,0,Math.PI*2);ctx.fill();
     if(b.kind==='farm'){for(let r=0;r<4;r++){const [px,py]=point(b.x+r*.18,b.y+.1);polygon([[px,py+4],[px+10,py+9],[px-7,py+17],[px-17,py+12]],r%2?'#b8b458':'#80764a');}continue;}
@@ -57,13 +90,14 @@ function draw(){
     ctx.fillStyle='#3d4438';ctx.fillRect(x-6,y-h+13,5,9);
     if(b.kind==='hall'){ctx.fillStyle='#d6c478';ctx.fillRect(x,y-h-30,2,17);polygon([[x+2,y-h-30],[x+16,y-h-26],[x+2,y-h-21]],'#d6c478');}
   }
-  if(town)town.villagers.forEach((v,i)=>{const [x,y]=point(3+(i%5),8+Math.floor(i/5));ctx.fillStyle=['#e7c68c','#b7cbd2','#d7a48d'][i%3];ctx.beginPath();ctx.arc(x,y-4,3,0,Math.PI*2);ctx.fill();ctx.fillStyle='#344b48';ctx.fillRect(x-3,y,6,8);});
 }
 canvas.onclick=async event=>{
   if(!tool || viewed!==identity?.town_id)return;
   const rect=canvas.getBoundingClientRect(),dx=event.clientX-rect.left-originX,dy=event.clientY-rect.top-originY;
   const x=Math.floor(dx/tileW+dy/tileH),y=Math.floor(dy/tileH-dx/tileW);
   if(x<0||y<0||x>=12||y>=12)return;
+  const resource=world.towns[viewed].map_resources?.find(r=>r.x===x&&r.y===y);
+  if(resource){notice(resource.kind==='tree'?'Forest: place a woodcutter within 3 tile steps to gather wood.':resource.kind==='water'?'Water: place a farm within 3 tile steps to grow food.':'Rock outcrop: choose open grass for buildings.');return;}
   if(tool==='move'){if(moveIndex===null){const index=world.towns[viewed].buildings.findIndex(b=>b.x===x&&b.y===y);if(index<0){notice('Click the tile beneath a building.');return;}moveIndex=index;render();}else{await act({action:'move',index:moveIndex,x,y});moveIndex=null;render();}}
   else await act({action:'build',kind:tool,x,y});
 };

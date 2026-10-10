@@ -13,10 +13,48 @@ LOCK = threading.RLock()
 COSTS = {'home': 20, 'woodcutter': 15, 'farm': 15, 'storehouse': 25}
 JOBS = {'idle', 'woodcutting', 'farming'}
 
+RESOURCE_REACH = 3
+
+
+def map_resources(buildings):
+    occupied = {(b['x'], b['y']) for b in buildings}
+    locations = {
+        'tree': [(0, 2), (0, 3), (1, 4), (2, 0), (3, 0), (3, 1),
+                 (0, 7), (1, 8), (2, 9), (3, 10), (7, 0), (8, 1),
+                 (8, 2), (10, 6), (11, 7), (10, 9), (9, 10), (11, 11)],
+        'water': [(9, 0), (10, 0), (11, 0), (9, 1), (10, 1), (11, 1),
+                  (9, 2), (10, 2)],
+        'rock': [(10, 3), (11, 4), (0, 10)],
+    }
+    return [{'kind': kind, 'x': x, 'y': y}
+            for kind, tiles in locations.items() for x, y in tiles
+            if (x, y) not in occupied]
+
+
+def ensure_resources(town):
+    if 'map_resources' not in town:
+        town['map_resources'] = map_resources(town['buildings'])
+
+
+def work_source(town, job, worker_index):
+    building, source = {'woodcutting': ('woodcutter', 'tree'),
+                        'farming': ('farm', 'water')}[job]
+    workplaces = []
+    for b in town['buildings']:
+        if b['kind'] != building:
+            continue
+        nearby = [r for r in town['map_resources'] if r['kind'] == source
+                  and abs(r['x'] - b['x']) + abs(r['y'] - b['y']) <= RESOURCE_REACH]
+        if nearby:
+            workplaces.append((b, min(nearby, key=lambda r:
+                                      abs(r['x'] - b['x']) + abs(r['y'] - b['y']))))
+    return workplaces[worker_index % len(workplaces)][1] if workplaces else None
+
 
 def new_town(name):
     return {'name': name, 'wood': 65, 'food': 40, 'coins': 20, 'level': 1,
             'harvested': 0, 'achievements': [],
+            'map_resources': map_resources([{'x': 5, 'y': 5}]),
             'buildings': [{'kind': 'hall', 'x': 5, 'y': 5}],
             'villagers': [{'name': n, 'job': 'idle', 'woodcutting': i % 3,
                            'farming': (i + 1) % 3} for i, n in enumerate(
@@ -29,11 +67,13 @@ def capacity(town):
 
 def tick(world):
     for town in world['towns'].values():
-        kinds = {b['kind'] for b in town['buildings']}
-        for villager in town['villagers']:
+        ensure_resources(town)
+        for index, villager in enumerate(town['villagers']):
             job = villager['job']
-            resource, building = ('wood', 'woodcutter') if job == 'woodcutting' else ('food', 'farm')
-            if job != 'idle' and building in kinds and town[resource] < capacity(town):
+            resource = 'wood' if job == 'woodcutting' else 'food'
+            source = work_source(town, job, index) if job != 'idle' else None
+            villager['work_target'] = source
+            if source and town[resource] < capacity(town):
                 amount = min(1 + villager[job] // 20, capacity(town) - town[resource])
                 town[resource] += amount
                 villager[job] += 1
@@ -51,6 +91,7 @@ def tick(world):
 
 
 def command(town, data):
+    ensure_resources(town)
     action = data.get('action')
     if action == 'build':
         kind, x, y = data.get('kind'), data.get('x'), data.get('y')
@@ -58,6 +99,8 @@ def command(town, data):
             raise ValueError('Choose a building and a tile inside your town.')
         if any(b['x'] == x and b['y'] == y for b in town['buildings']):
             raise ValueError('That tile is already occupied.')
+        if any(r['x'] == x and r['y'] == y for r in town['map_resources']):
+            raise ValueError('Choose open grass; trees, water, and rocks occupy this tile.')
         if town['wood'] < COSTS[kind]:
             raise ValueError('Gather more wood first.')
         town['wood'] -= COSTS[kind]
@@ -70,6 +113,8 @@ def command(town, data):
             raise ValueError('Choose a tile inside your town.')
         if any(b['x'] == x and b['y'] == y for b in town['buildings']):
             raise ValueError('That tile is already occupied.')
+        if any(r['x'] == x and r['y'] == y for r in town['map_resources']):
+            raise ValueError('Choose open grass; trees, water, and rocks occupy this tile.')
         # Rearranging must remain possible even after spending the starting coins.
         town['coins'] = max(0, town['coins'] - 1)
         town['buildings'][index].update(x=x, y=y)
@@ -91,6 +136,9 @@ def command(town, data):
         town['coins'] += 30
     else:
         raise ValueError('Unknown action.')
+    for index, villager in enumerate(town['villagers']):
+        villager['work_target'] = (work_source(town, villager['job'], index)
+                                   if villager['job'] != 'idle' else None)
 
 
 class Handler(SimpleHTTPRequestHandler):
@@ -109,6 +157,8 @@ class Handler(SimpleHTTPRequestHandler):
     def do_GET(self):
         if self.path == '/api/world':
             with LOCK:
+                for town in WORLD['towns'].values():
+                    ensure_resources(town)
                 self.reply(200, WORLD)
         else:
             super().do_GET()

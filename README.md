@@ -28,8 +28,12 @@ encrypted transport; do not expose it through router port forwarding.
 
 ## Play
 
-- Build a woodcutter and a farm by selecting a building and clicking an empty tile.
+- Build on open grass. Place woodcutters within three horizontal/vertical tile steps
+  of trees and farms within three steps of water; workers need these nearby sources.
+- Trees and water are renewable. Rock outcrops occupy tiles but cannot be mined yet.
 - Give villagers jobs using the selectors on the right. Their skills increase as they work.
+- Workers appear at their resource spots. If a workplace is out of reach, production
+  and skill growth pause; move it closer to the source to resume.
 - Build cottages to attract residents; maintain food and add storage as needed.
 - Click **Move a building**, its grid tile, then an empty tile. Moving costs one coin,
   or is free if you have none, so rearranging is always possible.
@@ -42,6 +46,8 @@ host address to return to your town; clearing site storage loses that associatio
 There is no recovery screen yet. Back up the save file while the server is stopped.
 Towns keep producing while owners are away if the host is running. No production
 occurs while the host is stopped.
+Existing saves gain resource spots on unoccupied tiles when the host restarts;
+existing buildings stay in place. Move older workplaces near trees or water as needed.
 
 Explore mode, combat, magic, trading, and cooperative quests are not implemented yet.
 See [DESIGN.md](DESIGN.md) for agreed decisions, provisional values, and questions

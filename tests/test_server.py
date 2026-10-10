@@ -1,7 +1,7 @@
 import copy
 import unittest
 
-from server import capacity, command, new_town, tick
+from server import capacity, command, ensure_resources, new_town, tick
 
 
 class VillageRules(unittest.TestCase):
@@ -66,6 +66,54 @@ class VillageRules(unittest.TestCase):
         self.assertEqual(self.town['level'], 2)
         with self.assertRaises(ValueError):
             command(self.town, {'action': 'upgrade'})
+
+    def test_resources_reserve_tiles_without_spending_on_rejection(self):
+        for kind in ['tree', 'water', 'rock']:
+            tile = next(r for r in self.town['map_resources'] if r['kind'] == kind)
+            for action in [{'action': 'build', 'kind': 'home'}, {'action': 'move', 'index': 0}]:
+                before = copy.deepcopy(self.town)
+                with self.assertRaises(ValueError):
+                    command(self.town, dict(action, x=tile['x'], y=tile['y']))
+                self.assertEqual(self.town, before)
+
+    def test_woodcutting_pauses_outside_forest_reach_and_resumes_after_move(self):
+        command(self.town, {'action': 'build', 'kind': 'woodcutter', 'x': 6, 'y': 6})
+        command(self.town, {'action': 'job', 'index': 0, 'job': 'woodcutting'})
+        before = self.town['wood'], self.town['villagers'][0]['woodcutting']
+        tick({'towns': {'a': self.town}})
+        self.assertEqual(before, (self.town['wood'], self.town['villagers'][0]['woodcutting']))
+        self.assertIsNone(self.town['villagers'][0]['work_target'])
+        command(self.town, {'action': 'move', 'index': 1, 'x': 2, 'y': 2})
+        tick({'towns': {'a': self.town}})
+        self.assertGreater(self.town['wood'], before[0])
+        self.assertEqual(self.town['villagers'][0]['work_target']['kind'], 'tree')
+
+    def test_farming_uses_water_at_reach_boundary(self):
+        command(self.town, {'action': 'build', 'kind': 'farm', 'x': 6, 'y': 2})
+        command(self.town, {'action': 'job', 'index': 0, 'job': 'farming'})
+        food = self.town['food']
+        tick({'towns': {'a': self.town}})
+        self.assertGreater(self.town['food'], food)
+        self.assertEqual(self.town['villagers'][0]['work_target']['kind'], 'water')
+        command(self.town, {'action': 'move', 'index': 1, 'x': 5, 'y': 2})
+        food, skill = self.town['food'], self.town['villagers'][0]['farming']
+        tick({'towns': {'a': self.town}})
+        self.assertLess(self.town['food'], food)
+        self.assertEqual(self.town['villagers'][0]['farming'], skill)
+        self.assertIsNone(self.town['villagers'][0]['work_target'])
+
+    def test_legacy_towns_keep_existing_buildings_when_resources_are_added(self):
+        del self.town['map_resources']
+        self.town['buildings'].extend([{'kind': 'farm', 'x': 9, 'y': 1},
+                                       {'kind': 'woodcutter', 'x': 0, 'y': 2}])
+        buildings = copy.deepcopy(self.town['buildings'])
+        ensure_resources(self.town)
+        self.assertEqual(self.town['buildings'], buildings)
+        occupied = {(b['x'], b['y']) for b in buildings}
+        self.assertFalse(any((r['x'], r['y']) in occupied for r in self.town['map_resources']))
+        resources = copy.deepcopy(self.town['map_resources'])
+        ensure_resources(self.town)
+        self.assertEqual(resources, self.town['map_resources'])
 
 
 if __name__ == '__main__':

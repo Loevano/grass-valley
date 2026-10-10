@@ -85,6 +85,11 @@ These are starting values to make the prototype playable, **not final design dec
 - Cottages, woodcutters, farms, and storehouses occupy one tile each.
 - Move a building instantly for one coin, preserving its identity. If you have no coins, moving is free so rearranging never becomes locked.
 - Every three seconds, assigned workers produce resources and gain skill if storage has room.
+- Town maps contain renewable forests and water, plus rock outcrops. Woodcutters
+  need a tree within three horizontal/vertical tile steps; farms need water within
+  the same reach. Workers appear at the source. Buildings use open grass tiles.
+  Rock mining and resource depletion are not implemented. Existing saves gain
+  resources only on unoccupied tiles, preserving their buildings.
 - Storage starts at 100 per resource; each storehouse adds 100. Full storage pauses that resource's production.
 - Food is consumed over time. Shortages pause arrivals; nobody dies or leaves.
 - Each cottage adds room for two villagers, up to 16 in the prototype.
@@ -99,6 +104,7 @@ These are starting values to make the prototype playable, **not final design dec
 **First village prototype:** LAN host, four persistent towns, host-side simulation,
 building placement/movement, jobs, individual skill growth, housing/food needs,
 storage, a town milestone and a chosen upgrade, view other towns, automatic saving.
+Visible map resources, source-dependent production, and workers at gathering spots.
 
 **Planned:** roads, richer upgrade choices, trading, shared explorable wilderness,
 WASD character controls, equipment and magic, instanced cooperative quests,
