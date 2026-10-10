@@ -65,6 +65,11 @@ encrypted transport; do not expose it through router port forwarding.
   or **Cancel selection** to clear it. Place woodcutters within three horizontal/vertical tile steps
   of trees and farms within three steps of water; workers need these nearby sources.
 - Trees and water are renewable. Rock outcrops occupy tiles but cannot be mined yet.
+- Select a farm and choose **Build acre · 5 wood**, then click open ground within
+  three tile steps of that farm. Farmers tend its acres and deliver food back to
+  the farm; water must still be within three steps of the farm. Farms without
+  nearby acres continue their existing production. Acres are saved with their farm
+  association; moving the farm out of reach pauses work on those fields.
 - Click a building, moving villager, or resource to open its information panel.
   Click the town hall for milestone progress and its upgrade. Close panels with
   **Close panel** or Escape. On small screens, panels appear as a bottom drawer.

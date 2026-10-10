@@ -31,7 +31,7 @@ const WorkerAnimation = (() => {
     // Match the host's workplace selection, including multiple assigned workers.
     const workplaces=town.buildings.filter(b=>b.kind===kind&&town.map_resources.some(r=>
       r.kind===(kind==='woodcutter'?'tree':'water')&&distance(b,r)<=3));
-    const workplace=workplaces[index%workplaces.length];
+    const workplace=source?.kind==='acre'?town.buildings[source.farm_index]:workplaces[index%workplaces.length];
     const home=workplace || town.buildings.find(b=>b.kind==='hall');
     const path=source?route(start,source,blocked):home?route(start,home,blocked):[];
     return {...start,phase:path===null?'waiting':path.length?'walking':source?'working':'idle',

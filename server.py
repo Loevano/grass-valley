@@ -16,7 +16,7 @@ from npcs import ensure_npcs
 ROOT = Path(__file__).resolve().parent
 SAVE = ROOT / 'savegame.json'
 LOCK = threading.RLock()
-COSTS = {'home': 20, 'woodcutter': 15, 'farm': 15, 'storehouse': 25}
+COSTS = {'home': 20, 'woodcutter': 15, 'farm': 15, 'storehouse': 25, 'acre': 5}
 JOBS = {'idle', 'woodcutting', 'farming'}
 
 RESOURCE_REACH = 3
@@ -108,12 +108,18 @@ def work_source(town, job, worker_index):
     building, source = {'woodcutting': ('woodcutter', 'tree'),
                         'farming': ('farm', 'water')}[job]
     workplaces = []
-    for b in town['buildings']:
+    for farm_index, b in enumerate(town['buildings']):
         if b['kind'] != building:
             continue
         nearby = [r for r in town['map_resources'] if r['kind'] == source
                   and abs(r['x'] - b['x']) + abs(r['y'] - b['y']) <= RESOURCE_REACH]
         if nearby:
+            if job == 'farming':
+                acres = [a for a in town['buildings'] if a['kind'] == 'acre'
+                         and a.get('farm_index') == farm_index
+                         and abs(a['x'] - b['x']) + abs(a['y'] - b['y']) <= RESOURCE_REACH]
+                if acres:
+                    nearby = [acres[worker_index % len(acres)]]
             workplaces.append((b, min(nearby, key=lambda r:
                                       abs(r['x'] - b['x']) + abs(r['y'] - b['y']))))
     return workplaces[worker_index % len(workplaces)][1] if workplaces else None
@@ -162,6 +168,15 @@ def tick(world):
             town['achievements'].append('Timber roots')
 
 
+def validate_acre(town, farm_index, x, y):
+    if (type(farm_index) is not int or not 0 <= farm_index < len(town['buildings'])
+            or town['buildings'][farm_index]['kind'] != 'farm'):
+        raise ValueError('Select a farm before building an acre.')
+    farm = town['buildings'][farm_index]
+    if abs(x - farm['x']) + abs(y - farm['y']) > RESOURCE_REACH:
+        raise ValueError('Place acres within 3 tile steps of their farm.')
+
+
 def command(town, data):
     ensure_resources(town)
     action = data.get('action')
@@ -188,8 +203,13 @@ def command(town, data):
             raise ValueError('Walk away from this tile before building here.')
         if town['wood'] < COSTS[kind]:
             raise ValueError('Gather more wood first.')
+        if kind == 'acre':
+            validate_acre(town, data.get('farm_index'), x, y)
         town['wood'] -= COSTS[kind]
-        town['buildings'].append({'kind': kind, 'x': x, 'y': y})
+        building = {'kind': kind, 'x': x, 'y': y}
+        if kind == 'acre':
+            building['farm_index'] = data['farm_index']
+        town['buildings'].append(building)
     elif action == 'move':
         index, x, y = data.get('index'), data.get('x'), data.get('y')
         if type(index) is not int or not 0 <= index < len(town['buildings']):
@@ -203,6 +223,8 @@ def command(town, data):
         player = ensure_player(town)
         if abs(player['x'] - x) < .68 and abs(player['y'] - y) < .68:
             raise ValueError('Walk away from this tile before moving a building here.')
+        if town['buildings'][index]['kind'] == 'acre':
+            validate_acre(town, town['buildings'][index].get('farm_index'), x, y)
         # Rearranging must remain possible even after spending the starting coins.
         town['coins'] = max(0, town['coins'] - 1)
         town['buildings'][index].update(x=x, y=y)

@@ -8,6 +8,7 @@ try {
 } catch { identities = {}; }
 let world = {towns:{}}, viewed = null, tool = null, moveIndex = null;
 let buildTile = null, building = false, hoverTile = null;
+let acreFarmIndex = null;
 let panel = null, selection = null, hitTargets = [], keyboardTile = null;
 let catalog = {worlds:[], can_manage:false}, menuStarted = false, refreshing = null, menuBusy = false, deletingWorld = null;
 let tileW = 46, tileH = 23, originX = 0, originY = 0;
@@ -105,8 +106,8 @@ function playerSprite(town,seconds){
   }
   return {kind:'player',x:s.x,y:s.y,index:1,state:s,villager:{job:'idle'},active:false};
 }
-const labels = {hall:'Town hall',home:'Cottage',woodcutter:'Woodcutter',farm:'Farm',storehouse:'Storehouse'};
-const costs = {home:20,woodcutter:15,farm:15,storehouse:25};
+const labels = {hall:'Town hall',home:'Cottage',woodcutter:'Woodcutter',farm:'Farm',storehouse:'Storehouse',acre:'Acre'};
+const costs = {home:20,woodcutter:15,farm:15,storehouse:25,acre:5};
 const colors = {hall:'#a88861',home:'#c5ad80',woodcutter:'#947b55',farm:'#bc9b5c',storehouse:'#8c9b8b'};
 // Small vector illustrations share the map's earth, sage, and amber palette.
 const iconPaths = {
@@ -121,6 +122,7 @@ const iconPaths = {
   storehouse:'<path fill="#8c9b8b" d="M4 13h24v16H4z"/><path fill="#647876" d="M2 14 16 4l14 10z"/><path fill="#ad895c" d="M8 18h8v11H8zm10 4h8v7h-8z"/><path d="m8 18 8 11m0-11L8 29m10-7 8 7"/>',
   tree:'<path fill="#775b3e" d="M14 16h4v14h-4z"/><path fill="#56814c" d="m16 2 13 22H3z"/><path fill="#719451" d="m16 2 9 15H7z"/>',
   water:'<path fill="#6ba2af" d="M16 2C12 10 5 15 5 21a11 11 0 0 0 22 0c0-6-7-11-11-19z"/><path d="M10 21q0 6 7 6"/>',
+  acre:'<path fill="#80764a" d="m2 19 15-8 13 8-15 10z"/><path d="m8 20 12-6m-8 9 12-6m-8 9 12-6"/><path fill="#d9bd70" d="M8 12h4v8H8zm8-6h4v9h-4zm8 6h4v8h-4z"/>',
   rock:'<path fill="#89928a" d="m3 25 3-15 12-7 11 12-3 12-13 3z"/><path fill="#b1baa8" d="m6 10 12-7 11 12-14 3z"/>'
 };
 function illustration(kind){
@@ -281,7 +283,7 @@ function renderSelection(town){
     if(item.kind==='home')$('selection-details').append(fact('+2','Villager spaces'));
     if(item.kind==='storehouse')$('selection-details').append(fact(100+100*town.buildings.filter(b=>b.kind==='storehouse').length,'Capacity per resource'));
     if(item.kind==='hall')$('selection-details').append(fact(town.level,'Hall level'));
-    p.textContent={hall:'The heart of your settlement. Harvest wood to unlock your first upgrade.',home:'Room for 2 additional villagers, up to 16 in the town. New residents need available housing and sufficient food.',storehouse:`Adds 100 storage for each resource. Town capacity: ${100+100*town.buildings.filter(b=>b.kind==='storehouse').length} wood and food.`,woodcutter:'A workplace for gathering wood from nearby trees.',farm:'A workplace for growing food near water.'}[item.kind];
+    p.textContent={hall:'The heart of your settlement. Harvest wood to unlock your first upgrade.',home:'Room for 2 additional villagers, up to 16 in the town. New residents need available housing and sufficient food.',storehouse:`Adds 100 storage for each resource. Town capacity: ${100+100*town.buildings.filter(b=>b.kind==='storehouse').length} wood and food.`,woodcutter:'A workplace for gathering wood from nearby trees.',farm:'A workplace for growing food near water. Build acres nearby for farmers to tend.',acre:'A crop field tended by farmers from its farm. Its farm needs water within 3 tile steps to produce food.'}[item.kind];
     if(item.kind==='hall'){
       $('hall-details').hidden=false;
       $('hall-progress').value=Math.min(30,town.harvested);
@@ -293,6 +295,11 @@ function renderSelection(town){
     $('selection-move').onclick=()=>{const index=selection.index;openPanel('build');tool='move';moveIndex=index;render();};
     $('selection-destroy').hidden=viewed!==identity?.town_id || item.kind==='hall';
     $('selection-details').append(p);
+    if(item.kind==='farm'&&viewed===identity?.town_id){
+      const button=document.createElement('button');button.textContent='Build acre · 5 wood';button.disabled=town.wood<costs.acre;
+      button.onclick=()=>{acreFarmIndex=selection.index;openPanel('build');tool='acre';moveIndex=null;buildTile=null;hoverTile=null;render();};
+      $('selection-details').append(button);
+    }
     if(item.kind==='woodcutter'||item.kind==='farm'){
       const assigned=town.villagers.map((v,i)=>({v,i,state:workers.get(i)})).filter(w=>w.v.job===(item.kind==='woodcutter'?'woodcutting':'farming')&&w.state?.home?.x===item.x&&w.state?.home?.y===item.y);
       const status=document.createElement('p');status.className='workplace-status';
@@ -304,16 +311,17 @@ function renderSelection(town){
   }
   if(selection.type==='resource')$('selection-details').append(p);
 }
-for(const [kind,cost] of Object.entries(costs)){const button=document.createElement('button');button.textContent=`${labels[kind]} · ${cost} wood`;button.append(illustration(kind));button.onclick=()=>{panel='build';selection=null;tool=kind;moveIndex=null;buildTile=null;hoverTile=null;render();};$('buildings').append(button);}
+for(const [kind,cost] of Object.entries(costs).filter(([kind])=>kind!=='acre')){const button=document.createElement('button');button.textContent=`${labels[kind]} · ${cost} wood`;button.append(illustration(kind));button.onclick=()=>{panel='build';selection=null;tool=kind;moveIndex=null;buildTile=null;hoverTile=null;render();};$('buildings').append(button);}
 $('move').onclick=()=>{panel='build';selection=null;tool='move';moveIndex=null;buildTile=null;hoverTile=null;render();};
 $('cancel').onclick=()=>{tool=null;moveIndex=null;buildTile=null;hoverTile=null;render();};
 async function buildAt(x,y){
   const town=world.towns[viewed];
   if(building || !costs[tool] || viewed!==identity?.town_id || !town || town.wood<costs[tool])return;
   const selected={x,y},kind=tool;
+  if(kind==='acre'&&!acrePlacementValid(town,selected,acreFarmIndex)){notice('Place acres within 3 tile steps of their farm.');return;}
   building=true;render();
   try{
-    await request('/api/command',{action:'build',kind,...selected,world_id:world.world_id});
+    await request('/api/command',{action:'build',kind,...selected,...(kind==='acre'?{farm_index:acreFarmIndex}:{}),world_id:world.world_id});
     if(tool===kind&&buildTile?.x===x&&buildTile?.y===y){buildTile=null;hoverTile=null;}
     await refresh();
   }catch(e){notice(e.message);await refresh();}
@@ -587,7 +595,7 @@ function draw(seconds=0){
     const index=character?b.index:type==='resource'?resources.indexOf(b):buildings.indexOf(b);
     const centerX=px+(character?(b.index%3-1)*3:0);
     const baseY=py+(character?tileH*.65+Math.floor(b.index/3):tileH/2);
-    hitTargets.push({type,index,left:centerX-(character?9*scale:tileW*.45),right:centerX+(character?9*scale:tileW*.45),top:baseY-(b.kind==='tree'?70:b.kind==='hall'?75:character?26:b.kind==='farm'?0:45)*scale,bottom:baseY+(character?5*scale:tileH/2)});
+    hitTargets.push({type,index,left:centerX-(character?9*scale:tileW*.45),right:centerX+(character?9*scale:tileW*.45),top:baseY-(b.kind==='tree'?70:b.kind==='hall'?75:character?26:(b.kind==='farm'||b.kind==='acre')?0:45)*scale,bottom:baseY+(character?5*scale:tileH/2)});
     if(character&&selection?.type===type&&selection.index===b.index){
       ctx.fillStyle='#fff0b144';ctx.strokeStyle='#fff0b1';ctx.lineWidth=2;ctx.beginPath();ctx.ellipse(centerX,baseY,12*scale,6*scale,0,0,Math.PI*2);ctx.fill();ctx.stroke();
     }
@@ -603,14 +611,29 @@ function draw(seconds=0){
     ctx.save();ctx.globalAlpha=valid ? .65 : .35;drawBuilding({...preview,kind:previewKind});ctx.restore();
   }
 }
+function acrePlacementValid(town,tile,index){
+  const farm=town.buildings[index];
+  return farm?.kind==='farm'&&Math.abs(tile.x-farm.x)+Math.abs(tile.y-farm.y)<=3;
+}
 function placementValid(town,tile,kind){
   return town.terrain?.[tile.y]?.[tile.x]!=='v'
+    && (kind!=='acre'||acrePlacementValid(town,tile,tool==='move'?town.buildings[moveIndex]?.farm_index:acreFarmIndex))
     && !town.buildings.some(b=>b.x===tile.x&&b.y===tile.y)
     && !(town.npcs || []).some(n=>n.x===tile.x&&n.y===tile.y)
     && !town.map_resources.some(r=>r.x===tile.x&&r.y===tile.y)
     && (tool==='move' || town.wood>=costs[kind]);
 }
 function drawBuilding(b){
+  if(b.kind==='acre'){
+    const [x,y]=point(b.x,b.y);
+    polygon([[x,y+tileH*.1],[x+tileW*.4,y+tileH*.5],[x,y+tileH*.9],[x-tileW*.4,y+tileH*.5]],'#80764a','#ab9561');
+    for(let row=0;row<4;row++)for(let crop=0;crop<4;crop++){
+      const [px,py]=point(b.x-.3+row*.2,b.y-.3+crop*.2);
+      ctx.strokeStyle=(row+crop)%2?'#d9bd70':'#b8b458';ctx.lineWidth=2*tileW/46;
+      ctx.beginPath();ctx.moveTo(px,py+tileH/2);ctx.lineTo(px,py+tileH/2-5*tileW/46);ctx.stroke();
+    }
+    return;
+  }
   if(b.kind==='farm'){
     const [x,y]=point(b.x,b.y),w=tileW*.38;
     ctx.fillStyle='#223b2944';ctx.beginPath();ctx.ellipse(x,y+tileH*.7,w+6,9,0,0,Math.PI*2);ctx.fill();
@@ -683,7 +706,7 @@ function tileAt(event){
 canvas.onmousemove=event=>{
   const town=world.towns[viewed],tile=tileAt(event);
   buildTile=costs[tool]&&viewed===identity?.town_id&&town&&tile.x>=0&&tile.y>=0&&tile.x<12&&tile.y<12
-    &&town.terrain?.[tile.y]?.[tile.x]!=='v'&&!(town.npcs || []).some(n=>n.x===tile.x&&n.y===tile.y)&&!town.buildings.some(b=>b.x===tile.x&&b.y===tile.y)&&!town.map_resources.some(r=>r.x===tile.x&&r.y===tile.y)?tile:null;
+    &&(tool!=='acre'||acrePlacementValid(town,tile,acreFarmIndex))&&town.terrain?.[tile.y]?.[tile.x]!=='v'&&!(town.npcs || []).some(n=>n.x===tile.x&&n.y===tile.y)&&!town.buildings.some(b=>b.x===tile.x&&b.y===tile.y)&&!town.map_resources.some(r=>r.x===tile.x&&r.y===tile.y)?tile:null;
   hoverTile=(costs[tool]||tool==='move'&&moveIndex!==null)&&viewed===identity?.town_id&&town&&tile.x>=0&&tile.y>=0&&tile.x<(town.map_size || 12)&&tile.y<(town.map_size || 12)?tile:null;
   draw();
 };
