@@ -1,0 +1,17 @@
+<!doctype html>
+<html lang="en">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Lantern Vale</title><link rel="stylesheet" href="style.css"></head>
+<body>
+<header><div><span class="eyebrow">A LITTLE WORLD, TOGETHER</span><h1>Lantern Vale</h1></div><div id="resources" aria-live="polite">Your village awaits</div></header>
+<main>
+<aside>
+<section id="join"><h2>Put down roots</h2><p>A quiet medieval valley. A town of your own. Room for friends.</p><form id="join-form"><label for="name">Town name</label><input id="name" maxlength="24" placeholder="Willowbrook" required><button>Found your town</button></form></section>
+<section id="controls" hidden><span class="eyebrow">YOUR SETTLEMENT</span><h2 id="town-name"></h2><p id="hint">Choose a building, then click a tile.</p><div id="buildings"></div><button id="move">Move a building · 1 coin</button><button id="cancel" class="quiet">Cancel selection</button><h3>Town hall</h3><p id="progress"></p><button id="upgrade">Choose hall upgrade · 40 wood</button></section>
+<section><h3>Across the valley</h3><div id="towns">Waiting for settlers…</div><p class="muted">Visit a friend's town to see it grow. Each town belongs to its founder.</p></section>
+</aside>
+<div class="scene"><div class="scene-label"><span class="eyebrow">THE GREEN VALLEY</span><h2 id="view-title">A place to call home</h2></div><canvas id="world" aria-label="Angled town grid. Select a building then click a tile to build."></canvas><div class="scene-footer">Safe towns · Shared world · No rush</div></div>
+<aside><span class="eyebrow">THE HEART OF YOUR TOWN</span><h2>Villagers</h2><p class="muted">Give everyone a purpose. Skills grow as they work.</p><div id="villagers">Found a town to meet your villagers.</div><section><h3>A gentle beginning</h3><p>Build a woodcutter and a farm. Assign workers, add homes, and welcome new neighbors.</p><p class="muted">Adventures and magic are planned for a later version.</p></section></aside>
+</main>
+<div id="notice" role="status" aria-live="polite"></div>
+<script src="app.js"></script>
+</body></html>
