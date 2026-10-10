@@ -7,6 +7,7 @@ const ctx=new Proxy({fillRect(){colors.push(this.fillStyle);}}, {get:(target,key
 const harness=new Function('WorkerAnimation','ctx','polygon','point','tileW','tileH','npcColors',`
   let world,viewed='own',workerTown=null;
   const workers=new Map();
+  ${source.slice(source.indexOf('function buildingLevel('),source.indexOf('function upgradeBenefit('))}
   ${source.slice(source.indexOf('function animatedVillagers('),source.indexOf('let npcClock='))}
   ${source.slice(source.indexOf('function villagerAccessories('),source.indexOf('function draw(seconds=0)'))}
   return {setWorld(value){world=value;},frame(town,seconds){

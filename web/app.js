@@ -191,6 +191,11 @@ function remotePlayerSprite(townId,town,seconds){
   return {kind:'player',townId,x:state.x,y:state.y,index:1,villager:{job:'idle'},active:false,state};
 }
 const labels = {hall:'Town hall',home:'Cottage',woodcutter:'Woodcutter',farm:'Farm',storehouse:'Storehouse',fishing_hut:'Fishing hut',acre:'Acre'};
+function buildingLevel(building){return building.level || 1;}
+function storageCapacity(town){return 100+100*town.buildings.filter(b=>b.kind==='storehouse'&&!b.construction).reduce((sum,b)=>sum+buildingLevel(b),0);}
+function upgradeBenefit(kind,level){
+  return kind==='home'?`${2*level} villager spaces`:kind==='storehouse'?`${100*level} storage per resource`:`+${25*(level-1)}% ${kind==='woodcutter'?'wood':kind==='fishing_hut'?'food per successful catch':kind==='acre'?'food from this field':'food'} per worker`;
+}
 const costs = {home:20,woodcutter:15,farm:15,storehouse:25,fishing_hut:15,acre:5};
 const colors = {hall:'#a88861',home:'#c5ad80',woodcutter:'#947b55',farm:'#bc9b5c',storehouse:'#8c9b8b',fishing_hut:'#7899a2'};
 // Small vector illustrations share the map's earth, sage, and amber palette.
@@ -317,7 +322,7 @@ function villagerCard(town,v,index,withLink=false){
   if(withLink){name.className='villager-name';name.onclick=()=>inspect('villager',index);}div.append(name);
   div.append(skillBar('Woodcutting',v.woodcutting));div.append(skillBar('Farming',v.farming));div.append(skillBar('Fishing',v.fishing || 0));
   const resource=v.job==='woodcutting'?'wood':'food';
-  const full=town[resource]>=100+100*town.buildings.filter(b=>b.kind==='storehouse'&&!b.construction).length;
+  const full=town[resource]>=storageCapacity(town);
   const activity=document.createElement('small');activity.textContent=v.construction_target?(v.construction_arrived?'Building at the construction site':'Walking to the construction site'):v.job==='building'?'Waiting for construction':v.job==='idle'?'Resting':v.work_target?(full?`Paused: ${resource} storage full. Spend ${resource} or build a storehouse.`:v.job==='woodcutting'?'Gathering at the forest':v.job==='fishing'?'Fishing by the water':'Tending crops by the water'):'Waiting for a workplace near '+(v.job==='woodcutting'?'trees':'water');div.append(activity);
   const select=document.createElement('select');select.setAttribute('aria-label',`Job for ${v.name}`);
   for(const [job,label] of [['idle','Resting'],['building','Builder'],['woodcutting','Woodcutting'],['farming','Farming'],['fishing','Fishing']]){const option=document.createElement('option');option.value=job;option.textContent=label;select.append(option);}
@@ -367,13 +372,13 @@ function renderSelection(town){
     p.textContent={tree:'Renewable wood source. Place a woodcutter within 3 horizontal or vertical tile steps, then assign a villager to woodcutting.',water:'Renewable source for farming and fishing. Place a farm or fishing hut within 3 horizontal or vertical tile steps, then assign a villager to farming or fishing.',rock:'This outcrop occupies its tile. Mining is not available yet.'}[item.kind];
   }else{
     $('selection-title').textContent=labels[item.kind];
-    if(item.kind==='home'&&!item.construction)$('selection-details').append(fact('+2','Villager spaces'));
-    if(item.kind==='storehouse')$('selection-details').append(fact(100+100*town.buildings.filter(b=>b.kind==='storehouse'&&!b.construction).length,'Capacity per resource'));
+    if(item.kind==='home'&&!item.construction)$('selection-details').append(fact(`+${2*buildingLevel(item)}`,'Villager spaces'));
+    if(item.kind==='storehouse')$('selection-details').append(fact(storageCapacity(town),'Capacity per resource'));
     if(item.kind==='hall'){
       $('selection-details').append(fact(town.level,'Hall level'));
       $('selection-details').append(fact(`${buildingRange(town)} tile steps`,'Building range'));
     }
-    p.textContent={hall:'The heart of your settlement. Harvest wood to unlock upgrades through level 10. Each completed upgrade awards coins.',home:'Room for 2 additional villagers, up to 16 in the town. New residents need available housing and sufficient food.',storehouse:`Adds 100 storage for each resource. Town capacity: ${100+100*town.buildings.filter(b=>b.kind==='storehouse'&&!b.construction).length} wood and food.`,woodcutter:'A workplace for gathering wood from nearby trees.',farm:'A workplace for growing food near water. Build acres nearby for farmers to tend.',fishing_hut:'A workplace for catching fish for food near water.',acre:'A crop field tended by farmers from its farm. Its farm needs water within 3 tile steps to produce food.'}[item.kind];
+    p.textContent={hall:'The heart of your settlement. Harvest wood to unlock upgrades through level 10. Each completed upgrade awards coins.',home:`Room for ${2*buildingLevel(item)} additional villagers, up to 16 in the town. New residents need available housing and sufficient food.`,storehouse:`Adds ${100*buildingLevel(item)} storage for each resource. Town capacity: ${storageCapacity(town)} wood and food.`,woodcutter:'A workplace for gathering wood from nearby trees.',farm:'A workplace for growing food near water. Build acres nearby for farmers to tend.',fishing_hut:'A workplace for catching fish for food near water.',acre:'A crop field tended by farmers from its farm. Its farm needs water within 3 tile steps to produce food.'}[item.kind];
     if(item.kind==='hall'){
       p.textContent+=` Build within ${buildingRange(town)} horizontal and vertical tile steps of the hall; diagonals count as 2.${town.level<2?' Upgrading expands the range to 15 steps.':''}`;
       $('hall-details').hidden=false;
@@ -401,6 +406,20 @@ function renderSelection(town){
       const progress=document.createElement('progress');progress.max=c.total;progress.value=c.progress;progress.setAttribute('aria-label',`${labels[item.kind]} construction`);$('selection-details').append(progress);
     }
     $('selection-details').append(p);
+    if(costs[item.kind]){
+      const level=buildingLevel(item),cost=costs[item.kind]*level;
+      $('selection-details').append(fact(level,'Building level'));
+      if(!item.construction)$('selection-details').append(fact(upgradeBenefit(item.kind,level),'Current benefit'));
+      if(item.kind==='farm'||item.kind==='acre'){
+        const note=document.createElement('p');note.textContent='Farm and acre production bonuses add together when tending that field.';$('selection-details').append(note);
+      }
+      const button=document.createElement('button');
+      button.textContent=level>=3?'Fully upgraded · Level 3':`Upgrade to level ${level+1} · ${cost} wood · ${upgradeBenefit(item.kind,level+1)}`;
+      button.disabled=!!item.construction||level>=3||town.wood<cost||viewed!==identity?.town_id;
+      const index=selection.index;
+      button.onclick=()=>{if(!button.disabled&&viewed===identity?.town_id)act({action:'upgrade_building',index});};
+      $('selection-details').append(button);
+    }
     if(item.kind==='farm'&&!item.construction&&viewed===identity?.town_id){
       const button=document.createElement('button');button.textContent='Build acre · 5 wood';button.disabled=town.wood<costs.acre;
       button.onclick=()=>{acreFarmIndex=selection.index;openPanel('build');tool='acre';moveIndex=null;buildTile=null;hoverTile=null;render();};
@@ -543,7 +562,7 @@ function animatedVillagers(town, seconds, townId=viewed, frameLayout=null){
     }
     const resource=villager.job==='woodcutting'?'wood':'food';
     state.latestFishingCatch=villager.fishing_catch;
-    const active=!!villager.construction_target || town[resource]<100+100*town.buildings.filter(b=>b.kind==='storehouse'&&!b.construction).length;
+    const active=!!villager.construction_target || town[resource]<storageCapacity(town);
     WorkerAnimation.advance(state,seconds,active);
     return {kind:'villager',townId,villager,index,x:state.x,y:state.y,state,active};
   });

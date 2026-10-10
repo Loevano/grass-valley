@@ -134,7 +134,7 @@ def ensure_resources(town):
     ensure_npcs(town)
 
 
-def work_source(town, job, worker_index):
+def work_assignment(town, job, worker_index):
     if job == 'building':
         return None
     building, source = {'woodcutting': ('woodcutter', 'tree'),
@@ -155,7 +155,21 @@ def work_source(town, job, worker_index):
                     nearby = [acres[worker_index % len(acres)]]
             workplaces.append((b, min(nearby, key=lambda r:
                                       abs(r['x'] - b['x']) + abs(r['y'] - b['y']))))
-    return workplaces[worker_index % len(workplaces)][1] if workplaces else None
+    return workplaces[worker_index % len(workplaces)] if workplaces else None
+
+
+def work_source(town, job, worker_index):
+    assignment = work_assignment(town, job, worker_index)
+    return assignment[1] if assignment else None
+
+
+def building_level(building):
+    return building.get('level', 1)
+
+
+def production_bonus(building):
+    return .25 * (building_level(building) - 1)
+
 
 
 def new_town(name, world=None):
@@ -180,7 +194,8 @@ def new_town(name, world=None):
 
 
 def capacity(town):
-    return 100 + 100 * sum(b['kind'] == 'storehouse' and completed(b) for b in town['buildings'])
+    return 100 + 100 * sum(building_level(b) for b in town['buildings']
+                           if b['kind'] == 'storehouse' and completed(b))
 
 
 def completed(building):
@@ -283,7 +298,8 @@ def tick(world):
         for index, villager in enumerate(town['villagers']):
             job = villager['job']
             resource = 'wood' if job == 'woodcutting' else 'food'
-            source = work_source(town, job, index) if job != 'idle' else None
+            assignment = work_assignment(town, job, index) if job != 'idle' else None
+            source = assignment[1] if assignment else None
             villager['work_target'] = source
             if source and town[resource] < capacity(town):
                 caught = True
@@ -294,6 +310,10 @@ def tick(world):
                         'caught': caught,
                     }
                 rate = .5 if job == 'woodcutting' else 1
+                bonus = production_bonus(assignment[0])
+                if source['kind'] == 'acre':
+                    bonus += production_bonus(source)
+                rate *= 1 + bonus
                 amount = min(rate * (1 + villager.get(job, 0) // 20),
                              capacity(town) - town[resource])
                 if caught:
@@ -305,7 +325,8 @@ def tick(world):
         town['food'] = max(0, town['food'] - len(town['villagers']) * 0.12
                            - WORKER_FOOD * sum(v['job'] != 'idle' or bool(v.get('construction_target'))
                                                for v in town['villagers']))
-        homes = sum(b['kind'] == 'home' and completed(b) for b in town['buildings'])
+        homes = sum(building_level(b) for b in town['buildings']
+                    if b['kind'] == 'home' and completed(b))
         if len(town['villagers']) < min(5 + homes * 2, 16) and town['food'] >= 20:
             town['food'] -= 10
             town['villagers'].append({'name': 'Settler ' + str(len(town['villagers']) + 1),
@@ -413,6 +434,23 @@ def command(town, data, world=None):
         if required and not any(b['kind'] == required and completed(b) for b in town['buildings']):
             raise ValueError('Build a ' + required + ' first.')
         town['villagers'][index]['job'] = job
+    elif action == 'upgrade_building':
+        index = data.get('index')
+        if type(index) is not int or not 0 <= index < len(town['buildings']):
+            raise ValueError('Choose a building first.')
+        building = town['buildings'][index]
+        if building['kind'] not in COSTS:
+            raise ValueError('Use the town hall upgrade instead.')
+        if not completed(building):
+            raise ValueError('Finish construction before upgrading.')
+        level = building_level(building)
+        if level >= 3:
+            raise ValueError('This building is fully upgraded.')
+        cost = COSTS[building['kind']] * level
+        if town['wood'] < cost:
+            raise ValueError(f'Gather {cost} wood to upgrade this building.')
+        town['wood'] -= cost
+        building['level'] = level + 1
     elif action == 'upgrade':
         if town.get('upgrade_remaining'):
             raise ValueError('Your hall upgrade is already underway.')

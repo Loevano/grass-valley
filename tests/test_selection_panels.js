@@ -149,6 +149,17 @@ const run=new Function('document','window','localStorage','setTimeout','clearTim
     check(commands.at(-1).action==='destroy'&&commands.at(-1).index===1&&commands.at(-1).world_id==='test','Destroy sends selected building and world');
     release();await pending;
     check(town.buildings.length===1&&selection===null&&panel===null,'Successful destruction removes building and closes selection');
+    act=async data=>{commands.push(data);};
+    town.buildings.push({kind:'home',x:6,y:3});town.wood=65;
+    inspect('building',1);
+    function buildingUpgrade(){return $('selection-details').children.find(child=>child.tag==='button'&&(/Upgrade to level|Fully upgraded/.test(child.textContent)));}
+    check(buildingUpgrade().textContent.includes('20 wood')&&buildingUpgrade().textContent.includes('4 villager spaces'),'Cottage upgrade previews cost and housing');
+    buildingUpgrade().onclick();check(commands.at(-1).action==='upgrade_building'&&commands.at(-1).index===1,'Upgrade targets the selected building');
+    town.wood=19;render();check(buildingUpgrade().disabled,'Building upgrade requires wood');
+    town.wood=65;town.buildings[1].construction={progress:0,total:30};render();check(buildingUpgrade().disabled,'Unfinished buildings cannot upgrade');
+    delete town.buildings[1].construction;town.buildings[1].level=3;render();check(buildingUpgrade().disabled&&buildingUpgrade().textContent.includes('Fully upgraded'),'Level 3 is the building limit');
+    friend.buildings[1].level=1;viewed='friend';inspect('building',1);check(buildingUpgrade().disabled,'Visitor cannot upgrade buildings');
+    town.buildings.push({kind:'storehouse',level:3,x:7,y:3});check(storageCapacity(town)===400,'Client storage reflects upgraded storehouses');
     identity=null;render();check($('find-player-button').disabled,'Players must own a town to use Find me');
   })();`);
 run(documentMock,{devicePixelRatio:1,addEventListener(key,callback){listeners[key]=callback;}},{getItem:()=>null},()=>0,()=>{},animation,listeners)

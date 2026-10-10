@@ -126,6 +126,15 @@ the Python host, refresh both browsers, and create a new world to use the shared
   takes 30 seconds of construction after arrival; the hall
   panel shows remaining time. Closing the host pauses the upgrade.
 - Build cottages to attract residents; maintain food and add storage as needed.
+- Select any completed cottage, storehouse, woodcutter, farm, fishing hut, or acre
+  to upgrade it immediately through level 3. Each upgrade costs its original
+  building price multiplied by its current level; the panel previews the benefit.
+  Cottages provide 2/4/6 housing spaces (the town limit stays 16), and storehouses
+  add 100/200/300 capacity for both wood and food. Woodcutters, farms, fishing huts,
+  and acres gain 25% production per worker at level 2 and 50% at level 3.
+  Farm and acre bonuses add together on that field. Fishing bonuses increase food
+  from successful catches; the 80% catch chance stays the same. Workers still need
+  nearby resources. Upgrades survive saving and moving the building.
 - Click a building, then **Destroy building** to remove it without a resource
   refund. The town hall cannot be destroyed. Removing workplaces pauses affected
   workers until another suitable workplace is available; existing residents stay.
