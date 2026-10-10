@@ -44,7 +44,154 @@
 <section id="selection-panel" hidden aria-labelledby="selection-title"><span class="eyebrow">A CLOSER LOOK</span><h2 id="selection-title"></h2><div id="selection-details"></div><div id="hall-details" hidden><p id="progress"></p><progress id="hall-progress" max="30" value="0" aria-label="Timber roots: wood harvested out of 30"></progress><button id="upgrade">Choose hall upgrade · 40 wood</button></div><button id="selection-move" hidden>Move building · 1 coin</button><button id="selection-destroy" class="danger" hidden>Destroy building · No refund</button></section>
 <section id="villagers-panel" hidden><span class="eyebrow">THE HEART OF YOUR TOWN</span><h2>Villagers</h2><p class="muted">Select a villager to expand their details and assign a job.</p><div id="villagers"></div></section>
 <section id="valley-panel" hidden><h2>Across the valley</h2><div id="towns">Waiting for settlers…</div><p class="muted">Visit a friend's town to see it grow. Each town belongs to its founder.</p></section>
-<section id="help-panel" hidden><h2>A gentle beginning</h2><p>Press F beside water to fish, C beside a tree to cut wood, or G beside berries and herbs to gather. Work repeats every 3 seconds and levels your character’s skills. Move, press the same action key again, or Escape to stop. You can rebind these actions in Settings.</p><p>Hall levels 1–5 unlock crops, livestock, tools, and processing buildings. Develop housing and reliable food for level 2, two professions for level 3, planks for level 4, and a processed good for level 5. Select an acre to choose crops; select a barn to buy and breed animals.</p><p>Trees have individual renewable supplies. Connected water shares one fish supply across all huts and players. Extra workplaces share that supply. Farms have limited output per field; barns have animal capacity. Select a source or worker to see supply and production status.</p><p>Your gold-clad villager is marked You. Click the map and use your movement keys (WASD by default) to explore. Press Y to toggle camera lock, or open Settings to change keybindings. When locked, the camera follows your movement; buildings and resources block your path. Your position is saved in this world.</p><p>Click a building, villager, tree, water tile, or rock to inspect it. Close panels with Escape. You can also focus the map and use arrow keys and Enter to select tiles.</p><p>Open Build, choose a building, hover over open grass, then left-click to build. Place woodcutters within 3 tile steps of trees, and farms or fishing huts within 3 steps of water. Count horizontal and vertical steps together: 2 across plus 2 down is 4 steps, and each diagonal counts as 2. Workplaces turn red when no suitable source is within 3 steps, including while previewing a build or move. Move them closer to resume production, then assign workers. Full storage also pauses gathering; spend resources or build a storehouse.</p><p>Buildings start as construction sites. Idle villagers automatically help; assign Builder to give a villager priority. Builders walk to the site and complete foundations, framing, and finishing before housing, storage, or production becomes available. Hall upgrades also need a builder.</p><p>Assign jobs through Villagers or a villager's information box. Settlers have natural strengths and weaknesses that change output and learning by 25%. Train them in basic jobs to qualify personally for advanced professions; assignment controls show the required practice. Experienced fishers can become fish breeders, millers can become bakers, and animal keepers can become butchers. Hall level 4 unlocks bakeries for turning flour into bread and butcher shops for preparing meat from barns. Build storehouses for more storage.</p><h3>Growing your population</h3><p>Open Build and place cottages: each costs 20 wood and adds room for 2 villagers. A new villager arrives automatically every 3 seconds while there is spare housing and at least 20 food after upkeep. Each arrival consumes 10 food, so keep villagers farming or fishing to maintain your supply. The population cap is 16 villagers. Food shortages pause arrivals; existing residents stay.</p><p>Click the town hall to see milestone progress and upgrade it. Open Valley to visit another town; visitors can inspect but only owners can make changes.</p><p class="muted">Trees, ponds, berries, and herbs regenerate while the host runs. Rocks cannot be mined yet. Adventures and magic are planned for a later version.</p></section>
+<section id="help-panel" hidden aria-labelledby="help-title">
+<h2 id="help-title">Guide to Lantern Vale</h2>
+<p class="muted">Open a topic to read it; select its heading again to fold it away. Production recipes show the base batch per worker every 3 seconds. Skill and talents can change batch sizes.</p>
+<h3>Production chains</h3>
+<details><summary>Wood → planks → tools</summary>
+<p class="help-chain">Trees → Woodcutter → Wood → Sawpit → Planks → Workshop → Tools</p>
+<p>Build a woodcutter for <strong>15 wood</strong> within 3 tile steps of a tree. Assign a woodcutter, or cut wood yourself beside a tree with C by default. A base worker gathers 0.5 wood per cycle; trees have a finite supply that regenerates.</p>
+<p>At <strong>Hall 3</strong>, build a sawpit for <strong>25 wood</strong>. Its worker needs their own <strong>10 woodcutting practice</strong>. Each base batch turns <strong>2 wood into 1 plank</strong>. Train a woodcutter first, then transfer them to the sawpit.</p>
+<p>At <strong>Hall 4</strong>, build a workshop for <strong>30 wood + 5 planks</strong>. A crafter needs <strong>10 woodworking practice</strong>, earned at a sawpit. Each batch turns <strong>2 planks + 1 wood into 1 tool</strong>.</p>
+<p>Keep some wood for construction and fuel, and some planks for buildings and hall upgrades. Tools unlock crafted axes and improved saws; a market sells each tool for 3 coins.</p>
+</details>
+<details><summary>Crops → flour → bread</summary>
+<p class="help-chain">Water nearby → Farm + wheat acres → Wheat → Mill → Flour → Bakery + wood → Bread</p>
+<p>Build a farm for <strong>15 wood</strong> within 3 steps of water. Select it and choose <strong>Build acre · 5 wood</strong>, then place the field within 3 steps of that farm. Assign farmers to the farm or directly to an acre. Select each acre to choose a crop.</p>
+<p><strong>Vegetables</strong> unlock at Hall 1 and feed residents or animals. <strong>Wheat</strong> unlocks at Hall 2 and is a milling ingredient, not pantry food. <strong>Carrots</strong> and <strong>fodder</strong> unlock at Hall 3: carrots are food, while fodder feeds animals and fish ponds.</p>
+<p>At <strong>Hall 4</strong>, build a mill for <strong>30 wood + 5 planks</strong>. A miller needs their own <strong>10 farming practice</strong>. Each batch turns <strong>2 wheat into 1 flour</strong>. Flour is an ingredient, not food.</p>
+<p>Also at Hall 4, build a bakery for <strong>30 wood + 5 planks</strong>. A baker needs <strong>10 milling practice</strong>. Each batch turns <strong>2 flour + 0.5 wood into 2 bread</strong>. Each bread adds <strong>1.5 Food</strong>.</p>
+<p>One acre can be tended once per cycle; extra workers do not create extra fields. Add acres to expand crops. Farms without usable acres produce vegetables directly, with one field cycle per farm. Water remains required, but farming does not consume the pond's fish supply. Farm and acre upgrades, skilled farmers, and manure improve field yields.</p>
+</details>
+<details><summary>Fish → smoked fish</summary>
+<p class="help-chain">Water → Fishing hut → Fish → Smokehouse + wood → Smoked fish</p>
+<p>Build a fishing hut for <strong>15 wood</strong> within 3 steps of water and assign a fisher. You can also fish beside water with F by default. Each attempt has an <strong>80% catch chance</strong>; unsuccessful attempts still earn practice. A base successful worker catch provides 1 fish.</p>
+<p>At <strong>Hall 4</strong>, build a smokehouse for <strong>25 wood + 5 planks</strong>. A preserver needs their own <strong>10 fishing practice</strong>. Each batch turns <strong>2 fish + 0.5 wood into 2 smoked fish</strong>. Fresh fish adds 1 Food per unit; smoked fish adds <strong>1.5 Food</strong>.</p>
+<p>Connected water tiles share a single renewable fish stock across all huts and players. More huts add workers, not fish supply. Nets increase catch quantity; a boat extends hut reach to 6 steps. Neither changes the catch chance.</p>
+</details>
+<details><summary>Animal feed → eggs, wool, meat, milk</summary>
+<p class="help-chain">Vegetables or fodder → Barn + animals → Eggs / Wool / Meat / Milk + Manure</p>
+<p>At <strong>Hall 2</strong>, build a barn for <strong>25 wood</strong>, assign a keeper with the Husbandry job, then select the barn to buy animals. Each barn initially holds <strong>4 animals</strong>.</p>
+<ul>
+<li><strong>Chicken:</strong> Hall 2, 3 coins; produces eggs; uses 0.15 feed per animal per cycle.</li>
+<li><strong>Sheep:</strong> Hall 3, 6 coins; produces wool; uses 0.25 feed.</li>
+<li><strong>Pig:</strong> Hall 4, 8 coins; produces meat; uses 0.4 feed.</li>
+<li><strong>Cow:</strong> Hall 5, 12 coins; produces milk; uses 0.5 feed.</li>
+</ul>
+<p>The barn uses fodder if there is enough for its entire feed bill; otherwise it uses vegetables for the whole bill. A base keeper produces <strong>0.25 of the animal's good per animal per cycle</strong>. Keeper skill and talents affect output. Only one keeper tends a barn each cycle, so assigning extra keepers does not multiply production.</p>
+<p>Each tended animal also makes <strong>0.1 manure</strong> per cycle. Farmers automatically spend 0.1 manure when available for <strong>25% extra yield</strong>. Eggs, meat, and milk each add 1 Food; wool and manure do not.</p>
+<p>To breed, keep <strong>two animals of the same kind</strong> and a free space, then pay <strong>3 fodder + 1 herb</strong> to add one animal of that kind. Gather herbs yourself. Animals remain in the barn when you breed them.</p>
+</details>
+<details><summary>Meat → prepared meat</summary>
+<p class="help-chain">Feed → Barn + pigs → Meat → Butcher shop → Prepared meat</p>
+<p>At <strong>Hall 4</strong>, buy pigs and build a butcher shop for <strong>25 wood + 5 planks</strong>. A butcher needs their own <strong>10 husbandry practice</strong>, earned tending a barn.</p>
+<p>Each batch turns <strong>2 meat into 2 prepared meat</strong>. Each prepared meat adds <strong>1.5 Food</strong>, compared with 1 for raw meat. Maintain feed and pigs upstream; residents can eat the same meat stock before the butcher uses it.</p>
+</details>
+<details><summary>Fodder → pond fish; orchards → fruit</summary>
+<p class="help-chain">Fodder acres → Fish pond → Fish → Food or smokehouse</p>
+<p>At <strong>Hall 5</strong>, build a fish pond for <strong>25 wood + 10 planks</strong>. A fish breeder needs their own <strong>20 fishing practice</strong>. Each batch turns <strong>0.5 fodder into 1 fish</strong>. This recipe uses feed rather than the natural pond's shared fish stock.</p>
+<p class="help-chain">Orchard + trained farmer → Fruit → Food or market</p>
+<p>At Hall 5, build an orchard for <strong>25 wood</strong>. Its worker needs <strong>20 farming practice</strong>. A base cycle produces <strong>1 fruit</strong> with no recipe ingredients. Fruit adds 1 Food per unit.</p>
+</details>
+<details><summary>Foraging, useful byproducts &amp; selling goods</summary>
+<p class="help-chain">Berry bushes → Berries → Food · Herb patches → Herbs → Breeding or market</p>
+<p>Stand beside berries or herbs and press G by default. Gathering repeats every 3 seconds, producing a base 1 berry or herb per cycle. Berries add 1 Food; herbs are breeding supplies. Your gathering practice increases output every 20 practice.</p>
+<p><strong>Wool</strong> makes durable fishing nets; <strong>manure</strong> improves crops; <strong>planks</strong> build advanced workplaces; <strong>tools</strong> improve axes and saws. Earlier chains remain useful as your town develops.</p>
+<p>At <strong>Hall 5</strong>, build a market stall for <strong>20 wood + 5 planks</strong>. Select it to sell goods. <strong>Tools sell for 3 coins each</strong>; planks, wool, flour, smoked fish, herbs, fruit, milk, eggs, meat, bread, and prepared meat sell for <strong>1 coin each</strong>. Selling food removes that same stock from your pantry. No market worker is needed to press the sell buttons. Coins buy animals and improvements and pay for moving buildings.</p>
+</details>
+<details><summary>Production timing, bottlenecks &amp; paused workers</summary>
+<p>The active world advances every <strong>3 seconds</strong> while the host runs. Workers' walking, tools, and carrying animations illustrate that work. Bigger processing batches consume proportionally more ingredients: a 2× baker needs 4 flour + 1 wood and makes 4 bread. Missing ingredients pause the batch.</p>
+<p>Check a worker's status and the building or source panel when output stops:</p>
+<ul>
+<li><strong>No workplace or source:</strong> finish construction, assign the worker, check free settler spaces, and place basic workplaces within reach of trees or water.</li>
+<li><strong>Requires practice:</strong> train that worker in the prerequisite job before transferring them.</li>
+<li><strong>Waiting for ingredients or feed:</strong> expand the upstream chain and check stored goods in Build.</li>
+<li><strong>Storage full:</strong> spend or sell goods, or complete a storehouse. Edible output also needs pantry room.</li>
+<li><strong>Supply regenerating:</strong> wait or use another tree or separate body of water.</li>
+<li><strong>Field or barn already tended:</strong> add fields or animals rather than assigning more workers to the same limited source.</li>
+</ul>
+<p>Build and staff the chain from its raw source toward its finished product. Keep food production running while training specialists, and leave an idle villager or builder available for construction.</p>
+</details>
+<h3>Your town &amp; controls</h3>
+<details><summary>Getting started</summary>
+<p>Choose or create a world in <strong>Worlds</strong>, then name your town. Start with a woodcutter near trees and a farm or fishing hut near water. Assign residents, keep a builder available, and build a cottage. A finished cottage, a finished farm or fishing hut near water, and at least 20 Food unlock your first hall upgrade.</p>
+<p>Click buildings, workers, your gold-clad character marked <strong>You</strong>, natural resources, or local characters to inspect them. The town hall shows milestone progress and upgrades. The <strong>Timber roots</strong> achievement is earned by harvesting 30 wood.</p>
+</details>
+<details><summary>Walking, camera, actions &amp; keyboard controls</summary>
+<p>Click the map, then hold <strong>WASD</strong> by default to walk in screen directions. Buildings, trees, water, and rocks block movement. <strong>Y</strong> toggles camera lock: locked follows your movement, unlocked lets you walk without moving the camera.</p>
+<p>Scroll to pan. Pinch on a touchpad or use <strong>Option/Alt-scroll</strong> to zoom. Focus the map and use <strong>arrow keys</strong> to choose tiles and <strong>Enter</strong> to inspect or place a selected building.</p>
+<p>Stand beside a source and press <strong>F to fish, C to chop, or G to gather</strong>. Work repeats until you move, press the same action again, or press Escape. Select You for action buttons and skill levels. Mining is not available yet.</p>
+<p><strong>Settings</strong> opens a popup for camera lock and keybindings. Select a binding and press a letter or number; every action needs a unique key. Restore defaults there. Preferences are saved in this browser. Gameplay shortcuts pause while typing, using Settings or world dialogs, or placing buildings. <strong>Escape</strong> closes the current popup or panel and cancels placement; outside popups it also stops your activity.</p>
+</details>
+<details><summary>Building placement, territory &amp; construction</summary>
+<p>Open <strong>Build</strong>, choose a building, hover over a clear tile, and left-click to place it. You can keep placing the selected kind. Cancel selection or press Escape to finish. Occupied resource tiles cannot be built on; open swamp ground can.</p>
+<p>Build within <strong>10 tile steps</strong> of your Hall 1 hall. Each hall level adds 5 steps, reaching 30 at Hall 5. Count horizontal and vertical steps together: 2 across + 2 down is 4; diagonals count as 2. New shared worlds also limit construction around your original town site, so moving a hall cannot extend territory indefinitely.</p>
+<p>Woodcutters need trees within <strong>3 steps</strong>; farms and fishing huts need water within 3. A fishing boat extends hut reach to 6. Acres must remain within 3 steps of their associated farm. Red workplaces or previews indicate an unusable source location. Processing buildings use stored ingredients.</p>
+<p>New buildings need <strong>30 seconds of builder work after arrival</strong>. Idle residents help automatically; the Builder job gets priority. Builders need a reachable route. Foundations, framing, and finishing show progress. Housing, storage, and production begin only when construction finishes. Upgrading also pauses a building's benefits until complete. Materials are paid at the start; progress is saved.</p>
+<p>Hall 1 building prices: <strong>cottage 20 wood, woodcutter 15, farm 15, fishing hut 15, storehouse 25, acre 5</strong>. Advanced building prices and hall requirements are listed in the chains above.</p>
+</details>
+<details><summary>Assigning settlers &amp; upgrading worker capacity</summary>
+<p>Open <strong>Villagers</strong> and expand a resident to change their job, or select a completed building and use <strong>Add settler</strong>. This transfers an existing resident; it does not create one. Workplaces assign the matching job; acres assign a farmer to that field. Select a worker in a building's roster to inspect them, or remove them to free a space.</p>
+<p>Initial settler spaces: <strong>hall, storehouse, woodcutter, fishing hut, acre, and market: 1; cottage: 2; farm: 4; barn and other advanced workplaces: 2</strong>. Settlers in halls, cottages, or storehouses rest and can help build.</p>
+<p><strong>Capacity upgrades</strong> cost 20 then 40 wood and require 30 then 60 seconds of construction. They multiply initial worker spaces by 2 then 3. They do not increase housing, storage, animal capacity, or field output. Moving preserves assignments; destruction releases assigned settlers.</p>
+</details>
+<details><summary>Practice, talents &amp; specialist qualifications</summary>
+<p>Each settler has saved natural strengths and weaknesses in woodcutting, farming, fishing, or husbandry. A strength gives <strong>+25%</strong> output and practice gain; a weakness gives <strong>−25%</strong>. Advanced jobs inherit their profession family's talent.</p>
+<p>Every <strong>20 practice in the current job</strong> adds another base output multiplier: 0–19 gives 1×, 20–39 gives 2×, and so on, before talent and applicable improvements. Processing increases ingredients and output together; fields and animal counts still bound production. Successful work trains the job; unsuccessful fishing attempts also train it.</p>
+<p>Specialists require <strong>that resident's own practice</strong>:</p>
+<ul>
+<li>Sawpit: 10 woodcutting; workshop: 10 woodworking.</li>
+<li>Mill: 10 farming; bakery: 10 milling; orchard: 20 farming.</li>
+<li>Smokehouse: 10 fishing; fish pond: 20 fishing.</li>
+<li>Butcher shop: 10 husbandry.</li>
+</ul>
+<p>Basic woodcutting, farming, fishing, and husbandry accept beginners. Another settler's or your character's practice cannot qualify a worker. Your character has separate fishing, woodcutting, and gathering levels; each rises every 20 practice.</p>
+</details>
+<details><summary>Food, storage, housing &amp; new residents</summary>
+<p><strong>Food is the pantry total, not a second copy of your goods.</strong> Vegetables, carrots, fish, berries, eggs, meat, milk, and fruit add 1 Food each. Smoked fish, bread, and prepared meat add 1.5 each. Wheat, flour, fodder, herbs, wool, manure, planks, and tools do not count as food. Eating, processing, animal feed, and selling draw from the same stock; fresh foods are eaten before processed foods.</p>
+<p>Resting residents consume <strong>0.12 Food per cycle</strong>; residents with jobs or helping construction consume <strong>0.30</strong>. Shortages pause new arrivals; existing residents stay.</p>
+<p>Base storage is <strong>100 per resource</strong> and 100 total pantry Food. A completed storehouse adds 100 capacity per building level: 100/200/300. Edible goods need both their own resource room and pantry room. Build → Stored goods shows individual stocks.</p>
+<p>Base housing supports <strong>5 residents</strong>. Completed cottages add <strong>2/4/6 spaces</strong> at building levels 1/2/3; timber framing adds another 2. The town population limit is <strong>16</strong>. Every 3 seconds, one resident can arrive if there is room and at least <strong>20 Food after upkeep</strong>; arrival consumes <strong>10 Food</strong>.</p>
+</details>
+<details><summary>Hall levels, milestones &amp; unlocks</summary>
+<p>Select the hall to check the exact remaining milestone and start its upgrade. A builder must reach it. Coins listed below are <strong>rewards on completion</strong>.</p>
+<ul>
+<li><strong>Hall 2:</strong> finish a cottage and a farm or fishing hut within 3 steps of water; hold 20 Food. Pay <strong>40 wood</strong>, build for <strong>30 seconds</strong>, receive <strong>30 coins</strong>. Unlock wheat, barns, chickens, improved axes, and fishing nets.</li>
+<li><strong>Hall 3:</strong> reach 10 practice in two different basic professions: woodcutting, farming, fishing, husbandry, or gathering. Each uses the town's best resident or player practice. Pay <strong>60 wood</strong>, build for <strong>60 seconds</strong>, receive <strong>40 coins</strong>. Unlock sawpits, sheep, carrots, fodder, boats, and wool nets.</li>
+<li><strong>Hall 4:</strong> have produced at least <strong>10 planks over time</strong>, and pay <strong>80 wood + 10 planks</strong>. Build for <strong>90 seconds</strong>, receive <strong>50 coins</strong>. Unlock mills, smokehouses, workshops, bakeries, butcher shops, pigs, and crafted axes.</li>
+<li><strong>Hall 5:</strong> have produced at least 1 flour, smoked fish, or tool; pay <strong>80 wood + 15 planks</strong>. Build for <strong>120 seconds</strong>, receive <strong>60 coins</strong>. Unlock fish ponds, orchards, cows, markets, improved saws, and timber framing.</li>
+</ul>
+<p>Milestones based on production count goods already used or sold, but upgrade ingredients must be in storage. Each completed hall level expands building reach by 5 steps. Higher hall levels are planned.</p>
+</details>
+<details><summary>Building levels &amp; profession improvements</summary>
+<p>Cottages, storehouses, woodcutters, farms, fishing huts, and acres can reach <strong>building level 3</strong>. The next upgrade costs the original wood price × current level and takes <strong>30 then 60 seconds</strong>. Cottages increase housing, storehouses increase storage, and basic workplaces gain <strong>+25% then +50%</strong> output. Farm and acre bonuses add together. Building level and settler capacity are separate upgrades.</p>
+<p>Profession improvements each need <strong>30 seconds</strong> of construction. Practice requirements use the best matching skill among residents and your character:</p>
+<ul>
+<li><strong>Improved axe:</strong> Hall 2, 10 woodcutting practice, 10 wood + 5 coins; +25% woodcutter output.</li>
+<li><strong>Fishing nets:</strong> Hall 2, 10 fishing practice, 10 wood + 5 coins; +25% hut catch quantity.</li>
+<li><strong>Fishing boat:</strong> Hall 3, 20 fishing practice, 10 planks; hut source reach becomes 6 steps.</li>
+<li><strong>Durable wool nets:</strong> Hall 3, 20 fishing practice, 5 wool; +25% hut catch quantity.</li>
+<li><strong>Crafted axe:</strong> Hall 4, 30 woodcutting practice, 3 tools; +25% woodcutter output.</li>
+<li><strong>Improved saw:</strong> Hall 5, 20 woodworking practice, 3 tools; sawpit batches and ingredient use grow by 25%.</li>
+<li><strong>Timber framing:</strong> Hall 5, 10 planks; adds 2 cottage housing spaces.</li>
+</ul>
+<p>Improvements apply to the selected building. Completed upgrades add visible framing, stonework, irrigation, or profession equipment. Barns currently hold 4 animals; extra settler capacity does not add animal spaces, and a barn building-level upgrade is not currently offered.</p>
+</details>
+<details><summary>Renewable supplies, terrain &amp; local characters</summary>
+<p>Each tree has <strong>8 wood supply</strong>, regenerating <strong>0.5 every 3 seconds</strong>. Each connected body of water shares <strong>12 fish supply</strong>, regenerating <strong>1.6</strong>. Berry bushes hold <strong>6</strong> and regenerate <strong>0.3</strong>; herb patches hold <strong>4</strong> and regenerate <strong>0.2</strong>. Workers and players share these supplies. Select a source to see its remaining stock.</p>
+<p>Forests, ponds, meadows, sandy areas, rocky areas, and swamps shape the map. Swamp trees supply wood; swamp water supports farming and fishing. Rocks block space but cannot be mined yet. Local characters have biome-specific appearances and introductions; click them to read their dialogue. They are separate from your town's workforce.</p>
+</details>
+<details><summary>Moving &amp; destroying buildings</summary>
+<p>Select a building and choose <strong>Move</strong>, then click a clear destination; or choose Move a building in Build. Moving costs <strong>1 coin</strong>, and is free when you have none. Normal territory and source-range rules still apply. Acres must remain near their own farm, and shared-world halls must stay at least 40 tiles apart. Moving a farm away from its fields pauses them.</p>
+<p>Select <strong>Destroy building</strong> to remove a building with <strong>no refund</strong>. The town hall cannot be destroyed. Assignments are released; residents remain, but affected production can pause. Removing homes or storage reduces their benefits. Movement and saved upgrades preserve a building's progress.</p>
+</details>
+<details><summary>Worlds, friends, saving &amp; planned features</summary>
+<p>One Mac hosts; up to <strong>four towns</strong> can share a world. New worlds use a shared <strong>120 × 120 map</strong> with spaced town sites and paths; older saves may retain separate town maps. <strong>Valley</strong> centers the selected town's hall on the map. Visitors can inspect; only owners can build or manage their own town.</p>
+<p>Friends join the host's local network address in their browsers. The host using localhost chooses the active world through <strong>Worlds</strong>, creates worlds, or destroys them by typing their name to confirm. World destruction permanently removes every town and its progress.</p>
+<p>The host automatically saves worlds. Inactive worlds and a stopped host pause production and construction. Your position, town, upgrades, crops, animals, talents, and progress are saved. This browser keeps your town's ownership token; use the same browser and host address to return. Clearing browser storage loses that association; recovery is not available yet. Settings are also saved in this browser.</p>
+<p>Mining, adventures, magic, higher hall levels, and player-to-player trading are planned. Market selling is available now.</p>
+</details>
+</section>
 </aside>
 </main>
 <div id="notice" role="status" aria-live="polite"></div>

@@ -22,3 +22,12 @@ canvas{cursor:pointer}button:focus-visible,canvas:focus-visible,select:focus-vis
 .player-skills{position:relative;display:grid;grid-template-columns:repeat(auto-fill,minmax(58px,1fr));gap:5px;margin:12px 0}.player-skill{display:flex;align-items:center;justify-content:center;gap:4px;min-width:0;height:40px;border:1px solid #c9ba7e33;border-radius:4px;background:#59492d55;cursor:help}.player-skill .illustration{flex:none;width:24px;height:24px;padding:0;margin:0;border:0;border-radius:0;background:none}.player-skill strong{font-size:14px;color:#e3d19b;font-variant-numeric:tabular-nums}.player-skill:hover,.player-skill:focus-visible{outline:1px solid #c9ba7e;background:#59492d}.skill-tooltip{display:none;position:absolute;top:calc(100% + 5px);left:0;z-index:2;width:max-content;max-width:100%;padding:6px 8px;border:1px solid #c9ba7e66;border-radius:4px;background:#13221d;color:#e8eadb;font-size:11px;line-height:1.4;pointer-events:none}.player-skill:hover .skill-tooltip,.player-skill:focus-visible .skill-tooltip{display:block}
 .upgrade-button,#upgrade{background:#59492d;border-color:#c9a65e;color:#f5dfaa;font-weight:600;box-shadow:inset 3px 0 #d5b36d}.upgrade-button:hover:enabled,#upgrade:hover:enabled{background:#715b34;border-color:#edcc83}.upgrade-button:disabled,#upgrade:disabled{background:#3b382b;border-color:#82714e;box-shadow:none}
 .building-workers{margin:12px 0}.building-worker{display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid #ffffff13}.worker-summary{flex:1;min-width:0;width:auto;margin:0;padding:4px;background:transparent;border-color:transparent}.worker-summary strong,.worker-summary small{display:block;overflow-wrap:anywhere}.worker-summary small{margin-top:3px;color:#bdcdb5;font-size:11px;font-weight:normal;font-variant-numeric:tabular-nums}.worker-kick{flex:none;width:auto;margin:0;padding:6px 9px;font-size:12px}
+
+/* Foldable game guide. */
+#help-panel details{margin:8px 0;border:1px solid #b8c99933;border-radius:8px;padding:0 12px}
+#help-panel summary{padding:12px 0;cursor:pointer;color:#e3d19b;font-weight:600;line-height:1.5}
+#help-panel summary:focus-visible{outline:2px solid #fff0b1;outline-offset:3px}
+#help-panel details[open] summary{border-bottom:1px solid #ffffff15}
+#help-panel li{margin:10px 0;line-height:1.7;color:#ccd5c3}
+#help-panel ul{padding-left:20px}
+#help-panel .help-chain{padding:10px;border-radius:6px;background:#b8c9990a;color:#e3d19b}
