@@ -2,7 +2,19 @@
 <html lang="en">
 <head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Lantern Vale</title><link rel="stylesheet" href="style.css"></head>
 <body>
-<header><div><span class="eyebrow">A LITTLE WORLD, TOGETHER</span><h1>Lantern Vale</h1></div><div><button id="world-menu-button">Worlds</button><div id="resources" aria-live="polite">Your village awaits</div></div></header>
+<header>
+<div><span class="eyebrow">A LITTLE WORLD, TOGETHER</span><h1>Lantern Vale</h1></div>
+<div id="resources" aria-live="polite">
+<span id="resources-empty">Your village awaits</span>
+<div id="resource-totals" hidden>
+<span class="resource"><span class="resource-icon" aria-hidden="true">🪵</span><span><small>Wood</small><strong id="resource-wood">0</strong></span></span>
+<span class="resource"><span class="resource-icon" aria-hidden="true">🌾</span><span><small>Food</small><strong id="resource-food">0</strong></span></span>
+<span class="resource"><span class="resource-icon" aria-hidden="true">🪙</span><span><small>Coins</small><strong id="resource-coins">0</strong></span></span>
+<span class="resource"><span class="resource-icon" aria-hidden="true">👥</span><span><small>Villagers</small><strong id="resource-villagers">0</strong></span></span>
+</div>
+</div>
+<button id="world-menu-button">Worlds</button>
+</header>
 <dialog id="world-menu" aria-labelledby="world-menu-title">
 <span class="eyebrow">A NEW CHAPTER</span><h2 id="world-menu-title">Your worlds</h2>
 <p id="world-menu-description">Choose a saved world or start a new one.</p>

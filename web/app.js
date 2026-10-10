@@ -85,7 +85,13 @@ function render(){
   const own=world.towns[identity?.town_id], town=world.towns[viewed];
   $('join').hidden=!!own || !world.world_id;$('controls').hidden=!own;
   $('view-title').textContent=town?.name || 'A place to call home';
-  $('resources').textContent=own?`Wood ${Math.floor(own.wood)} · Food ${Math.floor(own.food)} · Coins ${own.coins} · Villagers ${own.villagers.length}`:'Your village awaits';
+  $('resources-empty').hidden=!!own;$('resource-totals').hidden=!own;
+  if(own){
+    $('resource-wood').textContent=Math.floor(own.wood);
+    $('resource-food').textContent=Math.floor(own.food);
+    $('resource-coins').textContent=own.coins;
+    $('resource-villagers').textContent=own.villagers.length;
+  }
   if(own){$('town-name').textContent=own.name;$('hint').textContent=tool==='move'?(moveIndex===null?'Click a building to move it.':'Click open grass.'):tool?`Click open grass to place a ${labels[tool].toLowerCase()}.`:'Choose a building, then click open grass.';$('progress').textContent=`Level ${own.level} · Timber roots: ${Math.min(30,own.harvested)}/30 wood harvested`;$('upgrade').disabled=own.level>=2;}
   $('towns').replaceChildren();
   for(const [id,t] of Object.entries(world.towns)){const b=document.createElement('button');b.textContent=t.name+(id===identity?.town_id?' · Yours':'');b.classList.toggle('selected',id===viewed);b.onclick=()=>{viewed=id;tool=null;moveIndex=null;render();};$('towns').append(b);}
