@@ -20,7 +20,8 @@ function session(saved=null){
     const actions=[];playerAction=action=>actions.push(action);
     return {get actions(){return actions;},get bindings(){return keybindings;},get locked(){return cameraLocked;},get following(){return playerView.following;},
       get camera(){return typeof camera==='undefined'?null:{...camera};},get held(){return [...walkKeys];},step:seconds=>playerSprite(town,seconds),
-      pan(){if(typeof camera!=='undefined'){camera.x=30;camera.y=30;}},get panel(){return panel;}};
+      pan(){if(typeof camera!=='undefined'){camera.x=30;camera.y=30;}},get panel(){return panel;},get tool(){return tool;},
+      place(){panel='build';tool='home';buildTile={x:1,y:1};hoverTile={x:1,y:1};},get placement(){return buildTile || hoverTile;}};
   `);
   const state=run(document,{addEventListener(type,callback){listeners[type]=callback;}},
     {getItem:key=>storage.get(key),setItem:(key,value)=>storage.set(key,value)},()=>0,()=>{});
@@ -30,6 +31,16 @@ function session(saved=null){
 }
 (async()=>{
   const {state,document,storage,key,rebind,listeners}=session();
+  key('w');key('B');check(state.panel==='build'&&state.held.length===0,'B opens building mode and releases movement');
+  key('b',{repeat:true});key('b',{ctrlKey:true});check(state.panel==='build','Held and modified B do not toggle building mode');
+  state.place();document.activeElement={tagName:'BUTTON'};key('b');
+  check(state.panel===null&&state.tool===null&&!state.placement,'B closes building mode and cancels placement even with a focused build button');
+  document.activeElement={tagName:'INPUT'};key('b');check(state.panel===null,'Typing does not toggle building mode');
+  document.activeElement={isContentEditable:true};key('b');check(state.panel===null,'Editable content does not toggle building mode');
+  document.activeElement=null;
+  for(const id of ['world-menu','delete-world-dialog','settings-panel']){
+    document.getElementById(id).open=true;key('b');check(state.panel===null,'Dialogs block building mode shortcuts');document.getElementById(id).open=false;
+  }
   key('f');key('c');key('g');check(state.actions.join(',')==='fish,chop,gather','F/C/G start the matching character activities');
   key('f',{repeat:true});key('g',{ctrlKey:true});check(state.actions.length===3,'Held actions and modified shortcuts do not repeat requests');
   check(state.locked&&state.bindings.camera==='y','Camera starts locked with Y binding');
@@ -54,6 +65,7 @@ function session(saved=null){
   rebind('up','k',{metaKey:true});check(state.bindings.up==='w','Modified shortcuts cannot become bindings');
   rebind('camera','c');check(state.bindings.camera==='y','Gathering keys cannot be assigned twice');
   rebind('camera','v');
+  rebind('build','h');
   document.getElementById('close-settings').onclick();
   check(!document.getElementById('settings-panel').open&&document.getElementById('settings-button').attributes['aria-expanded']==='false','Close button dismisses the popup and updates the toolbar');
   document.getElementById('help-button').onclick();
@@ -69,13 +81,21 @@ function session(saved=null){
   key('l');check(state.held.includes('l'),'Custom movement binding works');
   key('y');check(state.locked,'Old camera binding stops working');
   key('v');check(!state.locked,'Custom camera binding works');
+  key('b');check(state.panel===null,'Old build binding stops working');
+  key('h');check(state.panel==='build','Custom build binding opens building mode');
+  key('h');check(state.panel===null,'Custom build binding closes building mode');
   const restored=session(storage.get('lantern-settings'));
   check(restored.state.bindings.right==='l'&&restored.state.bindings.camera==='v'&&!restored.state.locked,'Bindings and camera lock survive reload');
+  restored.key('h');check(restored.state.panel==='build','Custom build binding survives reload');
   document.getElementById('reset-keybindings').onclick();
   check(state.bindings.right==='d'&&state.bindings.camera==='y'&&state.held.length===0,'Reset restores defaults and releases held keys');
+  check(state.bindings.build==='b','Reset restores B for building mode');
   document.getElementById('world-menu').open=true;key('y');check(!state.locked,'World menus block camera toggling');
   const oldCustom=session(JSON.stringify({keybindings:{up:'i',left:'j',down:'k',right:'l',camera:'c'}}));
   check(oldCustom.state.bindings.camera==='c'&&oldCustom.state.bindings.chop!=='c'&&oldCustom.state.bindings.fish==='f','Older custom settings retain their bindings and get unique activity keys');
+  check(oldCustom.state.bindings.build==='b','Older settings receive the default build binding');
+  const occupiedBuildKey=session(JSON.stringify({keybindings:{up:'b',left:'a',down:'s',right:'d',camera:'y'}}));
+  check(occupiedBuildKey.state.bindings.up==='b'&&occupiedBuildKey.state.bindings.build!=='b','Existing custom bindings keep their keys when adding building mode');
   const malformed=session('{broken');check(malformed.state.bindings.camera==='y','Malformed storage falls back to defaults');
   const invalid=session(JSON.stringify({keybindings:{up:'w',left:'a',down:'s',right:'d',camera:'d'}}));
   check(invalid.state.bindings.camera==='y','Invalid stored duplicates fall back to defaults');

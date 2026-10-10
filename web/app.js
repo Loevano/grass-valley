@@ -17,8 +17,8 @@ const mapSize = town => town?.map_size || 120;
 const workers = new Map();
 let workerTown = null, lastFrame = null;
 const walkKeys = new Set();
-const defaultBindings={up:'w',left:'a',down:'s',right:'d',camera:'y',fish:'f',chop:'c',gather:'g'};
-const bindingLabels={up:'Walk up',left:'Walk left',down:'Walk down',right:'Walk right',camera:'Toggle camera lock',fish:'Fish',chop:'Cut wood',gather:'Gather berries and herbs'};
+const defaultBindings={up:'w',left:'a',down:'s',right:'d',camera:'y',fish:'f',chop:'c',gather:'g',build:'b'};
+const bindingLabels={up:'Walk up',left:'Walk left',down:'Walk down',right:'Walk right',camera:'Toggle camera lock',fish:'Fish',chop:'Cut wood',gather:'Gather berries and herbs',build:'Toggle building mode'};
 let keybindings={...defaultBindings}, cameraLocked=true;
 try{
   const saved=JSON.parse(localStorage.getItem('lantern-settings') || 'null');
@@ -53,7 +53,7 @@ function renderSettings(){
   $('camera-lock-button').setAttribute('aria-pressed',String(cameraLocked));
   for(const action of Object.keys(defaultBindings))$('binding-'+action).value=keybindings[action].toUpperCase();
   $('world').setAttribute('aria-label',`Town grid. Use ${['up','left','down','right'].map(action=>keybindings[action].toUpperCase()).join(', ')} to walk. Press ${keybindings.camera.toUpperCase()} to toggle camera lock. Use arrow keys and Enter to inspect tiles.`);
-  $('movement-hint').textContent=`Click map · ${['up','left','down','right'].map(action=>keybindings[action].toUpperCase()).join('/')} to walk · ${keybindings.camera.toUpperCase()} camera lock · ${keybindings.fish.toUpperCase()} fish · ${keybindings.chop.toUpperCase()} chop · ${keybindings.gather.toUpperCase()} gather`;
+  $('movement-hint').textContent=`Click map · ${['up','left','down','right'].map(action=>keybindings[action].toUpperCase()).join('/')} to walk · ${keybindings.camera.toUpperCase()} camera lock · ${keybindings.fish.toUpperCase()} fish · ${keybindings.chop.toUpperCase()} chop · ${keybindings.gather.toUpperCase()} gather · ${keybindings.build.toUpperCase()} building mode`;
 }
 for(const action of Object.keys(defaultBindings)){
   const label=document.createElement('label');label.textContent=bindingLabels[action];label.setAttribute('for','binding-'+action);
@@ -78,11 +78,12 @@ $('reset-keybindings').onclick=()=>{clearWalk();keybindings={...defaultBindings}
 renderSettings();
 let playerView = null, walkingRequest = false, walkCooldown = 0;
 function clearWalk(){walkKeys.clear();walkCooldown=0;}
-function canControlPlayer(){
-  return (world.shared_map || viewed===identity?.town_id) && !!world.towns[identity?.town_id]?.player && !tool
+function canControlPlayer(allowBuilding=false){
+  return (world.shared_map || viewed===identity?.town_id) && !!world.towns[identity?.town_id]?.player && (allowBuilding || !tool)
     && !$('world-menu').open && !$('delete-world-dialog').open
     && !$('settings-panel').open && !document.activeElement?.isContentEditable
-    && !['INPUT','TEXTAREA','SELECT','BUTTON'].includes(document.activeElement?.tagName);
+    && !['INPUT','TEXTAREA','SELECT'].includes(document.activeElement?.tagName)
+    && (allowBuilding || document.activeElement?.tagName!=='BUTTON');
 }
 window.addEventListener('keyup',event=>walkKeys.delete(event.key.toLowerCase()));
 window.addEventListener('blur',clearWalk);
@@ -219,7 +220,7 @@ function buildingHeight(building,town){
 }
 function storageCapacity(town){return 100+100*town.buildings.filter(b=>b.kind==='storehouse'&&!b.construction).reduce((sum,b)=>sum+buildingLevel(b),0);}
 function upgradeBenefit(kind,level){
-  return kind==='barn'?`${4*level} animal spaces`:['sawpit','mill','smokehouse','workshop','fish_pond','orchard','market','bakery','butcher'].includes(kind)?'Worker capacity upgraded separately':kind==='home'?`${2*level} villager spaces`:kind==='storehouse'?`${100*level} storage per resource`:`+${25*(level-1)}% ${kind==='woodcutter'?'wood':kind==='fishing_hut'?'food per successful catch':kind==='acre'?'food from this field':'food'} per worker`;
+  return kind==='barn'?`${4*level} animal spaces`:['sawpit','mill','smokehouse','workshop','fish_pond','orchard','market','bakery','butcher'].includes(kind)?'Worker capacity upgraded separately':kind==='home'?`${2*level} villager spaces · ${25*(level-1)}% lower departure risk for housed settlers`:kind==='storehouse'?`${100*level} storage per resource`:`+${25*(level-1)}% ${kind==='woodcutter'?'wood':kind==='fishing_hut'?'food per successful catch':kind==='acre'?'food from this field':'food'} per worker`;
 }
 const costs = {home:20,woodcutter:15,farm:15,storehouse:25,fishing_hut:15,acre:5};
 const colors = {hall:'#a88861',home:'#c5ad80',woodcutter:'#947b55',farm:'#bc9b5c',storehouse:'#8c9b8b',fishing_hut:'#7899a2'};
@@ -359,6 +360,9 @@ $('settings-panel').addEventListener('close',updateSettingsButton);
 $('close-panel').onclick=()=>{openPanel(null);canvas.focus();};
 window.addEventListener('keydown',event=>{
   const key=event.key.toLowerCase();
+  if(key===keybindings.build&&!event.repeat&&!event.ctrlKey&&!event.metaKey&&!event.altKey&&canControlPlayer(true)){
+    event.preventDefault();openPanel(panel==='build'?null:'build');canvas.focus();return;
+  }
   if(!event.repeat&&!event.ctrlKey&&!event.metaKey&&!event.altKey&&canControlPlayer()){
     const actions=[['fish','f',['water'],'No water to fish.'],['gather','g',['berry_bush','herb_patch'],'No berries to gather.'],['chop','c',['tree'],'No wood to cut.'],['mine','m',['rock'],'No stone to mine.']];
     const action=actions.find(([name,fallback])=>key===(keybindings[name] || fallback));
@@ -669,12 +673,30 @@ $('selection-destroy').onclick=async()=>{
   }catch(e){notice(e.message);await refresh();}
   finally{button.disabled=false;}
 };
+function departureMessage(town){
+  const departed=town.last_departure;
+  if(!departed)return '';
+  const role=departed.job==='idle'?'settler':departed.job==='baking'?'baker':departed.job==='butchery'?'butcher':departed.job==='building'?'builder':departed.job;
+  const practice=Object.entries(departed.practice || {}).map(([job,xp])=>`${xp} ${job} practice`).join(', ');
+  return `${departed.name}, your ${role}, left after prolonged food shortages. ${practice?`Lost ${practice}. `:''}Their experience is gone; their work needs a new settler.`;
+}
+function updateDepartures(next){
+  if(next.world_id!==world.world_id)return;
+  for(const [id,town] of Object.entries(next.towns)){
+    const previous=world.towns[id];
+    if(!previous || (town.departure_count || 0)<=(previous.departure_count || 0))continue;
+    workers.clear();
+    if(viewed===id&&selection?.type==='villager')selection=null;
+    if(id===identity?.town_id)notice(departureMessage(town));
+  }
+}
 async function refresh(){
   if(refreshing)return refreshing;
   refreshing=(async()=>{
     const next=await request('/api/world');
     if(next.world_id!==world.world_id){tool=null;moveIndex=null;buildTile=null;hoverTile=null;viewed=null;selection=null;panel=null;keyboardTile=null;}
     if(next.shared_map)for(const town of Object.values(next.towns))Object.assign(town,next.shared_map);
+    updateDepartures(next);
     world=next;identity=identities[world.world_id] || null;
     // Keep characters moving even if the lightweight endpoint is unavailable.
     updateRemotePlayers({world_id:world.world_id,sampled_at:world.players_sampled_at,
@@ -705,6 +727,7 @@ function render(){
   $('move').textContent=own?.coins?'Move a building · 1 coin':'Move a building · Free';
   $('mode-hint').textContent=tool==='move'?(moveIndex===null?'Moving: click a building. Escape to cancel.':'Moving: click open grass to move here. Escape to cancel.'):tool?`Building ${labels[tool].toLowerCase()}: hover over open grass and left-click to build. Escape to cancel.`:'Click a building, villager, or resource to learn more.';
   $('view-title').textContent=(world.shared_map?world.name:town?.name) || 'A place to call home';
+  if(!tool&&own?.food_shortage_seconds)$('mode-hint').textContent='Food shortage! Feed your settlers soon or they may leave. Open Villagers for details.';
   $('resources-empty').hidden=!!own;$('resource-totals').hidden=!own;
   if(own){
     $('resource-wood').textContent=Math.floor(own.wood);
@@ -730,6 +753,10 @@ function render(){
   for(const [id,t] of Object.entries(world.towns)){const b=document.createElement('button');b.textContent=t.name+(id===identity?.town_id?' · Yours':'');b.classList.toggle('selected',id===viewed);b.onclick=()=>{viewed=id;if(world.shared_map){const hall=t.buildings.find(b=>b.kind==='hall');camera.x=hall.x;camera.y=hall.y;}tool=null;moveIndex=null;buildTile=null;hoverTile=null;selection=null;panel=null;keyboardTile=null;render();};$('towns').append(b);}
   $('villagers').replaceChildren();
   if(town)for(const [i,v] of town.villagers.entries())$('villagers').append(villagerRow(town,v,i));
+  if(town?.food_shortage_seconds){
+    const warning=document.createElement('p');warning.textContent=`Food shortage · ${town.food_shortage_seconds}s without enough food. After 60 seconds, settlers may leave with all their skills. Upgrade cottages to reduce the risk.`;$('villagers').append(warning);
+  }
+  if(town?.last_departure){const loss=document.createElement('p');loss.textContent=departureMessage(town);$('villagers').append(loss);}
   draw();
 }
 function point(x,y){return [originX+(x-y)*tileW/2,originY+(x+y)*tileH/2];}

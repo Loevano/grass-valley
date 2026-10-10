@@ -93,7 +93,9 @@ These are starting values to make the prototype playable, **not final design dec
   Rock mining and resource depletion are not implemented. Existing saves gain
   resources only on unoccupied tiles, preserving their buildings.
 - Storage starts at 100 per resource; each storehouse adds 100. Full storage pauses that resource's production.
-- Food is consumed over time. Shortages pause arrivals; nobody dies or leaves.
+- Food is consumed over time. A full minute of missed meals puts settlers at risk
+  of leaving with all their skills. Cottage upgrades reduce that risk; the last
+  settler stays so the town can recover.
 - Each cottage adds room for two villagers, up to 16 in the prototype.
 - New villagers arrive when housing and sufficient food are available.
 - Harvesting 30 wood still records “Timber roots”; hall upgrades now use housing, food, profession, and processing milestones. See ROADMAP.md.

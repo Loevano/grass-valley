@@ -132,6 +132,15 @@ the Python host, refresh both browsers, and create a new world to use the shared
   and only one keeper tends a barn each cycle.
 - Open **Villagers** for the full roster, or select one villager to assign a job.
   Their skills increase as they work. **Help** contains the basic instructions.
+- A minute of consecutive missed meals puts settlers at risk of leaving (5% per
+  three-second tick before housing benefits). Departures permanently remove their
+  skills and stop their work. The Villagers panel warns about shortages and keeps
+  the latest departure visible. Feeding everyone resets the shortage timer; each
+  departure gives another minute of grace and delays new arrivals for a minute.
+  The last settler stays to help recovery. Level 2/3 cottages provide 25%/50% lower
+  departure risk per housing space, shared across the population (up to 75% with
+  timber framing). Only finished cottages count; capacity upgrades add worker
+  slots rather than comfort.
 - Use arrow keys and Enter on the focused map to inspect tiles or choose build locations.
 - Workers walk around obstacles to their resource spots, chop wood or tend crops,
   and carry supplies back to their workplace. These animations illustrate work;

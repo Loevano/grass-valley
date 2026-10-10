@@ -36,6 +36,48 @@ SETTLER_SPACES.update({k: v['slots'] for k, v in economy.BUILDINGS.items()})
 BUILDING_JOBS.update({k: v['job'] for k, v in economy.BUILDINGS.items() if 'job' in v})
 
 WORKER_FOOD = .18
+SHORTAGE_GRACE_SECONDS = 60
+DEPARTURE_CHANCE = 5  # Percent per tick after the grace period, before housing.
+
+
+def housing_loyalty(town):
+    # Housing is shared, so cottage comfort protects workers in every profession.
+    population = len(town['villagers'])
+    comfort = []
+    for building in town['buildings']:
+        if building['kind'] != 'home' or not completed(building):
+            continue
+        level = building_level(building) + ('timber_frame' in building.get('profession_upgrades', []))
+        comfort.extend([min(.75, .25 * (level - 1))] * (2 * level))
+    return sum(sorted(comfort, reverse=True)[:population]) / population if population else 0
+
+
+def feed_settlers(town):
+    needed = len(town['villagers']) * .12 + WORKER_FOOD * sum(
+        v['job'] != 'idle' or bool(v.get('construction_target')) for v in town['villagers'])
+    shortage = town['food'] + 1e-9 < needed
+    economy.eat(town, needed)
+    town['food_shortage_seconds'] = (town.get('food_shortage_seconds', 0) + TICK_SECONDS
+                                     if shortage else 0)
+    town['arrival_delay_seconds'] = max(0, town.get('arrival_delay_seconds', 0) - TICK_SECONDS)
+    if town['food_shortage_seconds'] < SHORTAGE_GRACE_SECONDS or len(town['villagers']) <= 1:
+        return
+    chance = round(DEPARTURE_CHANCE * (1 - housing_loyalty(town)) * 100)
+    if secrets.randbelow(10000) >= chance:
+        return
+    serials = [int(v['name'][8:]) for v in town['villagers']
+               if v['name'].startswith('Settler ') and v['name'][8:].isdigit()]
+    town['settler_serial'] = max([town.get('settler_serial', 0), len(town['villagers'])] + serials)
+    # Any resident can leave, including an experienced specialist.
+    villager = town['villagers'].pop(secrets.randbelow(len(town['villagers'])))
+    town['departure_count'] = town.get('departure_count', 0) + 1
+    town['last_departure'] = {
+        'name': villager['name'], 'job': villager['job'],
+        'practice': {job: villager.get(job, 0) for job in JOBS
+                     if job not in {'idle', 'building'} and villager.get(job, 0)},
+    }
+    town['food_shortage_seconds'] = 0
+    town['arrival_delay_seconds'] = SHORTAGE_GRACE_SECONDS
 
 MAP_SIZE = 120
 RESOURCE_REACH = 3
@@ -475,14 +517,14 @@ def tick(world):
                 economy.deliver(town, output, amount, capacity(town))
             economy.practice(villager, job)
             villager['production_status'] = 'Working' if caught else 'No catch — trying again'
-        # Shortages pause population growth; residents never leave.
-        economy.eat(town, len(town['villagers']) * .12 + WORKER_FOOD * sum(
-            v['job'] != 'idle' or bool(v.get('construction_target')) for v in town['villagers']))
+        feed_settlers(town)
         homes = sum(building_level(b) + ('timber_frame' in b.get('profession_upgrades', [])) for b in town['buildings']
                     if b['kind'] == 'home' and completed(b))
-        if len(town['villagers']) < min(5 + homes * 2, 16) and town['food'] >= 20:
+        if (len(town['villagers']) < min(5 + homes * 2, 16) and town['food'] >= 20
+                and not town.get('arrival_delay_seconds')):
             economy.eat(town, 10)
-            town['villagers'].append({'name': 'Settler ' + str(len(town['villagers']) + 1),
+            town['settler_serial'] = max(town.get('settler_serial', 0), len(town['villagers'])) + 1
+            town['villagers'].append({'name': 'Settler ' + str(town['settler_serial']),
                                      'job': 'idle', 'woodcutting': 0, 'farming': 0, 'fishing': 0})
             economy.ensure_talents(town['villagers'][-1], len(town['villagers']) - 1)
         if town['harvested'] >= 30 and 'Timber roots' not in town['achievements']:
