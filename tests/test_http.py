@@ -11,7 +11,7 @@ import server
 
 
 class LanHost(unittest.TestCase):
-    def test_character_movement_is_owned_rate_limited_and_saved(self):
+    def test_character_movement_is_owned_uninterrupted_and_saved(self):
         _, owner = self.call('/api/join', {'name': 'Home'})
         _, friend = self.call('/api/join', {'name': 'Friend'})
         owner, friend = json.loads(owner), json.loads(friend)
@@ -25,8 +25,12 @@ class LanHost(unittest.TestCase):
         self.assertGreater(result['player']['x'], 5)
         friend_player = server.WORLD['towns'][friend['town_id']]['player']
         self.assertEqual(friend_player['x'], 5)
-        status, _ = self.call('/api/command', move, owner['token'])
-        self.assertEqual(status, 429)
+        for _ in range(3):
+            status, body = self.call('/api/command', move, owner['token'])
+            self.assertEqual(status, 200)
+            next_result = json.loads(body)
+            self.assertGreater(next_result['player']['x'], result['player']['x'])
+            result = next_result
         server.load()
         self.assertEqual(server.WORLD['towns'][owner['town_id']]['player'], result['player'])
 

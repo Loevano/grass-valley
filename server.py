@@ -668,13 +668,6 @@ class Handler(SimpleHTTPRequestHandler):
                         if town_id not in WORLD['towns']:
                             self.reply(401, {'error': 'Join this world first.'})
                             return
-                        if data.get('action') == 'walk':
-                            move_key = (ACTIVE_WORLD, town_id)
-                            now = time.monotonic()
-                            if move_key in MOVE_TIMES and now - MOVE_TIMES[move_key] < .09:
-                                self.reply(429, {'error': 'Walking too quickly. Try again.'})
-                                return
-                            MOVE_TIMES[move_key] = now
                         result = command(WORLD['towns'][town_id], data, WORLD)
                         save()
                         self.reply(200, dict(result or {}, ok=True))
@@ -737,7 +730,6 @@ def simulation():
 
 
 WORLD, TOKENS = {'towns': {}}, {}
-MOVE_TIMES = {}
 WORLDS, ACTIVE_WORLD = {}, None
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
