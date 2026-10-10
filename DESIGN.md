@@ -84,7 +84,7 @@ These are starting values to make the prototype playable, **not final design dec
 - New worlds share one 120×120 landscape, with randomized hall sites at least 40 tiles apart. Construction stays within 10 steps of the owner's hall, adding 5 steps per completed hall upgrade, and within the greater of 15 steps or the hall's range of its original site. Existing worlds keep their separate town maps.
 - Cottages, woodcutters, farms, and storehouses occupy one tile each.
 - Move a building instantly for one coin, preserving its identity. If you have no coins, moving is free so rearranging never becomes locked.
-- Every three seconds, assigned workers produce resources and gain skill if storage has room.
+- Every three seconds, assigned workers produce into 50-unit workplace buffers and gain skill if the buffer has room.
 - Town maps contain renewable forests and water, plus rock outcrops. Woodcutters
   need a tree within three horizontal/vertical tile steps; farms need water within
   the same reach. Workers animate walking around obstacles, gathering beside the
@@ -92,7 +92,7 @@ These are starting values to make the prototype playable, **not final design dec
   production every three seconds. Buildings use open grass tiles.
   Rock mining and resource depletion are not implemented. Existing saves gain
   resources only on unoccupied tiles, preserving their buildings.
-- Storage starts at 100 per resource; each storehouse adds 100. Full storage pauses that resource's production.
+- The hall starts with 100 wood and 100 food spaces. Storehouses add 100 shared spaces per level, allocated between resources; level 5 becomes a 500-space Warehouse. Storage workers collect outputs and distribute inputs along walkable routes. Producers deliver full buffers and fetch inputs themselves when needed. Full storage preserves buffered goods and eventually pauses work.
 - Food is consumed over time. A full minute of missed meals puts settlers at risk
   of leaving with all their skills. Cottage upgrades reduce that risk; the last
   settler stays so the town can recover.

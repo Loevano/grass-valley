@@ -26,7 +26,8 @@ class EconomyRules(unittest.TestCase):
         command(self.town, {'action': 'job', 'index': 0, 'job': 'woodcutting'})
         wood = self.town['wood']
         tick(self.world)
-        self.assertEqual(self.town['wood'], wood + .5)
+        self.assertEqual(self.town['wood'], wood)
+        self.assertEqual(self.town['buildings'][1]['output_buffer']['wood'], .5)
         self.assertEqual(self.town['harvested'], .5)
 
     def test_assigned_workers_consume_extra_food(self):
@@ -52,7 +53,8 @@ class EconomyRules(unittest.TestCase):
         del self.town['villagers'][0]['fishing']  # Older saves have no fishing skill.
         food = self.town['food']
         tick(self.world)
-        self.assertGreater(self.town['food'], food)
+        self.assertLess(self.town['food'], food)
+        self.assertEqual(self.town['buildings'][1]['output_buffer']['fish'], 1)
         self.assertEqual(self.town['villagers'][0]['fishing'], 1)
         self.assertEqual(self.town['villagers'][0]['work_target']['kind'], 'water')
         command(self.town, {'action': 'move', 'index': 1, 'x': 6, 'y': 6})

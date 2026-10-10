@@ -93,6 +93,7 @@ class SettlerProfessions(unittest.TestCase):
         self.assertEqual(self.town['goods']['fodder'], 10)
         self.assertNotIn('breeding', self.worker)
         self.worker['fishing'] = 20
+        self.town['buildings'][index]['input_buffer'] = {'fodder': 10}
         server.tick({'towns': {'a': self.town}})
         self.assertEqual(self.worker['breeding'], 1)
 

@@ -46,6 +46,15 @@ def new_world(seed=None):
     starters = [{'kind': kind, 'x': site['x'] + dx, 'y': site['y'] + dy}
                 for site in sites for kind, dx, dy in
                 [('tree', -4, -3), ('tree', -4, -2), ('water', 4, -3), ('water', 4, -2)]]
+    # Dense timber patches give woodcutters a forest beside each starting town.
+    occupied = {(r['x'], r['y']) for r in resources + starters}
+    for site in sites:
+        for dx in range(-7, -3):
+            for dy in range(-5, -1):
+                x, y = site['x'] + dx, site['y'] + dy
+                if (x, y) not in occupied and rows[y][x] != 'v':
+                    resources.append({'kind': 'tree', 'x': x, 'y': y})
+                    rows[y][x] = 'f'
     resources.extend(starters)
     landscape = {'map_size': 120, 'terrain_seed': seed,
                  'terrain': [''.join(row) for row in rows], 'map_resources': resources}
