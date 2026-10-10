@@ -564,7 +564,7 @@ function draw(seconds=0){
     if(!wet&&variation===0){ctx.fillStyle='#8fa574';ctx.fillRect(px-5*tileW/46,py+tileH*.5,2*tileW/46,2*tileW/46);ctx.fillStyle='#d7c78a';ctx.fillRect(px+4*tileW/46,py+tileH*.65,2*tileW/46,2*tileW/46);}
     if(!wet&&(x===0||y===0||x===terrainSize-1||y===terrainSize-1)&&variation%2===0){ctx.strokeStyle='#9caf77';ctx.lineWidth=tileW/46;ctx.beginPath();ctx.moveTo(px-6*tileW/46,py+tileH*.65);ctx.lineTo(px-9*tileW/46,py+tileH*.4);ctx.moveTo(px-6*tileW/46,py+tileH*.65);ctx.lineTo(px-4*tileW/46,py+tileH*.35);ctx.stroke();}
     if(reachable.has(`${x},${y}`))polygon(diamond,'#b8dcad44','#c6dfaa');
-    if(preview?.x===x&&preview?.y===y&&previewKind&&town){const valid=placementValid(town,preview,previewKind);ctx.save();ctx.lineWidth=2;polygon(diamond,valid?'#d6d8a366':'#c76d6455',valid?'#eee5ab':'#f3a295');ctx.restore();}
+    if(preview?.x===x&&preview?.y===y&&previewKind&&town){const valid=placementValid(town,preview,previewKind)&&buildingUsable(town,{...preview,kind:previewKind});ctx.save();ctx.lineWidth=2;polygon(diamond,valid?'#d6d8a366':'#c76d6455',valid?'#eee5ab':'#f3a295');ctx.restore();}
     const selected=selection?.type==='building'?town?.buildings[selection.index]:selection?.type==='resource'?resources[selection.index]:null;
     if((selected?.x===x&&selected?.y===y)||(!previewKind&&keyboardTile?.x===x&&keyboardTile?.y===y)){
       ctx.save();ctx.lineWidth=3;polygon([[px,py],[px+tileW/2,py+tileH/2],[px,py+tileH],[px-tileW/2,py+tileH/2]],'#fff0b133','#fff0b1');ctx.restore();
@@ -610,11 +610,11 @@ function draw(seconds=0){
       drawVillager(b);
       continue;
     }
-    drawBuilding(b);
+    drawBuilding(b,town);
   }
   if(preview && previewKind && town && town.terrain?.[preview.y]?.[preview.x]!=='v' && viewed===identity?.town_id){
     const valid=placementValid(town,preview,previewKind);
-    ctx.save();ctx.globalAlpha=valid ? .65 : .35;drawBuilding({...preview,kind:previewKind});ctx.restore();
+    ctx.save();ctx.globalAlpha=valid ? .65 : .35;drawBuilding({...preview,kind:previewKind},town);ctx.restore();
   }
 }
 function acrePlacementValid(town,tile,index){
@@ -629,7 +629,11 @@ function placementValid(town,tile,kind){
     && !town.map_resources.some(r=>r.x===tile.x&&r.y===tile.y)
     && (tool==='move' || town.wood>=costs[kind]);
 }
-function drawBuilding(b){
+function buildingUsable(town,b){
+  const source={woodcutter:'tree',farm:'water',fishing_hut:'water'}[b.kind];
+  return !source || !!town?.map_resources.some(r=>r.kind===source&&Math.abs(r.x-b.x)+Math.abs(r.y-b.y)<=3);
+}
+function drawBuilding(b,town=world.towns[viewed]){
   if(b.kind==='acre'){
     const [x,y]=point(b.x,b.y);
     polygon([[x,y+tileH*.1],[x+tileW*.4,y+tileH*.5],[x,y+tileH*.9],[x-tileW*.4,y+tileH*.5]],'#80764a','#ab9561');
@@ -650,11 +654,12 @@ function drawBuilding(b){
   const w=tileW*(b.kind==='storehouse' ? .43 : .38),depth=w*tileH/tileW,h=(b.kind==='hall'?42:b.kind==='woodcutter'?23:27)*s;
   // Wall bases share the tile's ground plane and its isometric slope.
   ctx.fillStyle='#223b2944';ctx.beginPath();ctx.ellipse(x+8*s,y+depth*.6,w+8*s,depth+2*s,0,0,Math.PI*2);ctx.fill();
-  polygon([[x-w,y],[x,y+depth],[x,y+depth-h],[x-w,y-h]],colors[b.kind]);
-  polygon([[x,y+depth],[x+w,y],[x+w,y-h],[x,y+depth-h]],'#857659');
+  const usable=buildingUsable(town,b);
+  polygon([[x-w,y],[x,y+depth],[x,y+depth-h],[x-w,y-h]],usable?colors[b.kind]:'#c76d64');
+  polygon([[x,y+depth],[x+w,y],[x+w,y-h],[x,y+depth-h]],usable?'#857659':'#a34f49');
   polygon([[x-w,y],[x,y+depth],[x,y+depth-3*s],[x-w,y-3*s]],'#797665');
   polygon([[x,y+depth],[x+w,y],[x+w,y-3*s],[x,y+depth-3*s]],'#5e6255');
-  polygon([[x-w-3*s,y-h],[x,y-h-15*s],[x+w+3*s,y-h],[x,y-h+depth+1*s]],b.kind==='hall'?'#5a747b':'#80574b');
+  polygon([[x-w-3*s,y-h],[x,y-h-15*s],[x+w+3*s,y-h],[x,y-h+depth+1*s]],usable?(b.kind==='hall'?'#5a747b':'#80574b'):'#a34f49');
   ctx.fillStyle='#3d4438';ctx.fillRect(x-6*s,y-h+13*s,5*s,9*s);
   // Warm windows and a hanging lantern; no new ambient animation.
   ctx.save();ctx.shadowColor='#f1c779';ctx.shadowBlur=7*s;ctx.fillStyle='#edc77d';
