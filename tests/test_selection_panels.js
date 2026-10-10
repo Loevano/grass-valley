@@ -103,7 +103,7 @@ const run=new Function('document','window','localStorage','setTimeout','clearTim
       check(row.tag==='tr'&&row.children[0].attributes.scope==='row','Each villager has a table row header');
       check(row.children[3].children[0].className==='villager-skills','Skills use a compact icon group');
       check(!row.children[1].children[1].disabled,'Every owner row has a job control');
-      check(row.children[2].textContent==='Town hall · shared shelter','Housing is visible in the table');
+      check(row.children[2].textContent==='Shared, lvl 1','Housing is compact in the table');
       check(row.children[5].children.length>=1,'Work status is visible in the table');
     }
     const skillIcons=rosterRows()[0].children[3].children[0].children;

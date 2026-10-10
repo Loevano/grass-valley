@@ -481,7 +481,7 @@ function villagerRow(town,v,index){
   const label=document.createElement('span');label.textContent=v.job==='idle'&&v.construction_target?'Builder (automatic)':{idle:'Resting',building:'Builder',woodcutting:'Woodcutting',farming:'Farming',fishing:'Fishing',...professionJobs}[v.job] || goodName(v.job);job.append(label);row.append(job);
   const housing=document.createElement('td');
   const homes=town.buildings.filter(b=>b.kind==='home'&&!b.construction);
-  housing.textContent=homes.length?`Shared cottages · ${[...new Set(homes.map(buildingLevel))].sort((a,b)=>a-b).map(level=>`level ${level}`).join(', ')}`:'Town hall · shared shelter';row.append(housing);
+  housing.textContent=`Shared, lvl ${homes.length?[...new Set(homes.map(buildingLevel))].sort((a,b)=>a-b).join(', '):town.level}`;row.append(housing);
   const skills=document.createElement('td'),talents=document.createElement('td'),status=document.createElement('td');
   row.append(skills);row.append(talents);row.append(status);
   const icons=document.createElement('div');icons.className='villager-skills';
