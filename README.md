@@ -41,8 +41,13 @@ encrypted transport; do not expose it through router port forwarding.
 
 ## Play
 
+- Each new town has random forests, ponds, meadows, sandy ground, and rocky areas.
+  The starting clearing has nearby wood and water. Terrain and resources are saved,
+  so returning to a town keeps the same landscape. Open ground can be built on;
+  trees, water, and rocks still reserve their tiles.
 - Your gold-clad villager is marked **You**. Click the map and hold **WASD** to
   walk in screen directions; the camera follows as you explore your town.
+  Click **Find me** to return to your town, center your character, and start walking.
   Buildings, trees, water, and rocks block movement. Your position is saved per
   world. Movement pauses while typing, placing buildings, or using world menus.
 - Open **Build**, choose a building, hover over open grass to highlight its tile, then left-click
@@ -73,7 +78,8 @@ host address to return to your town; clearing site storage loses that associatio
 There is no recovery screen yet. Back up the save file while the server is stopped.
 Towns in the open world keep producing while owners are away if the host is running.
 No production occurs while the host is stopped or for worlds that are not open.
-Existing saves gain resource spots on unoccupied tiles when the host restarts;
+Existing saves keep their resource layout and gain varied ground. Saves without
+resources gain resource spots on unoccupied tiles when the host restarts;
 existing buildings stay in place. Move older workplaces near trees or water as needed.
 
 Shared wilderness, combat, magic, trading, and cooperative quests are not implemented yet.

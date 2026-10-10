@@ -27,7 +27,10 @@ document.addEventListener?.('visibilitychange',clearWalk);
 function playerSprite(town,seconds){
   if(!town?.player)return null;
   const key=`${world.world_id}/${viewed}`;
-  if(playerView?.key!==key){playerView={...town.player,key,target:{...town.player},clock:0};clearWalk();}
+  if(playerView?.key!==key){
+    playerView={...town.player,key,target:{...town.player},clock:0,following:viewed===identity?.town_id};clearWalk();
+    if(playerView.following&&typeof camera!=='undefined'){camera.x=playerView.x;camera.y=playerView.y;}
+  }
   const s=playerView;
   if(viewed!==identity?.town_id)s.target={...town.player};
   if(!canControlPlayer())clearWalk();
@@ -144,6 +147,15 @@ for(const name of ['build','villagers','valley','help']){
   $(name+'-button').onclick=()=>openPanel(panel===name?null:name);
 }
 $('close-panel').onclick=()=>{openPanel(null);canvas.focus();};
+$('find-player-button').onclick=()=>{
+  const town=world.towns[identity?.town_id];
+  if(!town)return;
+  if(!town.player){notice('Restart the Python host, then refresh this page to load your character.');return;}
+  viewed=identity.town_id;keyboardTile=null;openPanel(null);
+  playerView.following=true;
+  if(typeof camera!=='undefined'){camera.x=playerView.x;camera.y=playerView.y;camera.zoom=1;}
+  draw();canvas.focus();notice('Your gold-clad villager is marked You. Hold WASD to walk.');
+};
 window.addEventListener('keydown',event=>{
   const key=event.key.toLowerCase();
   if(['w','a','s','d'].includes(key)&&!event.ctrlKey&&!event.metaKey&&!event.altKey&&canControlPlayer()){
@@ -274,6 +286,7 @@ function render(){
     $(name+'-button').classList.toggle('selected',panel===name);
   }
   $('build-button').disabled=!own || viewed!==identity?.town_id;
+  $('find-player-button').disabled=!own;
   $('villagers-button').disabled=!town;
   $('move').textContent=own?.coins?'Move a building · 1 coin':'Move a building · Free';
   $('mode-hint').textContent=tool==='move'?(moveIndex===null?'Moving: click a building. Escape to cancel.':'Moving: click open grass to move here. Escape to cancel.'):tool?`Building ${labels[tool].toLowerCase()}: hover over open grass and left-click to build. Escape to cancel.`:'Click a building, villager, or resource to learn more.';
