@@ -177,6 +177,17 @@ def validate_acre(town, farm_index, x, y):
         raise ValueError('Place acres within 3 tile steps of their farm.')
 
 
+def building_range(town):
+    return 15 if town['level'] >= 2 else 10
+
+
+def validate_building_range(town, x, y):
+    hall = next((b for b in town['buildings'] if b['kind'] == 'hall'), None)
+    reach = building_range(town)
+    if hall is None or abs(x - hall['x']) + abs(y - hall['y']) > reach:
+        raise ValueError(f'Build within {reach} tile steps of your town hall.')
+
+
 def command(town, data):
     ensure_resources(town)
     action = data.get('action')
@@ -201,6 +212,7 @@ def command(town, data):
         player = ensure_player(town)
         if abs(player['x'] - x) < .68 and abs(player['y'] - y) < .68:
             raise ValueError('Walk away from this tile before building here.')
+        validate_building_range(town, x, y)
         if town['wood'] < COSTS[kind]:
             raise ValueError('Gather more wood first.')
         if kind == 'acre':
@@ -223,6 +235,7 @@ def command(town, data):
         player = ensure_player(town)
         if abs(player['x'] - x) < .68 and abs(player['y'] - y) < .68:
             raise ValueError('Walk away from this tile before moving a building here.')
+        validate_building_range(town, x, y)
         if town['buildings'][index]['kind'] == 'acre':
             validate_acre(town, town['buildings'][index].get('farm_index'), x, y)
         # Rearranging must remain possible even after spending the starting coins.

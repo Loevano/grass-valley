@@ -60,6 +60,11 @@ encrypted transport; do not expose it through router port forwarding.
   Click **Find me** to return to your town, center your character, and start walking.
   Buildings, trees, water, and rocks block movement. Your position is saved per
   world. Movement pauses while typing, placing buildings, or using world menus.
+- The town hall allows new buildings and moves within 10 horizontal/vertical tile
+  steps (a diagonal counts as two). Completing its upgrade expands the range to 15.
+  Click the hall to see its range; the map highlights it while inspecting the hall
+  or opening Build. Existing buildings outside the range keep working. Moving the
+  hall within its current range shifts the building area to its new location.
 - Open **Build**, choose a building, hover over open grass to highlight its tile, then left-click
   to place it and spend wood. Keep clicking open tiles to place more of the selected building,
   or **Cancel selection** to clear it. Place woodcutters within three horizontal/vertical tile steps

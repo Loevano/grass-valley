@@ -14,7 +14,7 @@ const documentMock={getElementById(id){
 const canvasMock=documentMock.getElementById('world');
 canvasMock.getContext=()=>context;
 canvasMock.getBoundingClientRect=()=>({left:0,top:0,width:720,height:660});
-const run=new Function('document','window','localStorage','setTimeout','clearTimeout',
+const run=new Function('document','window','localStorage','setTimeout','clearTimeout','fills',
   source.slice(0,source.lastIndexOf('requestAnimationFrame(animate);'))+`
   return (async()=>{
     function check(condition,message){if(!condition)throw Error(message);}
@@ -36,6 +36,20 @@ const run=new Function('document','window','localStorage','setTimeout','clearTim
     function hover(x,y){canvas.onmousemove(pointer(x,y));}
     $('buildings').children[0].onclick();
     check(tool==='home','Choosing a cottage activates its tool');
+    fills.length=0;hover(11,10);
+    check(buildTile===null&&fills.includes('#c76d6455'),'Beyond the hall range previews red');
+    check(fills.includes('#e4c98022'),'Build panel highlights the hall building area');
+    await click(11,10);
+    check(commands.length===0&&$('notice').textContent.includes('within 10 tile steps'),'Out-of-range clicks explain the limit without submitting');
+    check(placementValid(town,{x:10,y:10},'home'),'Ten combined steps is inside the range');
+    town.level=2;
+    check(placementValid(town,{x:11,y:10},'home'),'Upgraded hall expands client placement range');
+    town.level=1;
+    fills.length=0;inspect('building',0);
+    check(fills.includes('#e4c98022'),'Inspecting the hall highlights its building range');
+    fills.length=0;openPanel(null);
+    check(!fills.includes('#e4c98022'),'Closing the panel clears the range overlay');
+    $('buildings').children[0].onclick();
     hover(2,3);
     check(buildTile.x===2&&buildTile.y===3,'Hover previews the tile under the cursor');
     check(commands.length===0&&town.wood===65,'Hover does not build or spend wood');
@@ -83,6 +97,6 @@ const run=new Function('document','window','localStorage','setTimeout','clearTim
     tool='home';hover(3,3);await click(3,3);
     check(buildTile===null&&commands.length===3,'Visiting another town cannot preview or build');
   })();`);
-run(documentMock,{devicePixelRatio:1,addEventListener(){}},{getItem:()=>null},()=>0,()=>{})
+run(documentMock,{devicePixelRatio:1,addEventListener(){}},{getItem:()=>null},()=>0,()=>{},fills)
   .then(()=>{if(typeof print==='function')print('Building selection checks passed');else console.log('Building selection checks passed');})
   .catch(error=>{if(typeof print==='function'){print(error.stack);quit(1);}else{console.error(error);process.exitCode=1;}});

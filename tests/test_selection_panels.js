@@ -39,6 +39,11 @@ const run=new Function('document','window','localStorage','setTimeout','clearTim
     check(selection.type==='building'&&$('selection-title').textContent==='Town hall','Clicking the roof selects a building');
     check(!$('hall-details').hidden&&!$('upgrade').disabled,'Owner sees available hall upgrade');
     check($('selection-destroy').hidden,'Town hall has no destroy button');
+    function rangeFact(){return $('selection-details').children.find(child=>child.children?.[1]?.textContent==='Building range');}
+    check(rangeFact().children[0].textContent==='10 tile steps','Hall panel displays its current building range');
+    town.level=2;render();
+    check(rangeFact().children[0].textContent==='15 tile steps','Hall panel reflects the expanded range');
+    town.level=1;render();
     town.wood=0;render();check($('upgrade').disabled,'Hall upgrade requires enough wood');town.wood=65;
     await clickTile(3,8);
     check(selection.type==='resource'&&$('selection-title').textContent==='Water','Water tile opens resource information');
@@ -57,6 +62,8 @@ const run=new Function('document','window','localStorage','setTimeout','clearTim
     check($('selection-details').children.some(child=>child.textContent==='1 assigned worker.'),'Workplace lists its assigned workers');
     $('selection-move').onclick();
     check(tool==='move'&&moveIndex===1&&panel==='build','Inspector Move starts with the selected building');
+    await clickTile(11,10);
+    check(moveIndex===1&&commands.length===1&&$('notice').textContent.includes('within 10 tile steps'),'Out-of-range moves keep selection and show the limit');
     await clickTile(8,8);
     check(commands[1].action==='move'&&commands[1].index===1&&commands[1].x===8,'Movement sends the selected building and destination');
     $('buildings').children[0].onclick();const [hoverX,hoverY]=point(8,8);canvas.onmousemove({clientX:hoverX,clientY:hoverY+tileH/2});
