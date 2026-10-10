@@ -250,7 +250,7 @@ function villagerRow(town,v,index){
   row.append(details);return row;
 }
 function renderSelection(town){
-  $('selection-details').replaceChildren();$('hall-details').hidden=true;$('selection-move').hidden=true;
+  $('selection-details').replaceChildren();$('hall-details').hidden=true;$('selection-move').hidden=true;$('selection-destroy').hidden=true;
   if(!selection)return;
   if(!town){selection=null;panel=null;return;}
   if(selection.type==='player'){
@@ -291,6 +291,7 @@ function renderSelection(town){
     $('selection-move').hidden=viewed!==identity?.town_id;
     $('selection-move').textContent=town.coins?'Move building · 1 coin':'Move building · Free';
     $('selection-move').onclick=()=>{const index=selection.index;openPanel('build');tool='move';moveIndex=index;render();};
+    $('selection-destroy').hidden=viewed!==identity?.town_id || item.kind==='hall';
     $('selection-details').append(p);
     if(item.kind==='woodcutter'||item.kind==='farm'){
       const assigned=town.villagers.map((v,i)=>({v,i,state:workers.get(i)})).filter(w=>w.v.job===(item.kind==='woodcutter'?'woodcutting':'farming')&&w.state?.home?.x===item.x&&w.state?.home?.y===item.y);
@@ -319,6 +320,18 @@ async function buildAt(x,y){
   finally{building=false;render();}
 }
 $('upgrade').onclick=()=>act({action:'upgrade'});
+$('selection-destroy').onclick=async()=>{
+  const town=world.towns[viewed],selected=selection,button=$('selection-destroy');
+  if(button.disabled || viewed!==identity?.town_id || selected?.type!=='building'
+    || !town?.buildings[selected.index] || town.buildings[selected.index].kind==='hall')return;
+  button.disabled=true;
+  try{
+    await request('/api/command',{action:'destroy',index:selected.index,world_id:world.world_id});
+    if(selection===selected)openPanel(null);
+    await refresh();
+  }catch(e){notice(e.message);await refresh();}
+  finally{button.disabled=false;}
+};
 async function refresh(){
   if(refreshing)return refreshing;
   refreshing=(async()=>{

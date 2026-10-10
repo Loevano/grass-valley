@@ -76,6 +76,9 @@ encrypted transport; do not expose it through router port forwarding.
   production still follows the host's three-second rhythm. If a workplace is out
   of reach, production and skill growth pause; move it closer to the source to resume.
 - Build cottages to attract residents; maintain food and add storage as needed.
+- Click a building, then **Destroy building** to remove it without a resource
+  refund. The town hall cannot be destroyed. Removing workplaces pauses affected
+  workers until another suitable workplace is available; existing residents stay.
 - Click **Move** in a building’s information panel, then an empty tile.
   You can also use **Move a building** in the Build panel. Moving costs one coin,
   or is free if you have none, so rearranging is always possible.

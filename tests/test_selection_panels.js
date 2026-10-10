@@ -38,6 +38,7 @@ const run=new Function('document','window','localStorage','setTimeout','clearTim
     await clickSprite('building',0);
     check(selection.type==='building'&&$('selection-title').textContent==='Town hall','Clicking the roof selects a building');
     check(!$('hall-details').hidden&&!$('upgrade').disabled,'Owner sees available hall upgrade');
+    check($('selection-destroy').hidden,'Town hall has no destroy button');
     town.wood=0;render();check($('upgrade').disabled,'Hall upgrade requires enough wood');town.wood=65;
     await clickTile(3,8);
     check(selection.type==='resource'&&$('selection-title').textContent==='Water','Water tile opens resource information');
@@ -52,6 +53,7 @@ const run=new Function('document','window','localStorage','setTimeout','clearTim
     check(commands[0].action==='job'&&commands[0].index===0&&commands[0].job==='farming','Inspector assigns the selected villager job');
     draw(.2);render();check(selection.index===0&&$('selection-title').textContent==='Ada','Selection follows animation and refresh');
     inspect('building',1);
+    check(!$('selection-destroy').hidden,'Owner can destroy a regular building');
     check($('selection-details').children.some(child=>child.textContent==='1 assigned worker.'),'Workplace lists its assigned workers');
     $('selection-move').onclick();
     check(tool==='move'&&moveIndex===1&&panel==='build','Inspector Move starts with the selected building');
@@ -67,6 +69,7 @@ const run=new Function('document','window','localStorage','setTimeout','clearTim
     await clickSprite('building',0);
     check($('progress').textContent.includes('Level 2')&&$('progress').textContent.includes('12/30'),'Visitor sees the visited hall progress');
     check($('upgrade').disabled&&$('selection-move').hidden,'Visitor cannot upgrade or move buildings');
+    inspect('building',1);check($('selection-destroy').hidden,'Visitor cannot destroy buildings');
     await clickSprite('villager',0);
     check($('selection-details').children[0].children.find(child=>child.tag==='select').disabled,'Visitor job controls are disabled');
     $('towns').children[0].onclick();$('villagers-button').onclick();
@@ -103,6 +106,31 @@ const run=new Function('document','window','localStorage','setTimeout','clearTim
     check(hitTargets.some(hit=>hit.type==='player'),'Centered player is drawn and selectable');
     delete town.player;$('find-player-button').onclick();
     check($('notice').textContent.includes('Restart the Python host'),'Older running hosts explain how to load the character');
+    identity={town_id:'own'};viewed='own';
+    let release,fail=false;
+    request=async(path,data)=>{
+      commands.push(data);
+      await new Promise(resolve=>{release=resolve;});
+      if(fail)throw Error('Destroy rejected');
+      town.buildings.splice(data.index,1);
+    };
+    refresh=async()=>render();
+    inspect('building',0);
+    const before=commands.length;
+    await $('selection-destroy').onclick();
+    check(commands.length===before,'Town hall protection also guards the button handler');
+    viewed='friend';inspect('building',1);await $('selection-destroy').onclick();
+    check(commands.length===before,'Visitor handler cannot send a destroy command');
+    viewed='own';inspect('building',1);fail=true;
+    const rejected=$('selection-destroy').onclick();release();await rejected;
+    check(selection.index===1&&town.buildings.length===2&&!$('selection-destroy').disabled,'Rejected destruction keeps selection and allows retry');
+    check($('notice').textContent==='Destroy rejected','Destroy errors are shown');
+    fail=false;const pending=$('selection-destroy').onclick();
+    await $('selection-destroy').onclick();
+    check(commands.length===before+2,'Repeated clicks cannot destroy another building while pending');
+    check(commands.at(-1).action==='destroy'&&commands.at(-1).index===1&&commands.at(-1).world_id==='test','Destroy sends selected building and world');
+    release();await pending;
+    check(town.buildings.length===1&&selection===null&&panel===null,'Successful destruction removes building and closes selection');
     identity=null;render();check($('find-player-button').disabled,'Players must own a town to use Find me');
   })();`);
 run(documentMock,{devicePixelRatio:1,addEventListener(key,callback){listeners[key]=callback;}},{getItem:()=>null},()=>0,()=>{},animation,listeners)

@@ -38,6 +38,49 @@ class VillageRules(unittest.TestCase):
         self.assertGreater(self.town['wood'], wood)
         self.assertEqual(self.town['villagers'][0]['woodcutting'], skill + 1)
 
+    def test_destroy_removes_each_building_kind_without_refund(self):
+        for kind in ['home', 'woodcutter', 'farm', 'storehouse']:
+            with self.subTest(kind=kind):
+                town = new_town('Test')
+                command(town, {'action': 'build', 'kind': kind, 'x': 2, 'y': 3})
+                resources = [town[key] for key in ['wood', 'food', 'coins']]
+                command(town, {'action': 'destroy', 'index': 1})
+                self.assertEqual(town['buildings'], [{'kind': 'hall', 'x': 5, 'y': 5}])
+                self.assertEqual([town[key] for key in ['wood', 'food', 'coins']], resources)
+                self.assertEqual(capacity(town), 100)
+                command(town, {'action': 'build', 'kind': kind, 'x': 2, 'y': 3})
+
+    def test_destroy_rejects_town_hall_and_invalid_indices(self):
+        for index in [0, -1, 1, None, True, 0.0, '0']:
+            with self.subTest(index=index):
+                before = copy.deepcopy(self.town)
+                with self.assertRaises(ValueError):
+                    command(self.town, {'action': 'destroy', 'index': index})
+                self.assertEqual(self.town, before)
+
+    def test_destroy_preserves_acre_links_when_building_indices_shift(self):
+        self.town['buildings'].extend([
+            {'kind': 'home', 'x': 1, 'y': 1},
+            {'kind': 'farm', 'x': 2, 'y': 2},
+            {'kind': 'acre', 'x': 2, 'y': 3, 'farm_index': 2},
+        ])
+        command(self.town, {'action': 'destroy', 'index': 1})
+        self.assertEqual(self.town['buildings'][2]['farm_index'], 1)
+        command(self.town, {'action': 'destroy', 'index': 1})
+        self.assertIsNone(self.town['buildings'][1]['farm_index'])
+
+    def test_destroy_workplace_clears_targets_and_pauses_production(self):
+        command(self.town, {'action': 'build', 'kind': 'woodcutter', 'x': 2, 'y': 2})
+        command(self.town, {'action': 'job', 'index': 0, 'job': 'woodcutting'})
+        self.assertIsNotNone(self.town['villagers'][0]['work_target'])
+        command(self.town, {'action': 'destroy', 'index': 1})
+        self.assertIsNone(self.town['villagers'][0]['work_target'])
+        wood = self.town['wood']
+        skill = self.town['villagers'][0]['woodcutting']
+        tick({'towns': {'a': self.town}})
+        self.assertEqual(self.town['wood'], wood)
+        self.assertEqual(self.town['villagers'][0]['woodcutting'], skill)
+
     def test_full_storage_pauses_production_and_skill(self):
         command(self.town, {'action': 'build', 'kind': 'woodcutter', 'x': 1, 'y': 1})
         command(self.town, {'action': 'job', 'index': 0, 'job': 'woodcutting'})

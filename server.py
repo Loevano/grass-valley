@@ -206,6 +206,17 @@ def command(town, data):
         # Rearranging must remain possible even after spending the starting coins.
         town['coins'] = max(0, town['coins'] - 1)
         town['buildings'][index].update(x=x, y=y)
+    elif action == 'destroy':
+        index = data.get('index')
+        if type(index) is not int or not 0 <= index < len(town['buildings']):
+            raise ValueError('Select a building first.')
+        if town['buildings'][index]['kind'] == 'hall':
+            raise ValueError('The town hall cannot be destroyed.')
+        town['buildings'].pop(index)
+        for building in town['buildings']:
+            farm_index = building.get('farm_index')
+            if type(farm_index) is int and farm_index >= index:
+                building['farm_index'] = None if farm_index == index else farm_index - 1
     elif action == 'job':
         index, job = data.get('index'), data.get('job')
         if type(index) is not int or not 0 <= index < len(town['villagers']) or job not in JOBS:
