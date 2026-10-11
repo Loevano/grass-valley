@@ -29,12 +29,12 @@ class FishingLuck(unittest.TestCase):
             self.assertAlmostEqual(self.town['food'], food - self.upkeep)
             self.assertEqual(self.fisher['fishing_catch'], {'attempt': 2, 'caught': False})
             self.assertEqual(roll.call_count, 2)
-            roll.assert_called_with(5)
+            roll.assert_called_with(10)
         self.assertEqual(self.fisher['fishing'], .08, 'Practice earns skill even without a catch')
 
     def test_every_successful_roll_and_master_reward(self):
         self.fisher['fishing'] = 20
-        for result in [1, 2, 3, 4]:
+        for result in range(1, 10):
             with self.subTest(result=result), patch('server.secrets.randbelow', return_value=result):
                 self.setUp()
                 self.fisher['fishing'] = 20

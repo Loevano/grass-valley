@@ -652,7 +652,7 @@ def tick(world):
                     continue
             caught = True
             if job == 'fishing':
-                caught = secrets.randbelow(5) != 0
+                caught = secrets.randbelow(10) != 0
                 villager['fishing_catch'] = {'attempt': villager.get('fishing_catch', {}).get('attempt', 0) + 1, 'caught': caught}
             rate = .5 if job == 'woodcutting' else 1
             bonus = production_bonus(building) + npcs.tool_bonus(villager, job)

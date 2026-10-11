@@ -248,7 +248,7 @@ the Python host, refresh both browsers, and create a new world to use the shared
   Assigned fishers use a wooden pier extending from their hut to nearby water,
   so a hut on the only accessible bank does not block their fishing spot.
   Casts reach up to three more tiles into connected water when space allows.
-  Fishing attempts have an 80% chance of catching food; an unlucky attempt
+  Fishing attempts have a 90% chance of catching food; an unlucky attempt
   yields no food, but still builds skill. Empty casts reel in and try again.
 - Woodcutters produce half as much wood as before. Assigned workers consume
   0.30 food each tick, compared with 0.12 for resting villagers.
@@ -311,7 +311,7 @@ the Python host, refresh both browsers, and create a new world to use the shared
   hold 50/75/100/150/200 of each enabled resource. Level 5 becomes a Warehouse. Woodcutters, farms, fishing huts,
   and acres gain 25% production per worker at level 2 and 50% at level 3.
   Farm and acre bonuses add together on that field. Fishing bonuses increase food
-  from successful catches; the 80% catch chance stays the same. Workers still need
+  from successful catches; the 90% catch chance stays the same. Workers still need
   nearby resources. Upgrades survive saving and moving the building.
   Completed building upgrades change the artwork; settler-capacity upgrades add
   separate blue markers:
