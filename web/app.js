@@ -641,6 +641,9 @@ function renderSettlers(town,item,buildingIndex){
   const chooser=document.createElement('select');chooser.setAttribute('aria-label','Settler to add');
   const available=town.villagers.map((v,i)=>({v,i})).filter(({v,i})=>settlerBuilding(town,v,i)!==buildingIndex);
   const job={woodcutter:'woodcutting',farm:'farming',acre:'farming',fishing_hut:'fishing'}[item.kind] || world.progression?.buildings[item.kind]?.job;
+  const talentRoot=world.progression?.talent_roots?.[job] || job;
+  available.sort((a,b)=>Number(settlerBuilding(town,a.v,a.i)!==null)-Number(settlerBuilding(town,b.v,b.i)!==null)
+    || (job?(b.v.talents?.[talentRoot] || 0)-(a.v.talents?.[talentRoot] || 0):0));
   const requirements=world.progression?.job_requirements?.[job];
   if(requirements){const note=document.createElement('small');note.textContent='Each settler needs '+Object.entries(requirements).map(([skill,amount])=>`${amount} ${goodName(skill).toLowerCase()} practice`).join(', ');$('selection-details').append(note);}
   const eligible=available.filter(({v})=>!jobRequirement(v,job));

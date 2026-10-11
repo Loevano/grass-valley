@@ -59,10 +59,25 @@ const run=new Function('document','window','localStorage','setTimeout','clearTim
     town.villagers[1].talents={farming:1};
     inspect('building',3);
     const picker=controls().find(c=>c.attributes?.['aria-label']==='Settler to add');
-    check(picker.children[0].disabled&&picker.children[0].textContent.includes('Requires 10 milling'),'Unqualified settler shows required personal practice');
-    check(!picker.children[1].disabled&&picker.children[1].textContent.includes('1.25× output'),'Qualified settler shows natural output bonus');
+    check(picker.children[1].disabled&&picker.children[1].textContent.includes('Requires 10 milling'),'Unqualified settler shows required personal practice');
+    check(!picker.children[0].disabled&&picker.children[0].textContent.includes('1.25× output'),'Qualified settler shows natural output bonus');
     check(picker.value==='1','Picker defaults to an eligible settler');
     button('Add settler').onclick();check(commands.at(-1).index===1&&commands.at(-1).building_index===3,'Bakery assignment targets qualified settler');
+    town.villagers.push(
+      {name:'Cal',job:'idle',milling:10},
+      {name:'Dee',job:'idle',milling:10,talents:{farming:1}},
+      {name:'Eli',job:'idle',milling:10,talents:{farming:-1}},
+      {name:'Flo',job:'idle',milling:0,talents:{farming:1}}
+    );
+    render();
+    const recommendations=controls().find(c=>c.attributes?.['aria-label']==='Settler to add');
+    check(recommendations.children.map(option=>Number(option.value)).join(',')==='3,5,2,4,1,0','Unallocated settlers come first, ordered by profession talent, before reassignment candidates');
+    check(recommendations.value==='3','Qualified unallocated talent match is recommended by default');
+    check(recommendations.children[1].disabled,'Talent does not bypass profession requirements');
+    button('Add settler').onclick();check(commands.at(-1).index===3,'Assignment uses the recommended settler original index');
+    town.villagers[3].milling=0;render();
+    check(controls().find(c=>c.attributes?.['aria-label']==='Settler to add').value==='2','Unallocated qualified settler beats an assigned talent match');
+    town.villagers.splice(2);render();
     town.villagers[1].milling=0;render();check(button('Add settler').disabled,'No qualified settlers disables assignment');
     const card=villagerCard(town,town.villagers[0],0);
     const jobs=card.children.find(c=>c.tag==='select');
