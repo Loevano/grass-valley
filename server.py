@@ -628,6 +628,14 @@ def prepare_landscapes(world, regenerate=False):
 
 def tick(world):
     prepare_landscapes(world, regenerate=True)
+    towns = list(world['towns'].values())
+    if 'shared_map' in world:
+        horses.wander(world['shared_map'], towns, TICK_SECONDS)
+        if world.get('_chunks'):
+            world['_chunks'].sync()
+    else:
+        for town in towns:
+            horses.wander(town, [town], TICK_SECONDS)
     spatial = SpatialIndex(world['shared_map']['map_resources']) if 'shared_map' in world else None
     if world.get('shared_map', {}).get('chunked'):
         world['shared_map']['chunk_clock'] += TICK_SECONDS

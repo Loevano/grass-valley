@@ -1870,7 +1870,7 @@ function paintRock(ctx,r,detailed,polygon,joined=null){
       const shade=[106,114,105].map((dark,k)=>Math.round(dark+([214,206,185][k]-dark)*light));
       polygon([top[i],top[j],peak],`rgb(${shade.join(',')})`);
     }
-    return;
+    return [peak[0],peak[1]+3];
   }
   const stones=formation.map(([baseX,baseY,baseW,baseH])=>{
     const w=baseW*(.75+random()*.32),h=Math.min(baseH*(.7+random()*.3),w*1.65);
@@ -1903,9 +1903,23 @@ function paintRock(ctx,r,detailed,polygon,joined=null){
       polygon([shoulder,[x-w*.3,y-h*.9],[x-w*.42,y-h*.77]],'#a0aa69');
     }
   }
+  return [stones[0].x,stones[0].y-stones[0].h*.5];
+}
+function wildHorsePosition(r,now=Date.now()/1000){
+  const progress=Math.max(0,Math.min(1,(now-(r.wander_started || 0))/3));
+  if(!r.wander_from)return [r.x,r.y,1];
+  return [r.wander_from[0]+(r.x-r.wander_from[0])*progress,
+    r.wander_from[1]+(r.y-r.wander_from[1])*progress,progress];
 }
 function drawResource(r,joined=null){
-  const [x,y]=point(r.x,r.y),s=tileW/46;
+  const position=r.kind==='wild_horse'?wildHorsePosition(r):[r.x,r.y];
+  const [x,y]=point(position[0],position[1]),s=tileW/46;
+  if(r.kind==='wild_horse'){
+    ctx.save();ctx.translate(x,y);ctx.scale(s,s);
+    if(r.wander_from&&r.x-r.wander_from[0]-(r.y-r.wander_from[1])<0)ctx.scale(-1,1);
+    paintHorse(ctx,position[2]<1?Math.sin(position[2]*Math.PI*8):0);
+    ctx.restore();return;
+  }
   const detailed=tileW>=32;
   const willow=r.kind==='tree'&&(world.shared_map || world.towns[viewed])?.terrain?.[r.y]?.[r.x]==='b';
   const resolution=2**Math.ceil(Math.log2(Math.max(.5,s*renderPixelRatio())));
@@ -1964,7 +1978,16 @@ function paintResource(ctx,r,willow,detailed=true,joined=null){
     }
     ctx.restore();return;
   }
-  if(r.kind==='rock'){paintRock(ctx,r,detailed,polygon,joined);if(r.ore){ctx.strokeStyle='#c48658';ctx.lineWidth=3;ctx.beginPath();ctx.moveTo(-11,-8);ctx.lineTo(-2,-14);ctx.lineTo(8,-7);ctx.stroke();}ctx.restore();return;}
+  if(r.kind==='rock'){
+    const [oreX,oreY]=paintRock(ctx,r,detailed,polygon,joined);
+    if(r.ore&&detailed){
+      ctx.fillStyle='#ad8769';
+      for(const [x,y] of [[-3,0],[1,-2],[4,1]]){
+        ctx.beginPath();ctx.arc(oreX+x,oreY+y,1.2,0,Math.PI*2);ctx.fill();
+      }
+    }
+    ctx.restore();return;
+  }
   if(r.kind==='wild_horse'){paintHorse(ctx,0);ctx.restore();return;}
   if(!detailed&&r.kind!=='chest'){
     if(r.kind==='tree'){
@@ -2986,7 +3009,8 @@ function draw(seconds=0){
   const objects=mergeDepthObjects([...buildings,...cropObjects,...boats].filter(visible),visibleResourceObjects(resourceData,rect),
     [...villagers.filter(v=>!passengers.has(v)),...npcSprites(world.shared_map || town,seconds),...barnAnimalSprites(buildings,animalClock,world.shared_map || town),...otherPlayers,...(hero?[hero]:[])].filter(visible));
   for(const b of objects){
-    const [px,py]=point(b.x,b.y),scale=tileW/46;
+    const position=b.kind==='wild_horse'?wildHorsePosition(b):[b.x,b.y];
+    const [px,py]=point(position[0],position[1]),scale=tileW/46;
     if(px < -tileW || px > rect.width+tileW || py < -tileH || py > rect.height+80*scale)continue;
     if(b.kind==='animal'){drawBarnAnimal(b);continue;}
     if(b.kind==='crop'){drawFarmCrop(b);continue;}

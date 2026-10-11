@@ -120,10 +120,21 @@ def ensure_terrain(town, new=False):
 
 def ensure_industry(landscape, obstacles=(), origin=(0, 0)):
     """Add mineral veins and wild meadow horses without moving saved terrain."""
-    for resource in landscape['map_resources']:
-        if resource['kind'] == 'rock':
-            resource.setdefault('ore', 'iron')
-    if landscape.get('industry_version') == 1:
+    if landscape.get('mineral_version') != 1:
+        for resource in landscape['map_resources']:
+            if resource['kind'] == 'rock':
+                if (resource['x'] * 73 + resource['y'] * 137) % 7 == 0:
+                    resource['ore'] = 'iron'
+                else:
+                    resource.pop('ore', None)
+        landscape['mineral_version'] = 1
+    version = landscape.get('industry_version', 0)
+    if version == 1:
+        # Thin existing herds once, without replacing captured horses.
+        landscape['map_resources'][:] = [r for r in landscape['map_resources']
+            if r['kind'] != 'wild_horse' or (r['x'] * 31 + r['y'] * 53) % 10 == 0]
+    if version >= 1:
+        landscape['industry_version'] = 2
         return
     occupied = {(r['x'], r['y']) for r in landscape['map_resources']}
     occupied.update((b['x'], b['y']) for b in obstacles)
@@ -132,7 +143,8 @@ def ensure_industry(landscape, obstacles=(), origin=(0, 0)):
     for y, row in enumerate(landscape.get('terrain', [])):
         for x, biome in enumerate(row):
             tx, ty = x + ox, y + oy
-            if biome in 'gm' and (tx * 73 + ty * 137 + tx * ty * 11) % 499 == 71 and (tx, ty) not in occupied:
+            if (biome in 'gm' and (tx * 73 + ty * 137 + tx * ty * 11) % 499 == 71
+                    and (tx * 31 + ty * 53) % 10 == 0 and (tx, ty) not in occupied):
                 landscape['map_resources'].append({'kind': 'wild_horse', 'x': tx, 'y': ty})
                 occupied.add((tx, ty))
-    landscape['industry_version'] = 1
+    landscape['industry_version'] = 2

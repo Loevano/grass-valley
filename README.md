@@ -488,11 +488,12 @@ Check upgraded building artwork and selection with `node tests/test_building_vis
   offers. Both towns need completed markets and enabled storage for incoming goods.
   Offers use available stock when accepted, so spending it can make an offer unavailable.
 - **6 — Mining:** produce 5 leather to upgrade. Mines extract iron ore from a vein
-  within 10 tile steps. Existing rock outcrops gain visible copper-brown iron seams;
+  within 10 tile steps. Only some rock outcrops contain iron, marked by a few small mineral dots;
   their terrain and positions stay intact. Ore slowly regenerates.
 - **7 — Iron:** mine 10 ore to upgrade. Smelters turn ore and wood into iron.
 - **8 — Horses:** smelt 10 iron to upgrade, then build a stable and saddler.
-  Find a wild horse on open meadow or grass, walk beside it, select it, and choose
+  Wild horses are rare, wander near their grazing spot on open meadow or grass,
+  and pause when you approach. Find one, walk beside it, select it, and choose
   **Lead horse to stable**. Walk beside your own stable and choose **Settle the horse
   you are leading**. Assign a worker with 2 husbandry practice and supply fodder or
   vegetables; horses need five minutes of feeding to settle or grow. Two adults can

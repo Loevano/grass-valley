@@ -13,7 +13,7 @@ class IndustryFixture(unittest.TestCase):
     def setUp(self):
         self.town = server.new_town('Industry')
         self.town.update(level=10, terrain=['g' * 24] * 24, map_size=24,
-                         map_resources=[], npcs=[], goods={}, industry_version=1, town_origin={'x': 5, 'y': 5})
+                         map_resources=[], npcs=[], goods={}, industry_version=2, mineral_version=1, town_origin={'x': 5, 'y': 5})
         self.world = {'towns': {'own': self.town}}
         economy.ensure_inventory(self.town)
         self.worker = self.town['villagers'][0]
@@ -81,7 +81,8 @@ class Industry(IndustryFixture):
 
     def test_terrain_migration_preserves_tiles_and_never_respawns_captured_horses(self):
         self.town.pop('industry_version')
-        self.town['terrain'] = ['m' * 24] * 24
+        self.town.pop('mineral_version')
+        self.town['terrain'] = ['m' * 120] * 120
         self.town['map_resources'] = [{'kind': 'rock', 'x': 1, 'y': 1}]
         terrain = list(self.town['terrain'])
         ensure_industry(self.town, self.town['buildings'])

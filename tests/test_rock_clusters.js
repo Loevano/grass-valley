@@ -7,6 +7,8 @@ new Function('assert',`
   let resourceCache=null;
   ${sprites}
   ${resources}
+  assert.deepEqual(wildHorsePosition({x:8,y:5,wander_from:[7,5],wander_started:100},101.5),[7.5,5,.5],'Wild horses move smoothly between tiles');
+  assert.deepEqual(wildHorsePosition({x:8,y:5,wander_from:[7,5],wander_started:100},110),[8,5,1],'Horses stop at their authoritative position');
   const patch=[];
   for(let y=20;y<23;y++)for(let x=20;x<23;x++)patch.push({kind:'rock',x,y});
   patch.push({kind:'rock',x:40,y:40},{kind:'tree',x:19,y:20});
@@ -53,8 +55,14 @@ new Function('assert',`
   const diagonal=renderResources([{kind:'rock',x:0,y:0},{kind:'rock',x:1,y:1}]);
   assert.equal(diagonal.rockJoins.size,0,'Diagonal rocks do not bridge empty walkable tiles');
   const faces=[];
-  const ctx={save(){},restore(){},beginPath(){},moveTo(){},lineTo(){},closePath(){},fill(){faces.push(this.fillStyle);}};
-  paintResource(ctx,at(21,21),false,false,center);
+  const dots=[];
+  const ctx={arc(x,y,radius){dots.push([x,y,radius]);},save(){},restore(){},beginPath(){},moveTo(){},lineTo(){},closePath(){},fill(){faces.push(this.fillStyle);}};
+  paintResource(ctx,{...at(21,21),ore:'iron'},false,true,center);
+  assert.equal(dots.length,3,'Ore is marked with three small dots');
+  assert(dots.every(dot=>dot[2]<=1.2),'Ore markers stay subtle');
+  faces.length=0;dots.length=0;
+  paintResource(ctx,{...at(21,21),ore:'iron'},false,false,center);
+  assert.equal(dots.length,0,'Distant rocks skip ore detail');
   assert.equal(faces.length,5,'Interior rocks draw a solid top beneath slope-lit facets');
   faces.length=0;
   paintResource(ctx,at(22,22),false,false,data.rockJoins.get(at(22,22)));

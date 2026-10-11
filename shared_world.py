@@ -6,7 +6,7 @@ from npcs import ensure_npcs
 from terrain import generate_map
 
 MAP_FIELDS = ('map_size', 'terrain_seed', 'terrain', 'map_resources', 'tree_stumps', 'npcs', 'npc_roster_version', 'npc_placement_version', 'forage_version', 'forage_halls',
-              'chunked', 'chunk_size', 'chunk_clock', 'starter_offset', 'villages')
+              'chunked', 'chunk_size', 'chunk_clock', 'starter_offset', 'villages', 'industry_version', 'mineral_version')
 TOWN_RADIUS = 15
 HALL_SEPARATION = 40
 

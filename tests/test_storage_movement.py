@@ -134,6 +134,7 @@ class AllWorkplaceStorage(unittest.TestCase):
                 worker['building_index'] = 3
         elif kind in economy.RECIPES:
             if kind == 'mine':
+                town['mineral_version'] = 1
                 town['map_resources'].append({'kind': 'rock', 'ore': 'iron', 'x': 3, 'y': 1})
             building['input_buffer'] = {key: amount * 10
                                         for key, amount in economy.RECIPES[kind][0].items()}
