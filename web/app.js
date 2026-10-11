@@ -1157,7 +1157,9 @@ function renderRecipes(town,item,index,target){
   const note=document.createElement('small');
   const updateNote=()=>{
     const spec=recipes.find(recipe=>recipe.output===chooser.value);
-    note.textContent=`${costText(spec.inputs)} → ${spec.amount} ${goodName(spec.output).toLowerCase()}${spec.level>1?` · Worker level ${spec.level}+`:''}`;
+    const seconds=world.progression.production_seconds?.[spec.output] || 3;
+    const food=world.progression.edible?.[spec.output];
+    note.textContent=`${costText(spec.inputs)} → ${spec.amount} ${goodName(spec.output).toLowerCase()} · ${seconds}s · ${(0.04*seconds/3).toFixed(2)} practice${food?` · ${spec.amount*food} food`:''}${spec.level>1?` · Worker level ${spec.level}+`:''}`;
   };
   updateNote();
   chooser.onchange=()=>{if(!chooser.disabled){updateNote();act({action:'set_recipe',index,recipe:chooser.value});}};
@@ -1166,7 +1168,7 @@ function renderRecipes(town,item,index,target){
 function productionDescription(item){
   const spec=selectedProfessionRecipe(item);
   const recipe=spec?[spec.inputs,spec.output,spec.amount]:world.progression.recipes[item.kind];
-  if(recipe)return `${costText(recipe[0])} → ${recipe[2]} ${goodName(recipe[1]).toLowerCase()} / worker cycle\nSkill: larger batches + more ingredients\nRequires qualified workers${spec?` · Recipe level ${spec.level}`:''}`;
+  if(recipe){const seconds=world.progression.production_seconds?.[recipe[1]] || 3;return `${costText(recipe[0])} → ${recipe[2]} ${goodName(recipe[1]).toLowerCase()} / ${seconds}s batch\n${(0.04*seconds/3).toFixed(2)} practice / batch (neutral talent)\nSkill: larger batches + more ingredients\nRequires qualified workers${spec?` · Recipe level ${spec.level}`:''}`;}
   return {barn:'Adult output: eggs, wool, milk\nFeed: fodder / vegetables\nGrowth: 5 minutes of full feeding\nPigs provide meat at the butcher\n4 animals / level',orchard:'Output: fruit\nRequires workers',market:'Goods → coins\nPlayer trading: planned'}[item.kind] || 'Requires workers';
 }
 function animalAges(barn,animal){
@@ -1247,7 +1249,7 @@ function renderProfession(town,item,index,target,upgrades,details,boats){
     (fishingBoat?boats:upgrades).append(upgradeCard(button,upgradePreview({action:'profession_upgrade',index,upgrade:key},town,item),{status:unlocked?'Unlocked':''}));
   }
   if(item.kind==='market'&&owner)for(const key of ['fish','trout','salmon','sturgeon','planks','wool','flour','smoked_fish','tools','herbs','fruit','milk','eggs','meat','bread','prepared_meat',...Object.values(catalog.profession_recipes || {}).flat().map(recipe=>recipe.output).filter(key=>!['tools','bread','prepared_meat'].includes(key))]){
-    const price=catalog.fish?.[key]?.coins ?? ({trout:2,salmon:3,sturgeon:5}[key] || (key==='tools'?3:1));
+    const price=catalog.fish?.[key]?.coins ?? catalog.sale_prices?.[key] ?? ({trout:2,salmon:3,sturgeon:5}[key] || (key==='tools'?3:1));
     const button=document.createElement('button');button.textContent=`Sell 1 ${goodName(key).toLowerCase()} · ${price} coin${price===1?'':'s'}`;button.disabled=amountOf(town,key)<1;button.onclick=()=>act({action:'sell_goods',resource:key,amount:1});target.append(button);
   }
   if(['woodcutter','fishing_hut'].includes(item.kind)){

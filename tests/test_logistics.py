@@ -227,10 +227,10 @@ class ResourceLogistics(unittest.TestCase):
         saw = self.add('sawpit', input_buffer={'wood': 10})
         worker = self.assign(0, saw)
         logistics.record_output(self.town, saw, 'planks', 49.5)
-        self.assertEqual(logistics.produce(self.town, saw, worker), 'Workplace buffer full')
+        self.assertEqual(logistics.produce(self.town, saw, worker, elapsed=economy.production_seconds(saw)), 'Workplace buffer full')
         economy.spend(self.town, {'planks': 5})
         self.assertNotIn('buffer_full', saw)
-        self.assertEqual(logistics.produce(self.town, saw, worker), 'Working')
+        self.assertEqual(logistics.produce(self.town, saw, worker, elapsed=economy.production_seconds(saw)), 'Working')
         self.assertEqual(saw['input_buffer']['wood'], 8)
 
     def test_producer_delivers_and_returns_without_counting_output_twice(self):
@@ -315,7 +315,7 @@ class ResourceLogistics(unittest.TestCase):
             if saw.get('input_buffer', {}).get('wood', 0) > 0:
                 break
         self.assertEqual(saw['input_buffer']['wood'], 20)
-        self.assertEqual(logistics.produce(self.town, saw, sawyer), 'Working')
+        self.assertEqual(logistics.produce(self.town, saw, sawyer, elapsed=economy.production_seconds(saw)), 'Working')
         logistics.drop_off(self.town, saw, sawyer)
         produced = saw['output_buffer']['planks']
         for _ in range(100):

@@ -147,7 +147,8 @@ class AllWorkplaceStorage(unittest.TestCase):
                 world, town, building, worker = self.workplace(kind, output, 30)
                 for storage in town['buildings'][:2]:
                     self.assertEqual(economy.local_room(storage, output), 0)
-                server.tick(world)
+                for _ in range(economy.production_seconds(building) // 3):
+                    server.tick(world)
                 self.assertEqual(worker['production_status'], 'Working')
                 self.assertGreater(worker.get('pending_output', {}).get(output, 0), 0)
                 self.assertGreater(worker.get(worker['job'], 0), 0)
@@ -168,7 +169,8 @@ class AllWorkplaceStorage(unittest.TestCase):
                 self.assertLessEqual(logistics.buffered(building), 50)
                 economy.withdraw(town, output, 10, source=building)
                 economy.add_stock(town, output, -10)
-                server.tick(world)
+                for _ in range(economy.production_seconds(building) // 3):
+                    server.tick(world)
                 self.assertEqual(worker['production_status'], 'Working')
                 self.assertGreater(worker.get('pending_output', {}).get(output, 0), 0)
                 self.assertGreater(worker.get(worker['job'], 0), practice)

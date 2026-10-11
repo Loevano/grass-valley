@@ -186,6 +186,18 @@ current profession. Only qualified assigned workers unlock selection, and each
 worker must meet the chosen recipe level. Recipes use existing ingredients and
 new outputs participate in storage, hauling, production caps, food, and trading.
 
+Milling converts 2 wheat into 2 flour per three-second batch. Baking takes six
+seconds for bread, rolls, and herb bread, nine for fruit pies, and twelve for
+cakes. Planks and smoked fish take six seconds; workshop batches take six to
+fifteen. Butcher recipes take six to twelve seconds. Batch timers belong to each
+worker and persist in saves. Missing inputs, caps, and full buffers pause progress;
+ingredients, outputs, and practice are committed together when a batch completes.
+Completed work grants 0.04 practice per three active seconds, adjusted by talent.
+Changing assignment or recipe resets unfinished work. Fruit pies, cakes, and meat
+pies provide 7, 9, and 8 pantry food per basic batch; advanced food market prices
+round up their per-unit food value. Basic bread and prepared meat remain one coin.
+Existing available food is revalued once when loading the new balance.
+
 Processing expertise increases batch sizes and ingredient consumption together.
 Farming expertise improves a field's yield while retaining its shared cycle limit;
 barns still have one animal-limited production cycle regardless of worker count.

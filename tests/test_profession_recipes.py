@@ -42,10 +42,10 @@ class ProfessionRecipes(unittest.TestCase):
                     self.select(index, spec['output'])
                     building['input_buffer'] = {k: n * 2 for k, n in spec['inputs'].items()}
                     self.assertEqual(logistics.requirements(building, self.worker), spec['inputs'])
-                    self.assertEqual(logistics.produce(self.town, building, self.worker), 'Working')
+                    self.assertEqual(logistics.produce(self.town, building, self.worker, elapsed=economy.production_seconds(building)), 'Working')
                     self.assertEqual(building['input_buffer'], spec['inputs'])
                     self.assertEqual(self.worker['pending_output'], {spec['output']: spec['amount']})
-                    self.assertAlmostEqual(self.worker[job], (0 if spec['level'] == 1 else spec['level']) + .04)
+                    self.assertAlmostEqual(self.worker[job], (0 if spec['level'] == 1 else spec['level']) + .04 * economy.production_seconds(building) / 3)
                     logistics.drop_off(self.town, building, self.worker)
                     self.assertEqual(economy.quantity(self.town, spec['output']), spec['amount'])
 
@@ -63,11 +63,11 @@ class ProfessionRecipes(unittest.TestCase):
         building['input_buffer'] = {'flour': 4, 'milk': 2, 'wood': 1}
         self.worker[job] = 1.999
         before = copy.deepcopy(self.town)
-        self.assertIn('Requires level 2', logistics.produce(self.town, building, self.worker))
+        self.assertIn('Requires level 2', logistics.produce(self.town, building, self.worker, elapsed=economy.production_seconds(building)))
         self.assertEqual(logistics.supply_request(self.town, building, self.worker), {})
         self.assertEqual(self.town, before)
         self.select(index, 'bread')
-        self.assertEqual(logistics.produce(self.town, building, self.worker), 'Working')
+        self.assertEqual(logistics.produce(self.town, building, self.worker, elapsed=economy.production_seconds(building)), 'Working')
 
     def test_existing_workplaces_default_to_original_recipe(self):
         for kind in economy.PROFESSION_RECIPES:
@@ -111,10 +111,10 @@ class ProfessionRecipes(unittest.TestCase):
                     building['input_buffer'] = dict(spec['inputs'])
                     logistics.configure_rules(self.town, {'resource': spec['output'], 'cap': 0})
                     before = copy.deepcopy(self.town)
-                    self.assertEqual(logistics.produce(self.town, building, self.worker), 'Production cap reached')
+                    self.assertEqual(logistics.produce(self.town, building, self.worker, elapsed=economy.production_seconds(building)), 'Production cap reached')
                     self.assertEqual(self.town, before)
                     logistics.configure_rules(self.town, {'resource': spec['output'], 'cap': None})
-                    self.assertEqual(logistics.produce(self.town, building, self.worker), 'Working')
+                    self.assertEqual(logistics.produce(self.town, building, self.worker, elapsed=economy.production_seconds(building)), 'Working')
                     logistics.drop_off(self.town, building, self.worker)
                     storage = {'kind': 'storehouse', 'storage_enabled': {'food': True, spec['output']: True}}
                     self.assertGreater(economy.local_room(storage, spec['output']), 0)
@@ -122,7 +122,7 @@ class ProfessionRecipes(unittest.TestCase):
                     self.town['buildings'].append({'kind': 'market', 'x': 5, 'y': 6})
                     food, coins = self.town['food'], self.town['coins']
                     server.command(self.town, {'action': 'sell_goods', 'resource': spec['output'], 'amount': 1})
-                    self.assertEqual(self.town['coins'], coins + 1)
+                    self.assertEqual(self.town['coins'], coins + economy.SALE_PRICES[spec['output']])
                     self.assertAlmostEqual(self.town['food'], food - economy.EDIBLE.get(spec['output'], 0))
                     self.assertEqual(economy.quantity(self.town, spec['output']), spec['amount'] - 1)
 
@@ -132,11 +132,11 @@ class ProfessionRecipes(unittest.TestCase):
         self.select(index, 'meat_pies')
         building['input_buffer'] = {'meat': 2, 'flour': 2, 'wood': .5}
         before = copy.deepcopy(self.town)
-        self.assertIn('eggs', logistics.produce(self.town, building, self.worker))
+        self.assertIn('eggs', logistics.produce(self.town, building, self.worker, elapsed=economy.production_seconds(building)))
         self.assertEqual(self.town, before)
         building['input_buffer']['eggs'] = 1
         building['output_buffer'] = {'prepared_meat': 50}
-        self.assertEqual(logistics.produce(self.town, building, self.worker), 'Workplace buffer full')
+        self.assertEqual(logistics.produce(self.town, building, self.worker, elapsed=economy.production_seconds(building)), 'Workplace buffer full')
         self.assertEqual(building['input_buffer']['eggs'], 1)
         self.assertNotIn('pending_output', self.worker)
 
@@ -156,7 +156,7 @@ class ProfessionRecipes(unittest.TestCase):
         hauler = self.town['villagers'][1]
         hauler.update(job='hauling', talents={})
         self.assertEqual(logistics.transfer(self.town, building, store, 'supply', hauler), {'planks': 5, 'wool': 2})
-        self.assertEqual(logistics.produce(self.town, building, self.worker), 'Working')
+        self.assertEqual(logistics.produce(self.town, building, self.worker, elapsed=economy.production_seconds(building)), 'Working')
         logistics.drop_off(self.town, building, self.worker)
         self.assertEqual(logistics.transfer(self.town, building, store, 'collect', hauler), {'carved_furniture': 1})
         self.assertEqual(store['stored_goods']['carved_furniture'], 1)

@@ -180,6 +180,8 @@ class Progression(unittest.TestCase):
         self.town.update(level=4, wood=0)
         b,index=self.workplace('sawpit', input_buffer={'wood':10})
         tick(self.world)
+        self.assertEqual(b['input_buffer']['wood'],10)
+        tick(self.world)
         self.assertEqual(b['input_buffer']['wood'],8)
         self.assertEqual(b['pending_output']['planks'],1)
         self.assertEqual(self.town['goods'].get('planks',0),0)
@@ -187,7 +189,7 @@ class Progression(unittest.TestCase):
         self.town['buildings'][1]['stored_goods'] = {'planks': 100}
         tick(self.world)
         self.assertEqual(b['input_buffer']['wood'],8)
-        self.assertEqual(self.town['villagers'][0]['woodworking'],.04)
+        self.assertEqual(self.town['villagers'][0]['woodworking'],.08)
         b['output_buffer']['planks']=0;b['input_buffer']['wood']=0
         self.town['buildings'][1]['stored_goods'] = {}
         tick(self.world)
@@ -200,9 +202,12 @@ class Progression(unittest.TestCase):
         mill,_=self.workplace('mill',0,input_buffer={'wheat':4})
         workshop,_=self.workplace('workshop',1,x=4,y=6,input_buffer={'planks':4,'wood':10})
         tick(self.world)
-        self.assertEqual(mill['pending_output']['flour'],1)
+        self.assertEqual(mill['pending_output']['flour'],2)
+        self.assertNotIn('pending_output', workshop)
+        tick(self.world)
+        tick(self.world)
         self.assertEqual(workshop['pending_output']['tools'],1)
-        self.assertEqual(mill['input_buffer']['wheat'],2)
+        self.assertEqual(mill['input_buffer']['wheat'],0)
         self.assertEqual(workshop['input_buffer']['planks'],2)
         self.assertTrue(economy.milestone(self.town,5))
 
@@ -261,6 +266,7 @@ class Progression(unittest.TestCase):
     def test_edible_goods_are_counted_once_when_processed_eaten_and_sold(self):
         self.town.update(level=5,goods={},food=0,wood=0)
         b,index=self.workplace('smokehouse',input_buffer={'fish':2,'wood':.5})
+        tick(self.world)
         tick(self.world)
         self.assertEqual(self.town['food'],0)
         import logistics

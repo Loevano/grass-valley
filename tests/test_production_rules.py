@@ -49,20 +49,20 @@ class ProductionRules(unittest.TestCase):
         worker = {'job': 'woodworking', 'woodworking': 0, 'woodcutting': 10, 'talents': {}}
         self.rule('planks', .5)
         before = copy.deepcopy(building)
-        self.assertEqual(logistics.produce(self.town, building, worker), 'Production cap reached')
+        self.assertEqual(logistics.produce(self.town, building, worker, elapsed=economy.production_seconds(building)), 'Production cap reached')
         self.assertEqual(building, before)
         self.assertEqual(worker['woodworking'], 0)
         self.rule('planks', 1)
-        self.assertEqual(logistics.produce(self.town, building, worker), 'Working')
+        self.assertEqual(logistics.produce(self.town, building, worker, elapsed=economy.production_seconds(building)), 'Working')
         self.assertEqual(building['input_buffer']['wood'], 8)
         self.assertEqual(building['pending_output']['planks'], 1)
         self.assertEqual(economy.production_room(self.town, 'planks'), 0)
         second = {'kind': 'sawpit', 'x': 4, 'y': 3, 'input_buffer': {'wood': 10}}
         self.town['buildings'].append(second)
-        self.assertEqual(logistics.produce(self.town, second, worker), 'Production cap reached')
+        self.assertEqual(logistics.produce(self.town, second, worker, elapsed=economy.production_seconds(second)), 'Production cap reached')
         logistics.drop_off(self.town, building, worker)
         economy.spend(self.town, {'planks': 1})
-        self.assertEqual(logistics.produce(self.town, second, worker), 'Working')
+        self.assertEqual(logistics.produce(self.town, second, worker, elapsed=economy.production_seconds(second)), 'Working')
 
     def test_barn_waits_for_all_outputs_including_manure(self):
         barn = {'kind': 'barn', 'x': 3, 'y': 3, 'animals': {'chicken': 1},

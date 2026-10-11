@@ -1,5 +1,6 @@
 """Town professions, finite renewable supplies, and founder activities (hall 1–5)."""
 from collections import deque
+from math import ceil
 import secrets
 from equipment import find_item, gathering_bonus
 
@@ -98,7 +99,7 @@ RECIPES = {
     'bakery': ({'flour': 2, 'wood': .5}, 'bread', 2),
     'butcher': ({'meat': 2}, 'prepared_meat', 2),
     'sawpit': ({'wood': 2}, 'planks', 1),
-    'mill': ({'wheat': 2}, 'flour', 1),
+    'mill': ({'wheat': 2}, 'flour', 2),
     'smokehouse': ({'fish': 2, 'wood': .5}, 'smoked_fish', 2),
     'workshop': ({'planks': 2, 'wood': 1}, 'tools', 1),
     'fish_pond': ({'fodder': .5}, 'fish', 1),
@@ -131,6 +132,18 @@ PROFESSION_RECIPES = {
 CRAFTED_GOODS = tuple(r['output'] for r in PROFESSION_RECIPES['workshop'][1:])
 EDIBLE.update({r['output']: 1.5 + .25 * (r['level'] - 1)
                for kind in ('bakery', 'butcher') for r in PROFESSION_RECIPES[kind][1:]})
+EDIBLE.update({'fruit_pies': 3.5, 'cakes': 4.5, 'meat_pies': 4})
+PRODUCTION_SECONDS = {
+    'flour': 3, 'planks': 6, 'smoked_fish': 6, 'fish': 3,
+    'tools': 9, 'wooden_bowls': 6, 'crates': 9,
+    'furniture': 12, 'carved_furniture': 15,
+    'bread': 6, 'bread_rolls': 6, 'herb_bread': 6, 'fruit_pies': 9, 'cakes': 12,
+    'prepared_meat': 6, 'herbed_meat': 6, 'smoked_meat': 9,
+    'sausages': 9, 'meat_pies': 12,
+}
+SALE_PRICES = {r['output']: ceil(EDIBLE.get(r['output'], 1)) if r['level'] > 1 else 1
+               for recipes in PROFESSION_RECIPES.values() for r in recipes}
+SALE_PRICES['tools'] = 3
 
 
 def selected_recipe(building):
@@ -149,6 +162,10 @@ def recipe_requirement(villager, building):
 def production_recipe(building):
     spec = selected_recipe(building)
     return (spec['inputs'], spec['output'], spec['amount']) if spec else RECIPES[building['kind']]
+
+
+def production_seconds(building):
+    return PRODUCTION_SECONDS[production_recipe(building)[1]] if building['kind'] in RECIPES else 3
 
 
 SUPPLIES = {'tree': (8, .5), 'water': (12, 3.2), 'berry_bush': (6, .3), 'herb_patch': (4, .2)}
@@ -184,9 +201,9 @@ def efficiency(villager, job):
     return (1 + villager.get(job, 0) // 20) * (1 + .25 * aptitude(villager, job))
 
 
-def practice(villager, job):
+def practice(villager, job, seconds=3):
     # A neutral worker earns 20 practice in 500 active three-second cycles.
-    gain = .04 * (1 + .25 * aptitude(villager, job))
+    gain = .04 * seconds / 3 * (1 + .25 * aptitude(villager, job))
     villager[job] = round(villager.get(job, 0) + gain, 3)
 
 
@@ -304,6 +321,12 @@ def add_stock(town, key, amount):
 
 def ensure_inventory(town):
     """Locate old shared stock at the hall and count old workplace outputs once."""
+    if town.get('food_balance_version') != 1:
+        # Revalue available stock once; reserved inputs and pending outputs are not pantry food.
+        town['food'] = town.get('food', 0) + sum(
+            quantity(town, key) * (EDIBLE[key] - old)
+            for key, old in {'fruit_pies': 2.25, 'cakes': 2.5, 'meat_pies': 2.5}.items())
+        town['food_balance_version'] = 1
     if town.get('inventory_version') == 1 or 'buildings' not in town:
         return
     hall = next((b for b in town['buildings'] if b['kind'] == 'hall'), None)
@@ -685,7 +708,7 @@ def extra_worker(town, villager, building, capacity):
         deliver(town, 'manure', .1 * sum(animals.values()), capacity)
     else:
         return 'Resting'
-    practice(villager, villager['job'])
+    practice(villager, villager['job'], production_seconds(building))
     return 'Working'
 
 
@@ -695,5 +718,6 @@ def public_catalog():
             'animal_meat': ANIMAL_MEAT,
             'job_requirements': JOB_REQUIREMENTS, 'talent_roots': TALENT_ROOTS,
             'profession_recipes': PROFESSION_RECIPES, 'storage_keys': STORAGE_KEYS,
+            'production_seconds': PRODUCTION_SECONDS, 'sale_prices': SALE_PRICES,
             'boats': PLAYER_BOATS, 'fish': FISH, 'upgrades': PROFESSION_UPGRADES, 'recipes': RECIPES, 'edible': EDIBLE,
             'storage_goods': STORAGE_GOODS, 'fixed_storage': FIXED_STORAGE}

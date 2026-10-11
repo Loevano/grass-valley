@@ -70,6 +70,7 @@ def drop_off(town, building, villager):
 
 
 def cancel_output(town, villager):
+    villager.pop('production_work', None)
     spec = villager.pop('pending_workplace', None)
     goods = villager.pop('pending_output', {})
     building = next((b for b in town['buildings'] if spec and all(b.get(k) == v for k, v in spec.items())), None)
@@ -128,7 +129,7 @@ def supply_request(town, building, villager):
     return request
 
 
-def produce(town, building, villager):
+def produce(town, building, villager, elapsed=3):
     """Reuse profession recipes against local inputs; outputs never enter town stock."""
     reason = economy.qualification(villager, villager['job'])
     if building['kind'] in economy.RECIPES:
@@ -153,6 +154,18 @@ def produce(town, building, villager):
         return status
     if any(amount > economy.production_room(town, key) + 1e-9 for key, amount in produced.items()):
         return 'Production cap reached'
+    if building['kind'] in economy.RECIPES:
+        output = economy.production_recipe(building)[1]
+        task = [villager['job'], building['kind'], building['x'], building['y'], output]
+        progress = villager.get('production_work', {})
+        if progress.get('task') != task:
+            progress = {'task': task, 'elapsed': 0}
+        duration = economy.production_seconds(building)
+        progress['elapsed'] = min(duration, progress['elapsed'] + elapsed)
+        villager['production_work'] = progress
+        if progress['elapsed'] < duration:
+            return f"Producing {output.replace('_', ' ')} · {math.ceil(duration - progress['elapsed'])}s remaining"
+        villager.pop('production_work', None)
     building['input_buffer'] = {k: max(0, economy.quantity(local, k) - produced.get(k, 0)) for k in inputs}
     for key, amount in produced.items():
         record_output(town, building, key, amount, villager)

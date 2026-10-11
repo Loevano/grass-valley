@@ -700,7 +700,7 @@ def tick(world):
                         villager['production_status'] = 'Barn already tended this cycle'
                         continue
                     barn_cycles.add(marker)
-                villager['production_status'] = logistics.produce(town, building, villager)
+                villager['production_status'] = logistics.produce(town, building, villager, TICK_SECONDS)
                 if building['kind'] == 'barn' and villager['production_status'] == 'Working':
                     economy.grow_animals(building, TICK_SECONDS)
                 continue
@@ -1091,6 +1091,9 @@ def command(town, data, world=None):
                     buffer[key] = buffer.get(key, 0) + amount
                     economy.add_stock(town, key, amount)
             building['recipe'] = spec['output']
+            for villager in town['villagers']:
+                if villager.get('building_index') == index:
+                    villager.pop('production_work', None)
         elif action == 'set_crop':
             crop = data.get('crop')
             if building['kind'] != 'acre' or crop not in economy.CROPS:
@@ -1145,7 +1148,7 @@ def command(town, data, world=None):
         if not economy.afford(town, {key: amount}):
             raise ValueError('Not enough goods to sell.')
         economy.spend(town, {key: amount})
-        town['coins'] += amount * economy.FISH.get(key, {}).get('coins', 3 if key == 'tools' else 1)
+        town['coins'] += amount * economy.FISH.get(key, {}).get('coins', economy.SALE_PRICES.get(key, 1))
     elif action == 'upgrade':
         hall = next(b for b in town['buildings'] if b['kind'] == 'hall')
         if town.get('upgrade_remaining') or not completed(hall):

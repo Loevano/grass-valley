@@ -264,9 +264,22 @@ the Python host, refresh both browsers, and create a new world to use the shared
 
   Recipes show ingredient costs in the selector and use existing town resources.
   New products can be stored, hauled, capped, and sold at the market. Prepared
-  foods supply 1.75–2.5 pantry food per unit at recipe levels 2–5. Storehouse
+  foods supply 1.75–4.5 pantry food per unit at recipe levels 2–5. Fruit pies,
+  cakes, and meat pies supply 7, 9, and 8 food per basic batch respectively.
+  Advanced foods sell for their per-unit food value rounded up in coins;
+  basic bread and prepared meat remain 1 coin each. Storehouse
   switches include the new crafted goods. Switching recipes releases unused
   reserved ingredients for collection without losing them.
+- Mills turn 2 wheat into 2 flour in 3 seconds. Bread, rolls, and herb bread
+  take 6 seconds per batch; fruit pies take 9 seconds and cakes take 12.
+  Prepared and herbed meat take 6 seconds, smoked meat and sausages 9,
+  and meat pies 12. Planks and smoked fish take 6 seconds; workshop recipes
+  take 6–15 seconds according to complexity. These are active production times,
+  excluding transport and blocked work. Each worker has an independent saved
+  batch timer. Ingredients are consumed and goods awarded only at completion;
+  changing assignment or recipe discards unfinished work without ingredient loss.
+  Successful batches award 0.04 practice per 3 seconds, adjusted by talent
+  (a neutral baker gains 0.08 per bread batch). Blocked work earns no practice.
 - Open **Villagers** for a screen-wide roster with every resident’s details and job
   controls visible together. The roster scrolls when needed and stacks on smaller
   screens. You can also select one villager on the map to assign a job.
