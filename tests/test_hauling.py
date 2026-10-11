@@ -82,6 +82,62 @@ class HaulingSkill(unittest.TestCase):
         self.assertEqual(worker['hauling'], .04)
         self.assertNotIn('logistics_trip', worker)
 
+    def test_cargo_preview_matches_delivery_without_changing_stock(self):
+        economy.ensure_inventory(self.town)
+        before = copy.deepcopy(self.town)
+        cargo = logistics.planned_cargo(self.town, self.source, self.store, 'collect', self.worker)
+        self.assertEqual(cargo, {'wood': 50})
+        self.assertEqual(self.town, before)
+        self.assertEqual(logistics.transfer(self.town, self.source, self.store, 'collect', self.worker), cargo)
+
+    def test_mixed_cargo_shares_capacity_and_storage_food_space(self):
+        self.source['output_buffer'] = {'bread': 2, 'eggs': 4, 'wood': 40}
+        self.source['stored_goods'] = {}
+        self.store['storage_allocations'] = {'food': 3, 'wood': 200}
+        cargo = logistics.planned_cargo(self.town, self.source, self.store, 'collect', self.worker)
+        self.assertEqual(cargo, {'bread': 2, 'wood': 40})
+        self.assertEqual(logistics.transfer(self.town, self.source, self.store, 'collect', self.worker), cargo)
+
+    def test_supply_manifest_contains_each_recipe_ingredient(self):
+        self.store['stored_goods'] = {'wood': 100, 'planks': 100}
+        workshop = {'kind': 'workshop', 'x': 4, 'y': 2}
+        self.town['buildings'].append(workshop)
+        self.town['villagers'][1].update(job='crafting', building_index=3, crafting=0, talents={})
+        cargo = logistics.planned_cargo(self.town, workshop, self.store, 'supply', self.worker)
+        self.assertEqual(set(cargo), {'wood', 'planks'})
+        self.assertAlmostEqual(sum(cargo.values()), 50)
+        self.assertEqual(logistics.transfer(self.town, workshop, self.store, 'supply', self.worker), cargo)
+
+    def test_trip_records_pickup_and_refreshes_cargo_before_delivery(self):
+        self.worker['job'] = 'hauling'
+        paths = iter([[(0, 0), (1, 0), (2, 0)], [(2, 0), (3, 0), (4, 0)]])
+        route = lambda *_: next(paths)
+        landscape = {'buildings': [], 'map_resources': []}
+        self.assertTrue(logistics.start_trip(self.town, landscape, self.worker, self.source, self.store,
+                                            'collect', route, hauler=True))
+        trip = self.worker['logistics_trip']
+        self.assertEqual(trip['pickup_step'], 2)
+        self.assertEqual(trip['delivery_step'], 4)
+        self.assertEqual(trip['cargo'], {'wood': 50})
+        self.source['output_buffer']['wood'] = 0
+        self.source['stored_goods']['wood'] = 7
+        logistics.advance_trip(self.town, landscape, self.worker, 1.2)
+        self.assertFalse(trip['delivered'])
+        self.assertEqual(trip['cargo'], {'wood': 7})
+        restored = json.loads(json.dumps(self.town))
+        self.assertEqual(restored['villagers'][0]['logistics_trip']['cargo'], {'wood': 7})
+
+    def test_delivery_manifest_reflects_goods_that_actually_fit_on_arrival(self):
+        self.worker['logistics_trip'] = {
+            'workplace': {k: self.source[k] for k in ('kind', 'x', 'y')},
+            'storage': {k: self.store[k] for k in ('kind', 'x', 'y')},
+            'operation': 'collect', 'path': [[0, 0], [1, 0], [2, 0]],
+            'pickup_step': 0, 'delivery_step': 1, 'delivered': False, 'cargo': {'wood': 50}}
+        self.store['storage_allocations']['wood'] = 3
+        logistics.advance_trip(self.town, {'buildings': [], 'map_resources': []}, self.worker, .6)
+        self.assertEqual(self.worker['logistics_trip']['cargo'], {'wood': 3})
+        self.assertTrue(self.worker['logistics_trip']['delivered'])
+
 
 if __name__ == '__main__':
     unittest.main()

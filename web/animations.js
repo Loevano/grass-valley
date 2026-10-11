@@ -55,7 +55,10 @@ const WorkerAnimation = (() => {
       const remaining=trip?.path.slice(state?0:(trip.step || 0)).map(([x,y])=>({x,y}));
       const path=route(start,remaining?.[0] || target,blocked,size,false,bounds);
       const deliveryPath=path===null?[]:[...approach,...path,...(remaining?.slice(1) || [])];
-      return {...position,path:deliveryPath,phase:path===null?'waiting':'walking',source:target,home:null,blocked,size,bounds,transport:true,transportSpeed:1+.25*Math.floor((villager.hauling || 0)/20),elapsed:0,clock:state?.clock || index*.37,facing:state?.facing || 1};
+      return {...position,path:deliveryPath,phase:path===null?'waiting':'walking',source:target,home:null,blocked,size,bounds,transport:true,
+        transportCargo:trip?.cargo || {},pickupRemaining:(trip?.path.length || 1)-1-(trip?.pickup_step ?? 0),
+        deliveryRemaining:(trip?.path.length || 1)-1-(trip?.delivery_step ?? 0),
+        transportSpeed:1+.25*Math.floor((villager.hauling || 0)/20),elapsed:0,clock:state?.clock || index*.37,facing:state?.facing || 1};
     }
     const source=villager.construction_target || (villager.job==='idle'?null:villager.work_target);
     const kind=villager.job==='woodcutting'?'woodcutter':villager.job==='fishing'?'fishing_hut':'farm';
@@ -120,6 +123,8 @@ const WorkerAnimation = (() => {
   }
   function advance(state, seconds, active) {
     if(state.storagePaused&&!state.transport&&!state.construction)return;
+    const cargo=()=>state.transport&&state.path.length<=state.pickupRemaining&&state.path.length>state.deliveryRemaining?state.transportCargo:{};
+    state.cargo=cargo();
     // A completed host-owned drop-off waits for the next authoritative cycle.
     if(state.hostWork&&state.phase==='depositing'&&state.elapsed>=.65)return;
     if(active || state.path.length || !state.source)state.clock+=seconds;
@@ -139,6 +144,7 @@ const WorkerAnimation = (() => {
         else if(state.phase==='returning_water'){state.phase='working';state.waterReady=true;}
         else{state.phase=state.phase==='returning'?'depositing':state.source?'working':'idle';state.elapsed=0;}
       }
+      state.cargo=cargo();
       return;
     }
     if(state.transport){state.phase='waiting';return;}

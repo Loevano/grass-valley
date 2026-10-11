@@ -950,6 +950,12 @@ function villagerCard(town,v,index,withLink=false){
   div.append(skillBar('Hauling',v.hauling || 0));
   const hauling=document.createElement('small');hauling.className='villager-hauling';
   hauling.textContent=`Hauling: ${(50*workerEfficiency(v,'hauling')).toFixed(0)} goods per trip · ${(1.8*(1+.25*Math.floor((v.hauling || 0)/20))).toFixed(2)} tiles/s before road bonuses. Successful deliveries earn practice; every 20 practice adds 50 carrying capacity and 25% base travel speed.`;div.append(hauling);
+  if(v.job==='hauling'){
+    const trip=v.logistics_trip,load=document.createElement('small');load.className='villager-cargo';
+    const carrying=trip&&!trip.delivered&&(trip.step || 0)>=(trip.pickup_step ?? 0);
+    const goods=Object.entries(trip?.cargo || {}).filter(([,amount])=>amount>0).map(([key,amount])=>`${Number(amount.toFixed(2))} ${goodName(key)}`).join(' · ');
+    load.textContent=carrying&&goods?`Carrying: ${goods}`:trip&&!trip.delivered&&goods?`Collecting: ${goods}`:'Carrying: nothing';div.append(load);
+  }
   for(const [job,label] of Object.entries(professionJobs))if(v[job] || v.job===job)div.append(skillBar(label,v[job] || 0));
   const traits=document.createElement('small');traits.className='villager-talents';
   traits.textContent=Object.entries(v.talents || {}).map(([job,value])=>`${value>0?'Strength':'Weakness'}: ${goodName(job)} (${value>0?'+':'−'}25%)`).join(' · ');div.append(traits);
@@ -1752,7 +1758,7 @@ function animatedVillagers(town, seconds, townId=viewed, frameLayout=null){
       villager.construction_target?tiles([villager.construction_target]):null]);
     const trip=villager.logistics_trip;
     // Polling advances the host's step; keep the visible trip running continuously.
-    const signature=JSON.stringify([task,trip?[trip.operation,trip.workplace,trip.storage,trip.path]:villager.logistics_target]);
+    const signature=JSON.stringify([task,trip?[trip.id,trip.operation,trip.workplace,trip.storage,trip.path]:villager.logistics_target]);
     const workerKey=world.shared_map?`${townId}/${index}`:index;
     let state=workers.get(workerKey);
     const finishingDelivery=state?.transport&&state.path.length&&state.task===task&&state.layout===layout;
@@ -1760,6 +1766,7 @@ function animatedVillagers(town, seconds, townId=viewed, frameLayout=null){
       state=Object.assign(WorkerAnimation.plan(world.shared_map?{...town,obstacles:Object.values(world.towns).flatMap(t=>t.buildings),home_hall:town.buildings.find(b=>b.kind==='hall')}:town,villager,index,state),{signature,layout,task});workers.set(workerKey,state);
     }
     state.roads=roads;
+    if(state.transport&&trip?.cargo&&state.signature===signature)state.transportCargo=trip.cargo;
     state.storagePaused=!!villager.production_status?.startsWith('Waiting for storage space');
     const hostWork=villager.work_animation;
     if(hostWork&&!state.transport&&!villager.logistics_target&&!villager.construction_target){
@@ -1968,7 +1975,9 @@ function drawVillager(b){
     ctx.strokeStyle='#b7d1d5';ctx.lineWidth=1.5;ctx.beginPath();ctx.arc(10,-10,4,Math.PI,Math.PI*2);ctx.stroke();
     if(s.phase!=='fetching_water'){ctx.fillStyle='#9fd8e5';ctx.fillRect(7,-9,6,2);}
   }
-  if(s.transport||s.phase==='returning'||s.phase==='depositing'){
+  if(b.villager.job==='hauling'&&s.transport){
+    if(Object.values(s.cargo || {}).some(amount=>amount>0))drawHaulerCargo(s.cargo);
+  }else if(s.transport||s.phase==='returning'||s.phase==='depositing'){
     ctx.save();
     if(s.phase==='depositing'){const progress=Math.min(1,(s.elapsed || 0)/.65);ctx.translate(progress*8,progress*3);ctx.globalAlpha=1-progress;}
     ctx.fillStyle=b.villager.job==='woodcutting'?'#997044':b.villager.job==='fishing'?'#7899a2':'#d6c478';ctx.fillRect(2,-8,11,5);
@@ -1983,6 +1992,22 @@ function drawVillager(b){
     ctx.restore();
   }
   ctx.restore();
+}
+function drawHaulerCargo(cargo){
+  const entries=Object.entries(cargo).filter(([,amount])=>amount>0);
+  // Open baskets expose their load; labels identify mixed batches precisely.
+  ctx.fillStyle='#ac895d';ctx.fillRect(2,-8,14,9);
+  ctx.strokeStyle='#725333';ctx.lineWidth=1.2;ctx.strokeRect(2,-8,14,9);
+  for(let index=0;index<Math.min(3,entries.length);index++){
+    const key=entries[index][0],x=4+index*4;
+    ctx.fillStyle={wood:'#997044',planks:'#c59b65',fish:'#8ebbbd',smoked_fish:'#8ebbbd',wool:'#eee0bd',
+      tools:'#cbd7d2',wheat:'#e5c77f',flour:'#eee0bd',vegetables:'#8da962',fruit:'#cc8962',bread:'#d3ab69',
+      fodder:'#9caa63',manure:'#806448',herbs:'#70906a',meat:'#b66e65',eggs:'#eee0bd'}[key] || '#d6c478';
+    ctx.fillRect(x,-12,4,6);
+  }
+  ctx.font='9px system-ui';ctx.textAlign='center';ctx.lineWidth=3;ctx.strokeStyle='#263a32';ctx.fillStyle='#fff3d6';
+  const label=entries.map(([key,amount])=>`${Number(amount.toFixed(2))} ${goodName(key)}`).join(' · ');
+  ctx.strokeText(label,0,-43);ctx.fillText(label,0,-43);
 }
 // Tools and materials are drawn in character coordinates; elapsed freezes on pauses.
 function drawProfessionAction(job,time){

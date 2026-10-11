@@ -160,6 +160,31 @@ def output_storage_available(town, building, source, villager):
     return all(any(economy.local_room(b, key) > 1e-9 for b in stores) for key in keys)
 
 
+def planned_cargo(town, building, storage, operation, villager):
+    """Describe the batch this trip can deliver without reserving town stock."""
+    remaining = carry_capacity(villager)
+    cargo = {}
+    if operation == 'collect':
+        target = {**storage, 'stored_goods': dict(storage.get('stored_goods', {}))}
+        for field in ('output_buffer', 'stored_goods', 'orphaned_output'):
+            for key, amount in building.get(field, {}).items():
+                moved = min(amount, economy.local_room(target, key), remaining)
+                if moved > 0:
+                    cargo[key] = cargo.get(key, 0) + moved
+                    target['stored_goods'][key] = target['stored_goods'].get(key, 0) + moved
+                    remaining -= moved
+    else:
+        producer = next((v for v in town['villagers'] if v.get('building_index') is not None
+                         and town['buildings'][v['building_index']] is building
+                         and v['job'] in economy.JOB_BUILDINGS), villager)
+        for key, amount in supply_request(town, building, producer).items():
+            moved = min(amount, production_stock(storage, key), remaining)
+            if moved > 0:
+                cargo[key] = moved
+                remaining -= moved
+    return cargo
+
+
 def start_trip(town, landscape, villager, building, storage, operation, route, hauler=False):
     # Finished fields are walkable, including when carrying goods through a farm.
     landscape = {**landscape, 'buildings': [b for b in landscape['buildings']
@@ -172,9 +197,13 @@ def start_trip(town, landscape, villager, building, storage, operation, route, h
     back = route(landscape, outward[-1], last)
     if back is None:
         return False
-    villager['logistics_trip'] = {'operation': operation, 'workplace': {k: building[k] for k in ('kind', 'x', 'y')},
+    villager['logistics_trip_id'] = villager.get('logistics_trip_id', 0) + 1
+    villager['logistics_trip'] = {'id': villager['logistics_trip_id'], 'operation': operation, 'workplace': {k: building[k] for k in ('kind', 'x', 'y')},
                                  'storage': {k: storage[k] for k in ('kind', 'x', 'y')},
                                  'path': [list(p) for p in outward + back[1:]],
+                                 'pickup_step': len(outward) - 1 if (operation == 'collect' and hauler)
+                                 or (operation == 'supply' and not hauler) else 0,
+                                 'cargo': planned_cargo(town, building, storage, operation, villager),
                                  'delivery_step': len(outward) - 1 if (operation == 'collect' and not hauler)
                                  or (operation == 'supply' and hauler) else len(outward + back[1:]) - 1,
                                  'delivered': False}
@@ -194,6 +223,13 @@ def advance_trip(town, landscape, villager, elapsed, resume_work=False):
         villager.pop('logistics_target', None)
         villager['production_status'] = 'Delivery cancelled: building moved or unavailable'
         return True
+    if 'pickup_step' not in trip:
+        pickup = building if trip['operation'] == 'collect' and villager.get('job') == 'hauling' else storage
+        fetching = (trip['operation'] == 'collect') == (villager.get('job') == 'hauling')
+        trip['pickup_step'] = next((i for i, (x, y) in enumerate(trip['path'])
+                                   if abs(x - pickup['x']) + abs(y - pickup['y']) == 1), 0) if fetching else 0
+    if 'cargo' not in trip:
+        trip['cargo'] = planned_cargo(town, building, storage, trip['operation'], villager)
     obstacles = [b for b in landscape['buildings'] if b['kind'] != 'acre' or 'construction' in b]
     spatial = landscape.get('_spatial_index')
     blocked = (spatial.blocked(dict(landscape, buildings=obstacles)) if spatial is not None else
@@ -215,12 +251,14 @@ def advance_trip(town, landscape, villager, elapsed, resume_work=False):
             break
         remaining -= duration
         step += 1
+        if step == trip.get('pickup_step') and not trip['delivered']:
+            trip['cargo'] = planned_cargo(town, building, storage, trip['operation'], villager)
         if step >= trip['delivery_step'] and not trip['delivered']:
-            transfer(town, building, storage, trip['operation'], villager)
+            trip['cargo'] = transfer(town, building, storage, trip['operation'], villager)
             trip['delivered'] = True
     # Already adjacent trips still perform their transfer once.
     if step >= trip['delivery_step'] and not trip['delivered']:
-        transfer(town, building, storage, trip['operation'], villager)
+        trip['cargo'] = transfer(town, building, storage, trip['operation'], villager)
         trip['delivered'] = True
     trip.update(step=step, travel_seconds=remaining)
     villager['logistics_position'] = {'x': path[step][0], 'y': path[step][1]}
@@ -238,6 +276,7 @@ def transfer(town, building, storage, operation, villager):
     economy.ensure_inventory(town)
     remaining = carry_capacity(villager)
     total_moved = 0
+    cargo = {}
     if operation == 'collect':
         for field in ('output_buffer', 'stored_goods', 'orphaned_output'):
             buffer = building.get(field, {})
@@ -252,6 +291,7 @@ def transfer(town, building, storage, operation, villager):
                         economy.add_stock(town, key, moved)
                     remaining -= moved
                     total_moved += moved
+                    cargo[key] = cargo.get(key, 0) + moved
                     building.pop('buffer_full', None)
     else:
         # The assigned producer's practice determines the recipe, not the hauler's.
@@ -273,8 +313,10 @@ def transfer(town, building, storage, operation, villager):
             inputs = building.setdefault('input_buffer', {})
             for key, amount in request.items():
                 inputs[key] = inputs.get(key, 0) + amount
+            cargo = {key: amount for key, amount in request.items() if amount > 0}
     if total_moved > 0:
         economy.practice(villager, 'hauling')
+    return cargo
 
 
 def worker(town, landscape, villager, building, route, elapsed):
