@@ -1959,22 +1959,40 @@ function npcSprites(town,seconds){
     state:{path:[],phase:'idle',clock:npcClock+index*.7,facing:index%2?1:-1}}));
 }
 function villagerAccessories(b){
-  // Earned gear stays visible across jobs: tools at 5, clothing at 10, gold accents at 20.
+  // Only the current profession's practice earns its tools and clothing.
   const v=b.kind==='villager'?b.villager:{};
-  return {axe:v.woodcutting>=5||['fine_axe','steel_axe','masterwork_axe'].includes(v.worker_tool),blouse:v.woodcutting>=10,woodcuttingMaster:v.woodcutting>=20,
-    sickle:v.farming>=5||['fine_sickle','steel_sickle','masterwork_sickle'].includes(v.worker_tool),hat:v.farming>=10,farmingMaster:v.farming>=20,
-    pouch:v.fishing>=5,scarf:v.fishing>=10,fishingMaster:v.fishing>=20};
+  const job=v.job,level=v[job] || 0;
+  const outfits={
+    woodcutting:{color:'#78966b'},farming:{color:'#a0a16b'},fishing:{color:'#709ba8'},
+    building:{color:'#bc9564',cap:'#bca477',tool:'hammer'},
+    hauling:{color:'#94735b',cap:'#806448',tool:'pack'},
+    husbandry:{color:'#998261',apron:'#c8b993',cap:'#a68e64',tool:'bucket'},
+    woodworking:{color:'#8c785e',apron:'#b99b72',cap:'#876c4d',tool:'saw'},
+    milling:{color:'#a19a80',apron:'#e2d7b7',cap:'#d8c9a4',tool:'sack'},
+    preserving:{color:'#957367',apron:'#c5a18b',cap:'#a88875',tool:'fish'},
+    crafting:{color:'#727d8c',apron:'#806448',cap:'#65717e',tool:'hammer'},
+    breeding:{color:'#658f86',apron:'#9abeb2',cap:'#638f82',tool:'net'},
+    orcharding:{color:'#81955f',apron:'#b8c899',cap:'#9eac71',tool:'basket'},
+    baking:{color:'#c4aa86',apron:'#f2e6cd',cap:'#fff1d8',tool:'rolling_pin'},
+    butchery:{color:'#966d65',apron:'#dfc9bf',cap:'#d8b6a7',tool:'cleaver'},
+  };
+  return {axe:job==='woodcutting'&&(level>=5||['fine_axe','steel_axe','masterwork_axe'].includes(v.worker_tool)),
+    blouse:job==='woodcutting'&&level>=10,woodcuttingMaster:job==='woodcutting'&&level>=20,
+    sickle:job==='farming'&&(level>=5||['fine_sickle','steel_sickle','masterwork_sickle'].includes(v.worker_tool)),
+    hat:job==='farming'&&level>=10,farmingMaster:job==='farming'&&level>=20,
+    pouch:job==='fishing'&&level>=5,scarf:job==='fishing'&&level>=10,fishingMaster:job==='fishing'&&level>=20,
+    outfit:outfits[job] || null,level};
 }
 function drawVillager(b){
+  const accessories=villagerAccessories(b),outfit=accessories.outfit;
   if(tileW<32){
     const [x,y]=point(b.x,b.y),scale=tileW/46;
     ctx.save();ctx.translate(x+(b.index%3-1)*3,y+tileH*.65+Math.floor(b.index/3));ctx.scale(scale,scale);
     ctx.fillStyle='#283c38';ctx.fillRect(-4,-4,8,5);
-    ctx.fillStyle=b.kind==='npc'?npcColors[b.biome][0]:b.kind==='player'?'#d6b85d':['#7899a2','#b9866b','#a0a16b','#947ca0','#c6aa62'][b.index%5];ctx.fillRect(-4,-13,8,10);
+    ctx.fillStyle=b.kind==='npc'?npcColors[b.biome][0]:b.kind==='player'?'#d6b85d':outfit?.color || ['#7899a2','#b9866b','#a0a16b','#947ca0','#c6aa62'][b.index%5];ctx.fillRect(-4,-13,8,10);
     ctx.fillStyle=['#e7c68c','#c99f79','#ad795c'][b.index%3];ctx.beginPath();ctx.arc(0,-17,4,0,Math.PI*2);ctx.fill();
     ctx.restore();return;
   }
-  const accessories=villagerAccessories(b);
   const [px,py]=point(b.x,b.y),s=b.state;
   const walking=s.path.length>0,working=s.phase==='working'&&b.active;
   const stride=walking?Math.sin(s.clock*13):0;
@@ -1997,7 +2015,7 @@ function drawVillager(b){
   ctx.beginPath();ctx.moveTo(-2,-4);ctx.lineTo(-2-stride*3,1);ctx.moveTo(2,-4);ctx.lineTo(2+stride*3,1);ctx.stroke();
   const bob=walking?Math.abs(stride)*1.2:fishing?reel*1.5:farming?farmSwing*(farmStage===0?2:1):chopping?swing*2.5:working?swing:Math.sin(s.clock*2)*.3;
   ctx.translate(0,-bob);
-  ctx.fillStyle=b.kind==='npc'?npcColors[b.biome][0]:b.kind==='player'?'#d6b85d':['#7899a2','#b9866b','#a0a16b','#947ca0','#c6aa62'][b.index%5];ctx.fillRect(-4,-13,8,10);
+  ctx.fillStyle=b.kind==='npc'?npcColors[b.biome][0]:b.kind==='player'?'#d6b85d':outfit?.color || ['#7899a2','#b9866b','#a0a16b','#947ca0','#c6aa62'][b.index%5];ctx.fillRect(-4,-13,8,10);
   const gear=b.kind==='player'?b.equipment:null;
   if(gear?.feet==='swamp_boots'){ctx.fillStyle='#52715d';ctx.fillRect(-5,-5,4,6);ctx.fillRect(1,-5,4,6);}
   if(gear?.body==='desert_clothing'){polygon([[-5,-13],[5,-13],[6,-2],[-6,-2]],'#ead8ae');}
@@ -2009,10 +2027,22 @@ function drawVillager(b){
       ctx.fillStyle='#e8bd55';ctx.fillRect(-4,-4,8,1);ctx.fillRect(-1,-9,2,2);
     }
   }
+  if(outfit?.apron){
+    polygon([[-3,-12],[3,-12],[4,-3],[-4,-3]],outfit.apron);
+    ctx.fillStyle=outfit.apron;ctx.fillRect(-4,-10,8,1);
+    if(accessories.level>=10){ctx.fillStyle=outfit.color;ctx.fillRect(-2,-7,4,2);}
+  }
+  if(outfit&&accessories.level>=20){ctx.fillStyle='#e8bd55';ctx.fillRect(-4,-4,8,1);ctx.fillRect(-2,-12,2,2);}
   ctx.fillStyle=['#e7c68c','#c99f79','#ad795c'][b.index%3];ctx.beginPath();ctx.arc(0,-17,4,0,Math.PI*2);ctx.fill();
   ctx.fillStyle=['#584638','#aa7846','#363c36','#d3bc8c'][b.index%4];ctx.beginPath();ctx.arc(0,-18,4,Math.PI,Math.PI*2);ctx.fill();
   if(b.index%2)ctx.fillRect(-4,-18,2,7);
   if(gear?.body==='desert_clothing'){ctx.fillStyle='#ead8ae';ctx.fillRect(-5,-21,10,3);ctx.fillRect(-5,-19,2,8);}
+  if(outfit?.cap){
+    ctx.fillStyle=outfit.cap;ctx.fillRect(-5,-21,10,3);
+    if(b.villager.job==='baking'){
+      ctx.beginPath();ctx.arc(-3,-23,3,0,Math.PI*2);ctx.arc(0,-24,3,0,Math.PI*2);ctx.arc(3,-23,3,0,Math.PI*2);ctx.fill();
+    }else if(accessories.level>=10)ctx.fillRect(-6,-19,12,1);
+  }
   if(accessories.hat){polygon([[-6,-19],[0,-23],[6,-19]],'#ccb779');ctx.fillStyle='#ccb779';ctx.fillRect(-7,-19,14,2);}
   if(accessories.farmingMaster){ctx.fillStyle='#e8bd55';ctx.fillRect(-5,-20,10,1);}
   if(b.kind==='npc'){
@@ -2038,6 +2068,27 @@ function drawVillager(b){
   }
   if(accessories.scarf){
     ctx.fillStyle='#6baeb5';ctx.fillRect(-4,-14,8,2);ctx.fillRect(2,-12,2,5);
+  }
+  if(outfit?.tool&&accessories.level>=5){
+    const tool=outfit.tool;
+    ctx.strokeStyle='#a78454';ctx.lineWidth=2;
+    ctx.beginPath();ctx.moveTo(-6,0);ctx.lineTo(-7,-9);ctx.stroke();
+    const metal=accessories.level>=20?'#e8bd55':'#c9d5d2';
+    if(tool==='rolling_pin'){
+      ctx.fillStyle='#c39b64';ctx.fillRect(-9,-10,4,9);
+    }else if(tool==='hammer'||tool==='cleaver'||tool==='saw'){
+      ctx.fillStyle=metal;ctx.fillRect(tool==='saw'?-13:-11,-11,tool==='saw'?8:7,tool==='cleaver'?6:3);
+    }else if(tool==='net'){
+      ctx.strokeStyle=metal;ctx.beginPath();ctx.ellipse(-7,-12,4,5,0,0,Math.PI*2);ctx.stroke();
+      ctx.beginPath();ctx.moveTo(-10,-12);ctx.lineTo(-4,-12);ctx.moveTo(-7,-16);ctx.lineTo(-7,-8);ctx.stroke();
+    }else if(tool==='fish'){
+      polygon([[-10,-8],[-6,-10],[-3,-8],[-6,-5]],'#b8d8d5',metal);
+    }else{
+      const color={bucket:'#879b9c',pack:'#70543e',sack:'#cbb58a',basket:'#ac895d'}[tool];
+      ctx.fillStyle=color;ctx.fillRect(-11,-8,7,8);
+      ctx.strokeStyle=metal;ctx.beginPath();ctx.arc(-7.5,-8,3,Math.PI,Math.PI*2);ctx.stroke();
+      if(tool==='basket'){ctx.fillStyle='#b35b69';ctx.fillRect(-9,-9,3,3);}
+    }
   }
   ctx.strokeStyle='#e7c68c';ctx.lineWidth=2;
   const farmHandX=farmStage===1?7+farmSwing*8:7;
