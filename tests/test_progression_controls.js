@@ -48,7 +48,7 @@ const run=new Function('document','window','localStorage','setTimeout','clearTim
  town.level=1;inspect('building',4);check(!axe(),'Upgrades are hidden before their hall unlock');
  town.level=2;town.villagers[0].woodcutting=9;render();check(!axe(),'Upgrades are hidden before their skill unlock');
  town.villagers[0].woodcutting=10;render();check(axe()&&!axe().disabled,'Upgrades appear when hall and skill requirements are met');
- axe().onclick();check(commands.at(-1).action==='profession_upgrade'&&commands.at(-1).upgrade==='axe','Revealed upgrades send the correct command');
+ axe().onclick();$('confirm-upgrade').onclick();check(commands.at(-1).action==='profession_upgrade'&&commands.at(-1).upgrade==='axe','Revealed upgrades send the correct command');
  town.coins=0;render();check(axe()&&axe().disabled,'Unlocked upgrades stay visible when unaffordable');town.coins=20;
  town.buildings[4].profession_upgrades=['axe'];render();check(axe().textContent.includes('Unlocked')&&axe().disabled,'Purchased upgrades remain visible');
  town.buildings.pop();

@@ -16,6 +16,12 @@
 <form id="delete-world-form"><label for="delete-world-name">Type the world name to confirm</label><input id="delete-world-name" autocomplete="off" required><button class="danger">Destroy world permanently</button></form>
 <button id="cancel-delete-world" class="quiet">Keep this world</button><p id="delete-world-error" role="alert"></p>
 </dialog>
+<dialog id="upgrade-dialog" aria-labelledby="upgrade-title" aria-describedby="upgrade-description">
+<span class="eyebrow">GROW YOUR SETTLEMENT</span><h2 id="upgrade-title"></h2>
+<p id="upgrade-description"></p><h3>What you get</h3><ul id="upgrade-benefits"></ul>
+<p id="upgrade-cost"></p><p id="upgrade-time"></p><p id="upgrade-requirements"></p>
+<p id="upgrade-error" role="status"></p><button id="confirm-upgrade" class="upgrade-button">Confirm upgrade</button><button id="cancel-upgrade" class="quiet">Cancel</button>
+</dialog>
 <dialog id="settings-panel" aria-labelledby="settings-title"><h2 id="settings-title">Settings</h2><button id="camera-lock-button" aria-pressed="true">Camera lock: On</button><p class="muted">When locked, the camera follows your player as you walk. Turn it off to explore the map freely.</p><h3>Keybindings</h3><p id="keybindings-help" class="muted">Select a binding and press a letter or 0. Keys 1–9 are reserved for windows. Each action needs its own key. Changes are saved in this browser.</p><div id="keybindings"></div><button id="reset-keybindings" class="quiet">Restore default keybindings</button><p class="muted">Arrow keys and Enter inspect map tiles. Escape closes settings and panels. Scroll to pan; pinch on the touchpad or Option/Alt-scroll to zoom.</p><p id="settings-message" role="status"></p><button id="close-settings" class="quiet">Close settings · Esc</button></dialog>
 <nav id="toolbar" aria-label="Village controls">
 <button id="world-menu-button" aria-haspopup="dialog" aria-controls="world-menu" aria-keyshortcuts="1" title="Worlds (1)">Worlds</button>

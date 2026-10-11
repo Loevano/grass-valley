@@ -37,7 +37,7 @@ const run=new Function('document','window','localStorage','setTimeout','clearTim
     kick.onclick();check(commands.at(-1).action==='remove_settler'&&commands.at(-1).index===1,'Kicks the correct worker from the building');
     workerRows()[0].children[0].onclick();check(selection.type==='villager'&&selection.index===1,'Worker name opens individual details');
     inspect('building',1);
-    button('Upgrade to').onclick();check(commands.at(-1).action==='upgrade_capacity'&&commands.at(-1).index===1,'Upgrade targets selected building');
+    button('Upgrade to').onclick();$('confirm-upgrade').onclick();check(commands.at(-1).action==='upgrade_capacity'&&commands.at(-1).index===1,'Upgrade targets selected building');
     town.villagers[0].building_index=1;render();
     check(workerRows().length===2,'Compact list includes every assigned worker');
     workerRows()[0].children[1].onclick();check(commands.at(-1).index===0,'Each kick control targets its own worker');

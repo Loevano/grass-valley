@@ -171,7 +171,7 @@ const run=new Function('document','window','localStorage','setTimeout','clearTim
     inspect('building',1);
     function buildingUpgrade(){return $('selection-details').children.find(child=>child.tag==='button'&&(/Upgrade to level|Fully upgraded/.test(child.textContent)));}
     check(buildingUpgrade().textContent.includes('20 wood')&&buildingUpgrade().textContent.includes('4 villager spaces'),'Cottage upgrade previews cost and housing');
-    buildingUpgrade().onclick();check(commands.at(-1).action==='upgrade_building'&&commands.at(-1).index===1,'Upgrade targets the selected building');
+    buildingUpgrade().onclick();$('confirm-upgrade').onclick();check(commands.at(-1).action==='upgrade_building'&&commands.at(-1).index===1,'Upgrade targets the selected building');
     town.wood=19;render();check(buildingUpgrade().disabled,'Building upgrade requires wood');
     town.wood=65;town.buildings[1].construction={progress:0,total:30};render();check(buildingUpgrade().disabled,'Unfinished buildings cannot upgrade');
     delete town.buildings[1].construction;town.buildings[1].level=3;render();check(buildingUpgrade().disabled&&buildingUpgrade().textContent.includes('Fully upgraded'),'Level 3 is the building limit');
