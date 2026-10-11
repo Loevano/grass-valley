@@ -434,7 +434,7 @@ window.addEventListener('keydown',event=>{
   if(/^[1-9]$/.test(key)&&!event.ctrlKey&&!event.metaKey&&!event.altKey&&!event.shiftKey){
     if(!event.repeat&&!$('settings-panel').open&&!$('world-menu').open&&!$('delete-world-dialog').open
       &&!document.activeElement?.isContentEditable&&!['INPUT','TEXTAREA','SELECT'].includes(document.activeElement?.tagName)){
-      const name=['build','villagers','valley','help','world-menu','resources'][Number(key)-1];
+      const name=['world-menu','build','villagers','resources','valley','help'][Number(key)-1];
       if(name&&!$(name+'-button').disabled){
         event.preventDefault();clearWalk();$(name+'-button').onclick();
         if(name!=='world-menu')canvas.focus();

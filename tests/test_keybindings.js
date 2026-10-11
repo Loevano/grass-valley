@@ -106,44 +106,47 @@ function session(saved=null){
   check(oldCustom.state.bindings.build==='b','Older settings receive the default build binding');
   const occupiedBuildKey=session(JSON.stringify({keybindings:{up:'b',left:'a',down:'s',right:'d',camera:'y'}}));
   check(occupiedBuildKey.state.bindings.up==='b'&&occupiedBuildKey.state.bindings.build!=='b','Existing custom bindings keep their keys when adding building mode');
+  const toolbar=read('web/index.html').match(/<button id="(?:world-menu|build|villagers|resources|valley|help)-button"[^>]*>/g);
+  check(toolbar.length===6,'Toolbar exposes all six numbered menus');
+  toolbar.forEach((button,index)=>check(button.includes(`aria-keyshortcuts="${index+1}"`)&&button.includes(`(${index+1})`),'Menu tooltip and accessible shortcut follow toolbar order'));
   const windows=session();
-  windows.key('w');windows.key('1');
-  check(windows.state.panel==='build'&&windows.state.held.length===0,'1 opens Build and releases movement');
-  windows.state.place();windows.key('1');
-  check(windows.state.panel===null&&windows.state.tool===null&&!windows.state.placement,'1 closes Build and cancels placement');
-  for(const [number,name] of [['2','villagers'],['3','valley'],['4','help']]){
+  windows.key('w');windows.key('2');
+  check(windows.state.panel==='build'&&windows.state.held.length===0,'2 opens Build and releases movement');
+  windows.state.place();windows.key('2');
+  check(windows.state.panel===null&&windows.state.tool===null&&!windows.state.placement,'2 closes Build and cancels placement');
+  for(const [number,name] of [['3','villagers'],['5','valley'],['6','help']]){
     windows.key(number);check(windows.state.panel===name,number+' opens '+name);
     windows.key(number,{repeat:true});windows.key(number,{ctrlKey:true});windows.key(number,{metaKey:true});windows.key(number,{altKey:true});windows.key(number,{shiftKey:true});
     check(windows.state.panel===name,'Held or modified number shortcuts do not toggle panels');
     windows.key(number);check(windows.state.panel===null,number+' closes '+name);
   }
   for(const activeElement of [{tagName:'INPUT'},{tagName:'TEXTAREA'},{tagName:'SELECT'},{isContentEditable:true}]){
-    windows.document.activeElement=activeElement;windows.key('2');windows.key('5');
+    windows.document.activeElement=activeElement;windows.key('3');windows.key('1');
     check(windows.state.panel===null&&!windows.document.getElementById('world-menu').open,'Typing blocks window shortcuts');
   }
-  windows.document.activeElement={tagName:'BUTTON'};windows.key('2');
+  windows.document.activeElement={tagName:'BUTTON'};windows.key('3');
   check(windows.state.panel==='villagers','Window shortcuts work with a focused button');
   windows.document.activeElement=null;
   for(const id of ['settings-panel','world-menu','delete-world-dialog']){
-    windows.document.getElementById(id).open=true;windows.key('4');
+    windows.document.getElementById(id).open=true;windows.key('6');
     check(windows.state.panel==='villagers','Dialogs block number shortcuts');
     windows.document.getElementById(id).open=false;
   }
-  windows.document.getElementById('build-button').disabled=true;windows.key('1');
+  windows.document.getElementById('build-button').disabled=true;windows.key('2');
   check(windows.state.panel==='villagers','Number shortcuts respect disabled toolbar buttons');
-  windows.key('6');
-  check(windows.state.panel==='resources'&&!windows.document.getElementById('resources-panel').hidden,'6 opens Resources');
+  windows.key('4');
+  check(windows.state.panel==='resources'&&!windows.document.getElementById('resources-panel').hidden,'4 opens Resources');
   const resources=windows.document.getElementById('resources-list').children;
   const resource=label=>resources.find(row=>row.children[1].textContent===label)?.children[0].textContent;
   check(resource('Wood')==='50.0 / 0'&&resource('Food')==='30.0 / 0','Resources show stored amounts and allocated capacity');
   check(resource('Coins')==='5.0','Coins do not have a storage limit');
   check(resource('Fish')==='0.0 / 0'&&resource('Prepared meat')==='0.0 / 0'&&resource('Herbs')==='0.0 / 0','Unproduced resources remain visible');
   check(resources.length===22,'Resources include all storage categories, edible goods, and coins');
-  windows.key('6');check(windows.state.panel===null,'6 closes Resources');
-  windows.key('2');
+  windows.key('4');check(windows.state.panel===null,'4 closes Resources');
+  windows.key('3');
   for(const number of ['7','8','9'])windows.key(number);
   check(windows.state.panel==='villagers','Reserved future shortcuts do not change the current panel');
-  windows.key('5');check(windows.document.getElementById('world-menu').open,'5 opens Worlds');
+  windows.key('1');check(windows.document.getElementById('world-menu').open,'1 opens Worlds');
   windows.rebind('up','1');windows.rebind('up','9');
   check(windows.state.bindings.up==='w','Reserved window keys cannot be gameplay bindings');
   windows.rebind('up','0');check(windows.state.bindings.up==='0','0 remains available for gameplay bindings');
