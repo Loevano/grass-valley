@@ -66,13 +66,27 @@ def tool_bonus(villager, job):
 def change(town, data):
     action = data['action']
     player = town['player']
-    if action in {'give_worker_tool', 'take_worker_tool'}:
+    if action in {'give_worker_tool', 'take_worker_tool', 'transfer_worker_tool'}:
         index = data.get('index')
         if type(index) is not int or not 0 <= index < len(town['villagers']):
             raise ValueError('Choose one of your workers.')
         worker = town['villagers'][index]
         tools = player.get('worker_tools', {})
-        if action == 'give_worker_tool':
+        if action == 'transfer_worker_tool':
+            target_index = data.get('target_index')
+            if (type(target_index) is not int
+                    or not 0 <= target_index < len(town['villagers'])
+                    or target_index == index):
+                raise ValueError('Choose another worker to receive the tool.')
+            key = worker.get('worker_tool')
+            if key not in WORKER_TOOLS or data.get('item') != key:
+                raise ValueError('This worker no longer carries that tool.')
+            recipient = town['villagers'][target_index]
+            if recipient.get('worker_tool'):
+                raise ValueError('Take back the recipient’s tool first.')
+            recipient['worker_tool'] = key
+            del worker['worker_tool']
+        elif action == 'give_worker_tool':
             key = data.get('item')
             if not isinstance(key, str) or key not in WORKER_TOOLS:
                 raise ValueError('Choose a known worker tool.')

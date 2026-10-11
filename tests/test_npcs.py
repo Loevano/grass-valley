@@ -107,6 +107,30 @@ class LocalOffers(unittest.TestCase):
         self.assertEqual(self.town['player']['worker_tools']['fine_axe'], 0)
         self.assertNotIn('worker_tool', self.town['villagers'][0])
 
+    def test_direct_tool_transfer_is_atomic_and_preserves_inventory(self):
+        self.action('claim_local_gift', npc_index=0)
+        self.action('give_worker_tool', index=0, item='fine_axe')
+        for source, target, item in ((True, 1, 'fine_axe'), (0, True, 'fine_axe'),
+                                    (0, -1, 'fine_axe'), (0, 99, 'fine_axe'),
+                                    (0, 0, 'fine_axe'), (1, 0, 'fine_axe'),
+                                    (0, 1, 'fine_fishing_rod'), (0, 1, [])):
+            self.reject('transfer_worker_tool', index=source, target_index=target, item=item)
+        self.action('claim_local_gift', npc_index=1)
+        self.action('give_worker_tool', index=1, item='fine_fishing_rod')
+        self.reject('transfer_worker_tool', index=0, target_index=1, item='fine_axe')
+        self.action('take_worker_tool', index=1)
+        pool = copy.deepcopy(self.town['player']['worker_tools'])
+        self.action('transfer_worker_tool', index=0, target_index=1, item='fine_axe')
+        self.assertNotIn('worker_tool', self.town['villagers'][0])
+        self.assertEqual(self.town['villagers'][1]['worker_tool'], 'fine_axe')
+        self.assertEqual(self.town['player']['worker_tools'], pool)
+        self.reject('transfer_worker_tool', index=0, target_index=1, item='fine_axe')
+        self.town = json.loads(json.dumps(self.town))
+        ensure_resources(self.town)
+        self.assertEqual(self.town['villagers'][1]['worker_tool'], 'fine_axe')
+        self.action('transfer_worker_tool', index=1, target_index=0, item='fine_axe')
+        self.assertEqual(self.town['player']['worker_tools'], pool)
+
     def test_barter_is_atomic_and_restocking_is_saved_and_personal(self):
         self.reject('trade_local', npc_index=1)
         self.town['player']['x'] = 30

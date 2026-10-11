@@ -83,7 +83,11 @@ the Python host, refresh both browsers, and create a new world to use the shared
   Moss the swamp herbalist and Reed the marsh fisher. Click a local to read their
   introduction. Sylva gives each town a fine axe and Reed a fine fishing rod once.
   Walk beside them to accept, then give the tool to a worker from that worker’s
-  panel or the **Items** tab next to Resources. Each tool adds 25% output in its matching job; take it back to reassign it.
+  panel or the **Items** tab next to Resources. Each tool adds 25% output in its
+  matching job. Matching workers appear first in the item picker. Select a recipient
+  and **Transfer tool** to move an assigned tool directly, or take it back into inventory.
+  The Villagers overview shows equipped tool icons beside names; hover or focus an
+  icon to see its bonus and whether it matches the current job.
   Tobin and Clover each exchange 10 wood for 8 food once every five minutes of
   running game time, provided you have food storage room. Gifts and restocking
   are saved per town, so each player can collect their own rewards.

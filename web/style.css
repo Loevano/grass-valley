@@ -82,3 +82,7 @@ canvas{cursor:pointer}button:focus-visible,canvas:focus-visible,select:focus-vis
 .item-card{margin:12px 0;padding:12px;border:1px solid #c9ba7e33;border-radius:8px}.item-card strong{display:block;color:#e3d19b}.item-card select{width:100%;margin-top:10px}.item-card button{margin-top:8px}
 
 .item-heading{display:flex;align-items:center;gap:10px}.item-heading .illustration{flex:none;width:44px;height:44px;margin:0}.item-heading>div{min-width:0}.item-stats,.item-quantity{display:block;font-size:12px;line-height:1.5}.item-stats{color:#b8c999;margin-top:4px}.item-quantity{color:#98afa2;margin-top:2px}
+
+.villager-equipment{position:relative;display:inline-flex;vertical-align:middle;margin-left:6px;cursor:help}.villager-equipment .illustration{width:26px;height:26px;margin:0;padding:2px}.villager-equipment:hover .skill-tooltip,.villager-equipment:focus .skill-tooltip{display:block}.villager-equipment:focus-visible{outline:2px solid #fff0b1;outline-offset:2px;border-radius:4px}
+
+.villager-equipment .skill-tooltip{width:220px;max-width:220px;text-align:left;font-weight:normal;white-space:normal}

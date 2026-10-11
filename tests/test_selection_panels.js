@@ -144,6 +144,15 @@ const run=new Function('document','window','localStorage','setTimeout','clearTim
       check(row.children[2].textContent==='Shared, lvl 1','Housing is compact in the table');
       check(row.children[5].children.length>=1,'Work status is visible in the table');
     }
+    town.villagers[0].worker_tool='fine_axe';render();
+    const equippedIcon=rosterRows()[0].children[0].children[0];
+    check(equippedIcon.className==='villager-equipment'&&equippedIcon.tabIndex===0,'Equipped tool is visible beside the villager name and keyboard accessible');
+    check(equippedIcon.attributes['aria-label'].includes('Fine axe · +25% woodcutting output · Active for current job'),'Equipped icon describes its active bonus');
+    check(equippedIcon.children[0].innerHTML.includes(iconPaths.fine_axe),'Equipped tool uses its own artwork');
+    town.villagers[1].worker_tool='fine_fishing_rod';render();
+    check(rosterRows()[1].children[0].children[0].attributes['aria-label'].includes('Inactive for current job'),'Idle villager keeps its tool icon with an inactive bonus');
+    delete town.villagers[0].worker_tool;delete town.villagers[1].worker_tool;render();
+    check(rosterRows()[0].children[0].children.length===0,'Unequipped villagers have no equipment icon');
     const skillIcons=rosterRows()[0].children[3].children[0].children;
     check(skillIcons.length===2,'Zero and missing skills are hidden');
     check(skillIcons[0].attributes['aria-label']==='Woodcutting · 8 practice','Skill icon has an accessible skill name and value');

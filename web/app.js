@@ -579,12 +579,23 @@ function itemCard(key,name,stats,quantity){
   const count=document.createElement('small');count.className='item-quantity';count.textContent=quantity;details.append(count);
   header.append(details);card.append(header);return card;
 }
+function toolRecipientPicker(town,key){
+  const gear=workerTools[key];
+  const eligible=town.villagers.map((v,index)=>({v,index})).filter(({v})=>!v.worker_tool)
+    .sort((a,b)=>Number(b.v.job===gear.job)-Number(a.v.job===gear.job));
+  const select=document.createElement('select');select.setAttribute('aria-label',`Villager to receive ${gear.name.toLowerCase()}`);
+  const placeholder=document.createElement('option');placeholder.value='';placeholder.textContent=eligible.length?'Choose a villager':town.villagers.length?'All villagers have a tool':'No villagers yet';select.append(placeholder);select.value='';
+  for(const {v,index} of eligible){
+    const option=document.createElement('option');option.value=String(index);option.textContent=`${v.name} · ${goodName(v.job)}${v.job===gear.job?' · Matches current job':''}`;select.append(option);
+  }
+  select.disabled=!eligible.length;return select;
+}
 function renderItems(town){
   const target=$('items-list');target.replaceChildren();
   if(!town)return;
   const tools=document.createElement('div');tools.className='resource-group';
   const heading=document.createElement('h3');heading.textContent='Villager tools';tools.append(heading);
-  const hint=document.createElement('p');hint.className='muted';hint.textContent='One tool per villager. Take it back to reassign it.';tools.append(hint);
+  const hint=document.createElement('p');hint.className='muted';hint.textContent='One tool per villager. Matching workers appear first. Transfer tools directly or take them back.';tools.append(hint);
   for(const [key,gear] of Object.entries(workerTools)){
     const available=town.player?.worker_tools?.[key] || 0;
     const assigned=town.villagers.map((v,index)=>({v,index})).filter(({v})=>v.worker_tool===key);
@@ -592,13 +603,13 @@ function renderItems(town){
     const row=itemCard(key,gear.name,`+25% ${gear.job} output`,`${available} available · ${assigned.length} assigned`);
     for(const {v,index} of assigned){
       const carrier=document.createElement('p');carrier.textContent=`Carried by ${v.name}`;
-      const take=document.createElement('button');take.textContent='Take back tool';take.setAttribute('aria-label',`Take ${gear.name.toLowerCase()} back from ${v.name}`);take.onclick=()=>act({action:'take_worker_tool',index});carrier.append(take);row.append(carrier);
+      const take=document.createElement('button');take.textContent='Take back tool';take.setAttribute('aria-label',`Take ${gear.name.toLowerCase()} back from ${v.name}`);take.onclick=()=>act({action:'take_worker_tool',index});carrier.append(take);
+      const recipient=toolRecipientPicker(town,key);recipient.setAttribute('aria-label',`Transfer ${gear.name.toLowerCase()} from ${v.name} to villager`);carrier.append(recipient);
+      const transfer=document.createElement('button');transfer.textContent='Transfer tool';transfer.disabled=true;
+      recipient.onchange=()=>{transfer.disabled=recipient.disabled||recipient.value==='';};
+      transfer.onclick=()=>{if(!transfer.disabled)act({action:'transfer_worker_tool',item:key,index,target_index:Number(recipient.value)});};carrier.append(transfer);row.append(carrier);
     }
-    const eligible=town.villagers.map((v,index)=>({v,index})).filter(({v})=>!v.worker_tool);
-    const select=document.createElement('select');select.setAttribute('aria-label',`Villager to receive ${gear.name.toLowerCase()}`);
-    const placeholder=document.createElement('option');placeholder.value='';placeholder.textContent=eligible.length?'Choose a villager':town.villagers.length?'All villagers have a tool':'No villagers yet';select.append(placeholder);select.value='';
-    for(const {v,index} of eligible){const option=document.createElement('option');option.value=String(index);option.textContent=`${v.name} · ${goodName(v.job)}`;select.append(option);}
-    select.disabled=available<1||!eligible.length;row.append(select);
+    const select=toolRecipientPicker(town,key);select.disabled=select.disabled||available<1;row.append(select);
     const give=document.createElement('button');give.textContent=`Give ${gear.name.toLowerCase()}`;give.disabled=true;
     select.onchange=()=>{give.disabled=select.disabled||select.value==='';};
     give.onclick=()=>{if(!give.disabled)act({action:'give_worker_tool',item:key,index:Number(select.value)});};row.append(give);tools.append(row);
@@ -889,7 +900,15 @@ function villagerCard(town,v,index,withLink=false){
 }
 function villagerRow(town,v,index){
   const row=document.createElement('tr');
-  const name=document.createElement('th');name.setAttribute('scope','row');name.textContent=v.name;row.append(name);
+  const name=document.createElement('th');name.setAttribute('scope','row');name.textContent=v.name;
+  const gear=workerTools[v.worker_tool];
+  if(gear){
+    const equipped=document.createElement('span');equipped.className='villager-equipment';equipped.tabIndex=0;equipped.setAttribute('role','img');
+    const description=`${gear.name} · +25% ${gear.job} output · ${v.job===gear.job?'Active for current job':'Inactive for current job'}`;
+    equipped.title=description;equipped.setAttribute('aria-label',description);equipped.append(illustration(v.worker_tool));
+    const tooltip=document.createElement('span');tooltip.className='skill-tooltip';tooltip.textContent=description;tooltip.setAttribute('aria-hidden','true');equipped.append(tooltip);name.append(equipped);
+  }
+  row.append(name);
   const job=document.createElement('td');
   const label=document.createElement('span');label.textContent=v.job==='idle'&&v.construction_target?'Builder (automatic)':{idle:'Resting',building:'Builder',woodcutting:'Woodcutting',farming:'Farming',fishing:'Fishing',hauling:'Hauling',...professionJobs}[v.job] || goodName(v.job);job.append(label);row.append(job);
   const housing=document.createElement('td');

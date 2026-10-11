@@ -77,12 +77,22 @@ const run=new Function('document','window','localStorage','setTimeout','clearTim
     assert(axe.children[0].children[1].children[1].textContent==='+25% woodcutting output');
     assert(axe.children[0].children[1].children[2].textContent==='1 available · 0 assigned');
     assert(!choose.disabled&&giveAxe.disabled,'Giving requires an explicit recipient');
-    assert.deepStrictEqual(choose.children.map(c=>c.textContent),['Choose a villager','Ada · Woodcutting'],'Workers already carrying tools are excluded');
+    assert.deepStrictEqual(choose.children.map(c=>c.textContent),['Choose a villager','Ada · Woodcutting · Matches current job'],'Workers already carrying tools are excluded');
     choose.value='0';choose.onchange();assert(!giveAxe.disabled);giveAxe.onclick();
     assert.deepStrictEqual(sent.pop(),{action:'give_worker_tool',item:'fine_axe',index:0});
     const rod=toolCards[1];rod.children[1].children[0].onclick();
     assert.deepStrictEqual(sent.pop(),{action:'take_worker_tool',index:1});
     assert(rod.children[2].disabled,'Unavailable tools cannot be assigned');
+    const transferPicker=rod.children[1].children[1],transfer=rod.children[1].children[2];
+    assert(transfer.disabled,'Transfer requires a recipient');transferPicker.value='0';transferPicker.onchange();
+    assert(!transfer.disabled);transfer.onclick();
+    assert.deepStrictEqual(sent.pop(),{action:'transfer_worker_tool',item:'fine_fishing_rod',index:1,target_index:0});
+    town.villagers.push({name:'Cal',job:'fishing'},{name:'Dee',job:'fishing',worker_tool:'fine_axe'});
+    const recommended=toolRecipientPicker(town,'fine_fishing_rod');
+    assert.deepStrictEqual(recommended.children.map(c=>c.value),['','2','0'],'Matching job comes first while original villager indices are retained');
+    assert(recommended.children[1].textContent.includes('Matches current job'));
+    town.villagers.splice(2);
+
     const clothing=$('items-list').children[1];
     clothing.children[1].children[1].onclick();
     assert.deepStrictEqual(sent.pop(),{action:'unequip_item',item:'swamp_boots'});
@@ -91,6 +101,7 @@ const run=new Function('document','window','localStorage','setTimeout','clearTim
     town.player.worker_tools.fine_axe=0;town.villagers[0].worker_tool='fine_axe';renderItems(town);
     assert($('items-list').children[0].children[2].children[0].children[1].children[2].textContent==='0 available · 1 assigned','Refresh reflects assigned inventory');
     assert($('items-list').children[0].children[2].children[2].disabled,'All equipped villagers leaves no recipients');
+    assert($('items-list').children[0].children[2].children[1].children[1].disabled&&$('items-list').children[0].children[2].children[1].children[2].disabled,'Transfer unavailable when every villager carries a tool');
     town.villagers=[];town.player.worker_tools.fine_axe=1;renderItems(town);
     assert($('items-list').children[0].children[2].children[1].children[0].textContent==='No villagers yet');
     assert($('items-list').children[0].children.length===3,'Unowned tools are hidden');
