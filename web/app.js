@@ -1432,14 +1432,44 @@ function render(){
 }
 function point(x,y){return [originX+(x-y)*tileW/2,originY+(x+y)*tileH/2];}
 function polygon(points,fill,stroke){ctx.beginPath();points.forEach(([x,y],i)=>i?ctx.lineTo(x,y):ctx.moveTo(x,y));ctx.closePath();ctx.fillStyle=fill;ctx.fill();if(stroke){ctx.strokeStyle=stroke;ctx.stroke();}}
+// Share static resource artwork across tiles and frames. Resolution buckets keep
+// zooming sharp without generating a new canvas for every wheel event.
+const resourceSprites=new Map();
 function drawResource(r){
   const [x,y]=point(r.x,r.y),s=tileW/46;
-  ctx.save();ctx.translate(x,y);ctx.scale(s,s);
+  const willow=r.kind==='tree'&&(world.shared_map || world.towns[viewed])?.terrain?.[r.y]?.[r.x]==='b';
+  const resolution=2**Math.ceil(Math.log2(Math.max(.5,s*(window.devicePixelRatio || 1))));
+  const variant=r.kind==='tree'?`${r.species==='ancient'}/${willow}/${(r.x+r.y)%2}`:r.kind;
+  const key=`${r.kind}/${variant}/${resolution}`;
+  let sprite=resourceSprites.get(key);
+  if(!sprite){
+    const surface=document.createElement('canvas'),target=surface.getContext?.('2d');
+    if(!target){
+      ctx.save();ctx.translate(x,y);ctx.scale(s,s);paintResource(ctx,r,willow);ctx.restore();return;
+    }
+    // Include ancient canopies, willow branches, and the ground shadow.
+    surface.width=60*resolution;surface.height=104*resolution;
+    target.setTransform(resolution,0,0,resolution,30*resolution,80*resolution);
+    paintResource(target,r,willow);
+    sprite=surface;resourceSprites.set(key,sprite);
+    if(resourceSprites.size>64)resourceSprites.delete(resourceSprites.keys().next().value);
+  }else{
+    resourceSprites.delete(key);resourceSprites.set(key,sprite);
+  }
+  ctx.drawImage(sprite,x-30*s,y-80*s,60*s,104*s);
+}
+function paintResource(ctx,r,willow){
+  const polygon=(points,fill,stroke)=>{
+    ctx.beginPath();points.forEach(([x,y],i)=>i?ctx.lineTo(x,y):ctx.moveTo(x,y));
+    ctx.closePath();ctx.fillStyle=fill;ctx.fill();
+    if(stroke){ctx.strokeStyle=stroke;ctx.stroke();}
+  };
+  ctx.save();
   ctx.fillStyle='#223b2955';ctx.beginPath();ctx.ellipse(0,12,16,6,0,0,Math.PI*2);ctx.fill();
   if(r.kind==='tree'){
     if(r.species==='ancient')ctx.scale(1.35,1.35);
     ctx.fillStyle='#775b3e';ctx.fillRect(-3,-14,6,27);
-    if((world.shared_map || world.towns[viewed])?.terrain?.[r.y]?.[r.x]==='b'){
+    if(willow){
       ctx.strokeStyle='#665f40';ctx.lineWidth=3;ctx.beginPath();ctx.moveTo(0,-7);ctx.lineTo(-10,-29);ctx.moveTo(0,-12);ctx.lineTo(10,-34);ctx.stroke();
       ctx.fillStyle='#64784c';ctx.beginPath();ctx.ellipse(0,-34,20,14,0,0,Math.PI*2);ctx.fill();
       ctx.fillStyle='#819064';ctx.beginPath();ctx.ellipse(-5,-38,13,9,0,0,Math.PI*2);ctx.fill();
@@ -1726,7 +1756,7 @@ function renderResources(resources){
   }
   return resourceCache;
 }
-function paintGround(target,landscape,water,bounds,offsetX=0,offsetY=0){
+function paintGround(target,landscape,water,bounds,offsetX=0,offsetY=0,region=null){
   const ctx=target,terrainSize=landscape?.map_size || 12;
   const {minX,maxX,minY,maxY}=bounds;
   const point=(x,y)=>[originX+(x-y)*tileW/2+offsetX,originY+(x+y)*tileH/2+offsetY];
@@ -1739,6 +1769,8 @@ function paintGround(target,landscape,water,bounds,offsetX=0,offsetY=0){
     const [px,py]=point(x,y),wet=water.has(`${x},${y}`);
     if(px+tileW/2<0 || px-tileW/2>target.canvas?.width/(window.devicePixelRatio||1)
       || py+tileH+12<0 || py>target.canvas?.height/(window.devicePixelRatio||1))continue;
+    if(region&&(px+tileW/2<region.x || px-tileW/2>region.x+region.width
+      || py+tileH+12<region.y || py>region.y+region.height))continue;
     const variation=(x*17+y*31+x*y*7)%7;
     const diamond=[[px,py],[px+tileW/2,py+tileH/2],[px,py+tileH],[px-tileW/2,py+tileH/2]];
     const biome=landscape?.terrain?.[y]?.[x] || (landscape?.chunked?'v':'g');
@@ -1780,7 +1812,7 @@ function drawGround(rect,dpr,landscape,water,bounds){
   const margin=160;
   if(!groundCache || groundCache.world!==world || groundCache.landscape!==landscape){
     const signature=JSON.stringify([world.world_id,landscape?.terrain,landscape?.terrain_seed,
-      landscape?.map_size,landscape?.map_resources]);
+      landscape?.map_size,[...water].sort()]);
     if(groundCache?.signature!==signature)groundCache=null;
     if(groundCache)Object.assign(groundCache,{world,landscape});
     else{
@@ -1792,19 +1824,48 @@ function drawGround(rect,dpr,landscape,water,bounds){
   const cache=groundCache,dx=originX-cache.originX,dy=originY-cache.originY;
   if(cache.tileW!==tileW || cache.width!==rect.width || cache.height!==rect.height
     || cache.dpr!==dpr || Math.abs(dx)>margin || Math.abs(dy)>margin){
-    cache.surface.width=Math.ceil((rect.width+margin*2)*dpr);
-    cache.surface.height=Math.ceil((rect.height+margin*2)*dpr);
+    const width=Math.ceil((rect.width+margin*2)*dpr),height=Math.ceil((rect.height+margin*2)*dpr);
+    const shiftX=Math.round(dx*dpr),shiftY=Math.round(dy*dpr);
+    const reuse=cache.tileW===tileW&&cache.width===rect.width&&cache.height===rect.height
+      &&cache.dpr===dpr&&Math.abs(shiftX)<width&&Math.abs(shiftY)<height;
+    let regions;
+    if(reuse){
+      // Copy overlapping pixels before clearing and repainting the exposed strips.
+      // Integer device pixels avoid blurring the cache during repeated pans.
+      cache.target.setTransform(1,0,0,1,0,0);
+      cache.target.globalCompositeOperation='copy';
+      cache.target.drawImage(cache.surface,Math.max(0,-shiftX),Math.max(0,-shiftY),
+        width-Math.abs(shiftX),height-Math.abs(shiftY),Math.max(0,shiftX),Math.max(0,shiftY),
+        width-Math.abs(shiftX),height-Math.abs(shiftY));
+      cache.target.globalCompositeOperation='source-over';
+      regions=[];
+      if(shiftX)regions.push({x:shiftX>0?0:(width+shiftX)/dpr,y:0,width:Math.abs(shiftX)/dpr,height:height/dpr});
+      if(shiftY)regions.push({x:Math.max(0,shiftX)/dpr,y:shiftY>0?0:(height+shiftY)/dpr,
+        width:(width-Math.abs(shiftX))/dpr,height:Math.abs(shiftY)/dpr});
+    }else{
+      cache.surface.width=width;cache.surface.height=height;
+      regions=[{x:0,y:0,width:width/dpr,height:height/dpr}];
+    }
+    const nextX=reuse?cache.originX+shiftX/dpr:originX,nextY=reuse?cache.originY+shiftY/dpr:originY;
+    const offsetX=margin+nextX-originX,offsetY=margin+nextY-originY;
     cache.target.setTransform(dpr,0,0,dpr,0,0);
-    const corners=[[-margin-tileW,-margin-100],[rect.width+margin+tileW,-margin-100],
-      [-margin-tileW,rect.height+margin+100],[rect.width+margin+tileW,rect.height+margin+100]]
-      .map(([px,py])=>({x:(px-originX)/tileW+(py-originY)/tileH,y:(py-originY)/tileH-(px-originX)/tileW}));
-    const size=landscape?.map_size || 12;
-    const padded={minX:Math.max(0,Math.floor(Math.min(...corners.map(p=>p.x)))),
-      maxX:Math.min(size-1,Math.ceil(Math.max(...corners.map(p=>p.x)))),
-      minY:Math.max(0,Math.floor(Math.min(...corners.map(p=>p.y)))),
-      maxY:Math.min(size-1,Math.ceil(Math.max(...corners.map(p=>p.y))))};
-    paintGround(cache.target,landscape,water,padded,margin,margin);
-    Object.assign(cache,{originX,originY,tileW,width:rect.width,height:rect.height,dpr});
+    for(const region of regions){
+      cache.target.clearRect(region.x,region.y,region.width,region.height);
+      cache.target.save();cache.target.beginPath();
+      cache.target.rect(region.x,region.y,region.width,region.height);cache.target.clip();
+      const corners=[[region.x-tileW,region.y-tileH-12],[region.x+region.width+tileW,region.y-tileH-12],
+        [region.x-tileW,region.y+region.height],[region.x+region.width+tileW,region.y+region.height]]
+        .map(([px,py])=>({x:(px-originX-offsetX)/tileW+(py-originY-offsetY)/tileH,
+          y:(py-originY-offsetY)/tileH-(px-originX-offsetX)/tileW}));
+      const size=landscape?.map_size || 12;
+      const padded={minX:Math.max(0,Math.floor(Math.min(...corners.map(p=>p.x)))),
+        maxX:Math.min(size-1,Math.ceil(Math.max(...corners.map(p=>p.x)))),
+        minY:Math.max(0,Math.floor(Math.min(...corners.map(p=>p.y)))),
+        maxY:Math.min(size-1,Math.ceil(Math.max(...corners.map(p=>p.y))))};
+      paintGround(cache.target,landscape,water,padded,offsetX,offsetY,region);
+      cache.target.restore();
+    }
+    Object.assign(cache,{originX:nextX,originY:nextY,tileW,width:rect.width,height:rect.height,dpr});
   }
   ctx.drawImage(cache.surface,originX-cache.originX-margin,originY-cache.originY-margin,
     cache.surface.width/dpr,cache.surface.height/dpr);
