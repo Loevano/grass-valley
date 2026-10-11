@@ -37,7 +37,8 @@ canvas{cursor:pointer}button:focus-visible,canvas:focus-visible,select:focus-vis
 
 /* Full roster popup: every resident's details stay visible together. */
 #side-panel.villagers-overview{left:16px;right:16px;top:16px;bottom:auto;width:auto;max-height:max(0px,calc(100dvh - var(--toolbar-height,64px) - 32px));padding:24px;border:1px solid #b8c99966;border-radius:14px;box-shadow:0 16px 60px #0a1813cc}
-#side-panel.villagers-overview #close-panel{position:sticky;top:0;z-index:1;width:auto;margin:0 0 16px auto;background:#1c302a}
+#side-panel.villagers-overview #close-panel{position:sticky;top:0;z-index:1;float:right;width:auto;margin:18px 0 8px 16px;background:#1c302a}
+#villagers-panel>p{clear:both}
 @media(max-width:760px){#side-panel.villagers-overview{inset:calc(var(--toolbar-height,64px) + 12px) 12px 12px;max-height:max(0px,calc(100dvh - var(--toolbar-height,64px) - 24px));padding:16px}}
 
 
