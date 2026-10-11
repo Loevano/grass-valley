@@ -1325,7 +1325,7 @@ function renderSelection(town){
     if(!item.construction&&world.progression?.buildings[item.kind])p.textContent=productionDescription(item);
     details.append(p);
     renderProfession(town,item,selection.index,production,upgrades,details,boats);
-    if(!item.construction){
+    if(!item.construction&&item.kind!=='home'){
       renderStorage(town,item,selection.index,storageOverview);
     }
     if(costs[item.kind]){
@@ -1352,7 +1352,7 @@ function renderSelection(town){
       button.onclick=()=>{acreFarmIndex=selection.index;openPanel('build');tool='acre';moveIndex=null;buildTile=null;hoverTile=null;render();};
       production.append(button);
     }
-    if(!item.construction)$('selection-details').append(storageOverview);
+    if(!item.construction&&item.kind!=='home')$('selection-details').append(storageOverview);
     $('selection-details').append(workers);
     if(production.children.length>1)$('selection-details').append(production);
     if(boats?.children.length>1)$('selection-details').append(boats);
