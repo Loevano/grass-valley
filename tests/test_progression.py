@@ -119,14 +119,14 @@ class Progression(unittest.TestCase):
             town['player']['fishing']=40
             command(town, {'action':'fish'}, self.world)
         tick(self.world)
-        self.assertAlmostEqual(sum(t.get('produced',{}).get('fish',0) for t in [self.town,friend]),1.6)
+        self.assertAlmostEqual(sum(t.get('produced',{}).get('fish',0) for t in [self.town,friend]),3.2)
         pond=[r for r in shared['map_resources'] if r['kind']=='water']
         self.assertTrue(all(r['supply']==0 for r in pond))
         # GET-style preparation never replenishes supply.
         prepare_landscapes(self.world)
         self.assertTrue(all(r['supply']==0 for r in pond))
         tick(self.world)
-        self.assertAlmostEqual(sum(t.get('produced',{}).get('fish',0) for t in [self.town,friend]),3.2)
+        self.assertAlmostEqual(sum(t.get('produced',{}).get('fish',0) for t in [self.town,friend]),6.4)
 
     def test_legacy_implicit_workers_cannot_overfill_one_workplace(self):
         self.town['buildings'].append({'kind':'woodcutter','x':7,'y':7})

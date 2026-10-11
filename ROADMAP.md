@@ -51,7 +51,7 @@ and processed goods let towns develop different specialties.
 ## Production and limits
 
 - Each tree holds 8 wood supply and regenerates 0.5 every three seconds.
-- Each connected pond holds 12 fish supply and regenerates 1.6 every three
+- Each connected pond holds 12 fish supply and regenerates 3.2 every three
   seconds. All its water tiles, nearby huts, and founders share that stock,
   including between towns. Farming uses water access without consuming fish.
 - Berry bushes hold 6 supply and regenerate 0.3 per tick. Herb patches hold 4

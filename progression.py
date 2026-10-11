@@ -49,7 +49,7 @@ RECIPES = {
     'workshop': ({'planks': 2, 'wood': 1}, 'tools', 1),
     'fish_pond': ({'fodder': .5}, 'fish', 1),
 }
-SUPPLIES = {'tree': (8, .5), 'water': (12, 1.6), 'berry_bush': (6, .3), 'herb_patch': (4, .2)}
+SUPPLIES = {'tree': (8, .5), 'water': (12, 3.2), 'berry_bush': (6, .3), 'herb_patch': (4, .2)}
 _supply_cache = None
 
 JOB_BUILDINGS = {v['job']: k for k, v in BUILDINGS.items() if 'job' in v}
