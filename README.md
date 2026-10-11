@@ -277,6 +277,8 @@ the Python host, refresh both browsers, and create a new world to use the shared
 - Storehouses upgrade through level 5, becoming a **Warehouse** with 500 spaces.
   Building upgrades increase storage; settler-capacity upgrades add hauler slots.
 - New landscapes contain denser forests, including timber patches beside towns.
+  At distant zoom, trees merge into a forest canopy and rock artwork is hidden.
+  Zoom in to see individual trees and rocks; their tiles remain selectable at any zoom.
 - Build cottages to attract residents; maintain food and add storage as needed.
 - Select any completed cottage, storehouse, woodcutter, farm, fishing hut, or acre
   to upgrade it through level 3 (storehouses through level 5). Builders work for 30 seconds to reach level 2

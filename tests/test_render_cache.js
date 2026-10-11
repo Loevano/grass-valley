@@ -5,7 +5,7 @@ const WorkerAnimation=require('../web/animations.js');
 const elements=new Map(),surfaces=[],fills=[],images=[],copies=[];
 function element(){return {children:[],style:{},classList:{toggle(){}},append(...c){this.children.push(...c);},replaceChildren(){this.children=[];},setAttribute(){},addEventListener(){}};}
 function context(surface,offscreen){
-  return new Proxy({canvas:surface,fill(){if(offscreen)surface.paints++;else fills.push(this.fillStyle);},
+  return new Proxy({canvas:surface,fill(){if(offscreen){surface.paints++;(surface.fills ||= []).push(this.fillStyle);}else fills.push(this.fillStyle);},
     drawImage(...args){if(offscreen)copies.push({args,operation:this.globalCompositeOperation});else images.push(args);}}, {get:(target,key)=>key in target?target[key]:()=>{}});
 }
 const documentMock={getElementById(id){if(!elements.has(id))elements.set(id,element());return elements.get(id);},
@@ -153,6 +153,36 @@ const run=new Function('document','window','localStorage','setTimeout','clearTim
   const buildingBytes=[...buildingSprites.values()].reduce((sum,sprite)=>sum+sprite.width*sprite.height*4,0);
   assert.equal(buildingSpriteBytes,buildingBytes,'Building eviction tracks texture memory');
   assert(buildingBytes<=buildingSpriteByteLimit&&buildingSprites.size<=128,'Building textures remain bounded at high resolution');
+  const forestTrees=[];
+  for(let y=28;y<=32;y++)for(let x=28;x<=32;x++)if(x!==30||y!==30)forestTrees.push({kind:'tree',x,y});
+  const forestTown={map_size:120,terrain:Array(120).fill('g'.repeat(120)),
+    buildings:[],villagers:[],map_resources:[...forestTrees,{kind:'rock',x:35,y:30},{kind:'rock',x:36,y:30},{kind:'chest',x:34,y:34}],level:1};
+  world={world_id:'forest-test',towns:{own:forestTown}};viewed='own';cameraTown='forest-test/own';
+  camera={x:30,y:30,zoom:.35};
+  const resourceDraws=[],originalDrawResource=drawResource;
+  drawResource=(resource,...args)=>{resourceDraws.push(resource.kind);originalDrawResource(resource,...args);};
+  draw();
+  assert(!resourceDraws.includes('tree')&&!resourceDraws.includes('rock'),'Overview skips all tree and rock sprite draws');
+  assert(resourceDraws.includes('chest'),'Overview keeps useful loot markers visible');
+  assert(groundCache.surface.fills.includes('#3f6045'),'Trees become a forest canopy inside cached ground');
+  assert.equal(resourceCache.rockJoins.size,0,'Overview avoids calculating rock geometry');
+  assert(resourceCache.forest.has('30,30'),'Small gaps between neighboring trees join the forest canopy');
+  const forestSurface=groundCache.surface,forestPaints=forestSurface.paints;
+  draw();assert.equal(forestSurface.paints,forestPaints,'Stationary overview reuses the forest canopy');
+  const treeHit=hitTargets.find(target=>target.type==='resource'&&target.index===0);
+  assert(treeHit,'Forest tiles remain selectable');
+  assert(treeHit.bottom-treeHit.top<=tileH,'Invisible trees use tile-sized selection areas');
+  assert(hitTargets.some(target=>target.type==='resource'&&target.index===forestTrees.length),'Hidden rocks remain selectable on their tile');
+  camera.zoom=1;resourceDraws.length=0;draw();
+  assert(resourceDraws.includes('tree')&&resourceDraws.includes('rock'),'Zooming in restores individual tree and rock artwork');
+  assert.equal(resourceCache.rockJoins.size,2,'Zooming in restores joined rock geometry');
+  camera.zoom=.35;draw();
+  const oldForest=groundCache.surface;
+  world=JSON.parse(JSON.stringify(world));world.towns.own.map_resources=world.towns.own.map_resources.filter(resource=>resource.kind!=='tree');
+  draw();
+  assert.notStrictEqual(groundCache.surface,oldForest,'Removing trees invalidates the cached forest canopy');
+  assert(!groundCache.surface.fills.includes('#3f6045'),'Removed woodland leaves no stale canopy');
+  drawResource=originalDrawResource;
 
 `);
 run(documentMock,windowMock,{getItem:()=>null},()=>0,()=>{},WorkerAnimation,assert,surfaces,fills,images,copies,()=>{width=720;height=500;},{now:()=>now},ms=>{now+=ms;});

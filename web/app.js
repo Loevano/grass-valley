@@ -1965,8 +1965,8 @@ function drawProfessionAction(job,time){
 // A padded viewport keeps static ground reusable during walking and panning.
 // One canvas bounds memory usage even on Retina displays.
 let groundCache=null,resourceCache=null;
-function renderResources(resources){
-  if(resourceCache?.resources!==resources || resourceCache.count!==resources.length){
+function renderResources(resources,detailed=true){
+  if(resourceCache?.resources!==resources || resourceCache.count!==resources.length || resourceCache.detailed!==detailed){
     const water=new Set(),objects=[],indexes=new Map(),buckets=new Map();
     resources.forEach((r,index)=>{
       indexes.set(r,index);
@@ -1977,7 +1977,20 @@ function renderResources(resources){
         buckets.get(key).push(r);
       }
     });
-    const rocks=new Map(objects.filter(r=>r.kind==='rock').map(r=>[`${r.x},${r.y}`,r]));
+    const forest=detailed?null:new Set(objects.filter(r=>r.kind==='tree').map(r=>`${r.x},${r.y}`));
+    if(forest){
+      // Join small gaps between nearby trees into one ground-level canopy.
+      const neighbors=new Map();
+      for(const key of forest){
+        const [x,y]=key.split(',').map(Number);
+        for(const [dx,dy] of [[-1,0],[1,0],[0,-1],[0,1]]){
+          const adjacent=`${x+dx},${y+dy}`;
+          neighbors.set(adjacent,(neighbors.get(adjacent) || 0)+1);
+        }
+      }
+      for(const [key,count] of neighbors)if(count>=2)forest.add(key);
+    }
+    const rocks=new Map((detailed?objects.filter(r=>r.kind==='rock'):[]).map(r=>[`${r.x},${r.y}`,r]));
     const rockJoins=new Map();
     for(const r of rocks.values()){
       const mask=[[0,-1],[1,0],[0,1],[-1,0]].reduce((mask,[dx,dy],i)=>
@@ -2002,7 +2015,7 @@ function renderResources(resources){
       });
       rockJoins.set(r,{mask,heights,inset});
     }
-    resourceCache={resources,count:resources.length,water,objects,indexes,buckets,rockJoins,
+    resourceCache={resources,count:resources.length,detailed,forest,water,objects,indexes,buckets,rockJoins,
       layout:JSON.stringify(resources.map(({kind,x,y,farm_index,construction})=>[kind,x,y,farm_index,!!construction]))};
   }
   return resourceCache;
@@ -2035,7 +2048,7 @@ function visibleResourceObjects(data,rect){
   data.visible={originX,originY,tileW,width:rect.width,height:rect.height,objects};
   return objects;
 }
-function paintGround(target,landscape,water,bounds,offsetX=0,offsetY=0,region=null,pixelRatio=window.devicePixelRatio||1){
+function paintGround(target,landscape,water,bounds,offsetX=0,offsetY=0,region=null,pixelRatio=window.devicePixelRatio||1,forest=null){
   const ctx=target,terrainSize=landscape?.map_size || 12;
   const detailed=tileW>=32;
   const palette={g:['#68865a','#69875b','#668358'],f:['#506f4a','#55764c','#5a7b50'],
@@ -2075,7 +2088,8 @@ function paintGround(target,landscape,water,bounds,offsetX=0,offsetY=0,region=nu
         !water.has(`${x},${y+1}`),!water.has(`${x-1},${y}`)]:null;
       const shallow=shores?.some(Boolean);
       const waterColor=biome==='b'?(shallow?'#718565':'#4e6857'):(shallow?'#6299a1':'#447d91');
-      polygon(diamond,wet?waterColor:palette[biome][groundVariant(x,y)],null);
+      const canopy=!detailed&&forest?.has(`${x},${y}`);
+      polygon(diamond,wet?waterColor:canopy?(biome==='b'?'#4b6549':'#3f6045'):palette[biome][groundVariant(x,y)],null);
       if(detailed&&biome==='b'&&variation%3===0){
         ctx.strokeStyle='#9b9f69';ctx.lineWidth=tileW/46;
         for(let reed=0;reed<3;reed++){const rx=px+(reed-1)*tileW*.07,ry=py+tileH*.7;ctx.beginPath();ctx.moveTo(rx,ry);ctx.lineTo(rx+(reed-1)*tileW*.025,ry-tileH*.4);ctx.stroke();}
@@ -2098,33 +2112,33 @@ function paintGround(target,landscape,water,bounds,offsetX=0,offsetY=0,region=nu
     }
   }
 }
-function groundLayout(landscape,water,bounds){
+function groundLayout(landscape,water,bounds,forest=null){
   const rows=[],size=landscape?.map_size || 12;
   // Include neighboring tiles because they determine shores and valley edges.
   for(let y=Math.max(0,bounds.minY-1);y<=Math.min(size-1,bounds.maxY+1);y++){
     let row='';
     for(let x=Math.max(0,bounds.minX-1);x<=Math.min(size-1,bounds.maxX+1);x++){
-      row+=(landscape?.terrain?.[y]?.[x] || (landscape?.chunked?'v':'g'))+(water.has(`${x},${y}`)?'1':'0');
+      row+=(landscape?.terrain?.[y]?.[x] || (landscape?.chunked?'v':'g'))+(water.has(`${x},${y}`)?'1':'0')+(forest?.has(`${x},${y}`)?'t':'-');
     }
     rows.push(row);
   }
   return JSON.stringify([world.world_id,landscape?.terrain_seed,size,rows]);
 }
-function drawGround(rect,dpr,landscape,water,bounds){
+function drawGround(rect,dpr,landscape,water,bounds,forest=null){
   const margin=384;
   // Distant terrain needs fewer pixels; keep live objects and the UI sharp.
   if(tileW<32)dpr=Math.min(dpr,1);
-  if(!groundCache || groundCache.world!==world || groundCache.landscape!==landscape){
+  if(!groundCache || groundCache.world!==world || groundCache.landscape!==landscape || groundCache.forest!==forest){
     // Snapshots retain their terrain and water sets. Compare only when a new
     // snapshot arrives, keeping fingerprint scans out of scrolling frames.
     const changed=groundCache&&(groundCache.world.world_id!==world.world_id
-      ||groundLayout(groundCache.landscape,groundCache.water,groundCache.bounds)!==groundLayout(landscape,water,groundCache.bounds));
+      ||(groundCache.detailed===(tileW>=32)&&groundLayout(groundCache.landscape,groundCache.water,groundCache.bounds,groundCache.forest)!==groundLayout(landscape,water,groundCache.bounds,forest)));
     if(changed)groundCache=null;
-    if(groundCache)Object.assign(groundCache,{world,landscape,water});
+    if(groundCache)Object.assign(groundCache,{world,landscape,water,forest});
     else{
       const surface=document.createElement('canvas'),target=surface.getContext?.('2d');
-      if(!target){paintGround(ctx,landscape,water,bounds);return;}
-      groundCache={surface,target,world,landscape,water};
+      if(!target){paintGround(ctx,landscape,water,bounds,0,0,null,window.devicePixelRatio || 1,forest);return;}
+      groundCache={surface,target,world,landscape,water,forest};
     }
   }
   const cache=groundCache,now=performance.now();
@@ -2183,7 +2197,7 @@ function drawGround(rect,dpr,landscape,water,bounds){
       cache.target.clearRect(region.x,region.y,region.width,region.height);
       cache.target.save();cache.target.beginPath();
       cache.target.rect(region.x,region.y,region.width,region.height);cache.target.clip();
-      paintGround(cache.target,landscape,water,regionBounds(region),offsetX,offsetY,region,dpr);
+      paintGround(cache.target,landscape,water,regionBounds(region),offsetX,offsetY,region,dpr,forest);
       cache.target.restore();
     }
     Object.assign(cache,{originX:nextX,originY:nextY,detailed:tileW>=32,tileW,width:rect.width,height:rect.height,dpr});
@@ -2219,7 +2233,7 @@ function draw(seconds=0){
   }
   hitTargets=[];
   const resources=world.shared_map?.map_resources || town?.map_resources || [];
-  const resourceData=renderResources(resources),water=resourceData.water;
+  const resourceData=renderResources(resources,tileW>=32),water=resourceData.water;
   const corners=[[-tileW,-100],[rect.width+tileW,-100],[-tileW,rect.height+100],[rect.width+tileW,rect.height+100]]
     .map(([px,py])=>({x:(px-originX)/tileW+(py-originY)/tileH,y:(py-originY)/tileH-(px-originX)/tileW}));
   const size=mapSize(town),minX=Math.max(0,Math.floor(Math.min(...corners.map(p=>p.x)))),maxX=Math.min(size-1,Math.ceil(Math.max(...corners.map(p=>p.x))));
@@ -2229,7 +2243,7 @@ function draw(seconds=0){
   const previewKind=tool in costs?tool:tool==='move'&&moveIndex!==null?town?.buildings[moveIndex]?.kind:null;
   const sourceKind=previewKind==='woodcutter'?'tree':(previewKind==='farm'||previewKind==='fishing_hut')?'water':null;
   const reachable=new Set(preview&&sourceKind?resources.filter(r=>r.kind===sourceKind&&Math.abs(r.x-preview.x)+Math.abs(r.y-preview.y)<=(previewKind==='woodcutter'?10:3)).map(r=>`${r.x},${r.y}`):[]);
-  drawGround(rect,dpr,world.shared_map || town,water,{minX,maxX,minY,maxY});
+  drawGround(rect,dpr,world.shared_map || town,water,{minX,maxX,minY,maxY},resourceData.forest);
   for(const stump of (world.shared_map || town)?.tree_stumps || []){
     if(stump.x<minX||stump.x>maxX||stump.y<minY||stump.y>maxY)continue;
     const [px,py]=point(stump.x,stump.y),scale=tileW/46;
@@ -2320,12 +2334,14 @@ function draw(seconds=0){
     const centerX=px+(character?(b.index%3-1)*3:0);
     const baseY=py+(character?tileH*.65+Math.floor(b.index/3):tileH/2);
     const owner=world.towns[b.townId] || town;
-    const height=b.kind==='tree'?(b.species==='ancient'?94:70):character?26:b.kind==='acre'?0:b.kind==='rock'?80:type==='building'?buildingHeight(b,owner)+(b.kind==='hall'?(owner?.level>=4?35:33):18):45;
-    const halfWidth=character?9*scale:b.kind==='rock'?28*scale:tileW*.45;
+    const simplifiedResource=tileW<32&&(b.kind==='tree'||b.kind==='rock');
+    const height=simplifiedResource?tileH/(2*scale):b.kind==='tree'?(b.species==='ancient'?94:70):character?26:b.kind==='acre'?0:b.kind==='rock'?80:type==='building'?buildingHeight(b,owner)+(b.kind==='hall'?(owner?.level>=4?35:33):18):45;
+    const halfWidth=simplifiedResource?tileW*.45:character?9*scale:b.kind==='rock'?28*scale:tileW*.45;
     hitTargets.push({type,index,townId:b.townId || viewed,left:centerX-halfWidth,right:centerX+halfWidth,top:baseY-height*scale,bottom:baseY+(character?5*scale:tileH/2)});
     if(character&&selection?.type===type&&selection.index===b.index&&(!world.shared_map||b.townId===viewed||type==='npc')){
       ctx.fillStyle='#fff0b144';ctx.strokeStyle='#fff0b1';ctx.lineWidth=2;ctx.beginPath();ctx.ellipse(centerX,baseY,12*scale,6*scale,0,0,Math.PI*2);ctx.fill();ctx.stroke();
     }
+    if(simplifiedResource)continue;
     if(['tree','rock','berry_bush','herb_patch','chest'].includes(b.kind)){drawResource(b,resourceData.rockJoins.get(b));continue;}
     if(character){
       drawVillager(b);
