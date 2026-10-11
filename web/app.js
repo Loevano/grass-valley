@@ -1131,7 +1131,7 @@ function renderSelection(town){
       button.onclick=()=>{if(!button.disabled&&viewed===identity?.town_id)showUpgrade({action:'upgrade_building',index});};
       // Keep the level action before the capacity action.
       const capacityUpgrade=upgradeActions.children[0];
-      upgradeActions.replaceChildren();upgradeActions.append(upgradeCard(button,upgradePreview({action:'upgrade_building',index},town,item),{title:`Level ${level>=maxLevel?level:level+1}`,status:level>=maxLevel?'Fully upgraded':'',benefits:level>=maxLevel?[upgradeBenefit(item.kind,level,item)]:undefined}));
+      upgradeActions.replaceChildren();upgradeActions.append(upgradeCard(button,upgradePreview({action:'upgrade_building',index},town,item),{title:level>=maxLevel?`Level ${level}`:`Upgrade to level ${level+1}`,status:level>=maxLevel?'Fully upgraded':'',benefits:level>=maxLevel?[upgradeBenefit(item.kind,level,item)]:undefined}));
       if(capacityUpgrade)upgradeActions.append(capacityUpgrade);
     }
     if(item.kind==='farm'&&!item.construction&&viewed===identity?.town_id){
@@ -1144,7 +1144,7 @@ function renderSelection(town){
     if(production.children.length>1)$('selection-details').append(production);
     if(item.kind==='hall'){
       const preview=upgradePreview({action:'upgrade'},town,item);
-      upgradeActions.append(upgradeCard($('upgrade'),preview,{title:`Town hall · Level ${preview?town.level+1:town.level}`,status:town.upgrade_remaining?`Upgrading · ${town.upgrade_remaining}s remaining`:preview?'':'Further hall progression is planned.'}));details.append($('hall-details'));
+      upgradeActions.append(upgradeCard($('upgrade'),preview,{title:preview?`Upgrade to level ${town.level+1}`:`Town hall · Level ${town.level}`,status:town.upgrade_remaining?`Upgrading · ${town.upgrade_remaining}s remaining`:preview?'':'Further hall progression is planned.'}));details.append($('hall-details'));
     }
     if(upgradeActions.children.length)upgrades.append(upgradeActions);
     if(upgrades.children.length>1)$('selection-details').append(upgrades);
