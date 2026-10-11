@@ -15,14 +15,20 @@ new Function('assert',`
     if(r.kind==='water')return false;
     const px=originX+(r.x-r.y)*tileW/2,py=originY+(r.x+r.y)*tileH/2;
     return px>=-tileW&&px<=rect.width+tileW&&py>=-tileH&&py<=rect.height+80*tileW/46;
-  });
+  }).sort((a,b)=>(a.depth ?? a.x+a.y)-(b.depth ?? b.x+b.y));
   let data=renderResources(resources),visible=visibleResourceObjects(data,rect);
-  assert.deepEqual(visible,expected(resources),'Spatial culling matches the existing screen bounds and snapshot order');
+  assert.deepEqual(visible,expected(resources),'Spatial culling preserves screen bounds and equal-depth snapshot order');
   assert(projections<resources.length/2,'Distant loaded resources skip projection');
   projections=0;
   assert.strictEqual(visibleResourceObjects(data,rect),visible,'Stationary frames reuse visible resources');
   assert.equal(projections,0,'Stationary frames do not rescan resources');
   for(const resource of visible)assert.strictEqual(resources[data.indexes.get(resource)],resource,'Selection retains snapshot indexes');
+  const region=data.region;
+  originX+=40;
+  assert.deepEqual(visibleResourceObjects(data,rect),expected(resources),'Fast panning updates visibility');
+  assert.strictEqual(data.region,region,'Nearby camera movement reuses the sorted region');
+  originX-=40;visibleResourceObjects(data,rect);
+  assert.strictEqual(data.region,region,'Reversing direction does not rebuild the sorted region');
   for(const zoom of [.35,.36,.6,1,2.5])for(const position of [[0,0],[30,30],[140.25,139.75],[279,279]]){
     tileW=54*zoom;tileH=tileW/2;
     originX=rect.width/2-(position[0]-position[1])*tileW/2;

@@ -1928,12 +1928,15 @@ function visibleResourceObjects(data,rect){
   const minX=Math.floor(Math.min(...corners.map(p=>p.x))/16),maxX=Math.floor(Math.max(...corners.map(p=>p.x))/16);
   const minY=Math.floor(Math.min(...corners.map(p=>p.y))/16),maxY=Math.floor(Math.max(...corners.map(p=>p.y))/16);
   let region=data.region;
-  if(!region||region.minX!==minX||region.maxX!==maxX||region.minY!==minY||region.maxY!==maxY){
+  if(!region||minX<region.minX||maxX>region.maxX||minY<region.minY||maxY>region.maxY
+    ||region.maxX-region.minX>maxX-minX+4||region.maxY-region.minY>maxY-minY+4){
     const objects=[];
-    for(let x=minX;x<=maxX;x++)for(let y=minY;y<=maxY;y++)objects.push(...(data.buckets.get(`${x},${y}`) || []));
-    // Preserve snapshot order for resources sharing the same drawing depth.
-    objects.sort((a,b)=>data.indexes.get(a)-data.indexes.get(b));
-    region=data.region={minX,maxX,minY,maxY,objects};
+    // One spare bucket per edge absorbs small pans and direction reversals.
+    for(let x=minX-1;x<=maxX+1;x++)for(let y=minY-1;y<=maxY+1;y++)objects.push(...(data.buckets.get(`${x},${y}`) || []));
+    // Static resources retain depth order while moving; equal depths keep
+    // snapshot order so overlapping artwork and selection remain consistent.
+    objects.sort((a,b)=>(a.depth ?? a.x+a.y)-(b.depth ?? b.x+b.y)||data.indexes.get(a)-data.indexes.get(b));
+    region=data.region={minX:minX-1,maxX:maxX+1,minY:minY-1,maxY:maxY+1,objects};
   }
   const objects=[];
   for(const r of region.objects){
@@ -1946,6 +1949,10 @@ function visibleResourceObjects(data,rect){
 function paintGround(target,landscape,water,bounds,offsetX=0,offsetY=0,region=null,pixelRatio=window.devicePixelRatio||1){
   const ctx=target,terrainSize=landscape?.map_size || 12;
   const detailed=tileW>=32;
+  const palette={g:['#68865a','#69875b','#668358'],f:['#506f4a','#55764c','#5a7b50'],
+    m:['#83945e','#899b65','#80915b'],s:['#b4a575','#bdad7d','#b8a878'],r:['#8b8d7c','#969785','#858978'],b:['#59674b','#626f50','#536247']};
+  const land=(tx,ty)=>tx>=0&&ty>=0&&tx<terrainSize&&ty<terrainSize&&landscape?.terrain?.[ty]?.[tx]!=='v'
+    &&(!landscape?.chunked||!!landscape.terrain?.[ty]?.[tx]);
   const {minX,maxX,minY,maxY}=bounds;
   const point=(x,y)=>[originX+(x-y)*tileW/2+offsetX,originY+(x+y)*tileH/2+offsetY];
   const polygon=(points,fill,stroke)=>{
@@ -1973,16 +1980,12 @@ function paintGround(target,landscape,water,bounds,offsetX=0,offsetY=0,region=nu
       const biome=landscape?.terrain?.[y]?.[x] || (landscape?.chunked?'v':'g');
       if(biome==='v')continue;
       // Ground thickness appears only at the actual valley boundary.
-      const land=(tx,ty)=>tx>=0&&ty>=0&&tx<terrainSize&&ty<terrainSize&&landscape?.terrain?.[ty]?.[tx]!=='v'
-        &&(!landscape?.chunked||!!landscape.terrain?.[ty]?.[tx]);
       if(!land(x+1,y))polygon([diamond[1],diamond[2],[diamond[2][0],diamond[2][1]+12],[diamond[1][0],diamond[1][1]+12]],'#344b35');
       if(!land(x,y+1))polygon([diamond[2],diamond[3],[diamond[3][0],diamond[3][1]+12],[diamond[2][0],diamond[2][1]+12]],'#405438');
-      const palette={g:['#68865a','#69875b','#668358'],f:['#506f4a','#55764c','#5a7b50'],
-        m:['#83945e','#899b65','#80915b'],s:['#b4a575','#bdad7d','#b8a878'],r:['#8b8d7c','#969785','#858978'],b:['#59674b','#626f50','#536247']};
-      const neighbors=[[x,y-1],[x+1,y],[x,y+1],[x-1,y]];
-      const shores=neighbors.map(([tx,ty])=>!water.has(`${tx},${ty}`));
-      const depth=shores.filter(Boolean).length;
-      const waterColor=biome==='b'?(depth?'#718565':'#4e6857'):(depth?'#6299a1':'#447d91');
+      const shores=wet?[!water.has(`${x},${y-1}`),!water.has(`${x+1},${y}`),
+        !water.has(`${x},${y+1}`),!water.has(`${x-1},${y}`)]:null;
+      const shallow=shores?.some(Boolean);
+      const waterColor=biome==='b'?(shallow?'#718565':'#4e6857'):(shallow?'#6299a1':'#447d91');
       polygon(diamond,wet?waterColor:palette[biome][groundVariant(x,y)],null);
       if(detailed&&biome==='b'&&variation%3===0){
         ctx.strokeStyle='#9b9f69';ctx.lineWidth=tileW/46;

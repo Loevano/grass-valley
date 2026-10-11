@@ -38,6 +38,17 @@ const run=new Function('document','window','localStorage','setTimeout','clearTim
   check(!placementValid(town,{x:5,y:5},'home'),'Cannot preview a building outside the outline');
   delete town.terrain;fills.length=0;draw();
   check(fills.includes('#68865a'),'Maps without terrain still render grass');
+  // Refilling ground during fast panning should not inspect water neighbors
+  // for dry tiles, at either detail level.
+  for(const width of [18.9,54]){
+    tileW=width;tileH=width/2;originX=200;originY=100;
+    let probes=0;const water={has(){probes++;return false;}};
+    fills.length=0;
+    paintGround(ctx,{map_size:120,terrain:Array(120).fill('g'.repeat(120))},water,
+      {minX:1,maxX:3,minY:1,maxY:3});
+    check(fills.length===9,'Each dry tile is still painted');
+    check(probes===9,'Dry terrain needs only one water lookup per tile');
+  }
 `);
 run(documentMock,{devicePixelRatio:1,addEventListener(){}},{getItem:()=>null},()=>0,()=>{},fills);
 if(typeof print==='function')print('Terrain rendering checks passed');else console.log('Terrain rendering checks passed');
