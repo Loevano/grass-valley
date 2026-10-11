@@ -1054,7 +1054,8 @@ class Handler(SimpleHTTPRequestHandler):
                         if not isinstance(name, str) or not name.strip() or len(name.strip()) > 24:
                             raise ValueError('Enter a world name of 1–24 characters.')
                         world_id = secrets.token_hex(8)
-                        WORLDS[world_id] = {'name': name.strip(), 'world': new_world(), 'tokens': {}}
+                        WORLDS[world_id] = {'name': name.strip(), 'world': new_world(
+                            explorable=True, chunk_directory=SAVE.with_name(SAVE.stem + '_chunks')), 'tokens': {}}
                         activate(world_id)
                     else:
                         world_id = data.get('world_id')
