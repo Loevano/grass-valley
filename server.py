@@ -803,7 +803,15 @@ def command(town, data, world=None):
                        if k == key or (key == 'food' and k in economy.EDIBLE))
             if used > allocations.get(key, 0) + 1e-9:
                 raise ValueError('Spend or move stored goods before reducing their allocation.')
+        reserve = data.get('wood_reserve', building.get('wood_reserve', 0))
+        enabled = data.get('wood_reserve_enabled', building.get('wood_reserve_enabled', False))
+        if type(reserve) is not int or not 0 <= reserve <= allocations.get('wood', 0):
+            raise ValueError('The wood minimum must be a whole number between 0 and its maximum.')
+        if type(enabled) is not bool:
+            raise ValueError('Choose whether the wood reserve is enabled.')
         building['storage_allocations'] = dict(allocations)
+        building['wood_reserve'] = reserve
+        building['wood_reserve_enabled'] = enabled
     elif action == 'upgrade_capacity':
         index = data.get('index')
         if type(index) is not int or not 0 <= index < len(town['buildings']):

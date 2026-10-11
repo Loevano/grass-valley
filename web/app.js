@@ -269,6 +269,7 @@ function resourceStorage(town,key){
   return town.buildings.filter(b=>!b.construction&&(key==='food'?buildingStorageKeys(b).includes('food'):buildingStorageGoods(b).includes(key))).reduce((sum,b)=>sum+(roomAllocations(b)[group] || 0),0);
 }
 const storageEditing=new Set();
+const woodReserveDrafts=new Map();
 function renderStorage(town,item,index,target=$('selection-details')){
   const keys=buildingStorageKeys(item);
   const capacity=buildingStorageSize(item),allocations=roomAllocations(item);
@@ -291,22 +292,32 @@ function renderStorage(town,item,index,target=$('selection-details')){
   const heading=document.createElement('div');heading.className='storage-heading';
   if(canAllocate&&!editing&&keys.length){
     const button=document.createElement('button');button.textContent='Allocate';
-    button.onclick=()=>{storageEditing.add(draftKey);storageDrafts.set(draftKey,{...allocations});renderSelection(town);};heading.append(button);
+    button.onclick=()=>{storageEditing.add(draftKey);storageDrafts.set(draftKey,{...allocations});woodReserveDrafts.set(draftKey,{minimum:item.wood_reserve || 0,enabled:!!item.wood_reserve_enabled});renderSelection(town);};heading.append(button);
   }
   target.append(heading);
   const summary=document.createElement('p');summary.className='storage-summary';target.append(summary);
   if(editing||!keys.length){const note=document.createElement('p');note.className='storage-note';note.textContent=editing?'Assign space for incoming goods.':'This building does not store goods.';target.append(note);}
   const fields={},counts={};
+  const reserve=woodReserveDrafts.get(draftKey) || {minimum:item.wood_reserve || 0,enabled:!!item.wood_reserve_enabled};
+  let minimumInput,enableInput,woodTrack;
   const update=()=>{
     const used=keys.reduce((sum,key)=>sum+Number(fields[key].value),0);
     summary.textContent=`${used} / ${capacity} allocated · ${Math.max(0,capacity-used)} free`;
     for(const key of keys){
-      fields[key].max=String(Math.max(Number(fields[key].min),capacity-used+Number(fields[key].value)));
-      counts[key].textContent=`${fields[key].value} spaces`;
+      fields[key].max=key==='wood'?String(capacity):String(Math.max(Number(fields[key].min),capacity-used+Number(fields[key].value)));
+      if(key==='wood')fields[key].setAttribute('aria-valuemax',String(capacity-used+Number(fields[key].value)));
+      counts[key].textContent=key==='wood'?`Min ${reserve.minimum} · Max ${fields[key].value}`:`${fields[key].value} spaces`;
+    }
+    if(minimumInput){
+      reserve.minimum=Math.min(reserve.minimum,Number(fields.wood.value));
+      minimumInput.value=String(reserve.minimum);minimumInput.disabled=!reserve.enabled;
+      minimumInput.setAttribute('aria-valuemax',fields.wood.value);
+      woodTrack.style.background=`linear-gradient(to right,#ffffff15 0 ${100*reserve.minimum/capacity}%,#b8c999 ${100*reserve.minimum/capacity}% ${100*Number(fields.wood.value)/capacity}%,#ffffff15 ${100*Number(fields.wood.value)/capacity}% 100%) center / 100% 5px no-repeat`;
+      counts.wood.textContent=`Min ${reserve.minimum}${reserve.enabled?'':' (off)'} · Max ${fields.wood.value}`;
     }
   };
   for(const key of keys){
-    const row=document.createElement('label');row.className='storage-row';
+    const row=document.createElement(key==='wood'&&editing?'div':'label');row.className='storage-row';
     const caption=document.createElement('span');caption.className='storage-caption';
     const name=document.createElement('span');name.textContent=goodName(key);
     const count=document.createElement('span');count.className='storage-count';counts[key]=count;
@@ -314,7 +325,18 @@ function renderStorage(town,item,index,target=$('selection-details')){
     if(editing){
       const input=document.createElement('input');input.type='range';input.min=String(Math.ceil(minimum[key] || 0));input.max=String(capacity);input.step='1';input.value=String(Math.max(Number(input.min),values[key] || 0));
       input.setAttribute('aria-label',goodName(key)+' storage allocation');fields[key]=input;
-      input.oninput=()=>{input.value=String(Math.max(Number(input.min),Math.min(Number(input.max),Number(input.value))));update();storageDrafts.set(draftKey,Object.fromEntries(keys.map(k=>[k,Number(fields[k].value)])));};row.append(input);
+      input.oninput=()=>{const used=keys.reduce((sum,k)=>sum+Number(fields[k].value),0);const limit=key==='wood'?capacity-used+Number(input.value):Number(input.max);input.value=String(Math.max(Math.ceil(minimum[key] || 0),Math.min(limit,Number(input.value))));update();storageDrafts.set(draftKey,Object.fromEntries(keys.map(k=>[k,Number(fields[k].value)])));};
+      if(key==='wood'){
+        input.min='0';input.setAttribute('aria-valuemin',String(Math.ceil(minimum.wood || 0)));
+        const toggle=document.createElement('label');toggle.className='storage-reserve-enable';
+        enableInput=document.createElement('input');enableInput.type='checkbox';enableInput.checked=reserve.enabled;enableInput.setAttribute('aria-label','Enable wood reserve');
+        const text=document.createElement('span');text.textContent='Enable reserve';toggle.append(enableInput);toggle.append(text);row.append(toggle);
+        woodTrack=document.createElement('div');woodTrack.className='storage-wood-range';
+        minimumInput=document.createElement('input');minimumInput.type='range';minimumInput.min='0';minimumInput.max=String(capacity);minimumInput.step='1';minimumInput.value=String(reserve.minimum);minimumInput.setAttribute('aria-label','Wood reserve minimum');
+        minimumInput.oninput=()=>{reserve.minimum=Math.min(Number(minimumInput.value),Number(fields.wood.value));woodReserveDrafts.set(draftKey,reserve);update();};
+        enableInput.onchange=()=>{reserve.enabled=enableInput.checked;woodReserveDrafts.set(draftKey,reserve);update();};
+        woodTrack.append(input);woodTrack.append(minimumInput);row.append(woodTrack);
+      }else row.append(input);
     }else{
       const amount=stock[key] || 0,limit=allocations[key] || 0;
       count.textContent=`${Math.floor(amount)} / ${limit}`;
@@ -327,10 +349,12 @@ function renderStorage(town,item,index,target=$('selection-details')){
     update();
     const actions=document.createElement('div');actions.className='storage-actions';
     const save=document.createElement('button');save.textContent='Save allocations';
-    save.onclick=()=>{if(viewed!==identity?.town_id)return;act({action:'allocate_storage',index,allocations:Object.fromEntries(keys.map(key=>[key,Number(fields[key].value)]))});storageEditing.delete(draftKey);renderSelection(town);};
-    const cancel=document.createElement('button');cancel.textContent='Cancel';cancel.className='quiet';cancel.onclick=()=>{storageEditing.delete(draftKey);storageDrafts.delete(draftKey);renderSelection(town);};
+    save.onclick=()=>{if(viewed!==identity?.town_id)return;act({action:'allocate_storage',index,allocations:Object.fromEntries(keys.map(key=>[key,Number(fields[key].value)])),wood_reserve:reserve.minimum,wood_reserve_enabled:reserve.enabled});storageEditing.delete(draftKey);renderSelection(town);};
+    const cancel=document.createElement('button');cancel.textContent='Cancel';cancel.className='quiet';cancel.onclick=()=>{storageEditing.delete(draftKey);storageDrafts.delete(draftKey);woodReserveDrafts.delete(draftKey);renderSelection(town);};
     actions.append(save);actions.append(cancel);target.append(actions);
   }else summary.textContent=`${Math.floor(Object.values(stock).reduce((sum,n)=>sum+n,0))} / ${capacity} stored`;
+  if(item.kind==='storehouse'&&!editing){const note=document.createElement('p');note.className='storage-note';note.textContent=`Wood reserve: ${item.wood_reserve_enabled?`keep at least ${item.wood_reserve || 0}`:'off'}. Builders can always use it for construction and upgrades.`;target.append(note);}
+  if(editing){const note=document.createElement('p');note.className='storage-note';note.textContent='Wood minimum stays in this room for building and upgrades. Maximum allocates storage space. Production takes only wood above the enabled minimum.';target.append(note);}
   for(const [key,n] of Object.entries(stored))if(n>0&&!buildingStorageGoods(item).includes(key))target.append(fact(String(Math.floor(n)),`${goodName(key)} from previous storage · available to use or haul away`));
   for(const [key,n] of Object.entries(item.input_buffer || {}))if(n>0)target.append(fact(String(Math.floor(n)),`${goodName(key)} reserved for production`));
 }
@@ -878,7 +902,7 @@ function buildingSection(label,folded=false){
   return section;
 }
 function renderSelection(town){
-  if(document.activeElement?.getAttribute?.('aria-label')?.endsWith('storage allocation'))return;
+  if(document.activeElement?.getAttribute?.('aria-label')?.endsWith('storage allocation') || ['Wood reserve minimum','Enable wood reserve'].includes(document.activeElement?.getAttribute?.('aria-label')))return;
   $('selection-panel').classList.toggle('building-info',selection?.type==='building');
   $('selection-art').replaceChildren();$('selection-level').hidden=true;
   // Keep the hall controls attached while rebuilding their temporary section.

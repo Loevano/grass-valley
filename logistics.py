@@ -9,6 +9,14 @@ def buffered(building):
     return sum(economy.inventory(building).values())
 
 
+def production_stock(building, key):
+    """Storage reserves protect production inputs, never building costs."""
+    protected = (building['kind'] == 'storehouse' and key == 'wood'
+                 and building.get('wood_reserve_enabled', False))
+    reserve = building.get('wood_reserve', 0) if protected else 0
+    return max(0, economy.inventory(building).get(key, 0) - reserve)
+
+
 def record_output(town, building, key, amount):
     economy.ensure_inventory(town)
     buffer = building.setdefault('output_buffer', {})
@@ -48,7 +56,9 @@ def supply_request(town, building, villager):
     room = max(0, BUFFER_SIZE - sum(inputs.values()))
     request = {}
     for key, amount in needs.items():
-        take = min(room, max(0, amount * batches - inputs.get(key, 0)), economy.quantity(town, key))
+        available = sum(production_stock(b, key) for b in town['buildings']
+                        if b is not building and 'construction' not in b)
+        take = min(room, max(0, amount * batches - inputs.get(key, 0)), available)
         if take > 1e-9:
             request[key] = take
             room -= take
@@ -82,7 +92,7 @@ def produce(town, building, villager):
 
 def storage_for(town, keys, operation):
     return [b for b in town['buildings'] if 'construction' not in b
-            and any((economy.local_room(b, k) if operation == 'collect' else economy.inventory(b).get(k, 0)) > 0
+            and any((economy.local_room(b, k) if operation == 'collect' else production_stock(b, k)) > 0
                     for k in keys)]
 
 
@@ -176,8 +186,8 @@ def transfer(town, building, storage, operation, villager):
                          and town['buildings'][v['building_index']] is building
                          and v['job'] in economy.JOB_BUILDINGS), villager)
         request = supply_request(town, building, producer)
-        stock = economy.inventory(storage)
-        request = {k: min(n, stock.get(k, 0)) for k, n in request.items() if stock.get(k, 0) > 0}
+        request = {k: min(n, production_stock(storage, k)) for k, n in request.items()
+                   if production_stock(storage, k) > 0}
         if request:
             for key, amount in request.items():
                 economy.withdraw(town, key, amount, source=storage)

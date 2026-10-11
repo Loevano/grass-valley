@@ -227,6 +227,12 @@ the Python host, refresh both browsers, and create a new world to use the shared
   spaces, for example. Each building holds its own stock. Processors fetch supplies from buildings that actually hold them.
   Older saved stocks remain intact, including
   goods above their fixed capacities; spend or haul them away to resume deliveries.
+- In a storehouse or warehouse, select **Allocate** to adjust the wood slider's
+  minimum and maximum. The maximum assigns wood storage space; **Enable reserve**
+  keeps the minimum in that room, so producers and haulers take only surplus wood.
+  Builders can always spend reserved wood on construction and upgrades. Disable
+  the reserve to release it to production. Inputs already delivered to a workplace
+  finish processing normally.
 - Assign settlers to a **Storehouse** as haulers. They collect small batches and
   distribute recipe ingredients and animal feed so producers can keep working.
   Without hauling support, producers fetch their own inputs and deliver outputs

@@ -182,6 +182,75 @@ class ResourceLogistics(unittest.TestCase):
         self.assertEqual(self.town['wood'], 15)
         self.assertEqual(self.town['buildings'][0]['stored_goods']['wood'], 15)
 
+    def test_wood_reserve_limits_deliveries_but_allows_upgrades(self):
+        economy.ensure_inventory(self.town)
+        self.town['buildings'][0]['stored_goods']['wood'] = 0
+        self.town['wood'] = 40
+        store = self.add('storehouse', stored_goods={'wood': 40}, storage_allocations={'wood': 100})
+        saw = self.add('sawpit')
+        worker = self.assign(0, saw)
+        index = self.town['buildings'].index(store)
+        server.command(self.town, {'action': 'allocate_storage', 'index': index, 'allocations': {'wood': 100},
+                                   'wood_reserve': 25, 'wood_reserve_enabled': True})
+        restored = json.loads(json.dumps(self.town))
+        self.assertEqual(restored['buildings'][index]['wood_reserve'], 25)
+        logistics.transfer(self.town, saw, store, 'supply', worker)
+        self.assertEqual(saw['input_buffer']['wood'], 15)
+        self.assertEqual(self.town['wood'], 25)
+        self.assertNotIn(store, logistics.storage_for(self.town, ['wood'], 'supply'))
+        logistics.transfer(self.town, saw, store, 'supply', worker)
+        self.assertEqual(saw['input_buffer']['wood'], 15)
+        server.command(self.town, {'action': 'upgrade_building', 'index': index})
+        self.assertEqual(self.town['wood'], 0)
+        self.assertEqual(store['stored_goods']['wood'], 0)
+        self.assertIn('construction', store)
+
+    def test_reserve_is_rechecked_on_arrival_and_surplus_resumes_supply(self):
+        economy.ensure_inventory(self.town)
+        self.town['buildings'][0]['stored_goods']['wood'] = 0
+        self.town['wood'] = 20
+        store = self.add('storehouse', stored_goods={'wood': 20}, storage_allocations={'wood': 100})
+        saw = self.add('sawpit')
+        worker = self.assign(0, saw)
+        self.assertEqual(logistics.supply_request(self.town, saw, worker), {'wood': 20})
+        store.update(wood_reserve=20, wood_reserve_enabled=True)
+        logistics.transfer(self.town, saw, store, 'supply', worker)
+        self.assertNotIn('input_buffer', saw)
+        self.assertEqual(logistics.supply_request(self.town, saw, worker), {})
+        store['stored_goods']['wood'] += 4
+        self.town['wood'] += 4
+        self.assertEqual(logistics.supply_request(self.town, saw, worker), {'wood': 4})
+        logistics.transfer(self.town, saw, store, 'supply', worker)
+        self.assertEqual(store['stored_goods']['wood'], 20)
+        store['wood_reserve_enabled'] = False
+        saw['input_buffer'] = {}
+        logistics.transfer(self.town, saw, store, 'supply', worker)
+        self.assertEqual(store['stored_goods']['wood'], 0)
+
+    def test_wood_reserve_rejects_invalid_commands(self):
+        store = self.add('storehouse')
+        for amount in (None, True, -1, 1.5, '20', 101):
+            with self.subTest(amount=amount):
+                before = copy.deepcopy(self.town)
+                with self.assertRaises(ValueError):
+                    server.command(self.town, {'action': 'allocate_storage', 'index': 1, 'allocations': {'wood': 100},
+                                              'wood_reserve': amount, 'wood_reserve_enabled': True})
+                self.assertEqual(self.town, before)
+        for enabled in (None, 1, 'true'):
+            before = copy.deepcopy(self.town)
+            with self.assertRaises(ValueError):
+                server.command(self.town, {'action': 'allocate_storage', 'index': 1, 'allocations': {'wood': 100},
+                                          'wood_reserve': 20, 'wood_reserve_enabled': enabled})
+            self.assertEqual(self.town, before)
+        for index in (None, True, -1, 100, 0):
+            with self.assertRaises(ValueError):
+                server.command(self.town, {'action': 'allocate_storage', 'index': index, 'allocations': {'wood': 100},
+                                      'wood_reserve': 25, 'wood_reserve_enabled': True})
+        store['construction'] = {'total': 30, 'progress': 0}
+        with self.assertRaises(ValueError):
+            server.command(self.town, {'action': 'allocate_storage', 'index': 1, 'allocations': {'wood': 100},
+                                      'wood_reserve': 20, 'wood_reserve_enabled': True})
+
     def test_spending_output_releases_a_full_processor(self):
         saw = self.add('sawpit', input_buffer={'wood': 10})
         worker = self.assign(0, saw)
