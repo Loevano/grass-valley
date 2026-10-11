@@ -39,7 +39,7 @@ const run=new Function('document','window','localStorage','setTimeout','clearTim
     }
     await clickSprite('building',0);
     check(selection.type==='building'&&$('selection-title').textContent==='Town hall','Clicking the roof selects a building');
-    check(!$('hall-details').hidden&&!$('upgrade').disabled,'Owner sees available hall upgrade');
+    check(panelNodes().includes($('upgrade'))&&!$('upgrade').disabled,'Owner sees available hall upgrade');
     check($('selection-destroy').hidden,'Town hall has no destroy button');
     function rangeFact(){return panelNodes().find(child=>child.children?.[1]?.textContent==='Building range');}
     check(rangeFact().children[0].textContent==='30 tile steps','Hall panel displays its current building range');

@@ -45,6 +45,8 @@ function render(){context.renderSelection(town);}
 
 render();
 assert.strictEqual(find('hall-details'),hall);
+assert(hall.hidden,'Legacy hall details remain hidden after selecting the hall');
+assert.notStrictEqual(upgradeButton.parent,hall,'Hall upgrade is inside the visible card');
 assert.strictEqual(upgradeButton.disabled,false);
 // The two-second refresh rebuilds the currently selected hall.
 render();render();
@@ -61,5 +63,7 @@ assert(hall.hidden);
 context.selection=null;render();
 assert.strictEqual(find('upgrade'),upgradeButton,'Closing the panel preserves controls');
 context.selection={type:'building',index:0};render();
-assert(!hall.hidden,'Reopening the hall restores its controls');
+assert(hall.hidden,'Legacy hall details stay hidden when reopening the hall');
+assert.strictEqual(find('upgrade'),upgradeButton,'Reopening the hall restores its upgrade card');
+assert.notStrictEqual(upgradeButton.parent,hall,'Upgrade control appears in its visible card');
 console.log('Town hall refresh checks passed');

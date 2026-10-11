@@ -1117,7 +1117,7 @@ function renderSelection(town){
   if(document.activeElement?.getAttribute?.('aria-label')?.endsWith('storage allocation') || ['Wood reserve minimum','Enable wood reserve'].includes(document.activeElement?.getAttribute?.('aria-label')))return;
   $('selection-panel').classList.toggle('building-info',selection?.type==='building');
   $('selection-art').replaceChildren();$('selection-level').hidden=true;
-  // Keep the hall controls attached while rebuilding their temporary section.
+  // Park hall controls in the hidden attached container before rebuilding cards.
   $('hall-details').append($('upgrade'));
   $('selection-panel').append($('hall-details'));
   $('selection-details').replaceChildren();$('hall-details').hidden=true;$('selection-move').hidden=true;$('selection-destroy').hidden=true;
@@ -1269,7 +1269,6 @@ function renderSelection(town){
     p.textContent={hall:'Progression: housing / food / professions\nLevels: 1–5\nUpgrade reward: coins',home:'Town limit: 16 villagers\nArrivals require housing + food',storehouse:'Storage: allocate by resource\nHaulers: collect outputs + supply workplaces',woodcutter:'Output: wood\nRequires nearby trees',farm:'Output: crops\nAcres: within 3 tile steps\nWater: fetched by farmers',fishing_hut:'Output: fish\nRequires nearby water',acre:'Workers: farmers\nRequires farm within 3 tile steps\nWater: fetched by farmers'}[item.kind];
     if(item.kind==='hall'){
       p.textContent+=`\nBuild range: ${buildingRange(town)} tile steps\nDiagonal: 2 steps\nHall upgrade: +5 range`;
-      $('hall-details').hidden=false;
       const upgrade=world.hall_upgrades?.find(next=>next.level===town.level+1);
       $('hall-progress').hidden=true;
       const hallCosts=upgrade?Object.fromEntries(['wood','planks'].filter(k=>k in upgrade).map(k=>[k,upgrade[k]])):{};
@@ -1326,7 +1325,7 @@ function renderSelection(town){
     if(production.children.length>1)$('selection-details').append(production);
     if(item.kind==='hall'){
       const preview=upgradePreview({action:'upgrade'},town,item);
-      upgradeActions.append(upgradeCard($('upgrade'),preview,{title:preview?`Upgrade to level ${town.level+1}`:`Town hall · Level ${town.level}`,status:town.upgrade_remaining?`Upgrading · ${town.upgrade_remaining}s remaining`:preview?'':'Further hall progression is planned.'}));details.append($('hall-details'));
+      upgradeActions.append(upgradeCard($('upgrade'),preview,{title:preview?`Upgrade to level ${town.level+1}`:`Town hall · Level ${town.level}`,status:town.upgrade_remaining?`Upgrading · ${town.upgrade_remaining}s remaining`:preview?'':'Further hall progression is planned.'}));
     }
     if(upgradeActions.children.length)upgrades.append(upgradeActions);
     if(upgrades.children.length>1)$('selection-details').append(upgrades);
