@@ -53,7 +53,7 @@ const run=new Function('document','window','localStorage','setTimeout','clearTim
       assert(!insideBuildingRange(own,{x:30+reach,y:31}),'Diagonals count both axes at every level');
     }
     inspect('building',0,'own');
-    assert(panelNodes().some(child=>child.textContent?.includes('Each completed hall upgrade adds 5 steps')),'Hall explains range growth');
+    assert(panelNodes().some(child=>child.textContent?.includes('Hall upgrade: +5 range')),'Hall explains range growth');
     draw();const friendWorker=workers.get('friend/0');
     draw();draw();assert.equal(workers.get('friend/0'),friendWorker,'Friend animation state survives rendering');
     const wire={world_id:'wire',name:'Wire world',shared_map:landscape,town_sites:[{x:30,y:30}],towns:{own:{...world.towns.own}}};

@@ -53,3 +53,8 @@ canvas{cursor:pointer}button:focus-visible,canvas:focus-visible,select:focus-vis
 
 .worker-assignment{display:flex;align-items:center;gap:8px}.worker-assignment select{flex:1;min-width:0;width:auto;margin:0;font-size:12px}.worker-assignment button{flex:none;width:auto;margin:0;padding:6px 10px;font-size:12px}.building-upgrade-actions{display:grid;gap:10px;margin-top:10px}
 .upgrade-card{margin:10px 0;padding:12px;border:1px solid #b8c99940;border-radius:9px;background:#2b4438}.building-upgrade-actions .upgrade-card{margin:0}.upgrade-card-title{display:block;color:#f0e5bc;font-size:14px;line-height:1.4}.building-section .upgrade-card-benefit{margin:7px 0;color:#e0e7d7;font-size:12px;line-height:1.5}.upgrade-card-facts{display:grid;grid-template-columns:auto minmax(0,1fr);gap:5px 12px;margin:12px 0;font-size:12px;line-height:1.5}.upgrade-card-facts dt{color:#bdcdb5}.upgrade-card-facts dd{margin:0;color:#eef1e5;overflow-wrap:anywhere}.building-section .upgrade-card-status{margin:10px 0;color:#e3d19b}.upgrade-card .upgrade-button{width:100%;margin:8px 0 0;padding:8px 10px;font-size:12px}
+
+/* Short facts keep each metric on its own line. */
+.selection-fact strong,.upgrade-card-benefit,#upgrade-benefits li,.info-copy{white-space:pre-line;line-height:1.5}
+.selection-fact .fact-lines{font-size:16px;text-align:left}
+.info-copy{font-variant-numeric:tabular-nums}

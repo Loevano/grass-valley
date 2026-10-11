@@ -17,7 +17,7 @@ const run=new Function('document','window','localStorage','setTimeout','clearTim
  check($('upgrade-dialog').open&&!commands.length,'Opening preview sends no command');
  check($('upgrade-cost').textContent==='Cost: 20 wood','Building preview shows exact cost');
  check($('upgrade-time').textContent.includes('30 seconds'),'Building preview shows builder time');
- check($('upgrade-benefits').children.some(row=>row.textContent.includes('4 villager spaces')),'Building preview shows new housing');
+ check($('upgrade-benefits').children.some(row=>row.textContent.includes('4 spaces')),'Building preview shows new housing');
  check(!canControlPlayer(),'Modal blocks movement');
  $('cancel-upgrade').onclick();check(!pendingUpgrade&&!commands.length&&!$('upgrade-dialog').open,'Cancel discards pending upgrade');
  showUpgrade({action:'upgrade_capacity',index:1});
