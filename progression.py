@@ -82,7 +82,9 @@ def efficiency(villager, job):
 
 
 def practice(villager, job):
-    villager[job] = villager.get(job, 0) + 1 + .25 * aptitude(villager, job)
+    # A neutral worker earns 20 practice in 200 active three-second cycles.
+    gain = .1 * (1 + .25 * aptitude(villager, job))
+    villager[job] = round(villager.get(job, 0) + gain, 3)
 
 
 def qualification(villager, job):

@@ -121,7 +121,10 @@ the Python host, refresh both browsers, and create a new world to use the shared
   automatically. Moving preserves assignments; destroying a building releases them.
 - Settlers have permanent natural strengths and weaknesses: +25% or −25%
   output and practice gained in one profession family. Every 20 practice in
-  their current job adds another base output multiplier. Their panel shows talents
+  their current job adds another base output multiplier. Neutral settlers gain
+  0.1 practice per active three-second work cycle: about five minutes to reach
+  10 practice and ten minutes for each output bonus. Travel and blocked work
+  pause training. Their panel shows talents
   and current output; workplace selectors show qualifications and output too.
   Basic woodcutting, farming, fishing, and husbandry train anyone. Advanced roles
   require that settler's own practice: sawpit workers need 10 woodcutting,

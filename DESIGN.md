@@ -151,6 +151,8 @@ rules are documented in ROADMAP.md; balance values remain adjustable.
 Settlers combine learned experience with permanent natural strengths and weaknesses.
 One profession family gains 25% output and practice; another loses 25%. Related jobs
 inherit the family's talent. Weaknesses slow training but never prohibit a career.
+Settlers gain 0.1 practice per active three-second work cycle before talents,
+so 10 practice takes five minutes and 20 takes ten minutes of active work.
 Each 20 practice in the current job adds one base output multiplier. Traits persist
 through saves and reassignment; older residents receive deterministic traits on load.
 

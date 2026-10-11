@@ -67,7 +67,7 @@ class ResourceLogistics(unittest.TestCase):
         hauler = self.assign(1, store)
         self.assertEqual(hauler['job'], 'hauling')
         self.ticks(6)
-        self.assertEqual(producer['woodcutting'], 6)
+        self.assertEqual(producer['woodcutting'], .6)
         self.assertGreater(self.town['wood'], 65)
         self.assertAlmostEqual(self.town['wood'] - 65 + logistics.buffered(b), 3)
 
