@@ -1308,7 +1308,6 @@ function renderSelection(town){
     }
     if(upgradeActions.children.length)upgrades.append(upgradeActions);
     if(upgrades.children.length>1)$('selection-details').append(upgrades);
-    $('selection-details').append(details);
   }
   if(selection.type==='resource')$('selection-details').append(p);
 }

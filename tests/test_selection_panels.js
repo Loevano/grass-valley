@@ -102,13 +102,11 @@ const run=new Function('document','window','localStorage','setTimeout','clearTim
     check(upgradeActions.children.every(child=>child.className==='upgrade-card'),'Level and capacity use consistent upgrade cards');
     check(upgradeActions.children.map(child=>child.children.at(-1).textContent).join(',')==='Lvl,Capacity','Level card stays before capacity card');
     check($('selection-level').textContent==='Lv 1','Building level is a compact header badge');
-    const folds=()=>panelNodes().filter(child=>child.tag==='details');
-    check(folds().every(child=>!child.open),'Secondary details start collapsed');
-    const detailsFold=folds().find(child=>child.children[0].textContent==='Building details');
-    detailsFold.open=true;detailsFold.events.toggle();render();
-    check(folds().find(child=>child.children[0].textContent==='Building details').open,'Refresh preserves expanded details');
+    check(!panelNodes().some(child=>child.textContent==='Building details'),'Building details section is omitted');
+    render();
+    check(!panelNodes().some(child=>child.textContent==='Building details'),'Refresh keeps building details omitted');
     inspect('building',0);inspect('building',1);
-    check(folds().every(child=>!child.open),'Selecting another building resets expanded sections');
+    check(!panelNodes().some(child=>child.textContent==='Building details'),'Switching buildings keeps building details omitted');
     $('selection-move').onclick();
     check(tool==='move'&&moveIndex===1&&panel==='build','Inspector Move starts with the selected building');
     await clickTile(21,20);
