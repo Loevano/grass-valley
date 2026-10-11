@@ -94,7 +94,7 @@ document.addEventListener?.('visibilitychange',clearWalk);
 // Predict only the next host step; never run ahead while waiting for a reply.
 let movementMap=null;
 function mapRoads(town){return world.shared_map?Object.values(world.towns).flatMap(t=>t.roads || []):town?.roads || [];}
-function roadSpeed(town,position){return mapRoads(town).some(r=>r.x===Math.floor(position.x+.5)&&r.y===Math.floor(position.y+.5))?1.5:1;}
+function roadSpeed(town,position){return mapRoads(town).some(r=>!r.construction&&r.x===Math.floor(position.x+.5)&&r.y===Math.floor(position.y+.5))?1.5:1;}
 // Measure screen distance for the 2:1 isometric projection, preserving sideways speed.
 function playerMovementDistance(dx,dy){return Math.hypot(dx-dy,(dx+dy)*.5)/Math.SQRT2;}
 function predictPlayerStep(town,player,dx,dy){
@@ -751,7 +751,8 @@ function renderSelection(town){
     const road=town.roads?.[selection.index];
     if(!road){selection=null;panel=null;return;}
     $('selection-title').textContent='Dirt road';
-    const p=document.createElement('p');p.textContent='Players and settlers walk 50% faster here. Roads are free and placed instantly.';$('selection-details').append(p);
+    const p=document.createElement('p');p.textContent=road.construction?`Under construction · ${Math.ceil(road.construction.total-road.construction.progress)}s of builder work remaining`:'Players and settlers walk 50% faster here. Roads are free and take 10 seconds of builder work per tile.';$('selection-details').append(p);
+    if(road.construction){const progress=document.createElement('progress');progress.max=road.construction.total;progress.value=road.construction.progress;progress.setAttribute('aria-label','Dirt road construction');$('selection-details').append(progress);}
     if(viewed===identity?.town_id){const button=document.createElement('button');button.textContent='Remove road · Free';button.onclick=async()=>{await act({action:'remove_road',x:road.x,y:road.y});openPanel(null);};$('selection-details').append(button);}
     return;
   }
@@ -1030,7 +1031,7 @@ function render(){
       const kind=button.buildingKind,spec=world.progression?.buildings[kind] || {wood:costs[kind],level:1};
       button.hidden=!own || own.level<spec.level;
       button.classList.toggle('selected',kind===tool);button.disabled=!own || own.level<spec.level || !canAfford(own,materialCosts(spec));
-      button.textContent=`${labels[kind]} · ${kind==='road'?'Free · Instant · +50% walking':costText(materialCosts(spec))}${own&&own.level<spec.level?` · Hall ${spec.level}`:''}`;button.append(illustration(kind));
+      button.textContent=`${labels[kind]} · ${kind==='road'?'Free · 10s per tile · +50% walking':costText(materialCosts(spec))}${own&&own.level<spec.level?` · Hall ${spec.level}`:''}`;button.append(illustration(kind));
     }
     group.hidden=![...group.children].some(button=>button.buildingKind&&!button.hidden);
   }
@@ -1090,7 +1091,7 @@ function animatedVillagers(town, seconds, townId=viewed, frameLayout=null){
     if(!state || state.layout!==layout || state.signature!==signature){
       state=Object.assign(WorkerAnimation.plan(world.shared_map?{...town,obstacles:Object.values(world.towns).flatMap(t=>t.buildings),home_hall:town.buildings.find(b=>b.kind==='hall')}:town,villager,index,state),{signature,layout});workers.set(workerKey,state);
     }
-    state.roads=new Set((world.shared_map?Object.values(world.towns).flatMap(t=>t.roads || []):town.roads || []).map(r=>`${r.x},${r.y}`));
+    state.roads=new Set((world.shared_map?Object.values(world.towns).flatMap(t=>t.roads || []):town.roads || []).filter(r=>!r.construction).map(r=>`${r.x},${r.y}`));
     const resource=villager.job==='woodcutting'?'wood':'food';
     state.latestFishingCatch=villager.fishing_catch;
     const active=!!villager.construction_target || (villager.production_status==='Working' || villager.production_status?.startsWith('No catch') || (!villager.production_status&&town[resource]<resourceStorage(town,resource)));
@@ -1627,8 +1628,10 @@ function drawFarmCrop(crop){
 }
 function drawRoad(road){
   const [px,py]=point(road.x,road.y);
+  ctx.save();if(road.construction)ctx.globalAlpha=.4;
   polygon([[px,py],[px+tileW/2,py+tileH/2],[px,py+tileH],[px-tileW/2,py+tileH/2]],'#b99c70','#a58b63');
   polygon([[px,py+tileH*.2],[px+tileW*.3,py+tileH*.5],[px,py+tileH*.8],[px-tileW*.3,py+tileH*.5]],'#c6aa7e');
+  ctx.restore();
 }
 function drawBuilding(b,town=world.towns[viewed],farmState=null){
   if(b.construction){

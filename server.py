@@ -29,6 +29,7 @@ BUILDING_JOBS = {'storehouse': 'hauling', 'woodcutter': 'woodcutting', 'farm': '
                  'fishing_hut': 'fishing', 'acre': 'farming'}
 TICK_SECONDS = 3
 BUILD_SECONDS = 30
+ROAD_BUILD_SECONDS = 10
 # New towns develop professions instead of repeating wood-only upgrades.
 HALL_UPGRADES = economy.HALL_UPGRADES
 COSTS.update({k: v['wood'] for k, v in economy.BUILDINGS.items()})
@@ -137,7 +138,7 @@ def move_player(town, data):
     # Normalize screen distance for the 2:1 isometric projection.
     length = math.hypot(dx - dy, (dx + dy) * .5) / math.sqrt(2)
     if length:
-        roads = {(r['x'], r['y']) for r in town.get('roads', [])}
+        roads = {(r['x'], r['y']) for r in town.get('roads', []) if completed(r)}
         player.pop('activity', None)
         player.pop('activity_status', None)
         blocked = {(b['x'], b['y']) for b in
@@ -412,7 +413,7 @@ def construct(town, landscape, workers=None, elapsed=TICK_SECONDS):
                                 {'x': hall['x'] - 2 + index % 5,
                                  'y': hall['y'] + 3 + index // 5})
         start = (position['x'], position['y'])
-        for site_index, site in enumerate(town['buildings']):
+        for site_index, site in enumerate(town['buildings'] + town.get('roads', [])):
             if completed(site) or site_index in claimed:
                 continue
             path = construction_route(landscape, start, site)
@@ -420,8 +421,9 @@ def construct(town, landscape, workers=None, elapsed=TICK_SECONDS):
                 continue
             claimed.add(site_index)
             # A stable coordinate target avoids stale indices after destruction.
-            villager['construction_target'] = {key: site[key] for key in ('kind', 'x', 'y')}
-            roads = {(r['x'], r['y']) for r in landscape.get('roads', [])}
+            villager['construction_target'] = {'kind': site.get('kind', 'road'),
+                                               'x': site['x'], 'y': site['y']}
+            roads = {(r['x'], r['y']) for r in landscape.get('roads', []) if completed(r)}
             remaining, reached = elapsed, 0
             for tile in path[:-1]:
                 duration = 1 / (1.8 * (1.5 if tile in roads else 1))
@@ -437,14 +439,14 @@ def construct(town, landscape, workers=None, elapsed=TICK_SECONDS):
             construction = site['construction']
             construction['progress'] = min(construction['total'],
                                            construction['progress'] + elapsed)
-            if site['kind'] == 'hall' and 'upgrade' not in construction:
+            if site.get('kind') == 'hall' and 'upgrade' not in construction:
                 upgrade = hall_upgrade(town)
                 town['upgrade_remaining'] = construction['total'] - construction['progress']
             if construction['progress'] == construction['total']:
                 del site['construction']
                 if 'upgrade' in construction:
                     site.update(construction['upgrade'])
-                elif site['kind'] == 'hall':
+                elif site.get('kind') == 'hall':
                     if upgrade:
                         town['level'] = upgrade['level']
                         town['coins'] += upgrade['coins']
@@ -608,7 +610,9 @@ def command(town, data, world=None):
         if (terrain and terrain[y][x] == 'v') or any(r['x'] == x and r['y'] == y for r in obstacles):
             raise ValueError('Place roads on open ground.')
         if not any(r['x'] == x and r['y'] == y for r in town.get('roads', [])):
-            town.setdefault('roads', []).append({'x': x, 'y': y})
+            town.setdefault('roads', []).append({
+                'x': x, 'y': y,
+                'construction': {'progress': 0, 'total': ROAD_BUILD_SECONDS}})
         return {}
     if world and 'shared_map' in world:
         if action == 'walk':

@@ -123,7 +123,7 @@ def advance_trip(town, landscape, villager, elapsed, resume_work=False):
     obstacles = [b for b in landscape['buildings'] if b['kind'] != 'acre' or 'construction' in b]
     blocked = {(b['x'], b['y']) for b in obstacles + landscape['map_resources'] + landscape.get('npcs', [])}
     terrain = landscape.get('terrain', [])
-    roads = {(r['x'], r['y']) for r in landscape.get('roads', [])}
+    roads = {(r['x'], r['y']) for r in landscape.get('roads', []) if 'construction' not in r}
     path = trip['path']
     step = trip.get('step', 0)
     remaining = elapsed + trip.get('travel_seconds', 0)
