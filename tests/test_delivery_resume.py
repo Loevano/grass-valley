@@ -38,7 +38,7 @@ class ProducerDeliveryResume(unittest.TestCase):
         server.tick(self.world)
         self.assertNotIn('logistics_trip', bram)
         self.assertEqual(bram['production_status'], 'Working')
-        self.assertAlmostEqual(bram['farming'], 15.075)
+        self.assertAlmostEqual(bram['farming'], 15.03)
         self.assertAlmostEqual(self.town['buildings'][1]['output_buffer']['vegetables'], 50)
 
     def test_cancelled_delivery_does_not_resume_production(self):

@@ -44,7 +44,7 @@ class SettlerProfessions(unittest.TestCase):
         self.town['map_resources'] = [{'kind': 'water', 'x': 4, 'y': 7}]
         index = self.workplace('fishing_hut')
         self.assign(index)
-        for talent, output, practice in [(1, 1.25, .125), (-1, .75, .075)]:
+        for talent, output, practice in [(1, 1.25, .05), (-1, .75, .03)]:
             self.worker.update(fishing=0, talents={'fishing': talent})
             self.town.update(food=10, goods={})
             server.tick({'towns': {'a': self.town}})
@@ -54,7 +54,7 @@ class SettlerProfessions(unittest.TestCase):
         roll.return_value = 0
         before = self.worker['fishing']
         server.tick({'towns': {'a': self.town}})
-        self.assertEqual(self.worker['fishing'], before + .075)
+        self.assertEqual(self.worker['fishing'], before + .03)
         self.assertEqual(self.town['produced'].get('fish', 0), 0)
 
     def test_bakery_and_butcher_batches_obey_inputs_storage_and_upkeep(self):
@@ -73,7 +73,7 @@ class SettlerProfessions(unittest.TestCase):
                 self.assertEqual(self.town['goods'][output], 4)
                 input_key = next(iter(inputs))
                 self.assertEqual(self.town['goods'][input_key], 6)
-                self.assertEqual(self.worker[job], 20.1)
+                self.assertEqual(self.worker[job], 20.04)
                 self.town['goods'][output] = 100
                 before = copy.deepcopy(self.town)
                 self.assertEqual(economy.extra_worker(self.town, self.worker, building, 100), 'Storage full')
@@ -95,7 +95,7 @@ class SettlerProfessions(unittest.TestCase):
         self.worker['fishing'] = 20
         self.town['buildings'][index]['input_buffer'] = {'fodder': 10}
         server.tick({'towns': {'a': self.town}})
-        self.assertEqual(self.worker['breeding'], .1)
+        self.assertEqual(self.worker['breeding'], .04)
 
     def test_talents_are_distinct_and_survive_roundtrip_without_reassignment(self):
         profiles = [v['talents'] for v in self.town['villagers'][1:]]
@@ -120,7 +120,7 @@ class SettlerProfessions(unittest.TestCase):
                                   'building_index': index})
         server.tick({'towns': {'a': self.town}})
         self.assertEqual(self.town['produced']['vegetables'], 2.5)
-        self.assertEqual(self.worker['farming'], 20.125)
+        self.assertEqual(self.worker['farming'], 20.05)
         self.assertEqual(self.town['villagers'][1]['farming'], 0)
 
     def test_new_foods_can_be_sold_without_double_counting_the_pantry(self):

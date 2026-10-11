@@ -36,13 +36,13 @@ class Progression(unittest.TestCase):
 
     def test_settler_training_reaches_unlock_and_output_thresholds_on_time(self):
         worker = {'woodcutting': 0, 'talents': {}}
-        for _ in range(99):
+        for _ in range(249):
             economy.practice(worker, 'woodcutting')
         self.assertIsNotNone(economy.qualification(worker, 'woodworking'))
         economy.practice(worker, 'woodcutting')
         self.assertEqual(worker['woodcutting'], 10)
         self.assertIsNone(economy.qualification(worker, 'woodworking'))
-        for _ in range(99):
+        for _ in range(249):
             economy.practice(worker, 'woodcutting')
         self.assertEqual(economy.efficiency(worker, 'woodcutting'), 1)
         worker = json.loads(json.dumps(worker))
@@ -136,7 +136,7 @@ class Progression(unittest.TestCase):
         tick(self.world)
         self.assertEqual(self.town['wood'],.5)
         self.assertEqual(self.town['buildings'][1]['output_buffer']['wood'],.5)
-        self.assertEqual(sum(v['woodcutting'] for v in self.town['villagers']),.1)
+        self.assertEqual(sum(v['woodcutting'] for v in self.town['villagers']),.04)
 
     def test_processing_consumes_local_materials_and_pauses_when_buffer_full(self):
         self.town.update(level=4, wood=0)
@@ -148,7 +148,7 @@ class Progression(unittest.TestCase):
         b['output_buffer']['planks']=50
         tick(self.world)
         self.assertEqual(b['input_buffer']['wood'],8)
-        self.assertEqual(self.town['villagers'][0]['woodworking'],.1)
+        self.assertEqual(self.town['villagers'][0]['woodworking'],.04)
         b['output_buffer']['planks']=0;b['input_buffer']['wood']=0
         tick(self.world)
         self.assertEqual(self.town['villagers'][0]['production_status'],'Waiting for delivery: wood')

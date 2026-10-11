@@ -36,7 +36,7 @@ class FarmAcres(unittest.TestCase):
         self.assertAlmostEqual(self.town['food'], food + 1 - .78)
         self.assertEqual(self.town['buildings'][1]['output_buffer']['vegetables'], 1)
         self.assertEqual(self.town['villagers'][0]['work_target'], acre)
-        self.assertEqual(self.town['villagers'][0]['farming'], 1.1)
+        self.assertEqual(self.town['villagers'][0]['farming'], 1.04)
 
     def test_invalid_acres_do_not_spend_wood(self):
         for change in [{'farm_index': None}, {'farm_index': True}, {'farm_index': 0},
