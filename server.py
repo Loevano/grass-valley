@@ -41,6 +41,26 @@ BUILDING_JOBS.update({k: v['job'] for k, v in economy.BUILDINGS.items() if 'job'
 WORKER_FOOD = .18
 SHORTAGE_GRACE_SECONDS = 60
 DEPARTURE_CHANCE = 5  # Percent per tick after the grace period, before housing.
+VILLAGER_NAMES = (
+    'Ada', 'Rowan', 'Wren', 'Bram', 'Hazel', 'Finn', 'Mira', 'Jasper',
+    'Elara', 'Theo', 'Ivy', 'Silas', 'Nora', 'Felix', 'Willow', 'Owen',
+    'Cora', 'Alden', 'Flora', 'Hugo', 'Lila', 'Emmett', 'Pearl', 'Arthur',
+    'Clara', 'Tobin', 'Rose', 'Cedric', 'Iris', 'Elias', 'Mae', 'Oscar',
+)
+
+
+def next_villager_name(town):
+    # More names than the population cap, including room for a recent departure.
+    used = {v.get('name') for v in town['villagers']}
+    used.add(town.get('last_departure', {}).get('name'))
+    return next(name for name in VILLAGER_NAMES if name not in used)
+
+
+def ensure_villager_names(town):
+    for villager in town['villagers']:
+        name = villager.get('name', '')
+        if not name.strip() or (name.startswith('Settler ') and name[8:].isdigit()):
+            villager['name'] = next_villager_name(town)
 
 
 def housing_loyalty(town):
@@ -68,9 +88,6 @@ def feed_settlers(town):
     chance = round(DEPARTURE_CHANCE * (1 - housing_loyalty(town)) * 100)
     if secrets.randbelow(10000) >= chance:
         return
-    serials = [int(v['name'][8:]) for v in town['villagers']
-               if v['name'].startswith('Settler ') and v['name'][8:].isdigit()]
-    town['settler_serial'] = max([town.get('settler_serial', 0), len(town['villagers'])] + serials)
     # Any resident can leave, including an experienced specialist.
     villager = town['villagers'].pop(secrets.randbelow(len(town['villagers'])))
     town['departure_count'] = town.get('departure_count', 0) + 1
@@ -360,7 +377,7 @@ def new_town(name, world=None):
             'buildings': [{'kind': 'hall', 'x': 5, 'y': 5}],
             'villagers': [{'name': n, 'job': 'idle', 'woodcutting': i % 3,
                            'farming': (i + 1) % 3, 'fishing': 0} for i, n in enumerate(
-                               ['Ada', 'Rowan', 'Wren', 'Bram', 'Hazel'])]}
+                               VILLAGER_NAMES[:5])]}
     if world and 'shared_map' in world:
         site = dict(world['town_sites'][len(world['towns'])])
         town.update(world['shared_map'])
@@ -504,6 +521,7 @@ def prepare_landscapes(world, regenerate=False):
 def tick(world):
     prepare_landscapes(world, regenerate=True)
     for town in world['towns'].values():
+        ensure_villager_names(town)
         ensure_resources(town)
         economy.ensure_inventory(town)
         if town.get('upgrade_remaining'):
@@ -593,8 +611,7 @@ def tick(world):
         if (len(town['villagers']) < min(5 + homes * 2, 16) and town['food'] >= 20
                 and not town.get('arrival_delay_seconds')):
             economy.eat(town, 10)
-            town['settler_serial'] = max(town.get('settler_serial', 0), len(town['villagers'])) + 1
-            town['villagers'].append({'name': 'Settler ' + str(town['settler_serial']),
+            town['villagers'].append({'name': next_villager_name(town),
                                      'job': 'idle', 'woodcutting': 0, 'farming': 0, 'fishing': 0})
             economy.ensure_talents(town['villagers'][-1], len(town['villagers']) - 1)
         fill_cottages(town)
@@ -1054,6 +1071,7 @@ def load():
         activate('legacy')
     for entry in WORLDS.values():
         for town in entry['world']['towns'].values():
+            ensure_villager_names(town)
             for index, villager in enumerate(town['villagers']):
                 economy.ensure_talents(villager, index)
 

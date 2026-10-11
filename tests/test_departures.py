@@ -86,13 +86,16 @@ class SettlerDepartures(unittest.TestCase):
 
     @patch('server.secrets.randbelow', return_value=0)
     def test_departure_and_arrival_keep_generated_names_unique(self, _roll):
-        self.town['villagers'][0]['name'] = 'Settler 12'
+        departed_name = self.town['villagers'][0]['name']
         self.town['food_shortage_seconds'] = 57
         feed_settlers(self.town)
         self.town['food'] = 100
         self.town['arrival_delay_seconds'] = 0
         tick({'towns': {'a': self.town}})
-        self.assertEqual(self.town['villagers'][-1]['name'], 'Settler 13')
+        names = [v['name'] for v in self.town['villagers']]
+        self.assertEqual(len(names), len(set(names)))
+        self.assertNotIn(departed_name, names)
+        self.assertFalse(any(name.startswith('Settler ') for name in names))
 
 
 if __name__ == '__main__':

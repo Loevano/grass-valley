@@ -143,6 +143,8 @@ the Python host, refresh both browsers, and create a new world to use the shared
   assignment or settler-capacity upgrades. Settlers assigned to cottages rest
   and help construction automatically. Moving preserves assignments; destroying
   a building releases them.
+- Every villager has a name, including new arrivals. Numbered settlers in older
+  saves receive names when the host loads the world; existing names are preserved.
 - Settlers have permanent natural strengths and weaknesses: +25% or −25%
   output and practice gained in one profession family. Every 20 practice in
   their current job adds another base output multiplier. Neutral settlers gain
