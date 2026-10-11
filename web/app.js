@@ -2594,21 +2594,42 @@ function drawFishingBoat(boat){
   }
   ctx.restore();
 }
-// Animals stay in the barn's front yard; their motion is purely visual.
-function barnAnimalSprites(buildings,time){
-  const sprites=[];
+// Animals roam nearby open tiles; their motion is purely visual.
+function barnAnimalSprites(buildings,time,landscape={}){
+  const sprites=[],size=landscape.map_size || 120;
+  const key=p=>`${p.x},${p.y}`;
+  const blocked=new Set([...buildings,...(landscape.map_resources || []),...(landscape.npcs || [])].map(key));
   for(const barn of buildings){
     if(barn.kind!=='barn'||(barn.construction&&!barn.construction.upgrade))continue;
+    // A small breadth-first search keeps every trip connected to the barn.
+    const routes=[[]],queue=[{x:barn.x,y:barn.y,path:[]}],seen=new Set([key(barn)]);
+    for(const tile of queue){
+      if(tile.path.length>=2)continue;
+      for(const [dx,dy] of [[1,0],[0,1],[-1,0],[0,-1]]){
+        const next={x:tile.x+dx,y:tile.y+dy},biome=landscape.terrain?.[next.y]?.[next.x];
+        if(next.x<0||next.y<0||next.x>=size||next.y>=size||blocked.has(key(next))||seen.has(key(next))
+          ||biome==='v'||(landscape.chunked&&!biome))continue;
+        seen.add(key(next));
+        const path=[...tile.path,next];queue.push({...next,path});routes.push(path);
+      }
+    }
+    routes.sort((a,b)=>b.length-a.length);
     const stock=[];
     for(const species of ['chicken','sheep','pig','cow'])
       for(let i=0;i<(barn.animals?.[species] || 0);i++)stock.push(species);
     for(const [index,species] of stock.entries()){
-      const phase=time+(barn.x*7+barn.y*11+index*3.17)%13;
-      const cycle=phase%8,walking=cycle<3;
-      const side=(index%4-1.5)*.15+(walking?Math.sin(cycle*2)*.025:0);
-      const front=.3+Math.floor(index/4)*.16;
-      sprites.push({kind:'animal',species,x:barn.x+front+side,y:barn.y+front-side,
-        phase,walking,feeding:cycle>=4&&cycle<7,facing:Math.cos(Math.min(cycle,3)*2)>=0?1:-1,
+      const phase=time+(barn.x*7+barn.y*11+index*3.17)%13,cycle=phase%16;
+      const path=[barn,...routes[index%routes.length]];
+      const outbound=cycle<3,returning=cycle>=8&&cycle<11;
+      const walking=path.length>1&&(outbound||returning);
+      const progress=outbound?cycle/3:returning?1-(cycle-8)/3:cycle<8?1:0;
+      const step=progress*(path.length-1),segment=Math.min(Math.floor(step),Math.max(0,path.length-2));
+      const start=path[segment],end=path[Math.min(segment+1,path.length-1)],fraction=step-segment;
+      const side=(index%4-1.5)*.06,front=.12+Math.floor(index/4)*.04;
+      sprites.push({kind:'animal',species,x:start.x+(end.x-start.x)*fraction+front+side,
+        y:start.y+(end.y-start.y)*fraction+front-side,phase,walking,
+        feeding:!walking&&((cycle>=4&&cycle<7)||cycle>=12),
+        facing:((end.x-start.x)-(end.y-start.y))*(returning?-1:1)>=0?1:-1,
         size:stock.length>4?.62:.8});
     }
   }
@@ -2771,7 +2792,7 @@ function draw(seconds=0){
   const boats=fishingBoatSprites(entries,resources,villagers);
   const passengers=new Set(boats.flatMap(b=>b.crew));
   const objects=mergeDepthObjects([...buildings,...cropObjects,...boats].filter(visible),visibleResourceObjects(resourceData,rect),
-    [...villagers.filter(v=>!passengers.has(v)),...npcSprites(world.shared_map || town,seconds),...barnAnimalSprites(buildings,animalClock),...otherPlayers,...(hero?[hero]:[])].filter(visible));
+    [...villagers.filter(v=>!passengers.has(v)),...npcSprites(world.shared_map || town,seconds),...barnAnimalSprites(buildings,animalClock,world.shared_map || town),...otherPlayers,...(hero?[hero]:[])].filter(visible));
   for(const b of objects){
     const [px,py]=point(b.x,b.y),scale=tileW/46;
     if(px < -tileW || px > rect.width+tileW || py < -tileH || py > rect.height+80*scale)continue;

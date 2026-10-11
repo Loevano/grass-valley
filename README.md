@@ -393,7 +393,8 @@ the Python host, refresh both browsers, and create a new world to use the shared
   and market stalls. Each upgrade has a development milestone and material cost
   shown in the hall panel. Levels 6–10 remain documented plans.
 - Barns show each purchased or bred chicken, sheep, pig, and cow with walking,
-  pecking, and grazing animations in their front yard.
+  pecking, and grazing animations. They roam up to two open tiles from their barn
+  and return, avoiding buildings, resources, and impassable ground.
 - Select an acre to choose its crop, a barn to buy/breed animals, or a workplace
   to unlock profession improvements. Assign settlers to new production buildings.
   Sawpits use wood; mills use wheat; smokehouses use fish and wood; workshops use
