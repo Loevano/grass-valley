@@ -141,25 +141,6 @@ def storage_for(town, keys, operation):
                     for k in keys)]
 
 
-def output_storage_available(town, building, source, villager):
-    """Workplace buffers do not replace free central storage for production."""
-    kind = building['kind']
-    if kind in economy.RECIPES:
-        keys = [economy.RECIPES[kind][1]]
-    elif kind == 'barn':
-        keys = [economy.ANIMALS[a]['output'] for a, n in building.get('animals', {}).items() if n]
-        if keys:
-            keys.append('manure')
-    elif kind == 'orchard':
-        keys = ['fruit']
-    else:
-        keys = ['wood' if villager['job'] == 'woodcutting' else 'fish'
-                if villager['job'] == 'fishing' else source.get('crop', 'vegetables')]
-    stores = [b for b in town['buildings'] if b['kind'] in ('hall', 'storehouse')
-              and 'construction' not in b]
-    return all(any(economy.local_room(b, key) > 1e-9 for b in stores) for key in keys)
-
-
 def planned_cargo(town, building, storage, operation, villager):
     """Describe the batch this trip can deliver without reserving town stock."""
     remaining = carry_capacity(villager)

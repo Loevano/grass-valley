@@ -1,4 +1,3 @@
-import copy
 import unittest
 
 import logistics
@@ -23,62 +22,56 @@ class StorageMovement(unittest.TestCase):
         self.worker.update(job='woodcutting', building_index=1, talents={})
         self.world = {'towns': {'own': self.town}}
 
-    def test_full_central_storage_stops_movement_and_production(self):
+    def test_full_central_storage_allows_production_into_local_buffer(self):
+        self.camp['output_buffer'] = {'wood': 30}
+        self.town['wood'] += 30
         server.tick(self.world)
-        self.assertEqual(self.worker['production_status'], 'Waiting for storage space')
-        self.assertNotIn('work_animation', self.worker)
+        self.assertEqual(self.worker['production_status'], 'Working')
+        self.assertIn('work_animation', self.worker)
+        self.assertEqual(self.worker['pending_output'], {'wood': .5})
+        self.assertGreater(self.worker['woodcutting'], 0)
+
+    def test_full_local_buffer_stops_production_until_space_is_freed(self):
+        self.camp['output_buffer'] = {'wood': 50}
+        self.town['wood'] += 50
+        server.tick(self.world)
+        self.assertIn('Workplace buffer full', self.worker['production_status'])
         self.assertNotIn('pending_output', self.worker)
         self.assertEqual(self.worker['woodcutting'], 0)
-
-    def test_freeing_hall_space_resumes_worker(self):
-        server.tick(self.world)
-        economy.spend(self.town, {'wood': 1})
+        economy.withdraw(self.town, 'wood', 1, source=self.camp)
+        economy.add_stock(self.town, 'wood', -1)
         server.tick(self.world)
         self.assertEqual(self.worker['production_status'], 'Working')
         self.assertGreater(self.worker['woodcutting'], 0)
-        self.assertEqual(self.town['produced']['wood'], .5)
 
-    def test_existing_work_cycle_pauses_without_losing_pending_goods(self):
-        economy.spend(self.town, {'wood': 1})
+    def test_freeing_central_storage_allows_full_buffer_to_be_hauled(self):
+        self.camp['output_buffer'] = {'wood': 50}
+        self.town['wood'] += 50
         server.tick(self.world)
-        animation = copy.deepcopy(self.worker.get('work_animation'))
-        pending = copy.deepcopy(self.worker.get('pending_output'))
-        practice = self.worker['woodcutting']
-        self.hall['stored_goods']['wood'] = 100
-        self.town['wood'] = 100
+        self.assertNotIn('logistics_trip', self.worker)
+        economy.withdraw(self.town, 'wood', 10, source=self.hall)
+        economy.add_stock(self.town, 'wood', -10)
         server.tick(self.world)
-        self.assertEqual(self.worker.get('work_animation'), animation)
-        self.assertEqual(self.worker.get('pending_output'), pending)
-        economy.spend(self.town, {'wood': 1})
-        server.tick(self.world)
-        self.assertGreater(self.worker['woodcutting'], practice)
+        self.assertIn('logistics_trip', self.worker)
+        for _ in range(30):
+            server.tick(self.world)
+            if self.hall['stored_goods']['wood'] > 90:
+                break
+        self.assertEqual(self.hall['stored_goods']['wood'], 100)
+        self.assertLess(self.camp['output_buffer']['wood'], 50)
 
-    def test_only_completed_central_storage_with_matching_allocation_counts(self):
-        store = {'kind': 'storehouse', 'x': 8, 'y': 3,
-                 'storage_allocations': {'food': 100}}
-        self.town['buildings'].append(store)
-        available = lambda: logistics.output_storage_available(self.town, self.camp, self.tree, self.worker)
-        self.assertFalse(available())
-        store['storage_allocations'] = {'wood': 100}
-        self.assertTrue(available())
-        store['construction'] = {'progress': 0, 'total': 30}
-        self.assertFalse(available())
-        del store['construction']
-        store['stored_goods'] = {'wood': 100}
-        self.assertFalse(available())
-
-    def test_fish_requires_food_space_and_processors_require_output_space(self):
-        self.worker['job'] = 'fishing'
-        self.hall['stored_goods'] = {'wood': 0, 'food': 100}
-        hut = {'kind': 'fishing_hut', 'x': 3, 'y': 3}
-        self.assertFalse(logistics.output_storage_available(self.town, hut, self.tree, self.worker))
-        self.hall['stored_goods']['food'] = 99
-        self.assertTrue(logistics.output_storage_available(self.town, hut, self.tree, self.worker))
-        saw = {'kind': 'sawpit', 'x': 3, 'y': 3}
-        self.assertFalse(logistics.output_storage_available(self.town, saw, saw, self.worker))
-        self.town['buildings'].append({'kind': 'storehouse', 'x': 8, 'y': 3,
-                                       'storage_allocations': {'planks': 10}})
-        self.assertTrue(logistics.output_storage_available(self.town, saw, saw, self.worker))
+    def test_pending_goods_finish_delivery_with_central_storage_full(self):
+        self.camp['output_buffer'] = {'wood': 49.5}
+        self.town['wood'] += 49.5
+        server.tick(self.world)
+        self.assertEqual(self.worker['pending_output'], {'wood': .5})
+        for _ in range(30):
+            server.tick(self.world)
+            if not self.worker.get('pending_output'):
+                break
+        self.assertFalse(self.worker.get('pending_output'))
+        self.assertEqual(self.camp['output_buffer']['wood'], 50)
+        self.assertIn('Workplace buffer full', self.worker['production_status'])
 
     def test_hauler_keeps_round_trip_moving_while_producer_waits(self):
         store = {'kind': 'storehouse', 'x': 8, 'y': 3,
