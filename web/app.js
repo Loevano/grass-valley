@@ -1084,12 +1084,16 @@ function animatedVillagers(town, seconds, townId=viewed, frameLayout=null){
   const tiles=items=>items.map(({kind,x,y,farm_index,construction})=>[kind,x,y,farm_index,!!construction]);
   const layout=frameLayout ?? JSON.stringify([tiles(world.shared_map?Object.values(world.towns).flatMap(t=>t.buildings):town.buildings),tiles(town.map_resources)]);
   return town.villagers.map((villager,index)=>{
-    const signature=JSON.stringify([villager.job,villager.building_index,villager.work_target?tiles([villager.work_target]):null,
-      villager.construction_target?tiles([villager.construction_target]):null,villager.logistics_target,villager.logistics_trip?.delivered]);
+    const task=JSON.stringify([villager.job,villager.building_index,villager.work_target?tiles([villager.work_target]):null,
+      villager.construction_target?tiles([villager.construction_target]):null]);
+    const trip=villager.logistics_trip;
+    // Polling advances the host's step; keep the visible trip running continuously.
+    const signature=JSON.stringify([task,trip?[trip.operation,trip.workplace,trip.storage,trip.path]:villager.logistics_target]);
     const workerKey=world.shared_map?`${townId}/${index}`:index;
     let state=workers.get(workerKey);
-    if(!state || state.layout!==layout || state.signature!==signature){
-      state=Object.assign(WorkerAnimation.plan(world.shared_map?{...town,obstacles:Object.values(world.towns).flatMap(t=>t.buildings),home_hall:town.buildings.find(b=>b.kind==='hall')}:town,villager,index,state),{signature,layout});workers.set(workerKey,state);
+    const finishingDelivery=state?.transport&&state.path.length&&state.task===task&&state.layout===layout;
+    if(!state || state.layout!==layout || (state.signature!==signature&&!finishingDelivery)){
+      state=Object.assign(WorkerAnimation.plan(world.shared_map?{...town,obstacles:Object.values(world.towns).flatMap(t=>t.buildings),home_hall:town.buildings.find(b=>b.kind==='hall')}:town,villager,index,state),{signature,layout,task});workers.set(workerKey,state);
     }
     state.roads=new Set((world.shared_map?Object.values(world.towns).flatMap(t=>t.roads || []):town.roads || []).filter(r=>!r.construction).map(r=>`${r.x},${r.y}`));
     const resource=villager.job==='woodcutting'?'wood':'food';

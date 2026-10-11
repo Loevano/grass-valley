@@ -21,23 +21,29 @@ const WorkerAnimation = (() => {
   }
   function plan(town, villager, index, state) {
     const blocked=new Set([...(town.obstacles || town.buildings),...town.map_resources,...(town.npcs || [])].map(key));
+    if(villager.logistics_target || (villager.job==='farming'&&!villager.construction_target)){
+      for(const acre of (town.obstacles || town.buildings).filter(b=>b.kind==='acre'&&!b.construction))blocked.delete(key(acre));
+    }
     const hall=town.home_hall || town.buildings.find(b=>b.kind==='hall');
     const preferred=hall?{x:hall.x-2+index%5,y:hall.y+3+Math.floor(index/5)}:{x:3+index%5,y:8+Math.floor(index/5)};
     const open=[];
     const size=town.map_size || 120;
     for(let x=0;x<size;x++)for(let y=0;y<size;y++){if(town.terrain?.[y]?.[x]==='v')blocked.add(`${x},${y}`);else if(!blocked.has(`${x},${y}`))open.push({x,y});}
-    const current=state?{x:Math.round(state.x),y:Math.round(state.y)}:villager.construction_position || preferred;
+    const current=state?(state.path[0] || {x:Math.round(state.x),y:Math.round(state.y)}):villager.logistics_position || villager.construction_position || preferred;
     // Preserve the first closest tile without sorting the whole map.
     let start=preferred,best=Infinity;
     for(const tile of open){
       const delta=distance(tile,current);
       if(delta<best){start=tile;best=delta;if(delta===0)break;}
     }
+    const position=state?{x:state.x,y:state.y}:start;
+    const approach=distance(position,start)>1e-9?[start]:[];
     if(villager.logistics_target){
-      for(const acre of (town.obstacles || town.buildings).filter(b=>b.kind==='acre'&&!b.construction))blocked.delete(key(acre));
-      const target=villager.logistics_target,position=villager.logistics_position || start;
-      const path=route(position,target,blocked,size,false);
-      return {...position,path:path || [],phase:'walking',source:target,home:null,blocked,size,transport:true,elapsed:0,clock:state?.clock || index*.37,facing:state?.facing || 1};
+      const target=villager.logistics_target,trip=villager.logistics_trip;
+      const remaining=trip?.path.slice(state?0:(trip.step || 0)).map(([x,y])=>({x,y}));
+      const path=route(start,remaining?.[0] || target,blocked,size,false);
+      const deliveryPath=path===null?[]:[...approach,...path,...(remaining?.slice(1) || [])];
+      return {...position,path:deliveryPath,phase:path===null?'waiting':'walking',source:target,home:null,blocked,size,transport:true,elapsed:0,clock:state?.clock || index*.37,facing:state?.facing || 1};
     }
     const source=villager.construction_target || (villager.job==='idle'?null:villager.work_target);
     const kind=villager.job==='woodcutting'?'woodcutter':villager.job==='fishing'?'fishing_hut':'farm';
@@ -66,7 +72,8 @@ const WorkerAnimation = (() => {
         for(const tile of pier)blocked.delete(key(tile));
       }
     }
-    const path=source?route(start,workSpot || source,blocked,size,!workSpot):home?route(start,home,blocked,size):[];
+    let path=source?route(start,workSpot || source,blocked,size,!workSpot):home?route(start,home,blocked,size):[];
+    if(path!==null)path=[...approach,...path];
     let castTarget=villager.job==='fishing'?source:null;
     if(villager.job==='fishing'&&source){
       const water=new Set(town.map_resources.filter(r=>r.kind==='water').map(key));
@@ -81,7 +88,7 @@ const WorkerAnimation = (() => {
         }
       }
     }
-    return {...start,phase:path===null?'waiting':path.length?'walking':source?'working':'idle',
+    return {...position,phase:path===null?'waiting':path.length?'walking':source?'working':'idle',
       path:path || [],source,home,pier,workSpot,castTarget,fishingCaught:null,blocked,size,workDuration:villager.job==='farming'?8:3.2,
       farming:villager.job==='farming'&&!villager.construction_target,water:town.map_resources.filter(r=>r.kind==='water'),waterReady:false,
       stationary:!!source&&source.kind===workplace?.kind&&distance(source,workplace)===0&&!villager.construction_target,
