@@ -253,7 +253,7 @@ def settler_building(town, worker_index):
                   if b['kind'] == kind and completed(b)
                   and (kind == 'farm' or any(r['kind'] == source and
                           abs(r['x'] - b['x']) + abs(r['y'] - b['y']) <=
-                          (WOODCUTTER_REACH if kind == 'woodcutter' else 6 if kind == 'fishing_hut' and 'boat' in b.get('profession_upgrades', []) else RESOURCE_REACH)
+                          resource_reach(b)
                           for r in town['map_resources']))]
     return workplaces[worker_index % len(workplaces)] if workplaces else None
 
@@ -339,7 +339,7 @@ def work_assignment(town, job, worker_index, spatial=None):
     for farm_index, b in enumerate(town['buildings']):
         if b['kind'] != building or not completed(b) or (explicit is not None and farm_index != explicit):
             continue
-        reach = WOODCUTTER_REACH if job == 'woodcutting' else 6 if job == 'fishing' and 'boat' in b.get('profession_upgrades', []) else RESOURCE_REACH
+        reach = resource_reach(b)
         nearby = (spatial.nearby(source, b['x'], b['y'], reach) if spatial is not None else
                   [r for r in town['map_resources'] if r['kind'] == source
                    and abs(r['x'] - b['x']) + abs(r['y'] - b['y']) <= reach])
@@ -373,6 +373,14 @@ def work_source(town, job, worker_index):
 
 def building_level(building):
     return building.get('level', 1)
+
+
+def resource_reach(building):
+    if building['kind'] == 'woodcutter':
+        return WOODCUTTER_REACH
+    if building['kind'] == 'fishing_hut':
+        return RESOURCE_REACH + building_level(building) - 1 + (3 if 'boat' in building.get('profession_upgrades', []) else 0)
+    return RESOURCE_REACH
 
 
 def production_bonus(building):

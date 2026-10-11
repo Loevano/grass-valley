@@ -331,6 +331,9 @@ function remotePlayerSprite(townId,town,seconds){
 }
 const labels = {road:'Dirt road',hall:'Town hall',home:'Cottage',woodcutter:'Woodcutter',farm:'Farm',storehouse:'Storehouse',fishing_hut:'Fishing hut',acre:'Acre'};
 function buildingLevel(building){return building.level || 1;}
+function resourceReach(building){
+  return building.kind==='woodcutter'?10:building.kind==='fishing_hut'?3+buildingLevel(building)-1+(building.profession_upgrades?.includes('boat')?3:0):3;
+}
 function buildingVisualLevel(building,town){
   return building.kind==='hall'?Math.min(5,town?.level || 1):Math.min(3,buildingLevel(building));
 }
@@ -477,6 +480,7 @@ function renderStorage(town,item,index,target=$('selection-details')){
 
 function upgradeBenefit(kind,level,item){
   if(kind==='home'&&item?.profession_upgrades?.includes('timber_frame'))level++;
+  if(kind==='fishing_hut')return `+${25*(level-1)}% food / catch / worker\n${resourceReach({...item,kind,level})} tile reach`;
   return kind==='barn'?`${4*level} animal spaces`:['sawpit','mill','smokehouse','workshop','fish_pond','orchard','market','bakery','butcher'].includes(kind)?'Separate worker capacity':kind==='home'?`${2*level} spaces\n-${25*(level-1)}% departure`:kind==='storehouse'?`${100*level} storage spaces${level>=5?'\nWarehouse':''}`:`+${25*(level-1)}% ${kind==='woodcutter'?'wood':kind==='fishing_hut'?'food / catch':kind==='acre'?'field food':'food'} / worker`;
 }
 let pendingUpgrade=null;
@@ -485,7 +489,7 @@ const professionBenefits={
   nets:'+25% food / catch',
   wool_nets:'+25% food / catch\nStacks with nets',
   tools:'+25% wood / worker\nStacks with axe',
-  boat:'3 → 6 tile reach',
+  boat:'+3 tile reach',
   saw:'+25% plank processing speed',
   timber_frame:'+2 spaces'
 };
@@ -1093,7 +1097,7 @@ function renderProfession(town,item,index,target,upgrades,details){
     const button=document.createElement('button');button.textContent=`Sell 1 ${goodName(key).toLowerCase()} · ${key==='tools'?3:1} coin${key==='tools'?'s':''}`;button.disabled=amountOf(town,key)<1;button.onclick=()=>act({action:'sell_goods',resource:key,amount:1});target.append(button);
   }
   if(['woodcutter','fishing_hut'].includes(item.kind)){
-    const reach=item.kind==='woodcutter'?10:item.profession_upgrades?.includes('boat')?6:3;
+    const reach=resourceReach(item);
     const sources=town.map_resources.filter(r=>r.kind===(item.kind==='woodcutter'?'tree':'water')&&Math.abs(r.x-item.x)+Math.abs(r.y-item.y)<=reach);
     const note=document.createElement('p');note.textContent=sources.length?`Shared supply: ${sources[0].supply == null ? '—' : Math.floor(sources[0].supply)} / ${sources[0].supply_max ?? '—'} · Regen: ${sources[0].regeneration ?? '—'} / 3s · Reach: ${reach} tiles`:'No source in reach.';details.append(note);
   }
@@ -1223,7 +1227,7 @@ function renderSelection(town){
       if(viewed===identity?.town_id){const button=document.createElement('button');button.textContent='Collect loot';button.onclick=()=>playerAction('gather');$('selection-details').append(button);}return;
     }
     $('selection-title').textContent=({berry_bush:'Berry bush',herb_patch:'Herb patch'}[item.kind]) || (swamp?{tree:'Swamp willow',water:'Swamp water',rock:'Rock outcrop'}:{tree:'Forest',water:'Water',rock:'Rock outcrop',berry_bush:'Berry bush',herb_patch:'Herb patch'})[item.kind];
-    p.textContent={tree:'Renewable wood source. Place a woodcutter within 10 horizontal or vertical tile steps, then assign a villager to woodcutting.',water:'Uses: farming / fishing\nFishing hut reach: 3 tile steps\nFarmers fetch water when watering',rock:'Occupied tile\nMining: unavailable',berry_bush:`Food: berries\nGather: stand nearby · ${keybindings.gather.toUpperCase()}`,herb_patch:`Use: animal breeding\nGather: stand nearby · ${keybindings.gather.toUpperCase()}`}[item.kind];
+    p.textContent={tree:'Renewable wood source. Place a woodcutter within 10 horizontal or vertical tile steps, then assign a villager to woodcutting.',water:'Uses: farming / fishing\nFishing hut reach: 3–5 tile steps (+3 with boat)\nFarmers fetch water when watering',rock:'Occupied tile\nMining: unavailable',berry_bush:`Food: berries\nGather: stand nearby · ${keybindings.gather.toUpperCase()}`,herb_patch:`Use: animal breeding\nGather: stand nearby · ${keybindings.gather.toUpperCase()}`}[item.kind];
     if(item.kind==='rock'&&(world.shared_map||viewed===identity?.town_id)){
       const own=world.towns[identity?.town_id],progress=own?localStoryProgress(own,'Flint'):{};
       if(progress.story_stage===1){
@@ -2299,7 +2303,8 @@ function draw(seconds=0){
   const preview=hoverTile || keyboardTile;
   const previewKind=tool in costs?tool:tool==='move'&&moveIndex!==null?town?.buildings[moveIndex]?.kind:null;
   const sourceKind=previewKind==='woodcutter'?'tree':(previewKind==='farm'||previewKind==='fishing_hut')?'water':null;
-  const reachable=new Set(preview&&sourceKind?resources.filter(r=>r.kind===sourceKind&&Math.abs(r.x-preview.x)+Math.abs(r.y-preview.y)<=(previewKind==='woodcutter'?10:3)).map(r=>`${r.x},${r.y}`):[]);
+  const previewReach=resourceReach(tool==='move'&&moveIndex!==null?town.buildings[moveIndex]:{kind:previewKind});
+  const reachable=new Set(preview&&sourceKind?resources.filter(r=>r.kind===sourceKind&&Math.abs(r.x-preview.x)+Math.abs(r.y-preview.y)<=previewReach).map(r=>`${r.x},${r.y}`):[]);
   drawGround(rect,dpr,world.shared_map || town,water,{minX,maxX,minY,maxY},resourceData.forest);
   for(const stump of (world.shared_map || town)?.tree_stumps || []){
     if(stump.x<minX||stump.x>maxX||stump.y<minY||stump.y>maxY)continue;
@@ -2463,7 +2468,7 @@ function placementValid(town,tile,kind){
 }
 function buildingUsable(town,b){
   const source={woodcutter:'tree',fishing_hut:'water'}[b.kind];
-  const reach=b.kind==='woodcutter'?10:b.kind==='fishing_hut'&&b.profession_upgrades?.includes('boat')?6:3;
+  const reach=resourceReach(b);
   return !source || !!town?.map_resources.some(r=>r.kind===source&&Math.abs(r.x-b.x)+Math.abs(r.y-b.y)<=reach);
 }
 function drawFarmCrops(b,state,collectCrop=null){
