@@ -170,8 +170,8 @@ const run=new Function('document','window','localStorage','setTimeout','clearTim
   assert(resourceCache.forest.has('30,30'),'Small gaps between neighboring trees join the forest canopy');
   const forestSurface=groundCache.surface,forestPaints=forestSurface.paints;
   draw();assert.equal(forestSurface.paints,forestPaints,'Stationary overview reuses the forest canopy');
-  const originalLayout=groundLayout;let layoutScans=0;
-  groundLayout=(...args)=>{layoutScans++;return originalLayout(...args);};
+  const originalLayout=groundMatchesCache;let layoutScans=0;
+  groundMatchesCache=(...args)=>{layoutScans++;return originalLayout(...args);};
   const oldCanopy=resourceCache.forest;
   world={...world,towns:{own:{...world.towns.own}}};draw();
   assert.equal(layoutScans,0,'Metadata-only polls avoid scanning the cached ground');
@@ -179,7 +179,7 @@ const run=new Function('document','window','localStorage','setTimeout','clearTim
   draw();
   assert.strictEqual(resourceCache.forest,oldCanopy,'Supply-only polls preserve the forest canopy');
   assert.equal(layoutScans,0,'Supply-only polls avoid scanning unchanged ground');
-  groundLayout=originalLayout;
+  groundMatchesCache=originalLayout;
   const originalPoint=point;let projections=0;
   point=(...args)=>{projections++;return originalPoint(...args);};
   selection=null;draw();const unselectedProjections=projections;

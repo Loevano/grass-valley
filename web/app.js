@@ -1707,6 +1707,14 @@ function animatedVillagers(town, seconds, townId=viewed, frameLayout=null){
   const townKey=`${world.world_id}/${world.shared_map?'shared':viewed}`;
   if(workerTown!==townKey){workers.clear();workerTown=townKey;}
   if(!town)return [];
+  if(animatedVillagers.roadWorld!==world){
+    animatedVillagers.roadWorld=world;animatedVillagers.roadSets=new Map();
+  }
+  const roadKey=world.shared_map?'shared':town;
+  if(!animatedVillagers.roadSets.has(roadKey)){
+    animatedVillagers.roadSets.set(roadKey,new Set((world.shared_map?Object.values(world.towns).flatMap(t=>t.roads || []):town.roads || []).filter(r=>!r.construction).map(r=>`${r.x},${r.y}`)));
+  }
+  const roads=animatedVillagers.roadSets.get(roadKey);
   const tiles=items=>items.map(({kind,x,y,farm_index,construction})=>[kind,x,y,farm_index,!!construction]);
   const layout=frameLayout ?? JSON.stringify([tiles(world.shared_map?Object.values(world.towns).flatMap(t=>t.buildings):town.buildings),tiles(town.map_resources)]);
   return town.villagers.map((villager,index)=>{
@@ -1721,7 +1729,7 @@ function animatedVillagers(town, seconds, townId=viewed, frameLayout=null){
     if(!state || state.layout!==layout || (state.signature!==signature&&!finishingDelivery)){
       state=Object.assign(WorkerAnimation.plan(world.shared_map?{...town,obstacles:Object.values(world.towns).flatMap(t=>t.buildings),home_hall:town.buildings.find(b=>b.kind==='hall')}:town,villager,index,state),{signature,layout,task});workers.set(workerKey,state);
     }
-    state.roads=new Set((world.shared_map?Object.values(world.towns).flatMap(t=>t.roads || []):town.roads || []).filter(r=>!r.construction).map(r=>`${r.x},${r.y}`));
+    state.roads=roads;
     const resource=villager.job==='woodcutting'?'wood':'food';
     state.latestFishingCatch=villager.fishing_catch;
     const active=!!villager.construction_target || (villager.production_status==='Working' || villager.production_status?.startsWith('No catch') || (!villager.production_status&&town[resource]<resourceStorage(town,resource)));
@@ -2141,17 +2149,26 @@ function paintGround(target,landscape,water,bounds,offsetX=0,offsetY=0,region=nu
     }
   }
 }
-function groundLayout(landscape,water,bounds,forest=null){
-  const rows=[],size=landscape?.map_size || 12;
+function groundMatchesCache(landscape,water,bounds,forest,cache){
+  const previous=cache.landscape,size=landscape?.map_size || 12;
+  if(size!==(previous?.map_size || 12)||landscape?.terrain_seed!==previous?.terrain_seed)return false;
+  const sameTerrain=landscape?.terrain===previous?.terrain&&!!landscape?.chunked===!!previous?.chunked;
+  const sameWater=water===cache.water,sameForest=forest===cache.forest;
   // Include neighboring tiles because they determine shores and valley edges.
   for(let y=Math.max(0,bounds.minY-1);y<=Math.min(size-1,bounds.maxY+1);y++){
-    let row='';
+    const row=landscape?.terrain?.[y],oldRow=previous?.terrain?.[y];
+    const sameRow=sameTerrain||(row===oldRow&&!!landscape?.chunked===!!previous?.chunked);
+    if(sameRow&&sameWater&&sameForest)continue;
     for(let x=Math.max(0,bounds.minX-1);x<=Math.min(size-1,bounds.maxX+1);x++){
-      row+=(landscape?.terrain?.[y]?.[x] || (landscape?.chunked?'v':'g'))+(water.has(`${x},${y}`)?'1':'0')+(forest?.has(`${x},${y}`)?'t':'-');
+      if(!sameRow&&(row?.[x] || (landscape?.chunked?'v':'g'))
+        !==(oldRow?.[x] || (previous?.chunked?'v':'g')))return false;
+      if(sameWater&&sameForest)continue;
+      const key=`${x},${y}`;
+      if(!sameWater&&water.has(key)!==cache.water.has(key))return false;
+      if(!sameForest&&!!forest?.has(key)!==!!cache.forest?.has(key))return false;
     }
-    rows.push(row);
   }
-  return JSON.stringify([world.world_id,landscape?.terrain_seed,size,rows]);
+  return true;
 }
 function drawGround(rect,dpr,landscape,water,bounds,forest=null){
   const margin=384;
@@ -2162,8 +2179,10 @@ function drawGround(rect,dpr,landscape,water,bounds,forest=null){
     // snapshot arrives, keeping fingerprint scans out of scrolling frames.
     const changed=groundCache&&(groundCache.world.world_id!==world.world_id
       ||(groundCache.detailed===(tileW>=32)
-        &&!(groundCache.landscape.terrain===landscape?.terrain&&groundCache.water===water&&groundCache.forest===forest)
-        &&groundLayout(groundCache.landscape,groundCache.water,groundCache.bounds,groundCache.forest)!==groundLayout(landscape,water,groundCache.bounds,forest)));
+        &&!(groundCache.landscape.terrain===landscape?.terrain&&groundCache.water===water&&groundCache.forest===forest
+          &&groundCache.landscape.map_size===landscape?.map_size&&groundCache.landscape.terrain_seed===landscape?.terrain_seed
+          &&!!groundCache.landscape.chunked===!!landscape?.chunked)
+        &&!groundMatchesCache(landscape,water,groundCache.bounds,forest,groundCache)));
     if(changed)groundCache=null;
     if(groundCache)Object.assign(groundCache,{world,landscape,water,forest});
     else{

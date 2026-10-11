@@ -37,6 +37,13 @@ state=animation.plan(shaped,{job:'idle'},0);
 check(state.x>=4,'Workers spawn inside the irregular outline');
 check(state.blocked.has('3,8'),'Tiles outside the outline block worker paths');
 check(state.path.every(p=>shaped.terrain[p.y][p.x]!=='v'),'Workers stay inside the outline');
+const blockedSpawn={map_size:12,buildings:[{kind:'hall',x:5,y:5}],map_resources:[{kind:'tree',x:3,y:8}]};
+state=animation.plan(blockedSpawn,{job:'idle'},0);
+check(state.x===2&&state.y===8,'Blocked spawn keeps the first nearest open tile in column order');
+state=animation.plan(blockedSpawn,{job:'idle',logistics_position:{x:6,y:8}},0);
+check(state.x===6&&state.y===8,'An existing open position survives replanning');
+state=animation.plan(blockedSpawn,{job:'idle',logistics_position:{x:6.5,y:8}},0);
+check(state.x===6&&state.y===8,'Fractional positions keep nearest-tile tie ordering');
 
 const fishingTown={buildings:[{kind:'fishing_hut',x:6,y:2}],map_resources:[{kind:'water',x:9,y:2}]};
 state=animation.plan(fishingTown,{job:'fishing',work_target:fishingTown.map_resources[0]},0);

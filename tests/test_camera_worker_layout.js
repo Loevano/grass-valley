@@ -19,6 +19,9 @@ new Function('WorkerAnimation','assert','planCount',`
     return animatedVillagers(town,0,'own',townWorkerLayout(town,buildings,town.map_resources));
   };
   const states=frame().map(sprite=>sprite.state);assert.equal(planCount(),2);
+  assert.strictEqual(states[0].roads,states[1].roads,'Workers share the snapshot road index');
+  const originalRoads=states[0].roads;
+  frame();assert.strictEqual(states[0].roads,originalRoads,'Animation frames reuse the road index');
   const snapshot=()=>{world=JSON.parse(JSON.stringify(world));return world.towns.own;};
   snapshot().map_resources.push({kind:'tree',x:1100,y:1100});
   frame().forEach((sprite,i)=>assert.strictEqual(sprite.state,states[i],'Distant camera resources preserve worker paths'));
@@ -39,5 +42,9 @@ new Function('WorkerAnimation','assert','planCount',`
   assert.equal(planCount(),10,'Construction progress preserves the path layout');
   snapshot().buildings.at(-1).construction=null;frame();
   assert.equal(planCount(),12,'Construction completion updates the path layout');
+  snapshot().roads=[{x:961,y:962},{x:962,y:962,construction:{progress:0}}];
+  const updated=frame();
+  assert(updated[0].state.roads.has('961,962'),'Road snapshots update the shared index');
+  assert(!updated[0].state.roads.has('962,962'),'Unfinished roads do not speed workers');
 `)(WorkerAnimation,assert,()=>plans);
 console.log('Camera exploration worker layout checks passed');

@@ -27,22 +27,26 @@ const WorkerAnimation = (() => {
     }
     const hall=town.home_hall || town.buildings.find(b=>b.kind==='hall');
     const preferred=hall?{x:hall.x-2+index%5,y:hall.y+3+Math.floor(index/5)}:{x:3+index%5,y:8+Math.floor(index/5)};
-    const open=[];
     const size=town.map_size || 120;
     const center=town.town_origin || hall || preferred;
     const bounds=town.chunked?{minX:Math.max(0,center.x-60),maxX:Math.min(size-1,center.x+60),
       minY:Math.max(0,center.y-60),maxY:Math.min(size-1,center.y+60)}:null;
-    for(let x=bounds?.minX || 0;x<=(bounds?.maxX ?? size-1);x++)for(let y=bounds?.minY || 0;y<=(bounds?.maxY ?? size-1);y++){
+    const current=state?(state.path[0] || {x:Math.round(state.x),y:Math.round(state.y)}):villager.logistics_position || villager.construction_position || preferred;
+    const minX=bounds?.minX || 0,maxX=bounds?.maxX ?? size-1,minY=bounds?.minY || 0,maxY=bounds?.maxY ?? size-1;
+    const currentBiome=town.terrain?.[current.y]?.[current.x];
+    const currentOpen=Number.isInteger(current.x)&&Number.isInteger(current.y)
+      &&current.x>=minX&&current.x<=maxX&&current.y>=minY&&current.y<=maxY
+      &&!blocked.has(key(current))&&currentBiome!=='v'&&(!town.chunked||!!currentBiome);
+    // Most replans already stand on an open tile. Otherwise retain the first
+    // closest tile in column order without allocating every open map tile.
+    let start=currentOpen?current:preferred,best=currentOpen?0:Infinity;
+    for(let x=minX;x<=maxX;x++)for(let y=minY;y<=maxY;y++){
       const biome=town.terrain?.[y]?.[x];
       if(biome==='v'||(town.chunked&&!biome))blocked.add(`${x},${y}`);
-      else if(!blocked.has(`${x},${y}`))open.push({x,y});
-    }
-    const current=state?(state.path[0] || {x:Math.round(state.x),y:Math.round(state.y)}):villager.logistics_position || villager.construction_position || preferred;
-    // Preserve the first closest tile without sorting the whole map.
-    let start=preferred,best=Infinity;
-    for(const tile of open){
-      const delta=distance(tile,current);
-      if(delta<best){start=tile;best=delta;if(delta===0)break;}
+      else if(best>0&&!blocked.has(`${x},${y}`)){
+        const delta=Math.abs(x-current.x)+Math.abs(y-current.y);
+        if(delta<best){start={x,y};best=delta;}
+      }
     }
     const position=state?{x:state.x,y:state.y}:start;
     const approach=distance(position,start)>1e-9?[start]:[];
