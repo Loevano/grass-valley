@@ -17,6 +17,11 @@ canvas.getBoundingClientRect=()=>({left:0,top:0,width,height});
 const windowMock={devicePixelRatio:2,addEventListener(){}};
 const run=new Function('document','window','localStorage','setTimeout','clearTimeout','WorkerAnimation','assert','surfaces','fills','images','copies','resize','performance','advanceTime','texts',
   source.slice(0,source.lastIndexOf('requestAnimationFrame(animate);'))+`
+  let scheduledFrames=0;
+  const requestAnimationFrame=()=>scheduledFrames++;
+  animate(0);
+  assert.equal(scheduledFrames,1,'Startup schedules the next animation frame before a town has loaded');
+  surfaces.length=0;fills.length=0;images.length=0;
   const town={map_size:120,terrain:Array(120).fill('g'.repeat(120)),map_resources:[{kind:'tree',x:31,y:31}],
     buildings:[{kind:'hall',x:30,y:30}],villagers:[{name:'Ada',job:'idle'}],food:40,wood:40,level:1};
   world={world_id:'cache-test',towns:{own:town}};viewed='own';cameraTown='cache-test/own';camera={x:30,y:30,zoom:1};
