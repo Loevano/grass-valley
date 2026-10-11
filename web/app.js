@@ -1896,15 +1896,45 @@ function drawProfessionAction(job,time){
 let groundCache=null,resourceCache=null;
 function renderResources(resources){
   if(resourceCache?.resources!==resources || resourceCache.count!==resources.length){
-    const water=new Set(),objects=[],indexes=new Map();
+    const water=new Set(),objects=[],indexes=new Map(),buckets=new Map();
     resources.forEach((r,index)=>{
       indexes.set(r,index);
-      if(r.kind==='water')water.add(`${r.x},${r.y}`);else objects.push(r);
+      if(r.kind==='water')water.add(`${r.x},${r.y}`);else{
+        objects.push(r);
+        const key=`${Math.floor(r.x/16)},${Math.floor(r.y/16)}`;
+        if(!buckets.has(key))buckets.set(key,[]);
+        buckets.get(key).push(r);
+      }
     });
-    resourceCache={resources,count:resources.length,water,objects,indexes,
+    resourceCache={resources,count:resources.length,water,objects,indexes,buckets,
       layout:JSON.stringify(resources.map(({kind,x,y,farm_index,construction})=>[kind,x,y,farm_index,!!construction]))};
   }
   return resourceCache;
+}
+function visibleResourceObjects(data,rect){
+  const previous=data.visible;
+  if(previous&&previous.originX===originX&&previous.originY===originY&&previous.tileW===tileW
+    &&previous.width===rect.width&&previous.height===rect.height)return previous.objects;
+  const bottom=rect.height+80*tileW/46;
+  const corners=[[-tileW,-tileH],[rect.width+tileW,-tileH],[-tileW,bottom],[rect.width+tileW,bottom]]
+    .map(([px,py])=>({x:(px-originX)/tileW+(py-originY)/tileH,y:(py-originY)/tileH-(px-originX)/tileW}));
+  const minX=Math.floor(Math.min(...corners.map(p=>p.x))/16),maxX=Math.floor(Math.max(...corners.map(p=>p.x))/16);
+  const minY=Math.floor(Math.min(...corners.map(p=>p.y))/16),maxY=Math.floor(Math.max(...corners.map(p=>p.y))/16);
+  let region=data.region;
+  if(!region||region.minX!==minX||region.maxX!==maxX||region.minY!==minY||region.maxY!==maxY){
+    const objects=[];
+    for(let x=minX;x<=maxX;x++)for(let y=minY;y<=maxY;y++)objects.push(...(data.buckets.get(`${x},${y}`) || []));
+    // Preserve snapshot order for resources sharing the same drawing depth.
+    objects.sort((a,b)=>data.indexes.get(a)-data.indexes.get(b));
+    region=data.region={minX,maxX,minY,maxY,objects};
+  }
+  const objects=[];
+  for(const r of region.objects){
+    const [px,py]=point(r.x,r.y);
+    if(px>=-tileW&&px<=rect.width+tileW&&py>=-tileH&&py<=bottom)objects.push(r);
+  }
+  data.visible={originX,originY,tileW,width:rect.width,height:rect.height,objects};
+  return objects;
 }
 function paintGround(target,landscape,water,bounds,offsetX=0,offsetY=0,region=null,pixelRatio=window.devicePixelRatio||1){
   const ctx=target,terrainSize=landscape?.map_size || 12;
@@ -2165,7 +2195,7 @@ function draw(seconds=0){
     drawFarmCrops(field,farmer?.state,crop=>cropObjects.push(crop));
   }
   const otherPlayers=world.shared_map?entries.filter(([id,t])=>t.player&&id!==hero?.townId).map(([id,t])=>remotePlayerSprite(id,t,seconds)):[];
-  const objects=[...buildings,...cropObjects,...resourceData.objects,...villagers,...npcSprites(world.shared_map || town,seconds),...otherPlayers,...(hero?[hero]:[])].filter(b=>{
+  const objects=[...buildings,...cropObjects,...visibleResourceObjects(resourceData,rect),...villagers,...npcSprites(world.shared_map || town,seconds),...otherPlayers,...(hero?[hero]:[])].filter(b=>{
     const [px,py]=point(b.x,b.y);
     return px>=-tileW&&px<=rect.width+tileW&&py>=-tileH&&py<=rect.height+80*tileW/46;
   });
