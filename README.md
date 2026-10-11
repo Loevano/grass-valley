@@ -111,8 +111,8 @@ the Python host, refresh both browsers, and create a new world to use the shared
   Their panels show exact costs; trades need storage and restock every five
   minutes. Gifts are once per town and clothing appears in your character inventory.
   Existing saves gain these new locals without moving the original ones.
-  Matching workers appear first in the item picker. Select a recipient
-  and **Transfer tool** to move an assigned tool directly, or take it back into inventory.
+  Matching workers appear first in the item picker. Select a villager to assign
+  or transfer a tool immediately, or select **Nobody** to return it to inventory.
   The Villagers overview shows equipped tool icons beside names; hover or focus an
   icon to see its bonus and whether it matches the current job.
   Tobin and Clover each exchange 10 wood for 8 food once every five minutes of
