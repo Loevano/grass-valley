@@ -18,7 +18,7 @@ function session(saved=null){
     world={world_id:'test',towns:{own:town}};identity={town_id:'own'};viewed='own';playerSprite(town,0);
     request=async()=>({player:{x:5.2,y:6.8,facing:1}});
     const actions=[];playerAction=action=>actions.push(action);
-    return {get actions(){return actions;},get bindings(){return keybindings;},get locked(){return cameraLocked;},get following(){return playerView.following;},
+    return {get quality(){return graphicsQuality;},get actions(){return actions;},get bindings(){return keybindings;},get locked(){return cameraLocked;},get following(){return playerView.following;},
       get camera(){return typeof camera==='undefined'?null:{...camera};},get held(){return [...walkKeys];},step:seconds=>playerSprite(town,seconds),
       addHall(){town.buildings.push({kind:'hall',x:12,y:14});},pan(){if(typeof camera!=='undefined'){camera.x=30;camera.y=30;}},get panel(){return panel;},get tool(){return tool;},
       place(){panel='build';tool='home';buildTile={x:1,y:1};hoverTile={x:1,y:1};},get placement(){return buildTile || hoverTile;}};
@@ -30,6 +30,18 @@ function session(saved=null){
   return {state,document,storage,key,rebind,listeners};
 }
 (async()=>{
+  const qualitySession=session();
+  check(qualitySession.state.quality==='high','Existing browsers default to High');
+  const qualitySelect=qualitySession.document.getElementById('graphics-quality');
+  qualitySelect.value='low';qualitySelect.onchange();
+  const savedQuality=qualitySession.storage.get('lantern-settings');
+  check(JSON.parse(savedQuality).graphicsQuality==='low','Quality is saved locally');
+  check(session(savedQuality).state.quality==='low','Quality survives browser reloads');
+  qualitySession.key('y');
+  check(JSON.parse(qualitySession.storage.get('lantern-settings')).graphicsQuality==='low','Other settings preserve quality');
+  check(session(JSON.stringify({graphicsQuality:'unknown',cameraLocked:false})).state.quality==='high','Invalid saved quality falls back to High');
+  check(session(JSON.stringify({cameraLocked:false})).state.quality==='high','Older settings keep the High default');
+  check(session('{invalid').state.quality==='high','Malformed storage keeps the High default');
   const home=session();
   home.state.addHall();home.state.pan();home.key(' ');
   check(home.state.camera.x===12&&home.state.camera.y===14&&!home.state.locked&&!home.state.following,'Space centers the town hall and disables player following');

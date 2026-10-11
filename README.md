@@ -117,6 +117,9 @@ the Python host, refresh both browsers, and create a new world to use the shared
   walk in screen directions. Press **Y** to toggle camera lock: when locked, the
   camera follows your movement; when unlocked, walking leaves the camera in place.
   Press **⌘,** to open **Settings** and rebind movement and camera lock keys or restore defaults.
+  Settings also offers **Low**, **Medium**, and **High** graphics quality. High
+  (the default) uses full display resolution, Medium caps it at standard resolution,
+  and Low uses reduced resolution to help slower devices. Changes apply immediately.
   Preferences are saved in this browser. Scroll to pan; pinch on the touchpad or
   Option/Alt-scroll to zoom.
   Buildings, trees, water, and rocks block movement. Your position is saved per

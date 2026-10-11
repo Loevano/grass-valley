@@ -1,6 +1,7 @@
 // Run with: node tests/test_resource_sprites.js
 const fs=require('fs'),assert=require('assert');
 const source=fs.readFileSync('web/app.js','utf8');
+const qualityHelpers=source.slice(source.indexOf('function renderPixelRatio('),source.indexOf('function saveSettings('));
 const helpers=source.slice(source.indexOf('const resourceSprites='),source.indexOf('function animatedVillagers('));
 const surfaces=[],images=[];
 const main=new Proxy({drawImage(...args){images.push(args);}}, {get:(target,key)=>key in target?target[key]:()=>{}});
@@ -16,6 +17,8 @@ const documentMock={createElement(){
 new Function('document','ctx','window','assert','surfaces','images',`
   let tileW=54,world={shared_map:{terrain:{10:{10:'g',12:'b'}}}},viewed='own';
   const point=(x,y)=>[100+(x-y)*tileW/2,100+(x+y)*tileW/4];
+  let graphicsQuality='high';
+  ${qualityHelpers}
   ${helpers}
   const tree={kind:'tree',x:10,y:10};
   drawResource(tree);
@@ -133,5 +136,13 @@ new Function('document','ctx','window','assert','surfaces','images',`
   tileW=54;drawResource(rock,join);
   assert.deepEqual(images.at(-1)[0].paths,joinedSprite.paths,'Eviction preserves joined rock artwork');
   assert.deepEqual(images.at(-1)[0].colors,joinedSprite.colors,'Eviction preserves joined rock shading');
+  window.devicePixelRatio=2;graphicsQuality='high';drawResource(tree);
+  const sharpTree=images.at(-1)[0];
+  graphicsQuality='low';drawResource(tree);
+  assert(images.at(-1)[0].width<sharpTree.width,'Low creates smaller resource textures');
+  graphicsQuality='medium';drawResource(tree);
+  assert(images.at(-1)[0].width<sharpTree.width,'Medium caps resource texture resolution');
+  graphicsQuality='high';drawResource(tree);
+  assert.strictEqual(images.at(-1)[0],sharpTree,'High restores cached sharp resource artwork');
 `)(documentMock,main,{devicePixelRatio:2},assert,surfaces,images);
 console.log('Resource sprite cache checks passed');

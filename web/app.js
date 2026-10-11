@@ -81,7 +81,7 @@ let workerTown = null, lastFrame = null;
 const walkKeys = new Set();
 const defaultBindings={up:'w',left:'a',down:'s',right:'d',camera:'y',fish:'f',chop:'c',gather:'g',build:'b',interact:'i'};
 const bindingLabels={up:'Walk up',left:'Walk left',down:'Walk down',right:'Walk right',camera:'Toggle camera lock',fish:'Fish',chop:'Cut wood',gather:'Gather berries and herbs',build:'Toggle building mode',interact:'Interact with nearby NPC'};
-let keybindings={...defaultBindings}, cameraLocked=true;
+let keybindings={...defaultBindings}, cameraLocked=true, graphicsQuality='high';
 try{
   const saved=JSON.parse(localStorage.getItem('lantern-settings') || 'null');
   if(saved?.keybindings){
@@ -97,9 +97,14 @@ try{
     }
   }
   if(typeof saved?.cameraLocked==='boolean')cameraLocked=saved.cameraLocked;
+  if(['low','medium','high'].includes(saved?.graphicsQuality))graphicsQuality=saved.graphicsQuality;
 }catch{}
+function renderPixelRatio(){
+  const dpr=window.devicePixelRatio || 1;
+  return graphicsQuality==='low'?Math.min(dpr,.75):graphicsQuality==='medium'?Math.min(dpr,1):dpr;
+}
 function saveSettings(){
-  try{localStorage.setItem('lantern-settings',JSON.stringify({keybindings,cameraLocked}));}
+  try{localStorage.setItem('lantern-settings',JSON.stringify({keybindings,cameraLocked,graphicsQuality}));}
   catch{notice('Settings apply for this session. Browser storage is unavailable.');}
 }
 function setCameraLock(locked){
@@ -111,6 +116,7 @@ function setCameraLock(locked){
   saveSettings();renderSettings();
 }
 function renderSettings(){
+  $('graphics-quality').value=graphicsQuality;
   $('camera-lock-button').textContent=`Camera lock: ${cameraLocked?'On':'Off'}`;
   $('camera-lock-button').setAttribute('aria-pressed',String(cameraLocked));
   for(const action of Object.keys(defaultBindings))$('binding-'+action).value=keybindings[action].toUpperCase();
@@ -139,6 +145,12 @@ for(const action of Object.keys(defaultBindings)){
   };
   $('keybindings').append(label,input);
 }
+$('graphics-quality').onchange=()=>{
+  const quality=$('graphics-quality').value;
+  if(!['low','medium','high'].includes(quality))return;
+  graphicsQuality=quality;saveSettings();draw();
+  $('settings-message').textContent='Graphics quality applied.';
+};
 $('camera-lock-button').onclick=()=>setCameraLock(!cameraLocked);
 $('reset-keybindings').onclick=()=>{clearWalk();keybindings={...defaultBindings};saveSettings();renderSettings();$('settings-message').textContent='Default keybindings restored.';};
 renderSettings();
@@ -1675,7 +1687,7 @@ function drawResource(r,joined=null){
   const [x,y]=point(r.x,r.y),s=tileW/46;
   const detailed=tileW>=32;
   const willow=r.kind==='tree'&&(world.shared_map || world.towns[viewed])?.terrain?.[r.y]?.[r.x]==='b';
-  const resolution=2**Math.ceil(Math.log2(Math.max(.5,s*(window.devicePixelRatio || 1))));
+  const resolution=2**Math.ceil(Math.log2(Math.max(.5,s*renderPixelRatio())));
   const variant=r.kind==='tree'?`${r.species==='ancient'}/${willow}/${(r.x+r.y)%2}`:r.kind==='rock'?(joined?`joined/${JSON.stringify([joined.mask,joined.heights,joined.inset || null])}`:`single/${rockVariant(r)%48}`):r.kind;
   const key=`${r.kind}/${variant}/${resolution}/${detailed}`;
   let sprite=resourceSprites.get(key);
@@ -2169,7 +2181,7 @@ function mergeDepthObjects(before,resources,after){
     objects.push(lists[next][positions[next]++]);
   }
 }
-function paintGround(target,landscape,water,bounds,offsetX=0,offsetY=0,region=null,pixelRatio=window.devicePixelRatio||1,forest=null){
+function paintGround(target,landscape,water,bounds,offsetX=0,offsetY=0,region=null,pixelRatio=renderPixelRatio(),forest=null){
   const ctx=target,terrainSize=landscape?.map_size || 12;
   const detailed=tileW>=32;
   const palette={g:['#68865a','#69875b','#668358'],f:['#506f4a','#55764c','#5a7b50'],
@@ -2271,7 +2283,7 @@ function drawGround(rect,dpr,landscape,water,bounds,forest=null){
     if(groundCache)Object.assign(groundCache,{world,landscape,water,forest});
     else{
       const surface=document.createElement('canvas'),target=surface.getContext?.('2d');
-      if(!target){paintGround(ctx,landscape,water,bounds,0,0,null,window.devicePixelRatio || 1,forest);return;}
+      if(!target){paintGround(ctx,landscape,water,bounds,0,0,null,renderPixelRatio(),forest);return;}
       groundCache={surface,target,world,landscape,water,forest};
     }
   }
@@ -2374,7 +2386,7 @@ function drawFishingBoat(boat){
   ctx.restore();
 }
 function draw(seconds=0){
-  const rect=canvas.getBoundingClientRect(),dpr=window.devicePixelRatio||1;
+  const rect=canvas.getBoundingClientRect(),dpr=renderPixelRatio();
   const width=Math.round(rect.width*dpr),height=Math.round(rect.height*dpr);
   if(canvas.width!==width||canvas.height!==height){canvas.width=width;canvas.height=height;}
   ctx.setTransform(dpr,0,0,dpr,0,0);ctx.clearRect(0,0,rect.width,rect.height);
@@ -2643,7 +2655,7 @@ let buildingSpriteBytes=0;
 function drawBuilding(b,town=world.towns[viewed],farmState=null){
   if(b.construction || b.kind==='acre')return paintBuilding(b,town,farmState);
   const usable=buildingUsable(town,b),s=tileW/46;
-  const resolution=2**Math.ceil(Math.log2(Math.max(.5,s*(typeof window==='undefined'?1:window.devicePixelRatio || 1))));
+  const resolution=2**Math.ceil(Math.log2(Math.max(.5,s*renderPixelRatio())));
   const bytes=128*144*resolution*resolution*4;
   const key=JSON.stringify([b.kind,buildingVisualLevel(b,town),b.kind==='hall'?town?.level || 1:buildingLevel(b),b.settler_level || 1,
     [...(b.profession_upgrades || [])].sort(),Math.min(4,Object.values(b.animals || {}).reduce((a,n)=>a+n,0)),
