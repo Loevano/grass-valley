@@ -9,8 +9,10 @@ from functools import lru_cache
 from pathlib import Path
 
 CHUNK_SIZE = 40
-WORLD_SIZE = 1920
-START_OFFSET = 880
+WORLD_SIZE = 480
+START_OFFSET = 160
+LEGACY_WORLD_SIZE = 1920
+LEGACY_START_OFFSET = 880
 MAX_VIEW_CHUNKS = 49
 
 
@@ -19,6 +21,7 @@ def chunk_key(x, y):
 
 
 def parse_keys(value):
+    # Accept legacy cache keys; snapshots enforce the active world boundary.
     keys = value.split(';') if value else []
     if len(keys) > MAX_VIEW_CHUNKS:
         raise ValueError('Too many map chunks.')
@@ -28,7 +31,7 @@ def parse_keys(value):
         if len(parts) != 2 or not all(p.isdecimal() and len(p) <= 2 for p in parts):
             raise ValueError('Invalid map chunk.')
         x, y = map(int, parts)
-        if not (0 <= x < WORLD_SIZE // CHUNK_SIZE and 0 <= y < WORLD_SIZE // CHUNK_SIZE):
+        if not (0 <= x < LEGACY_WORLD_SIZE // CHUNK_SIZE and 0 <= y < LEGACY_WORLD_SIZE // CHUNK_SIZE):
             raise ValueError('Map chunk outside the world.')
         result.add(f'{x},{y}')
     return result
@@ -56,7 +59,7 @@ class TerrainRow:
         self.terrain, self.y = terrain, y
 
     def __len__(self):
-        return WORLD_SIZE
+        return self.terrain.size
 
     def __getitem__(self, x):
         record = self.terrain.records.get(chunk_key(x, self.y))
@@ -65,14 +68,15 @@ class TerrainRow:
 
 class ChunkTerrain:
     """Existing tile lookups work; unloaded tiles are impassable."""
-    def __init__(self, records):
+    def __init__(self, records, size):
         self.records = records
+        self.size = size
 
     def __len__(self):
-        return WORLD_SIZE
+        return self.size
 
     def __getitem__(self, y):
-        if not 0 <= y < WORLD_SIZE:
+        if not 0 <= y < self.size:
             raise IndexError(y)
         return TerrainRow(self, y)
 
@@ -134,7 +138,9 @@ class ChunkMap:
         self.membership = None
         self.resource_index = None
         self.base = base
-        self.terrain = ChunkTerrain(self.records)
+        self.size = self.landscape['map_size']
+        self.start_offset = self.landscape.get('starter_offset', LEGACY_START_OFFSET)
+        self.terrain = ChunkTerrain(self.records, self.size)
 
     def _starter(self):
         if self.base is None:
@@ -161,7 +167,7 @@ class ChunkMap:
         from progression import SUPPLIES, source_limits
         clock = self.landscape.get('chunk_clock', 0)
         elapsed = max(0, clock - record.get('clock', 0))
-        landscape = {'terrain': ChunkTerrain({key: record})}
+        landscape = {'terrain': ChunkTerrain({key: record}, self.size)}
         for resource in record['map_resources']:
             if resource['kind'] not in SUPPLIES:
                 continue
@@ -179,10 +185,10 @@ class ChunkMap:
         if key in self.memory:
             return json.loads(self.memory[key])
         cx, cy = map(int, key.split(','))
-        x, y = cx * CHUNK_SIZE - START_OFFSET, cy * CHUNK_SIZE - START_OFFSET
+        x, y = cx * CHUNK_SIZE - self.start_offset, cy * CHUNK_SIZE - self.start_offset
         if 0 <= x < 120 and 0 <= y < 120:
             base = self._starter()
-            resources = [dict(r, x=r['x'] + START_OFFSET, y=r['y'] + START_OFFSET)
+            resources = [dict(r, x=r['x'] + self.start_offset, y=r['y'] + self.start_offset)
                          for r in base['map_resources'] if x <= r['x'] < x + CHUNK_SIZE and y <= r['y'] < y + CHUNK_SIZE]
             return {'terrain': [row[x:x + CHUNK_SIZE].replace('v', 'g') for row in base['terrain'][y:y + CHUNK_SIZE]],
                     'map_resources': resources, 'tree_stumps': [], 'clock': 0}
@@ -196,8 +202,8 @@ class ChunkMap:
         result = set()
         for point in points:
             cx, cy = map(int, chunk_key(point['x'], point['y']).split(','))
-            for x in range(max(0, cx - 1), min(WORLD_SIZE // CHUNK_SIZE, cx + 2)):
-                for y in range(max(0, cy - 1), min(WORLD_SIZE // CHUNK_SIZE, cy + 2)):
+            for x in range(max(0, cx - 1), min(self.size // CHUNK_SIZE, cx + 2)):
+                for y in range(max(0, cy - 1), min(self.size // CHUNK_SIZE, cy + 2)):
                     result.add(f'{x},{y}')
         return result
 
@@ -276,6 +282,10 @@ class ChunkMap:
         return dict(town, map_resources=nearby)
 
     def snapshot(self, keys=(), known=(), versions=None):
+        for key in keys:
+            x, y = map(int, key.split(','))
+            if not (0 <= x < self.size // CHUNK_SIZE and 0 <= y < self.size // CHUNK_SIZE):
+                raise ValueError('Map chunk outside the world.')
         self.sync()
         keys = self.records.keys() | set(keys)
         chunks = {key: self.read(key) for key in sorted(keys)}
@@ -317,7 +327,7 @@ def expand_new_world(world, directory=None):
         site['x'] += START_OFFSET
         site['y'] += START_OFFSET
     world['shared_map'] = {'map_size': WORLD_SIZE, 'terrain_seed': base['terrain_seed'],
-                           'chunked': 1, 'chunk_size': CHUNK_SIZE, 'chunk_clock': 0,
+                           'chunked': 1, 'chunk_size': CHUNK_SIZE, 'chunk_clock': 0, 'starter_offset': START_OFFSET,
                            'npcs': [dict(n, x=n['x'] + START_OFFSET, y=n['y'] + START_OFFSET) for n in base['npcs']]}
     world['_chunks'] = ChunkMap(world, directory, base)
     world['_chunks'].activate()

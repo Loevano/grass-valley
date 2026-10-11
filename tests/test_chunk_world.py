@@ -5,7 +5,7 @@ import unittest
 from unittest.mock import patch
 
 import server
-from chunk_world import CHUNK_SIZE, WORLD_SIZE, attach, chunk_key, generate_chunk
+from chunk_world import CHUNK_SIZE, WORLD_SIZE, LEGACY_WORLD_SIZE, LEGACY_START_OFFSET, attach, chunk_key, generate_chunk
 from shared_world import bind_map, export_world, new_world, walking_map
 import test_http
 
@@ -37,7 +37,7 @@ class ExplorableMap(unittest.TestCase):
         self.assertEqual(len(self.town['terrain']), WORLD_SIZE)
         self.assertEqual(self.town['terrain'][0][0], 'v')
         self.assertLess(len(json.dumps(export_world(self.world))), 5000)
-        for x in (200, 400, 600, 1200, 1600):
+        for x in (40, 120, 280, 360, 440):
             self.visit(x, 200)
             self.assertLessEqual(len(self.manager.records), 18)
         self.assertEqual(generate_chunk(42, '3,4'), generate_chunk(42, '3,4'))
@@ -102,41 +102,41 @@ class ExplorableMap(unittest.TestCase):
         self.assertLessEqual(len(self.manager.snapshots), len(self.manager.records) + 1)
 
     def test_removals_and_regrowth_survive_eviction_and_reload(self):
-        self.visit(200, 200)
+        self.visit(80, 80)
         landscape = self.world['shared_map']
-        tree = next(r for r in landscape['map_resources'] if r['kind'] == 'tree' and r['x'] < 400
+        tree = next(r for r in landscape['map_resources'] if r['kind'] == 'tree' and r['x'] < 120
                     and landscape['terrain'][r['y']][r['x']] == 'f')
         position = tree['x'], tree['y']
         server.economy.take_supply(landscape, tree, 100)
         self.assertTrue(any((r['x'], r['y']) == position for r in landscape['tree_stumps']))
-        self.visit(1400, 1400)
+        self.visit(440, 440)
         self.world['shared_map']['chunk_clock'] += 600
-        self.visit(200, 200)
+        self.visit(80, 80)
         server.prepare_landscapes(self.world, regenerate=True)
         self.assertTrue(any((r['x'], r['y']) == position for r in landscape['map_resources']))
         # A chest removal must remain permanent even outside the working set.
-        chest = {'kind': 'chest', 'x': 200, 'y': 200}
+        chest = {'kind': 'chest', 'x': 80, 'y': 80}
         landscape['map_resources'].append(chest)
         self.manager.flush()
         landscape['map_resources'].remove(chest)
-        self.visit(1400, 1400)
+        self.visit(440, 440)
         stored = json.loads(json.dumps(export_world(self.world)))
         restored = attach(stored, self.root / 'save_chunks')
-        stored['towns']['own']['player'].update(x=200, y=200)
+        stored['towns']['own']['player'].update(x=80, y=80)
         restored.activate()
-        self.assertFalse(any(r['kind'] == 'chest' and r['x'] == 200 and r['y'] == 200
+        self.assertFalse(any(r['kind'] == 'chest' and r['x'] == 80 and r['y'] == 80
                              for r in stored['shared_map']['map_resources']))
 
     def test_sleeping_supplies_catch_up_and_unchanged_chunks_are_not_rewritten(self):
-        self.visit(200, 200)
+        self.visit(80, 80)
         server.prepare_landscapes(self.world)
-        resource = next(r for r in self.town['map_resources'] if r.get('regeneration', 0) and r['x'] < 400)
+        resource = next(r for r in self.town['map_resources'] if r.get('regeneration', 0) and r['x'] < 120)
         position = resource['x'], resource['y']
         resource['supply'] = 0
         self.manager.flush()
-        self.visit(1400, 1400)
+        self.visit(440, 440)
         self.world['shared_map']['chunk_clock'] += 600
-        self.visit(200, 200)
+        self.visit(80, 80)
         resource = next(r for r in self.town['map_resources'] if (r['x'], r['y']) == position)
         self.assertEqual(resource['supply'], resource['supply_max'])
         self.manager.flush()
@@ -161,6 +161,38 @@ class ExplorableMap(unittest.TestCase):
             server.command(self.town, {'action': 'walk', 'dx': 1, 'dy': 0}, self.world)
         self.assertLessEqual(self.town['player']['x'], 400.32)
         self.assertLess(len(walking_map(self.world, self.town, local=True)['map_resources']), 26)
+
+    def test_small_world_starters_and_boundaries_survive_reload(self):
+        self.assertEqual(WORLD_SIZE, 480)
+        for site in self.world['town_sites']:
+            self.assertTrue(0 <= site['x'] < WORLD_SIZE and 0 <= site['y'] < WORLD_SIZE)
+        stored = json.loads(json.dumps(export_world(self.world)))
+        restored = attach(stored, self.root / 'save_chunks')
+        self.assertEqual(restored.start_offset, self.manager.start_offset)
+        self.assertEqual(restored._read('4,4'), self.manager._read('4,4'))
+        self.visit(WORLD_SIZE - 1, WORLD_SIZE - 1)
+        self.assertIn('11,11', self.manager.records)
+        self.assertTrue(all(int(part) < 12 for key in self.manager.records for part in key.split(',')))
+        with self.assertRaisesRegex(ValueError, 'outside'):
+            self.manager.snapshot({'12,0'})
+
+    def test_legacy_chunked_maps_keep_dimensions_and_starter_layout(self):
+        # Recreate the persisted metadata used before the smaller default.
+        with patch('chunk_world.WORLD_SIZE', LEGACY_WORLD_SIZE), patch('chunk_world.START_OFFSET', LEGACY_START_OFFSET):
+            old = new_world(42, explorable=True)
+        stored = json.loads(json.dumps(export_world(old)))
+        del stored['shared_map']['starter_offset']
+        original_sites = json.loads(json.dumps(stored['town_sites']))
+        manager = attach(stored)
+        self.assertEqual(len(manager.terrain), LEGACY_WORLD_SIZE)
+        self.assertEqual(len(manager.terrain[1919]), LEGACY_WORLD_SIZE)
+        self.assertEqual(manager._read('22,22'), old['_chunks']._read('22,22'))
+        self.assertEqual(stored['town_sites'], original_sites)
+        self.assertIn('47,47', manager.snapshot({'47,47'})['terrain_chunks'])
+        stored['towns']['own'] = server.new_town('Home', stored)
+        stored['towns']['own']['player'].update(x=1919, y=1919)
+        manager.activate()
+        self.assertIn('47,47', manager.records)
 
     def test_legacy_shared_maps_keep_their_dimensions(self):
         old = new_world(42)
@@ -220,7 +252,7 @@ class ExplorableMapHTTP(unittest.TestCase):
         changed_world = json.loads(self.call('/api/world?known=' + known + '&world_id=old-world')[1])
         self.assertTrue(changed_world['shared_map']['terrain_chunks'])
         self.assertNotIn(owner['token'], json.dumps(snapshot))
-        self.assertEqual(self.call('/api/world?chunks=48,0')[0], 400)
+        self.assertEqual(self.call(f'/api/world?chunks={WORLD_SIZE // CHUNK_SIZE},0')[0], 400)
         self.assertEqual(self.call('/api/world?chunks=' + ';'.join(['0,0'] * 50))[0], 400)
         self.assertEqual(self.call('/api/world?known=' + ';'.join(['0,0'] * 129))[0], 400)
         self.assertEqual(self.call('/api/world?resources=:0123456789abcdef')[0], 400)

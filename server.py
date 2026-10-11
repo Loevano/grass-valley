@@ -1022,7 +1022,11 @@ class Handler(SimpleHTTPRequestHandler):
                     ensure_player(walking_map(WORLD, town) if 'shared_map' in WORLD else town)
                 snapshot = export_world(WORLD)
                 if WORLD.get('_chunks'):
-                    landscape = WORLD['_chunks'].snapshot(keys, known, versions)
+                    try:
+                        landscape = WORLD['_chunks'].snapshot(keys, known, versions)
+                    except ValueError as error:
+                        self.reply(400, {'error': str(error)})
+                        return
                     snapshot = dict(snapshot, shared_map=landscape)
                 self.reply(200, dict(snapshot, hall_upgrades=HALL_UPGRADES, progression=economy.public_catalog(), local_stories=npcs.STORIES,
                                      hall_ready={k: economy.milestone(t, t['level'] + 1) for k, t in WORLD['towns'].items()}, world_id=ACTIVE_WORLD,

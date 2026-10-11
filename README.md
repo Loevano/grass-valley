@@ -42,11 +42,11 @@ encrypted transport; do not expose it through router port forwarding.
 
 ## Shared map in new worlds
 
-New worlds use one shared 1,920×1,920 map, 256 times the area of the original
-120×120 valley. Terrain loads as you explore. Everyone sees the
-same terrain, buildings, workers, and player characters, and can walk between
-towns. Town halls start at randomized locations at least 40 tiles apart, with
-nearby wood, water, and clear paths connecting the towns.
+New worlds use one shared 480×480 map, 16 times the area of the original
+120×120 valley. Existing saves keep their map size and layout. Terrain loads as
+you explore. Everyone sees the same terrain, buildings, workers, and player
+characters, and can walk between towns. Town halls start at randomized locations
+at least 40 tiles apart, with nearby wood, water, and clear paths connecting the towns.
 
 Build within 30 horizontal/vertical tile steps of your hall, adding 5 steps with
 each completed upgrade (30, 35, 40, 45, 50 at levels 1–5). Construction also stays
