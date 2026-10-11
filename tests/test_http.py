@@ -11,6 +11,25 @@ import server
 
 
 class LanHost(unittest.TestCase):
+    def test_npc_story_catalog_and_progress_are_owned_and_saved(self):
+        _, owner = self.call('/api/join', {'name': 'Story home'})
+        _, friend = self.call('/api/join', {'name': 'Friend'})
+        owner, friend = json.loads(owner), json.loads(friend)
+        town = server.WORLD['towns'][owner['town_id']]
+        town['npcs'] = [{'name': 'Moss', 'x': 5, 'y': 8}]
+        status, body = self.call('/api/world')
+        self.assertEqual(status, 200)
+        self.assertEqual(json.loads(body)['local_stories'], server.npcs.STORIES)
+        request = {'action': 'advance_local_story', 'npc_index': 0,
+                   'town_id': friend['town_id']}
+        self.assertEqual(self.call('/api/command', request)[0], 401)
+        self.assertEqual(self.call('/api/command', request, owner['token'])[0], 200)
+        key = server.npcs.local_key(town['npcs'][0])
+        self.assertEqual(town['local_visits'][key]['story_stage'], 1)
+        self.assertNotIn('local_visits', server.WORLD['towns'][friend['town_id']])
+        server.load()
+        self.assertEqual(server.WORLD['towns'][owner['town_id']]['local_visits'][key]['story_stage'], 1)
+
     def test_character_movement_is_owned_uninterrupted_and_saved(self):
         _, owner = self.call('/api/join', {'name': 'Home'})
         _, friend = self.call('/api/join', {'name': 'Friend'})

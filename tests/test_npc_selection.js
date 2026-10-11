@@ -51,6 +51,37 @@ const run=new Function('document','window','localStorage','setTimeout','clearTim
     openPanel(null);world.shared_map={npcs:town.npcs};viewed='friend';key('o');
     check(selection.index===2,'Shared map interaction uses the owner player while viewing another town');
     delete world.shared_map;
+    world.local_stories={Moss:{title:'A Remedy Remembered',reward:12,keepsake:'Pressed leaf',stages:[
+      {dialogue:'Help remember a remedy.',button:'Offer to help'},
+      {dialogue:'Bring herbs.',costs:{herbs:3},button:'Bring the herbs'},
+      {dialogue:'The traveler is recovering.'}]}};
+    viewed='own';selection={type:'npc',index:0};town.player={x:6,y:7};render();
+    let storyButton=$('selection-details').children.find(child=>child.textContent==='Offer to help');
+    check(storyButton&&!storyButton.disabled,'Nearby NPC offers the story');
+    let storyCommand;act=async data=>{storyCommand=data;};await storyButton.onclick();
+    check(storyCommand.action==='advance_local_story'&&storyCommand.npc_index===0,'Story button sends the selected NPC');
+    town.local_visits={[localVisitKey(town.npcs[0])]:{story_stage:1}};render();
+    storyButton=$('selection-details').children.find(child=>child.textContent==='Bring the herbs');
+    check(storyButton.disabled,'Story delivery is disabled without supplies');
+    town.goods={herbs:3};render();
+    check(!$('selection-details').children.find(child=>child.textContent==='Bring the herbs').disabled,'Supplies enable delivery');
+    town.player.x=11;render();
+    check($('selection-details').children.find(child=>child.textContent==='Bring the herbs').disabled,'Remote story delivery is disabled');
+    selection={type:'player'};render();
+    check($('selection-details').children.some(child=>child.textContent?.includes('A Remedy Remembered')&&child.textContent.includes('3 herbs')),'Character panel tracks active objectives');
+    selection={type:'npc',index:0};town.local_visits[localVisitKey(town.npcs[0])].story_stage=2;render();
+    check($('selection-details').children.some(child=>child.textContent?.includes('A Remedy Remembered · Completed')),'Completed story stays readable');
+    check(!$('selection-details').children.some(child=>child.textContent==='Bring the herbs'),'Completed story has no repeat reward button');
+    town.player.keepsakes=['Pressed leaf'];selection={type:'player'};render();
+    check($('selection-details').children.some(child=>child.textContent==='Keepsake: Pressed leaf'),'Character keepsakes remain visible');
+    town.npcs.push({name:'Flint',biome:'r',x:8,y:8});town.local_visits[localVisitKey(town.npcs.at(-1))]={story_stage:1};
+    town.map_resources=[{kind:'rock',x:7,y:8}];town.player={x:6,y:8};selection={type:'resource',index:0};render();
+    let rockButton=$('selection-details').children.find(child=>child.textContent?.startsWith('Examine markings'));
+    check(rockButton&&!rockButton.disabled,'Active survey offers nearby rock inspection');await rockButton.onclick();
+    check(storyCommand.action==='inspect_story_rock'&&storyCommand.x===7&&storyCommand.y===8,'Rock inspection sends coordinates');
+    town.local_visits[localVisitKey(town.npcs.at(-1))].story_rocks=['7:8'];render();
+    check($('selection-details').children.find(child=>child.textContent==='Outcrop markings recorded').disabled,'Recorded outcrop cannot be counted twice');
+    selection={type:'npc',index:0};
     delete town.npcs;render();check(selection===null,'Missing selected NPC closes inspector safely');
     viewed='own';key('o');check(selection===null,'Missing NPC list is safe to interact with');
   })();`);

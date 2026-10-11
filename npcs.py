@@ -48,6 +48,95 @@ GIFTS = {'Sylva': 'fine_axe', 'Reed': 'fine_fishing_rod'}
 BARTERERS = {'Tobin', 'Clover'}
 TRADE_SECONDS = 300
 
+# Stages are shared with the inspector; progress and rewards belong to each town.
+STORIES = {
+    'Moss': {
+        'title': 'A Remedy Remembered', 'reward': 12, 'keepsake': 'Moss’s pressed willow leaf',
+        'stages': [
+            {'dialogue': 'A traveler is feverish, and my mentor’s remedy has slipped from memory. Will you help me remember?',
+             'button': 'Offer to help'},
+            {'dialogue': 'Bring three herbs from the patches among the reeds. Their scent may bring the old lesson back. Allocate herb storage in a storehouse before gathering.',
+             'costs': {'herbs': 3}, 'button': 'Bring the herbs'},
+            {'dialogue': 'Willow, of course! My mentor brewed it gently and always served a meal afterward. Two more herbs and four food will let me care for our visitor.',
+             'costs': {'herbs': 2, 'food': 4}, 'button': 'Deliver the remedy supplies'},
+            {'dialogue': 'The traveler is resting comfortably. I remembered the recipe, but you reminded me why my mentor taught it. Keep this leaf from her willow.'},
+        ],
+    },
+    'Tobin': {
+        'title': 'The Lantern Road', 'reward': 15, 'keepsake': 'Tobin’s brass lantern token',
+        'stages': [
+            {'dialogue': 'My old friend kept a lantern burning for travelers. Her light went dark last winter. Help me prepare to look for her?',
+             'button': 'Help Tobin search'},
+            {'dialogue': 'Four food will see me through the walk. I will follow the old route and bring back word.',
+             'costs': {'food': 4}, 'button': 'Pack provisions'},
+            {'dialogue': 'She is safe! Her shelter fell apart, and she moved to stay with family. Let us keep her welcome alive: finish three road tiles in your town and bring six wood for a new lantern shelter.',
+             'costs': {'wood': 6}, 'roads': 3, 'button': 'Supply the lantern shelter'},
+            {'dialogue': 'The shelter has a light again, and your road welcomes weary feet. My friend sent this token: a promise that someone will leave a lantern burning.'},
+        ],
+    },
+    'Flint': {
+        'title': 'Marks Beneath the Stone', 'reward': 18, 'keepsake': 'Flint’s charcoal map',
+        'stages': [
+            {'dialogue': 'I found a carved line beneath the moss on an outcrop. It might be part of a map. Will you help survey the rocks?',
+             'button': 'Join the survey'},
+            {'dialogue': 'Examine three different rock outcrops and return with your notes. Walk beside each rock and select it to record its markings.',
+             'rocks': 3, 'button': 'Compare the markings'},
+            {'dialogue': 'The lines join! They mark a doorway beneath the ridge. Bring two wood for charcoal, and I will copy the route for you. We should gather companions before venturing inside.',
+             'costs': {'wood': 2}, 'button': 'Make a charcoal map'},
+            {'dialogue': 'Here is our map. The doorway remains sealed, but we now know where a future expedition should begin. Until then, keep the route safe.'},
+        ],
+    },
+}
+
+
+def advance_story(town, npc, progress):
+    story = STORIES.get(npc['name'])
+    if not story:
+        raise ValueError('This local has no story request.')
+    stage = progress.get('story_stage', 0)
+    if stage >= len(story['stages']) - 1:
+        raise ValueError('You already completed this story.')
+    objective = story['stages'][stage]
+    costs = objective.get('costs', {})
+    if not economy.afford(town, costs):
+        raise ValueError('Bring the supplies listed in this story request.')
+    roads = sum(not road.get('construction') for road in town.get('roads', []))
+    if roads < objective.get('roads', 0):
+        raise ValueError('Finish three road tiles in your town first.')
+    if len(progress.get('story_rocks', [])) < objective.get('rocks', 0):
+        raise ValueError('Examine three different rock outcrops first.')
+    if costs:
+        economy.spend(town, costs)
+    progress = town.setdefault('local_visits', {}).setdefault(local_key(npc), {})
+    progress['story_stage'] = stage + 1
+    if stage + 1 == len(story['stages']) - 1:
+        town['coins'] += story['reward']
+        town['player'].setdefault('keepsakes', []).append(story['keepsake'])
+    return {}
+
+
+def inspect_story_rock(town, data):
+    x, y = data.get('x'), data.get('y')
+    if type(x) is not int or type(y) is not int:
+        raise ValueError('Choose a rock outcrop.')
+    if math.hypot(town['player']['x'] - x, town['player']['y'] - y) > 1.8:
+        raise ValueError('Walk beside the rock to examine it.')
+    if not any(r['kind'] == 'rock' and r['x'] == x and r['y'] == y
+               for r in town['map_resources']):
+        raise ValueError('Choose a rock outcrop.')
+    npc = next((n for n in town['npcs'] if n['name'] == 'Flint'), None)
+    progress = town.get('local_visits', {}).get(local_key(npc), {}) if npc else {}
+    if progress.get('story_stage') != 1:
+        raise ValueError('Start Flint’s survey before recording markings.')
+    rocks = progress.get('story_rocks', [])
+    key = f'{x}:{y}'
+    if key in rocks:
+        raise ValueError('You already recorded this outcrop.')
+    if len(rocks) >= 3:
+        raise ValueError('Your survey is ready. Return to Flint.')
+    progress['story_rocks'] = [*rocks, key]
+    return {}
+
 
 def local_key(npc):
     return f"{npc['name']}:{npc['x']}:{npc['y']}"
@@ -66,6 +155,8 @@ def tool_bonus(villager, job):
 def change(town, data):
     action = data['action']
     player = town['player']
+    if action == 'inspect_story_rock':
+        return inspect_story_rock(town, data)
     if action in {'give_worker_tool', 'take_worker_tool', 'transfer_worker_tool'}:
         index = data.get('index')
         if type(index) is not int or not 0 <= index < len(town['villagers']):
@@ -113,6 +204,8 @@ def change(town, data):
         raise ValueError('Walk beside the local to interact.')
     visit_key = local_key(npc)
     progress = town.get('local_visits', {}).get(visit_key, {})
+    if action == 'advance_local_story':
+        return advance_story(town, npc, progress)
     if action == 'claim_local_gift':
         key = GIFTS.get(npc['name'])
         if not key:

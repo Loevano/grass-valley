@@ -667,7 +667,8 @@ def command(town, data, world=None):
         bind_map(world)
     ensure_resources(town)
     action = data.get('action')
-    if action in {'claim_local_gift', 'trade_local', 'give_worker_tool', 'take_worker_tool', 'transfer_worker_tool'}:
+    if action in {'claim_local_gift', 'trade_local', 'give_worker_tool', 'take_worker_tool', 'transfer_worker_tool',
+                  'advance_local_story', 'inspect_story_rock'}:
         return npcs.change(town, data)
     if action in {'buy_equipment', 'sell_equipment', 'equip_item', 'unequip_item'}:
         return equipment.change(town, data)
@@ -1014,7 +1015,7 @@ class Handler(SimpleHTTPRequestHandler):
                 if WORLD.get('_chunks'):
                     landscape = WORLD['_chunks'].snapshot(keys, known, versions)
                     snapshot = dict(snapshot, shared_map=landscape)
-                self.reply(200, dict(snapshot, hall_upgrades=HALL_UPGRADES, progression=economy.public_catalog(),
+                self.reply(200, dict(snapshot, hall_upgrades=HALL_UPGRADES, progression=economy.public_catalog(), local_stories=npcs.STORIES,
                                      hall_ready={k: economy.milestone(t, t['level'] + 1) for k, t in WORLD['towns'].items()}, world_id=ACTIVE_WORLD,
                                      name=WORLDS[ACTIVE_WORLD]['name'] if ACTIVE_WORLD else None,
                                      players_sampled_at=time.monotonic()))

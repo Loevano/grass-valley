@@ -92,6 +92,17 @@ the Python host, refresh both browsers, and create a new world to use the shared
   running game time, provided you have food storage room. Gifts and restocking
   are saved per town, so each player can collect their own rewards.
   Locals are separate from town workers; their positions are saved.
+- Moss, Tobin, and Flint offer playable stories. Walk beside them and open their
+  panel to accept a request, see its supplies and objectives, and continue the story.
+  Moss needs herbs and food for **A Remedy Remembered**. Tobin needs provisions,
+  three completed town road tiles, and wood for **The Lantern Road**. Flint asks you
+  to examine three different rock outcrops for **Marks Beneath the Stone**: accept
+  his survey, walk beside a rock, select it, and choose **Examine markings**.
+  Return to Flint with your notes, then supply wood for a charcoal map.
+  Each story awards coins and a keepsake once per town. Progress, examined rocks,
+  and rewards survive reloads; shared-world players complete their own stories.
+  Select **You** to review active objectives and collected keepsakes. Flint’s map
+  hints at a future cooperative adventure; its doorway is not enterable yet.
 - Your gold-clad villager is marked **You**. Click the map and hold **WASD** to
   walk in screen directions. Press **Y** to toggle camera lock: when locked, the
   camera follows your movement; when unlocked, walking leaves the camera in place.
