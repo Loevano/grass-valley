@@ -1,16 +1,20 @@
 """Player clothing, exploration equipment, and local trading."""
 import math
 
+from terrain import ground_variant
+
 
 ITEMS = {
     'swamp_boots': {'name': 'Swamp boots', 'slot': 'feet', 'biome': 'b', 'price': 15},
-    'desert_clothing': {'name': 'Desert clothing', 'slot': 'body', 'biome': 's', 'price': 20},
+    'desert_clothing': {'name': 'Desert clothing', 'slot': 'body', 'price': 20},
 }
 
 
-def protected(player, biome):
+def protected(player, biome, x, y):
+    if biome == 'b' and ground_variant(x, y) != 2:
+        return True
     return all(player.get('equipment', {}).get(item['slot']) == key
-               for key, item in ITEMS.items() if item['biome'] == biome)
+               for key, item in ITEMS.items() if 'biome' in item and item['biome'] == biome)
 
 
 def find_item(player, chest):
@@ -56,7 +60,8 @@ def change(town, data):
         for y in range(math.floor(player['y'] + .5) - 1, math.floor(player['y'] + .5) + 2):
             for x in range(math.floor(player['x'] + .5) - 1, math.floor(player['x'] + .5) + 2):
                 if (0 <= y < len(terrain) and 0 <= x < len(terrain[y])
-                        and terrain[y][x] == item['biome']
+                        and terrain[y][x] == item.get('biome')
+                        and (terrain[y][x] != 'b' or ground_variant(x, y) == 2)
                         and abs(player['x'] - x) < .68 and abs(player['y'] - y) < .68):
                     raise ValueError('Return to safe ground before removing this item.')
         del player['equipment'][item['slot']]

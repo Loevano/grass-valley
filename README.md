@@ -70,7 +70,7 @@ the Python host, refresh both browsers, and create a new world to use the shared
   trees, water, and rocks still reserve their tiles.
 - Swamp regions in new towns have muddy ground, green pools, reeds, lily pads,
   and willow trees. Swamp trees supply wood and swamp water supports farming.
-  Your character needs equipped swamp boots to enter swamp ground. Existing saved terrain stays as it is.
+  Lighter swamp ground is walkable; only the darkest muddy tiles require equipped swamp boots. Existing saved terrain stays as it is.
 - Friendly locals live in each biome, with matching outfits and dialogue. Look for
   Moss the swamp herbalist and Reed the marsh fisher. Click a local to read their
   introduction. Locals are separate from town workers; their positions are saved.
@@ -83,8 +83,9 @@ the Python host, refresh both browsers, and create a new world to use the shared
   Buildings, trees, water, and rocks block movement. Your position is saved per
   world. Movement pauses while typing, placing buildings, or using world menus.
 - Select **You** to inspect your equipment and equip or remove items. Swamp boots
-  (15 coins) unlock swamp ground; desert clothing (20 coins) unlocks sandy desert
-  ground. Both can be worn together. Boats still allow sailing without desert gear.
+  (15 coins) unlock the darkest swamp tiles. Sand is walkable without equipment;
+  desert clothing (20 coins) can still be worn. The planned desert biome will have
+  windy patches deeper inside it that require goggles. Boats allow sailing on water.
   Walk beside any local, click them, and buy or sell gear; sale prices are half
   the purchase price, rounded down. Remove worn gear before selling your last copy,
   and return to safe ground before removing protective clothing. Island treasure

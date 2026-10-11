@@ -113,7 +113,7 @@ def walkable(town, x, y, blocked=None, water=None):
                        and terrain[ty][tx] == 'v')
             hazardous = (terrain and 0 <= ty < len(terrain) and 0 <= tx < len(terrain[ty])
                          and (tx, ty) not in water
-                         and not equipment.protected(town.get('player', {}), terrain[ty][tx]))
+                         and not equipment.protected(town.get('player', {}), terrain[ty][tx], tx, ty))
             if ((tx, ty) in blocked or outside or hazardous) and (abs(x - tx) < .5 + radius
                                        and abs(y - ty) < .5 + radius):
                 return False

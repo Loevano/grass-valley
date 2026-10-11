@@ -25,6 +25,10 @@ const run=new Function('document','window','localStorage','setTimeout','clearTim
   town.terrain=Array(12).fill('bbbbbbbbbbbb');fills.length=0;draw();
   check(fills.includes('#59674b'),'Swamp ground has its own palette');
   check(fills.includes('#718565')&&fills.includes('#4e6857'),'Swamp water has shallow and deep green colors');
+  for(const [x,y,color] of [[6,5,'#536247'],[6,7,'#626f50'],[6,8,'#59674b']]){
+    fills.length=0;paintGround(ctx,town,new Set(),{minX:x,maxX:x,minY:y,maxY:y});
+    check(fills.includes(color),'Swamp movement fixtures match the visible tile shade');
+  }
   town.map_resources.push({kind:'water',x:0,y:0});fills.length=0;draw();
   check(fills.includes('#a3ad74'),'Swamp water contains lily pads');
   fills.length=0;drawResource({kind:'tree',x:5,y:5});

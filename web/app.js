@@ -95,9 +95,10 @@ document.addEventListener?.('visibilitychange',clearWalk);
 let movementMap=null;
 const equipmentItems={
   swamp_boots:{name:'Swamp boots',slot:'feet',biome:'b',price:15},
-  desert_clothing:{name:'Desert clothing',slot:'body',biome:'s',price:20},
+  desert_clothing:{name:'Desert clothing',slot:'body',price:20},
 };
-function biomeProtected(player,biome){return Object.entries(equipmentItems).every(([key,item])=>item.biome!==biome||player?.equipment?.[item.slot]===key);}
+function groundVariant(x,y){return ((x*17+y*31+x*y*7)%7)%3;}
+function biomeProtected(player,biome,x,y){return (biome==='b'&&groundVariant(x,y)!==2)||Object.entries(equipmentItems).every(([key,item])=>!item.biome||item.biome!==biome||player?.equipment?.[item.slot]===key);}
 function mapRoads(town){return world.shared_map?Object.values(world.towns).flatMap(t=>t.roads || []):town?.roads || [];}
 function roadSpeed(town,position){return mapRoads(town).some(r=>!r.construction&&r.x===Math.floor(position.x+.5)&&r.y===Math.floor(position.y+.5))?1.5:1;}
 // Measure screen distance for the 2:1 isometric projection, preserving sideways speed.
@@ -114,7 +115,7 @@ function predictPlayerStep(town,player,dx,dy){
     for(let tx=Math.floor(x+.5)-1;tx<=Math.floor(x+.5)+1;tx++){
       for(let ty=Math.floor(y+.5)-1;ty<=Math.floor(y+.5)+1;ty++){
         const outside=tx>=0&&ty>=0&&tx<size&&ty<size&&terrain?.[ty]?.[tx]==='v';
-        const hazardous=!movementMap.water.has(`${tx},${ty}`)&&!biomeProtected(town.player,terrain?.[ty]?.[tx]);
+        const hazardous=!movementMap.water.has(`${tx},${ty}`)&&!biomeProtected(town.player,terrain?.[ty]?.[tx],tx,ty);
         if((movementMap.blocked.has(`${tx},${ty}`)||outside||hazardous)&&Math.abs(x-tx)<.68&&Math.abs(y-ty)<.68)return false;
       }
     }
@@ -891,7 +892,7 @@ function renderSelection(town){
       skills.append(tile);
     }
     $('selection-details').append(skills);
-    const gear=document.createElement('p');gear.textContent='Equipment: wear swamp boots to enter swamp ground and desert clothing to cross sandy desert ground. Find gear in treasure or trade with a nearby local.';$('selection-details').append(gear);
+    const gear=document.createElement('p');gear.textContent='Equipment: wear swamp boots to enter the darkest swamp ground. Sand and lighter swamp ground are walkable without gear. Find gear in treasure or trade with a nearby local.';$('selection-details').append(gear);
     for(const [key,item] of Object.entries(equipmentItems)){
       const count=town.player?.items?.[key] || 0,equipped=town.player?.equipment?.[item.slot]===key;
       const row=document.createElement('p');row.textContent=`${item.name} · ${count} owned${equipped?' · Equipped':''}`;
@@ -1546,7 +1547,7 @@ function paintGround(target,landscape,water,bounds,offsetX=0,offsetY=0){
     const shores=neighbors.map(([tx,ty])=>!water.has(`${tx},${ty}`));
     const depth=shores.filter(Boolean).length;
     const waterColor=biome==='b'?(depth?'#718565':'#4e6857'):(depth?'#6299a1':'#447d91');
-    polygon(diamond,wet?waterColor:palette[biome][variation%3],null);
+    polygon(diamond,wet?waterColor:palette[biome][groundVariant(x,y)],null);
     if(biome==='b'&&variation%3===0){
       ctx.strokeStyle='#9b9f69';ctx.lineWidth=tileW/46;
       for(let reed=0;reed<3;reed++){const rx=px+(reed-1)*tileW*.07,ry=py+tileH*.7;ctx.beginPath();ctx.moveTo(rx,ry);ctx.lineTo(rx+(reed-1)*tileW*.025,ry-tileH*.4);ctx.stroke();}

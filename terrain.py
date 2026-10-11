@@ -4,6 +4,11 @@ import random
 import secrets
 
 
+def ground_variant(x, y):
+    """Match the visible ground shade used by the browser."""
+    return ((x * 17 + y * 31 + x * y * 7) % 7) % 3
+
+
 def generate_map(size, seed):
     rng = random.Random(seed)
 
