@@ -12,6 +12,13 @@ new Function('assert',`
   patch.push({kind:'rock',x:40,y:40},{kind:'tree',x:19,y:20});
   const original=JSON.stringify(patch),data=renderResources(patch);
   assert.strictEqual(renderResources(patch),data,'Stationary frames reuse topology');
+  const supplyUpdate=patch.map(r=>({...r,supply:5})),updated=renderResources(supplyUpdate);
+  assert.strictEqual(updated.water,data.water,'Supply-only polls retain water topology');
+  for(const r of patch.slice(0,9)){
+    const replacement=supplyUpdate[patch.indexOf(r)];
+    assert.strictEqual(updated.rockJoins.get(replacement),data.rockJoins.get(r),'Supply-only updates reuse calculated rock shapes');
+    assert.equal(updated.indexes.get(replacement),patch.indexOf(r),'Replacement resources retain selection indexes');
+  }
   assert.equal(data.rockJoins.size,9,'A touching patch joins every rock tile');
   assert(!data.rockJoins.has(patch[9]),'Isolated rocks retain standalone artwork');
   const at=(x,y)=>patch.find(r=>r.x===x&&r.y===y);

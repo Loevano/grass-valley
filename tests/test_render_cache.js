@@ -169,6 +169,24 @@ const run=new Function('document','window','localStorage','setTimeout','clearTim
   assert(resourceCache.forest.has('30,30'),'Small gaps between neighboring trees join the forest canopy');
   const forestSurface=groundCache.surface,forestPaints=forestSurface.paints;
   draw();assert.equal(forestSurface.paints,forestPaints,'Stationary overview reuses the forest canopy');
+  const originalLayout=groundLayout;let layoutScans=0;
+  groundLayout=(...args)=>{layoutScans++;return originalLayout(...args);};
+  const oldCanopy=resourceCache.forest;
+  world={...world,towns:{own:{...world.towns.own}}};draw();
+  assert.equal(layoutScans,0,'Metadata-only polls avoid scanning the cached ground');
+  world={...world,towns:{own:{...world.towns.own,map_resources:world.towns.own.map_resources.map(r=>({...r,supply:5}))}}};
+  draw();
+  assert.strictEqual(resourceCache.forest,oldCanopy,'Supply-only polls preserve the forest canopy');
+  assert.equal(layoutScans,0,'Supply-only polls avoid scanning unchanged ground');
+  groundLayout=originalLayout;
+  const originalPoint=point;let projections=0;
+  point=(...args)=>{projections++;return originalPoint(...args);};
+  selection=null;draw();const unselectedProjections=projections;
+  selection={type:'resource',index:0};projections=0;fills.length=0;draw();
+  assert(projections<=unselectedProjections+2,'Selecting one resource avoids traversing all viewport tiles');
+  assert(fills.includes('#fff0b133'),'The selected resource still receives its tile highlight');
+  point=originalPoint;selection=null;
+
   const treeHit=hitTargets.find(target=>target.type==='resource'&&target.index===0);
   assert(treeHit,'Forest tiles remain selectable');
   assert(treeHit.bottom-treeHit.top<=tileH,'Invisible trees use tile-sized selection areas');

@@ -14,7 +14,7 @@ let catalog = {worlds:[], can_manage:false}, menuStarted = false, refreshing = n
 let tileW = 46, tileH = 23, originX = 0, originY = 0;
 let camera = {x:5.5,y:5.5,zoom:1}, cameraTown = null;
 const mapSize = town => town?.map_size || world.shared_map?.map_size || 120;
-let chunkTerrainWorld=null, chunkTerrainCache=new Map(), chunkResourceCache=new Map(), requestedMapView=null;
+let chunkTerrainWorld=null, chunkTerrainCache=new Map(), chunkResourceCache=new Map(), requestedMapView=null, chunkHydratedMap=null;
 function mapChunkKeys(landscape=world.shared_map){
   if(!landscape?.chunked)return [];
   const chunkSize=landscape.chunk_size,limit=landscape.map_size/chunkSize;
@@ -30,22 +30,32 @@ function mapChunkKeys(landscape=world.shared_map){
 function hydrateMapChunks(next){
   const landscape=next.shared_map;
   if(!landscape?.chunked)return;
-  if(chunkTerrainWorld!==next.world_id){chunkTerrainCache.clear();chunkResourceCache.clear();chunkTerrainWorld=next.world_id;}
+  if(chunkTerrainWorld!==next.world_id){chunkTerrainCache.clear();chunkResourceCache.clear();chunkTerrainWorld=next.world_id;chunkHydratedMap=null;}
   for(const [key,rows] of Object.entries(landscape.terrain_chunks || {}))chunkTerrainCache.set(key,rows);
   for(const [key,update] of Object.entries(landscape.resource_chunks || {}))chunkResourceCache.set(key,update);
-  const terrain={};
-  landscape.map_resources=[];landscape.tree_stumps=[];
+  const keys=landscape.visible_chunks.join(';');
+  const terrainChunks=landscape.visible_chunks.map(key=>chunkTerrainCache.get(key));
+  const resourceChunks=landscape.visible_chunks.map(key=>chunkResourceCache.get(key));
+  const sameView=chunkHydratedMap?.keys===keys;
+  const sameTerrain=sameView&&terrainChunks.every((rows,i)=>rows===chunkHydratedMap.terrainChunks[i]);
+  const sameResources=sameView&&resourceChunks.every((update,i)=>update===chunkHydratedMap.resourceChunks[i]);
+  const terrain=sameTerrain?chunkHydratedMap.terrain:{};
+  landscape.map_resources=sameResources?chunkHydratedMap.resources:[];
+  landscape.tree_stumps=sameResources?chunkHydratedMap.stumps:[];
   for(const key of landscape.visible_chunks){
     const update=chunkResourceCache.get(key);
     if(update){
       chunkResourceCache.delete(key);chunkResourceCache.set(key,update);
-      landscape.map_resources.push(...update.map_resources);
-      landscape.tree_stumps.push(...update.tree_stumps);
+      if(!sameResources){
+        landscape.map_resources.push(...update.map_resources);
+        landscape.tree_stumps.push(...update.tree_stumps);
+      }
     }
     const rows=chunkTerrainCache.get(key);
     if(!rows)continue;
     // Keep this response's working set most recently used.
     chunkTerrainCache.delete(key);chunkTerrainCache.set(key,rows);
+    if(sameTerrain)continue;
     const [cx,cy]=key.split(',').map(Number),size=landscape.chunk_size;
     rows.forEach((row,dy)=>{
       const target=terrain[cy*size+dy] ||= {};
@@ -55,6 +65,7 @@ function hydrateMapChunks(next){
   while(chunkTerrainCache.size>128)chunkTerrainCache.delete(chunkTerrainCache.keys().next().value);
   while(chunkResourceCache.size>128)chunkResourceCache.delete(chunkResourceCache.keys().next().value);
   landscape.terrain=terrain;
+  chunkHydratedMap={keys,terrainChunks,resourceChunks,terrain,resources:landscape.map_resources,stumps:landscape.tree_stumps};
   delete landscape.terrain_chunks;
   delete landscape.resource_chunks;
 }
@@ -1967,6 +1978,8 @@ function drawProfessionAction(job,time){
 let groundCache=null,resourceCache=null;
 function renderResources(resources,detailed=true){
   if(resourceCache?.resources!==resources || resourceCache.count!==resources.length || resourceCache.detailed!==detailed){
+    const layout=JSON.stringify(resources.map(({kind,x,y,farm_index,construction})=>[kind,x,y,farm_index,!!construction]));
+    const sameLayout=resourceCache?.layout===layout&&resourceCache.detailed===detailed;
     const water=new Set(),objects=[],indexes=new Map(),buckets=new Map();
     resources.forEach((r,index)=>{
       indexes.set(r,index);
@@ -1977,8 +1990,8 @@ function renderResources(resources,detailed=true){
         buckets.get(key).push(r);
       }
     });
-    const forest=detailed?null:new Set(objects.filter(r=>r.kind==='tree').map(r=>`${r.x},${r.y}`));
-    if(forest){
+    const forest=sameLayout?resourceCache.forest:detailed?null:new Set(objects.filter(r=>r.kind==='tree').map(r=>`${r.x},${r.y}`));
+    if(forest&&!sameLayout){
       // Join small gaps between nearby trees into one ground-level canopy.
       const neighbors=new Map();
       for(const key of forest){
@@ -1990,8 +2003,8 @@ function renderResources(resources,detailed=true){
       }
       for(const [key,count] of neighbors)if(count>=2)forest.add(key);
     }
-    const rocks=new Map((detailed?objects.filter(r=>r.kind==='rock'):[]).map(r=>[`${r.x},${r.y}`,r]));
-    const rockJoins=new Map();
+    const rocks=new Map((detailed&&!sameLayout?objects.filter(r=>r.kind==='rock'):[]).map(r=>[`${r.x},${r.y}`,r]));
+    const rockJoins=sameLayout?new Map([...resourceCache.rockJoins].map(([rock,join])=>[resources[resourceCache.indexes.get(rock)],join])):new Map();
     for(const r of rocks.values()){
       const mask=[[0,-1],[1,0],[0,1],[-1,0]].reduce((mask,[dx,dy],i)=>
         mask|(rocks.has(`${r.x+dx},${r.y+dy}`)?1<<i:0),0);
@@ -2015,8 +2028,7 @@ function renderResources(resources,detailed=true){
       });
       rockJoins.set(r,{mask,heights,inset});
     }
-    resourceCache={resources,count:resources.length,detailed,forest,water,objects,indexes,buckets,rockJoins,
-      layout:JSON.stringify(resources.map(({kind,x,y,farm_index,construction})=>[kind,x,y,farm_index,!!construction]))};
+    resourceCache={resources,count:resources.length,detailed,forest,water:sameLayout?resourceCache.water:water,objects,indexes,buckets,rockJoins,layout};
   }
   return resourceCache;
 }
@@ -2132,7 +2144,9 @@ function drawGround(rect,dpr,landscape,water,bounds,forest=null){
     // Snapshots retain their terrain and water sets. Compare only when a new
     // snapshot arrives, keeping fingerprint scans out of scrolling frames.
     const changed=groundCache&&(groundCache.world.world_id!==world.world_id
-      ||(groundCache.detailed===(tileW>=32)&&groundLayout(groundCache.landscape,groundCache.water,groundCache.bounds,groundCache.forest)!==groundLayout(landscape,water,groundCache.bounds,forest)));
+      ||(groundCache.detailed===(tileW>=32)
+        &&!(groundCache.landscape.terrain===landscape?.terrain&&groundCache.water===water&&groundCache.forest===forest)
+        &&groundLayout(groundCache.landscape,groundCache.water,groundCache.bounds,groundCache.forest)!==groundLayout(landscape,water,groundCache.bounds,forest)));
     if(changed)groundCache=null;
     if(groundCache)Object.assign(groundCache,{world,landscape,water,forest});
     else{
@@ -2255,7 +2269,7 @@ function draw(seconds=0){
     drawRoad(road);
   }
   // Selection and construction overlays remain live above the cached ground.
-  if(tool || showBuildingRange || reachable.size || selection || keyboardTile){
+  if(tool || showBuildingRange || reachable.size){
     for(let x=minX;x<=maxX;x++)for(let y=minY;y<=maxY;y++){
       const [px,py]=point(x,y);
       if(px+tileW/2<0 || px-tileW/2>rect.width || py+tileH+12<0 || py>rect.height)continue;
@@ -2265,11 +2279,18 @@ function draw(seconds=0){
       if(showBuildingRange && insideBuildingRange(town,{x,y}))polygon(diamond,'#e4c98022','#e4c98088');
       if(reachable.has(`${x},${y}`))polygon(diamond,'#b8dcad44','#c6dfaa');
       if(preview?.x===x&&preview?.y===y&&previewKind&&town){const valid=placementValid(town,preview,previewKind)&&buildingUsable(town,{...preview,kind:previewKind});ctx.save();ctx.lineWidth=2;polygon(diamond,valid?'#d6d8a366':'#c76d6455',valid?'#eee5ab':'#f3a295');ctx.restore();}
-      const selected=selection?.type==='building'?town?.buildings[selection.index]:selection?.type==='road'?town?.roads?.[selection.index]:selection?.type==='resource'?resources[selection.index]:null;
-      if((selected?.x===x&&selected?.y===y)||(!previewKind&&keyboardTile?.x===x&&keyboardTile?.y===y)){
-        ctx.save();ctx.lineWidth=3;polygon([[px,py],[px+tileW/2,py+tileH/2],[px,py+tileH],[px-tileW/2,py+tileH/2]],'#fff0b133','#fff0b1');ctx.restore();
-      }
     }
+  }
+  const selected=selection?.type==='building'?town?.buildings[selection.index]:selection?.type==='road'?town?.roads?.[selection.index]:selection?.type==='resource'?resources[selection.index]:null;
+  const highlights=[selected,!previewKind?keyboardTile:null].filter(Boolean);
+  for(let i=0;i<highlights.length;i++){
+    const {x,y}=highlights[i];
+    if(i&&x===highlights[0].x&&y===highlights[0].y)continue;
+    const [px,py]=point(x,y),landscape=world.shared_map || town;
+    if(x<minX||x>maxX||y<minY||y>maxY||px+tileW/2<0||px-tileW/2>rect.width||py+tileH+12<0||py>rect.height)continue;
+    if(landscape?.terrain?.[y]?.[x]==='v'||(town?.chunked&&!landscape?.terrain?.[y]?.[x]))continue;
+    ctx.save();ctx.lineWidth=3;
+    polygon([[px,py],[px+tileW/2,py+tileH/2],[px,py+tileH],[px-tileW/2,py+tileH/2]],'#fff0b133','#fff0b1');ctx.restore();
   }
   const entries=world.shared_map?Object.entries(world.towns):[[viewed,town]];
   const buildings=world.shared_map?entries.flatMap(([id,t])=>t.buildings.map((b,index)=>({...b,townId:id,objectIndex:index}))):town?.buildings || [{kind:'hall',x:5,y:5}];

@@ -21,6 +21,22 @@ const run=new Function('assert',`
   hydrateMapChunks(cached);
   assert.equal(cached.shared_map.terrain[960][960],'g','Reuse cached terrain');
   assert.deepEqual(cached.shared_map.map_resources,[resource],'Reuse cached resources');
+  assert.strictEqual(cached.shared_map.terrain,first.shared_map.terrain,'Unchanged polls reuse hydrated terrain');
+  assert.strictEqual(cached.shared_map.map_resources,first.shared_map.map_resources,'Unchanged polls preserve resource identity');
+  assert.strictEqual(cached.shared_map.tree_stumps,first.shared_map.tree_stumps,'Unchanged polls preserve stump identity');
+  const supply=snapshot('first',['24,24'],{}, {'24,24':{
+    version:'1111111111111111',map_resources:[{...resource,supply:5}],tree_stumps:[]}});
+  hydrateMapChunks(supply);
+  assert.strictEqual(supply.shared_map.terrain,cached.shared_map.terrain,'Resource changes preserve terrain identity');
+  assert.notStrictEqual(supply.shared_map.map_resources,cached.shared_map.map_resources,'Changed supplies remain visible');
+  assert.equal(supply.shared_map.map_resources[0].supply,5);
+  assert.equal(cached.shared_map.map_resources[0].supply,undefined,'Hydration does not mutate earlier resource snapshots');
+  const terrainChange=snapshot('first',['24,24'],{'24,24':Array(40).fill('f'.repeat(40))});
+  hydrateMapChunks(terrainChange);
+  assert.notStrictEqual(terrainChange.shared_map.terrain,supply.shared_map.terrain,'Terrain updates replace the hydrated surface');
+  assert.strictEqual(terrainChange.shared_map.map_resources,supply.shared_map.map_resources,'Terrain updates retain unchanged resources');
+  assert.equal(terrainChange.shared_map.terrain[960][960],'f');
+  assert.equal(supply.shared_map.terrain[960][960],'g','Terrain updates preserve earlier snapshots');
   const removed=snapshot('first',['24,24'],{}, {'24,24':{
     version:'fedcba9876543210',map_resources:[],tree_stumps:[]}});
   hydrateMapChunks(removed);
