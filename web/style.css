@@ -8,7 +8,7 @@ main{position:relative}
 #resources-list .selection-fact{justify-content:space-between;gap:10px;padding:8px 0}#resources-list .selection-fact strong{order:2;font-size:14px;text-align:right}#resources-list .selection-fact small{font-size:12px}
 .resource-group{margin-top:20px}.resource-group h3{font-size:17px;color:#d7d0a1;margin:0 0 8px}
 #side-panel{position:fixed;top:var(--toolbar-height,64px);right:0;bottom:0;z-index:5;width:300px;padding:18px 20px;max-height:max(0px,calc(100dvh - var(--toolbar-height,64px)));overflow:auto;overscroll-behavior:contain;box-shadow:-8px 0 30px #12241f66}
-#side-panel section{margin:0;border:0;padding:0}#close-panel{text-align:right;margin:0 0 18px}
+#side-panel section{margin:0;border:0;padding:0}
 #villagers{overflow-x:auto}.villager-name{background:transparent;border:0;padding:0;font-weight:600}
 .villagers-table{width:100%;min-width:800px;border-collapse:collapse;text-align:left}.villagers-table th,.villagers-table td{padding:8px 10px;vertical-align:top;border-bottom:1px solid #ffffff13}.villagers-table thead th{color:#e3d19b;background:#233b30;font-size:12px}.villagers-table tbody th{min-width:90px;color:#e3d19b;overflow-wrap:anywhere}.villagers-table tbody tr:nth-child(even){background:#233b3066}.villagers-table td{min-width:120px;font-size:12px}.villagers-table td:nth-child(4){width:190px;min-width:190px}.villagers-table small{display:block;color:#a8be9e;margin-bottom:6px}.villagers-table select{margin-top:8px;min-width:150px}#villagers>p{margin:12px 0;padding:14px;border:1px solid #c9ba7e33;border-radius:8px}
 .villager-skills{display:flex;flex-wrap:wrap;gap:6px}.villager-skill{display:flex;align-items:center;gap:3px;padding:3px;border:1px solid #c9ba7e33;border-radius:4px;cursor:help}.villager-skill-art{position:relative;width:28px;height:28px}.villager-skill .illustration{width:28px;height:28px;padding:0;margin:0;border:0;border-radius:0;background:none}.villager-skill-art>.illustration:first-child{filter:grayscale(1);opacity:.25}.villager-skill .villager-skill-fill{position:absolute;inset:0}.villager-skill strong{font-size:11px;color:#e3d19b;font-variant-numeric:tabular-nums}.villager-skill:focus-visible{outline:2px solid #fff0b1;outline-offset:2px}
@@ -38,7 +38,6 @@ canvas{cursor:pointer}button:focus-visible,canvas:focus-visible,select:focus-vis
 
 /* Full roster popup: every resident's details stay visible together. */
 #side-panel.villagers-overview{position:absolute;left:16px;right:16px;top:16px;bottom:auto;width:auto;max-height:max(0px,calc(100dvh - var(--toolbar-height,64px) - 32px));padding:24px;border:1px solid #b8c99966;border-radius:14px;box-shadow:0 16px 60px #0a1813cc}
-#side-panel.villagers-overview #close-panel{position:sticky;top:0;z-index:1;float:right;width:auto;margin:18px 0 8px 16px;background:#1c302a}
 #villagers-panel>p{clear:both}
 @media(max-width:760px){#side-panel.villagers-overview{position:fixed;inset:calc(var(--toolbar-height,64px) + 12px) 12px 12px;max-height:max(0px,calc(100dvh - var(--toolbar-height,64px) - 24px));padding:16px}}
 

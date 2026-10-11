@@ -129,7 +129,7 @@ the Python host, refresh both browsers, and create a new world to use the shared
   association; moving the farm out of reach pauses work on those fields.
 - Click a building, moving villager, or resource to open its information panel.
   Click the town hall for milestone progress and its upgrade. Close panels with
-  **Close panel** or Escape. On small screens, panels appear as a bottom drawer.
+  Escape. On small screens, panels appear as a bottom drawer.
 - Every finished building except the town hall has an **Add settler** control,
   an assigned roster, and removal controls. Woodcutters, fishing huts, storehouses,
   and acres start with 1 space, cottages with 2, and farms with 4. Upgrade settler capacity twice

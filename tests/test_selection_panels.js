@@ -87,7 +87,6 @@ const run=new Function('document','window','localStorage','setTimeout','clearTim
     inspect('building',1);
     check(!$('selection-destroy').hidden,'Owner can destroy a regular building');
     check(panelNodes().some(child=>child.textContent==='1 assigned worker.'),'Workplace lists its assigned workers');
-    check($('close-panel').hidden,'Building inspector omits the Esc button');
     check($('selection-details').children[0].children[0].textContent==='Storage','Storage appears first');
     const workerSection=$('selection-details').children[1];
     check(workerSection.children[0].textContent==='Workers','Workers appear below storage');
@@ -158,7 +157,7 @@ const run=new Function('document','window','localStorage','setTimeout','clearTim
     viewed='friend';render();
     check(rosterRows().every(row=>row.children[1].children[1].disabled),'Overview respects visitor restrictions');
     viewed='own';town.villagers.pop();render();
-    $('close-panel').onclick();check($('side-panel').hidden,'Close button closes inspector');
+    listeners.keydown({key:'Escape'});check($('side-panel').hidden,'Escape closes inspector');
     check(!$('side-panel').classList['villagers-overview'],'Closing clears the wide layout');
     const residents=town.villagers;town.villagers=[];openPanel('villagers');
     check($('villagers').children[0].textContent.includes('No villagers yet'),'Empty roster explains how to welcome residents');

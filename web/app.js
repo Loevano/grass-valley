@@ -596,7 +596,6 @@ $('settings-button').onclick=()=>{
 };
 $('close-settings').onclick=()=>{ $('settings-panel').close();updateSettingsButton(); };
 $('settings-panel').addEventListener('close',updateSettingsButton);
-$('close-panel').onclick=()=>{openPanel(null);canvas.focus();};
 window.addEventListener('keydown',event=>{
   const key=event.key.toLowerCase();
   if(key===','&&event.metaKey&&!event.ctrlKey&&!event.altKey&&!event.shiftKey){
@@ -1178,7 +1177,6 @@ function render(){
   $('controls').hidden=panel!=='build' || !own || viewed!==identity?.town_id;
   for(const name of ['selection','villagers','valley','help','resources'])$(name+'-panel').hidden=panel!==name;
   $('side-panel').hidden=!panel && $('join').hidden;
-  $('close-panel').hidden=!panel || (panel==='selection'&&selection?.type==='building');
   $('side-panel').classList.toggle('villagers-overview',panel==='villagers');
   $('game').classList.toggle('panel-open',!$('side-panel').hidden);
   for(const name of ['build','villagers','valley','help','resources']){

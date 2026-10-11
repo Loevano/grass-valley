@@ -86,7 +86,7 @@ function session(saved=null){
   document.getElementById('settings-button').onclick();
   document.getElementById('settings-button').onclick();
   check(!document.getElementById('settings-panel').open&&state.panel==='help','Settings toggles without changing the underlying panel');
-  document.getElementById('close-panel').onclick();
+  key('Escape');
   key('d');check(state.held.length===0,'Old movement binding stops working');
   key('l');check(state.held.includes('l'),'Custom movement binding works');
   key('y');check(state.locked,'Old camera binding stops working');
