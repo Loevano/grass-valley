@@ -16,6 +16,7 @@ import progression as economy
 import logistics
 import equipment
 import npcs
+from spatial import SpatialIndex
 
 from terrain import ensure_terrain
 from npcs import ensure_npcs
@@ -299,7 +300,7 @@ def fill_cottages(town):
             assign_settler(town, worker_index, building_index)
 
 
-def work_assignment(town, job, worker_index):
+def work_assignment(town, job, worker_index, spatial=None):
     if job == 'hauling':
         index = town['villagers'][worker_index].get('building_index')
         if type(index) is int and 0 <= index < len(town['buildings']):
@@ -339,8 +340,9 @@ def work_assignment(town, job, worker_index):
         if b['kind'] != building or not completed(b) or (explicit is not None and farm_index != explicit):
             continue
         reach = WOODCUTTER_REACH if job == 'woodcutting' else 6 if job == 'fishing' and 'boat' in b.get('profession_upgrades', []) else RESOURCE_REACH
-        nearby = [r for r in town['map_resources'] if r['kind'] == source
-                  and abs(r['x'] - b['x']) + abs(r['y'] - b['y']) <= reach]
+        nearby = (spatial.nearby(source, b['x'], b['y'], reach) if spatial is not None else
+                  [r for r in town['map_resources'] if r['kind'] == source
+                   and abs(r['x'] - b['x']) + abs(r['y'] - b['y']) <= reach])
         if nearby or job == 'farming':
             if job == 'farming':
                 acres = [a for a in town['buildings'] if a['kind'] == 'acre' and completed(a)
@@ -412,8 +414,12 @@ def completed(building):
 
 def construction_route(town, start, target):
     size = town.get('map_size', MAP_SIZE)
-    blocked = {(b['x'], b['y']) for b in town['buildings'] + town['map_resources']}
-    blocked.update((n['x'], n['y']) for n in town.get('npcs', []))
+    spatial = town.get('_spatial_index')
+    if spatial is not None:
+        blocked = spatial.blocked(town)
+    else:
+        blocked = {(b['x'], b['y']) for b in town['buildings'] + town['map_resources']}
+        blocked.update((n['x'], n['y']) for n in town.get('npcs', []))
     terrain = town.get('terrain', [])
 
     def open_tile(p):
@@ -532,6 +538,7 @@ def prepare_landscapes(world, regenerate=False):
 
 def tick(world):
     prepare_landscapes(world, regenerate=True)
+    spatial = SpatialIndex(world['shared_map']['map_resources']) if 'shared_map' in world else None
     if world.get('shared_map', {}).get('chunked'):
         world['shared_map']['chunk_clock'] += TICK_SECONDS
     for town in world['towns'].values():
@@ -546,7 +553,9 @@ def tick(world):
             if upgrade and completed(hall):
                 hall['construction'] = {'total': upgrade['seconds'],
                                         'progress': upgrade['seconds'] - town['upgrade_remaining']}
-        walking = walking_map(world, town) if 'shared_map' in world else town
+        town_spatial = spatial if spatial is not None else SpatialIndex(town['map_resources'])
+        walking = dict(walking_map(world, town) if 'shared_map' in world else town,
+                       _spatial_index=town_spatial)
         construct(town, walking)
         landscape = world.get('shared_map', town)
         economy.player_tick(town, landscape, capacity(town))
@@ -556,7 +565,7 @@ def tick(world):
         for index in sorted(range(len(town['villagers'])), key=lambda i: town['villagers'][i]['job'] != 'hauling'):
             villager = town['villagers'][index]
             job = villager['job']
-            assignment = work_assignment(town, job, index) if job != 'idle' else None
+            assignment = work_assignment(town, job, index, town_spatial) if job != 'idle' else None
             source = assignment[1] if assignment else None
             villager['work_target'] = source
             villager.pop('production_status', None)
@@ -572,7 +581,7 @@ def tick(world):
                         camp = town['buildings'][camp_index]
                         if camp['kind'] == 'woodcutter' and completed(camp):
                             nearby = lambda r: abs(r['x'] - camp['x']) + abs(r['y'] - camp['y']) <= WOODCUTTER_REACH
-                            if not any(r['kind'] == 'tree' and nearby(r) for r in town['map_resources']):
+                            if not town_spatial.nearby('tree', camp['x'], camp['y'], WOODCUTTER_REACH):
                                 regrowing = any(nearby(r) for r in landscape.get('tree_stumps', []))
                                 villager['production_status'] = ('Waiting for trees to regrow' if regrowing
                                                                  else 'Waiting for trees within 10 tiles')
