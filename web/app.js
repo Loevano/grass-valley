@@ -1539,29 +1539,54 @@ function paintRock(ctx,r,detailed,polygon,joined=null){
   const colors=!joined&&Math.floor(variant/6)%2?['#999889','#d4cbb2','#b7b09b','#686f69','#83877b']
     :['#96958a','#d6ceb9','#b8b3a2','#626c69','#7f857c'];
   if(joined){
-    // Shared corner elevations make neighboring tiles one continuous outcrop.
-    // Only exposed front edges receive walls, so no seams divide the interior.
-    const ground=[[0,0],[23,11.5],[0,23],[-23,11.5]];
-    const top=ground.map(([x,y],i)=>[x,y-joined.heights[i]]);
+    const ground=[[0,0],[23,11.5],[0,23],[-23,11.5]].map(([x,y],i)=>
+      [x+(joined.inset?.[i][0] || 0)*.6,y+(joined.inset?.[i][1] || 0)*.6]);
+    const rim=ground.map(([x,y],i)=>[x+(joined.inset?.[i][0] || 0)*.4,y+(joined.inset?.[i][1] || 0)*.4]);
+    const top=rim.map(([x,y],i)=>[x,y-joined.heights[i]]);
+    // A single shadow path avoids dark overlaps at corners. The light comes
+    // from the upper left, like the village buildings.
+    if(detailed&&(joined.mask&6)!==6){
+      ctx.beginPath();
+      for(const [a,b,bit] of [[1,2,2],[2,3,4]]){
+        if(joined.mask&bit)continue;
+        const points=[ground[a],ground[b],[ground[b][0]+5,ground[b][1]+3],[ground[a][0]+5,ground[a][1]+3]];
+        points.forEach(([x,y],i)=>i?ctx.lineTo(x,y):ctx.moveTo(x,y));ctx.closePath();
+      }
+      ctx.fillStyle='#223b2940';ctx.fill();
+    }
     if(!(joined.mask&2))polygon([top[1],ground[1],ground[2],top[2]],colors[3]);
     if(!(joined.mask&4))polygon([top[2],ground[2],ground[3],top[3]],colors[4]);
-    const center=[(random()-.5)*9,11.5-joined.heights.reduce((sum,h)=>sum+h,0)/4];
-    polygon([top[0],top[1],center,top[3]],colors[1]);
-    polygon([top[1],top[2],center],colors[2]);
-    polygon([top[2],top[3],center],colors[0]);
-    if(detailed&&variant%5===0){
-      const [x,y]=center;
-      polygon([[x-6,y-3],[x+1,y-6],[x+7,y-1],[x+2,y+3],[x-5,y+1]],'#819057');
+    const center=[rim.reduce((sum,p)=>sum+p[0],0)/4,rim.reduce((sum,p)=>sum+p[1],0)/4];
+    const height=joined.heights.reduce((sum,h)=>sum+h,0)/4;
+    const peak=[center[0],center[1]-height];
+    // Cover the top first so antialiasing cannot expose grass between facets.
+    polygon(top,colors[0]);
+    // Shade the actual slopes instead of painting a repeated tile pattern.
+    for(let i=0;i<4;i++){
+      const j=(i+1)%4;
+      const a=[rim[i][0]-center[0],(rim[i][1]-center[1])*2,joined.heights[i]-height];
+      const b=[rim[j][0]-center[0],(rim[j][1]-center[1])*2,joined.heights[j]-height];
+      let normal=[a[1]*b[2]-a[2]*b[1],a[2]*b[0]-a[0]*b[2],a[0]*b[1]-a[1]*b[0]];
+      if(normal[2]<0)normal=normal.map(n=>-n);
+      const light=Math.max(0,(-.55*normal[0]-.65*normal[1]+normal[2])/(Math.hypot(...normal)*1.313));
+      const shade=[106,114,105].map((dark,k)=>Math.round(dark+([214,206,185][k]-dark)*light));
+      polygon([top[i],top[j],peak],`rgb(${shade.join(',')})`);
     }
     return;
   }
-  if(detailed){
-    ctx.fillStyle='#223b2940';ctx.beginPath();ctx.ellipse(2,15,26,6,0,0,Math.PI*2);ctx.fill();
-  }
-  for(const [baseX,baseY,baseW,baseH] of formation){
-    const w=baseW*(.75+random()*.32),h=baseH*(.8+random()*.4);
+  const stones=formation.map(([baseX,baseY,baseW,baseH])=>{
+    const w=baseW*(.75+random()*.32),h=Math.min(baseH*(.7+random()*.3),w*1.65);
     const x=Math.max(-29+w,Math.min(29-w,baseX+(random()-.5)*7));
     const y=Math.min(19,baseY+(random()-.5)*4);
+    return {x,y,w,h};
+  });
+  if(detailed){
+    ctx.fillStyle='#223b2940';
+    for(const {x,y,w} of stones){
+      ctx.beginPath();ctx.ellipse(x+w*.12,y+3,w*.85,Math.max(1,w*.2),0,0,Math.PI*2);ctx.fill();
+    }
+  }
+  for(const {x,y,w,h} of stones){
     // Wide shoulders and a short, flat crown replace the pointed outcrops.
     const left=[x-w,y-h*(.22+random()*.2)],shoulder=[x-w*(.45+random()*.3),y-h*(.72+random()*.2)];
     const crown=[x+w*(random()*.45-.15),y-h],right=[x+w*(.6+random()*.25),y-h*(.55+random()*.25)];
@@ -1586,7 +1611,7 @@ function drawResource(r,joined=null){
   const detailed=tileW>=32;
   const willow=r.kind==='tree'&&(world.shared_map || world.towns[viewed])?.terrain?.[r.y]?.[r.x]==='b';
   const resolution=2**Math.ceil(Math.log2(Math.max(.5,s*(window.devicePixelRatio || 1))));
-  const variant=r.kind==='tree'?`${r.species==='ancient'}/${willow}/${(r.x+r.y)%2}`:r.kind==='rock'?`${rockVariant(r)%48}/${joined?`${joined.mask}/${joined.heights.join(',')}`:''}`:r.kind;
+  const variant=r.kind==='tree'?`${r.species==='ancient'}/${willow}/${(r.x+r.y)%2}`:r.kind==='rock'?`${rockVariant(r)%48}/${joined?JSON.stringify(joined):''}`:r.kind;
   const key=`${r.kind}/${variant}/${resolution}/${detailed}`;
   let sprite=resourceSprites.get(key);
   if(!sprite){
@@ -1595,7 +1620,7 @@ function drawResource(r,joined=null){
       ctx.save();ctx.translate(x,y);ctx.scale(s,s);paintResource(ctx,r,willow,detailed,joined);ctx.restore();return;
     }
     // Include ancient canopies, willow branches, and the ground shadow.
-    surface.width=60*resolution;surface.height=104*resolution;
+    surface.width=60*resolution;surface.height=112*resolution;
     target.setTransform(resolution,0,0,resolution,30*resolution,80*resolution);
     paintResource(target,r,willow,detailed,joined);
     sprite=surface;resourceSprites.set(key,sprite);
@@ -1603,7 +1628,7 @@ function drawResource(r,joined=null){
   }else{
     resourceSprites.delete(key);resourceSprites.set(key,sprite);
   }
-  ctx.drawImage(sprite,x-30*s,y-80*s,60*s,104*s);
+  ctx.drawImage(sprite,x-30*s,y-80*s,60*s,112*s);
 }
 function paintResource(ctx,r,willow,detailed=true,joined=null){
   const polygon=(points,fill,stroke)=>{
@@ -1946,13 +1971,24 @@ function renderResources(resources){
       const mask=[[0,-1],[1,0],[0,1],[-1,0]].reduce((mask,[dx,dy],i)=>
         mask|(rocks.has(`${r.x+dx},${r.y+dy}`)?1<<i:0),0);
       if(!mask)continue;
+      const inset=[];
       const heights=[[0,0],[1,0],[1,1],[0,1]].map(([dx,dy])=>{
         const x=r.x+dx,y=r.y+dy;
-        const count=[[0,0],[-1,0],[-1,-1],[0,-1]].filter(([ox,oy])=>rocks.has(`${x+ox},${y+oy}`)).length;
-        const hash=(Math.imul(x,73856093)^Math.imul(y,19349663))>>>0;
-        return 8+count*7+((hash^(hash>>>16))>>>0)%8;
+        const neighbors=[[0,0],[-1,0],[-1,-1],[0,-1]].filter(([ox,oy])=>rocks.has(`${x+ox},${y+oy}`));
+        const ox=neighbors.reduce((sum,[ox])=>sum+ox+.5,0)/neighbors.length;
+        const oy=neighbors.reduce((sum,[,oy])=>sum+oy+.5,0)/neighbors.length;
+        inset.push([23*(ox-oy)*.35,11.5*(ox+oy)*.35]);
+        // A smooth density field creates one broad mound across the patch.
+        let density=0;
+        for(let tx=x-2;tx<=x+1;tx++)for(let ty=y-2;ty<=y+1;ty++){
+          if(!rocks.has(`${tx},${ty}`))continue;
+          const distance=(tx+.5-x)**2+(ty+.5-y)**2;
+          density+=Math.max(0,1-distance/4);
+        }
+        const taper=neighbors.length===4?1:.2+neighbors.length*.1375;
+        return Math.min(58,(12+density*5)*taper);
       });
-      rockJoins.set(r,{mask,heights});
+      rockJoins.set(r,{mask,heights,inset});
     }
     resourceCache={resources,count:resources.length,water,objects,indexes,buckets,rockJoins,
       layout:JSON.stringify(resources.map(({kind,x,y,farm_index,construction})=>[kind,x,y,farm_index,!!construction]))};

@@ -18,16 +18,18 @@ new Function('assert',`
   for(const r of patch.slice(0,9)){
     const join=data.rockJoins.get(r);
     assert.equal(data.indexes.get(r),patch.indexOf(r),'Joined tiles retain individual selection indexes');
-    for(const height of join.heights)assert(height>=15&&height<=43,'Outcrops fit inside the resource texture');
+    for(const height of join.heights)assert(height>=5&&height<=58,'Outcrops fit inside the resource texture');
     const right=at(r.x+1,r.y),front=at(r.x,r.y+1);
     if(right){
       const next=data.rockJoins.get(right);
       assert.deepEqual([join.heights[1],join.heights[2]],[next.heights[0],next.heights[3]],'Horizontal neighbors have gap-free shared edges');
+      assert.deepEqual([join.inset[1],join.inset[2]],[next.inset[0],next.inset[3]],'Beveled horizontal rims remain connected');
       assert(join.mask&2,'Internal horizontal walls are hidden');
     }
     if(front){
       const next=data.rockJoins.get(front);
       assert.deepEqual([join.heights[3],join.heights[2]],[next.heights[0],next.heights[1]],'Vertical neighbors have gap-free shared edges');
+      assert.deepEqual([join.inset[3],join.inset[2]],[next.inset[0],next.inset[1]],'Beveled vertical rims remain connected');
       assert(join.mask&4,'Internal vertical walls are hidden');
     }
   }
@@ -46,9 +48,14 @@ new Function('assert',`
   const faces=[];
   const ctx={save(){},restore(){},beginPath(){},moveTo(){},lineTo(){},closePath(){},fill(){faces.push(this.fillStyle);}};
   paintResource(ctx,at(21,21),false,false,center);
-  assert.equal(faces.length,3,'Interior rocks draw only continuous top facets');
+  assert.equal(faces.length,5,'Interior rocks draw a solid top beneath slope-lit facets');
   faces.length=0;
   paintResource(ctx,at(22,22),false,false,data.rockJoins.get(at(22,22)));
-  assert.equal(faces.length,5,'Exposed front edges draw both cliff faces');
+  assert.equal(faces.length,7,'Exposed front edges draw both cliff faces');
+  faces.length=0;paintResource(ctx,at(22,22),false,true,data.rockJoins.get(at(22,22)));
+  assert.equal(faces.filter(color=>color==='#223b2940').length,1,'Exposed corners cast one shadow without double-dark overlaps');
+  faces.length=0;paintResource(ctx,at(21,21),false,true,center);
+  assert(!faces.includes('#223b2940'),'Interior tiles do not cast shadows onto the outcrop');
+  assert(faces.slice(1).every(color=>color.startsWith('rgb(')),'Surface shading follows face slopes rather than alternating fixed tile colors');
 `)(assert);
 console.log('Connected rock outcrop checks passed');

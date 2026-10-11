@@ -5,9 +5,10 @@ const helpers=source.slice(source.indexOf('const resourceSprites='),source.index
 const surfaces=[],images=[];
 const main={drawImage(...args){images.push(args);}};
 const documentMock={createElement(){
-  const surface={paints:0,colors:[],points:[],paths:[]};
+  const surface={paints:0,colors:[],points:[],paths:[],ellipses:[]};
   surface.getContext=()=>new Proxy({fill(){surface.paints++;surface.colors.push(this.fillStyle);surface.paths.push(surface.path || []);},
     beginPath(){surface.path=[];},
+    ellipse(...args){surface.ellipses.push(args);},
     moveTo(x,y){surface.points.push([x,y]);surface.path.push([x,y]);},lineTo(x,y){surface.points.push([x,y]);surface.path.push([x,y]);},
     setTransform(...args){surface.transform=args;}},{get:(target,key)=>key in target?target[key]:()=>{}});
   surfaces.push(surface);return surface;
@@ -56,6 +57,17 @@ new Function('document','ctx','window','assert','surfaces','images',`
   for(const sprite of formations.values()){
     assert(sprite.colors.includes('#d4cbb2')||sprite.colors.includes('#d6ceb9'),'Low-poly rocks have a bright upper-left face');
     assert(sprite.colors.includes('#686f69')||sprite.colors.includes('#626c69'),'Low-poly rocks have a contrasting shadow face');
+  }
+  for(const sprite of formations.values()){
+    const silhouettes=sprite.paths.filter(path=>path.length===7);
+    assert.equal(sprite.ellipses.length,silhouettes.length,'Every stone casts a shadow matching its own footprint');
+    sprite.ellipses.forEach(([x,y,w,h],i)=>{
+      const stone=silhouettes[i],left=Math.min(...stone.map(p=>p[0])),right=Math.max(...stone.map(p=>p[0]));
+      assert(Math.abs(w-(right-left)*.425)<1e-8,'Shadow width scales with the actual stone width');
+      assert(x-w>=left&&x+w<=right,'Contact shadows stay beneath their stone');
+      assert(Math.abs(y-(Math.max(...stone.map(p=>p[1]))-1))<1e-8,'Contact shadows stay anchored at the stone base');
+      assert(h<=Math.max(1,w*.3),'Contact shadows follow the ground perspective');
+    });
   }
   for(const sprite of formations.values())
     assert(sprite.points.every(([x,y])=>x>=-30&&x<=30&&y>=-80&&y<=24),'Rock formations fit inside their cached texture');
