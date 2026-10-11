@@ -56,7 +56,7 @@ class ExplorableMap(unittest.TestCase):
         self.assertLessEqual(len(self.manager.records), 9)
         self.assertEqual(len(self.town['terrain']), WORLD_SIZE)
         self.assertEqual(self.town['terrain'][0][0], 'v')
-        self.assertLess(len(json.dumps(export_world(self.world))), 5000)
+        self.assertLess(len(json.dumps(export_world(self.world))), 8000)
         for x in (40, 120, 280, 360, 440):
             self.visit(x, 200)
             self.assertLessEqual(len(self.manager.records), 18)

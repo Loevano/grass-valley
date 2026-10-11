@@ -9,6 +9,7 @@ from functools import lru_cache
 from pathlib import Path
 
 from terrain import remove_invalid_trees
+from villages import apply_villages, ensure_villages
 
 CHUNK_SIZE = 40
 WORLD_SIZE = 480
@@ -116,9 +117,10 @@ def generate_chunk(seed, key):
             wet = _field(seed, 'moisture', x, y, 18)
             ground = _field(seed, 'ground', x, y, 25)
             lake = _field(seed, 'lake', x, y, 45)
-            biome = 'b' if wet > .78 else 'f' if wet > .58 else 's' if ground < .3 else 'r' if ground > .75 else 'm' if wet > .4 else 'g'
+            temperature = _field(seed, 'temperature', x, y, 90)
+            biome = 'i' if temperature < .24 else 'd' if temperature > .65 and wet < .45 else 'b' if wet > .78 else 'f' if wet > .58 else 's' if ground < .3 else 'r' if ground > .75 else 'm' if wet > .4 else 'g'
             kind = 'water' if lake < .25 else 'tree' if biome in ('f', 'b') and rng.random() < .45 else 'rock' if biome == 'r' and rng.random() < .15 else None
-            if kind == 'water' and biome != 'b':
+            if kind == 'water' and biome not in ('b', 'd', 'i'):
                 biome = 's'
             row.append(biome)
             if kind:
@@ -158,7 +160,7 @@ class ChunkMap:
             if self.views[key].get('clock') != self.landscape.get('chunk_clock', 0):
                 self.catch_up(key, self.views[key])
             return self.views[key]
-        record = self._read(key)
+        record = apply_villages(self._read(key), key, self.landscape.get('villages', []), CHUNK_SIZE)
         self.catch_up(key, record)
         self.views[key] = record
         while len(self.views) > MAX_VIEW_CHUNKS:
@@ -315,6 +317,7 @@ class ChunkMap:
 def attach(world, directory=None):
     if not world.get('shared_map', {}).get('chunked'):
         return None
+    ensure_villages(world)
     manager = world.get('_chunks')
     if manager is None:
         manager = world['_chunks'] = ChunkMap(world, directory)
@@ -332,6 +335,7 @@ def expand_new_world(world, directory=None):
     world['shared_map'] = {'map_size': WORLD_SIZE, 'terrain_seed': base['terrain_seed'],
                            'chunked': 1, 'chunk_size': CHUNK_SIZE, 'chunk_clock': 0, 'starter_offset': START_OFFSET,
                            'npcs': [dict(n, x=n['x'] + START_OFFSET, y=n['y'] + START_OFFSET) for n in base['npcs']]}
+    ensure_villages(world)
     world['_chunks'] = ChunkMap(world, directory, base)
     world['_chunks'].activate()
     return world

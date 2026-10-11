@@ -1317,6 +1317,11 @@ function renderSelection(town){
   const p=document.createElement('p');p.className='info-copy';
   if(selection.type==='resource'){
     const swamp=town.terrain?.[item.y]?.[item.x]==='b';
+    if(item.kind==='village_hut'||item.kind==='village_market'){
+      $('selection-title').textContent=`${item.village} · ${item.kind==='village_market'?'Market':'Cottage'}`;
+      p.textContent=`A ${item.biome==='b'?'swamp':item.biome==='d'?'desert':'ice'} village. Walk beside a resident and click them or press ${keybindings.interact.toUpperCase()} to talk and trade travel equipment.`;
+      $('selection-details').append(p);return;
+    }
     if(item.kind==='chest'){
       $('selection-title').textContent='Island treasure';p.textContent=`Loot: 25 coins + equipment\nCollect: stand nearby · ${keybindings.gather.toUpperCase()}\nOne claim / world`;$('selection-details').append(p);
       if(viewed===identity?.town_id){const button=document.createElement('button');button.textContent='Collect loot';button.onclick=()=>playerAction('gather');$('selection-details').append(button);}return;
@@ -1620,6 +1625,12 @@ function render(){
   }
   if(own){$('town-name').textContent=own.name;$('hint').textContent=tool==='move'?(moveIndex===null?'Click a building to move it.':'Click open grass.'):tool?(building?'Building…':own.wood<costs[tool]?'Not enough wood.':`Hover over open grass, then left-click to build a ${labels[tool].toLowerCase()}.`):'Choose a building, then hover over an open tile.';}
   $('towns').replaceChildren();
+  for(const village of world.shared_map?.villages || []){
+    const button=document.createElement('button');
+    button.textContent=`${village.name} · ${village.biome==='b'?'Swamp':village.biome==='d'?'Desert':'Ice'} village`;
+    button.onclick=()=>{setCameraLock(false);camera.x=village.x;camera.y=village.y;tool=null;selection=null;panel=null;keyboardTile=null;render();};
+    $('towns').append(button);
+  }
   for(const [id,t] of Object.entries(world.towns)){const b=document.createElement('button');b.textContent=t.name+(id===identity?.town_id?' · Yours':'');b.classList.toggle('selected',id===viewed);b.onclick=()=>{viewed=id;if(world.shared_map){const hall=t.buildings.find(b=>b.kind==='hall');camera.x=hall.x;camera.y=hall.y;}tool=null;moveIndex=null;buildTile=null;hoverTile=null;selection=null;panel=null;keyboardTile=null;render();};$('towns').append(b);}
   $('villagers').replaceChildren();
   if(town&&!town.villagers.length){const empty=document.createElement('p');empty.textContent='No villagers yet. Build housing and keep food available to welcome new residents.';$('villagers').append(empty);}
@@ -1734,7 +1745,7 @@ function drawResource(r,joined=null){
   const detailed=tileW>=32;
   const willow=r.kind==='tree'&&(world.shared_map || world.towns[viewed])?.terrain?.[r.y]?.[r.x]==='b';
   const resolution=2**Math.ceil(Math.log2(Math.max(.5,s*renderPixelRatio())));
-  const variant=r.kind==='tree'?`${r.species==='ancient'}/${willow}/${(r.x+r.y)%2}`:r.kind==='rock'?(joined?`joined/${JSON.stringify([joined.mask,joined.heights,joined.inset || null])}`:`single/${rockVariant(r)%48}`):r.kind;
+  const variant=r.kind==='tree'?`${r.species==='ancient'}/${willow}/${(r.x+r.y)%2}`:r.kind==='rock'?(joined?`joined/${JSON.stringify([joined.mask,joined.heights,joined.inset || null])}`:`single/${rockVariant(r)%48}`):`${r.kind}/${r.biome || ''}`;
   const key=`${r.kind}/${variant}/${resolution}/${detailed}`;
   let sprite=resourceSprites.get(key);
   if(!sprite){
@@ -1770,6 +1781,25 @@ function paintResource(ctx,r,willow,detailed=true,joined=null){
     if(stroke){ctx.strokeStyle=stroke;ctx.stroke();}
   };
   ctx.save();
+  if(r.kind==='village_hut'||r.kind==='village_market'){
+    const ice=r.biome==='i',desert=r.biome==='d',market=r.kind==='village_market';
+    const wall=ice?'#b8d0d6':desert?'#e0bd80':'#9c8159',roof=ice?'#edf6f8':desert?'#c29157':'#647951';
+    if(!ice&&!desert){
+      ctx.fillStyle='#5e513c';ctx.fillRect(-15,1,4,13);ctx.fillRect(11,1,4,13);
+      polygon([[-21,7],[0,-3],[21,7],[0,18]],'#a78e67');
+    }
+    polygon([[-18,4],[0,14],[0,-20],[-18,-30]],wall);
+    polygon([[0,14],[18,4],[18,-30],[0,-20]],ice?'#87aab7':desert?'#b68d59':'#746044');
+    polygon([[-22,-30],[0,-47],[22,-30],[0,-17]],roof,'#56625e');
+    ctx.fillStyle='#4b514a';ctx.fillRect(-10,-16,6,18);
+    ctx.fillStyle='#f4d58c';ctx.fillRect(5,-13,6,7);
+    if(market){
+      polygon([[-23,-10],[0,-1],[23,-10],[0,-20]],desert?'#c47853':ice?'#6595ac':'#a4b572');
+      ctx.fillStyle='#654e37';ctx.fillRect(-17,3,34,5);
+      ctx.fillStyle='#e2bd77';ctx.fillRect(-12,-1,7,4);ctx.fillStyle='#7d985e';ctx.fillRect(3,-1,7,4);
+    }
+    ctx.restore();return;
+  }
   if(r.kind==='rock'){paintRock(ctx,r,detailed,polygon,joined);ctx.restore();return;}
   if(!detailed&&r.kind!=='chest'){
     if(r.kind==='tree'){
@@ -1879,7 +1909,7 @@ function townWorkerLayout(town,buildings,resources){
 }
 let npcClock=0;
 const npcColors={g:['#a97b58','#c7a06d'],f:['#416951','#70906a'],m:['#b29b4a','#e2cc80'],
-  s:['#be986a','#e6c79a'],r:['#717b88','#acb4bd'],b:['#586b4b','#a1a474']};
+  s:['#be986a','#e6c79a'],r:['#717b88','#acb4bd'],b:['#586b4b','#a1a474'],d:['#c18d58','#f0dab0'],i:['#658da2','#e0edf0']};
 function npcSprites(town,seconds){
   npcClock+=seconds;
   return (town?.npcs || []).map((npc,index)=>({...npc,kind:'npc',index,villager:{job:'idle'},active:false,
@@ -2231,7 +2261,7 @@ function paintGround(target,landscape,water,bounds,offsetX=0,offsetY=0,region=nu
   const ctx=target,terrainSize=landscape?.map_size || 12;
   const detailed=tileW>=32;
   const palette={g:['#68865a','#69875b','#668358'],f:['#506f4a','#55764c','#5a7b50'],
-    m:['#83945e','#899b65','#80915b'],s:['#b4a575','#bdad7d','#b8a878'],r:['#8b8d7c','#969785','#858978'],b:['#59674b','#626f50','#536247']};
+    m:['#83945e','#899b65','#80915b'],s:['#b4a575','#bdad7d','#b8a878'],r:['#8b8d7c','#969785','#858978'],b:['#59674b','#626f50','#536247'],d:['#d6b575','#dfbf80','#cfac6b'],i:['#c7e0e8','#d8eaf0','#b9d5e1']};
   const land=(tx,ty)=>tx>=0&&ty>=0&&tx<terrainSize&&ty<terrainSize&&landscape?.terrain?.[ty]?.[tx]!=='v'
     &&(!landscape?.chunked||!!landscape.terrain?.[ty]?.[tx]);
   const {minX,maxX,minY,maxY}=bounds;
@@ -2269,12 +2299,19 @@ function paintGround(target,landscape,water,bounds,offsetX=0,offsetY=0,region=nu
       const waterColor=biome==='b'?(shallow?'#718565':'#4e6857'):(shallow?'#6299a1':'#447d91');
       const canopy=!detailed&&forest?.has(`${x},${y}`);
       polygon(diamond,wet?waterColor:canopy?(biome==='b'?'#4b6549':'#3f6045'):palette[biome][groundVariant(x,y)],null);
+      if(detailed&&!wet&&(biome==='d'||biome==='i')&&variation%3===0){
+        ctx.strokeStyle=biome==='d'?'#b9965d':'#94bdce';ctx.lineWidth=tileW/46;
+        ctx.beginPath();ctx.moveTo(px-tileW*.18,py+tileH*.55);
+        if(biome==='d')ctx.quadraticCurveTo(px,py+tileH*.35,px+tileW*.18,py+tileH*.55);
+        else{ctx.lineTo(px,py+tileH*.7);ctx.lineTo(px+tileW*.1,py+tileH*.48);}
+        ctx.stroke();
+      }
       if(detailed&&biome==='b'&&variation%3===0){
         ctx.strokeStyle='#9b9f69';ctx.lineWidth=tileW/46;
         for(let reed=0;reed<3;reed++){const rx=px+(reed-1)*tileW*.07,ry=py+tileH*.7;ctx.beginPath();ctx.moveTo(rx,ry);ctx.lineTo(rx+(reed-1)*tileW*.025,ry-tileH*.4);ctx.stroke();}
         if(wet){ctx.fillStyle='#a3ad74';ctx.beginPath();ctx.ellipse(px+tileW*.17,py+tileH*.55,tileW*.065,tileH*.075,0,0,Math.PI*2);ctx.fill();}
       }
-      if(detailed&&!wet&&variation===0){ctx.fillStyle='#8fa574';ctx.fillRect(px-5*tileW/46,py+tileH*.5,2*tileW/46,2*tileW/46);ctx.fillStyle='#d7c78a';ctx.fillRect(px+4*tileW/46,py+tileH*.65,2*tileW/46,2*tileW/46);}
+      if(detailed&&!wet&&!['d','i'].includes(biome)&&variation===0){ctx.fillStyle='#8fa574';ctx.fillRect(px-5*tileW/46,py+tileH*.5,2*tileW/46,2*tileW/46);ctx.fillStyle='#d7c78a';ctx.fillRect(px+4*tileW/46,py+tileH*.65,2*tileW/46,2*tileW/46);}
       if(detailed&&!wet&&(x===0||y===0||x===terrainSize-1||y===terrainSize-1)&&variation%2===0){ctx.strokeStyle='#9caf77';ctx.lineWidth=tileW/46;ctx.beginPath();ctx.moveTo(px-6*tileW/46,py+tileH*.65);ctx.lineTo(px-9*tileW/46,py+tileH*.4);ctx.moveTo(px-6*tileW/46,py+tileH*.65);ctx.lineTo(px-4*tileW/46,py+tileH*.35);ctx.stroke();}
       if(detailed&&wet){
         ctx.strokeStyle='#b4d7ce99';ctx.lineWidth=tileW/46;
@@ -2603,7 +2640,7 @@ function draw(seconds=0){
       ctx.fillStyle='#fff0b144';ctx.strokeStyle='#fff0b1';ctx.lineWidth=2;ctx.beginPath();ctx.ellipse(centerX,baseY,12*scale,6*scale,0,0,Math.PI*2);ctx.fill();ctx.stroke();
     }
     if(simplifiedResource)continue;
-    if(['tree','rock','berry_bush','herb_patch','chest'].includes(b.kind)){drawResource(b,resourceData.rockJoins.get(b));continue;}
+    if(['tree','rock','berry_bush','herb_patch','chest','village_hut','village_market'].includes(b.kind)){drawResource(b,resourceData.rockJoins.get(b));continue;}
     if(character){
       drawVillager(b);
       continue;

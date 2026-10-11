@@ -1,0 +1,98 @@
+import copy
+import json
+from pathlib import Path
+import tempfile
+import unittest
+
+import server
+from chunk_world import CHUNK_SIZE, attach, chunk_key, generate_chunk
+from equipment import change, protected
+from shared_world import bind_map, export_world, new_world
+from villages import apply_villages, ensure_villages
+
+
+class WildernessVillages(unittest.TestCase):
+    def test_all_villages_have_clear_access_residents_and_structures(self):
+        for seed in (0, 42, 99):
+            world = new_world(seed, explorable=True)
+            manager = world['_chunks']
+            landscape = world['shared_map']
+            self.assertEqual({v['biome'] for v in landscape['villages']}, {'b', 'd', 'i'})
+            for village in landscape['villages']:
+                x, y = village['x'], village['y']
+                residents = [n for n in landscape['npcs'] if n.get('village') == village['name']]
+                self.assertEqual(len(residents), 2)
+                records = [manager.read(f'{cx},{cy}')
+                           for cy in range((y-24)//CHUNK_SIZE, (y+24)//CHUNK_SIZE+1)
+                           for cx in range((x-24)//CHUNK_SIZE, (x+24)//CHUNK_SIZE+1)]
+                resources = [r for record in records for r in record['map_resources']]
+                structures = [r for r in resources if r.get('village') == village['name']]
+                self.assertEqual(len(structures), 4)
+                blocked = {(r['x'], r['y']) for r in resources}
+                for npc in residents:
+                    self.assertNotIn((npc['x'], npc['y']), blocked)
+                    self.assertTrue(npc['dialogue'])
+                for dx in range(-24, 25):
+                    for tx, ty in ((x+dx, y), (x, y+dx)):
+                        record = manager.read(chunk_key(tx, ty))
+                        biome = record['terrain'][ty % CHUNK_SIZE][tx % CHUNK_SIZE]
+                        self.assertNotIn((tx, ty), blocked)
+                        self.assertTrue(protected({}, biome, tx, ty))
+
+    def test_residents_trade_with_proximity_and_structures_block_building(self):
+        world = new_world(42, explorable=True)
+        town = server.new_town('Visitor', world)
+        world['towns']['own'] = town
+        for village in world['shared_map']['villages']:
+            npc = next(n for n in town['npcs'] if n.get('village') == village['name'])
+            index = town['npcs'].index(npc)
+            with self.assertRaisesRegex(ValueError, 'beside'):
+                change(town, {'action': 'buy_equipment', 'item': 'swamp_boots', 'npc_index': index})
+            town['player'].update(x=npc['x'], y=npc['y']+1)
+            town['coins'] = 100
+            change(town, {'action': 'buy_equipment', 'item': 'swamp_boots', 'npc_index': index})
+            world['_chunks'].activate()
+            bind_map(world)
+            hut = next(r for r in town['map_resources'] if r.get('village') == village['name'])
+            self.assertFalse(server.walkable(town, hut['x'], hut['y']))
+
+    def test_overlay_is_idempotent_and_survives_eviction_and_save(self):
+        with tempfile.TemporaryDirectory() as directory:
+            world = new_world(42, explorable=True, chunk_directory=Path(directory))
+            manager = world['_chunks']
+            village = world['shared_map']['villages'][0]
+            key = chunk_key(village['x'], village['y'])
+            record = manager.read(key)
+            before = copy.deepcopy(record)
+            apply_villages(record, key, world['shared_map']['villages'], CHUNK_SIZE)
+            self.assertEqual(record, before)
+            manager.records[key] = record
+            world['shared_map']['map_resources'] += record['map_resources']
+            manager.flush()
+            saved = json.loads(json.dumps(export_world(world)))
+            restored = attach(saved, Path(directory))
+            self.assertEqual(restored.read(key), before)
+            self.assertEqual(saved['shared_map']['villages'], world['shared_map']['villages'])
+            self.assertEqual(saved['shared_map']['npcs'], world['shared_map']['npcs'])
+
+    def test_migration_avoids_player_buildings_roads_and_existing_locals(self):
+        world = new_world(42, explorable=True)
+        del world['shared_map']['villages']
+        world['shared_map']['npcs'] = [n for n in world['shared_map']['npcs'] if 'village' not in n]
+        world['towns']['own'] = {'buildings': [{'x': 80, 'y': 200}], 'roads': [{'x': 360, 'y': 200}]}
+        original = copy.deepcopy(world['shared_map']['npcs'])
+        ensure_villages(world)
+        self.assertEqual(world['shared_map']['npcs'][:len(original)], original)
+        for village in world['shared_map']['villages']:
+            for obstacle in world['towns']['own']['buildings'] + world['towns']['own']['roads']:
+                self.assertTrue(abs(village['x']-obstacle['x']) > 26 or abs(village['y']-obstacle['y']) > 26)
+        before = copy.deepcopy(world['shared_map']['villages'])
+        ensure_villages(world)
+        self.assertEqual(world['shared_map']['villages'], before)
+
+    def test_coordinate_noise_produces_desert_and_ice(self):
+        biomes = set()
+        for key in ('0,0', '2,2', '8,8', '11,0', '11,11', '5,0'):
+            biomes.update(''.join(generate_chunk(42, key)['terrain']))
+        self.assertIn('d', biomes)
+        self.assertIn('i', biomes)

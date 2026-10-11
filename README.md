@@ -43,7 +43,7 @@ encrypted transport; do not expose it through router port forwarding.
 ## Shared map in new worlds
 
 New worlds use one shared 480×480 map, 16 times the area of the original
-120×120 valley. Existing saves keep their map size and layout. Terrain loads as
+120×120 valley. Existing saves keep their map size and player towns. Terrain loads as
 you explore. Everyone sees the same terrain, buildings, workers, and player
 characters, and can walk between towns. Town halls start at randomized locations
 at least 40 tiles apart, with nearby wood, water, and clear paths connecting the towns.
@@ -61,6 +61,15 @@ the browser retains at most 128 terrain chunks. Resource regeneration catches
 up when a sleeping area becomes active again. Changed chunks save separately.
 Map refreshes send only terrain and resource chunks the browser needs, and walking
 saves with the regular three-second simulation update.
+
+Explorable worlds also have three small wilderness villages: Reedhaven in the
+swamp, Sunwell in the desert, and Frostbrook on the snowy ice fields. Each has
+three themed cottages, a market, and two residents. Open **Valley** and click a
+village to find it, then walk there; click a resident or press **I** nearby to
+talk and buy or sell travel equipment. The swamp village has safe clear paths;
+dark marsh ground outside them still requires swamp boots. Desert and ice ground
+are walkable without special gear. Existing explorable saves gain these villages
+away from player buildings and roads; older 120×120 maps keep their layout.
 
 **Valley** centers the camera on a town without changing maps. Existing saved
 worlds keep their current maps and dimensions. Restart
@@ -134,8 +143,8 @@ the Python host, refresh both browsers, and create a new world to use the shared
   world. Movement pauses while typing, placing buildings, or using world menus.
 - Select **You** to inspect your equipment and equip or remove items. Swamp boots
   (15 coins) unlock the darkest swamp tiles. Sand is walkable without equipment;
-  desert clothing (20 coins) can still be worn. The planned desert biome will have
-  windy patches deeper inside it that require goggles. Boats allow sailing on water.
+  desert clothing (20 coins) can still be worn. Desert dunes and ice fields are
+  walkable without protective clothing. Boats allow sailing on water.
   Walk beside any local and press **I** (or click them) to read dialogue and buy or sell gear.
   **I** selects the nearest local within trading distance; change it in Settings. Sale prices are half
   the purchase price, rounded down. Remove worn gear before selling your last copy,
