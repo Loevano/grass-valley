@@ -58,3 +58,21 @@ canvas{cursor:pointer}button:focus-visible,canvas:focus-visible,select:focus-vis
 .selection-fact strong,.upgrade-card-benefit,#upgrade-benefits li,.info-copy{white-space:pre-line;line-height:1.5}
 .selection-fact .fact-lines{font-size:16px;text-align:left}
 .info-copy{font-variant-numeric:tabular-nums}
+
+/* Upgrade decisions share a compact layout across buildings and equipment. */
+#upgrade-dialog{padding:24px;width:min(480px,calc(100vw - 32px))}
+#upgrade-dialog h2{font-size:25px;line-height:1.2;margin:0 0 10px;overflow-wrap:anywhere}
+.upgrade-context{display:flex;justify-content:space-between;flex-wrap:wrap;gap:6px 16px;color:#bdcdb5;font-size:13px}
+.upgrade-context p{margin:0;line-height:1.5}.upgrade-context span{line-height:1.5;font-variant-numeric:tabular-nums}
+#upgrade-benefits{list-style:none;padding:0;margin:20px 0;display:grid;gap:12px}
+#upgrade-benefits li{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:4px 12px;padding:12px 14px;border:1px solid #b8c99933;border-radius:8px;background:#b8c9990a;overflow-wrap:anywhere}
+.upgrade-benefit-label{grid-column:1 / -1;color:#ccd5c3;font-size:12px}
+#upgrade-benefits strong{font-size:18px;color:#f0e5bc;font-weight:600;font-variant-numeric:tabular-nums;white-space:pre-line}
+.upgrade-benefit-gain{align-self:center;color:#b8c999;font-size:13px;font-variant-numeric:tabular-nums}
+.upgrade-dialog-facts{display:grid;grid-template-columns:auto minmax(0,1fr);gap:10px 20px;margin:0;font-size:14px;line-height:1.5}
+.upgrade-dialog-facts dt{color:#ccd5c3}.upgrade-dialog-facts dd{margin:0;text-align:right;color:#e8eadb;font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
+#upgrade-dialog .upgrade-completion{font-size:12px;line-height:1.5;margin:14px 0 20px;color:#bdcdb5}
+#upgrade-error{color:#f1b9a3;font-size:13px;line-height:1.5;margin:0 0 14px}
+.upgrade-dialog-actions{display:flex;align-items:stretch;gap:10px}.upgrade-dialog-actions button{width:auto;margin:0;text-align:center}
+.upgrade-dialog-actions .upgrade-button{flex:1}.upgrade-dialog-actions .quiet{flex:none;border-color:transparent;font-size:14px}
+@media(max-width:380px){#upgrade-dialog{padding:18px}.upgrade-dialog-actions{flex-direction:column}}

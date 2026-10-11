@@ -393,16 +393,37 @@ function renderUpgradeDialog(){
   const current=item&&JSON.stringify([item.kind,item.x,item.y,buildingLevel(item),item.settler_level || 1,town.level,item.profession_upgrades || []]);
   const valid=world.world_id===worldId&&viewed===townId&&identity?.town_id===townId&&current===signature;
   const preview=valid?upgradePreview(command,town,item):null;
-  if(!preview){$('confirm-upgrade').disabled=true;$('upgrade-error').textContent='This upgrade has changed. Close this popup and select it again.';return;}
-  $('upgrade-title').textContent=preview.title;
-  $('upgrade-description').textContent=`${buildingName(item)} · (${item.x}, ${item.y})`;
+  if(!preview){$('confirm-upgrade').disabled=true;$('upgrade-error').hidden=false;$('upgrade-error').textContent='This upgrade has changed. Close this popup and select it again.';return;}
+  const capacity=command.action==='upgrade_capacity',equipment=command.action==='profession_upgrade';
+  const level=command.action==='upgrade'?town.level:capacity?item.settler_level || 1:buildingLevel(item);
+  $('upgrade-title').textContent=equipment?preview.title:`Upgrade ${buildingName(item)}`;
+  $('upgrade-description').textContent=equipment?buildingName(item):`${capacity?'Capacity tier':'Level'} ${level} → ${level+1}`;
+  $('upgrade-location').textContent=`(${item.x}, ${item.y})`;
   $('upgrade-benefits').replaceChildren();
-  for(const benefit of preview.benefits){const row=document.createElement('li');row.textContent=benefit;$('upgrade-benefits').append(row);}
-  $('upgrade-cost').textContent=`Cost: ${costText(preview.cost)}`;
-  $('upgrade-time').textContent=`Build time: ${preview.seconds} seconds · Benefits on completion`;
-  $('upgrade-requirements').textContent=preview.requirements?`Requirements: ${preview.requirements}`:'';
+  for(const benefit of preview.benefits){
+    const row=document.createElement('li');
+    const metric=benefit.match(/^([+-]?\d+%?) (.+) → ([+-]?\d+%?) \2$/);
+    const spaces=benefit.match(/^(\d+) → (\d+) spaces$/);
+    const colon=benefit.indexOf(': ');
+    let label='',value=benefit,gain='';
+    if(metric||spaces){
+      const before=(metric||spaces)[1],after=metric?metric[3]:spaces[2],unit=metric?metric[2]:'spaces';
+      label=({'storage spaces':'Storage capacity',spaces:'Housing capacity','animal spaces':'Animal capacity','departure':'Departure chance'})[unit] || unit;
+      value=`${before} → ${after}${unit.includes('spaces')?' spaces':''}`;
+      if(unit.includes('spaces'))gain=`+${Number(after)-Number(before)}`;
+    }else if(colon>=0){label=benefit.slice(0,colon);value=benefit.slice(colon+2);}
+    if(label){const name=document.createElement('span');name.className='upgrade-benefit-label';name.textContent=label;row.append(name);}
+    const detail=document.createElement('strong');detail.textContent=value;row.append(detail);
+    if(gain){const change=document.createElement('span');change.className='upgrade-benefit-gain';change.textContent=gain;row.append(change);}
+    $('upgrade-benefits').append(row);
+  }
+  $('upgrade-cost').textContent=costText(preview.cost);
+  $('upgrade-time').textContent=`${preview.seconds} seconds`;
+  $('upgrade-requirements').textContent=preview.requirements;
+  $('upgrade-requirements').hidden=$('upgrade-requirements-label').hidden=!preview.requirements;
+  $('confirm-upgrade').textContent=`Upgrade for ${costText(preview.cost)}`;
   const error=item.construction?'Finish the current construction first.':!preview.ready?'Upgrade requirements are not met.':!canAfford(town,preview.cost)?'Gather more resources to afford this upgrade.':'';
-  $('upgrade-error').textContent=error;$('confirm-upgrade').disabled=!!error;
+  $('upgrade-error').textContent=error;$('upgrade-error').hidden=!error;$('confirm-upgrade').disabled=!!error;
 }
 function showUpgrade(command){
   const town=world.towns[viewed];
