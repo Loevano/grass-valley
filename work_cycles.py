@@ -104,7 +104,7 @@ def advance(town, landscape, villager, building, source, index, seconds):
             return None if approach is None or sailing is None else approach + sailing
         return route(start, target, blocked, size, terrain, adjacent, bounds)
     if not state or state['task'] != spec or state['phase'] in ('waiting', 'waiting_water'):
-        position = (villager.get('logistics_position') or state or villager.get('construction_position')
+        position = (state or villager.get('logistics_position') or villager.get('construction_position')
                     or {'x': hall['x'] - 2 + index % 5, 'y': hall['y'] + 3 + index // 5})
         x, y = round(position['x']), round(position['y'])
         if (x, y) in blocked or not (0 <= x < size and 0 <= y < size) or (terrain and terrain[y][x] == 'v'):
@@ -115,9 +115,13 @@ def advance(town, landscape, villager, building, source, index, seconds):
             if spot is None:
                 return False
             x, y = spot
-        state = {'task': spec, 'x': x, 'y': y, 'elapsed': 0, 'waterReady': False,
+        preserved = (x, y) == (round(position['x']), round(position['y']))
+        state = {'task': spec, 'x': position['x'] if preserved else x,
+                 'y': position['y'] if preserved else y, 'elapsed': 0, 'waterReady': False,
                  'version': (state or {}).get('version', 0), 'facing': 1}
         path = travel(state, work_spot or source, not work_spot)
+        if path is not None and (state['x'], state['y']) != (x, y):
+            path.insert(0, {'x': x, 'y': y})
         state.update(path=path or [], phase='waiting' if path is None else 'walking' if path else 'working')
         villager['work_animation'] = state
     state['version'] += 1
@@ -127,7 +131,7 @@ def advance(town, landscape, villager, building, source, index, seconds):
         if state['path']:
             target = state['path'][0]
             if (target['x'], target['y']) in blocked or (terrain and terrain[target['y']][target['x']] == 'v'):
-                villager.pop('work_animation', None)
+                state.update(path=[], phase='waiting', elapsed=0)
                 return False
             dx, dy = target['x'] - state['x'], target['y'] - state['y']
             distance = math.hypot(dx, dy)

@@ -62,8 +62,8 @@ const WorkerAnimation = (() => {
         if(delta<best){start={x,y};best=delta;}
       }
     }
-    const position=state?{x:state.x,y:state.y}:start;
-    const approach=distance(position,start)>1e-9?[start]:[];
+    let position=state?{x:state.x,y:state.y}:start;
+    let approach=distance(position,start)>1e-9?[start]:[];
     if(villager.logistics_target){
       const target=villager.logistics_target,trip=villager.logistics_trip;
       const remaining=trip?.path.slice(state?0:(trip.step || 0)).map(([x,y])=>({x,y}));
@@ -128,6 +128,14 @@ const WorkerAnimation = (() => {
         pier=[home,...deck];workSpot=source;
         for(const tile of pier)blocked.delete(key(tile));
       }
+    }
+    // Fishing opens water and pier tiles after the general spawn search.
+    // Replanning offshore must continue from the current waypoint, not a bank.
+    if((boating||pier.length)&&!blocked.has(key(current))&&Number.isInteger(current.x)&&Number.isInteger(current.y)
+      &&current.x>=minX&&current.x<=maxX&&current.y>=minY&&current.y<=maxY){
+      start=current;
+      if(!state)position=start;
+      approach=distance(position,start)>1e-9?[start]:[];
     }
     const routing={blocked,size,bounds,sailing,source};
     let path=source?travel(start,workSpot || source,routing,!workSpot):home?route(start,home,blocked,size,true,bounds):[];

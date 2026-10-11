@@ -107,4 +107,13 @@ assert.strictEqual(sailor.phase,'depositing');
 assert.deepStrictEqual([sailor.x,sailor.y],[3,2],'Catch unloads beside the hut');
 animation.advance(sailor,.7,true);
 assert.strictEqual(sailor.phase,'walking','Boat departs again after unloading');
+
+const offshore=animation.plan(sailingTown,{job:'fishing',building_index:0,work_target:sailingTown.map_resources.at(-1),
+  logistics_position:{x:2,y:3}},0,{...sailor,x:4.4,y:4,path:[{x:5,y:4}]});
+assert.deepStrictEqual([offshore.x,offshore.y],[4.4,4],'Retargeting preserves the visible offshore position');
+assert(offshore.path.every(p=>sea.has(p.x+','+p.y)),'Retargeting offshore keeps the entire approach on water');
+assert.deepStrictEqual(offshore.path[0],{x:5,y:4},'Retargeting continues to the existing waypoint before turning');
+const resumed=animation.plan(sailingTown,{job:'fishing',building_index:0,work_target:sailingTown.map_resources.at(-1),
+  logistics_position:{x:5,y:3}},0);
+assert.deepStrictEqual([resumed.x,resumed.y],[5,3],'A saved offshore position resumes on water');
 console.log('Fishing animation checks passed');

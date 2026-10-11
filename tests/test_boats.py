@@ -85,6 +85,48 @@ class Boats(unittest.TestCase):
             command(self.town, data)
         self.assertEqual(self.town, before)
 
+    def test_retargeting_offshore_preserves_position_after_delivery_and_save(self):
+        hut = {'kind': 'fishing_hut', 'x': 2, 'y': 2, 'profession_upgrades': ['boat']}
+        self.town['buildings'].append(hut)
+        self.town['map_resources'] = [{'kind': 'water', 'x': x, 'y': y}
+                                      for x, y in [(3, 2), (3, 3), (3, 4), (4, 4), (5, 4), (5, 3), (5, 2)]]
+        fisher = self.town['villagers'][0]
+        fisher.update(job='fishing', logistics_position={'x': 2, 'y': 3})
+        source = self.town['map_resources'][-1]
+        for _ in range(31):
+            work_cycles.advance(self.town, self.town, fisher, hut, source, 0, .1)
+        self.town = json.loads(json.dumps(self.town))
+        fisher, hut = self.town['villagers'][0], self.town['buildings'][1]
+        before = dict(fisher['work_animation'])
+        self.assertGreater(before['x'], 3)
+        source = self.town['map_resources'][-2]
+        work_cycles.advance(self.town, self.town, fisher, hut, source, 0, 0)
+        state = fisher['work_animation']
+        self.assertEqual((state['x'], state['y']), (before['x'], before['y']))
+        work_cycles.advance(self.town, self.town, fisher, hut, source, 0, .1)
+        self.assertLessEqual(((state['x'] - before['x']) ** 2 + (state['y'] - before['y']) ** 2) ** .5, .180001)
+        water = {(r['x'], r['y']) for r in self.town['map_resources']}
+        self.assertTrue(all((p['x'], p['y']) in water for p in state['path']))
+
+    def test_blocked_route_keeps_position_for_retry(self):
+        hut = {'kind': 'fishing_hut', 'x': 2, 'y': 2, 'profession_upgrades': ['boat']}
+        self.town['buildings'].append(hut)
+        self.town['map_resources'] = [{'kind': 'water', 'x': x, 'y': 2} for x in range(3, 9)]
+        fisher = self.town['villagers'][0]
+        fisher.update(job='fishing', logistics_position={'x': 2, 'y': 3})
+        source = self.town['map_resources'][-1]
+        work_cycles.advance(self.town, self.town, fisher, hut, source, 0, 2)
+        before = dict(fisher['work_animation'])
+        obstacle = {'kind': 'home', **before['path'][0]}
+        self.town['buildings'].append(obstacle)
+        work_cycles.advance(self.town, self.town, fisher, hut, source, 0, .1)
+        self.assertEqual(fisher['work_animation']['phase'], 'waiting')
+        self.town['buildings'].remove(obstacle)
+        work_cycles.advance(self.town, self.town, fisher, hut, source, 0, 0)
+        state = fisher['work_animation']
+        self.assertEqual((state['x'], state['y']), (before['x'], before['y']))
+        self.assertEqual(state['phase'], 'walking')
+
     def test_exploration_purchase_upgrade_costs_requirements_and_save(self):
         buy = {'action': 'buy_boat'}
         upgrade = {'action': 'upgrade_boat'}
