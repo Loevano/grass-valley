@@ -246,7 +246,15 @@ function buildingStorageKeys(building){
   return storageKeys.filter(key=>groups.has(key));
 }
 function roomAllocations(building){
-  const allocations=building.storage_allocations || (building.kind==='hall'?{wood:100,food:100}:{});
+  const fixed=world.progression?.fixed_storage || {
+    hall:{wood:100,food:100},home:{},woodcutter:{wood:50},fishing_hut:{food:50},
+    farm:{food:20,wheat:10,fodder:10,manure:10},acre:{food:20,wheat:10,fodder:10,manure:10},
+    barn:{food:20,fodder:15,wool:10,manure:5},orchard:{food:50},
+    bakery:{flour:20,wood:5,food:25},butcher:{food:50},sawpit:{wood:30,planks:20},mill:{wheat:30,flour:20},
+    smokehouse:{food:45,wood:5},workshop:{planks:25,wood:15,tools:10},fish_pond:{fodder:15,food:35},
+    market:Object.fromEntries(storageKeys.map(key=>[key,5]))
+  };
+  const allocations=building.kind==='storehouse'?(building.storage_allocations || {}):(fixed[building.kind] || {});
   return Object.fromEntries(Object.entries(allocations).filter(([key])=>buildingStorageKeys(building).includes(key)));
 }
 function resourceStorage(town,key){
@@ -258,7 +266,7 @@ function renderStorage(town,item,index,target=$('selection-details')){
   const keys=buildingStorageKeys(item);
   const capacity=buildingStorageSize(item),allocations=roomAllocations(item);
   const draftKey=`${world.world_id}/${viewed}/${index}/${item.kind}/${item.x},${item.y}`;
-  const owner=viewed===identity?.town_id,editing=owner&&storageEditing.has(draftKey);
+  const owner=viewed===identity?.town_id,canAllocate=owner&&item.kind==='storehouse',editing=canAllocate&&storageEditing.has(draftKey);
   const draft=storageDrafts.get(draftKey);
   if(!editing&&draft&&keys.every(key=>(draft[key] || 0)===(allocations[key] || 0)))storageDrafts.delete(draftKey);
   const values=editing?(storageDrafts.get(draftKey) || allocations):allocations;
@@ -274,13 +282,13 @@ function renderStorage(town,item,index,target=$('selection-details')){
     stock[category]=(stock[category] || 0)+n*(edible[key] || 1);
   }
   const heading=document.createElement('div');heading.className='storage-heading';
-  if(owner&&!editing&&keys.length){
+  if(canAllocate&&!editing&&keys.length){
     const button=document.createElement('button');button.textContent='Allocate';
     button.onclick=()=>{storageEditing.add(draftKey);storageDrafts.set(draftKey,{...allocations});renderSelection(town);};heading.append(button);
   }
   target.append(heading);
   const summary=document.createElement('p');summary.className='storage-summary';target.append(summary);
-  const note=document.createElement('p');note.className='storage-note';note.textContent=keys.length?(editing?'Assign space for incoming goods relevant to this building.':'Stored / allocated spaces')+(keys.includes('food')?' · Food space is shared by the edible goods this building accepts.':''):'This building does not store goods.';target.append(note);
+  const note=document.createElement('p');note.className='storage-note';note.textContent=keys.length?(editing?'Assign space for incoming goods.':item.kind==='storehouse'?'Stored / allocated spaces':'Stored / fixed spaces for this building’s resources')+(keys.includes('food')?' · Food space is shared by the edible goods this building accepts.':''):'This building does not store goods.';target.append(note);
   const fields={},counts={};
   const update=()=>{
     const used=keys.reduce((sum,key)=>sum+Number(fields[key].value),0);
@@ -304,7 +312,7 @@ function renderStorage(town,item,index,target=$('selection-details')){
       const amount=stock[key] || 0,limit=allocations[key] || 0;
       count.textContent=`${Number(amount.toFixed(1))} / ${limit}`;
       const meter=document.createElement('meter');meter.min=0;meter.max=Math.max(1,limit,amount);meter.value=amount;
-      meter.setAttribute('aria-label',`${goodName(key)} stored`);meter.setAttribute('aria-valuetext',`${Number(amount.toFixed(1))} stored, ${limit} spaces allocated`);row.append(meter);
+      meter.setAttribute('aria-label',`${goodName(key)} stored`);meter.setAttribute('aria-valuetext',`${Number(amount.toFixed(1))} stored, ${limit} ${item.kind==='storehouse'?'allocated':'fixed'} spaces`);row.append(meter);
     }
     target.append(row);
   }

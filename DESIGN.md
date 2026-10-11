@@ -84,7 +84,7 @@ These are starting values to make the prototype playable, **not final design dec
 - New worlds share one 120×120 landscape, with randomized hall sites at least 40 tiles apart. Construction stays within 10 steps of the owner's hall, adding 5 steps per completed hall upgrade, and within the greater of 15 steps or the hall's range of its original site. Existing worlds keep their separate town maps.
 - Cottages, woodcutters, farms, and storehouses occupy one tile each.
 - Move a building instantly for one coin, preserving its identity. If you have no coins, moving is free so rearranging never becomes locked.
-- Every three seconds, assigned workers produce into 50-unit workplace buffers and gain skill if the buffer has room. Local outputs are immediately included in usable town stock; hauling relocates them without adding them twice. Each completed building shows its own inventory and can allocate incoming storage. Ordinary buildings hold 50 units; processor inputs remain separately reserved.
+- Every three seconds, assigned workers produce into 50-unit workplace buffers and gain skill if the buffer has room. Local outputs are immediately included in usable town stock; hauling relocates them without adding them twice. Each completed building shows its own inventory. Only storehouses and warehouses can allocate incoming storage; other buildings have fixed capacities for relevant inputs and outputs. Ordinary buildings hold 50 units; processor inputs remain separately reserved.
 - Town maps contain renewable forests and water, plus rock outcrops. Woodcutters
   need a tree within three horizontal/vertical tile steps; farmers fetch water during
   the watering stage without a farm-to-water distance limit. Workers animate

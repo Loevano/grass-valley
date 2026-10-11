@@ -74,12 +74,12 @@ class ResourceLogistics(unittest.TestCase):
         self.assertEqual(restored['wood'], 2)
         self.assertEqual(sum(economy.inventory(b).get('wood', 0) for b in restored['buildings']), 2)
 
-    def test_workplace_allocations_and_deliveries_only_accept_relevant_goods(self):
+    def test_workplaces_reject_allocations_and_deliveries_only_accept_relevant_goods(self):
         camp = self.add('woodcutter', storage_allocations={'wood': 50, 'tools': 50})
         source = self.add('storehouse', stored_goods={'wood': 10, 'tools': 5})
         economy.ensure_inventory(self.town)
         before = copy.deepcopy(self.town)
-        with self.assertRaisesRegex(ValueError, 'relevant'):
+        with self.assertRaisesRegex(ValueError, 'Only storehouses'):
             server.command(self.town, {'action': 'allocate_storage', 'index': 1,
                                       'allocations': {'tools': 10}})
         self.assertEqual(self.town, before)
@@ -88,7 +88,8 @@ class ResourceLogistics(unittest.TestCase):
         logistics.transfer(self.town, source, camp, 'collect', self.town['villagers'][0])
         self.assertEqual(camp['stored_goods'], {'wood': 10})
         self.assertEqual(source['stored_goods']['tools'], 5)
-        server.command(self.town, {'action': 'allocate_storage', 'index': 1, 'allocations': {'wood': 50}})
+        with self.assertRaises(ValueError):
+            server.command(self.town, {'action': 'allocate_storage', 'index': 1, 'allocations': {'wood': 50}})
         with self.assertRaises(ValueError):
             server.command(self.town, {'action': 'allocate_storage', 'index': 1, 'allocations': {'wood': 9}})
 
@@ -113,7 +114,7 @@ class ResourceLogistics(unittest.TestCase):
         self.assertEqual(economy.storage_allocations(home), {})
         self.assertEqual(economy.local_room(home, 'fish'), 0)
         for key in ('wood', 'food'):
-            with self.assertRaisesRegex(ValueError, 'relevant'):
+            with self.assertRaisesRegex(ValueError, 'Only storehouses'):
                 server.command(self.town, {'action': 'allocate_storage', 'index': 1, 'allocations': {key: 10}})
         economy.eat(self.town, 2)
         self.assertEqual(hut['stored_goods']['fish'], 3)
@@ -123,13 +124,34 @@ class ResourceLogistics(unittest.TestCase):
         camp = self.add('woodcutter', stored_goods={'wool': 5}, storage_allocations={'wool': 50})
         store = self.add('storehouse', storage_allocations={'wool': 100})
         economy.ensure_inventory(self.town)
-        server.command(self.town, {'action': 'allocate_storage', 'index': 1, 'allocations': {'wood': 50}})
+        self.assertEqual(economy.storage_allocations(camp), {'wood': 50})
         restored = json.loads(json.dumps(self.town))
         economy.ensure_inventory(restored)
         self.assertEqual(restored['buildings'][1]['stored_goods']['wool'], 5)
         logistics.transfer(self.town, camp, store, 'collect', self.town['villagers'][0])
         self.assertEqual(store['stored_goods']['wool'], 5)
         self.assertEqual(camp['stored_goods']['wool'], 0)
+
+    def test_fixed_capacities_ignore_legacy_allocations_and_match_building_goods(self):
+        for kind in economy.STORAGE_GOODS:
+            if kind == 'storehouse':
+                continue
+            building = {'kind': kind, 'storage_allocations': {'herbs': 999}}
+            limits = economy.storage_allocations(building)
+            with self.subTest(kind=kind):
+                self.assertEqual(sum(limits.values()), economy.storage_size(building))
+                self.assertLessEqual(set(limits), set(economy.building_storage_keys(building)))
+                if kind != 'hall':
+                    self.assertEqual(set(limits), set(economy.building_storage_keys(building)))
+                before = copy.deepcopy(self.town)
+                index = len(self.town['buildings'])
+                self.town['buildings'].append(building)
+                with self.assertRaisesRegex(ValueError, 'Only storehouses'):
+                    server.command(self.town, {'action': 'allocate_storage', 'index': index, 'allocations': {}})
+                self.town['buildings'].pop()
+                self.assertEqual(self.town, before)
+        self.assertEqual(economy.storage_allocations({'kind': 'mill'}), {'wheat': 30, 'flour': 20})
+        self.assertEqual(economy.public_catalog()['fixed_storage'], economy.FIXED_STORAGE)
 
     def test_processor_and_farming_storage_accepts_inputs_and_outputs(self):
         for kind, (inputs, output, _) in economy.RECIPES.items():
@@ -142,7 +164,7 @@ class ResourceLogistics(unittest.TestCase):
             building = {'kind': kind, 'storage_allocations': {'food': 10, 'wheat': 10, 'fodder': 10, 'manure': 10}}
             for key in (*economy.CROPS, 'manure'):
                 self.assertGreater(economy.local_room(building, key), 0)
-        for kind in ('hall', 'storehouse', 'market'):
+        for kind in ('storehouse', 'market'):
             building = {'kind': kind, 'storage_allocations': {'herbs': 10, 'food': 10}}
             self.assertGreater(economy.local_room(building, 'herbs'), 0)
             self.assertGreater(economy.local_room(building, 'bread'), 0)

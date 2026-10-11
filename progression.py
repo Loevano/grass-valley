@@ -136,6 +136,24 @@ STORAGE_GOODS = {
     'orchard': ('fruit',),
     **{kind: (*inputs, output) for kind, (inputs, output, _) in RECIPES.items()},
 }
+FIXED_STORAGE = {
+    'hall': {'wood': 100, 'food': 100},
+    'home': {},
+    'woodcutter': {'wood': 50},
+    'fishing_hut': {'food': 50},
+    'farm': {'food': 20, 'wheat': 10, 'fodder': 10, 'manure': 10},
+    'acre': {'food': 20, 'wheat': 10, 'fodder': 10, 'manure': 10},
+    'barn': {'food': 20, 'fodder': 15, 'wool': 10, 'manure': 5},
+    'orchard': {'food': 50},
+    'bakery': {'flour': 20, 'wood': 5, 'food': 25},
+    'butcher': {'food': 50},
+    'sawpit': {'wood': 30, 'planks': 20},
+    'mill': {'wheat': 30, 'flour': 20},
+    'smokehouse': {'food': 45, 'wood': 5},
+    'workshop': {'planks': 25, 'wood': 15, 'tools': 10},
+    'fish_pond': {'fodder': 15, 'food': 35},
+    'market': {key: 5 for key in STORAGE_KEYS},
+}
 
 
 def accepts_storage(building, key):
@@ -210,7 +228,9 @@ def local_room(building, key):
 
 
 def storage_allocations(building):
-    allocations = building.get('storage_allocations', {'wood': 100, 'food': 100} if building['kind'] == 'hall' else {})
+    if building['kind'] != 'storehouse':
+        return dict(FIXED_STORAGE.get(building['kind'], {}))
+    allocations = building.get('storage_allocations', {})
     return {k: n for k, n in allocations.items() if k in building_storage_keys(building)}
 
 
@@ -485,4 +505,4 @@ def public_catalog():
     return {'buildings': BUILDINGS, 'crops': CROPS, 'animals': ANIMALS,
             'job_requirements': JOB_REQUIREMENTS, 'talent_roots': TALENT_ROOTS,
             'upgrades': PROFESSION_UPGRADES, 'recipes': RECIPES, 'edible': EDIBLE,
-            'storage_goods': STORAGE_GOODS}
+            'storage_goods': STORAGE_GOODS, 'fixed_storage': FIXED_STORAGE}

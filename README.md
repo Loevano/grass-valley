@@ -198,10 +198,12 @@ the Python host, refresh both browsers, and create a new world to use the shared
   with 100 wood and 100 food spaces. Each storehouse level adds 100 shared spaces;
   new and upgraded spaces remain unallocated until you assign them. Allocations
   cannot exceed a room's capacity or remove space occupied by its delivered goods.
-  Each building holds its own stock; allocations determine which resources it
-  accepts. Processors fetch supplies from buildings that actually hold them.
+  Only storehouses and warehouses can change allocations. Other buildings have
+  fixed spaces for their relevant goods within a 50-space budget (the hall has
+  100 wood and 100 food spaces; homes have none). A mill has 30 wheat and 20 flour
+  spaces, for example. Each building holds its own stock. Processors fetch supplies from buildings that actually hold them.
   Older saved stocks remain intact, including
-  goods above their new allocations; spend them or allocate more space to resume deliveries.
+  goods above their fixed capacities; spend or haul them away to resume deliveries.
 - Assign settlers to a **Storehouse** as haulers. They collect small batches and
   distribute recipe ingredients and animal feed so producers can keep working.
   Without hauling support, producers fetch their own inputs and deliver outputs

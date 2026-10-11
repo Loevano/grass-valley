@@ -714,6 +714,8 @@ def command(town, data, world=None):
         if type(index) is not int or not 0 <= index < len(town['buildings']):
             raise ValueError('Choose a storage room first.')
         building = town['buildings'][index]
+        if building['kind'] != 'storehouse':
+            raise ValueError('Only storehouses and warehouses can allocate storage.')
         if not completed(building):
             raise ValueError('Choose a completed storage room.')
         if (not isinstance(allocations, dict) or any(k not in economy.STORAGE_KEYS or type(n) is not int or n < 0

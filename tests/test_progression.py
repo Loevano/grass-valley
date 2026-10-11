@@ -89,13 +89,13 @@ class Progression(unittest.TestCase):
         self.assertEqual(self.town['player']['gathering'],xp)
 
     def test_gather_herbs_and_full_storage_pause_practice(self):
-        self.town['buildings'][0]['storage_allocations']={'wood':65,'food':40,'herbs':95}
+        self.town['buildings'].append({'kind':'storehouse','x':3,'y':3,'storage_allocations':{'herbs':100}})
         self.town['player'].update(x=5,y=9)
         command(self.town, {'action':'gather'}, self.world)
         tick(self.world)
         self.assertEqual(self.town['goods']['herbs'],1)
         self.town['goods']['herbs']=100
-        self.town['buildings'][0]['stored_goods']['herbs']=100
+        self.town['buildings'][-1]['stored_goods']['herbs']=100
         tick(self.world)
         self.assertEqual(self.town['player']['gathering'],1)
         self.assertEqual(self.town['player']['activity_status'],'Storage full')
