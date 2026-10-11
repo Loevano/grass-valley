@@ -1527,49 +1527,77 @@ const rockFormations=[
   [[-3,5,17,26],[19,14,5,7]],           // Mid-sized rock and a pebble.
   [[-2,12,7,10],[12,16,4,6]]            // Small rock and a pebble.
 ];
-function paintRock(ctx,r,detailed,polygon){
-  const variant=rockVariant(r),formation=rockFormations[variant%rockFormations.length];
-  const colors=variant%2?['#999889','#d4cbb2','#b7b09b','#686f69','#83877b']
+function paintRock(ctx,r,detailed,polygon,joined=null){
+  const variant=rockVariant(r)%48,formation=rockFormations[variant%rockFormations.length];
+  let seed=variant+1;
+  const random=()=>{
+    seed=(seed+0x6d2b79f5)>>>0;
+    let value=Math.imul(seed^(seed>>>15),seed|1);
+    value^=value+Math.imul(value^(value>>>7),value|61);
+    return ((value^(value>>>14))>>>0)/4294967296;
+  };
+  const colors=!joined&&Math.floor(variant/6)%2?['#999889','#d4cbb2','#b7b09b','#686f69','#83877b']
     :['#96958a','#d6ceb9','#b8b3a2','#626c69','#7f857c'];
+  if(joined){
+    // Shared corner elevations make neighboring tiles one continuous outcrop.
+    // Only exposed front edges receive walls, so no seams divide the interior.
+    const ground=[[0,0],[23,11.5],[0,23],[-23,11.5]];
+    const top=ground.map(([x,y],i)=>[x,y-joined.heights[i]]);
+    if(!(joined.mask&2))polygon([top[1],ground[1],ground[2],top[2]],colors[3]);
+    if(!(joined.mask&4))polygon([top[2],ground[2],ground[3],top[3]],colors[4]);
+    const center=[(random()-.5)*9,11.5-joined.heights.reduce((sum,h)=>sum+h,0)/4];
+    polygon([top[0],top[1],center,top[3]],colors[1]);
+    polygon([top[1],top[2],center],colors[2]);
+    polygon([top[2],top[3],center],colors[0]);
+    if(detailed&&variant%5===0){
+      const [x,y]=center;
+      polygon([[x-6,y-3],[x+1,y-6],[x+7,y-1],[x+2,y+3],[x-5,y+1]],'#819057');
+    }
+    return;
+  }
   if(detailed){
     ctx.fillStyle='#223b2940';ctx.beginPath();ctx.ellipse(2,15,26,6,0,0,Math.PI*2);ctx.fill();
   }
-  for(const [x,y,w,h] of formation){
+  for(const [baseX,baseY,baseW,baseH] of formation){
+    const w=baseW*(.75+random()*.32),h=baseH*(.8+random()*.4);
+    const x=Math.max(-29+w,Math.min(29-w,baseX+(random()-.5)*7));
+    const y=Math.min(19,baseY+(random()-.5)*4);
     // Wide shoulders and a short, flat crown replace the pointed outcrops.
-    const left=[x-w,y-h*.3],shoulder=[x-w*.65,y-h*.82];
-    const crown=[x+w*.1,y-h],right=[x+w*.72,y-h*.7];
+    const left=[x-w,y-h*(.22+random()*.2)],shoulder=[x-w*(.45+random()*.3),y-h*(.72+random()*.2)];
+    const crown=[x+w*(random()*.45-.15),y-h],right=[x+w*(.6+random()*.25),y-h*(.55+random()*.25)];
     const edge=[x+w,y-h*.12],foot=[x+w*.45,y+4],base=[x-w*.65,y+3];
-    const seam=[x-w*.05,y-h*.38];
+    const seam=[x+w*(random()*.3-.2),y-h*(.3+random()*.2)];
     polygon([left,shoulder,crown,right,edge,foot,base],colors[0]);
     polygon([left,shoulder,crown,seam],colors[1]);
     polygon([seam,crown,right,edge,foot],colors[3]);
+    const moss=random()<.35;
     if(!detailed)continue;
     polygon([crown,right,[x+w*.42,y-h*.35],seam],colors[2]);
     polygon([left,seam,foot,base],colors[4]);
-    if(w>=17&&variant%3===0){
+    if(w>=17&&moss){
       polygon([shoulder,[x-w*.3,y-h*.9],[x-w*.12,y-h*.7],
         [x-w*.4,y-h*.63],[x-w*.72,y-h*.58]],'#819057');
       polygon([shoulder,[x-w*.3,y-h*.9],[x-w*.42,y-h*.77]],'#a0aa69');
     }
   }
 }
-function drawResource(r){
+function drawResource(r,joined=null){
   const [x,y]=point(r.x,r.y),s=tileW/46;
   const detailed=tileW>=32;
   const willow=r.kind==='tree'&&(world.shared_map || world.towns[viewed])?.terrain?.[r.y]?.[r.x]==='b';
   const resolution=2**Math.ceil(Math.log2(Math.max(.5,s*(window.devicePixelRatio || 1))));
-  const variant=r.kind==='tree'?`${r.species==='ancient'}/${willow}/${(r.x+r.y)%2}`:r.kind==='rock'?rockVariant(r)%6:r.kind;
+  const variant=r.kind==='tree'?`${r.species==='ancient'}/${willow}/${(r.x+r.y)%2}`:r.kind==='rock'?`${rockVariant(r)%48}/${joined?`${joined.mask}/${joined.heights.join(',')}`:''}`:r.kind;
   const key=`${r.kind}/${variant}/${resolution}/${detailed}`;
   let sprite=resourceSprites.get(key);
   if(!sprite){
     const surface=document.createElement('canvas'),target=surface.getContext?.('2d');
     if(!target){
-      ctx.save();ctx.translate(x,y);ctx.scale(s,s);paintResource(ctx,r,willow,detailed);ctx.restore();return;
+      ctx.save();ctx.translate(x,y);ctx.scale(s,s);paintResource(ctx,r,willow,detailed,joined);ctx.restore();return;
     }
     // Include ancient canopies, willow branches, and the ground shadow.
     surface.width=60*resolution;surface.height=104*resolution;
     target.setTransform(resolution,0,0,resolution,30*resolution,80*resolution);
-    paintResource(target,r,willow,detailed);
+    paintResource(target,r,willow,detailed,joined);
     sprite=surface;resourceSprites.set(key,sprite);
     if(resourceSprites.size>64)resourceSprites.delete(resourceSprites.keys().next().value);
   }else{
@@ -1577,14 +1605,14 @@ function drawResource(r){
   }
   ctx.drawImage(sprite,x-30*s,y-80*s,60*s,104*s);
 }
-function paintResource(ctx,r,willow,detailed=true){
+function paintResource(ctx,r,willow,detailed=true,joined=null){
   const polygon=(points,fill,stroke)=>{
     ctx.beginPath();points.forEach(([x,y],i)=>i?ctx.lineTo(x,y):ctx.moveTo(x,y));
     ctx.closePath();ctx.fillStyle=fill;ctx.fill();
     if(stroke){ctx.strokeStyle=stroke;ctx.stroke();}
   };
   ctx.save();
-  if(r.kind==='rock'){paintRock(ctx,r,detailed,polygon);ctx.restore();return;}
+  if(r.kind==='rock'){paintRock(ctx,r,detailed,polygon,joined);ctx.restore();return;}
   if(!detailed&&r.kind!=='chest'){
     if(r.kind==='tree'){
       if(r.species==='ancient')ctx.scale(1.35,1.35);
@@ -1912,7 +1940,21 @@ function renderResources(resources){
         buckets.get(key).push(r);
       }
     });
-    resourceCache={resources,count:resources.length,water,objects,indexes,buckets,
+    const rocks=new Map(objects.filter(r=>r.kind==='rock').map(r=>[`${r.x},${r.y}`,r]));
+    const rockJoins=new Map();
+    for(const r of rocks.values()){
+      const mask=[[0,-1],[1,0],[0,1],[-1,0]].reduce((mask,[dx,dy],i)=>
+        mask|(rocks.has(`${r.x+dx},${r.y+dy}`)?1<<i:0),0);
+      if(!mask)continue;
+      const heights=[[0,0],[1,0],[1,1],[0,1]].map(([dx,dy])=>{
+        const x=r.x+dx,y=r.y+dy;
+        const count=[[0,0],[-1,0],[-1,-1],[0,-1]].filter(([ox,oy])=>rocks.has(`${x+ox},${y+oy}`)).length;
+        const hash=(Math.imul(x,73856093)^Math.imul(y,19349663))>>>0;
+        return 8+count*7+((hash^(hash>>>16))>>>0)%8;
+      });
+      rockJoins.set(r,{mask,heights});
+    }
+    resourceCache={resources,count:resources.length,water,objects,indexes,buckets,rockJoins,
       layout:JSON.stringify(resources.map(({kind,x,y,farm_index,construction})=>[kind,x,y,farm_index,!!construction]))};
   }
   return resourceCache;
@@ -2230,13 +2272,13 @@ function draw(seconds=0){
     const centerX=px+(character?(b.index%3-1)*3:0);
     const baseY=py+(character?tileH*.65+Math.floor(b.index/3):tileH/2);
     const owner=world.towns[b.townId] || town;
-    const height=b.kind==='tree'?(b.species==='ancient'?94:70):character?26:b.kind==='acre'?0:b.kind==='rock'?68:type==='building'?buildingHeight(b,owner)+(b.kind==='hall'?(owner?.level>=4?35:33):18):45;
+    const height=b.kind==='tree'?(b.species==='ancient'?94:70):character?26:b.kind==='acre'?0:b.kind==='rock'?80:type==='building'?buildingHeight(b,owner)+(b.kind==='hall'?(owner?.level>=4?35:33):18):45;
     const halfWidth=character?9*scale:b.kind==='rock'?28*scale:tileW*.45;
     hitTargets.push({type,index,townId:b.townId || viewed,left:centerX-halfWidth,right:centerX+halfWidth,top:baseY-height*scale,bottom:baseY+(character?5*scale:tileH/2)});
     if(character&&selection?.type===type&&selection.index===b.index&&(!world.shared_map||b.townId===viewed||type==='npc')){
       ctx.fillStyle='#fff0b144';ctx.strokeStyle='#fff0b1';ctx.lineWidth=2;ctx.beginPath();ctx.ellipse(centerX,baseY,12*scale,6*scale,0,0,Math.PI*2);ctx.fill();ctx.stroke();
     }
-    if(['tree','rock','berry_bush','herb_patch','chest'].includes(b.kind)){drawResource(b);continue;}
+    if(['tree','rock','berry_bush','herb_patch','chest'].includes(b.kind)){drawResource(b,resourceData.rockJoins.get(b));continue;}
     if(character){
       drawVillager(b);
       continue;

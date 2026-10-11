@@ -5,9 +5,10 @@ const helpers=source.slice(source.indexOf('const resourceSprites='),source.index
 const surfaces=[],images=[];
 const main={drawImage(...args){images.push(args);}};
 const documentMock={createElement(){
-  const surface={paints:0,colors:[],points:[]};
-  surface.getContext=()=>new Proxy({fill(){surface.paints++;surface.colors.push(this.fillStyle);},
-    moveTo(x,y){surface.points.push([x,y]);},lineTo(x,y){surface.points.push([x,y]);},
+  const surface={paints:0,colors:[],points:[],paths:[]};
+  surface.getContext=()=>new Proxy({fill(){surface.paints++;surface.colors.push(this.fillStyle);surface.paths.push(surface.path || []);},
+    beginPath(){surface.path=[];},
+    moveTo(x,y){surface.points.push([x,y]);surface.path.push([x,y]);},lineTo(x,y){surface.points.push([x,y]);surface.path.push([x,y]);},
     setTransform(...args){surface.transform=args;}},{get:(target,key)=>key in target?target[key]:()=>{}});
   surfaces.push(surface);return surface;
 }};
@@ -38,16 +39,16 @@ new Function('document','ctx','window','assert','surfaces','images',`
     assert.equal(surface.paints,paints,'Supply changes reuse '+kind+' artwork');
   }
   const formations=new Map();
-  for(let x=0;x<60;x++){
+  for(let x=0;x<500;x++){
     const rock={kind:'rock',x,y:20};drawResource(rock);
-    const sprite=images.at(-1)[0],variant=rockVariant(rock)%6;
+    const sprite=images.at(-1)[0],variant=rockVariant(rock)%48;
     if(formations.has(variant))assert.strictEqual(sprite,formations.get(variant),'Matching rock formations share cached artwork');
     formations.set(variant,sprite);
     drawResource(JSON.parse(JSON.stringify(rock)));
     assert.strictEqual(images.at(-1)[0],sprite,'Reloaded coordinates preserve rock appearance');
   }
-  assert.equal(formations.size,6,'The landscape contains all six rock formations');
-  assert.equal(new Set([...formations.values()].map(sprite=>JSON.stringify(sprite.points))).size,6,'Each formation has a distinct silhouette');
+  assert.equal(formations.size,48,'The landscape contains all 48 rock variations');
+  assert.equal(new Set([...formations.values()].map(sprite=>JSON.stringify(sprite.points))).size,48,'Each variation has a distinct silhouette');
   const heights=[...formations.values()].map(sprite=>Math.max(...sprite.points.map(p=>p[1]))-Math.min(...sprite.points.map(p=>p[1])));
   assert(Math.max(...heights)>=50,'Large boulders have an enlarged silhouette');
   assert(Math.min(...heights)<=20,'Some tiles contain only small stones');
@@ -60,13 +61,13 @@ new Function('document','ctx','window','assert','surfaces','images',`
     assert(sprite.points.every(([x,y])=>x>=-30&&x<=30&&y>=-80&&y<=24),'Rock formations fit inside their cached texture');
   tileW=31;
   for(const [variant,detailedSprite] of formations){
-    const x=Array.from({length:60},(_,x)=>x).find(x=>rockVariant({x,y:20})%6===variant);
+    const x=Array.from({length:500},(_,x)=>x).find(x=>rockVariant({x,y:20})%48===variant);
     drawResource({kind:'rock',x,y:20});const simple=images.at(-1)[0];
-    assert.deepEqual(simple.points.slice(0,6),detailedSprite.points.slice(0,6),'Zoomed-out rocks retain their formation silhouette');
+    assert.deepEqual(simple.paths.filter(path=>path.length===7),detailedSprite.paths.filter(path=>path.length===7),'Every stone retains its silhouette across zoom detail tiers');
     assert(simple.paints<detailedSprite.paints,'Distant rocks keep primary facets but skip secondary faces and moss');
     assert(simple.colors.length>=6,'Even small distant rocks retain contrasting low-poly faces');
   }
-  tileW=54;
+  tileW=54;drawResource(tree);
   const count=surfaces.length;
   tileW=50;drawResource(tree);
   assert.equal(surfaces.length,count,'Nearby zoom levels reuse a resolution bucket');
@@ -87,6 +88,17 @@ new Function('document','ctx','window','assert','surfaces','images',`
   assert.notEqual(images.at(-1)[0],close,'Display scale changes select an appropriate texture');
   world.shared_map.terrain[10][10]='b';tileW=54;drawResource(tree);
   assert(images.at(-1)[0].colors.includes('#64784c'),'Biome changes select the correct tree sprite');
+  const rock={kind:'rock',x:201,y:20};drawResource(rock);
+  const originalRock=images.at(-1)[0];resourceSprites.clear();drawResource(rock);
+  assert.deepEqual(images.at(-1)[0].paths,originalRock.paths,'Evicted rock artwork regenerates with the same shapes');
+  assert.deepEqual(images.at(-1)[0].colors,originalRock.colors,'Evicted rock artwork regenerates with the same colors');
+  const join={mask:6,heights:[23,24,38,25]};drawResource(rock,join);
+  const joinedSprite=images.at(-1)[0];
+  assert.notStrictEqual(joinedSprite,images.at(-2)[0],'Joined rocks have distinct artwork from standalone rocks');
+  drawResource({...rock},{...join,heights:[...join.heights]});
+  assert.strictEqual(images.at(-1)[0],joinedSprite,'Identical topology reuses joined rock artwork');
+  drawResource(rock,{...join,heights:[23,24,31,25]});
+  assert.notStrictEqual(images.at(-1)[0],joinedSprite,'Changed neighboring rocks invalidate the joined sprite');
   for(let resolution=1;resolution<=128;resolution*=2){
     tileW=46*resolution;
     for(const kind of ['tree','rock','berry_bush','herb_patch','chest'])
