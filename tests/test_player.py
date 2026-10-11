@@ -76,6 +76,27 @@ class PlayerMovement(unittest.TestCase):
                 self.walk(dx, dy)
             self.assertEqual(before, self.town)
 
+    def test_buffered_steps_match_individual_commands_and_collide_along_the_route(self):
+        self.town['terrain'] = ['g' * 120] * 120
+        self.town['buildings'] = []
+        self.town['map_resources'] = [{'kind': 'rock', 'x': 6, 'y': 7}]
+        steps = [{'dx': 1, 'dy': 0}] * 3 + [{'dx': 0, 'dy': -1}] * 2
+        sequential = copy.deepcopy(self.town)
+        for step in steps:
+            expected = command(sequential, dict(step, action='walk'))
+        result = command(self.town, {'action': 'walk', 'steps': steps})
+        self.assertEqual(result, expected)
+        self.assertTrue(walkable(self.town, result['player']['x'], result['player']['y']))
+
+    def test_invalid_buffered_steps_do_not_apply_partial_movement(self):
+        before = copy.deepcopy(self.town)
+        valid = {'dx': 1, 'dy': -1}
+        for steps in ([], [valid] * 6, [valid, {'dx': 100, 'dy': 0}],
+                      [valid, {'dx': True, 'dy': 0}], [valid, None], 'walk'):
+            with self.subTest(steps=steps), self.assertRaises(ValueError):
+                command(self.town, {'action': 'walk', 'steps': steps})
+            self.assertEqual(before, self.town)
+
     def test_old_saves_get_character_on_open_grass(self):
         del self.town['player']
         self.town['buildings'].append({'kind': 'home', 'x': 5, 'y': 7})

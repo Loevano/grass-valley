@@ -37,10 +37,14 @@ const run=new Function('document','window','localStorage','setTimeout','clearTim
     }
     for(let frame=0;frame<120;frame++)hero=playerSprite(town,1/60);
     assert.equal(calls,1,'Delayed replies cannot flood movement commands');
-    assert(Math.hypot(hero.x-5,hero.y-7)<=.300001,'Prediction is limited to one host step');
+    assert(Math.hypot(hero.x-5,hero.y-7)<=1.500001,'Prediction remains bounded during a stalled connection');
     release({player:{x:5,y:7,facing:1}});clearWalk();
     for(let i=0;i<6;i++)await Promise.resolve();
-    hero=playerSprite(town,.1);
+    hero=playerSprite(town,0);
+    assert.equal(calls,2,'Buffered input is sent as one ordered catch-up request');
+    release({player:{x:5,y:7,facing:1}});
+    for(let i=0;i<6;i++)await Promise.resolve();
+    for(let frame=0;frame<40;frame++)hero=playerSprite(town,.1);
     assert.equal(hero.x,5);assert.equal(hero.y,7,'Host rejection corrects a predicted step');
     // Low-latency walking should sustain the host\'s 10 Hz cadence at 60 FPS.
     calls=0;let host={x:5,y:7,facing:1};
@@ -52,6 +56,51 @@ const run=new Function('document','window','localStorage','setTimeout','clearTim
     }
     assert.equal(calls,11,'Movement sends immediately and at each 100 ms boundary');
     clearWalk();
+    // Periodic host stalls must not interrupt the walking animation or camera.
+    town.player={x:5,y:7,facing:1};playerView=null;playerSprite(town,0);
+    host={...town.player};let clock=0,pending=null,maxBatch=0;
+    request=(path,data)=>{
+      const steps=data.steps || [{dx:data.dx,dy:data.dy}];maxBatch=Math.max(maxBatch,steps.length);
+      for(const step of steps)host=predictPlayerStep(town,host,step.dx,step.dy);
+      return new Promise(resolve=>{pending={resolve,player:{...host},due:clock+((clock<.11||clock>.5&&clock<.61)?.25:.02)};});
+    };
+    walkKeys.add('d');previous=5;
+    for(let frame=0;frame<60;frame++){
+      clock+=1/60;
+      if(pending&&clock>=pending.due){pending.resolve({player:pending.player});pending=null;}
+      for(let i=0;i<6;i++)await Promise.resolve();
+      hero=playerSprite(town,1/60);
+      assert(hero.x>previous,'250 ms host delays preserve continuous walking at frame '+frame);previous=hero.x;
+      assert.equal(camera.x,hero.x,'The camera follows buffered walking');
+    }
+    clearWalk();
+    assert(maxBatch>1&&maxBatch<=5,'Delayed input catches up in bounded batches');
+    // Drain the final acknowledged and unsent input before the next scenario.
+    request=async(path,data)=>{
+      for(const step of data.steps || [{dx:data.dx,dy:data.dy}])host=predictPlayerStep(town,host,step.dx,step.dy);
+      return {player:{...host}};
+    };
+    if(pending){pending.resolve({player:pending.player});pending=null;}
+    for(let frame=0;frame<10;frame++){
+      for(let i=0;i<6;i++)await Promise.resolve();
+      playerSprite(town,.1);
+    }
+    // Buffered turns retain their order after the original command is acknowledged.
+    town.player={x:5,y:7,facing:1};playerView=null;playerSprite(town,0);host={...town.player};
+    const sent=[];
+    request=(path,data)=>{
+      const steps=data.steps || [{dx:data.dx,dy:data.dy}];sent.push(steps);
+      for(const step of steps)host=predictPlayerStep(town,host,step.dx,step.dy);
+      return new Promise(resolve=>{release=()=>resolve({player:{...host}});});
+    };
+    walkKeys.add('d');playerSprite(town,.1);playerSprite(town,.1);
+    walkKeys.delete('d');walkKeys.add('s');playerSprite(town,.1);clearWalk();
+    release();for(let i=0;i<6;i++)await Promise.resolve();
+    playerSprite(town,0);
+    assert.deepEqual(sent[1],[{dx:1,dy:-1},{dx:1,dy:1}],'Catch-up preserves the turn before key release');
+    release();for(let i=0;i<6;i++)await Promise.resolve();
+    assert.equal(playerView.steps.length,0,'Released input drains after acknowledgement');
+    assert.deepEqual(playerView.target,host,'Acknowledgement reconciles to the host position');
     // Uneven display frames must not introduce pauses between movement commands.
     for(const keys of [['w'],['s'],['d'],['w','d']]){
       town.player={x:5,y:7,facing:1};playerView=null;playerSprite(town,0);

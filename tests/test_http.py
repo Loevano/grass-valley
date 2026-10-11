@@ -90,6 +90,14 @@ class LanHost(unittest.TestCase):
         self.assertGreater(result['player']['x'], 5)
         friend_player = server.WORLD['towns'][friend['town_id']]['player']
         self.assertEqual(friend_player['x'], 5)
+        batch = dict(move, steps=[{'dx': 1, 'dy': -1}] * 3)
+        self.assertEqual(self.call('/api/command', batch)[0], 401)
+        status, body = self.call('/api/command', batch, owner['token'])
+        self.assertEqual(status, 200)
+        next_result = json.loads(body)
+        self.assertGreater(next_result['player']['x'], result['player']['x'])
+        self.assertEqual(friend_player['x'], 5)
+        result = next_result
         for _ in range(3):
             status, body = self.call('/api/command', move, owner['token'])
             self.assertEqual(status, 200)

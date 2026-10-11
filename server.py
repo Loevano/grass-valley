@@ -725,6 +725,19 @@ def command(town, data, world=None):
         bind_map(world)
     ensure_resources(town)
     action = data.get('action')
+    if action == 'walk' and 'steps' in data:
+        steps = data['steps']
+        if (not isinstance(steps, list) or not 1 <= len(steps) <= 5
+                or any(not isinstance(step, dict)
+                       or type(step.get('dx')) is not int or step['dx'] not in (-1, 0, 1)
+                       or type(step.get('dy')) is not int or step['dy'] not in (-1, 0, 1)
+                       for step in steps)):
+            raise ValueError('Choose up to five WASD steps.')
+        # Process input in order, refreshing local obstacles after every step.
+        # The entire batch is validated before any player movement is applied.
+        for step in steps:
+            result = command(town, {'action': 'walk', 'dx': step['dx'], 'dy': step['dy']}, world)
+        return result
     if action == 'configure_rule':
         return logistics.configure_rules(town, data)
     if action in {'claim_local_gift', 'buy_worker_tool', 'trade_local', 'give_worker_tool', 'take_worker_tool', 'transfer_worker_tool',

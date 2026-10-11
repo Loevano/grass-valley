@@ -77,7 +77,7 @@ function session(saved=null){
   key('y',{repeat:true});check(!state.locked,'Held Y does not toggle repeatedly');
   state.pan();key('d');state.step(.1);await Promise.resolve();await Promise.resolve();
   const hero=state.step(.1);
-  check(hero.x===5.2&&!state.following&&(!state.camera||state.camera.x===30&&state.camera.y===30),'Unlocked player moves without moving camera');
+  check(hero.x>5&&!state.following&&(!state.camera||state.camera.x===30&&state.camera.y===30),'Unlocked player moves without moving camera');
   listeners.keyup({key:'d'});
   key('y');check(state.locked&&state.following&&(!state.camera||state.camera.x===hero.x&&state.camera.y===hero.y),'Relocking immediately centers player');
   key('y',{ctrlKey:true});check(state.locked,'Browser shortcuts do not toggle camera');

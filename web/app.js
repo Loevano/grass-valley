@@ -166,7 +166,7 @@ function canControlPlayer(allowBuilding=false){
 window.addEventListener('keyup',event=>walkKeys.delete(event.key.toLowerCase()));
 window.addEventListener('blur',clearWalk);
 document.addEventListener?.('visibilitychange',clearWalk);
-// Predict only the next host step; never run ahead while waiting for a reply.
+// Buffer at most half a second of input while a host reply is delayed.
 let movementMap=null;
 const workerTools={
   fine_axe:{name:'Fine axe',job:'woodcutting',bonus:.25},
@@ -270,7 +270,7 @@ function playerSprite(town,seconds){
   const playerTown=world.shared_map&&world.towns[identity?.town_id]?identity.town_id:viewed;
   const key=`${world.world_id}/${playerTown}`;
   if(playerView?.key!==key){
-    playerView={...town.player,key,authoritative:{...town.player},target:{...town.player},clock:0,following:cameraLocked&&playerTown===identity?.town_id};clearWalk();
+    playerView={...town.player,key,authoritative:{...town.player},target:{...town.player},steps:[],segments:[],clock:0,following:cameraLocked&&playerTown===identity?.town_id};clearWalk();
     if(playerView.following&&typeof camera!=='undefined'){camera.x=playerView.x;camera.y=playerView.y;}
   }
   const s=playerView;
@@ -281,19 +281,41 @@ function playerSprite(town,seconds){
   const dx=Math.sign(horizontal+vertical),dy=Math.sign(vertical-horizontal);
   // Carry frame overshoot into the next step without accumulating delayed-request debt.
   walkCooldown=(dx||dy)?Math.max(-seconds,walkCooldown-seconds):0;
-  if((dx||dy)&&!walkingRequest&&walkCooldown<=1e-6){
-    walkingRequest=true;walkCooldown+=.1;
-    s.target=predictPlayerStep(town,s.authoritative,dx,dy);
+  if((dx||dy)&&s.steps.length<5&&walkCooldown<=1e-6){
+    const step={dx,dy};walkCooldown+=.1;s.steps.push(step);
+    s.target=predictPlayerStep(town,s.target,dx,dy);
+    s.segments.push({step,target:s.target});
+  }
+  if(!walkingRequest&&s.steps.length&&playerTown===identity?.town_id){
+    walkingRequest=true;
+    const steps=s.steps.slice(),data={action:'walk',...steps[0],world_id:world.world_id};
+    if(steps.length>1)data.steps=steps;
     const controller=new AbortController(),timeout=setTimeout(()=>controller.abort(),1000);
-    request('/api/command',{action:'walk',dx,dy,world_id:world.world_id},{signal:controller.signal}).then(result=>{
-      if(playerView===s){s.authoritative={...result.player};s.target=result.player;
-        const current=world.towns[playerTown];if(current)current.player={...result.player};}
-    }).catch(error=>{if(playerView===s){s.target={...s.authoritative};clearWalk();notice(error.message);}})
+    request('/api/command',data,{signal:controller.signal}).then(result=>{
+      if(playerView===s){
+        const unrendered=new Set(s.segments.map(segment=>segment.step));s.segments=[];
+        s.steps.splice(0,steps.length);s.authoritative={...result.player};s.target={...result.player};
+        const current=world.towns[playerTown];if(current)current.player={...result.player};
+        for(const step of s.steps){
+          s.target=predictPlayerStep(current || town,s.target,step.dx,step.dy);
+          if(unrendered.has(step))s.segments.push({step,target:s.target});
+        }
+      }
+    }).catch(error=>{if(playerView===s){s.steps.length=0;s.segments=[];s.target={...s.authoritative};clearWalk();notice(error.message);}})
       .finally(()=>{clearTimeout(timeout);walkingRequest=false;});
   }
   const distance=playerMovementDistance(s.target.x-s.x,s.target.y-s.y);
-  const travel=Math.min(1,distance?seconds*3*playerTravelSpeed(town,s)/distance:0);
-  s.x+=(s.target.x-s.x)*travel;s.y+=(s.target.y-s.y)*travel;
+  let remaining=seconds;
+  // Follow each predicted step so buffering a turn cannot cut across obstacles.
+  while(remaining>0){
+    const target=s.segments[0]?.target || s.target;
+    const length=playerMovementDistance(target.x-s.x,target.y-s.y);
+    const duration=length/(3*playerTravelSpeed(town,s));
+    const progress=duration?Math.min(1,remaining/duration):1;
+    s.x+=(target.x-s.x)*progress;s.y+=(target.y-s.y)*progress;
+    if(progress<1||!s.segments.length)break;
+    remaining=Math.max(0,remaining-duration);s.segments.shift();
+  }
   s.facing=s.target.facing;s.clock+=seconds;s.path=distance>.001?[s.target]:[];s.phase='idle';
   const activity=town.player.activity;
   s.source=activity;s.castTarget=activity;s.elapsed=s.clock%3;
@@ -2371,21 +2393,38 @@ function drawGround(rect,dpr,landscape,water,bounds,forest=null){
     cache.surface.width/dpr*scale,cache.surface.height/dpr*scale);
 }
 function fishingBoatSprites(entries,resources,villagers=[]){
-  const water=resources.filter(r=>r.kind==='water'),waterTiles=new Set(water.map(r=>`${r.x},${r.y}`)),berths=new Map(),boats=[];
-  for(const [townId,town] of entries)for(const [index,hut] of (town?.buildings || []).entries()){
-    if(hut.kind!=='fishing_hut'||!fishingBoatLevel(hut))continue;
-    const nearby=water.filter(r=>Math.abs(r.x-hut.x)+Math.abs(r.y-hut.y)<=resourceReach(hut))
-      .sort((a,b)=>(Math.abs(a.x-hut.x)+Math.abs(a.y-hut.y))-(Math.abs(b.x-hut.x)+Math.abs(b.y-hut.y))||a.y-b.y||a.x-b.x);
-    const berth=nearby.find(r=>!berths.has(`${r.x},${r.y}`)) || nearby[0];
-    const key=berth?`${berth.x},${berth.y}`:`shore:${townId}/${index}`,count=berths.get(key) || 0;
-    berths.set(key,count+1);
-    const passenger=villagers.find(v=>v.townId===townId&&v.state.boating&&v.state.home?.x===hut.x&&v.state.home?.y===hut.y
-      &&waterTiles.has(`${Math.floor(v.x+.5)},${Math.floor(v.y+.5)}`));
-    boats.push({kind:'fishing_boat',townId,objectIndex:index,level:fishingBoatLevel(hut),
-      passenger,x:passenger?passenger.x:berth?berth.x+(count ? .35*Math.sin(count*2.4) : 0):hut.x+.7,
-      y:passenger?passenger.y:berth?berth.y+(count ? .35*Math.cos(count*2.4) : 0):hut.y+.4});
+  const huts=[];
+  for(const [townId,town] of entries)for(const [index,hut] of (town?.buildings || []).entries())
+    if(hut.kind==='fishing_hut'&&fishingBoatLevel(hut))huts.push({townId,index,hut});
+  const layout=JSON.stringify(huts.map(({townId,index,hut})=>[townId,index,hut.x,hut.y,resourceReach(hut),fishingBoatLevel(hut)]));
+  let changed=fishingBoatSprites.layout!==layout;
+  if(fishingBoatSprites.resources!==resources || fishingBoatSprites.count!==resources.length){
+    const water=resources.filter(r=>r.kind==='water');
+    Object.assign(fishingBoatSprites,{resources,count:resources.length,water,
+      waterTiles:new Set(water.map(r=>`${r.x},${r.y}`))});
+    changed=true;
   }
-  return boats;
+  const {water,waterTiles}=fishingBoatSprites;
+  if(changed){
+    const berths=new Map();
+    fishingBoatSprites.layout=layout;
+    fishingBoatSprites.docked=huts.map(({townId,index,hut})=>{
+      const nearby=water.filter(r=>Math.abs(r.x-hut.x)+Math.abs(r.y-hut.y)<=resourceReach(hut))
+        .sort((a,b)=>(Math.abs(a.x-hut.x)+Math.abs(a.y-hut.y))-(Math.abs(b.x-hut.x)+Math.abs(b.y-hut.y))||a.y-b.y||a.x-b.x);
+      const berth=nearby.find(r=>!berths.has(`${r.x},${r.y}`)) || nearby[0];
+      const key=berth?`${berth.x},${berth.y}`:`shore:${townId}/${index}`,count=berths.get(key) || 0;
+      berths.set(key,count+1);
+      return {kind:'fishing_boat',townId,objectIndex:index,level:fishingBoatLevel(hut),
+        x:berth?berth.x+(count ? .35*Math.sin(count*2.4) : 0):hut.x+.7,
+        y:berth?berth.y+(count ? .35*Math.cos(count*2.4) : 0):hut.y+.4};
+    });
+  }
+  return fishingBoatSprites.docked.map((boat,index)=>{
+    const {hut}=huts[index];
+    const passenger=villagers.find(v=>v.townId===boat.townId&&v.state.boating&&v.state.home?.x===hut.x&&v.state.home?.y===hut.y
+      &&waterTiles.has(`${Math.floor(v.x+.5)},${Math.floor(v.y+.5)}`));
+    return {...boat,passenger,x:passenger?passenger.x:boat.x,y:passenger?passenger.y:boat.y};
+  });
 }
 function drawFishingBoat(boat){
   const [x,top]=point(boat.x,boat.y),y=top+tileH/2,s=tileW/46;
@@ -2610,8 +2649,17 @@ function placementValid(town,tile,kind){
 }
 function buildingUsable(town,b){
   const source={woodcutter:'tree',fishing_hut:'water'}[b.kind];
+  if(!source)return true;
+  const resources=town?.map_resources;
+  if(!resources)return false;
+  if(buildingUsable.resources!==resources || buildingUsable.count!==resources.length){
+    buildingUsable.resources=resources;buildingUsable.count=resources.length;buildingUsable.results=new Map();
+  }
   const reach=resourceReach(b);
-  return !source || !!town?.map_resources.some(r=>r.kind===source&&Math.abs(r.x-b.x)+Math.abs(r.y-b.y)<=reach);
+  const key=`${source}/${b.x}/${b.y}/${reach}`;
+  if(!buildingUsable.results.has(key))buildingUsable.results.set(key,
+    resources.some(r=>r.kind===source&&Math.abs(r.x-b.x)+Math.abs(r.y-b.y)<=reach));
+  return buildingUsable.results.get(key);
 }
 function drawFarmCrops(b,state,collectCrop=null){
   const elapsed=state?.elapsed ?? 6;
