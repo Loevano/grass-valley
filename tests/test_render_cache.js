@@ -19,7 +19,7 @@ const run=new Function('document','window','localStorage','setTimeout','clearTim
   const town={map_size:120,terrain:Array(120).fill('g'.repeat(120)),map_resources:[{kind:'tree',x:31,y:31}],
     buildings:[{kind:'hall',x:30,y:30}],villagers:[{name:'Ada',job:'idle'}],food:40,wood:40,level:1};
   world={world_id:'cache-test',towns:{own:town}};viewed='own';cameraTown='cache-test/own';camera={x:30,y:30,zoom:1};
-  const groundSurfaces=()=>surfaces.filter(surface=>![...resourceSprites.values()].includes(surface));
+  const groundSurfaces=()=>surfaces.filter(surface=>![...resourceSprites.values(),...buildingSprites.values()].includes(surface));
   draw();
   assert.equal(groundSurfaces().length,1);const surface=groundCache.surface,painted=surface.paints;
   assert(painted>0,'Ground is painted into the cache');
@@ -107,6 +107,53 @@ const run=new Function('document','window','localStorage','setTimeout','clearTim
   assert.equal(waterSurface.paints,waterPaints,'Supply updates do not repaint water');
   world=JSON.parse(JSON.stringify(world));world.towns.friend.map_resources=[];draw();
   assert.equal(groundSurfaces().length,waterSurfaces+1,'Water layout changes invalidate the terrain');
+  buildingSprites.clear();buildingSpriteBytes=0;
+  const cottage={kind:'home',x:30,y:30},owner={level:1,map_resources:[]};
+  tileW=54;tileH=27;
+  drawBuilding(cottage,owner);
+  const cottageSprite=images.at(-1)[0],cottagePaints=cottageSprite.paints;
+  const allocations=surfaces.length;
+  for(let frame=0;frame<100;frame++)drawBuilding({...cottage,x:30+frame/100},owner);
+  assert.equal(surfaces.length,allocations,'Completed buildings share artwork across frames and positions');
+  assert.equal(cottageSprite.paints,cottagePaints,'Warm building frames do not repaint paths');
+  drawBuilding({...cottage,level:2},owner);
+  assert.notStrictEqual(images.at(-1)[0],cottageSprite,'Completed structural upgrades select new artwork');
+  drawBuilding({...cottage,settler_level:2},owner);
+  assert.notStrictEqual(images.at(-1)[0],cottageSprite,'Capacity upgrades select new markers');
+  drawBuilding({...cottage,profession_upgrades:['timber_frame']},owner);
+  assert.notStrictEqual(images.at(-1)[0],cottageSprite,'Profession upgrades select new artwork');
+  const woodcutter={kind:'woodcutter',x:30,y:30};
+  drawBuilding(woodcutter,owner);const unusableSprite=images.at(-1)[0];
+  drawBuilding(woodcutter,{...owner,map_resources:[{kind:'tree',x:31,y:30}]});
+  assert.notStrictEqual(images.at(-1)[0],unusableSprite,'Nearby resource changes update workplace colors');
+  const barn={kind:'barn',x:30,y:30};
+  drawBuilding(barn,owner);const emptyBarn=images.at(-1)[0];
+  drawBuilding({...barn,animals:{chicken:2}},owner);
+  assert.notStrictEqual(images.at(-1)[0],emptyBarn,'Animal changes update the cached barn');
+  const hall={kind:'hall',x:30,y:30};
+  drawBuilding(hall,owner);const firstHall=images.at(-1)[0];
+  drawBuilding(hall,{...owner,level:5});
+  assert.notStrictEqual(images.at(-1)[0],firstHall,'Hall artwork uses its owner level');
+  const mill={kind:'mill',x:30,y:30};
+  drawBuilding(mill,owner,{elapsed:1});const millSprite=images.at(-1)[0],millPaints=millSprite.paints;
+  const oldStroke=ctx.stroke;let movingSails=0;ctx.stroke=()=>movingSails++;
+  drawBuilding(mill,owner,{elapsed:2});drawBuilding(mill,owner,{elapsed:3});ctx.stroke=oldStroke;
+  assert.strictEqual(images.at(-1)[0],millSprite,'Animated mill reuses its static artwork');
+  assert.equal(millSprite.paints,millPaints,'Rotating sails do not repaint the building');
+  assert.equal(movingSails,8,'Four sails still draw on each animated frame');
+  const imageCount=images.length;
+  drawBuilding({...cottage,construction:{progress:12,total:30}},owner);
+  assert.equal(images.length,imageCount,'Construction progress draws directly');
+  tileW=50;tileH=25;drawBuilding(cottage,owner);
+  assert.strictEqual(images.at(-1)[0],cottageSprite,'Nearby zoom levels reuse the same resolution bucket');
+  for(let resolution=1;resolution<=64;resolution*=2){
+    tileW=46*resolution;tileH=tileW/2;
+    for(let level=1;level<=5;level++)drawBuilding(hall,{...owner,level});
+  }
+  const buildingBytes=[...buildingSprites.values()].reduce((sum,sprite)=>sum+sprite.width*sprite.height*4,0);
+  assert.equal(buildingSpriteBytes,buildingBytes,'Building eviction tracks texture memory');
+  assert(buildingBytes<=buildingSpriteByteLimit&&buildingSprites.size<=128,'Building textures remain bounded at high resolution');
+
 `);
 run(documentMock,windowMock,{getItem:()=>null},()=>0,()=>{},WorkerAnimation,assert,surfaces,fills,images,copies,()=>{width=720;height=500;},{now:()=>now},ms=>{now+=ms;});
 console.log('Render cache checks passed');
