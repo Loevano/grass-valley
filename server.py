@@ -204,10 +204,10 @@ def settler_building(town, worker_index):
     source = 'tree' if kind == 'woodcutter' else 'water'
     workplaces = [i for i, b in enumerate(town['buildings'])
                   if b['kind'] == kind and completed(b)
-                  and any(r['kind'] == source and
+                  and (kind == 'farm' or any(r['kind'] == source and
                           abs(r['x'] - b['x']) + abs(r['y'] - b['y']) <=
                           (6 if kind == 'fishing_hut' and 'boat' in b.get('profession_upgrades', []) else RESOURCE_REACH)
-                          for r in town['map_resources'])]
+                          for r in town['map_resources']))]
     return workplaces[worker_index % len(workplaces)] if workplaces else None
 
 
@@ -279,7 +279,7 @@ def work_assignment(town, job, worker_index):
         reach = 6 if job == 'fishing' and 'boat' in b.get('profession_upgrades', []) else RESOURCE_REACH
         nearby = [r for r in town['map_resources'] if r['kind'] == source
                   and abs(r['x'] - b['x']) + abs(r['y'] - b['y']) <= reach]
-        if nearby:
+        if nearby or job == 'farming':
             if job == 'farming':
                 acres = [a for a in town['buildings'] if a['kind'] == 'acre' and completed(a)
                          and a.get('farm_index') == farm_index
@@ -288,8 +288,7 @@ def work_assignment(town, job, worker_index):
                     if assigned_acre not in acres:
                         return None
                     acres = [assigned_acre]
-                if acres:
-                    nearby = [acres[worker_index % len(acres)]]
+                nearby = [acres[worker_index % len(acres)]] if acres else [b]
             workplaces.append((b, min(nearby, key=lambda r:
                                       (r.get('supply', 1) <= 0, abs(r['x'] - b['x']) + abs(r['y'] - b['y'])))))
     if not workplaces:

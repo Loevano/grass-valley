@@ -20,7 +20,7 @@ function render(state,job='farming',active=true){
 const stages=[['plowing','#aab9b4'],['sowing','#efd59a'],['watering','#9fd8e5'],['harvesting','#e5c77f']];
 const town={map_size:12,buildings:[{kind:'farm',x:6,y:2},{kind:'acre',x:6,y:3,farm_index:0}],
   map_resources:[{kind:'water',x:9,y:2}]};
-for(const target of [town.buildings[1],town.map_resources[0]]){
+for(const target of [town.buildings[1],town.buildings[0]]){
   const state=animation.plan(town,{job:'farming',work_target:target},0);
   for(let i=0;i<300&&state.path.length;i++)animation.advance(state,.1,true);
   assert.strictEqual(state.phase,'working');
@@ -29,6 +29,13 @@ for(const target of [town.buildings[1],town.map_resources[0]]){
     assert.strictEqual(state.y,target.y,'Farmer works inside the acre');
   }
   for(const [index,[name,color]] of stages.entries()){
+    if(index===2){
+      assert(['fetching_water','collecting_water'].includes(state.phase),'Water fetching begins after sowing');
+      for(let i=0;i<300&&state.phase!=='working';i++)animation.advance(state,.1,true);
+      assert.strictEqual(state.phase,'working','Farmer brings water back before watering');
+      assert.strictEqual(state.elapsed,4,'Field work pauses while fetching water');
+      assert(state.waterReady,'Watering uses a filled can');
+    }
     const output=render(state);
     assert(output.some(mark=>mark.color===color),`Arrival at stage ${index} shows ${name}`);
     for(const [,other] of stages.filter((_,i)=>i!==index)){
@@ -72,7 +79,7 @@ const farmer=animation.plan(clustered,{job:'farming',work_target:fields[0]},0);
 for(let i=0;i<300&&farmer.path.length;i++)animation.advance(farmer,.1,true);
 assert.strictEqual(farmer.phase,'working','Farmer can enter a field surrounded by other acres');
 assert.strictEqual(farmer.x,6);assert.strictEqual(farmer.y,3);
-animation.advance(farmer,8,true);
+for(let i=0;i<300&&!['returning','depositing'].includes(farmer.phase);i++)animation.advance(farmer,.1,true);
 assert(['returning','depositing'].includes(farmer.phase),'Farmer can leave the cluster to deliver grain');
 const builder=animation.plan(clustered,{job:'farming',construction_target:town.buildings[0]},0);
 assert(builder.blocked.has('6,3'),'Building assignments keep construction path rules');

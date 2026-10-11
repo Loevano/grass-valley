@@ -47,14 +47,14 @@ class FarmAcres(unittest.TestCase):
                 self.build(**change)
             self.assertEqual(before, self.town)
 
-    def test_acres_need_water_and_follow_their_own_farm(self):
+    def test_acres_follow_their_own_farm_without_nearby_water(self):
         self.build()
         command(self.town, {'action': 'build', 'kind': 'farm', 'x': 7, 'y': 3})
         self.finish_construction()
         self.assertEqual(work_source(self.town, 'farming', 0)['kind'], 'acre')
-        self.assertEqual(work_source(self.town, 'farming', 1)['kind'], 'water')
+        self.assertEqual(work_source(self.town, 'farming', 1)['kind'], 'farm')
         self.town['map_resources'] = [r for r in self.town['map_resources'] if r['kind'] != 'water']
-        self.assertIsNone(work_source(self.town, 'farming', 0))
+        self.assertEqual(work_source(self.town, 'farming', 0)['kind'], 'acre')
 
     def test_relocation_keeps_association_and_enforces_reach(self):
         self.build()

@@ -89,12 +89,12 @@ class BuildingSettlers(unittest.TestCase):
     def test_assignment_and_production_follow_selected_farm_after_save_and_move(self):
         self.assign(0, 2)
         self.town = json.loads(json.dumps(self.town))
-        self.assertEqual(self.town['villagers'][0]['work_target']['kind'], 'water')
+        self.assertEqual(self.town['villagers'][0]['work_target']['kind'], 'farm')
         command(self.town, {'action': 'move', 'index': 2, 'x': 4, 'y': 4})
         tick({'towns': {'own': self.town}})
         self.assertEqual(self.town['villagers'][0]['building_index'], 2)
-        self.assertIsNone(self.town['villagers'][0]['work_target'])
-        # The nearby first farm must not take over the explicit assignment.
+        self.assertIs(self.town['villagers'][0]['work_target'], self.town['buildings'][2])
+        # Moving away from water keeps the explicit farm assignment.
 
     def test_acre_assignments_use_that_specific_field_and_pause_without_their_farm(self):
         self.assign(0, 3)

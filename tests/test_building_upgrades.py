@@ -151,7 +151,7 @@ class BuildingUpgrades(unittest.TestCase):
         self.assertEqual(self.town['buildings'][farm]['output_buffer']['vegetables'], 3)
         self.town['map_resources'] = []
         tick({'towns': {'a': self.town}})
-        self.assertIsNone(self.town['villagers'][0]['work_target'])
+        self.assertIs(self.town['villagers'][0]['work_target'], self.town['buildings'][acre])
 
 
 if __name__ == '__main__':

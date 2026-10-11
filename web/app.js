@@ -615,7 +615,7 @@ function renderSettlers(town,item,buildingIndex){
   const assigned=town.villagers.map((v,i)=>({v,i})).filter(({v,i})=>settlerBuilding(town,v,i)===buildingIndex);
   $('selection-details').append(fact(`${assigned.length} / ${capacity}`,'Settler spaces'));
   const note=document.createElement('p');
-  note.textContent=item.kind==='acre'?'Assigned settlers tend this acre using its farm’s water supply.':
+  note.textContent=item.kind==='acre'?'Assigned settlers tend this acre and fetch water when watering.':
     item.kind==='storehouse'?'Assigned haulers collect workplace outputs and deliver processor inputs.':['hall','home'].includes(item.kind)?'Assigned settlers rest here and can still help with construction. Housing and storage benefits are automatic.':
     'Assign settlers here to work at this building.';
   $('selection-details').append(note);
@@ -757,7 +757,7 @@ function renderSelection(town){
   if(selection.type==='resource'){
     const swamp=town.terrain?.[item.y]?.[item.x]==='b';
     $('selection-title').textContent=({berry_bush:'Berry bush',herb_patch:'Herb patch'}[item.kind]) || (swamp?{tree:'Swamp willow',water:'Swamp water',rock:'Rock outcrop'}:{tree:'Forest',water:'Water',rock:'Rock outcrop',berry_bush:'Berry bush',herb_patch:'Herb patch'})[item.kind];
-    p.textContent={tree:'Renewable wood source. Place a woodcutter within 3 horizontal or vertical tile steps, then assign a villager to woodcutting.',water:'Renewable source for farming and fishing. Place a farm or fishing hut within 3 horizontal or vertical tile steps, then assign a villager to farming or fishing.',rock:'This outcrop occupies its tile. Mining is not available yet.',berry_bush:'Stand nearby and press G to gather berries for food.',herb_patch:'Stand nearby and press G to gather herbs for animal breeding.'}[item.kind];
+    p.textContent={tree:'Renewable wood source. Place a woodcutter within 3 horizontal or vertical tile steps, then assign a villager to woodcutting.',water:'Renewable source for farming and fishing. Farmers fetch water during watering. Place fishing huts within 3 horizontal or vertical tile steps, then assign a villager to fishing.',rock:'This outcrop occupies its tile. Mining is not available yet.',berry_bush:'Stand nearby and press G to gather berries for food.',herb_patch:'Stand nearby and press G to gather herbs for animal breeding.'}[item.kind];
     if(item.supply_max){$('selection-details').append(fact(`${(item.supply || 0).toFixed(1)} / ${item.supply_max}`,'Shared supply'));$('selection-details').append(fact(`${item.regeneration} per 3 seconds`,'Regeneration'));}
   }else{
     $('selection-title').textContent=buildingName(item);
@@ -767,7 +767,7 @@ function renderSelection(town){
       $('selection-details').append(fact(town.level,'Hall level'));
       $('selection-details').append(fact(`${buildingRange(town)} tile steps`,'Building range'));
     }
-    p.textContent={hall:'The heart of your settlement. Develop housing, food, and professions to unlock hall levels 2–5. Each completed upgrade awards coins.',home:`Room for ${2*(buildingLevel(item)+(item.profession_upgrades?.includes('timber_frame')?1:0))} additional villagers, up to 16 in the town. New residents need available housing and sufficient food.`,storehouse:`${buildingName(item)} adds ${100*buildingLevel(item)} shared spaces. Allocate them between resources and assign haulers to collect outputs and supply workplaces.`,woodcutter:'A workplace for gathering wood from nearby trees.',farm:'A workplace for growing food near water. Build acres nearby for farmers to tend.',fishing_hut:'A workplace for catching fish for food near water.',acre:'A crop field tended by farmers from its farm. Its farm needs water within 3 tile steps to produce food.'}[item.kind];
+    p.textContent={hall:'The heart of your settlement. Develop housing, food, and professions to unlock hall levels 2–5. Each completed upgrade awards coins.',home:`Room for ${2*(buildingLevel(item)+(item.profession_upgrades?.includes('timber_frame')?1:0))} additional villagers, up to 16 in the town. New residents need available housing and sufficient food.`,storehouse:`${buildingName(item)} adds ${100*buildingLevel(item)} shared spaces. Allocate them between resources and assign haulers to collect outputs and supply workplaces.`,woodcutter:'A workplace for gathering wood from nearby trees.',farm:'A workplace for growing food. Build acres nearby; farmers fetch water when watering their crops.',fishing_hut:'A workplace for catching fish for food near water.',acre:'A crop field tended by farmers from its farm. Farmers fetch water during the watering stage.'}[item.kind];
     if(item.kind==='hall'){
       p.textContent+=` Build within ${buildingRange(town)} horizontal and vertical tile steps of the hall; diagonals count as 2. Each completed hall upgrade adds 5 steps to the range.`;
       $('hall-details').hidden=false;
@@ -1096,7 +1096,7 @@ function drawVillager(b){
   const swing=working?(Math.sin((s.elapsed || 0)*(chopping?5:7))+1)/2:0;
   ctx.save();ctx.translate(px+(b.index%3-1)*3,py+tileH*.65+Math.floor(b.index/3));ctx.scale(tileW/46,tileW/46);
   ctx.fillStyle='#223b2966';ctx.beginPath();ctx.ellipse(0,2,7,3,0,0,Math.PI*2);ctx.fill();
-  const facingTarget=fishing?(s.castTarget || s.source):s.source;
+  const facingTarget=s.phase==='collecting_water'?s.waterSource:fishing?(s.castTarget || s.source):s.source;
   const towardSource=facingTarget?(facingTarget.x-s.x)-(facingTarget.y-s.y):0;
   const facing=(working||fishing||farming)&&towardSource!==0?Math.sign(towardSource):s.facing;
   ctx.scale(facing,1);
@@ -1220,6 +1220,11 @@ function drawVillager(b){
     if(chopping&&swing>.85){
       ctx.fillStyle='#e4c98a';for(let i=0;i<4;i++)ctx.fillRect(13+i*3,-6-i*3+swing*7,3,2);
     }
+  }
+  if(['fetching_water','collecting_water','returning_water'].includes(s.phase)){
+    ctx.fillStyle='#789da5';ctx.fillRect(6,-9,8,7);
+    ctx.strokeStyle='#b7d1d5';ctx.lineWidth=1.5;ctx.beginPath();ctx.arc(10,-10,4,Math.PI,Math.PI*2);ctx.stroke();
+    if(s.phase!=='fetching_water'){ctx.fillStyle='#9fd8e5';ctx.fillRect(7,-9,6,2);}
   }
   if(s.transport||s.phase==='returning'||s.phase==='depositing'){
     ctx.save();
@@ -1543,7 +1548,7 @@ function placementValid(town,tile,kind){
     && (tool==='move' || town.wood>=costs[kind]);
 }
 function buildingUsable(town,b){
-  const source={woodcutter:'tree',farm:'water',fishing_hut:'water'}[b.kind];
+  const source={woodcutter:'tree',fishing_hut:'water'}[b.kind];
   const reach=b.kind==='fishing_hut'&&b.profession_upgrades?.includes('boat')?6:3;
   return !source || !!town?.map_resources.some(r=>r.kind===source&&Math.abs(r.x-b.x)+Math.abs(r.y-b.y)<=reach);
 }

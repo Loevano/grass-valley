@@ -7,7 +7,7 @@ const WorkerAnimation = (() => {
     const queue = [start], previous = new Map([[key(start),null]]);
     for(let i=0;i<queue.length;i++){
       const p=queue[i];
-      if(distance(p,target)===(adjacent?1:0)){
+      if(target instanceof Set?target.has(key(p)):distance(p,target)===(adjacent?1:0)){
         const path=[];
         for(let step=p;previous.get(key(step));step=previous.get(key(step)))path.unshift(step);
         return path;
@@ -42,10 +42,10 @@ const WorkerAnimation = (() => {
     const source=villager.construction_target || (villager.job==='idle'?null:villager.work_target);
     const kind=villager.job==='woodcutting'?'woodcutter':villager.job==='fishing'?'fishing_hut':'farm';
     // Match the host's workplace selection, including multiple assigned workers.
-    const workplaces=town.buildings.filter(b=>b.kind===kind&&!b.construction&&town.map_resources.some(r=>
-      r.kind===(kind==='woodcutter'?'tree':'water')&&distance(b,r)<=3));
+    const workplaces=town.buildings.filter(b=>b.kind===kind&&!b.construction&&(kind==='farm'||town.map_resources.some(r=>
+      r.kind===(kind==='woodcutter'?'tree':'water')&&distance(b,r)<=3)));
     const assigned=Number.isInteger(villager.building_index)?town.buildings[villager.building_index]:null;
-    const workplace=assigned || (source?.kind==='acre'?town.buildings[source.farm_index]:workplaces[index%workplaces.length]);
+    const workplace=(assigned?.kind==='acre'?town.buildings[assigned.farm_index]:assigned) || (source?.kind==='acre'?town.buildings[source.farm_index]:workplaces[index%workplaces.length]);
     const home=villager.construction_target || workplace || town.buildings.find(b=>b.kind==='hall');
     let pier=[],workSpot=null;
     if(!villager.construction_target&&villager.job==='farming'&&source?.kind==='acre'){
@@ -83,8 +83,21 @@ const WorkerAnimation = (() => {
     }
     return {...start,phase:path===null?'waiting':path.length?'walking':source?'working':'idle',
       path:path || [],source,home,pier,workSpot,castTarget,fishingCaught:null,blocked,size,workDuration:villager.job==='farming'?8:3.2,
+      farming:villager.job==='farming'&&!villager.construction_target,water:town.map_resources.filter(r=>r.kind==='water'),waterReady:false,
       stationary:!!source&&source.kind===workplace?.kind&&distance(source,workplace)===0&&!villager.construction_target,
       construction:!!villager.construction_target,elapsed:0,clock:state?.clock || index*.37,facing:state?.facing || 1};
+  }
+  function fetchWater(state) {
+    // Search all reachable banks in one pass; water need not be near the farm.
+    const banks=new Map();
+    for(const water of state.water)for(const bank of neighbors(water)){
+      if(bank.x>=0&&bank.y>=0&&bank.x<state.size&&bank.y<state.size&&!state.blocked.has(key(bank)))banks.set(key(bank),water);
+    }
+    const path=route(state,new Set(banks.keys()),state.blocked,state.size,false);
+    if(path===null){state.phase='waiting_water';return;}
+    const bank=path.at(-1) || state;
+    state.waterSource=banks.get(key(bank));state.path=path;state.waterElapsed=0;
+    state.phase=path.length?'fetching_water':'collecting_water';
   }
   function advance(state, seconds, active) {
     if(active || state.path.length || !state.source)state.clock+=seconds;
@@ -99,13 +112,30 @@ const WorkerAnimation = (() => {
         if(length<=travel+1e-9){state.x=next.x;state.y=next.y;state.path.shift();}
         else{state.x+=dx/length*travel;state.y+=dy/length*travel;}
       }
-      if(!state.path.length){state.phase=state.phase==='returning'?'depositing':state.source?'working':'idle';state.elapsed=0;}
+      if(!state.path.length){
+        if(state.phase==='fetching_water'){state.phase='collecting_water';state.waterElapsed=0;}
+        else if(state.phase==='returning_water'){state.phase='working';state.waterReady=true;}
+        else{state.phase=state.phase==='returning'?'depositing':state.source?'working':'idle';state.elapsed=0;}
+      }
       return;
     }
     if(state.transport){state.phase='waiting';return;}
     if(state.construction){state.elapsed+=seconds;return;}
     if(!active || !state.source || state.phase==='waiting')return;
+    if(state.phase==='waiting_water')return;
+    if(state.phase==='collecting_water'){
+      state.waterElapsed+=seconds;
+      if(state.waterElapsed>=.65){
+        const path=route(state,state.workSpot || state.source,state.blocked,state.size,!state.workSpot);
+        state.path=path || [];state.phase=path===null?'waiting_water':path.length?'returning_water':'working';
+        state.waterReady=path!==null&&!path.length;
+      }
+      return;
+    }
     state.elapsed+=seconds;
+    if(state.farming&&state.phase==='working'&&state.elapsed>=4&&!state.waterReady){
+      state.elapsed=4;fetchWater(state);return;
+    }
     if(state.phase==='working'&&state.castTarget&&state.elapsed>=2.35&&state.fishingCaught===null){
       state.fishingCaught=state.latestFishingCatch?.caught ?? true;
     }
@@ -116,7 +146,7 @@ const WorkerAnimation = (() => {
       state.path=path;state.phase=path.length?'returning':'depositing';state.elapsed=0;
     }else if(state.phase==='depositing'&&state.elapsed>=.65){
       const path=route(state,state.workSpot || state.source,state.blocked,state.size,!state.workSpot);
-      state.path=path || [];state.phase=path===null?'waiting':path.length?'walking':'working';state.elapsed=0;state.fishingCaught=null;
+      state.path=path || [];state.phase=path===null?'waiting':path.length?'walking':'working';state.elapsed=0;state.fishingCaught=null;state.waterReady=false;
     }
   }
   return {route,plan,advance};

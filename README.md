@@ -90,7 +90,7 @@ the Python host, refresh both browsers, and create a new world to use the shared
 - Open **Build**, choose a building, hover over open grass to highlight its tile, then left-click
   to place it and spend wood. Keep clicking open tiles to place more of the selected building,
   or **Cancel selection** to clear it. Place woodcutters within three horizontal/vertical tile steps
-  of trees and farms within three steps of water; workers need these nearby sources.
+  of trees; farmers can fetch water farther away during the watering stage.
 - Choose **Dirt road** in Build to place free roads instantly on open ground within
   your town’s building area. Players and settlers walk 50% faster on road tiles.
   Everyone can use roads in the shared valley. Click a road to inspect it; its
@@ -103,7 +103,8 @@ the Python host, refresh both browsers, and create a new world to use the shared
 - Trees and water regenerate finite shared supplies. Rock outcrops cannot be mined yet.
 - Select a farm and choose **Build acre · 5 wood**, then click open ground within
   three tile steps of that farm. Farmers tend its acres and deliver food back to
-  the farm; water must still be within three steps of the farm. Farms without
+  the farm. Farmers fetch reachable water when watering; the farm can be farther
+  than three steps from water. Farms without
   nearby acres continue their existing production. Acres are saved with their farm
   association; moving the farm out of reach pauses work on those fields.
 - Click a building, moving villager, or resource to open its information panel.
@@ -157,9 +158,12 @@ the Python host, refresh both browsers, and create a new world to use the shared
 - Workers walk around obstacles to their resource spots, chop wood or tend crops,
   and carry supplies back to their workplace. These animations illustrate work;
   production still follows the host's three-second rhythm. If a workplace is out
-  of reach, production and skill growth pause; move it closer to the source to resume.
+  of reach of its wood or fishing source, production and skill growth pause;
+  move it closer to the source to resume.
 - Farmers plow with a hoe, sow seeds, water with a can, and harvest with a sickle,
-  then carry grain back to the farm. Each action lasts two seconds; full food
+  then carry grain back to the farm. At the watering stage, they walk to a
+  reachable water source, fill their can, and return to the field. Travel pauses
+  the action timer. Each action lasts two seconds; full food
   storage pauses the animation until there is room again.
 - Build a fishing hut within three tile steps of water and assign Fishing to
   produce food and learn fishing skill. Fishers cast into the water, wait by a

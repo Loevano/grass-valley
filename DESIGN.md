@@ -86,9 +86,9 @@ These are starting values to make the prototype playable, **not final design dec
 - Move a building instantly for one coin, preserving its identity. If you have no coins, moving is free so rearranging never becomes locked.
 - Every three seconds, assigned workers produce into 50-unit workplace buffers and gain skill if the buffer has room.
 - Town maps contain renewable forests and water, plus rock outcrops. Woodcutters
-  need a tree within three horizontal/vertical tile steps; farms need water within
-  the same reach. Workers animate walking around obstacles, gathering beside the
-  source, and delivering supplies. Animation is cosmetic; the host still controls
+  need a tree within three horizontal/vertical tile steps; farmers fetch water during
+  the watering stage without a farm-to-water distance limit. Workers animate
+  walking around obstacles, gathering beside the source, and delivering supplies. Animation is cosmetic; the host still controls
   production every three seconds. Buildings use open grass tiles.
   Rock mining and resource depletion are not implemented. Existing saves gain
   resources only on unoccupied tiles, preserving their buildings.

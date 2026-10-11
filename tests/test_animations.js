@@ -28,9 +28,9 @@ check(!changed.source&&changed.phase!=='working','Changing jobs cancels gatherin
 const enclosure=new Set(['0,1','1,0']);
 check(animation.route({x:0,y:0},{x:5,y:5},enclosure)===null,'Unreachable routes are detected');
 const farm={buildings:[{kind:'farm',x:6,y:2}],map_resources:[{kind:'water',x:9,y:2}]};
-state=animation.plan(farm,{job:'farming',work_target:farm.map_resources[0]},0);
+state=animation.plan(farm,{job:'farming',work_target:farm.buildings[0]},0);
 for(let i=0;i<300&&state.path.length;i++)animation.advance(state,.1,true);
-check(state.phase==='working'&&state.home.kind==='farm','Farmers walk to water and use the matching farm');
+check(state.phase==='working'&&state.home.kind==='farm','Farmers tend their farm before fetching water');
 const shaped={map_size:12,buildings:[{kind:'hall',x:5,y:5}],map_resources:[],
   terrain:Array(12).fill('vvvvgggggggg')};
 state=animation.plan(shaped,{job:'idle'},0);

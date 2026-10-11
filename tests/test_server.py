@@ -181,7 +181,7 @@ class VillageRules(unittest.TestCase):
         self.assertGreater(self.town['buildings'][1]['output_buffer']['wood'], 0)
         self.assertEqual(self.town['villagers'][0]['work_target']['kind'], 'tree')
 
-    def test_farming_uses_water_at_reach_boundary(self):
+    def test_farming_workplace_does_not_require_nearby_water(self):
         command(self.town, {'action': 'build', 'kind': 'farm', 'x': 6, 'y': 2})
         self.finish_construction()
         command(self.town, {'action': 'job', 'index': 0, 'job': 'farming'})
@@ -189,13 +189,13 @@ class VillageRules(unittest.TestCase):
         tick({'towns': {'a': self.town}})
         self.assertLess(self.town['food'], food)
         self.assertGreater(self.town['buildings'][1]['output_buffer']['vegetables'], 0)
-        self.assertEqual(self.town['villagers'][0]['work_target']['kind'], 'water')
+        self.assertEqual(self.town['villagers'][0]['work_target']['kind'], 'farm')
         command(self.town, {'action': 'move', 'index': 1, 'x': 5, 'y': 2})
         food, skill = self.town['food'], self.town['villagers'][0]['farming']
         tick({'towns': {'a': self.town}})
         self.assertLess(self.town['food'], food)
-        self.assertEqual(self.town['villagers'][0]['farming'], skill)
-        self.assertIsNone(self.town['villagers'][0]['work_target'])
+        self.assertGreater(self.town['villagers'][0]['farming'], skill)
+        self.assertEqual(self.town['villagers'][0]['work_target']['kind'], 'farm')
 
     def test_legacy_towns_keep_existing_buildings_when_resources_are_added(self):
         del self.town['map_resources']
