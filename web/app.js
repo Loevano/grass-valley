@@ -54,6 +54,7 @@ function renderSettings(){
   for(const action of Object.keys(defaultBindings))$('binding-'+action).value=keybindings[action].toUpperCase();
   $('world').setAttribute('aria-label',`Town grid. Use ${['up','left','down','right'].map(action=>keybindings[action].toUpperCase()).join(', ')} to walk. Press ${keybindings.camera.toUpperCase()} to toggle camera lock. Press ${keybindings.interact.toUpperCase()} to interact with a nearby NPC. Use arrow keys and Enter to inspect tiles.`);
   $('movement-hint').textContent=`Click map · ${['up','left','down','right'].map(action=>keybindings[action].toUpperCase()).join('/')} to walk · ${keybindings.camera.toUpperCase()} camera lock · ${keybindings.fish.toUpperCase()} fish · ${keybindings.chop.toUpperCase()} chop · ${keybindings.gather.toUpperCase()} gather · ${keybindings.build.toUpperCase()} building mode · ${keybindings.interact.toUpperCase()} interact`;
+  $('movement-hint').textContent+=' · Space town hall';
 }
 for(const action of Object.keys(defaultBindings)){
   const label=document.createElement('label');label.textContent=bindingLabels[action];label.setAttribute('for','binding-'+action);
@@ -659,6 +660,13 @@ window.addEventListener('keydown',event=>{
         event.preventDefault();clearWalk();$(name+'-button').onclick();
         if(name!=='world-menu')canvas.focus();
       }
+    }
+    return;
+  }
+  if(key===' '&&!event.repeat&&!event.ctrlKey&&!event.metaKey&&!event.altKey&&canControlPlayer(true)&&document.activeElement?.tagName!=='BUTTON'){
+    const hall=world.towns[viewed]?.buildings?.find(building=>building.kind==='hall');
+    if(hall){
+      event.preventDefault();setCameraLock(false);camera.x=hall.x;camera.y=hall.y;keyboardTile=null;draw();
     }
     return;
   }
@@ -2151,7 +2159,7 @@ canvas.addEventListener('keydown',event=>{
     event.preventDefault();const [dx,dy]=directions[event.key];
     keyboardTile=keyboardTile || (world.shared_map?{x:Math.round(camera.x),y:Math.round(camera.y)}:{x:5,y:5});
     keyboardTile={x:Math.max(0,Math.min(mapSize(world.towns[viewed])-1,keyboardTile.x+dx)),y:Math.max(0,Math.min(mapSize(world.towns[viewed])-1,keyboardTile.y+dy))};draw();
-  }else if(event.key==='Enter'||event.key===' '){event.preventDefault();const tile=keyboardTile || (world.shared_map?{x:Math.round(camera.x),y:Math.round(camera.y)}:{x:5,y:5});selectTile(tile.x,tile.y);}
+  }else if(event.key==='Enter'){event.preventDefault();const tile=keyboardTile || (world.shared_map?{x:Math.round(camera.x),y:Math.round(camera.y)}:{x:5,y:5});selectTile(tile.x,tile.y);}
 });
 canvas.addEventListener('wheel',event=>{
   event.preventDefault();

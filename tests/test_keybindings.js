@@ -20,7 +20,7 @@ function session(saved=null){
     const actions=[];playerAction=action=>actions.push(action);
     return {get actions(){return actions;},get bindings(){return keybindings;},get locked(){return cameraLocked;},get following(){return playerView.following;},
       get camera(){return typeof camera==='undefined'?null:{...camera};},get held(){return [...walkKeys];},step:seconds=>playerSprite(town,seconds),
-      pan(){if(typeof camera!=='undefined'){camera.x=30;camera.y=30;}},get panel(){return panel;},get tool(){return tool;},
+      addHall(){town.buildings.push({kind:'hall',x:12,y:14});},pan(){if(typeof camera!=='undefined'){camera.x=30;camera.y=30;}},get panel(){return panel;},get tool(){return tool;},
       place(){panel='build';tool='home';buildTile={x:1,y:1};hoverTile={x:1,y:1};},get placement(){return buildTile || hoverTile;}};
   `);
   const state=run(document,{addEventListener(type,callback){listeners[type]=callback;}},
@@ -30,6 +30,23 @@ function session(saved=null){
   return {state,document,storage,key,rebind,listeners};
 }
 (async()=>{
+  const home=session();
+  home.state.addHall();home.state.pan();home.key(' ');
+  check(home.state.camera.x===12&&home.state.camera.y===14&&!home.state.locked&&!home.state.following,'Space centers the town hall and disables player following');
+  home.state.step(.1);check(home.state.camera.x===12&&home.state.camera.y===14,'Player updates preserve the town hall camera');
+  home.state.pan();home.document.getElementById('world').events.keydown({key:' ',preventDefault(){}});
+  check(home.state.camera.x===30,'Canvas Space does not select a tile before the global shortcut');
+  for(const extra of [{repeat:true},{ctrlKey:true},{metaKey:true},{altKey:true}]){
+    home.key(' ',extra);check(home.state.camera.x===30,'Repeated and modified Space leave camera unchanged');
+  }
+  for(const active of [{tagName:'INPUT'},{tagName:'TEXTAREA'},{tagName:'SELECT'},{tagName:'BUTTON'},{isContentEditable:true}]){
+    home.document.activeElement=active;home.key(' ');check(home.state.camera.x===30,'Space respects typing and button activation');
+  }
+  home.document.activeElement=null;
+  for(const id of ['world-menu','delete-world-dialog','settings-panel','upgrade-dialog']){
+    home.document.getElementById(id).open=true;home.key(' ');check(home.state.camera.x===30,'Dialogs block the town hall shortcut');home.document.getElementById(id).open=false;
+  }
+  check(home.document.getElementById('movement-hint').textContent.includes('Space town hall'),'Movement hint includes town hall shortcut');
   const {state,document,storage,key,rebind,listeners}=session();
   key('w');key('B');check(state.panel==='build'&&state.held.length===0,'B opens building mode and releases movement');
   key('b',{repeat:true});key('b',{ctrlKey:true});check(state.panel==='build','Held and modified B do not toggle building mode');
