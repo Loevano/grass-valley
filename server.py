@@ -712,8 +712,6 @@ def command(town, data, world=None):
         bind_map(world)
     ensure_resources(town)
     action = data.get('action')
-    if action == 'configure_rule':
-        return logistics.configure_rules(town, data)
     if action in {'claim_local_gift', 'buy_worker_tool', 'trade_local', 'give_worker_tool', 'take_worker_tool', 'transfer_worker_tool',
                   'advance_local_story', 'inspect_story_rock'}:
         return npcs.change(town, data)
