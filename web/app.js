@@ -2344,9 +2344,10 @@ function paintGround(target,landscape,water,bounds,offsetX=0,offsetY=0,region=nu
       if(detailed&&!wet&&biome==='d'){
         // Sparse, seeded plants stay inside their tile for ground-cache scrolling.
         const plant=((x*73856093)^(y*19349663)^(landscape?.terrain_seed || 0))>>>0;
-        if(plant%5===0){
+        if(plant%7===0){
           const mirror=plant&1?1:-1;
-          const p=(dx,dy)=>[px+dx*tileW*mirror,py+dy*tileH];
+          const plantScale=plant%3===0?1.2:1;
+          const p=(dx,dy)=>[px+dx*tileW*mirror*plantScale,py+(.74+(dy-.74)*plantScale)*tileH];
           polygon([p(-.12,.72),p(0,.67),p(.19,.74),p(.06,.81)],'#ad8d554d');
           if(plant%3===0){
             // A small branching cactus with a sunlit rib and sandy spines.
