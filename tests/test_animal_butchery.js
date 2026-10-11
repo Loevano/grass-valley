@@ -17,9 +17,19 @@ function panel(owner=true){
 }
 let p=panel();
 assert.equal(p.chooser.children.length,1,'Only mature animals appear');
-assert(p.chooser.children[0].textContent.includes('1 adult → 8 meat'));
+assert.equal(p.chooser.children[0].textContent,'pig → 8 meat');
+assert(p.note.textContent.includes('permanently'),'Keep the animal consumption warning visible');
 p.chooser.value=p.chooser.children[0].value;p.button.onclick();
 assert.deepStrictEqual(commands.at(-1),{action:'butcher_animal',index:1,barn_index:0,animal:'pig'});
+town.buildings.push({kind:'barn',x:9,y:4,animals:{pig:1,cow:1}});
+p=panel();
+assert.equal(p.chooser.children[0].textContent,'pig → 8 meat · Barn (3, 6)');
+const otherPig=p.chooser.children.find(option=>option.value==='2:pig');
+assert.equal(otherPig.textContent,'pig → 8 meat · Barn (9, 4)');
+assert.equal(p.chooser.children.find(option=>option.value==='2:cow').textContent,'cow → 10 meat');
+p.chooser.value=otherPig.value;p.button.onclick();
+assert.deepStrictEqual(commands.at(-1),{action:'butcher_animal',index:1,barn_index:2,animal:'pig'});
+town.buildings.pop();
 town.buildings[1].butchering={animal:'pig',amount:8,remaining:42};
 p=panel();assert(p.note.textContent.includes('42s'));assert(p.button.disabled);assert(p.chooser.disabled);
 const previous=commands.length;p.button.onclick();assert.equal(commands.length,previous);

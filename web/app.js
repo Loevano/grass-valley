@@ -1147,15 +1147,19 @@ function renderRecipes(town,item,index,target){
   for(const spec of recipes){
     const unlocked=spec.level===1||workers.some(v=>(v[job] || 0)>=spec.level);
     const option=document.createElement('option');option.value=spec.output;
-    option.textContent=`Level ${spec.level} · ${goodName(spec.output)} · ${costText(spec.inputs)} → ${spec.amount}${unlocked?'':' · Requires trained worker'}`;
+    option.textContent=`${goodName(spec.output)} · Lv ${spec.level}${unlocked?'':' · Locked'}`;
     option.disabled=!unlocked;chooser.append(option);
   }
   chooser.value=selectedProfessionRecipe(item).output;
   chooser.disabled=viewed!==identity?.town_id;
-  chooser.onchange=()=>{if(!chooser.disabled)act({action:'set_recipe',index,recipe:chooser.value});};
   target.append(chooser);
   const note=document.createElement('small');
-  note.textContent='Recipe levels 2–5 need 2–5 practice in this profession. Each worker must meet the selected recipe’s level; beginners can make level 1.';
+  const updateNote=()=>{
+    const spec=recipes.find(recipe=>recipe.output===chooser.value);
+    note.textContent=`${costText(spec.inputs)} → ${spec.amount} ${goodName(spec.output).toLowerCase()}${spec.level>1?` · Worker level ${spec.level}+`:''}`;
+  };
+  updateNote();
+  chooser.onchange=()=>{if(!chooser.disabled){updateNote();act({action:'set_recipe',index,recipe:chooser.value});}};
   target.append(note);
 }
 function productionDescription(item){
@@ -1172,20 +1176,25 @@ function renderAnimalButchery(town,item,index,target){
   const catalog=world.progression,owner=viewed===identity?.town_id;
   const note=document.createElement('p');
   const task=item.butchering;
-  note.textContent=task?`Butchering ${goodName(task.animal).toLowerCase()} → ${task.amount} meat · ${Math.ceil(task.remaining)}s of work remaining${task.remaining===0?' · Waiting for buffer space or production cap':''}`:`Choose a fully grown animal. It is permanently removed from its barn and takes ${catalog.butcher_seconds || 60}s of butcher work to produce raw meat. Growth requires full feeding. Meat recipes resume afterward.`;
+  note.textContent=task?`Butchering ${goodName(task.animal).toLowerCase()} → ${task.amount} meat · ${Math.ceil(task.remaining)}s of work remaining${task.remaining===0?' · Waiting for buffer space or production cap':''}`:`Uses 1 adult animal permanently · ${catalog.butcher_seconds || 60}s of work.`;
   target.append(note);
   if(!owner)return;
   const chooser=document.createElement('select');chooser.setAttribute('aria-label','Animal to butcher');
+  const choices=[];
   town.buildings.forEach((barn,barnIndex)=>{
     if(barn.kind!=='barn'||barn.construction&&!barn.construction.upgrade)return;
     for(const animal of Object.keys(catalog.animals)){
       const adults=animalAges(barn,animal).filter(age=>age>=(catalog.animal_growth_seconds || 300)).length;
       if(!adults)continue;
-      const option=document.createElement('option');option.value=`${barnIndex}:${animal}`;
-      option.textContent=`${goodName(animal)} · Barn (${barn.x}, ${barn.y}) · ${adults} adult${adults===1?'':'s'} → ${catalog.animal_meat?.[animal] || 0} meat`;
-      chooser.append(option);
+      choices.push({barn,barnIndex,animal});
     }
   });
+  for(const {barn,barnIndex,animal} of choices){
+    const option=document.createElement('option');option.value=`${barnIndex}:${animal}`;
+    const multipleBarns=choices.some(choice=>choice.animal===animal&&choice.barnIndex!==barnIndex);
+    option.textContent=`${goodName(animal)} → ${catalog.animal_meat?.[animal] || 0} meat${multipleBarns?` · Barn (${barn.x}, ${barn.y})`:''}`;
+    chooser.append(option);
+  }
   const qualified=town.villagers.some(v=>v.building_index===index&&v.job==='butchery'&&!jobRequirement(v,'butchery'));
   const button=document.createElement('button');button.textContent=task?'Butchering in progress':!chooser.children.length?'No fully grown animals':!qualified?'Assign a qualified butcher':'Use animal for meat';
   button.disabled=!!task||!chooser.children.length||!qualified;chooser.disabled=button.disabled;

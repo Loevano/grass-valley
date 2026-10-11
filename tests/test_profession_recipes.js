@@ -16,7 +16,7 @@ function panel(town,item,index,owner=true){
   const target=document.createElement('div');
   const ui=context(world,document,{town_id:'own'},owner?'own':'visitor',data=>commands.push(data));
   ui.renderRecipes(town,item,index,target);
-  return {chooser:target.children[0],description:ui.productionDescription(item)};
+  return {chooser:target.children[0],note:target.children[1],description:ui.productionDescription(item)};
 }
 for(const [kind,recipes] of Object.entries(progression.profession_recipes)){
   const job=progression.buildings[kind].job,index=3,item={kind};
@@ -27,6 +27,9 @@ for(const [kind,recipes] of Object.entries(progression.profession_recipes)){
   assert.strictEqual(chooser.children.length,5);
   assert(!chooser.children[0].disabled);
   assert(chooser.children.slice(1).every(option=>option.disabled));
+  assert.equal(chooser.children[0].textContent.toLowerCase(),recipes[0].output.replaceAll('_',' ')+' · lv 1');
+  assert.equal(chooser.children[1].textContent.toLowerCase(),recipes[1].output.replaceAll('_',' ')+' · lv 2 · locked');
+  assert(panel(town,item,index).note.textContent.includes('→ '+recipes[0].amount));
   assert(description.includes(recipes[0].output.replaceAll('_',' ')));
   for(let level=2;level<=5;level++){
     worker[job]=level-.001;
@@ -38,6 +41,9 @@ for(const [kind,recipes] of Object.entries(progression.profession_recipes)){
     assert.deepStrictEqual(commands.at(-1),{action:'set_recipe',index,recipe:recipes[level-1].output});
     item.recipe=recipes[level-1].output;
     description=panel(town,item,index).description;
+    const note=panel(town,item,index).note.textContent;
+    assert(note.includes(recipes[level-1].output.replaceAll('_',' ')));
+    assert(note.includes('Worker level '+level+'+'));
     assert(description.includes('Recipe level '+level));
     assert(description.includes(recipes[level-1].output.replaceAll('_',' ')));
   }
