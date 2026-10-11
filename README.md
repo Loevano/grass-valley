@@ -76,8 +76,8 @@ the Python host, refresh both browsers, and create a new world to use the shared
   The starting clearing has nearby wood and water. Terrain and resources are saved,
   so returning to a town keeps the same landscape. Open ground can be built on;
   trees, water, and rocks still reserve their tiles.
-  Rocks vary from broad boulders and flat slabs to split outcrops, rubble clusters,
-  jagged ridges, and tall standing stones, with stable shapes and earthy colors.
+  Low-poly rocks mix large, broad boulders with medium rocks and small scattered
+  stones, with flat shaded faces, occasional moss, and stable shapes and earthy colors.
 - Swamp regions in new towns have muddy ground, green pools, reeds, lily pads,
   and willow trees. Swamp trees supply wood and swamp water supports farming.
   Lighter swamp ground is walkable; only the darkest muddy tiles require equipped swamp boots. Existing saved terrain stays as it is.

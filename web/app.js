@@ -1521,30 +1521,37 @@ function rockVariant(r){
   return (hash^(hash>>>16))>>>0;
 }
 const rockFormations=[
-  [[0,2,21,30]],                         // Broad boulder.
-  [[0,5,22,17],[-14,11,6,8]],            // Low slab and a loose fragment.
-  [[-9,0,12,33],[10,7,12,24]],           // Split outcrop.
-  [[-11,1,10,19],[9,3,12,23],[-2,12,10,14]], // Rubble cluster.
-  [[-10,5,11,22],[5,0,14,39],[17,12,6,10]], // Jagged ridge.
-  [[1,1,14,42],[-13,11,8,13]]            // Tall standing stone.
+  [[-2,1,25,50],[20,13,6,9]],           // Large boulder with a small stone.
+  [[-4,3,23,36],[19,12,7,11]],          // Broad, low boulder.
+  [[-6,1,20,44],[19,11,8,14]],          // Medium boulder with a loose stone.
+  [[-10,8,9,14],[9,11,7,10],[0,17,4,6]], // Small scattered stones.
+  [[-3,5,17,26],[19,14,5,7]],           // Mid-sized rock and a pebble.
+  [[-2,12,7,10],[12,16,4,6]]            // Small rock and a pebble.
 ];
 function paintRock(ctx,r,detailed,polygon){
   const variant=rockVariant(r),formation=rockFormations[variant%rockFormations.length];
-  const colors=variant%2?['#87918f','#b4b9ac','#65736f']:['#969487','#c0bba7','#777b70'];
+  const colors=variant%2?['#999889','#d4cbb2','#b7b09b','#686f69','#83877b']
+    :['#96958a','#d6ceb9','#b8b3a2','#626c69','#7f857c'];
   if(detailed){
-    ctx.fillStyle='#223b2955';ctx.beginPath();ctx.ellipse(0,13,23,6,0,0,Math.PI*2);ctx.fill();
+    ctx.fillStyle='#223b2940';ctx.beginPath();ctx.ellipse(2,15,26,6,0,0,Math.PI*2);ctx.fill();
   }
   for(const [x,y,w,h] of formation){
-    const left=[x-w,y-h*.28],peak=[x-w*.2,y-h],right=[x+w,y-h*.5];
-    const seam=[x-w*.1,y-h*.12],foot=[x+w*.15,y+5],edge=[x+w*.85,y+1];
-    polygon([[x-w,y+1],left,peak,right,edge,foot],colors[0],detailed?'#647166':null);
+    // Wide shoulders and a short, flat crown replace the pointed outcrops.
+    const left=[x-w,y-h*.3],shoulder=[x-w*.65,y-h*.82];
+    const crown=[x+w*.1,y-h],right=[x+w*.72,y-h*.7];
+    const edge=[x+w,y-h*.12],foot=[x+w*.45,y+4],base=[x-w*.65,y+3];
+    const seam=[x-w*.05,y-h*.38];
+    polygon([left,shoulder,crown,right,edge,foot,base],colors[0]);
+    polygon([left,shoulder,crown,seam],colors[1]);
+    polygon([seam,crown,right,edge,foot],colors[3]);
     if(!detailed)continue;
-    polygon([left,peak,right,seam],colors[1]);
-    polygon([seam,right,edge,foot],colors[2]);
-    ctx.strokeStyle='#56645e';ctx.lineWidth=.8;
-    ctx.beginPath();ctx.moveTo(peak[0]+w*.2,peak[1]+h*.18);
-    ctx.lineTo(x+w*.15,y-h*.4);ctx.lineTo(seam[0]+2,seam[1]-2);ctx.stroke();
-    if(variant%3===0)polygon([[x-w*.7,y],[x-w*.4,y-3],[x+w*.1,y+3],[x-w*.4,y+3]],'#75825b');
+    polygon([crown,right,[x+w*.42,y-h*.35],seam],colors[2]);
+    polygon([left,seam,foot,base],colors[4]);
+    if(w>=17&&variant%3===0){
+      polygon([shoulder,[x-w*.3,y-h*.9],[x-w*.12,y-h*.7],
+        [x-w*.4,y-h*.63],[x-w*.72,y-h*.58]],'#819057');
+      polygon([shoulder,[x-w*.3,y-h*.9],[x-w*.42,y-h*.77]],'#a0aa69');
+    }
   }
 }
 function drawResource(r){
@@ -2221,8 +2228,8 @@ function draw(seconds=0){
     const centerX=px+(character?(b.index%3-1)*3:0);
     const baseY=py+(character?tileH*.65+Math.floor(b.index/3):tileH/2);
     const owner=world.towns[b.townId] || town;
-    const height=b.kind==='tree'?(b.species==='ancient'?94:70):character?26:b.kind==='acre'?0:b.kind==='rock'?56:type==='building'?buildingHeight(b,owner)+(b.kind==='hall'?(owner?.level>=4?35:33):18):45;
-    const halfWidth=character?9*scale:b.kind==='rock'?24*scale:tileW*.45;
+    const height=b.kind==='tree'?(b.species==='ancient'?94:70):character?26:b.kind==='acre'?0:b.kind==='rock'?68:type==='building'?buildingHeight(b,owner)+(b.kind==='hall'?(owner?.level>=4?35:33):18):45;
+    const halfWidth=character?9*scale:b.kind==='rock'?28*scale:tileW*.45;
     hitTargets.push({type,index,townId:b.townId || viewed,left:centerX-halfWidth,right:centerX+halfWidth,top:baseY-height*scale,bottom:baseY+(character?5*scale:tileH/2)});
     if(character&&selection?.type===type&&selection.index===b.index&&(!world.shared_map||b.townId===viewed||type==='npc')){
       ctx.fillStyle='#fff0b144';ctx.strokeStyle='#fff0b1';ctx.lineWidth=2;ctx.beginPath();ctx.ellipse(centerX,baseY,12*scale,6*scale,0,0,Math.PI*2);ctx.fill();ctx.stroke();

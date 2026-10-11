@@ -48,7 +48,14 @@ new Function('document','ctx','window','assert','surfaces','images',`
   }
   assert.equal(formations.size,6,'The landscape contains all six rock formations');
   assert.equal(new Set([...formations.values()].map(sprite=>JSON.stringify(sprite.points))).size,6,'Each formation has a distinct silhouette');
-  assert([...formations.values()].some(sprite=>sprite.points.some(([x,y])=>y<-35)),'Large outcrops rise above the original small rocks');
+  const heights=[...formations.values()].map(sprite=>Math.max(...sprite.points.map(p=>p[1]))-Math.min(...sprite.points.map(p=>p[1])));
+  assert(Math.max(...heights)>=50,'Large boulders have an enlarged silhouette');
+  assert(Math.min(...heights)<=20,'Some tiles contain only small stones');
+  assert(Math.max(...heights)>Math.min(...heights)*3,'Boulders and small stones have clearly different sizes');
+  for(const sprite of formations.values()){
+    assert(sprite.colors.includes('#d4cbb2')||sprite.colors.includes('#d6ceb9'),'Low-poly rocks have a bright upper-left face');
+    assert(sprite.colors.includes('#686f69')||sprite.colors.includes('#626c69'),'Low-poly rocks have a contrasting shadow face');
+  }
   for(const sprite of formations.values())
     assert(sprite.points.every(([x,y])=>x>=-30&&x<=30&&y>=-80&&y<=24),'Rock formations fit inside their cached texture');
   tileW=31;
@@ -56,7 +63,8 @@ new Function('document','ctx','window','assert','surfaces','images',`
     const x=Array.from({length:60},(_,x)=>x).find(x=>rockVariant({x,y:20})%6===variant);
     drawResource({kind:'rock',x,y:20});const simple=images.at(-1)[0];
     assert.deepEqual(simple.points.slice(0,6),detailedSprite.points.slice(0,6),'Zoomed-out rocks retain their formation silhouette');
-    assert(simple.paints<detailedSprite.paints,'Distant rocks skip facets and surface details');
+    assert(simple.paints<detailedSprite.paints,'Distant rocks keep primary facets but skip secondary faces and moss');
+    assert(simple.colors.length>=6,'Even small distant rocks retain contrasting low-poly faces');
   }
   tileW=54;
   const count=surfaces.length;
