@@ -11,10 +11,10 @@ function context(surface,offscreen){
 const documentMock={getElementById(id){if(!elements.has(id))elements.set(id,element());return elements.get(id);},
   createElement(tag){if(tag!=='canvas')return element();const surface={paints:0};surface.getContext=()=>surface.ctx ||= context(surface,true);surfaces.push(surface);return surface;},querySelectorAll:()=>[]};
 const canvas=documentMock.getElementById('world');canvas.getContext=()=>context(canvas,false);
-let width=960,height=660;
+let width=960,height=660,now=0;
 canvas.getBoundingClientRect=()=>({left:0,top:0,width,height});
 const windowMock={devicePixelRatio:2,addEventListener(){}};
-const run=new Function('document','window','localStorage','setTimeout','clearTimeout','WorkerAnimation','assert','surfaces','fills','images','copies','resize',
+const run=new Function('document','window','localStorage','setTimeout','clearTimeout','WorkerAnimation','assert','surfaces','fills','images','copies','resize','performance','advanceTime',
   source.slice(0,source.lastIndexOf('requestAnimationFrame(animate);'))+`
   const town={map_size:120,terrain:Array(120).fill('g'.repeat(120)),map_resources:[{kind:'tree',x:31,y:31}],
     buildings:[{kind:'hall',x:30,y:30}],villagers:[{name:'Ada',job:'idle'}],food:40,wood:40,level:1};
@@ -55,6 +55,16 @@ const run=new Function('document','window','localStorage','setTimeout','clearTim
   camera.x+=10;draw();assert(surface.paints>painted,'Leaving the padded viewport repaints ground');
   let previous=surface.paints;camera.zoom=.35;draw();assert(surface.paints>previous,'Zoom repaints ground');
   previous=surface.paints;draw();assert.equal(surface.paints,previous,'Repeated zoomed-out frames reuse ground');
+  camera.zoom=.36;draw();
+  assert.equal(surface.paints,previous,'Small zoom steps scale cached ground during the gesture');
+  const zoomImage=images.filter(args=>args[0]===surface).at(-1),ratio=tileW/groundCache.tileW;
+  const cachedX=160+groundCache.originX,cachedY=160+groundCache.originY+15*groundCache.tileW;
+  const live=point(30,30);
+  assert(Math.abs(zoomImage[1]+cachedX*ratio-live[0])<1e-6,'Scaled ground aligns with live objects horizontally');
+  assert(Math.abs(zoomImage[2]+cachedY*ratio-live[1])<1e-6,'Scaled ground aligns with live objects vertically');
+  advanceTime(151);draw();
+  assert(surface.paints>previous,'Ground repaints at the final resolution after zoom settles');
+  assert.equal(groundCache.tileW,tileW,'The settled zoom uses a sharp ground texture');
   window.devicePixelRatio=1;draw();assert(surface.paints>previous,'Retina scale changes repaint ground');
   previous=surface.paints;resize();draw();assert(surface.paints>previous,'Window resizing repaints ground');
   panel='build';fills.length=0;draw();assert(fills.includes('#e4c98022'),'Build range remains above cached terrain');
@@ -65,6 +75,11 @@ const run=new Function('document','window','localStorage','setTimeout','clearTim
   viewed='friend';draw();assert.equal(groundSurfaces().length,3,'Switching separate maps discards stale ground');
   world=JSON.parse(JSON.stringify(world));world.world_id='another-world';draw();
   assert.equal(groundSurfaces().length,4,'Changing worlds invalidates ground');
+  const beforeDistant=groundCache,paintedDistant=beforeDistant.surface.paints;
+  world=JSON.parse(JSON.stringify(world));world.towns.friend.terrain[119]='b'.repeat(120);
+  world.towns.friend.map_resources.push({kind:'water',x:119,y:119});draw();
+  assert.strictEqual(groundCache,beforeDistant,'Distant terrain changes preserve the cached viewport');
+  assert.equal(beforeDistant.surface.paints,paintedDistant,'Distant water changes do not repaint the viewport');
   world=JSON.parse(JSON.stringify(world));world.towns.friend.map_resources=[{kind:'water',x:30,y:30,supply:10}];draw();
   const waterSurface=groundCache.surface,waterPaints=waterSurface.paints,waterSurfaces=groundSurfaces().length;
   world=JSON.parse(JSON.stringify(world));world.towns.friend.map_resources[0].supply=20;draw();
@@ -73,5 +88,5 @@ const run=new Function('document','window','localStorage','setTimeout','clearTim
   world=JSON.parse(JSON.stringify(world));world.towns.friend.map_resources=[];draw();
   assert.equal(groundSurfaces().length,waterSurfaces+1,'Water layout changes invalidate the terrain');
 `);
-run(documentMock,windowMock,{getItem:()=>null},()=>0,()=>{},WorkerAnimation,assert,surfaces,fills,images,copies,()=>{width=720;height=500;});
+run(documentMock,windowMock,{getItem:()=>null},()=>0,()=>{},WorkerAnimation,assert,surfaces,fills,images,copies,()=>{width=720;height=500;},{now:()=>now},ms=>{now+=ms;});
 console.log('Render cache checks passed');

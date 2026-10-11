@@ -141,6 +141,33 @@ let movementMap=null;
 const workerTools={fine_axe:{name:'Fine axe',job:'woodcutting'},fine_fishing_rod:{name:'Fine fishing rod',job:'fishing'}};
 const localGifts={Sylva:'fine_axe',Reed:'fine_fishing_rod'};
 function localVisitKey(npc){return `${npc.name}:${npc.x}:${npc.y}`;}
+function localStoryProgress(town,name){
+  const npc=(world.shared_map?.npcs || town.npcs || []).find(n=>n.name===name);
+  return npc?town.local_visits?.[localVisitKey(npc)] || {}:{};
+}
+function storyObjectives(stage,town,progress){
+  const goals=Object.entries(stage.costs || {}).map(([key,amount])=>`${amount} ${goodName(key).toLowerCase()} (${Math.floor(amountOf(town,key))} available)`);
+  if(stage.roads)goals.push(`${Math.min(stage.roads,(town.roads || []).filter(r=>!r.construction).length)} / ${stage.roads} completed road tiles`);
+  if(stage.rocks)goals.push(`${progress.story_rocks?.length || 0} / ${stage.rocks} outcrops examined`);
+  return goals.join(' · ');
+}
+function renderLocalStory(town,npc,index,nearby,target){
+  const story=world.local_stories?.[npc.name];
+  if(!story)return;
+  const progress=town.local_visits?.[localVisitKey(npc)] || {},stageIndex=progress.story_stage || 0;
+  const stage=story.stages[stageIndex];
+  if(!stage)return;
+  const title=document.createElement('p');title.textContent=`${story.title} · ${stage.button?`Step ${stageIndex+1} / ${story.stages.length-1}`:'Completed'}`;target.append(title);
+  const dialogue=document.createElement('p');dialogue.textContent='“'+stage.dialogue+'”';target.append(dialogue);
+  const reward=document.createElement('p');reward.textContent=`${stage.button?'Reward':'Received'}: ${story.reward} coins · ${story.keepsake}`;target.append(reward);
+  if(!stage.button)return;
+  const objectives=document.createElement('p');objectives.textContent=storyObjectives(stage,town,progress) || 'Speak with this local to begin.';target.append(objectives);
+  const button=document.createElement('button');button.textContent=stage.button;
+  button.disabled=!nearby||!canAfford(town,stage.costs || {})
+    ||(town.roads || []).filter(r=>!r.construction).length<(stage.roads || 0)
+    ||(progress.story_rocks?.length || 0)<(stage.rocks || 0);
+  button.onclick=()=>act({action:'advance_local_story',npc_index:index});target.append(button);
+}
 function renderWorkerTools(town,v,index,target){
   const owner=viewed===identity?.town_id;
   if(v.worker_tool&&workerTools[v.worker_tool]){
@@ -1107,6 +1134,14 @@ function renderSelection(town){
       if(viewed===identity?.town_id&&count){const button=document.createElement('button');button.textContent=equipped?`Unequip ${item.name.toLowerCase()}`:`Equip ${item.name.toLowerCase()}`;button.onclick=()=>act({action:equipped?'unequip_item':'equip_item',item:key});row.append(button);}
       $('selection-details').append(row);
     }
+    for(const [name,story] of Object.entries(world.local_stories || {})){
+      const progress=localStoryProgress(town,name),stage=story.stages[progress.story_stage || 0];
+      if(!progress.story_stage||!stage?.button)continue;
+      const row=document.createElement('p');row.textContent=`${story.title} · ${name}: ${storyObjectives(stage,town,progress)} · Return to ${name} to continue.`;$('selection-details').append(row);
+    }
+    for(const keepsake of town.player?.keepsakes || []){
+      const row=document.createElement('p');row.textContent=`Keepsake: ${keepsake}`;$('selection-details').append(row);
+    }
     for(const [key,gear] of Object.entries(workerTools)){
       const row=document.createElement('p');row.textContent=`${gear.name} · ${town.player?.worker_tools?.[key] || 0} available · Give to a worker from their panel (+25% ${gear.job} output)`;$('selection-details').append(row);
     }
@@ -1135,6 +1170,7 @@ function renderSelection(town){
       const hint=document.createElement('p');hint.textContent=nearby?'Trade equipment for coins. Equip purchases from your character panel.':'Walk beside this local to trade equipment.';$('selection-details').append(hint);
       if(world.shared_map||viewed===identity?.town_id){
         const progress=own.local_visits?.[localVisitKey(item)] || {},gift=localGifts[item.name];
+        renderLocalStory(own,item,selection.index,nearby,$('selection-details'));
         if(gift){
           const gear=workerTools[gift],note=document.createElement('p');
           note.textContent=item.name==='Sylva'?'“A sharp axe makes lighter work. Take my spare and pass it to your woodcutter.”':'“This rod has landed many a fine catch. Let one of your fishers put it to use.”';$('selection-details').append(note);
@@ -1170,6 +1206,15 @@ function renderSelection(town){
     }
     $('selection-title').textContent=({berry_bush:'Berry bush',herb_patch:'Herb patch'}[item.kind]) || (swamp?{tree:'Swamp willow',water:'Swamp water',rock:'Rock outcrop'}:{tree:'Forest',water:'Water',rock:'Rock outcrop',berry_bush:'Berry bush',herb_patch:'Herb patch'})[item.kind];
     p.textContent={tree:'Renewable wood source. Place a woodcutter within 10 horizontal or vertical tile steps, then assign a villager to woodcutting.',water:'Uses: farming / fishing\nFishing hut reach: 3 tile steps\nFarmers fetch water when watering',rock:'Occupied tile\nMining: unavailable',berry_bush:`Food: berries\nGather: stand nearby · ${keybindings.gather.toUpperCase()}`,herb_patch:`Use: animal breeding\nGather: stand nearby · ${keybindings.gather.toUpperCase()}`}[item.kind];
+    if(item.kind==='rock'&&(world.shared_map||viewed===identity?.town_id)){
+      const own=world.towns[identity?.town_id],progress=own?localStoryProgress(own,'Flint'):{};
+      if(progress.story_stage===1){
+        const recorded=progress.story_rocks?.includes(`${item.x}:${item.y}`),button=document.createElement('button');
+        button.textContent=recorded?'Outcrop markings recorded':`Examine markings · ${progress.story_rocks?.length || 0} / 3`;
+        button.disabled=recorded||(progress.story_rocks?.length || 0)>=3||!own.player||Math.hypot(own.player.x-item.x,own.player.y-item.y)>1.8;
+        button.onclick=()=>act({action:'inspect_story_rock',x:item.x,y:item.y});$('selection-details').append(button);
+      }
+    }
     if(item.kind==='tree'){
       $('selection-title').textContent=swamp?'Swamp willow':item.species==='ancient'?'Ancient tree':'Forest';
       p.textContent=`Chop: ${keybindings.chop.toUpperCase()} / nearby woodcutter\nWoodcutter reach: 10 tile steps\nFelling: leaves a stump, clears tile\nRegrowth: ${swamp||item.species==='ancient'?15:5} min · all ground\nRegrowth requires an empty tile`;
@@ -1556,6 +1601,22 @@ function animatedVillagers(town, seconds, townId=viewed, frameLayout=null){
     return {kind:'villager',townId,villager,index,x:state.x,y:state.y,state,active};
   });
 }
+function townWorkerLayout(town,buildings,resources){
+  // Camera exploration outside a town's routing area cannot change its paths.
+  if(townWorkerLayout.world!==world){townWorkerLayout.world=world;townWorkerLayout.layouts=new Map();}
+  if(townWorkerLayout.layouts.has(town))return townWorkerLayout.layouts.get(town);
+  const center=town.town_origin || town.buildings.find(b=>b.kind==='hall');
+  const near=item=>Math.abs(item.x-center.x)<=60&&Math.abs(item.y-center.y)<=60;
+  const tiles=items=>items.filter(near).map(({kind,x,y,farm_index,construction})=>[kind,x,y,farm_index,!!construction]);
+  const terrain=[];
+  for(let y=Math.max(0,center.y-60);y<=Math.min(town.map_size-1,center.y+60);y++){
+    let row='';
+    for(let x=Math.max(0,center.x-60);x<=Math.min(town.map_size-1,center.x+60);x++)row+=town.terrain?.[y]?.[x] || 'v';
+    terrain.push(row);
+  }
+  const layout=JSON.stringify([tiles(buildings),tiles(resources),terrain]);
+  townWorkerLayout.layouts.set(town,layout);return layout;
+}
 let npcClock=0;
 const npcColors={g:['#a97b58','#c7a06d'],f:['#416951','#70906a'],m:['#b29b4a','#e2cc80'],
   s:['#be986a','#e6c79a'],r:['#717b88','#acb4bd'],b:['#586b4b','#a1a474']};
@@ -1843,22 +1904,43 @@ function paintGround(target,landscape,water,bounds,offsetX=0,offsetY=0,region=nu
     }
   }
 }
+function groundLayout(landscape,water,bounds){
+  const rows=[],size=landscape?.map_size || 12;
+  // Include neighboring tiles because they determine shores and valley edges.
+  for(let y=Math.max(0,bounds.minY-1);y<=Math.min(size-1,bounds.maxY+1);y++){
+    let row='';
+    for(let x=Math.max(0,bounds.minX-1);x<=Math.min(size-1,bounds.maxX+1);x++){
+      row+=(landscape?.terrain?.[y]?.[x] || (landscape?.chunked?'v':'g'))+(water.has(`${x},${y}`)?'1':'0');
+    }
+    rows.push(row);
+  }
+  return JSON.stringify([world.world_id,landscape?.terrain_seed,size,rows]);
+}
 function drawGround(rect,dpr,landscape,water,bounds){
   const margin=160;
   if(!groundCache || groundCache.world!==world || groundCache.landscape!==landscape){
-    const signature=JSON.stringify([world.world_id,landscape?.terrain,landscape?.terrain_seed,
-      landscape?.map_size,[...water].sort()]);
+    const signature=groundCache&&groundLayout(landscape,water,groundCache.bounds);
     if(groundCache?.signature!==signature)groundCache=null;
     if(groundCache)Object.assign(groundCache,{world,landscape});
     else{
       const surface=document.createElement('canvas'),target=surface.getContext?.('2d');
       if(!target){paintGround(ctx,landscape,water,bounds);return;}
-      groundCache={surface,target,signature,world,landscape};
+      groundCache={surface,target,world,landscape};
     }
   }
-  const cache=groundCache,dx=originX-cache.originX,dy=originY-cache.originY;
-  if(cache.tileW!==tileW || cache.width!==rect.width || cache.height!==rect.height
-    || cache.dpr!==dpr || Math.abs(dx)>margin || Math.abs(dy)>margin){
+  const cache=groundCache,now=performance.now();
+  if(cache.requestedTileW!==tileW){cache.requestedTileW=tileW;cache.zoomUpdatedAt=now;}
+  const ratio=tileW/(cache.tileW || tileW);
+  const left=originX-(cache.originX+margin)*ratio,top=originY-(cache.originY+margin)*ratio;
+  const dx=originX-cache.originX,dy=originY-cache.originY;
+  const zooming=cache.tileW!==tileW;
+  // Reproject cached ground during a gesture. Repaint when coverage/resolution
+  // runs out, or once the gesture settles, instead of on every wheel event.
+  const repaintZoom=zooming&&(ratio<.8||ratio>1.25||now-cache.zoomUpdatedAt>=150
+    ||left>0||top>0||left+cache.surface.width/dpr*ratio<rect.width
+    ||top+cache.surface.height/dpr*ratio<rect.height);
+  if(!cache.tileW || repaintZoom || cache.width!==rect.width || cache.height!==rect.height
+    || cache.dpr!==dpr || (!zooming&&(Math.abs(dx)>margin || Math.abs(dy)>margin))){
     const width=Math.ceil((rect.width+margin*2)*dpr),height=Math.ceil((rect.height+margin*2)*dpr);
     const shiftX=Math.round(dx*dpr),shiftY=Math.round(dy*dpr);
     const reuse=cache.tileW===tileW&&cache.width===rect.width&&cache.height===rect.height
@@ -1884,26 +1966,31 @@ function drawGround(rect,dpr,landscape,water,bounds){
     const nextX=reuse?cache.originX+shiftX/dpr:originX,nextY=reuse?cache.originY+shiftY/dpr:originY;
     const offsetX=margin+nextX-originX,offsetY=margin+nextY-originY;
     cache.target.setTransform(dpr,0,0,dpr,0,0);
-    for(const region of regions){
-      cache.target.clearRect(region.x,region.y,region.width,region.height);
-      cache.target.save();cache.target.beginPath();
-      cache.target.rect(region.x,region.y,region.width,region.height);cache.target.clip();
+    const regionBounds=region=>{
       const corners=[[region.x-tileW,region.y-tileH-12],[region.x+region.width+tileW,region.y-tileH-12],
         [region.x-tileW,region.y+region.height],[region.x+region.width+tileW,region.y+region.height]]
         .map(([px,py])=>({x:(px-originX-offsetX)/tileW+(py-originY-offsetY)/tileH,
           y:(py-originY-offsetY)/tileH-(px-originX-offsetX)/tileW}));
       const size=landscape?.map_size || 12;
-      const padded={minX:Math.max(0,Math.floor(Math.min(...corners.map(p=>p.x)))),
+      return {minX:Math.max(0,Math.floor(Math.min(...corners.map(p=>p.x)))),
         maxX:Math.min(size-1,Math.ceil(Math.max(...corners.map(p=>p.x)))),
         minY:Math.max(0,Math.floor(Math.min(...corners.map(p=>p.y)))),
         maxY:Math.min(size-1,Math.ceil(Math.max(...corners.map(p=>p.y))))};
-      paintGround(cache.target,landscape,water,padded,offsetX,offsetY,region);
+    };
+    for(const region of regions){
+      cache.target.clearRect(region.x,region.y,region.width,region.height);
+      cache.target.save();cache.target.beginPath();
+      cache.target.rect(region.x,region.y,region.width,region.height);cache.target.clip();
+      paintGround(cache.target,landscape,water,regionBounds(region),offsetX,offsetY,region);
       cache.target.restore();
     }
     Object.assign(cache,{originX:nextX,originY:nextY,tileW,width:rect.width,height:rect.height,dpr});
+    cache.bounds=regionBounds({x:0,y:0,width:width/dpr,height:height/dpr});
+    cache.signature=groundLayout(landscape,water,cache.bounds);
   }
-  ctx.drawImage(cache.surface,originX-cache.originX-margin,originY-cache.originY-margin,
-    cache.surface.width/dpr,cache.surface.height/dpr);
+  const scale=tileW/cache.tileW;
+  ctx.drawImage(cache.surface,originX-(cache.originX+margin)*scale,originY-(cache.originY+margin)*scale,
+    cache.surface.width/dpr*scale,cache.surface.height/dpr*scale);
 }
 function draw(seconds=0){
   const rect=canvas.getBoundingClientRect(),dpr=window.devicePixelRatio||1;
@@ -1972,7 +2059,8 @@ function draw(seconds=0){
   const entries=world.shared_map?Object.entries(world.towns):[[viewed,town]];
   const buildings=world.shared_map?entries.flatMap(([id,t])=>t.buildings.map((b,index)=>({...b,townId:id,objectIndex:index}))):town?.buildings || [{kind:'hall',x:5,y:5}];
   const workerLayout='['+JSON.stringify(buildings.map(({kind,x,y,farm_index,construction})=>[kind,x,y,farm_index,!!construction]))+','+resourceData.layout+']';
-  const villagers=entries.flatMap(([id,t])=>animatedVillagers(t,seconds,id,workerLayout));
+  const villagers=entries.flatMap(([id,t])=>animatedVillagers(t,seconds,id,
+    t?.chunked?townWorkerLayout(t,buildings,resources):workerLayout));
   const drawnPiers=new Set();
   for(const worker of villagers){
     const pier=worker.state.pier;
