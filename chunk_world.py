@@ -8,7 +8,7 @@ from collections import OrderedDict
 from functools import lru_cache
 from pathlib import Path
 
-from terrain import remove_invalid_trees
+from terrain import remove_invalid_trees, ensure_industry
 from villages import apply_villages, ensure_villages
 
 CHUNK_SIZE = 40
@@ -171,6 +171,12 @@ class ChunkMap:
         from progression import SUPPLIES, source_limits
         clock = self.landscape.get('chunk_clock', 0)
         elapsed = max(0, clock - record.get('clock', 0))
+        cx, cy = map(int, key.split(','))
+        obstacles = [b for t in self.world['towns'].values() for b in t['buildings'] + t.get('roads', [])]
+        obstacles += self.landscape.get('npcs', [])
+        obstacles += [dict(x=round(t['player']['x']), y=round(t['player']['y']))
+                      for t in self.world['towns'].values() if 'player' in t]
+        ensure_industry(record, obstacles, (cx * CHUNK_SIZE, cy * CHUNK_SIZE))
         landscape = dict(record, terrain=ChunkTerrain({key: record}, self.size))
         remove_invalid_trees(landscape)
         for resource in record['map_resources']:

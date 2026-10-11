@@ -95,7 +95,7 @@ class AllWorkplaceStorage(unittest.TestCase):
     cases = [('woodcutter', 'wood'), ('fishing_hut', 'fish'), ('orchard', 'fruit')]
     cases += [(kind, recipe[1]) for kind, recipe in economy.RECIPES.items()]
     cases += [(kind, crop) for kind in ('farm', 'acre') for crop in economy.CROPS]
-    cases += [('barn', spec['output']) for animal, spec in economy.ANIMALS.items() if animal != 'pig']
+    cases += [('barn', spec['output']) for animal, spec in economy.ANIMALS.items() if animal not in {'pig', 'horse'}]
 
     def workplace(self, kind, output, stored):
         town = server.new_town('All storage')
@@ -133,6 +133,8 @@ class AllWorkplaceStorage(unittest.TestCase):
                     economy.add_stock(town, key, amount)
                 worker['building_index'] = 3
         elif kind in economy.RECIPES:
+            if kind == 'mine':
+                town['map_resources'].append({'kind': 'rock', 'ore': 'iron', 'x': 3, 'y': 1})
             building['input_buffer'] = {key: amount * 10
                                         for key, amount in economy.RECIPES[kind][0].items()}
         elif kind == 'barn':

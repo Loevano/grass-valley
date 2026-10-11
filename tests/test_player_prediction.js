@@ -19,10 +19,16 @@ const run=new Function('document','window','localStorage','setTimeout','clearTim
       assert(Math.abs(screenDistance(sprite.x-5,sprite.y-7)-3/60*Math.SQRT2*23)<1e-9,
         'Every animated direction covers the same screen distance per frame');
     }
+    town.player.mounted=true;
+    assert(Math.abs(predictPlayerStep(town,town.player,1,-1).x-5-.3/Math.SQRT2*1.75)<1e-9,'Horse land speed matches the host');
+    town.roads=[{x:5,y:7}];
+    assert.equal(playerTravelSpeed(town,town.player),1.75*1.5,'Roads also speed up horses');
+    town.roads=[];
     town.player.boat=true;town.player.boat_level=3;
     town.map_resources=[{kind:'water',x:5,y:7}];movementMap=null;
     const sailing=predictPlayerStep(town,town.player,1,-1);
     assert(Math.abs(sailing.x-5-.3/Math.SQRT2*1.5)<1e-9,'Boat speed is predicted on water');
+    town.player.mounted=false;
     town.map_resources=[];movementMap=null;
     assert(Math.abs(predictPlayerStep(town,town.player,1,-1).x-5-.3/Math.SQRT2)<1e-9,'Boat upgrades keep normal land speed');
     playerView=null;

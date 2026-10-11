@@ -59,7 +59,7 @@ the conversation and practical details needed for later development.
 | What should moving a building cost? You wanted a small loss; a coin fee was suggested but not confirmed. | |
 | Should roads be freely placed and movable? Do buildings need road access? | Dirt roads are free, take 10 seconds of builder work per tile, are removable by their owner, and give players and settlers +50% walking speed when complete. Buildings do not require roads. |
 | Which services matter first: market, tavern, well, healer, or something else? | |
-| Which town upgrades can players choose between? | Hall levels 1–5 unlock profession branches; individual profession improvements require practice and materials. See ROADMAP.md. |
+| Which town upgrades can players choose between? | Hall levels 1–10 unlock profession branches; individual profession improvements require practice and materials. See ROADMAP.md. |
 | How do individual villager skills contribute to town achievements? | |
 | How should better resource types and recipes unlock? | Hall-gated crops, animals, and workplaces, with profession practice gates for tools. Earlier resources remain useful. |
 | Are skills tied to a job, or also to tools and buildings? | |
@@ -108,7 +108,7 @@ These are starting values to make the prototype playable, **not final design dec
   housing resets that timer. Settler assignment capacity is separate from housing.
 - New villagers arrive when housing and sufficient food are available.
 - Harvesting 30 wood still records “Timber roots”; hall upgrades now use housing, food, profession, and processing milestones. See ROADMAP.md.
-- Hall levels 2–5 provide coins and unlock profession branches. Levels 6–10 and player trading remain planned.
+- Hall levels 2–10 provide coins and unlock profession branches, including leather, ore, iron, stables, saddles, steel, and trade crates. Market owners can exchange goods through saved town trade offers.
 - Simulation runs only while the host is running; no catch-up production while it is closed.
 - Each browser keeps a private ownership token. Other players can view, but cannot edit, its town through the supported interface.
 
@@ -148,7 +148,7 @@ worlds; workers keep their assigned jobs.
 
 ## Confirmed progression and founder gathering
 
-Implement hall levels 1–5 first and retain the level 6–10 design in ROADMAP.md.
+Hall levels 1–10 are implemented; see ROADMAP.md for milestones and industrial branches.
 Prevent production spam through shared renewable forest/fishing supplies, worker
 slots, field output, and animal capacity rather than arbitrary building counts.
 The founder fishes with F, chops with C, and gathers berries/herbs with G,
@@ -214,5 +214,5 @@ until the resident trains in the required job. Balance values remain provisional
 Start with free dirt roads requiring 10 seconds of builder work per tile that make players and settlers walk 50% faster when complete.
 Roads use the town building area, remain walkable, and can be removed by their owner.
 NPC requests, stone mining, a tavern, and a first cooperative adventure are approved
-future additions. Player-to-player trading requires a market; its exchange rules
-still need design before implementation.
+future additions. Player-to-player trading uses market offers accepted by the other
+town owner, with stock and storage rechecked before exchanging both sides.

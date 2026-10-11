@@ -59,7 +59,7 @@ const run=new Function('document','window','localStorage','setTimeout','clearTim
     town.wood=80;town.upgrade_remaining=57;render();
     check($('upgrade').disabled&&$('upgrade').title.includes('57s remaining'),'Pending upgrade shows timer and prevents repeat clicks');
     town.upgrade_remaining=0;town.level=10;render();
-    check($('upgrade').disabled&&$('hall-progress').hidden&&$('progress').textContent.includes('planned'),'Maximum level hides milestone and disables upgrade');
+    check($('upgrade').disabled&&$('hall-progress').hidden&&$('progress').textContent.includes('fully upgraded'),'Maximum level hides milestone and disables upgrade');
     town.level=1;town.harvested=30;town.wood=65;render();
     check($('progress').textContent.includes('Level 1'),'Returning to a hall restores its development requirements');
     await clickTile(3,8);

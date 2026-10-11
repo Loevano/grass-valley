@@ -1,8 +1,7 @@
 # Town and profession progression
 
-Hall levels 1–5 are implemented. Levels 6–10 below are design plans, not unlocks
-available in this version. Existing towns above level 5 keep their levels and
-buildings; already-paid upgrades finish. New upgrades stop at level 5.
+Hall levels 1–10 are implemented. Existing towns and already-paid hall upgrades
+retain their progress. New industrial branches use the existing worker and storage systems.
 
 ## Implemented unlocks
 
@@ -96,7 +95,7 @@ Select acres to choose crops. Wheat and fodder are crafting/feed reserves;
 vegetables and carrots are edible. Wool supplies durable nets; planks build boats
 and processing buildings. Herbs support breeding. At level 5, market stalls sell
 surplus goods for coins (tools sell for three, other supported goods for one).
-Player-to-player trading remains planned.
+Town owners can create and accept goods or coin offers from their markets.
 
 ## Founder activities
 
@@ -108,17 +107,24 @@ Character practice is saved separately from resident skills. Every 20 practice
 increases the displayed character skill level and requested yield. F/C/G can be
 rebound in Settings; older movement and camera preferences are preserved.
 
-## Planned levels 6–10
+## Implemented late progression
 
-| Hall | Proposed additions |
-| --- | --- |
-| 6 — Comfortable town | Bakery and bread, dairy and cheese, varied meals and better housing supporting population expansion |
-| 7 — Specialist town | Choose fishing, farming, livestock, and woodworking specialties; towns cooperate through trading |
-| 8 — Prosperous town | Rare fish, greenhouse crops, advanced animal breeding, furniture |
-| 9 — Enchanted town | Magical pond improvements, enchanted gardens, husbandry, and tools |
-| 10 — Valley capital | Large cooperative valley projects using goods from multiple branches |
+| Hall | Additions | Next hall milestone |
+| --- | --- | --- |
+| 5 | Tannery, hides from butchery, town trade offers | Produce 5 leather |
+| 6 | Mines and visible iron veins | Mine 10 iron ore |
+| 7 | Iron smelters | Smelt 10 iron |
+| 8 | Wild horse capture, stables, breeding, saddlers, riding | Saddle a settled horse |
+| 9 | Steelworks and steel pickaxes | Produce 15 steel and complete a town trade or sell 10 goods |
+| 10 | Trade houses and valuable trade crates | Maximum hall level |
 
-These stages still need balance and concrete design. Towns remain safe;
-adventure quests require two players to start. Town development should continue
-to offer alternatives to mandatory quests. Shared wilderness, trading, combat,
-and magic are separate future work.
+Horses settle or grow over 300 fed seconds. A stable houses 4 horses per building
+level; two adults can breed. Riding requires a saddle and increases land speed by
+75%, with road bonuses also applying. Captured horses follow their founder until
+delivered beside a stable. Riding horses can return to a stable for breeding.
+
+Each town's owner creates or accepts offers from their market. Stock and physical
+storage are rechecked at acceptance; both sides exchange together and an offer can
+only complete once. Trading does not count as producing materials.
+
+Cooperative adventures, combat, magic, and valley projects remain future work.

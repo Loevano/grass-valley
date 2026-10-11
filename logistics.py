@@ -4,9 +4,9 @@ import math
 import progression as economy
 
 BUFFER_SIZE = 50
-PRODUCTION_KINDS = {'woodcutter', 'farm', 'fishing_hut', 'barn', 'orchard', *economy.RECIPES}
+PRODUCTION_KINDS = {'woodcutter', 'farm', 'fishing_hut', 'barn', 'stable', 'orchard', *economy.RECIPES}
 PRODUCTION_GOODS = tuple(dict.fromkeys(('wood', *economy.CROPS, *economy.EDIBLE,
-                                       *(r[1] for r in economy.RECIPES.values()), 'wool', 'manure', 'herbs', *economy.CRAFTED_GOODS)))
+                                       *(r[1] for r in economy.RECIPES.values()), 'wool', 'manure', 'herbs', *economy.CRAFTED_GOODS, *economy.LATE_GOODS)))
 
 
 def configure_rules(town, data):
@@ -96,9 +96,9 @@ def requirements(building, villager):
         if economy.recipe_requirement(villager, building):
             return {}
         speed = economy.efficiency(villager, villager['job'])
-        speed *= 1.25 if 'saw' in building.get('profession_upgrades', []) else 1
+        speed *= 1.25 if any(k in building.get('profession_upgrades', []) for k in ('saw', 'steel_pickaxe')) else 1
         return {key: amount * speed for key, amount in economy.production_recipe(building)[0].items()}
-    if kind == 'barn':
+    if kind in {'barn', 'stable'}:
         feed = sum(economy.ANIMALS[a]['feed'] * n for a, n in building.get('animals', {}).items())
         if not feed:
             return {}
@@ -112,7 +112,7 @@ def supply_request(town, building, villager):
     inputs = building.get('input_buffer', {})
     if all(inputs.get(k, 0) + 1e-9 >= n for k, n in needs.items()):
         return {}
-    if building['kind'] == 'barn':
+    if building['kind'] in {'barn', 'stable'}:
         feed = next(iter(needs.values()), 0)
         needs = {'fodder' if economy.quantity(town, 'fodder') >= feed else 'vegetables': feed}
     # Reserve each ingredient's share so separate storage workers can supply a recipe.
@@ -136,6 +136,13 @@ def produce(town, building, villager, elapsed=3):
         reason = reason or economy.recipe_requirement(villager, building)
     if reason:
         return reason
+    deposit = None
+    if building['kind'] == 'mine':
+        deposits = [r for r in town['map_resources'] if r['kind'] == 'rock' and r.get('ore') == 'iron'
+                    and economy.distance(building, r) <= 10]
+        if not deposits:
+            return 'Needs an iron vein within 10 tiles'
+        deposit = max(deposits, key=lambda r: r.get('supply', 60))
     inputs = building.get('input_buffer', {})
     needs = requirements(building, villager)
     missing = [k for k, n in needs.items() if inputs.get(k, 0) + 1e-9 < n]
@@ -150,6 +157,8 @@ def produce(town, building, villager, elapsed=3):
     if buffered(building) + sum(produced.values()) > BUFFER_SIZE + 1e-9:
         building['buffer_full'] = True
         return 'Workplace buffer full'
+    if deposit and deposit.get('supply', 60) + 1e-9 < produced.get('iron_ore', 0):
+        return 'Waiting for ore to regenerate'
     if status != 'Working':
         return status
     if any(amount > economy.production_room(town, key) + 1e-9 for key, amount in produced.items()):
@@ -166,6 +175,8 @@ def produce(town, building, villager, elapsed=3):
         if progress['elapsed'] < duration:
             return f"Producing {output.replace('_', ' ')} · {math.ceil(duration - progress['elapsed'])}s remaining"
         villager.pop('production_work', None)
+    if deposit:
+        economy.take_supply(town, deposit, produced['iron_ore'])
     building['input_buffer'] = {k: max(0, economy.quantity(local, k) - produced.get(k, 0)) for k in inputs}
     for key, amount in produced.items():
         record_output(town, building, key, amount, villager)
@@ -189,7 +200,13 @@ def butcher_animal(town, building, villager, seconds):
     if buffered(building) + amount > BUFFER_SIZE + 1e-9:
         building['buffer_full'] = True
         return 'Workplace buffer full'
+    hides = {'sheep': 1, 'pig': 2, 'cow': 3}.get(task['animal'], 0)
+    if hides and (buffered(building) + amount + hides > BUFFER_SIZE + 1e-9
+                  or hides > economy.production_room(town, 'hides') + 1e-9):
+        return 'Waiting for hide buffer space or production cap'
     record_output(town, building, 'meat', amount)
+    if hides:
+        record_output(town, building, 'hides', hides)
     economy.practice(villager, 'butchery')
     del building['butchering']
     return 'Working'

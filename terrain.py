@@ -116,3 +116,23 @@ def ensure_terrain(town, new=False):
     if new:
         occupied = {(b['x'], b['y']) for b in town['buildings']}
         town['map_resources'] = [r for r in resources if (r['x'], r['y']) not in occupied]
+
+
+def ensure_industry(landscape, obstacles=(), origin=(0, 0)):
+    """Add mineral veins and wild meadow horses without moving saved terrain."""
+    for resource in landscape['map_resources']:
+        if resource['kind'] == 'rock':
+            resource.setdefault('ore', 'iron')
+    if landscape.get('industry_version') == 1:
+        return
+    occupied = {(r['x'], r['y']) for r in landscape['map_resources']}
+    occupied.update((b['x'], b['y']) for b in obstacles)
+    occupied.update((r['x'], r['y']) for r in landscape.get('tree_stumps', []))
+    ox, oy = origin
+    for y, row in enumerate(landscape.get('terrain', [])):
+        for x, biome in enumerate(row):
+            tx, ty = x + ox, y + oy
+            if biome in 'gm' and (tx * 73 + ty * 137 + tx * ty * 11) % 499 == 71 and (tx, ty) not in occupied:
+                landscape['map_resources'].append({'kind': 'wild_horse', 'x': tx, 'y': ty})
+                occupied.add((tx, ty))
+    landscape['industry_version'] = 1

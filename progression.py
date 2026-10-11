@@ -1,4 +1,4 @@
-"""Town professions, finite renewable supplies, and founder activities (hall 1–5)."""
+"""Town professions, finite renewable supplies, and founder activities (hall 1–10)."""
 from collections import deque
 from math import ceil
 import secrets
@@ -14,6 +14,13 @@ BUILDINGS = {
     'orchard': {'label': 'Orchard', 'level': 5, 'wood': 25, 'job': 'orcharding', 'slots': 2},
     'bakery': {'label': 'Bakery', 'level': 4, 'wood': 30, 'planks': 5, 'job': 'baking', 'slots': 2},
     'butcher': {'label': 'Butcher shop', 'level': 4, 'wood': 25, 'planks': 5, 'job': 'butchery', 'slots': 2},
+    'tannery': {'label': 'Tannery', 'level': 5, 'wood': 30, 'planks': 10, 'job': 'tanning', 'slots': 2},
+    'mine': {'label': 'Mine', 'level': 6, 'wood': 40, 'planks': 15, 'tools': 3, 'job': 'mining', 'slots': 2},
+    'smelter': {'label': 'Iron smelter', 'level': 7, 'wood': 40, 'planks': 15, 'job': 'smelting', 'slots': 2},
+    'stable': {'label': 'Stable', 'level': 8, 'wood': 40, 'planks': 20, 'iron': 5, 'job': 'horsekeeping', 'slots': 2},
+    'saddler': {'label': 'Saddler', 'level': 8, 'wood': 30, 'planks': 15, 'job': 'saddlery', 'slots': 2},
+    'steelworks': {'label': 'Steelworks', 'level': 9, 'wood': 40, 'planks': 20, 'iron': 10, 'job': 'steelmaking', 'slots': 2},
+    'tradehouse': {'label': 'Trade house', 'level': 10, 'wood': 50, 'planks': 25, 'steel': 10, 'job': 'packing', 'slots': 2},
     'market': {'label': 'Market stall', 'level': 5, 'wood': 20, 'planks': 5, 'slots': 1},
 }
 CROPS = {'vegetables': 1, 'wheat': 2, 'carrots': 3, 'fodder': 3}
@@ -23,6 +30,7 @@ ANIMALS = {
     'pig': {'level': 4, 'coins': 8, 'output': 'meat', 'feed': .4},
     'cow': {'level': 5, 'coins': 12, 'output': 'milk', 'feed': .5},
 }
+ANIMALS['horse'] = {'level': 8, 'coins': 0, 'output': 'horse', 'feed': .5}
 ANIMAL_GROWTH_SECONDS = 300
 BUTCHER_SECONDS = 60
 ANIMAL_MEAT = {'chicken': 2, 'sheep': 4, 'pig': 8, 'cow': 10}
@@ -54,6 +62,7 @@ PROFESSION_UPGRADES = {
     'wool_nets': {'label': 'Durable wool nets', 'building': 'fishing_hut', 'level': 3, 'skill': 'fishing', 'xp': 20, 'wool': 5},
     'tools': {'label': 'Crafted axe', 'building': 'woodcutter', 'level': 4, 'skill': 'woodcutting', 'xp': 30, 'tools': 3},
     'saw': {'label': 'Improved saw', 'building': 'sawpit', 'level': 5, 'skill': 'woodworking', 'xp': 20, 'tools': 3},
+    'steel_pickaxe': {'label': 'Steel pickaxes', 'building': 'mine', 'level': 9, 'skill': 'mining', 'xp': 10, 'steel': 5, 'leather': 3},
     'timber_frame': {'label': 'Timber framing', 'building': 'home', 'level': 5, 'planks': 10},
 }
 PLAYER_BOATS = {
@@ -77,6 +86,11 @@ HALL_UPGRADES = [
     {'level': 3, 'wood': 60, 'seconds': 60, 'coins': 40, 'milestone': 'Develop two professions (10 practice each)'},
     {'level': 4, 'wood': 80, 'planks': 10, 'seconds': 90, 'coins': 50, 'milestone': 'Produce 10 planks'},
     {'level': 5, 'wood': 80, 'planks': 15, 'seconds': 120, 'coins': 60, 'milestone': 'Produce flour, smoked fish, or crafted tools'},
+    {'level': 6, 'wood': 90, 'planks': 20, 'leather': 5, 'seconds': 150, 'coins': 70, 'milestone': 'Produce 5 leather'},
+    {'level': 7, 'wood': 100, 'planks': 25, 'iron_ore': 10, 'seconds': 180, 'coins': 80, 'milestone': 'Mine 10 iron ore'},
+    {'level': 8, 'wood': 100, 'planks': 25, 'iron': 10, 'seconds': 210, 'coins': 90, 'milestone': 'Smelt 10 iron'},
+    {'level': 9, 'wood': 100, 'planks': 30, 'iron': 15, 'leather': 10, 'seconds': 240, 'coins': 100, 'milestone': 'Saddle a settled horse from your stable'},
+    {'level': 10, 'wood': 100, 'planks': 40, 'steel': 15, 'seconds': 270, 'coins': 120, 'milestone': 'Produce 15 steel and complete a town trade or sell 10 goods at your market'},
 ]
 # Food is the aggregate pantry, including these goods and legacy untyped provisions.
 FISH = {
@@ -96,6 +110,12 @@ def fishing_catch(building, depth):
 
 
 RECIPES = {
+    'tannery': ({'hides': 2, 'wood': .5}, 'leather', 2),
+    'mine': ({}, 'iron_ore', 2),
+    'smelter': ({'iron_ore': 3, 'wood': 2}, 'iron', 1),
+    'saddler': ({'leather': 5, 'iron': 1}, 'saddles', 1),
+    'steelworks': ({'iron': 2, 'wood': 3}, 'steel', 1),
+    'tradehouse': ({'planks': 3, 'leather': 2, 'steel': 1}, 'trade_crates', 1),
     'bakery': ({'flour': 2, 'wood': .5}, 'bread', 2),
     'butcher': ({'meat': 2}, 'prepared_meat', 2),
     'sawpit': ({'wood': 2}, 'planks', 1),
@@ -134,6 +154,7 @@ EDIBLE.update({r['output']: 1.5 + .25 * (r['level'] - 1)
                for kind in ('bakery', 'butcher') for r in PROFESSION_RECIPES[kind][1:]})
 EDIBLE.update({'fruit_pies': 3.5, 'cakes': 4.5, 'meat_pies': 4})
 PRODUCTION_SECONDS = {
+    'leather': 9, 'iron_ore': 9, 'iron': 12, 'saddles': 15, 'steel': 15, 'trade_crates': 18,
     'flour': 3, 'planks': 6, 'smoked_fish': 6, 'fish': 3,
     'tools': 9, 'wooden_bowls': 6, 'crates': 9,
     'furniture': 12, 'carved_furniture': 15,
@@ -144,6 +165,11 @@ PRODUCTION_SECONDS = {
 SALE_PRICES = {r['output']: ceil(EDIBLE.get(r['output'], 1)) if r['level'] > 1 else 1
                for recipes in PROFESSION_RECIPES.values() for r in recipes}
 SALE_PRICES['tools'] = 3
+SALE_PRICES.update(hides=2, leather=4, iron_ore=2, iron=6, saddles=25, steel=12, trade_crates=40)
+LATE_GOODS = ('hides', 'leather', 'iron_ore', 'iron', 'saddles', 'steel', 'trade_crates')
+TRADABLE_GOODS = tuple(dict.fromkeys(('coins', 'wood', 'planks', 'wool', 'flour', 'tools',
+                                     'wheat', 'fodder', 'manure', 'herbs', *EDIBLE,
+                                     *CRAFTED_GOODS, *LATE_GOODS)))
 
 
 def selected_recipe(building):
@@ -168,7 +194,7 @@ def production_seconds(building):
     return PRODUCTION_SECONDS[production_recipe(building)[1]] if building['kind'] in RECIPES else 3
 
 
-SUPPLIES = {'tree': (8, .5), 'water': (12, 3.2), 'berry_bush': (6, .3), 'herb_patch': (4, .2)}
+SUPPLIES = {'tree': (8, .5), 'water': (12, 3.2), 'berry_bush': (6, .3), 'herb_patch': (4, .2), 'rock': (60, .15)}
 _supply_cache = None
 
 JOB_BUILDINGS = {v['job']: k for k, v in BUILDINGS.items() if 'job' in v}
@@ -176,12 +202,17 @@ JOB_BUILDINGS = {v['job']: k for k, v in BUILDINGS.items() if 'job' in v}
 
 # Practice belongs to the individual; town/player skill cannot qualify a worker.
 JOB_REQUIREMENTS = {
+    'smelting': {'mining': 2}, 'tanning': {'husbandry': 2},
+    'horsekeeping': {'husbandry': 2}, 'saddlery': {'tanning': 2},
+    'steelmaking': {'smelting': 2}, 'packing': {'crafting': 2},
     'woodworking': {'woodcutting': 10}, 'milling': {'farming': 10},
     'preserving': {'fishing': 10}, 'crafting': {'woodworking': 2},
     'breeding': {'fishing': 20}, 'orcharding': {'farming': 20},
     'baking': {'milling': 2}, 'butchery': {'husbandry': 2},
 }
-TALENT_ROOTS = {'woodworking': 'woodcutting', 'crafting': 'woodcutting',
+TALENT_ROOTS = {'tanning': 'husbandry', 'horsekeeping': 'husbandry', 'saddlery': 'husbandry',
+                'mining': 'woodcutting', 'smelting': 'woodcutting', 'steelmaking': 'woodcutting', 'packing': 'woodcutting',
+                'woodworking': 'woodcutting', 'crafting': 'woodcutting',
                 'milling': 'farming', 'orcharding': 'farming', 'baking': 'farming',
                 'preserving': 'fishing', 'breeding': 'fishing', 'butchery': 'husbandry'}
 TALENTS = ('woodcutting', 'farming', 'fishing', 'husbandry')
@@ -253,12 +284,13 @@ def spend(town, costs):
 
 
 def costs_of(spec):
-    return {k: v for k, v in spec.items() if k in {'wood', 'coins', 'planks', 'wool', 'tools'}}
+    return {k: v for k, v in spec.items() if k in {'wood', 'coins', 'planks', 'wool', 'tools', *LATE_GOODS}}
 
 
-STORAGE_KEYS = ('wood', 'food', 'planks', 'wheat', 'fodder', 'flour', 'wool', 'tools', 'manure', 'herbs', *CRAFTED_GOODS)
+STORAGE_KEYS = ('wood', 'food', 'planks', 'wheat', 'fodder', 'flour', 'wool', 'tools', 'manure', 'herbs', *CRAFTED_GOODS, *LATE_GOODS)
 STORAGE_GOODS = {
     **{kind: (*STORAGE_KEYS, *EDIBLE) for kind in ('hall', 'storehouse', 'market')},
+    'stable': ('fodder', 'vegetables', 'manure'),
     'home': (),
     'woodcutter': ('wood',),
     'fishing_hut': tuple(FISH),
@@ -271,8 +303,12 @@ STORAGE_GOODS = {
 for kind, recipes in PROFESSION_RECIPES.items():
     STORAGE_GOODS[kind] = tuple(dict.fromkeys(k for r in recipes for k in (*r['inputs'], r['output'])))
 
+STORAGE_GOODS['butcher'] = (*STORAGE_GOODS['butcher'], 'hides')
 FIXED_STORAGE = {
     'hall': {'wood': 100, 'food': 100},
+    'stable': {'fodder': 30, 'food': 15, 'manure': 5},
+    **{kind: {key: 50 / len(set((*inputs, output))) for key in (*inputs, output)}
+       for kind, (inputs, output, _) in RECIPES.items() if kind in {'tannery', 'mine', 'smelter', 'saddler', 'steelworks', 'tradehouse'}},
     'home': {},
     'woodcutter': {'wood': 50},
     'fishing_hut': {'food': 50},
@@ -281,13 +317,13 @@ FIXED_STORAGE = {
     'barn': {'food': 20, 'fodder': 15, 'wool': 10, 'manure': 5},
     'orchard': {'food': 50},
     'bakery': {'flour': 15, 'wood': 5, 'herbs': 5, 'food': 25},
-    'butcher': {'food': 30, 'flour': 10, 'herbs': 5, 'wood': 5},
+    'butcher': {'hides': 10, 'food': 20, 'flour': 10, 'herbs': 5, 'wood': 5},
     'sawpit': {'wood': 30, 'planks': 20},
     'mill': {'wheat': 30, 'flour': 20},
     'smokehouse': {'food': 45, 'wood': 5},
     'workshop': {'planks': 15, 'wood': 5, 'tools': 5, 'wool': 5, **{key: 5 for key in CRAFTED_GOODS}},
     'fish_pond': {'fodder': 15, 'food': 35},
-    'market': {key: 2.5 if key in CRAFTED_GOODS else 4 for key in STORAGE_KEYS},
+    'market': {key: 3 if index < 8 else 2 for index, key in enumerate(STORAGE_KEYS)},
 }
 
 
@@ -473,6 +509,14 @@ def milestone(town, level):
         return town.get('produced', {}).get('planks', 0) >= 10
     if level == 5:
         return any(town.get('produced', {}).get(k, 0) >= 1 for k in ('flour', 'smoked_fish', 'tools'))
+    produced = town.get('produced', {})
+    if level in {6, 7, 8}:
+        key, count = {6: ('leather', 5), 7: ('iron_ore', 10), 8: ('iron', 10)}[level]
+        return produced.get(key, 0) >= count
+    if level == 9:
+        return bool(town.get('horse_ridden'))
+    if level == 10:
+        return produced.get('steel', 0) >= 15 and (town.get('completed_trades', 0) >= 1 or town.get('market_sales', 0) >= 10)
     return False
 
 
@@ -666,7 +710,7 @@ def extra_worker(town, villager, building, capacity):
         return reason
     kind = building['kind']
     upgrades = building.get('profession_upgrades', [])
-    speed = (1.25 if 'saw' in upgrades else 1) * efficiency(villager, villager['job'])
+    speed = (1.25 if 'saw' in upgrades or 'steel_pickaxe' in upgrades else 1) * efficiency(villager, villager['job'])
     if kind in RECIPES:
         reason = recipe_requirement(villager, building)
         if reason:
@@ -683,15 +727,15 @@ def extra_worker(town, villager, building, capacity):
     elif kind == 'orchard':
         if deliver(town, 'fruit', speed, capacity) == 0:
             return 'Storage full'
-    elif kind == 'barn':
+    elif kind in {'barn', 'stable'}:
         animals = building.get('animals', {})
         output_amounts = {}
         for animal in animals:
             adults = mature_animals(building, animal)
-            if adults and animal != 'pig':
+            if adults and animal not in {'pig', 'horse'}:
                 key = ANIMALS[animal]['output']; output_amounts[key] = output_amounts.get(key, 0) + adults * .25 * speed
         if not sum(animals.values()):
-            return 'Buy animals first'
+            return 'Capture horses first' if kind == 'stable' else 'Buy animals first'
         # One barn cycle per tick regardless of the number of assigned workers.
         feed = sum(ANIMALS[a]['feed'] * n for a, n in animals.items())
         if quantity(town, 'fodder') < feed:
@@ -715,7 +759,7 @@ def extra_worker(town, villager, building, capacity):
 def public_catalog():
     return {'buildings': BUILDINGS, 'crops': CROPS, 'animals': ANIMALS,
             'animal_growth_seconds': ANIMAL_GROWTH_SECONDS, 'butcher_seconds': BUTCHER_SECONDS,
-            'animal_meat': ANIMAL_MEAT,
+            'animal_meat': ANIMAL_MEAT, 'tradable_goods': TRADABLE_GOODS,
             'job_requirements': JOB_REQUIREMENTS, 'talent_roots': TALENT_ROOTS,
             'profession_recipes': PROFESSION_RECIPES, 'storage_keys': STORAGE_KEYS,
             'production_seconds': PRODUCTION_SECONDS, 'sale_prices': SALE_PRICES,

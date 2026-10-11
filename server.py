@@ -17,9 +17,11 @@ import logistics
 import work_cycles
 import equipment
 import npcs
+import trading
+import horses
 from spatial import SpatialIndex
 
-from terrain import ensure_terrain, remove_invalid_trees
+from terrain import ensure_terrain, remove_invalid_trees, ensure_industry
 from npcs import ensure_npcs
 from shared_world import bind_map, building_range, export_world, new_world, validate_placement, walking_map
 from chunk_world import CHUNK_SIZE, ChunkTerrain, attach as attach_chunks, chunk_key, parse_keys, parse_versions
@@ -202,6 +204,8 @@ def move_player(town, data):
         for _ in range(5):
             tile = (math.floor(player['x'] + .5), math.floor(player['y'] + .5))
             speed = (1 + .25 * max(0, economy.player_boat_level(player) - 1)) if tile in water else 1.5 if tile in roads else 1
+            if tile not in water and player.get('mounted'):
+                speed *= 1.75
             x = player['x'] + dx / length * .06 * speed
             if walkable(town, x, player['y'], blocked, water):
                 player['x'] = x
@@ -404,6 +408,8 @@ def building_level(building):
 
 
 def resource_reach(building):
+    if building['kind'] == 'mine':
+        return 10
     if building['kind'] == 'woodcutter':
         return WOODCUTTER_REACH
     if building['kind'] == 'fishing_hut':
@@ -579,6 +585,8 @@ def prepare_landscapes(world, regenerate=False):
     for landscape in landscapes:
         if 'shared_map' not in world:
             ensure_resources(landscape)
+        if not landscape.get('chunked'):
+            ensure_industry(landscape, obstacles + landscape.get('npcs', []))
         remove_invalid_trees(landscape)
         npc_map = landscape
         if landscape.get('chunked') and not landscape.get('npc_placement_version'):
@@ -712,14 +720,14 @@ def tick(world):
                         butcher_cycles.add(marker)
                         villager['production_status'] = logistics.butcher_animal(town, building, villager, TICK_SECONDS)
                     continue
-                if building['kind'] == 'barn':
+                if building['kind'] in {'barn', 'stable'}:
                     marker = id(building)
                     if marker in barn_cycles:
                         villager['production_status'] = 'Barn already tended this cycle'
                         continue
                     barn_cycles.add(marker)
                 villager['production_status'] = logistics.produce(town, building, villager, TICK_SECONDS)
-                if building['kind'] == 'barn' and villager['production_status'] == 'Working':
+                if building['kind'] in {'barn', 'stable'} and villager['production_status'] == 'Working':
                     economy.grow_animals(building, TICK_SECONDS)
                 continue
             output = 'wood' if job == 'woodcutting' else 'fish' if job == 'fishing' else source.get('crop', 'vegetables')
@@ -817,6 +825,10 @@ def command(town, data, world=None):
         for step in steps:
             result = command(town, {'action': 'walk', 'dx': step['dx'], 'dy': step['dy']}, world)
         return result
+    if action in {'create_trade', 'accept_trade', 'cancel_trade'}:
+        return trading.change(town, data, world)
+    if action in {'lead_horse', 'stable_horse', 'ride_horse', 'return_horse', 'toggle_mount'}:
+        return horses.change(town, data)
     if action == 'configure_rule':
         return logistics.configure_rules(town, data)
     if action in {'claim_local_gift', 'buy_worker_tool', 'trade_local', 'give_worker_tool', 'take_worker_tool', 'transfer_worker_tool',
@@ -1120,7 +1132,9 @@ def command(town, data, world=None):
         elif action in {'buy_animal', 'breed_animal'}:
             animal = data.get('animal')
             spec = economy.ANIMALS.get(animal)
-            if building['kind'] != 'barn' or spec is None or town['level'] < spec['level']:
+            if (spec is None or town['level'] < spec['level']
+                    or building['kind'] != ('stable' if animal == 'horse' else 'barn')
+                    or (animal == 'horse' and action == 'buy_animal')):
                 raise ValueError('Choose an unlocked animal and a barn.')
             animals = building.get('animals', {})
             if sum(animals.values()) >= 4 * building_level(building):
@@ -1159,22 +1173,24 @@ def command(town, data, world=None):
         key, amount = data.get('resource'), data.get('amount')
         if not any(b['kind'] == 'market' and completed(b) for b in town['buildings']):
             raise ValueError('Build a market stall first.')
-        if key not in {*economy.FISH, 'planks', 'wool', 'flour', 'smoked_fish', 'tools', 'herbs', 'fruit', 'milk', 'eggs', 'meat', 'bread', 'prepared_meat', *(r['output'] for recipes in economy.PROFESSION_RECIPES.values() for r in recipes)} or type(amount) is not int or not 1 <= amount <= 10:
+        if key not in {*economy.LATE_GOODS, *economy.FISH, 'planks', 'wool', 'flour', 'smoked_fish', 'tools', 'herbs', 'fruit', 'milk', 'eggs', 'meat', 'bread', 'prepared_meat', *(r['output'] for recipes in economy.PROFESSION_RECIPES.values() for r in recipes)} or type(amount) is not int or not 1 <= amount <= 10:
             raise ValueError('Choose goods and a quantity from 1 to 10.')
         if not economy.afford(town, {key: amount}):
             raise ValueError('Not enough goods to sell.')
         economy.spend(town, {key: amount})
         town['coins'] += amount * economy.FISH.get(key, {}).get('coins', economy.SALE_PRICES.get(key, 1))
+        town['market_sales'] = town.get('market_sales', 0) + amount
     elif action == 'upgrade':
         hall = next(b for b in town['buildings'] if b['kind'] == 'hall')
         if town.get('upgrade_remaining') or not completed(hall):
             raise ValueError('Your hall upgrade is already underway.')
         upgrade = hall_upgrade(town)
         if not upgrade:
-            raise ValueError('Hall levels above 5 are planned; existing higher-level towns keep their level.')
+            raise ValueError('Your town hall is fully upgraded (level 10).')
         if not economy.milestone(town, upgrade['level']):
             raise ValueError(upgrade['milestone'] + ' required to upgrade.')
-        costs = {k: upgrade[k] for k in ('wood', 'planks') if k in upgrade}
+        costs = economy.costs_of(upgrade)
+        costs.pop('coins', None)  # Hall coins are rewards, not a material cost.
         if not economy.afford(town, costs):
             raise ValueError('Save the hall upgrade materials: ' + ', '.join(costs))
         economy.spend(town, costs)

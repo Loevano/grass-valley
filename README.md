@@ -411,7 +411,7 @@ the Python host, refresh both browsers, and create a new world to use the shared
   sawpits/planks; level 4 adds mills, smokehouses, pigs, and workshops/tools;
   level 5 adds fish breeding ponds, orchards, cows, improved saws, timber framing,
   and market stalls. Each upgrade has a development milestone and material cost
-  shown in the hall panel. Levels 6–10 remain documented plans.
+  shown in the hall panel. Levels 6–10 add mining, metalworking, horses, and advanced trade.
 - Barns show each purchased or bred chicken, sheep, pig, and cow with walking,
   pecking, and grazing animations. They roam up to two open tiles from their barn
   and return, avoiding buildings, resources, and impassable ground.
@@ -479,3 +479,35 @@ With Node.js available, check worker movement and animation transitions with
 `node tests/test_building_selection.js`. Check contextual panels, object selection,
 keyboard controls, and visitor restrictions with `node tests/test_selection_panels.js`.
 Check upgraded building artwork and selection with `node tests/test_building_visual_upgrades.js`.
+
+## Hall levels 5–10
+
+- **5 — Leather and trade:** build a tannery. Butchering adult sheep, pigs, or cows
+  also yields hides; tanning turns them into leather. Market stalls let town owners
+  offer goods or coins to another town. Open your market to create, accept, or cancel
+  offers. Both towns need completed markets and enabled storage for incoming goods.
+  Offers use available stock when accepted, so spending it can make an offer unavailable.
+- **6 — Mining:** produce 5 leather to upgrade. Mines extract iron ore from a vein
+  within 10 tile steps. Existing rock outcrops gain visible copper-brown iron seams;
+  their terrain and positions stay intact. Ore slowly regenerates.
+- **7 — Iron:** mine 10 ore to upgrade. Smelters turn ore and wood into iron.
+- **8 — Horses:** smelt 10 iron to upgrade, then build a stable and saddler.
+  Find a wild horse on open meadow or grass, walk beside it, select it, and choose
+  **Lead horse to stable**. Walk beside your own stable and choose **Settle the horse
+  you are leading**. Assign a worker with 2 husbandry practice and supply fodder or
+  vegetables; horses need five minutes of feeding to settle or grow. Two adults can
+  breed using 3 fodder and 1 herb. The saddler makes saddles from leather and iron.
+  At the stable, saddle an adult to ride; riding adds 75% land speed and stacks with
+  roads. Select **You** to mount or dismount. Return the horse at a stable to use it
+  for breeding; your saddle is reusable. Wild horses, captured horses, riding status,
+  growth, and trade offers survive saves.
+- **9 — Steel:** saddle a settled horse to upgrade. Steelworks turn iron and wood
+  into steel. Steel pickaxes improve mine output by 25%.
+- **10 — Advanced trade:** produce 15 steel and either complete a town trade or
+  sell 10 goods at a market. Trade houses pack planks, leather, and steel into trade
+  crates worth 40 coins each. Hall level 10 reaches 75 tile steps of building range.
+
+New professions use the existing delivery, production cap, worker practice, and
+storehouse systems. Enable hides, leather, ore, iron, saddles, steel, and trade crates
+inside your storehouses as needed. Restart the host and refresh the browser to use
+these additions in existing worlds.

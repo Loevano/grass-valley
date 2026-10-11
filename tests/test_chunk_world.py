@@ -39,7 +39,7 @@ class ExplorableMap(unittest.TestCase):
         record['tree_stumps'] = [{'kind': 'tree', 'x': 0, 'y': 0, 'remaining': 3}]
         self.manager.memory[key] = json.dumps(record)
         loaded = self.manager.read(key)
-        self.assertEqual([(r['x'], r['y']) for r in loaded['map_resources']], [(1, 0)])
+        self.assertEqual([(r['x'], r['y']) for r in loaded['map_resources'] if r['kind'] == 'tree'], [(1, 0)])
         self.assertEqual(loaded['tree_stumps'], [])
 
     def test_generated_chunks_only_have_trees_on_green_ground(self):
@@ -268,7 +268,8 @@ class ExplorableMapHTTP(unittest.TestCase):
         again = json.loads(self.call('/api/world?chunks=1,1&known=' + known + '&resources=' + versions)[1])
         self.assertEqual(again['shared_map']['terrain_chunks'], {})
         self.assertEqual(again['shared_map']['resource_chunks'], {})
-        self.assertLess(len(json.dumps(again)), 20000)
+        # The profession catalog grows independently of streamed terrain.
+        self.assertLess(len(json.dumps(again)) - len(json.dumps(again['progression'])), 20000)
         changed_world = json.loads(self.call('/api/world?known=' + known + '&world_id=old-world')[1])
         self.assertTrue(changed_world['shared_map']['terrain_chunks'])
         self.assertNotIn(owner['token'], json.dumps(snapshot))
