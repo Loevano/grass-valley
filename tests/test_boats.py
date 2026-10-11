@@ -70,8 +70,8 @@ class Boats(unittest.TestCase):
         for key, reach in [('boat', 6), ('improved_boat', 8), ('master_boat', 10)]:
             before_reach = resource_reach(hut)
             command(self.town, dict(upgrade, upgrade=key))
-            self.assertEqual(resource_reach(hut), before_reach)
-            self.reject(dict(upgrade, upgrade=key), 'construction')
+            self.assertEqual(resource_reach(hut), reach if key == 'boat' else before_reach)
+            self.reject(dict(upgrade, upgrade=key), 'Already unlocked' if key == 'boat' else 'construction')
             for _ in range(100):
                 construct(self.town, self.town)
                 if 'construction' not in hut:
@@ -83,6 +83,21 @@ class Boats(unittest.TestCase):
         saved = json.loads(json.dumps(self.town))
         self.assertEqual(resource_reach(saved['buildings'][1]), 10)
         self.reject(upgrade, 'Already unlocked')
+
+    def test_each_hut_buys_one_independent_boat_immediately(self):
+        self.town['buildings'].extend([{'kind': 'fishing_hut', 'x': 6, 'y': 2},
+                                      {'kind': 'fishing_hut', 'x': 7, 'y': 2}])
+        buy = {'action': 'profession_upgrade', 'index': 1, 'upgrade': 'boat'}
+        command(self.town, buy)
+        self.assertEqual(economy.fishing_boat_level(self.town['buildings'][1]), 1)
+        self.assertEqual(economy.fishing_boat_level(self.town['buildings'][2]), 0)
+        self.assertNotIn('construction', self.town['buildings'][1])
+        self.reject(buy, 'Already unlocked')
+        command(self.town, dict(buy, index=2))
+        saved = json.loads(json.dumps(self.town))
+        self.assertEqual([economy.fishing_boat_level(b) for b in saved['buildings'][1:]], [1, 1])
+        self.assertEqual(self.town['goods']['planks'], 80)
+        self.assertFalse(self.town['player'].get('boat'))
 
     def test_hut_upgrades_increase_catches_and_stack_with_nets(self):
         self.town['buildings'].append({'kind': 'fishing_hut', 'x': 6, 'y': 2,

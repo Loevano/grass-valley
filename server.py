@@ -1000,9 +1000,12 @@ def command(town, data, world=None):
             if not economy.afford(town, economy.costs_of(spec)):
                 raise ValueError('Missing profession upgrade materials.')
             economy.spend(town, economy.costs_of(spec))
-            building['construction'] = {'progress': 0, 'total': BUILD_SECONDS,
-                                        'upgrade': {'profession_upgrades':
-                                                    building.get('profession_upgrades', []) + [key]}}
+            if key == 'boat':
+                building.setdefault('profession_upgrades', []).append(key)
+            else:
+                building['construction'] = {'progress': 0, 'total': BUILD_SECONDS,
+                                            'upgrade': {'profession_upgrades':
+                                                        building.get('profession_upgrades', []) + [key]}}
     elif action == 'sell_goods':
         key, amount = data.get('resource'), data.get('amount')
         if not any(b['kind'] == 'market' and completed(b) for b in town['buildings']):

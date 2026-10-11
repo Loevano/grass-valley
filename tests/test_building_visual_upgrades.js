@@ -47,6 +47,23 @@ const run=new Function('document','window','localStorage','setTimeout','clearTim
   const fishingHut={kind:'fishing_hut',x:5,y:5};
   const boatTiers=[['boat'],['boat','improved_boat'],['boat','improved_boat','master_boat']].map(profession_upgrades=>appearance({...fishingHut,profession_upgrades}));
   assert.strictEqual(new Set(boatTiers).size,3,'Each fishing boat tier has visible upgrades');
+  town.map_resources.push({kind:'water',x:4,y:6});
+  town.buildings=[{kind:'fishing_hut',x:4,y:5,profession_upgrades:['boat']},
+    {kind:'fishing_hut',x:5,y:4,profession_upgrades:['boat']}];
+  const docked=fishingBoatSprites([['own',town]],town.map_resources);
+  assert.strictEqual(docked.length,2,'Each hut owns its own visible boat');
+  assert.notDeepStrictEqual([docked[0].x,docked[0].y],[docked[1].x,docked[1].y],'Boats use separate nearby berths');
+  assert(docked.every(b=>town.map_resources.some(r=>r.kind==='water'&&r.x===b.x&&r.y===b.y)),'Boats float on water');
+  assert.strictEqual(JSON.stringify(docked),JSON.stringify(fishingBoatSprites([['own',JSON.parse(JSON.stringify(town))]],town.map_resources)),'Berths remain stable after reload');
+  const crowded=fishingBoatSprites([['own',town]], [{kind:'water',x:5,y:6}]);
+  assert(crowded.every(b=>Math.floor(b.x+.5)===5&&Math.floor(b.y+.5)===6),'Shared berths keep every boat on the water tile');
+  const boatLooks=[1,2,3].map(level=>{marks.length=0;drawFishingBoat({...docked[0],level});return JSON.stringify(marks);});
+  assert.strictEqual(new Set(boatLooks).size,3,'Full-size boat tiers look different');
+  draw();
+  assert(docked.every(b=>{const [px,py]=point(b.x,b.y);return hitTargets.some(hit=>hit.type==='building'&&hit.index===b.objectIndex&&hit.townId==='own'&&hit.left<=px&&hit.right>=px&&hit.top<=py+tileH/2&&hit.bottom>=py+tileH/2);}), 'Clicking a visible boat opens its own hut');
+  town.buildings[0].construction={progress:0,total:30,upgrade:{profession_upgrades:['boat','improved_boat']}};
+  assert.strictEqual(fishingBoatSprites([['own',town]],town.map_resources)[0].level,1,'Owned boat stays visible at its current tier during upgrades');
+  assert.strictEqual(fishingBoatSprites([['own',{...town,buildings:[{kind:'fishing_hut',x:4,y:5}]}]],town.map_resources).length,0,'Unpurchased huts have no boat');
   const visitor={...town,level:5,buildings:[hall],map_resources:[]};
   town.buildings=[{kind:'home',x:4,y:5,level:3}];
   world={world_id:'test',shared_map:town,town_sites:[{x:5,y:5}],towns:{own:town,visitor}};

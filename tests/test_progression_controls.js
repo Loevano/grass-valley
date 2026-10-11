@@ -67,13 +67,14 @@ const run=new Function('document','window','localStorage','setTimeout','clearTim
  town.level=4;town.player.fishing=30;town.goods.planks=50;town.coins=100;
  town.buildings.push({kind:'fishing_hut',x:3,y:5});inspect('building',4);
  check(panelNodes().some(c=>c.textContent==='Fishing boats'),'Fishing hut has a dedicated boat shop');
+ check(panelNodes().some(c=>c.textContent?.includes('Buy one boat for this fishing hut')),'Boat shop explains individual hut ownership');
  check(!!buy('Buy fishing boat')&&!!buy('Upgrade to improved fishing boat'),'Boat purchase and later tiers are visible at the hut');
  town.level=1;town.player.fishing=0;render();
  check(!!buy('Buy fishing boat'),'Locked boat purchases remain discoverable');
  buy('Buy fishing boat').onclick();check($('confirm-upgrade').disabled&&$('upgrade-requirements').textContent.includes('Hall level 3'),'Locked purchases explain requirements and cannot be confirmed');$('cancel-upgrade').onclick();
  town.level=4;town.player.fishing=30;render();
  buy('Upgrade to improved fishing boat').onclick();check($('confirm-upgrade').disabled,'Later tiers require an owned boat');$('cancel-upgrade').onclick();
- buy('Buy fishing boat').onclick();$('confirm-upgrade').onclick();check(commands.at(-1).action==='profession_upgrade'&&commands.at(-1).index===4&&commands.at(-1).upgrade==='boat','Boat purchase from the hut targets that hut');
+ buy('Buy fishing boat').onclick();check($('upgrade-time').textContent==='0 seconds'&&$('confirm-upgrade').textContent.startsWith('Buy boat'),'Boat purchase applies immediately');$('confirm-upgrade').onclick();check(commands.at(-1).action==='profession_upgrade'&&commands.at(-1).index===4&&commands.at(-1).upgrade==='boat','Boat purchase from the hut targets that hut');
  town.buildings[4].profession_upgrades=['boat'];render();
  check(!!buy('Upgrade to improved fishing boat'),'Owned boat unlocks the next tier');
  buy('Upgrade to improved fishing boat').onclick();check($('upgrade-requirements').textContent.includes('Fishing boat'),'Boat preview explains the previous-tier requirement');

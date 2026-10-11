@@ -485,7 +485,7 @@ function upgradePreview(command,town,item){
   if(command.action==='profession_upgrade'){
     const spec=world.progression?.upgrades?.[command.upgrade];
     if(!spec)return null;
-    return {title:spec.label,benefits:[professionBenefits[command.upgrade] || spec.label],cost:materialCosts(spec),seconds:30,requirements:`Hall level ${spec.level}${spec.xp?` · ${spec.xp} ${goodName(spec.skill).toLowerCase()} practice`:''}${spec.requires?` · ${world.progression.upgrades[spec.requires]?.label || goodName(spec.requires)}`:''}`,ready:town.level>=spec.level&&professionSkill(town,spec.skill)>=(spec.xp || 0)&&(!spec.requires||item.profession_upgrades?.includes(spec.requires))&&!item.profession_upgrades?.includes(command.upgrade)};
+    return {title:spec.label,benefits:[professionBenefits[command.upgrade] || spec.label],cost:materialCosts(spec),seconds:command.upgrade==='boat'?0:30,requirements:`Hall level ${spec.level}${spec.xp?` · ${spec.xp} ${goodName(spec.skill).toLowerCase()} practice`:''}${spec.requires?` · ${world.progression.upgrades[spec.requires]?.label || goodName(spec.requires)}`:''}`,ready:town.level>=spec.level&&professionSkill(town,spec.skill)>=(spec.xp || 0)&&(!spec.requires||item.profession_upgrades?.includes(spec.requires))&&!item.profession_upgrades?.includes(command.upgrade)};
   }
   const capacity=command.action==='upgrade_capacity',level=capacity?item.settler_level || 1:buildingLevel(item);
   const currentBenefits=upgradeBenefit(item.kind,level,item).split('\n'),nextBenefits=upgradeBenefit(item.kind,level+1,item).split('\n');
@@ -542,7 +542,7 @@ function renderUpgradeDialog(){
   $('upgrade-time').textContent=`${preview.seconds} seconds`;
   $('upgrade-requirements').textContent=preview.requirements;
   $('upgrade-requirements').hidden=$('upgrade-requirements-label').hidden=!preview.requirements;
-  $('confirm-upgrade').textContent=`Upgrade for ${costText(preview.cost)}`;
+  $('confirm-upgrade').textContent=`${command.upgrade==='boat'?'Buy boat':'Upgrade'} for ${costText(preview.cost)}`;
   const error=item.construction?'Finish the current construction first.':!preview.ready?'Upgrade requirements are not met.':!canAfford(town,preview.cost)?'Gather more resources to afford this upgrade.':'';
   $('upgrade-error').textContent=error;$('upgrade-error').hidden=!error;$('confirm-upgrade').disabled=!!error;
 }
@@ -1080,6 +1080,11 @@ function renderProfession(town,item,index,target,upgrades,details,boats){
   const owner=viewed===identity?.town_id;
   const catalog=world.progression;
   if(!catalog)return;
+  if(boats){
+    const note=document.createElement('p');
+    note.textContent=fishingBoatLevel(item)?`Boat owned by this hut · Tier ${fishingBoatLevel(item)}/3. Click its boat on the map to manage it.`:'No boat owned · Buy one boat for this fishing hut. It appears beside nearby water immediately.';
+    boats.append(note);
+  }
   if(item.kind==='acre'){
     const chooser=document.createElement('select');chooser.setAttribute('aria-label','Crop');
     for(const [key,level] of Object.entries(catalog.crops)){
@@ -2333,6 +2338,35 @@ function drawGround(rect,dpr,landscape,water,bounds,forest=null){
   ctx.drawImage(cache.surface,originX-(cache.originX+margin)*scale,originY-(cache.originY+margin)*scale,
     cache.surface.width/dpr*scale,cache.surface.height/dpr*scale);
 }
+function fishingBoatSprites(entries,resources){
+  const water=resources.filter(r=>r.kind==='water'),berths=new Map(),boats=[];
+  for(const [townId,town] of entries)for(const [index,hut] of (town?.buildings || []).entries()){
+    if(hut.kind!=='fishing_hut'||!fishingBoatLevel(hut))continue;
+    const nearby=water.filter(r=>Math.abs(r.x-hut.x)+Math.abs(r.y-hut.y)<=resourceReach(hut))
+      .sort((a,b)=>(Math.abs(a.x-hut.x)+Math.abs(a.y-hut.y))-(Math.abs(b.x-hut.x)+Math.abs(b.y-hut.y))||a.y-b.y||a.x-b.x);
+    const berth=nearby.find(r=>!berths.has(`${r.x},${r.y}`)) || nearby[0];
+    const key=berth?`${berth.x},${berth.y}`:`shore:${townId}/${index}`,count=berths.get(key) || 0;
+    berths.set(key,count+1);
+    boats.push({kind:'fishing_boat',townId,objectIndex:index,level:fishingBoatLevel(hut),
+      x:berth?berth.x+(count ? .35*Math.sin(count*2.4) : 0):hut.x+.7,y:berth?berth.y+(count ? .35*Math.cos(count*2.4) : 0):hut.y+.4});
+  }
+  return boats;
+}
+function drawFishingBoat(boat){
+  const [x,top]=point(boat.x,boat.y),y=top+tileH/2,s=tileW/46;
+  ctx.save();ctx.lineWidth=1.5*s;
+  ctx.strokeStyle='#b8dcda';ctx.beginPath();ctx.ellipse(x,y+6*s,23*s,8*s,0,0,Math.PI*2);ctx.stroke();
+  polygon([[x-23*s,y-3*s],[x-13*s,y+12*s],[x+12*s,y+12*s],[x+25*s,y-4*s]],boat.level===3?'#a27640':'#805738','#493627');
+  polygon([[x-23*s,y-3*s],[x-9*s,y-9*s],[x+25*s,y-4*s],[x+10*s,y+5*s],[x-12*s,y+5*s]],'#c29a63','#efcb8c');
+  polygon([[x-16*s,y-2*s],[x-8*s,y-5*s],[x+17*s,y-2*s],[x+8*s,y+2*s],[x-9*s,y+2*s]],'#574637');
+  ctx.fillStyle='#e0bb80';ctx.fillRect(x-8*s,y-4*s,3*s,8*s);ctx.fillRect(x+6*s,y-3*s,3*s,7*s);
+  ctx.strokeStyle='#efd49f';ctx.lineWidth=2*s;ctx.beginPath();ctx.moveTo(x-15*s,y+12*s);ctx.lineTo(x+14*s,y-10*s);ctx.stroke();
+  if(boat.level>=2){
+    ctx.fillStyle='#dfd6ac';ctx.fillRect(x,y-31*s,2*s,32*s);
+    polygon([[x+2*s,y-31*s],[x+2*s,y-7*s],[x+20*s,y-7*s]],boat.level===3?'#d4af6b':'#ece3c5','#805738');
+  }
+  ctx.restore();
+}
 function draw(seconds=0){
   const rect=canvas.getBoundingClientRect(),dpr=window.devicePixelRatio||1;
   const width=Math.round(rect.width*dpr),height=Math.round(rect.height*dpr);
@@ -2446,12 +2480,18 @@ function draw(seconds=0){
     const [px,py]=point(b.x,b.y);
     return px>=-tileW&&px<=rect.width+tileW&&py>=-tileH&&py<=rect.height+80*tileW/46;
   };
-  const objects=mergeDepthObjects([...buildings,...cropObjects].filter(visible),visibleResourceObjects(resourceData,rect),
+  const boats=fishingBoatSprites(entries,resources);
+  const objects=mergeDepthObjects([...buildings,...cropObjects,...boats].filter(visible),visibleResourceObjects(resourceData,rect),
     [...villagers,...npcSprites(world.shared_map || town,seconds),...otherPlayers,...(hero?[hero]:[])].filter(visible));
   for(const b of objects){
     const [px,py]=point(b.x,b.y),scale=tileW/46;
     if(px < -tileW || px > rect.width+tileW || py < -tileH || py > rect.height+80*scale)continue;
     if(b.kind==='crop'){drawFarmCrop(b);continue;}
+    if(b.kind==='fishing_boat'){
+      drawFishingBoat(b);
+      hitTargets.push({type:'building',index:b.objectIndex,townId:b.townId,left:px-25*scale,right:px+25*scale,top:py+(tileH/2)-(b.level>=2?32:10)*scale,bottom:py+tileH/2+13*scale});
+      continue;
+    }
     if(b.kind==='player'){
       const baseY=py+tileH*.65;
       if(world.towns[b.townId]?.player?.boat&&water.has(`${Math.floor(b.x+.5)},${Math.floor(b.y+.5)}`)){
@@ -2760,12 +2800,10 @@ function paintBuilding(b,town,farmState=null,target=ctx,usable=buildingUsable(to
     }
   }
   if(fishingBoatLevel(b)){
-    paintPolygon([[x+2*s,y+8*s],[x+9*s,y+13*s],[x+21*s,y+7*s],[x+15*s,y+5*s]],'#b08a59','#644f3b');
-    ctx.strokeStyle='#e0ce97';ctx.lineWidth=2*s;ctx.beginPath();ctx.moveTo(x+9*s,y+6*s);ctx.lineTo(x+19*s,y+15*s);ctx.stroke();
-    if(fishingBoatLevel(b)>=2){
-      ctx.fillStyle='#dfd6ac';ctx.fillRect(x+10*s,y-8*s,2*s,16*s);
-      paintPolygon([[x+12*s,y-8*s],[x+12*s,y+3*s],[x+22*s,y+3*s]],fishingBoatLevel(b)===3?'#d4af6b':'#ece3c5');
-    }
+    ctx.fillStyle=['','#c29a63','#ece3c5','#d4af6b'][fishingBoatLevel(b)];
+    ctx.fillRect(x+10*s,y-9*s,8*s,8*s);
+    ctx.fillStyle='#493627';ctx.font=`bold ${6*s}px sans-serif`;ctx.textAlign='center';
+    ctx.fillText(String(fishingBoatLevel(b)),x+14*s,y-3*s);
   }
 
   ctx.save();ctx.translate(x,y);ctx.scale(s,s);

@@ -170,7 +170,9 @@ the Python host, refresh both browsers, and create a new world to use the shared
   Fishing-hut boats add 3, 5, then 7 tiles of reach; the two upgrades add 25%
   then 50% fish per catch. Exploration upgrades add 25% then 50% sailing speed
   and fish per catch while afloat. Each upgrade requires the previous tier.
-  Fishing-hut upgrades use builders; exploration purchases and upgrades apply
+  Each fishing hut buys and owns its own boat. The initial purchase applies
+  immediately and shows a full-size boat on nearby water; click it to manage its
+  hut. Boat upgrades use builders; exploration purchases and upgrades apply
   immediately. Existing boats keep their ownership and start at tier 1.
 - Select a farm and choose **Build acre · 5 wood**, then click open ground within
   three tile steps of that farm. Farmers tend its acres and deliver food back to
