@@ -17,6 +17,26 @@ class Boats(unittest.TestCase):
                          npcs=[], terrain=['g' * 120] * 120)
         self.town['player']['fishing'] = 40
 
+    def test_boat_crew_capacity_leaves_other_fishers_on_the_dock(self):
+        hut = {'kind': 'fishing_hut', 'x': 6, 'y': 2, 'settler_level': 4}
+        self.town['buildings'].append(hut)
+        self.town['map_resources'] = [{'kind': 'water', 'x': x, 'y': 2} for x in range(7, 18)]
+        self.town['villagers'] = [{'job': 'fishing', 'building_index': 1,
+                                  'logistics_position': {'x': 6, 'y': 3}} for _ in range(4)]
+        for tier in range(1, 4):
+            hut['profession_upgrades'] = ['boat', 'improved_boat', 'master_boat'][:tier]
+            for index, fisher in enumerate(self.town['villagers']):
+                with self.subTest(tier=tier, worker=index):
+                    for spatial in (None, SpatialIndex(self.town['map_resources'])):
+                        source = work_assignment(self.town, 'fishing', index, spatial)[1]
+                        self.assertEqual(source['x'], 6 + 4 + 2 * tier if index < tier else 7)
+                    self.assertEqual(work_cycles.fishing_boating(self.town, hut, index), index < tier)
+                    work_cycles.advance(self.town, self.town, fisher, hut, source, index, 0)
+                    if index >= tier:
+                        self.assertTrue(all(p['x'] <= 7 for p in fisher['work_animation']['path']))
+                        work_cycles.advance(self.town, self.town, fisher, hut, source, index, 3)
+                        self.assertEqual((fisher['work_animation']['x'], fisher['work_animation']['y']), (7, 2))
+
     def test_fishers_sail_offshore_and_return_to_unload(self):
         hut = {'kind': 'fishing_hut', 'x': 6, 'y': 2, 'profession_upgrades': ['boat']}
         self.town['buildings'].append(hut)

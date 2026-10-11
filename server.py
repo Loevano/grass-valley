@@ -343,11 +343,11 @@ def work_assignment(town, job, worker_index, spatial=None):
     for farm_index, b in enumerate(town['buildings']):
         if b['kind'] != building or not completed(b) or (explicit is not None and farm_index != explicit):
             continue
-        reach = resource_reach(b)
+        boating = job == 'fishing' and work_cycles.fishing_boating(town, b, worker_index)
+        reach = 2 + b.get('level', 1) if job == 'fishing' and not boating else resource_reach(b)
         nearby = (spatial.nearby(source, b['x'], b['y'], reach) if spatial is not None else
                   [r for r in town['map_resources'] if r['kind'] == source
                    and abs(r['x'] - b['x']) + abs(r['y'] - b['y']) <= reach])
-        boating = job == 'fishing' and economy.fishing_boat_level(b)
         if boating:
             depths = (spatial or SpatialIndex(town['map_resources'])).water_depths()
             occupied = {(item['x'], item['y']) for item in town['buildings'] + town.get('npcs', [])}
@@ -665,7 +665,7 @@ def tick(world):
             output = 'wood' if job == 'woodcutting' else 'fish' if job == 'fishing' else source.get('crop', 'vegetables')
             if job == 'fishing':
                 depth = town_spatial.water_depths().get((source['x'], source['y']), 1)
-                output = economy.fishing_catch(building, depth)
+                output = economy.fishing_catch(building, depth) if work_cycles.fishing_boating(town, building, index) else 'fish'
             cap_room = economy.production_room(town, output)
             if cap_room <= 0:
                 villager['production_status'] = 'Production cap reached'
@@ -690,7 +690,7 @@ def tick(world):
                 bonus += production_bonus(source)
             upgrades = building.get('profession_upgrades', [])
             bonus += .25 * sum(u in upgrades for u in ('axe', 'nets', 'wool_nets', 'tools'))
-            if job == 'fishing':
+            if job == 'fishing' and work_cycles.fishing_boating(town, building, index):
                 bonus += .25 * max(0, economy.fishing_boat_level(building) - 1)
             amount = min(room, rate * (1 + bonus) * economy.efficiency(villager, job))
             if job == 'farming':

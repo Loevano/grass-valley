@@ -6,6 +6,23 @@ import progression as economy
 from spatial import SpatialIndex
 
 
+def fishing_boating(town, building, worker_index):
+    """One boat crew space per boat tier; other hut workers use the dock."""
+    tier = economy.fishing_boat_level(building)
+    if not tier:
+        return False
+    owner = next((i for i, b in enumerate(town['buildings']) if b is building), None)
+    huts = [i for i, b in enumerate(town['buildings']) if b['kind'] == 'fishing_hut'
+            and ('construction' not in b or 'upgrade' in b['construction'])
+            and any(r['kind'] == 'water' and abs(r['x'] - b['x']) + abs(r['y'] - b['y'])
+                    <= 2 + b.get('level', 1) + (3 + 2 * (economy.fishing_boat_level(b) - 1)
+                                               if economy.fishing_boat_level(b) else 0)
+                    for r in town['map_resources'])]
+    crew = [i for i, v in enumerate(town['villagers']) if v['job'] == 'fishing'
+            and v.get('building_index', huts[i % len(huts)] if huts else None) == owner]
+    return worker_index in crew[:tier]
+
+
 def fishing_water(building, water, occupied, reach, terrain=None, depths=None):
     """Water reachable by boat from the hut's nearest bank, within its reach."""
     tiles = {(r['x'], r['y']): r for r in water
@@ -52,9 +69,10 @@ def route(start, target, blocked, size, terrain, adjacent=True, bounds=None):
 
 def advance(town, landscape, villager, building, source, index, seconds):
     """Return True only when the worker finishes unloading at its workplace."""
+    boating = villager['job'] == 'fishing' and fishing_boating(town, building, index)
     spec = [villager['job'], building['kind'], building['x'], building['y'], source['kind'], source['x'], source['y']]
     if villager['job'] == 'fishing':
-        spec.extend([building.get('level', 1), economy.fishing_boat_level(building)])
+        spec.extend([building.get('level', 1), economy.fishing_boat_level(building), boating])
     state = villager.get('work_animation')
     size, terrain = landscape.get('map_size', 120), landscape.get('terrain', [])
     blocked = {(b['x'], b['y']) for b in landscape['buildings'] + landscape['map_resources'] + landscape.get('npcs', [])}
@@ -66,7 +84,6 @@ def advance(town, landscape, villager, building, source, index, seconds):
     if farming:
         blocked.difference_update((b['x'], b['y']) for b in landscape['buildings'] if b['kind'] == 'acre' and 'construction' not in b)
     work_spot = source if farming and source['kind'] == 'acre' else None
-    boating = villager['job'] == 'fishing' and economy.fishing_boat_level(building)
     if boating:
         reach = 2 + building.get('level', 1) + 3 + 2 * (economy.fishing_boat_level(building) - 1)
         occupied = {(b['x'], b['y']) for b in landscape['buildings'] + landscape.get('npcs', [])}

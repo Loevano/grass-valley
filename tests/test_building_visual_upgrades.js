@@ -10,7 +10,7 @@ const context=new Proxy({}, {get(target,key){
 const documentMock={getElementById(id){if(!elements.has(id))elements.set(id,element());return elements.get(id);},createElement:element,querySelectorAll:()=>[]};
 const canvas=documentMock.getElementById('world');canvas.getContext=()=>context;
 canvas.getBoundingClientRect=()=>({left:0,top:0,width:960,height:660});
-const run=new Function('document','window','localStorage','setTimeout','clearTimeout','assert','marks',
+const run=new Function('document','window','localStorage','setTimeout','clearTimeout','assert','marks','WorkerAnimation',
   source.slice(0,source.lastIndexOf('requestAnimationFrame(animate);'))+`
   const town={level:1,map_size:12,buildings:[],map_resources:[{kind:'tree',x:6,y:5},{kind:'water',x:5,y:6}],villagers:[]};
   identity={town_id:'own'};viewed='own';world={world_id:'test',towns:{own:town}};
@@ -60,12 +60,19 @@ const run=new Function('document','window','localStorage','setTimeout','clearTim
   assert.deepStrictEqual([sailing[0].x,sailing[0].y],[sailor.x,sailor.y],'Boat follows its fisher continuously on water');
   assert.strictEqual(sailing[0].passenger,sailor,'Fisher rides in the hut-owned boat');
   assert(!sailing[1].passenger,'Another hut keeps its own docked boat');
+  town.buildings[0].profession_upgrades.push('improved_boat');
+  const secondSailor={...sailor,x:5,y:6},rodFisher={...sailor,state:{...sailor.state,boating:false}};
+  const crewBoat=fishingBoatSprites([['own',town]],town.map_resources,[sailor,secondSailor,rodFisher])[0];
+  assert.deepStrictEqual(crewBoat.crew,[sailor,secondSailor],'Every boat crew member rides aboard; rod fishers remain on the dock');
+  town.buildings[0].profession_upgrades.pop();
+
   assert(!fishingBoatSprites([['own',town]],town.map_resources,[{...sailor,x:4,y:5}])[0].passenger,'Boat stays docked while its fisher walks on land');
   const crowded=fishingBoatSprites([['own',town]], [{kind:'water',x:5,y:6}]);
   assert(crowded.every(b=>Math.floor(b.x+.5)===5&&Math.floor(b.y+.5)===6),'Shared berths keep every boat on the water tile');
   const boatLooks=[1,2,3].map(level=>{marks.length=0;drawFishingBoat({...docked[0],level});return JSON.stringify(marks);});
   assert.strictEqual(new Set(boatLooks).size,3,'Full-size boat tiers look different');
   draw();
+  assert(draw.piers.length===2&&draw.piers.every(pier=>pier.length>1),'Unstaffed boat huts keep their visible docks');
   assert(docked.every(b=>{const [px,py]=point(b.x,b.y);return hitTargets.some(hit=>hit.type==='building'&&hit.index===b.objectIndex&&hit.townId==='own'&&hit.left<=px&&hit.right>=px&&hit.top<=py+tileH/2&&hit.bottom>=py+tileH/2);}), 'Clicking a visible boat opens its own hut');
   town.buildings[0].construction={progress:0,total:30,upgrade:{profession_upgrades:['boat','improved_boat']}};
   assert.strictEqual(fishingBoatSprites([['own',town]],town.map_resources)[0].level,1,'Owned boat stays visible at its current tier during upgrades');
@@ -95,4 +102,4 @@ const run=new Function('document','window','localStorage','setTimeout','clearTim
   assert.strictEqual(buildingEffects.length,0,'Switching worlds clears feedback');
   console.log('Building visual upgrade checks passed');
 `);
-run(documentMock,{devicePixelRatio:1,addEventListener(){}},{getItem:()=>null},()=>0,()=>{},assert,marks);
+run(documentMock,{devicePixelRatio:1,addEventListener(){}},{getItem:()=>null},()=>0,()=>{},assert,marks,require('../web/animations.js'));

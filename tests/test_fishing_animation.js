@@ -89,7 +89,7 @@ const sailingTown={map_size:16,buildings:[{kind:'fishing_hut',x:2,y:2,profession
 const sailor=animation.plan(sailingTown,{job:'fishing',building_index:0,work_target:sailingTown.map_resources.at(-1),
   logistics_position:{x:2,y:3}},0);
 assert(sailor.boating,'Boat-equipped fishers sail to their target');
-assert.strictEqual(sailor.pier.length,0,'Boats do not extend the walking pier offshore');
+assert.deepStrictEqual(sailor.pier,[sailingTown.buildings[0],{x:3,y:2}],'Boat purchase preserves the dock at the bank');
 const sea=new Set(sailingTown.map_resources.map(r=>r.x+','+r.y));
 const boarding=sailor.path.findIndex(p=>sea.has(p.x+','+p.y));
 assert(boarding>=0);
@@ -132,4 +132,21 @@ for(let tier=1;tier<=3;tier++){
 }
 const island=lake.map_resources.filter(r=>r.x!==10||r.y!==8);
 assert.strictEqual(animation.waterDepths(island).get('10,7'),1,'Island shores make adjacent water shallow');
+
+const crewTown={...sailingTown,buildings:[{...sailingTown.buildings[0],settler_level:4}],
+  villagers:Array.from({length:4},()=>({job:'fishing',building_index:0}))};
+for(let tier=1;tier<=3;tier++){
+  crewTown.buildings[0].profession_upgrades=['boat','improved_boat','master_boat'].slice(0,tier);
+  for(let i=0;i<4;i++){
+    const source=crewTown.map_resources[i<tier?crewTown.map_resources.length-1:0];
+    const fisher=animation.plan(crewTown,{...crewTown.villagers[i],work_target:source},i);
+    assert.strictEqual(!!fisher.boating,i<tier,'Boat crew is limited to its upgraded capacity');
+    assert(fisher.pier.length,'Every tier keeps the dock');
+    if(i>=tier){
+      for(let step=0;step<300&&fisher.path.length;step++)animation.advance(fisher,.1,true);
+      assert.strictEqual(fisher.phase,'working');
+      assert(fisher.pier.some(p=>p.x===fisher.x&&p.y===fisher.y),'Rod fishers stand on the dock');
+    }
+  }
+}
 console.log('Fishing animation checks passed');

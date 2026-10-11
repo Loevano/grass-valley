@@ -524,9 +524,9 @@ const professionBenefits={
   nets:'+25% food / catch',
   wool_nets:'+25% food / catch\nStacks with nets',
   tools:'+25% wood / worker\nStacks with axe',
-  boat:'+3 tile reach\nDepth 2 water · Trout (1.5 food / 2 coins)',
-  improved_boat:'+2 additional tile reach\nDepth 3 water · Salmon (2 food / 3 coins)\n+25% fish / catch',
-  master_boat:'+2 additional tile reach\nDepth 4 water · Sturgeon (3 food / 5 coins)\n+25% fish / catch (total boat bonus: +50%)',
+  boat:'1 fisherman aboard · Other fishers use the dock\n+3 tile reach\nDepth 2 water · Trout (1.5 food / 2 coins)',
+  improved_boat:'2 fishermen aboard\n+2 additional tile reach\nDepth 3 water · Salmon (2 food / 3 coins)\n+25% fish / catch',
+  master_boat:'3 fishermen aboard\n+2 additional tile reach\nDepth 4 water · Sturgeon (3 food / 5 coins)\n+25% fish / catch (total boat bonus: +50%)',
   saw:'+25% plank processing speed',
   timber_frame:'+2 spaces'
 };
@@ -1144,7 +1144,7 @@ function renderProfession(town,item,index,target,upgrades,details,boats){
   if(!catalog)return;
   if(boats){
     const note=document.createElement('p');
-    note.textContent=fishingBoatLevel(item)?`Boat owned by this hut · Tier ${fishingBoatLevel(item)}/3 · Reach ${resourceReach(item)} tiles · Maximum depth ${fishingBoatLevel(item)+1}. Prefers deeper water; ${['','trout','salmon','sturgeon'][fishingBoatLevel(item)]} require this depth. Click its boat on the map to manage it.`:'No boat owned · Buy one boat for this fishing hut. It appears beside nearby water immediately.';
+    note.textContent=fishingBoatLevel(item)?`Boat owned by this hut · Tier ${fishingBoatLevel(item)}/3 · Crew ${fishingBoatLevel(item)} · Other fishers use the dock · Reach ${resourceReach(item)} tiles · Maximum depth ${fishingBoatLevel(item)+1}. Prefers deeper water; ${['','trout','salmon','sturgeon'][fishingBoatLevel(item)]} require this depth. Click its boat on the map to manage it.`:'No boat owned · Buy one boat for this fishing hut. It appears beside nearby water immediately.';
     boats.append(note);
   }
   if(item.kind==='acre'){
@@ -1876,7 +1876,7 @@ function animatedVillagers(town, seconds, townId=viewed, frameLayout=null){
   return town.villagers.map((villager,index)=>{
     const task=JSON.stringify([villager.job,villager.building_index,villager.work_target?tiles([villager.work_target]):null,
       villager.construction_target?tiles([villager.construction_target]):null,
-      villager.job==='fishing'?town.buildings.filter(b=>b.kind==='fishing_hut').map(b=>[b.level,b.profession_upgrades]):null]);
+      villager.job==='fishing'?[town.villagers.map(v=>[v.job,v.building_index]),town.buildings.filter(b=>b.kind==='fishing_hut').map(b=>[b.level,b.profession_upgrades])]:null]);
     const trip=villager.logistics_trip;
     // Polling advances the host's step; keep the visible trip running continuously.
     const signature=JSON.stringify([task,trip?[trip.id,trip.operation,trip.workplace,trip.storage,trip.path]:villager.logistics_target]);
@@ -2546,9 +2546,10 @@ function fishingBoatSprites(entries,resources,villagers=[]){
   }
   return fishingBoatSprites.docked.map((boat,index)=>{
     const {hut}=huts[index];
-    const passenger=villagers.find(v=>v.townId===boat.townId&&v.state.boating&&v.state.home?.x===hut.x&&v.state.home?.y===hut.y
+    const crew=villagers.filter(v=>v.townId===boat.townId&&v.state.boating&&v.state.home?.x===hut.x&&v.state.home?.y===hut.y
       &&waterTiles.has(`${Math.floor(v.x+.5)},${Math.floor(v.y+.5)}`));
-    return {...boat,passenger,x:passenger?passenger.x:boat.x,y:passenger?passenger.y:boat.y};
+    const passenger=crew[0];
+    return {...boat,passenger,crew,x:passenger?passenger.x:boat.x,y:passenger?passenger.y:boat.y};
   });
 }
 function drawFishingBoat(boat){
@@ -2638,14 +2639,18 @@ function draw(seconds=0){
     ctx.save();ctx.lineWidth=3;
     polygon([[px,py],[px+tileW/2,py+tileH/2],[px,py+tileH],[px-tileW/2,py+tileH/2]],'#fff0b133','#fff0b1');ctx.restore();
   }
-  const entries=world.shared_map?Object.entries(world.towns):[[viewed,town]];
+  const entries=world.shared_map?Object.entries(world.towns):town?[[viewed,town]]:[];
   const buildings=world.shared_map?entries.flatMap(([id,t])=>t.buildings.map((b,index)=>({...b,townId:id,objectIndex:index}))):town?.buildings || [{kind:'hall',x:5,y:5}];
   const workerLayout='['+JSON.stringify(buildings.map(({kind,x,y,farm_index,construction})=>[kind,x,y,farm_index,!!construction]))+','+resourceData.layout+']';
   const villagers=entries.flatMap(([id,t])=>animatedVillagers(t,seconds,id,
     t?.chunked?townWorkerLayout(t,buildings,resources):workerLayout));
   const drawnPiers=new Set();
-  for(const worker of villagers){
-    const pier=worker.state.pier;
+  if(draw.pierLayout!==workerLayout){
+    draw.pierLayout=workerLayout;
+    draw.piers=entries.flatMap(([,t])=>t.buildings.filter(b=>b.kind==='fishing_hut'&&(!b.construction||b.construction.upgrade))
+      .map(hut=>WorkerAnimation.fishingPier({...t,obstacles:buildings},hut)));
+  }
+  for(const pier of [...draw.piers,...villagers.map(worker=>worker.state.pier)]){
     if(!pier?.length)continue;
     const id=JSON.stringify(pier);
     if(drawnPiers.has(id))continue;
@@ -2680,7 +2685,7 @@ function draw(seconds=0){
     return px>=-tileW&&px<=rect.width+tileW&&py>=-tileH&&py<=rect.height+80*tileW/46;
   };
   const boats=fishingBoatSprites(entries,resources,villagers);
-  const passengers=new Set(boats.map(b=>b.passenger).filter(Boolean));
+  const passengers=new Set(boats.flatMap(b=>b.crew));
   const objects=mergeDepthObjects([...buildings,...cropObjects,...boats].filter(visible),visibleResourceObjects(resourceData,rect),
     [...villagers.filter(v=>!passengers.has(v)),...npcSprites(world.shared_map || town,seconds),...otherPlayers,...(hero?[hero]:[])].filter(visible));
   for(const b of objects){
@@ -2689,7 +2694,10 @@ function draw(seconds=0){
     if(b.kind==='crop'){drawFarmCrop(b);continue;}
     if(b.kind==='fishing_boat'){
       drawFishingBoat(b);
-      if(b.passenger)drawVillager({...b.passenger,state:{...b.passenger.state,path:[]}});
+      for(const [seat,passenger] of b.crew.entries()){
+        const offset=(seat-(b.crew.length-1)/2)*.28;
+        drawVillager({...passenger,x:b.x+offset,y:b.y-offset,state:{...passenger.state,path:[]}});
+      }
       hitTargets.push({type:'building',index:b.objectIndex,townId:b.townId,left:px-25*scale,right:px+25*scale,top:py+(tileH/2)-(b.level>=2?32:10)*scale,bottom:py+tileH/2+13*scale});
       continue;
     }

@@ -5,6 +5,30 @@ const WorkerAnimation = (() => {
   const neighbors = p => [{x:p.x+1,y:p.y},{x:p.x,y:p.y+1},{x:p.x-1,y:p.y},{x:p.x,y:p.y-1}];
   const boatLevel = b => b?.profession_upgrades?.includes('master_boat')?3:b?.profession_upgrades?.includes('improved_boat')?2:b?.profession_upgrades?.includes('boat')?1:0;
   const fishingReach = b => 2+(b.level || 1)+(boatLevel(b)?3+2*(boatLevel(b)-1):0);
+  function fishingBoating(town,home,index){
+    const huts=town.buildings.filter(b=>b.kind==='fishing_hut'&&(!b.construction||b.construction.upgrade)
+      &&town.map_resources.some(r=>r.kind==='water'&&distance(b,r)<=fishingReach(b)));
+    const crew=(town.villagers || []).map((v,i)=>({v,i})).filter(({v,i})=>v.job==='fishing'
+      &&(Number.isInteger(v.building_index)?town.buildings[v.building_index]:huts[i%huts.length])===home);
+    return crew.length?crew.slice(0,boatLevel(home)).some(worker=>worker.i===index):index<boatLevel(home);
+  }
+  function fishingPier(town,home){
+    const occupied=new Set([...(town.obstacles || town.buildings),...(town.npcs || [])].map(key));
+    const waters=town.map_resources.filter(r=>r.kind==='water'&&distance(home,r)<=3&&!occupied.has(key(r)))
+      .sort((a,b)=>distance(home,a)-distance(home,b)||a.y-b.y||a.x-b.x);
+    const blocked=new Set([...occupied,...town.map_resources.map(key)]);
+    blocked.delete(key(home));
+    for(const water of waters)if(town.terrain?.[water.y]?.[water.x]!=='v')blocked.delete(key(water));
+    const size=town.map_size || 120,bounds={minX:Math.max(0,home.x-3),maxX:Math.min(size-1,home.x+3),
+      minY:Math.max(0,home.y-3),maxY:Math.min(size-1,home.y+3)};
+    for(let x=bounds.minX;x<=bounds.maxX;x++)for(let y=bounds.minY;y<=bounds.maxY;y++)
+      if(town.terrain?.[y]?.[x]==='v'||(town.chunked&&!town.terrain?.[y]?.[x]))blocked.add(`${x},${y}`);
+    for(const water of waters){
+      const deck=route(home,water,blocked,size,false,bounds);
+      if(deck&&deck.length<=3)return [home,...deck];
+    }
+    return [];
+  }
   function waterDepths(resources){
     const water=new Set(resources.filter(r=>r.kind==='water').map(key)),depths=new Map(),queue=[];
     for(const tile of water){
@@ -99,7 +123,8 @@ const WorkerAnimation = (() => {
       for(const acre of town.buildings.filter(b=>b.kind==='acre'&&!b.construction))blocked.delete(key(acre));
       workSpot=source;
     }
-    const boating=!villager.construction_target&&villager.job==='fishing'&&source&&home?.kind==='fishing_hut'&&boatLevel(home)>0;
+    const boating=!villager.construction_target&&villager.job==='fishing'&&source&&home?.kind==='fishing_hut'&&fishingBoating(town,home,index);
+    if(!villager.construction_target&&villager.job==='fishing'&&home?.kind==='fishing_hut')pier=fishingPier(town,home);
     if(boating){
       const depths=waterDepths(town.map_resources);
       const water=new Set(town.map_resources.filter(r=>r.kind==='water'&&distance(home,r)<=fishingReach(home)
@@ -241,6 +266,6 @@ const WorkerAnimation = (() => {
       state.path=path || [];state.phase=path===null?'waiting':path.length?'walking':'working';state.elapsed=0;state.fishingCaught=null;state.waterReady=false;
     }
   }
-  return {route,plan,advance,waterDepths};
+  return {route,plan,advance,waterDepths,fishingPier};
 })();
 if(typeof module!=='undefined')module.exports=WorkerAnimation;
