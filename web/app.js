@@ -1447,9 +1447,7 @@ function draw(seconds=0){
   drawGround(rect,dpr,world.shared_map || town,water,{minX,maxX,minY,maxY});
   for(const road of mapRoads(town)){
     if(road.x<minX||road.x>maxX||road.y<minY||road.y>maxY)continue;
-    const [px,py]=point(road.x,road.y);
-    polygon([[px,py],[px+tileW/2,py+tileH/2],[px,py+tileH],[px-tileW/2,py+tileH/2]],'#b99c70','#a58b63');
-    polygon([[px,py+tileH*.2],[px+tileW*.3,py+tileH*.5],[px,py+tileH*.8],[px-tileW*.3,py+tileH*.5]],'#c6aa7e');
+    drawRoad(road);
   }
   // Selection and construction overlays remain live above the cached ground.
   if(tool || showBuildingRange || reachable.size || selection || keyboardTile){
@@ -1556,7 +1554,10 @@ function draw(seconds=0){
   }
   if(preview && previewKind && town && town.terrain?.[preview.y]?.[preview.x]!=='v' && viewed===identity?.town_id){
     const valid=placementValid(town,preview,previewKind);
-    ctx.save();ctx.globalAlpha=valid ? .65 : .35;drawBuilding({...preview,kind:previewKind},town);ctx.restore();
+    ctx.save();ctx.globalAlpha=valid ? .65 : .35;
+    if(previewKind==='road')drawRoad(preview);
+    else drawBuilding({...preview,kind:previewKind},town);
+    ctx.restore();
   }
 }
 function acrePlacementValid(town,tile,index){
@@ -1623,6 +1624,11 @@ function drawFarmCrop(crop){
     ctx.beginPath();ctx.moveTo(px,py+tileH/2);
     ctx.lineTo(px+crop.sway*scale,py+tileH/2-crop.height*scale);ctx.stroke();
   }
+}
+function drawRoad(road){
+  const [px,py]=point(road.x,road.y);
+  polygon([[px,py],[px+tileW/2,py+tileH/2],[px,py+tileH],[px-tileW/2,py+tileH/2]],'#b99c70','#a58b63');
+  polygon([[px,py+tileH*.2],[px+tileW*.3,py+tileH*.5],[px,py+tileH*.8],[px-tileW*.3,py+tileH*.5]],'#c6aa7e');
 }
 function drawBuilding(b,town=world.towns[viewed],farmState=null){
   if(b.construction){
