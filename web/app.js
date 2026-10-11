@@ -705,6 +705,8 @@ function renderProfession(town,item,index){
 }
 function renderSelection(town){
   if(document.activeElement?.getAttribute?.('aria-label')?.endsWith('storage allocation'))return;
+  // Keep the hall controls attached while rebuilding their temporary section.
+  $('selection-panel').append($('hall-details'));
   $('selection-details').replaceChildren();$('hall-details').hidden=true;$('selection-move').hidden=true;$('selection-destroy').hidden=true;
   if(!selection)return;
   if(!town){selection=null;panel=null;return;}
