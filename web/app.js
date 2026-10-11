@@ -906,7 +906,7 @@ function renderSettlers(town,item,buildingIndex,target=$('selection-details'),up
   const upgrade=document.createElement('button');upgrade.className='upgrade-button';upgrade.textContent='Capacity';
   upgrade.title=level>=3?'Settler capacity fully upgraded':`Upgrade to ${settlerSpaces[item.kind]*(level+1)} spaces · ${20*level} wood · ${30*level} seconds`;
   upgrade.setAttribute('aria-label',`Capacity: ${upgrade.title}`);
-  upgrade.disabled=level>=3||town.wood<20*level;
+  upgrade.disabled=level>=3;
   upgrade.onclick=()=>{if(!upgrade.disabled)showUpgrade({action:'upgrade_capacity',index:buildingIndex});};
   upgrades.append(upgradeCard(upgrade,upgradePreview({action:'upgrade_capacity',index:buildingIndex},town,item),{title:level>=3?'Capacity · Tier 3':`Capacity · Tier ${level+1}`,status:level>=3?'Fully upgraded':'',benefits:[`Settler spaces: ${capacity}${level<3?` → ${settlerSpaces[item.kind]*(level+1)}`:''}.`]}));
 }
@@ -945,7 +945,7 @@ function renderProfession(town,item,index,target,upgrades,details){
     if(!unlocked&&(town.level<spec.level || professionSkill(town,spec.skill)<(spec.xp || 0)))continue;
     const button=document.createElement('button');button.textContent=unlocked?`${spec.label} · Unlocked`:spec.label;
     button.className='upgrade-button';
-    button.disabled=!owner || unlocked || town.level<spec.level || professionSkill(town,spec.skill)<(spec.xp || 0) || !canAfford(town,materialCosts(spec));button.onclick=()=>{if(!button.disabled)showUpgrade({action:'profession_upgrade',index,upgrade:key});};
+    button.disabled=!owner || unlocked;button.onclick=()=>{if(!button.disabled)showUpgrade({action:'profession_upgrade',index,upgrade:key});};
     upgrades.append(upgradeCard(button,upgradePreview({action:'profession_upgrade',index,upgrade:key},town,item),{status:unlocked?'Unlocked':''}));
   }
   if(item.kind==='market'&&owner)for(const key of ['planks','wool','flour','smoked_fish','tools','herbs','fruit','milk','eggs','meat','bread','prepared_meat']){
@@ -1097,7 +1097,7 @@ function renderSelection(town){
       $('upgrade').className='upgrade-button';
       $('upgrade').title=town.upgrade_remaining?`Upgrading to level ${town.level+1} · ${town.upgrade_remaining}s remaining`:upgrade?`Upgrade to level ${upgrade.level} · ${costText(hallCosts)} · ${upgrade.seconds} seconds`:'Levels 6–10 planned';
       $('upgrade').setAttribute('aria-label',`Lvl: ${$('upgrade').title}`);
-      $('upgrade').disabled=!!town.upgrade_remaining || !!item.construction || viewed!==identity?.town_id || !upgrade || !ready || !canAfford(town,hallCosts);
+      $('upgrade').disabled=!!town.upgrade_remaining || !!item.construction || viewed!==identity?.town_id || !upgrade;
     }
     $('selection-move').hidden=viewed!==identity?.town_id;
     $('selection-move').textContent=town.coins?'Move building · 1 coin':'Move building · Free';
@@ -1126,7 +1126,7 @@ function renderSelection(town){
       button.textContent='Lvl';
       button.title=level>=maxLevel?`Fully upgraded · Level ${maxLevel}${item.kind==='storehouse'?' · Warehouse':''}`:`Upgrade to level ${level+1} · ${cost} wood · ${30*level} seconds · ${upgradeBenefit(item.kind,level+1,item)}`;
       button.setAttribute('aria-label',`Lvl: ${button.title}`);
-      button.disabled=!!item.construction||level>=maxLevel||town.wood<cost||viewed!==identity?.town_id;
+      button.disabled=!!item.construction||level>=maxLevel||viewed!==identity?.town_id;
       const index=selection.index;
       button.onclick=()=>{if(!button.disabled&&viewed===identity?.town_id)showUpgrade({action:'upgrade_building',index});};
       // Keep the level action before the capacity action.

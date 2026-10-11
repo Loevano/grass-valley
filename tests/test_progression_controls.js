@@ -51,7 +51,9 @@ const run=new Function('document','window','localStorage','setTimeout','clearTim
  town.level=2;town.villagers[0].woodcutting=9;render();check(!axe(),'Upgrades are hidden before their skill unlock');
  town.villagers[0].woodcutting=10;render();check(axe()&&!axe().disabled,'Upgrades appear when hall and skill requirements are met');
  axe().onclick();$('confirm-upgrade').onclick();check(commands.at(-1).action==='profession_upgrade'&&commands.at(-1).upgrade==='axe','Revealed upgrades send the correct command');
- town.coins=0;render();check(axe()&&axe().disabled,'Unlocked upgrades stay visible when unaffordable');town.coins=20;
+ town.coins=0;render();check(axe()&&!axe().disabled,'Equipment preview remains available when unaffordable');
+ const beforeUpgrade=commands.length;axe().onclick();check($('confirm-upgrade').disabled,'Unaffordable equipment disables confirmation');
+ $('confirm-upgrade').onclick();check(commands.length===beforeUpgrade,'Unaffordable equipment sends no command');$('cancel-upgrade').onclick();town.coins=20;
  town.buildings[4].profession_upgrades=['axe'];render();check(axe().textContent.includes('Unlocked')&&axe().disabled,'Purchased upgrades remain visible');
  town.buildings.pop();
  inspect('resource',0);check(panelNodes().some(c=>c.children?.[0]?.textContent==='4 / 8'),'Sources show their shared supply');

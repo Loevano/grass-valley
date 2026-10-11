@@ -7,7 +7,7 @@ function element(tag){
   return {tag,children:[],style:{},attributes:{},events:{},classList:{toggle(name,enabled){this[name]=enabled;}},
     append(child){this.children.push(child);},replaceChildren(){this.children=[];},
     setAttribute(key,value){this.attributes[key]=value;},
-    addEventListener(key,callback){this.events[key]=callback;},focus(){},showModal(){},close(){}};
+    addEventListener(key,callback){this.events[key]=callback;},focus(){},showModal(){this.open=true;},close(){this.open=false;this.events.close?.();}};
 }
 const documentMock={getElementById(id){if(!elements.has(id))elements.set(id,element());return elements.get(id);},createElement:element,querySelectorAll:()=>[]};
 const canvasMock=documentMock.getElementById('world');
@@ -46,12 +46,16 @@ const run=new Function('document','window','localStorage','setTimeout','clearTim
     town.level=2;render();
     check(rangeFact().children[0].textContent==='15 tile steps','Hall panel reflects the expanded range');
     town.level=1;render();
-    town.wood=0;render();check($('upgrade').disabled,'Hall upgrade requires enough wood');town.wood=65;
+    town.wood=0;render();check(!$('upgrade').disabled,'Hall preview remains available without wood');
+    $('upgrade').onclick();check($('upgrade-dialog').open&&$('confirm-upgrade').disabled,'Unaffordable hall opens popup with confirmation disabled');
+    $('confirm-upgrade').onclick();check(!commands.length,'Unaffordable hall sends no command');$('cancel-upgrade').onclick();town.wood=65;
     town.level=2;town.harvested=90;town.wood=80;render();
     check(!$('upgrade').disabled&&$('upgrade').title.includes('level 3'),'Level 2 owners can upgrade again');
     check($('hall-progress').hidden&&$('progress').textContent.includes('60 coins'),'Next milestone and reward use host requirements');
-    world.hall_ready.own=false;render();check($('upgrade').disabled,'Later levels require their own milestone');
-    world.hall_ready.own=true;town.wood=79;render();check($('upgrade').disabled,'Later levels require their own wood cost');
+    world.hall_ready.own=false;render();check(!$('upgrade').disabled,'Hall preview remains available before its milestone');
+    $('upgrade').onclick();check($('upgrade-dialog').open&&$('confirm-upgrade').disabled&&!$('upgrade-error').hidden,'Unmet hall milestone blocks confirmation and shows a reason');
+    $('confirm-upgrade').onclick();check(!commands.length,'Unmet hall milestone sends no command');$('cancel-upgrade').onclick();
+    world.hall_ready.own=true;town.wood=79;render();check(!$('upgrade').disabled,'Later hall preview remains available before its wood cost is met');
     town.wood=80;town.upgrade_remaining=57;render();
     check($('upgrade').disabled&&$('upgrade').title.includes('57s remaining'),'Pending upgrade shows timer and prevents repeat clicks');
     town.upgrade_remaining=0;town.level=10;render();
@@ -206,7 +210,10 @@ const run=new Function('document','window','localStorage','setTimeout','clearTim
     function buildingUpgrade(){return panelNodes().find(child=>child.tag==='button'&&child.textContent==='Lvl');}
     check(buildingUpgrade().title.includes('20 wood')&&buildingUpgrade().title.includes('4 spaces'),'Cottage upgrade previews cost and housing');
     buildingUpgrade().onclick();$('confirm-upgrade').onclick();check(commands.at(-1).action==='upgrade_building'&&commands.at(-1).index===1,'Upgrade targets the selected building');
-    town.wood=19;render();check(buildingUpgrade().disabled,'Building upgrade requires wood');
+    town.wood=19;render();check(!buildingUpgrade().disabled,'Building preview remains available without wood');
+    const beforeUpgrade=commands.length;buildingUpgrade().onclick();
+    check($('upgrade-dialog').open&&$('confirm-upgrade').disabled,'Unaffordable building opens popup with confirmation disabled');
+    $('confirm-upgrade').onclick();check(commands.length===beforeUpgrade,'Unaffordable building sends no command');$('cancel-upgrade').onclick();
     town.wood=65;town.buildings[1].construction={progress:0,total:30};render();check(buildingUpgrade().disabled,'Unfinished buildings cannot upgrade');
     delete town.buildings[1].construction;town.buildings[1].level=3;render();check(buildingUpgrade().disabled&&buildingUpgrade().title.includes('Fully upgraded'),'Level 3 is the building limit');
     friend.buildings[1].level=1;viewed='friend';inspect('building',1);check(buildingUpgrade().disabled,'Visitor cannot upgrade buildings');

@@ -55,7 +55,9 @@ const run=new Function('document','window','localStorage','setTimeout','clearTim
     delete town.villagers[0].building_index;
     inspect('building',2);check(controls().some(c=>c.children?.[0]?.textContent==='0 / 2'),'Cottage has two spaces');
     town.villagers[0].building_index=2;
-    town.wood=0;render();check(button('Capacity').disabled,'Upgrade disabled without enough wood');
+    town.wood=0;render();check(!button('Capacity').disabled,'Capacity preview available without enough wood');
+    const beforeUpgrade=commands.length;button('Capacity').onclick();check($('confirm-upgrade').disabled,'Unaffordable capacity disables confirmation');
+    $('confirm-upgrade').onclick();check(commands.length===beforeUpgrade,'Unaffordable capacity sends no command');$('cancel-upgrade').onclick();
     town.buildings[2].settler_level=3;render();check(button('Capacity').disabled,'Max capacity cannot upgrade');
     town.buildings[2].construction={progress:0,total:30};render();check(!button('Add worker'),'Construction sites cannot assign settlers');
     delete town.buildings[2].construction;viewed='friend';inspect('building',1);
