@@ -1536,9 +1536,10 @@ function render(){
   if(panel==='items')renderItems(own);
   if(panel==='resources')renderResourceList(own);
   $('move').textContent=own?.coins?'Move a building · 1 coin':'Move a building · Free';
-  $('mode-hint').textContent=tool==='move'?(moveIndex===null?'Moving: click a building. Escape to cancel.':'Moving: click open grass to move here. Escape to cancel.'):tool?`Building ${labels[tool].toLowerCase()}: hover over open grass and left-click to build. Escape to cancel.`:'Click a building, villager, or resource to learn more.';
+  $('mode-hint').textContent=tool==='move'?(moveIndex===null?'Moving: click a building. Escape to cancel.':'Moving: click open grass to move here. Escape to cancel.'):tool?`Building ${labels[tool].toLowerCase()}: hover over open grass and left-click to build. Escape to cancel.`:'';
   $('view-title').textContent=(world.shared_map?world.name:town?.name) || 'A place to call home';
   if(!tool&&own?.food_shortage_seconds)$('mode-hint').textContent='Food shortage! Feed your settlers soon or they may leave. Open Villagers for details.';
+  $('mode-hint').hidden=!$('mode-hint').textContent;
   $('resources-empty').hidden=!!own;$('resource-totals').hidden=!own;
   if(own){
     $('resource-wood').textContent=Math.floor(own.wood);
