@@ -1204,7 +1204,7 @@ function renderAnimalButchery(town,item,index,target){
   button.onclick=()=>{if(button.disabled||viewed!==identity?.town_id)return;const [barnIndex,animal]=chooser.value.split(':');act({action:'butcher_animal',index,barn_index:Number(barnIndex),animal});};
   target.append(chooser,button);
 }
-function renderProfession(town,item,index,target,upgrades,details,boats){
+function renderProfession(town,item,index,target,upgrades,details,boats,unlockedUpgrades){
   if(item.construction)return;
   const owner=viewed===identity?.town_id;
   const catalog=world.progression;
@@ -1246,7 +1246,7 @@ function renderProfession(town,item,index,target,upgrades,details,boats){
     const button=document.createElement('button');button.textContent=unlocked?`${spec.label} · Unlocked`:fishingBoat?`${key==='boat'?'Buy':'Upgrade to'} ${spec.label.toLowerCase()}`:spec.label;
     button.className='upgrade-button';
     button.disabled=!owner || unlocked;button.onclick=()=>{if(!button.disabled)showUpgrade({action:'profession_upgrade',index,upgrade:key});};
-    (fishingBoat?boats:upgrades).append(upgradeCard(button,upgradePreview({action:'profession_upgrade',index,upgrade:key},town,item),{status:unlocked?'Unlocked':''}));
+    (unlocked?unlockedUpgrades:fishingBoat?boats:upgrades).append(upgradeCard(button,upgradePreview({action:'profession_upgrade',index,upgrade:key},town,item),{status:unlocked?'Unlocked':''}));
   }
   if(item.kind==='market'&&owner)for(const key of ['fish','trout','salmon','sturgeon','planks','wool','flour','smoked_fish','tools','herbs','fruit','milk','eggs','meat','bread','prepared_meat',...Object.values(catalog.profession_recipes || {}).flat().map(recipe=>recipe.output).filter(key=>!['tools','bread','prepared_meat'].includes(key))]){
     const price=catalog.fish?.[key]?.coins ?? catalog.sale_prices?.[key] ?? ({trout:2,salmon:3,sturgeon:5}[key] || (key==='tools'?3:1));
@@ -1441,6 +1441,7 @@ function renderSelection(town){
     const production=buildingSection(['hall','home','storehouse'].includes(item.kind)?'Benefits':'Production');
     const upgrades=buildingSection('Upgrades'),details=buildingSection('Building details',true),storageOverview=buildingSection('Storage');
     const boats=item.kind==='fishing_hut'?buildingSection('Fishing boats'):null;
+    const unlockedUpgrades=buildingSection('Unlocked upgrades',true);
     const upgradeActions=document.createElement('div');upgradeActions.className='building-upgrade-actions';
     const assigned=town.villagers.filter((v,i)=>settlerBuilding(town,v,i)===selection.index);
     const status=document.createElement('p');status.className='workplace-status';
@@ -1481,7 +1482,7 @@ function renderSelection(town){
     }
     if(!item.construction&&world.progression?.buildings[item.kind])p.textContent=productionDescription(item);
     details.append(p);
-    renderProfession(town,item,selection.index,production,upgrades,details,boats);
+    renderProfession(town,item,selection.index,production,upgrades,details,boats,unlockedUpgrades);
     if(!item.construction&&item.kind!=='home'){
       renderStorage(town,item,selection.index,storageOverview);
     }
@@ -1519,6 +1520,7 @@ function renderSelection(town){
     }
     if(upgradeActions.children.length)upgrades.append(upgradeActions);
     if(upgrades.children.length>1)$('selection-details').append(upgrades);
+    if(unlockedUpgrades.children.length>1)$('selection-details').append(unlockedUpgrades);
   }
   if(selection.type==='resource')$('selection-details').append(p);
 }

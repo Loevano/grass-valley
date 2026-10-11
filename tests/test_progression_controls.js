@@ -2,7 +2,7 @@ const fs=require('fs');
 const source=fs.readFileSync('web/app.js','utf8');
 const animation=new Function(fs.readFileSync('web/animations.js','utf8')+';return WorkerAnimation;')();
 const elements=new Map(),listeners={};
-function element(tag){return {tag,children:[],style:{},attributes:{},classList:{toggle(){}},append(...items){this.children.push(...items);},replaceChildren(){this.children=[];},setAttribute(k,v){this.attributes[k]=v;},addEventListener(){},focus(){},showModal(){},close(){}};}
+function element(tag){return {tag,children:[],style:{},attributes:{},classList:{toggle(){}},append(...items){this.children.push(...items);},replaceChildren(){this.children=[];},setAttribute(k,v){this.attributes[k]=v;},addEventListener(name,handler){(this.listeners ||= {})[name]=handler;},focus(){},showModal(){},close(){}};}
 const document={getElementById(id){if(!elements.has(id))elements.set(id,element());return elements.get(id);},createElement:element,querySelectorAll:()=>[]};
 const canvas=document.getElementById('world');canvas.getContext=()=>new Proxy({},{get:()=>()=>{}});canvas.getBoundingClientRect=()=>({width:960,height:660});
 const run=new Function('document','window','localStorage','setTimeout','clearTimeout','WorkerAnimation',
@@ -54,7 +54,14 @@ const run=new Function('document','window','localStorage','setTimeout','clearTim
  town.coins=0;render();check(axe()&&!axe().disabled,'Equipment preview remains available when unaffordable');
  const beforeUpgrade=commands.length;axe().onclick();check($('confirm-upgrade').disabled,'Unaffordable equipment disables confirmation');
  $('confirm-upgrade').onclick();check(commands.length===beforeUpgrade,'Unaffordable equipment sends no command');$('cancel-upgrade').onclick();town.coins=20;
- town.buildings[4].profession_upgrades=['axe'];render();check(axe().textContent.includes('Unlocked')&&axe().disabled,'Purchased upgrades remain visible');
+ const unlockedSection=()=>$('selection-details').children.find(c=>c.tag==='details'&&c.children[0].textContent==='Unlocked upgrades');
+ check(!unlockedSection(),'No completed-upgrade dropdown appears before a purchase');
+ town.buildings[4].profession_upgrades=['axe'];render();
+ check(axe().textContent.includes('Unlocked')&&axe().disabled,'Purchased upgrades remain available for reference');
+ check(unlockedSection()&&!unlockedSection().open&&panelNodes(unlockedSection()).includes(axe()),'Purchased equipment moves into a collapsed dropdown');
+ check($('selection-details').children.at(-1)===unlockedSection(),'Completed upgrades appear at the bottom of the panel');
+ unlockedSection().open=true;unlockedSection().listeners.toggle();render();
+ check(unlockedSection().open,'Completed-upgrade dropdown stays open across refreshes');
  town.buildings.pop();
  inspect('resource',0);check(panelNodes().some(c=>c.children?.[0]?.textContent==='4 / 8'),'Sources show their shared supply');
  inspect('player',0);check(panelNodes().some(c=>c.className==='player-skills'),'Founder shows saved skill tiles');
@@ -76,10 +83,15 @@ const run=new Function('document','window','localStorage','setTimeout','clearTim
  buy('Upgrade to improved fishing boat').onclick();check($('confirm-upgrade').disabled,'Later tiers require an owned boat');$('cancel-upgrade').onclick();
  buy('Buy fishing boat').onclick();check($('upgrade-time').textContent==='0 seconds'&&$('confirm-upgrade').textContent.startsWith('Buy boat'),'Boat purchase applies immediately');$('confirm-upgrade').onclick();check(commands.at(-1).action==='profession_upgrade'&&commands.at(-1).index===4&&commands.at(-1).upgrade==='boat','Boat purchase from the hut targets that hut');
  town.buildings[4].profession_upgrades=['boat'];render();
+ const boatSection=()=>$('selection-details').children.find(c=>c.children[0]?.textContent==='Fishing boats');
+ check(!unlockedSection().open,'Selecting another building resets the completed-upgrade dropdown');
+ check(panelNodes(unlockedSection()).some(c=>c.textContent==='Fishing boat · Unlocked')&&!panelNodes(boatSection()).some(c=>c.textContent==='Fishing boat · Unlocked'),'Owned boats move out of the boat shop into completed upgrades');
  check(!!buy('Upgrade to improved fishing boat'),'Owned boat unlocks the next tier');
  buy('Upgrade to improved fishing boat').onclick();check($('upgrade-requirements').textContent.includes('Fishing boat'),'Boat preview explains the previous-tier requirement');
  $('confirm-upgrade').onclick();check(commands.at(-1).upgrade==='improved_boat','Boat upgrade targets the fishing hut');
  town.buildings[4].profession_upgrades.push('improved_boat');
+ render();check(unlockedSection().children.length===3,'Every purchased boat tier appears in the completed-upgrade dropdown');
+ check(!panelNodes(boatSection()).some(c=>c.className==='upgrade-card'),'Boat shop contains no completed upgrade cards');
  check(resourceReach(town.buildings[4])===8,'Improved boat extends range');town.buildings.pop();
  world.progression.boats={1:{label:'Exploration boat',level:3,xp:0,coins:20},2:{label:'Improved exploration boat',level:4,xp:30,planks:15,coins:20},3:{label:'Masterwork exploration boat',level:5,xp:40,planks:20,coins:40}};
  inspect('player',0);buy('Buy exploration boat').onclick();check(commands.at(-1).action==='buy_boat','Character can purchase a boat');
