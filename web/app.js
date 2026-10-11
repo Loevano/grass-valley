@@ -312,7 +312,7 @@ function remotePlayerState(townId,player){
   if(remoteWorld!==world.world_id){remotePlayers.clear();remoteWorld=world.world_id;remoteSample=-Infinity;}
   let state=remotePlayers.get(townId);
   if(!state){
-    state={...player,from:{...player},target:{...player},elapsed:.1,clock:0,path:[],phase:'idle'};
+    state={...player,target:{...player},waypoints:[],buffer:0,clock:0,path:[],phase:'idle'};
     remotePlayers.set(townId,state);
   }
   return state;
@@ -327,9 +327,18 @@ function updateRemotePlayers(snapshot){
     if(!town || id===identity?.town_id)continue;
     const state=remotePlayerState(id,town.player || player);
     if(player.x!==state.target.x || player.y!==state.target.y){
-      state.from={x:state.x,y:state.y};state.target={...player};state.elapsed=0;
+      // Queue positions so turns survive polling jitter, and play at walking speed.
+      // A short lead absorbs uneven arrivals without accelerating to catch up.
+      if(playerMovementDistance(player.x-state.x,player.y-state.y)>3){
+        state.x=player.x;state.y=player.y;state.waypoints.length=0;state.buffer=0;
+      }else{
+        if(!state.waypoints.length)state.buffer=.1;
+        state.waypoints.push({...player});
+      }
+      state.target={...player};
     }
-    state.facing=player.facing;town.player={...player};
+    if(!state.waypoints.length)state.facing=player.facing;
+    town.player={...player};
   }
   remoteSample=sampledAt;
 }
@@ -346,11 +355,19 @@ async function refreshPlayers(){
 }
 function remotePlayerSprite(townId,town,seconds){
   const state=remotePlayerState(townId,town.player);
-  state.elapsed=Math.min(.1,state.elapsed+seconds);state.clock+=seconds;
-  const progress=state.elapsed/.1;
-  state.x=state.from.x+(state.target.x-state.from.x)*progress;
-  state.y=state.from.y+(state.target.y-state.from.y)*progress;
-  state.path=progress<1?[state.target]:[];
+  state.clock+=seconds;
+  const waiting=Math.min(state.buffer,seconds);state.buffer-=waiting;
+  let remaining=seconds-waiting;
+  while(state.waypoints.length&&remaining>0){
+    const next=state.waypoints[0],distance=playerMovementDistance(next.x-state.x,next.y-state.y);
+    const speed=3*playerTravelSpeed(town,state),duration=distance/speed;
+    const progress=duration?Math.min(1,remaining/duration):1;
+    state.x+=(next.x-state.x)*progress;state.y+=(next.y-state.y)*progress;
+    state.facing=next.facing;
+    if(progress<1)break;
+    remaining=Math.max(0,remaining-duration);state.waypoints.shift();
+  }
+  state.path=state.waypoints.length?[state.waypoints[0]]:[];
   const activity=town.player.activity;state.source=activity;state.castTarget=activity;state.activityElapsed=state.clock%3;
   const active=!!activity&&!town.player.activity_status?.includes('full')&&!town.player.activity_status?.includes('Waiting');
   state.phase=active&&!state.path.length?'working':'idle';

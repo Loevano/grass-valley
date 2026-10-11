@@ -16,22 +16,47 @@ const run=new Function('document','window','localStorage','setTimeout','clearTim
     await refreshPlayers();
     assert.equal(friend.player.x,10.3,'Remote position arrives without a full-world refresh');
     assert.equal(world.towns.own.player.x,5,'Position polling preserves own movement authority');
-    let sprite=remotePlayerSprite('friend',friend,.05);
-    assert(Math.abs(sprite.x-10.15)<1e-9,'Movement interpolates halfway instead of teleporting');
+    let sprite=remotePlayerSprite('friend',friend,.1);
+    assert.equal(sprite.x,10,'A short buffer absorbs uneven snapshot arrivals');
+    sprite=remotePlayerSprite('friend',friend,.05);
+    assert(Math.abs(playerMovementDistance(sprite.x-10,sprite.y-10)-.15)<1e-9,'Remote movement uses the normal walking speed');
     assert(sprite.state.path.length,'Walking animates between samples');
     await refreshPlayers();
     sprite=remotePlayerSprite('friend',friend,.05);
     assert.equal(sprite.x,10.3,'Repeated identical samples do not restart interpolation');
     assert.equal(sprite.state.path.length,0,'Walking animation stops when position settles');
-    // Continuous 10 Hz movement stays continuous on each display frame.
-    let previous=sprite.x;
-    for(let sample=0;sample<10;sample++){
-      snapshot.players.friend.x+=.3;snapshot.sampled_at++;await refreshPlayers();
-      for(let frame=0;frame<6;frame++){
-        sprite=remotePlayerSprite('friend',friend,1/60);
-        assert(sprite.x>previous,'Remote walking advances every frame between updates');previous=sprite.x;
-      }
+    // Jittery arrivals and batched updates retain steady speed on every frame.
+    const step=.3/Math.SQRT2;
+    let previous={x:sprite.x,y:sprite.y};
+    const sendStep=count=>{
+      snapshot.players.friend.x+=step*count;snapshot.players.friend.y-=step*count;
+      snapshot.sampled_at+=.1*count;updateRemotePlayers(snapshot);
+    };
+    sendStep(1);remotePlayerSprite('friend',friend,.1);
+    for(let frame=0;frame<60;frame++){
+      // Alternate short and long polling intervals; some responses contain two steps.
+      if([0,9,21,24,33,36,45,48,57].includes(frame))sendStep(frame===9?2:1);
+      sprite=remotePlayerSprite('friend',friend,1/60);
+      assert(Math.abs(playerMovementDistance(sprite.x-previous.x,sprite.y-previous.y)-.05)<1e-9,
+        'Polling jitter cannot speed up or slow down remote walking');
+      previous={x:sprite.x,y:sprite.y};
     }
+    // Drain the buffer after stopping, with no extrapolation past the host position.
+    sprite=remotePlayerSprite('friend',friend,1);
+    assert.equal(sprite.x,snapshot.players.friend.x);
+    assert.equal(sprite.y,snapshot.players.friend.y);
+    assert.equal(sprite.state.path.length,0,'Stopped characters stop animating');
+    // Preserve a sampled corner instead of cutting diagonally to the latest target.
+    const corner={x:sprite.x+step,y:sprite.y-step};
+    snapshot.players.friend={...corner,facing:1};snapshot.sampled_at+=.1;updateRemotePlayers(snapshot);
+    snapshot.players.friend={x:corner.x+step,y:corner.y+step,facing:-1};
+    snapshot.sampled_at+=.1;updateRemotePlayers(snapshot);
+    sprite=remotePlayerSprite('friend',friend,.2);
+    assert(Math.abs(sprite.x-corner.x)<1e-9&&Math.abs(sprite.y-corner.y)<1e-9,'Queued turns pass through the sampled corner');
+    sprite=remotePlayerSprite('friend',friend,.2);
+    assert.equal(sprite.x,snapshot.players.friend.x);assert.equal(sprite.y,snapshot.players.friend.y);
+    assert.equal(sprite.state.facing,-1,'Facing follows the played movement');
+    previous=sprite.x;
     const state=sprite.state;
     world=JSON.parse(JSON.stringify(world));world.towns.friend.player.x=1;
     sprite=remotePlayerSprite('friend',world.towns.friend,0);
