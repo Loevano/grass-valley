@@ -108,7 +108,7 @@ def start_trip(town, landscape, villager, building, storage, operation, route, h
     return True
 
 
-def advance_trip(town, landscape, villager, elapsed):
+def advance_trip(town, landscape, villager, elapsed, resume_work=False):
     trip = villager.get('logistics_trip')
     if not trip:
         return False
@@ -154,6 +154,7 @@ def advance_trip(town, landscape, villager, elapsed):
     if step == len(path) - 1:
         villager.pop('logistics_trip', None)
         villager.pop('logistics_target', None)
+        return not resume_work
     return True
 
 
@@ -187,8 +188,9 @@ def transfer(town, building, storage, operation, villager):
 
 
 def worker(town, landscape, villager, building, route, elapsed):
-    if advance_trip(town, landscape, villager, elapsed):
-        return True
+    if villager.get('logistics_trip'):
+        # Use room freed by delivery before another producer refills the buffer.
+        return advance_trip(town, landscape, villager, elapsed, resume_work=True)
     collect = buffered(building) >= BUFFER_SIZE - 1e-9 or building.get('buffer_full', False)
     request = supply_request(town, building, villager) if not collect else {}
     if not collect and not request:
@@ -200,8 +202,7 @@ def worker(town, landscape, villager, building, route, elapsed):
         if collect and not any(economy.local_room(storage, k) > 0 for k, n in keys.items() if n):
             continue
         if start_trip(town, landscape, villager, building, storage, 'collect' if collect else 'supply', route):
-            advance_trip(town, landscape, villager, elapsed)
-            return True
+            return advance_trip(town, landscape, villager, elapsed, resume_work=True)
     if collect:
         villager['production_status'] = 'Workplace buffer full: storage full, unallocated, or unreachable'
         return True
