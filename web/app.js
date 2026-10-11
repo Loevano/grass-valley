@@ -1456,7 +1456,7 @@ function renderSelection(town){
     if(item.kind==='hall'){
       production.append(fact(`${buildingRange(town)} tile steps`,'Building range'));
     }
-    p.textContent={hall:'Progression: housing / food / professions\nLevels: 1–5\nUpgrade reward: coins',home:'Town limit: 16 villagers\nArrivals require housing + food',storehouse:'Storage: enable resources\nHaulers: collect outputs + supply workplaces',woodcutter:'Output: wood\nRequires nearby trees',farm:'Output: crops\nAcres: within 3 tile steps\nWater: fetched by farmers',fishing_hut:'Output: fish\nRequires nearby water',acre:'Workers: farmers\nRequires farm within 3 tile steps\nWater: fetched by farmers'}[item.kind];
+    p.textContent={hall:'Progression: housing / food / professions\nLevels: 1–5\nUpgrade reward: coins',home:'No fixed population limit\nArrivals require free housing + food',storehouse:'Storage: enable resources\nHaulers: collect outputs + supply workplaces',woodcutter:'Output: wood\nRequires nearby trees',farm:'Output: crops\nAcres: within 3 tile steps\nWater: fetched by farmers',fishing_hut:'Output: fish\nRequires nearby water',acre:'Workers: farmers\nRequires farm within 3 tile steps\nWater: fetched by farmers'}[item.kind];
     if(item.kind==='hall'){
       p.textContent+=`\nBuild range: ${buildingRange(town)} tile steps\nDiagonal: 2 steps\nHall upgrade: +5 range`;
       const upgrade=world.hall_upgrades?.find(next=>next.level===town.level+1);
@@ -1622,7 +1622,8 @@ function departureMessage(town){
   if(!departed)return '';
   const role=departed.job==='idle'?'settler':departed.job==='baking'?'baker':departed.job==='butchery'?'butcher':departed.job==='building'?'builder':departed.job;
   const practice=Object.entries(departed.practice || {}).map(([job,xp])=>`${Math.floor(xp)} ${job} practice`).join(', ');
-  return `${departed.name}, your ${role}, left after prolonged food shortages. ${practice?`Lost ${practice}. `:''}Their experience is gone; their work needs a new settler.`;
+  const reason=departed.reason || 'food';
+  return `${departed.name}, your ${role}, left after prolonged ${reason} shortages. ${practice?`Lost ${practice}. `:''}Their experience is gone; their work needs a new settler.`;
 }
 function updateDepartures(next){
   if(next.world_id!==world.world_id)return;
@@ -1692,6 +1693,7 @@ function render(){
   $('mode-hint').textContent=tool==='move'?(moveIndex===null?'Moving: click a building. Escape to cancel.':'Moving: click open grass to move here. Escape to cancel.'):tool?`Building ${labels[tool].toLowerCase()}: hover over open grass and left-click to build. Escape to cancel.`:'';
   $('view-title').textContent=(world.shared_map?world.name:town?.name) || 'A place to call home';
   if(!tool&&own?.food_shortage_seconds)$('mode-hint').textContent='Food shortage! Feed your settlers soon or they may leave. Open Villagers for details.';
+  if(!tool&&own?.housing_shortage_seconds)$('mode-hint').textContent='Housing shortage! Build or upgrade cottages soon or settlers may leave. Open Villagers for details.';
   $('mode-hint').hidden=!$('mode-hint').textContent;
   $('resources-empty').hidden=!!own;$('resource-totals').hidden=!own;
   if(own){
@@ -1725,8 +1727,15 @@ function render(){
   $('villagers').replaceChildren();
   if(town&&!town.villagers.length){const empty=document.createElement('p');empty.textContent='No villagers yet. Build housing and keep food available to welcome new residents.';$('villagers').append(empty);}
   if(town?.villagers.length)$('villagers').append(villagersTable(town));
+  if(town){
+    const spaces=5+2*town.buildings.filter(b=>b.kind==='home'&&!b.construction).reduce((sum,b)=>sum+buildingLevel(b)+(b.profession_upgrades?.includes('timber_frame')?1:0),0);
+    const housing=document.createElement('p');housing.textContent=`Housing · ${town.villagers.length} residents / ${spaces} spaces. New settlers need a free space and at least 20 food after meals; each arrival uses 10 food.`;$('villagers').append(housing);
+  }
   if(town?.food_shortage_seconds){
     const warning=document.createElement('p');warning.textContent=`Food shortage · ${town.food_shortage_seconds}s without enough food. After 60 seconds, settlers may leave with all their skills. Upgrade cottages to reduce the risk.`;$('villagers').append(warning);
+  }
+  if(town?.housing_shortage_seconds){
+    const warning=document.createElement('p');warning.textContent=`Housing shortage · ${town.housing_shortage_seconds}s without enough housing. After 60 seconds, settlers may leave with all their skills. Build or upgrade cottages.`;$('villagers').append(warning);
   }
   if(town?.last_departure){const loss=document.createElement('p');loss.textContent=departureMessage(town);$('villagers').append(loss);}
   draw();

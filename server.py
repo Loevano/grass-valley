@@ -55,10 +55,16 @@ VILLAGER_NAMES = (
 
 
 def next_villager_name(town):
-    # More names than the population cap, including room for a recent departure.
+    # Reuse available names, adding a suffix when a large town fills the pool.
     used = {v.get('name') for v in town['villagers']}
     used.add(town.get('last_departure', {}).get('name'))
-    return next(name for name in VILLAGER_NAMES if name not in used)
+    generation = 1
+    while True:
+        for base in VILLAGER_NAMES:
+            name = base if generation == 1 else f'{base} {generation}'
+            if name not in used:
+                return name
+        generation += 1
 
 
 def ensure_villager_names(town):
@@ -66,6 +72,11 @@ def ensure_villager_names(town):
         name = villager.get('name', '')
         if not name.strip() or (name.startswith('Settler ') and name[8:].isdigit()):
             villager['name'] = next_villager_name(town)
+
+
+def housing_capacity(town):
+    return 5 + 2 * sum(building_level(b) + ('timber_frame' in b.get('profession_upgrades', []))
+                       for b in town['buildings'] if b['kind'] == 'home' and completed(b))
 
 
 def housing_loyalty(town):
@@ -87,10 +98,15 @@ def feed_settlers(town):
     economy.eat(town, needed)
     town['food_shortage_seconds'] = (town.get('food_shortage_seconds', 0) + TICK_SECONDS
                                      if shortage else 0)
+    town['housing_shortage_seconds'] = (town.get('housing_shortage_seconds', 0) + TICK_SECONDS
+                                       if len(town['villagers']) > housing_capacity(town) else 0)
     town['arrival_delay_seconds'] = max(0, town.get('arrival_delay_seconds', 0) - TICK_SECONDS)
-    if town['food_shortage_seconds'] < SHORTAGE_GRACE_SECONDS or len(town['villagers']) <= 1:
+    reasons = [kind for kind in ('food', 'housing')
+               if town[f'{kind}_shortage_seconds'] >= SHORTAGE_GRACE_SECONDS]
+    if not reasons or len(town['villagers']) <= 1:
         return
-    chance = round(DEPARTURE_CHANCE * (1 - housing_loyalty(town)) * 100)
+    loyalty = 0 if 'housing' in reasons else housing_loyalty(town)
+    chance = round(DEPARTURE_CHANCE * (1 - loyalty) * 100)
     if secrets.randbelow(10000) >= chance:
         return
     # Any resident can leave, including an experienced specialist.
@@ -103,10 +119,12 @@ def feed_settlers(town):
     town['departure_count'] = town.get('departure_count', 0) + 1
     town['last_departure'] = {
         'name': villager['name'], 'job': villager['job'],
+        'reason': ' and '.join(reasons),
         'practice': {job: villager.get(job, 0) for job in JOBS
                      if job not in {'idle', 'building'} and villager.get(job, 0)},
     }
     town['food_shortage_seconds'] = 0
+    town['housing_shortage_seconds'] = 0
     town['arrival_delay_seconds'] = SHORTAGE_GRACE_SECONDS
 
 MAP_SIZE = 120
@@ -752,9 +770,7 @@ def tick(world):
             economy.practice(villager, job)
             villager['production_status'] = 'Working' if caught else 'No catch — trying again'
         feed_settlers(town)
-        homes = sum(building_level(b) + ('timber_frame' in b.get('profession_upgrades', [])) for b in town['buildings']
-                    if b['kind'] == 'home' and completed(b))
-        if (len(town['villagers']) < min(5 + homes * 2, 16) and town['food'] >= 20
+        if (len(town['villagers']) < housing_capacity(town) and town['food'] >= 20
                 and not town.get('arrival_delay_seconds')):
             economy.eat(town, 10)
             town['villagers'].append({'name': next_villager_name(town),

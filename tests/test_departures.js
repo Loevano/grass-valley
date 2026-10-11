@@ -18,6 +18,9 @@ assert.equal(harness.state().selection,null,'Departure clears an index-based vil
 assert.equal(harness.state().workers.size,0,'Departure resets animation state after roster indices shift');
 assert(harness.state().notices[0].includes('Ada, your baker'),'Notice names the lost specialist');
 assert(harness.state().notices[0].includes('80 baking practice'),'Notice includes lost experience');
+assert(harness.state().notices[0].includes('food shortages'),'Old departures default to food shortages');
+assert(harness.departureMessage({last_departure:{name:'Finn',job:'idle',reason:'housing'}}).includes('housing shortages'));
+assert(harness.departureMessage({last_departure:{name:'Finn',job:'idle',reason:'food and housing'}}).includes('food and housing shortages'));
 harness.setWorld(after);
 harness.updateDepartures(after);
 assert.equal(harness.state().notices.length,1,'Polling does not repeat a departure notice');

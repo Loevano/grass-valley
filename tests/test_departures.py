@@ -3,7 +3,7 @@ import unittest
 from unittest.mock import patch
 
 from server import (SHORTAGE_GRACE_SECONDS, assigned_settlers, feed_settlers,
-                    housing_loyalty, new_town, tick)
+                    housing_capacity, housing_loyalty, new_town, tick)
 
 
 class SettlerDepartures(unittest.TestCase):
@@ -96,6 +96,62 @@ class SettlerDepartures(unittest.TestCase):
         self.assertEqual(len(names), len(set(names)))
         self.assertNotIn(departed_name, names)
         self.assertFalse(any(name.startswith('Settler ') for name in names))
+
+    def test_housing_capacity_uses_finished_cottages_and_comfort_upgrades(self):
+        self.assertEqual(housing_capacity(self.town), 5)
+        self.town['buildings'].extend([
+            {'kind': 'home', 'level': 3, 'settler_level': 3},
+            {'kind': 'home', 'level': 2, 'profession_upgrades': ['timber_frame']},
+            {'kind': 'home', 'level': 3, 'construction': {'progress': 0, 'total': 30}},
+        ])
+        self.assertEqual(housing_capacity(self.town), 17)
+
+    @patch('server.secrets.randbelow', return_value=0)
+    def test_lost_housing_causes_departures_despite_plentiful_food(self, roll):
+        self.town['food'] = 1000
+        self.town['buildings'].append({'kind': 'home', 'x': 3, 'y': 3})
+        tick({'towns': {'a': self.town}})
+        self.assertEqual(len(self.town['villagers']), 6)
+        self.town['buildings'].pop()
+        for _ in range(19):
+            tick({'towns': {'a': self.town}})
+        self.assertEqual(len(self.town['villagers']), 6)
+        roll.assert_not_called()
+        tick({'towns': {'a': self.town}})
+        self.assertEqual(len(self.town['villagers']), 5)
+        self.assertEqual(self.town['last_departure']['reason'], 'housing')
+        self.assertEqual(self.town['housing_shortage_seconds'], 0)
+        self.assertEqual(self.town['food_shortage_seconds'], 0)
+        self.assertEqual(self.town['arrival_delay_seconds'], 60)
+
+    @patch('server.secrets.randbelow', return_value=0)
+    def test_restoring_housing_resets_grace_period(self, roll):
+        self.town['food'] = 1000
+        self.town['villagers'].append({'name': 'Extra', 'job': 'idle'})
+        self.town['housing_shortage_seconds'] = 57
+        self.town['buildings'].append({'kind': 'home', 'x': 3, 'y': 3})
+        feed_settlers(self.town)
+        self.assertEqual(self.town['housing_shortage_seconds'], 0)
+        self.assertEqual(len(self.town['villagers']), 6)
+        roll.assert_not_called()
+
+    def test_arrivals_require_free_housing_and_food_after_meals(self):
+        self.town['food'] = 100
+        world = {'towns': {'a': self.town}}
+        tick(world)
+        self.assertEqual(len(self.town['villagers']), 5)
+        home = {'kind': 'home', 'x': 3, 'y': 3, 'construction': {'progress': 0, 'total': 30}}
+        self.town['buildings'].append(home)
+        tick(world)
+        self.assertEqual(len(self.town['villagers']), 5)
+        home.pop('construction')
+        self.town['food'] = 20
+        tick(world)
+        self.assertEqual(len(self.town['villagers']), 5)
+        self.town['food'] = 21
+        tick(world)
+        self.assertEqual(len(self.town['villagers']), 6)
+        self.assertAlmostEqual(self.town['food'], 10.4)
 
 
 if __name__ == '__main__':

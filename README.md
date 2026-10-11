@@ -217,8 +217,8 @@ the Python host, refresh both browsers, and create a new world to use the shared
   an assigned roster, and removal controls. Woodcutters, fishing huts, storehouses,
   and acres start with 1 space, cottages with 2, and farms with 4. Upgrade settler capacity twice
   for 20 then 40 wood to reach twice then three times the initial spaces. Capacity
-  upgrades take 30 then 60 seconds of builder work and do not increase housing,
-  storage, or the town population limit.
+  upgrades take 30 then 60 seconds of builder work and do not increase housing
+  or storage.
   Assignment transfers an existing resident; it does not create a new settler.
   Workplaces set the appropriate job; acres assign farmers to that specific field.
   The town hall is reserved for your controllable character and has no resident
@@ -293,6 +293,13 @@ the Python host, refresh both browsers, and create a new world to use the shared
   departure risk per housing space, shared across the population (up to 75% with
   timber framing). Only finished cottages count; capacity upgrades add worker
   slots rather than comfort.
+- There is no fixed population limit. The town hall shelters five settlers;
+  each finished cottage provides two housing spaces per building level, plus
+  two for timber framing. New arrivals wait for free housing and at least 20 food
+  after meals, consuming 10 food when they arrive. If housing is lost, a minute
+  without enough spaces puts settlers at a 5% departure risk per three-second tick.
+  Restoring enough housing resets this timer; a departure resets both shortage
+  timers and delays arrivals for a minute. The last settler stays.
 - Use arrow keys and Enter on the focused map to inspect tiles or choose build locations.
 - Workers walk around obstacles to their resource spots, chop wood or tend crops,
   and carry supplies back to their workplace. These animations illustrate work;

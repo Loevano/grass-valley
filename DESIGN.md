@@ -102,7 +102,10 @@ These are starting values to make the prototype playable, **not final design dec
 - Food is consumed over time. A full minute of missed meals puts settlers at risk
   of leaving with all their skills. Cottage upgrades reduce that risk; the last
   settler stays so the town can recover.
-- Each cottage adds room for two villagers, up to 16 in the prototype.
+- Population has no fixed cap: the hall shelters five villagers, and finished
+  cottages add two spaces per building level plus two for timber framing.
+  A minute of insufficient housing puts settlers at risk of leaving; restoring
+  housing resets that timer. Settler assignment capacity is separate from housing.
 - New villagers arrive when housing and sufficient food are available.
 - Harvesting 30 wood still records “Timber roots”; hall upgrades now use housing, food, profession, and processing milestones. See ROADMAP.md.
 - Hall levels 2–5 provide coins and unlock profession branches. Levels 6–10 and player trading remain planned.

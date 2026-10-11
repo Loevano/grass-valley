@@ -9,17 +9,18 @@ import server
 
 
 class VillagerNames(unittest.TestCase):
-    def test_arrivals_have_unique_names_up_to_population_limit(self):
+    def test_arrivals_grow_beyond_old_cap_and_name_pool_until_housing_is_full(self):
         town = server.new_town('Growing town')
         town['food'] = 1000
-        town['buildings'].extend({'kind': 'home', 'x': x, 'y': 7}
+        town['buildings'].extend({'kind': 'home', 'x': x, 'y': 7, 'level': 3}
                                  for x in range(6))
-        for _ in range(11):
+        for _ in range(40):
             server.tick({'towns': {'a': town}})
         names = [v['name'] for v in town['villagers']]
-        self.assertEqual(len(names), 16)
-        self.assertEqual(len(set(names)), 16)
-        self.assertTrue(all(name in server.VILLAGER_NAMES for name in names))
+        self.assertEqual(len(names), 41)
+        self.assertEqual(len(set(names)), 41)
+        self.assertIn('Ada 2', names)
+        self.assertFalse(any(name.startswith('Settler ') for name in names))
 
     def test_migration_preserves_names_and_villager_data_and_is_stable(self):
         town = {'villagers': [{'name': 'Finn', 'job': 'farming', 'farming': 25},
