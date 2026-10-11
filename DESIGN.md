@@ -90,7 +90,13 @@ These are starting values to make the prototype playable, **not final design dec
   the watering stage without a farm-to-water distance limit. Workers animate
   walking around obstacles, gathering beside the source, and delivering supplies. Animation is cosmetic; the host still controls
   production every three seconds. Buildings use open grass tiles.
-  Rock mining and resource depletion are not implemented. Existing saves gain
+  Trees disappear when felled and regrow only on unoccupied dark forest/swamp
+  tiles after five minutes (fifteen for willows and ancient trees, which hold
+  five times the wood). Buildings and roads pause regrowth. New shared worlds
+  contain a large lake with three loot islands. Exploration boats unlock at
+  hall level 3, cost 20 wood and 10 planks, and automatically embark/disembark
+  when crossing shores. Each shared island chest awards 25 coins once.
+  Rock mining is not implemented. Existing saves gain
   resources only on unoccupied tiles, preserving their buildings.
 - The hall starts with 100 wood and 100 food spaces. Storehouses add 100 shared spaces per level, allocated between resources; level 5 becomes a 500-space Warehouse. Storage workers collect outputs and distribute inputs along walkable routes. Producers deliver full buffers and fetch inputs themselves when needed. Full storage preserves buffered goods and eventually pauses work.
 - Food is consumed over time. A full minute of missed meals puts settlers at risk

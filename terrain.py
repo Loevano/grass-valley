@@ -59,7 +59,10 @@ def generate_map(size, seed):
                     biome = 'g'
             row.append(biome)
             if kind:
-                resources.append({'kind': kind, 'x': x, 'y': y})
+                resource = {'kind': kind, 'x': x, 'y': y}
+                if kind == 'tree' and not swamp and rng.random() < .06:
+                    resource['species'] = 'ancient'
+                resources.append(resource)
         terrain.append(''.join(row))
     starter = {
         'tree': [(0, 2), (0, 3), (1, 4), (2, 0), (3, 0), (3, 1),

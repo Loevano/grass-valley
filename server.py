@@ -102,7 +102,7 @@ def walkable(town, x, y, blocked=None):
     if blocked is None:
         blocked = {(b['x'], b['y']) for b in
                    town['buildings'] + town['map_resources']
-                   if b['kind'] != 'tree'}
+                   if b['kind'] != 'tree' and not (b['kind'] == 'water' and town.get('player', {}).get('boat'))}
     terrain = town.get('terrain')
     for tx in range(math.floor(x + .5) - 1, math.floor(x + .5) + 2):
         for ty in range(math.floor(y + .5) - 1, math.floor(y + .5) + 2):
@@ -120,7 +120,7 @@ def ensure_player(town):
         size = town.get('map_size', 12)
         blocked = {(b['x'], b['y']) for b in
                    town['buildings'] + town['map_resources']
-                   if b['kind'] != 'tree'}
+                   if b['kind'] != 'tree' and not (b['kind'] == 'water' and player.get('boat'))}
         tiles = ((x, y) for x in range(size) for y in range(size))
         for x, y in sorted(tiles, key=lambda p:
                            abs(p[0] - player['x']) + abs(p[1] - player['y'])):
@@ -143,7 +143,7 @@ def move_player(town, data):
         player.pop('activity_status', None)
         blocked = {(b['x'], b['y']) for b in
                    town['buildings'] + town['map_resources']
-                   if b['kind'] != 'tree'}
+                   if b['kind'] != 'tree' and not (b['kind'] == 'water' and player.get('boat'))}
         # Small steps prevent tunnelling through obstacles; slide along walls.
         for _ in range(5):
             speed = 1.5 if (math.floor(player['x'] + .5), math.floor(player['y'] + .5)) in roads else 1
@@ -471,17 +471,23 @@ def construct(town, landscape, workers=None, elapsed=TICK_SECONDS):
 
 def prepare_landscapes(world, regenerate=False):
     buildings = [b for t in world['towns'].values() for b in t['buildings']]
+    obstacles = buildings + [r for t in world['towns'].values() for r in t.get('roads', [])]
+    obstacles += [dict(x=math.floor(t['player']['x'] + .5), y=math.floor(t['player']['y'] + .5))
+                  for t in world['towns'].values() if 'player' in t]
     landscapes = [world['shared_map']] if 'shared_map' in world else list(world['towns'].values())
     for landscape in landscapes:
         if 'shared_map' not in world:
             ensure_resources(landscape)
         economy.ensure_forage(landscape, buildings if 'shared_map' in world else landscape['buildings'])
         if regenerate:
-            economy.renew(landscape)
+            local_obstacles = obstacles if 'shared_map' in world else landscape['buildings'] + landscape.get('roads', [])
+            economy.renew(landscape, local_obstacles + landscape.get('npcs', []))
         else:
             for _, _, members in economy.supply_groups(landscape):
-                maximum, regeneration = economy.SUPPLIES[members[0]['kind']]
+                maximum, regeneration = economy.source_limits(landscape, members[0])
                 for resource in members:
+                    if resource['kind'] == 'tree' and resource.get('supply_max', maximum) != maximum:
+                        resource['supply'] = resource.get('supply', maximum) * maximum / resource['supply_max']
                     resource.setdefault('supply', maximum)
                     resource.update(supply_max=maximum, regeneration=regeneration)
     if 'shared_map' in world:
@@ -609,6 +615,16 @@ def validate_building_range(town, x, y):
 def command(town, data, world=None):
     ensure_resources(town)
     action = data.get('action')
+    if action == 'build_boat':
+        if town['level'] < 3:
+            raise ValueError('Exploration boats require town hall level 3.')
+        if town['player'].get('boat'):
+            raise ValueError('You already have an exploration boat.')
+        if not economy.afford(town, {'wood': 20, 'planks': 10}):
+            raise ValueError('An exploration boat costs 20 wood and 10 planks.')
+        economy.spend(town, {'wood': 20, 'planks': 10})
+        town['player']['boat'] = True
+        return {'player': dict(town['player'])}
     if action in {'build_road', 'remove_road'}:
         x, y = data.get('x'), data.get('y')
         size = town.get('map_size', MAP_SIZE)

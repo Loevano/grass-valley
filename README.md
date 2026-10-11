@@ -101,7 +101,18 @@ the Python host, refresh both browsers, and create a new world to use the shared
   Builders walk to reachable sites, then work through foundations, framing, and
   finishing over 30 seconds. Housing, storage, and workplaces activate only on
   completion. Progress survives saving, moving a site, and restarting the host.
-- Trees and water regenerate finite shared supplies. Rock outcrops cannot be mined yet.
+- Trees are felled when their remaining wood reaches zero, freeing their tile for
+  building. They regrow after five minutes on dark forest or swamp ground while
+  the tile is unoccupied. Buildings and roads pause regrowth until removed.
+  Swamp willows and rare ancient trees take five times as much chopping and
+  fifteen minutes to regrow. Trees on lighter ground do not regrow.
+  Water regenerates its shared supply. Rock outcrops cannot be mined yet.
+- New shared worlds have a large lake with three treasure islands. At hall level 3,
+  select **You** and build an **Exploration boat** for 20 wood and 10 planks.
+  Walk onto water to sail automatically and step onto land to disembark. Stand
+  beside an island chest and press **G** (or choose **Collect loot**) for 25 coins.
+  Each chest can be claimed once across the whole world; boat ownership and
+  collected loot are saved. Existing landscapes keep their layout.
 - Select a farm and choose **Build acre · 5 wood**, then click open ground within
   three tile steps of that farm. Farmers tend its acres and deliver food back to
   the farm. Farmers fetch reachable water when watering; the farm can be farther
@@ -257,7 +268,7 @@ the Python host, refresh both browsers, and create a new world to use the shared
   to unlock profession improvements. Assign settlers to new production buildings.
   Sawpits use wood; mills use wheat; smokehouses use fish and wood; workshops use
   planks and wood; breeding ponds use fodder. The Build panel shows stored goods.
-- Forest trees and connected fishing waters have limited, regenerating supplies
+- Forest trees and connected fishing waters have limited supplies
   shared by workers and players. Additional huts cannot duplicate a pond's supply.
   Worker slots, field output, barn animal capacity, and storage bound production.
   Source and worker panels show supply and pauses. Barns use fodder or vegetables;

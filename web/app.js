@@ -98,10 +98,10 @@ function roadSpeed(town,position){return mapRoads(town).some(r=>!r.construction&
 // Measure screen distance for the 2:1 isometric projection, preserving sideways speed.
 function playerMovementDistance(dx,dy){return Math.hypot(dx-dy,(dx+dy)*.5)/Math.SQRT2;}
 function predictPlayerStep(town,player,dx,dy){
-  if(movementMap?.world!==world || movementMap.town!==town){
+  if(movementMap?.world!==world || movementMap.town!==town || movementMap.boat!==!!town.player?.boat){
     const buildings=world.shared_map?Object.values(world.towns).flatMap(t=>t.buildings || []):town.buildings || [];
-    movementMap={world,town,blocked:new Set([...buildings,...(town.map_resources || [])]
-      .filter(b=>b.kind!=='tree').map(b=>`${b.x},${b.y}`))};
+    movementMap={world,town,boat:!!town.player?.boat,blocked:new Set([...buildings,...(town.map_resources || [])]
+      .filter(b=>b.kind!=='tree'&&!(b.kind==='water'&&town.player?.boat)).map(b=>`${b.x},${b.y}`))};
   }
   const size=town.map_size || 12,terrain=town.terrain;
   const open=(x,y)=>{
@@ -441,7 +441,8 @@ function workerEfficiency(v,job){
 }
 async function playerAction(action){
   try{
-    await request('/api/command',{action,world_id:world.world_id});
+    const result=await request('/api/command',{action,world_id:world.world_id});
+    if(result?.player?.activity_status?.startsWith('Found '))notice(result.player.activity_status);
     await refresh();
   }catch(e){notice(e.message);}
 }
@@ -596,7 +597,7 @@ window.addEventListener('keydown',event=>{
     event.preventDefault();openPanel(panel==='build'?null:'build');canvas.focus();return;
   }
   if(!event.repeat&&!event.ctrlKey&&!event.metaKey&&!event.altKey&&canControlPlayer()){
-    const actions=[['fish','f',['water'],'No water to fish.'],['gather','g',['berry_bush','herb_patch'],'No berries to gather.'],['chop','c',['tree'],'No wood to cut.'],['mine','m',['rock'],'No stone to mine.']];
+    const actions=[['fish','f',['water'],'No water to fish.'],['gather','g',['chest','berry_bush','herb_patch'],'No loot, berries, or herbs nearby.'],['chop','c',['tree'],'No wood to cut.'],['mine','m',['rock'],'No stone to mine.']];
     const action=actions.find(([name,fallback])=>key===(keybindings[name] || fallback));
     if(action){
       const town=world.towns[identity.town_id],landscape=world.shared_map || town;
@@ -838,6 +839,10 @@ function renderSelection(town){
       skills.append(tile);
     }
     $('selection-details').append(skills);
+    if(viewed===identity?.town_id){
+      if(town.player?.boat){const boat=document.createElement('p');boat.textContent='Exploration boat ready. Walk onto water to sail; step ashore to disembark.';$('selection-details').append(boat);}
+      else{const boat=document.createElement('button');boat.textContent=town.level<3?'Exploration boat · Requires hall level 3':'Build exploration boat · 20 wood + 10 planks';boat.disabled=town.level<3||amountOf(town,'wood')<20||amountOf(town,'planks')<10;boat.onclick=()=>act({action:'build_boat'});$('selection-details').append(boat);}
+    }
     if(town.player?.activity){
       const state=document.createElement('p');state.textContent=`${goodName(town.player.activity.job)} · ${town.player.activity_status || 'Working'}`;$('selection-details').append(state);
     }
@@ -861,9 +866,18 @@ function renderSelection(town){
   const p=document.createElement('p');
   if(selection.type==='resource'){
     const swamp=town.terrain?.[item.y]?.[item.x]==='b';
+    if(item.kind==='chest'){
+      $('selection-title').textContent='Island treasure';p.textContent='Stand beside this chest and press G to claim 25 coins. Each chest can be claimed once across the shared world.';$('selection-details').append(p);
+      if(viewed===identity?.town_id){const button=document.createElement('button');button.textContent='Collect loot';button.onclick=()=>playerAction('gather');$('selection-details').append(button);}return;
+    }
     $('selection-title').textContent=({berry_bush:'Berry bush',herb_patch:'Herb patch'}[item.kind]) || (swamp?{tree:'Swamp willow',water:'Swamp water',rock:'Rock outcrop'}:{tree:'Forest',water:'Water',rock:'Rock outcrop',berry_bush:'Berry bush',herb_patch:'Herb patch'})[item.kind];
     p.textContent={tree:'Renewable wood source. Place a woodcutter within 3 horizontal or vertical tile steps, then assign a villager to woodcutting.',water:'Renewable source for farming and fishing. Farmers fetch water during watering. Place fishing huts within 3 horizontal or vertical tile steps, then assign a villager to fishing.',rock:'This outcrop occupies its tile. Mining is not available yet.',berry_bush:'Stand nearby and press G to gather berries for food.',herb_patch:'Stand nearby and press G to gather herbs for animal breeding.'}[item.kind];
-    if(item.supply_max){$('selection-details').append(fact(`${Math.floor(item.supply || 0)} / ${item.supply_max}`,'Shared supply'));$('selection-details').append(fact(`${item.regeneration} per 3 seconds`,'Regeneration'));}
+    if(item.kind==='tree'){
+      $('selection-title').textContent=swamp?'Swamp willow':item.species==='ancient'?'Ancient tree':'Forest';
+      p.textContent='Chop with C or assign a nearby woodcutter. Felling clears this tile. Trees regrow after 5 minutes on dark forest or swamp ground while unoccupied; buildings and roads stop regrowth.';
+      if(swamp||item.species==='ancient')p.textContent+=' This large tree takes five times as much chopping and 15 minutes to regrow.';
+    }
+    if(item.supply_max){$('selection-details').append(fact(`${Math.floor(item.supply || 0)} / ${item.supply_max}`,item.kind==='tree'?'Wood remaining before felling':'Shared supply'));if(item.kind!=='tree')$('selection-details').append(fact(`${item.regeneration} per 3 seconds`,'Regeneration'));}
   }else{
     $('selection-title').textContent=buildingName(item);
     if(item.kind==='home'&&!item.construction)$('selection-details').append(fact(`+${2*(buildingLevel(item)+(item.profession_upgrades?.includes('timber_frame')?1:0))}`,'Villager spaces'));
@@ -1120,6 +1134,7 @@ function drawResource(r){
   ctx.save();ctx.translate(x,y);ctx.scale(s,s);
   ctx.fillStyle='#223b2955';ctx.beginPath();ctx.ellipse(0,12,16,6,0,0,Math.PI*2);ctx.fill();
   if(r.kind==='tree'){
+    if(r.species==='ancient')ctx.scale(1.35,1.35);
     ctx.fillStyle='#775b3e';ctx.fillRect(-3,-14,6,27);
     if((world.shared_map || world.towns[viewed])?.terrain?.[r.y]?.[r.x]==='b'){
       ctx.strokeStyle='#665f40';ctx.lineWidth=3;ctx.beginPath();ctx.moveTo(0,-7);ctx.lineTo(-10,-29);ctx.moveTo(0,-12);ctx.lineTo(10,-34);ctx.stroke();
@@ -1133,6 +1148,10 @@ function drawResource(r){
     polygon([[-17,-7],[0,-39],[17,-7],[0,0]],shade?'#355b3e':'#3e6642');
     polygon([[-14,-20],[0,-49],[14,-20],[0,-13]],shade?'#4e7847':'#56814c');
     polygon([[-10,-32],[0,-57],[10,-32],[0,-26]],'#719451');
+  }else if(r.kind==='chest'){
+    polygon([[-12,11],[-12,-3],[8,-8],[14,-2],[14,12],[0,17]],'#88603b','#d6b45e');
+    polygon([[-12,-3],[0,2],[14,-2],[8,-8]],'#b1824b','#e1c376');
+    ctx.fillStyle='#f5d46b';ctx.fillRect(-1,1,4,7);
   }else if(r.kind==='berry_bush'||r.kind==='herb_patch'){
     ctx.fillStyle=r.kind==='berry_bush'?'#587a45':'#7b9e60';ctx.beginPath();ctx.ellipse(0,2,12,8,0,0,Math.PI*2);ctx.fill();
     ctx.fillStyle=r.kind==='berry_bush'?'#b35b69':'#e2c8ea';for(let i=0;i<5;i++){ctx.beginPath();ctx.arc((i%3-1)*6,-3+Math.floor(i/3)*6,2,0,Math.PI*2);ctx.fill();}
@@ -1516,6 +1535,12 @@ function draw(seconds=0){
   const sourceKind=previewKind==='woodcutter'?'tree':(previewKind==='farm'||previewKind==='fishing_hut')?'water':null;
   const reachable=new Set(preview&&sourceKind?resources.filter(r=>r.kind===sourceKind&&Math.abs(r.x-preview.x)+Math.abs(r.y-preview.y)<=3).map(r=>`${r.x},${r.y}`):[]);
   drawGround(rect,dpr,world.shared_map || town,water,{minX,maxX,minY,maxY});
+  for(const stump of (world.shared_map || town)?.tree_stumps || []){
+    if(stump.x<minX||stump.x>maxX||stump.y<minY||stump.y>maxY)continue;
+    const [px,py]=point(stump.x,stump.y),scale=tileW/46;
+    ctx.fillStyle='#775b3e';ctx.fillRect(px-4*scale,py+tileH*.5,8*scale,5*scale);
+    ctx.fillStyle='#ba9869';ctx.beginPath();ctx.ellipse(px,py+tileH*.5,4*scale,2*scale,0,0,Math.PI*2);ctx.fill();
+  }
   for(const road of mapRoads(town)){
     if(road.x<minX||road.x>maxX||road.y<minY||road.y>maxY)continue;
     drawRoad(road);
@@ -1583,6 +1608,9 @@ function draw(seconds=0){
     if(b.kind==='crop'){drawFarmCrop(b);continue;}
     if(b.kind==='player'){
       const baseY=py+tileH*.65;
+      if(world.towns[b.townId]?.player?.boat&&water.has(`${Math.floor(b.x+.5)},${Math.floor(b.y+.5)}`)){
+        polygon([[px-20*scale,baseY],[px-10*scale,baseY+10*scale],[px+12*scale,baseY+10*scale],[px+21*scale,baseY-2*scale]],'#805838','#d4af6b');
+      }
       ctx.strokeStyle='#ffe8a0';ctx.lineWidth=2;ctx.beginPath();ctx.ellipse(px,baseY,10*scale,5*scale,0,0,Math.PI*2);ctx.stroke();
       drawVillager(b);
       ctx.fillStyle='#fff0b1';ctx.font=`bold ${12*scale}px sans-serif`;ctx.textAlign='center';
@@ -1596,12 +1624,12 @@ function draw(seconds=0){
     const centerX=px+(character?(b.index%3-1)*3:0);
     const baseY=py+(character?tileH*.65+Math.floor(b.index/3):tileH/2);
     const owner=world.towns[b.townId] || town;
-    const height=b.kind==='tree'?70:character?26:b.kind==='acre'?0:type==='building'?buildingHeight(b,owner)+(b.kind==='hall'?(owner?.level>=4?35:33):18):45;
+    const height=b.kind==='tree'?(b.species==='ancient'?94:70):character?26:b.kind==='acre'?0:type==='building'?buildingHeight(b,owner)+(b.kind==='hall'?(owner?.level>=4?35:33):18):45;
     hitTargets.push({type,index,townId:b.townId || viewed,left:centerX-(character?9*scale:tileW*.45),right:centerX+(character?9*scale:tileW*.45),top:baseY-height*scale,bottom:baseY+(character?5*scale:tileH/2)});
     if(character&&selection?.type===type&&selection.index===b.index&&(!world.shared_map||b.townId===viewed||type==='npc')){
       ctx.fillStyle='#fff0b144';ctx.strokeStyle='#fff0b1';ctx.lineWidth=2;ctx.beginPath();ctx.ellipse(centerX,baseY,12*scale,6*scale,0,0,Math.PI*2);ctx.fill();ctx.stroke();
     }
-    if(['tree','rock','berry_bush','herb_patch'].includes(b.kind)){drawResource(b);continue;}
+    if(['tree','rock','berry_bush','herb_patch','chest'].includes(b.kind)){drawResource(b);continue;}
     if(character){
       drawVillager(b);
       continue;

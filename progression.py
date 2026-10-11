@@ -382,31 +382,73 @@ def supply_groups(landscape):
     return groups
 
 
-def renew(landscape):
+def source_limits(landscape, source):
+    if source['kind'] == 'tree':
+        swamp = landscape.get('terrain', [])[source['y']][source['x']] == 'b' if landscape.get('terrain') else False
+        return (40 if swamp or source.get('species') == 'ancient' else 8), 0
+    return SUPPLIES[source['kind']]
+
+
+def renew(landscape, obstacles=()):
+    occupied = {(r['x'], r['y']) for r in landscape['map_resources']}
+    occupied.update((r['x'], r['y']) for r in obstacles)
+    remaining = []
+    for stump in landscape.get('tree_stumps', []):
+        x, y = stump['x'], stump['y']
+        if (x, y) in occupied:
+            remaining.append(stump)
+            continue
+        stump['remaining'] -= 3
+        if stump['remaining'] <= 0:
+            landscape['map_resources'].append({k: v for k, v in stump.items() if k != 'remaining'})
+            occupied.add((x, y))
+        else:
+            remaining.append(stump)
+    if 'tree_stumps' in landscape:
+        landscape['tree_stumps'][:] = remaining
     for kind, _, members in supply_groups(landscape):
-        maximum, regeneration = SUPPLIES[kind]
+        maximum, regeneration = source_limits(landscape, members[0])
         root = min(members, key=lambda r: (r['x'], r['y']))
         available = min(maximum, root.get('supply', maximum) + regeneration)
+        if kind == 'tree' and root.get('supply_max', maximum) != maximum:
+            available = min(maximum, root.get('supply', maximum) * maximum / root['supply_max'])
         for r in members:
             r.update(supply=available, supply_max=maximum, regeneration=regeneration)
 
 
 def take_supply(landscape, source, amount):
+    global _supply_cache
     # Supply metadata is stored on actual map resources, never client-provided tiles.
     supply_groups(landscape)
     group = _supply_cache[3].get(id(source))
     if group is None:
-        return amount  # Acres do not consume fish stocks.
+        return 0 if source['kind'] in SUPPLIES else amount  # Acres do not consume fish stocks.
     kind, members = group
-    available = min(r.get('supply', SUPPLIES[kind][0]) for r in members)
+    available = min(r.get('supply', source_limits(landscape, r)[0]) for r in members)
     taken = min(amount, available)
     for r in members:
         r['supply'] = available - taken
+    if kind == 'tree' and available - taken <= 1e-9:
+        landscape['map_resources'].remove(source)
+        _supply_cache = None
+        terrain = landscape.get('terrain')
+        if terrain and terrain[source['y']][source['x']] in ('f', 'b'):
+            stump = {k: source[k] for k in ('kind', 'x', 'y', 'species') if k in source}
+            stump['remaining'] = 300 if source_limits(landscape, source)[0] == 8 else 900
+            landscape.setdefault('tree_stumps', []).append(stump)
     return taken
 
 
 def start_activity(town, landscape, action):
     player = town['player']
+    if action == 'gather':
+        chest = next((r for r in landscape['map_resources'] if r['kind'] == 'chest' and distance(player, r) <= 1.8), None)
+        if chest:
+            landscape['map_resources'].remove(chest)
+            town['coins'] += 25
+            player.pop('activity', None)
+            player['activity_status'] = 'Found 25 coins'
+            return
     if action == 'stop_activity':
         player.pop('activity', None); player.pop('activity_status', None)
         return

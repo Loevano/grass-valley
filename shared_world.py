@@ -5,7 +5,7 @@ import secrets
 from npcs import ensure_npcs
 from terrain import generate_map
 
-MAP_FIELDS = ('map_size', 'terrain_seed', 'terrain', 'map_resources', 'npcs', 'forage_version', 'forage_halls')
+MAP_FIELDS = ('map_size', 'terrain_seed', 'terrain', 'map_resources', 'tree_stumps', 'npcs', 'forage_version', 'forage_halls')
 TOWN_RADIUS = 15
 HALL_SEPARATION = 40
 
@@ -56,8 +56,22 @@ def new_world(seed=None):
                     resources.append({'kind': 'tree', 'x': x, 'y': y})
                     rows[y][x] = 'f'
     resources.extend(starters)
+    # A broad inland lake with water-only access to its treasure islands.
+    lake_x, lake_y = rng.randint(54, 56), rng.randint(57, 61)
+    lake = {(x, y) for y in range(lake_y - 14, lake_y + 15)
+            for x in range(lake_x - 14, lake_x + 15)
+            if ((x - lake_x) / 14) ** 2 + ((y - lake_y) / 14) ** 2 <= 1}
+    islands = [(lake_x - 7, lake_y - 3), (lake_x + 4, lake_y + 4), (lake_x + 9, lake_y - 5)]
+    island_tiles = {(cx + dx, cy + dy) for cx, cy in islands
+                    for dx in range(-2, 3) for dy in range(-2, 3) if dx * dx + dy * dy <= 5}
+    resources = [r for r in resources if (r['x'], r['y']) not in lake]
+    for x, y in sorted(lake):
+        rows[y][x] = 's'
+        if (x, y) not in island_tiles:
+            resources.append({'kind': 'water', 'x': x, 'y': y})
+    resources.extend({'kind': 'chest', 'x': x, 'y': y} for x, y in islands)
     landscape = {'map_size': 120, 'terrain_seed': seed,
-                 'terrain': [''.join(row) for row in rows], 'map_resources': resources}
+                 'terrain': [''.join(row) for row in rows], 'map_resources': resources, 'tree_stumps': []}
     npc_map = dict(landscape, buildings=[])
     ensure_npcs(npc_map)
     landscape['npcs'] = [n for n in npc_map['npcs']
