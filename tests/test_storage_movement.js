@@ -1,0 +1,20 @@
+const assert=require('assert');
+const animation=require('../web/animations.js');
+const town={map_size:16,buildings:[{kind:'hall',x:5,y:5},{kind:'woodcutter',x:3,y:3}],
+  map_resources:[{kind:'tree',x:3,y:1}]};
+const worker={job:'woodcutting',building_index:1,work_target:town.map_resources[0]};
+const state=animation.plan(town,worker,0);
+state.storagePaused=true;
+const before=JSON.stringify(state);
+animation.advance(state,1,true);
+assert.strictEqual(JSON.stringify(state),before,'Storage pause freezes movement and work clocks');
+state.storagePaused=false;
+animation.advance(state,1,true);
+assert.notStrictEqual(JSON.stringify({...state,storagePaused:true}),before,'Free space resumes movement');
+state.storagePaused=true;state.transport=true;
+const position=[state.x,state.y];
+animation.advance(state,.1,true);
+assert.notDeepStrictEqual([state.x,state.y],position,'Haulers keep moving');
+const source=require('fs').readFileSync('web/app.js','utf8');
+assert(source.includes("state.storagePaused=!!villager.production_status?.startsWith('Waiting for storage space')"));
+console.log('Storage movement checks passed');

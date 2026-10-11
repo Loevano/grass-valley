@@ -1741,6 +1741,7 @@ function animatedVillagers(town, seconds, townId=viewed, frameLayout=null){
       state=Object.assign(WorkerAnimation.plan(world.shared_map?{...town,obstacles:Object.values(world.towns).flatMap(t=>t.buildings),home_hall:town.buildings.find(b=>b.kind==='hall')}:town,villager,index,state),{signature,layout,task});workers.set(workerKey,state);
     }
     state.roads=roads;
+    state.storagePaused=!!villager.production_status?.startsWith('Waiting for storage space');
     const resource=villager.job==='woodcutting'?'wood':'food';
     state.latestFishingCatch=villager.fishing_catch;
     const active=!!villager.construction_target || (villager.production_status==='Working' || villager.production_status?.startsWith('No catch') || (!villager.production_status&&town[resource]<resourceStorage(town,resource)));

@@ -119,6 +119,7 @@ const WorkerAnimation = (() => {
     state.phase=path.length?'fetching_water':'collecting_water';
   }
   function advance(state, seconds, active) {
+    if(state.storagePaused&&!state.transport&&!state.construction)return;
     if(active || state.path.length || !state.source)state.clock+=seconds;
     if(state.path.length){
       let remaining=seconds;

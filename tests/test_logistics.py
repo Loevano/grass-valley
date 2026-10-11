@@ -397,6 +397,7 @@ class ResourceLogistics(unittest.TestCase):
     def test_recipe_can_receive_ingredients_from_different_storage_allocations(self):
         a = self.add('storehouse', x=1, storage_allocations={'wood': 100})
         b = self.add('storehouse', x=1, y=3, storage_allocations={'planks': 100})
+        self.add('storehouse', x=10, y=10, storage_allocations={'tools': 100})
         workshop = self.add('workshop')
         self.town.update(wood=10, goods={'planks': 10})
         producer = self.assign(0, workshop)

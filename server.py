@@ -598,6 +598,11 @@ def tick(world):
             if job == 'hauling':
                 logistics.haul(town, walking, villager, building, construction_route, TICK_SECONDS)
                 continue
+            if not villager.get('logistics_trip') and not logistics.output_storage_available(town, building, source, villager):
+                villager['production_status'] = 'Waiting for storage space'
+                if logistics.buffered(building) >= logistics.BUFFER_SIZE - 1e-9 or building.get('buffer_full', False):
+                    villager['production_status'] += ': workplace buffer full'
+                continue
             if logistics.worker(town, walking, villager, building, construction_route, TICK_SECONDS):
                 continue
             if job in economy.JOB_BUILDINGS:

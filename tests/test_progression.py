@@ -139,6 +139,8 @@ class Progression(unittest.TestCase):
         self.assertEqual(sum(v['woodcutting'] for v in self.town['villagers']),.04)
 
     def test_processing_consumes_local_materials_and_pauses_when_buffer_full(self):
+        self.town['buildings'].append({'kind': 'storehouse', 'x': 10, 'y': 10,
+                                      'storage_allocations': {'planks': 100}})
         self.town.update(level=4, wood=0)
         b,index=self.workplace('sawpit', input_buffer={'wood':10})
         tick(self.world)
@@ -146,14 +148,18 @@ class Progression(unittest.TestCase):
         self.assertEqual(b['output_buffer']['planks'],1)
         self.assertEqual(self.town['goods'].get('planks',0),1)
         b['output_buffer']['planks']=50
+        self.town['buildings'][1]['stored_goods'] = {'planks': 100}
         tick(self.world)
         self.assertEqual(b['input_buffer']['wood'],8)
         self.assertEqual(self.town['villagers'][0]['woodworking'],.04)
         b['output_buffer']['planks']=0;b['input_buffer']['wood']=0
+        self.town['buildings'][1]['stored_goods'] = {}
         tick(self.world)
         self.assertEqual(self.town['villagers'][0]['production_status'],'Waiting for delivery: wood')
 
     def test_full_chain_crop_mill_and_tool_production(self):
+        self.town['buildings'].append({'kind': 'storehouse', 'x': 10, 'y': 10,
+                                      'storage_allocations': {'flour': 50, 'tools': 50}})
         self.town.update(level=4,goods={},wood=0)
         mill,_=self.workplace('mill',0,input_buffer={'wheat':4})
         workshop,_=self.workplace('workshop',1,x=4,y=6,input_buffer={'planks':4,'wood':10})
@@ -165,6 +171,8 @@ class Progression(unittest.TestCase):
         self.assertTrue(economy.milestone(self.town,5))
 
     def test_animals_feed_breed_and_obey_capacity_without_worker_multiplier(self):
+        self.town['buildings'].append({'kind': 'storehouse', 'x': 10, 'y': 10,
+                                      'storage_allocations': {'wool': 50, 'manure': 50}})
         self.town.update(level=3,coins=100,goods={'fodder':10,'herbs':2})
         barn,index=self.workplace('barn',input_buffer={'fodder':10})
         for _ in range(2):
