@@ -3,10 +3,34 @@ import json
 import unittest
 
 from server import command, ensure_resources, new_town, walkable
-from terrain import generate_map
+from terrain import TREE_BIOMES, generate_map, remove_invalid_trees
 
 
 class RandomTerrain(unittest.TestCase):
+    def test_trees_only_spawn_on_green_ground_including_starter_trees(self):
+        for size in (12, 120):
+            for seed in range(10):
+                with self.subTest(size=size, seed=seed):
+                    terrain, resources = generate_map(size, seed)
+                    trees = [r for r in resources if r['kind'] == 'tree']
+                    self.assertTrue(trees)
+                    self.assertTrue(all(terrain[r['y']][r['x']] in TREE_BIOMES
+                                        for r in trees))
+
+    def test_saved_trees_and_stumps_are_removed_only_from_non_green_ground(self):
+        trees = [{'kind': 'tree', 'x': x, 'y': 0} for x in range(7)]
+        rock = {'kind': 'rock', 'x': 5, 'y': 0}
+        landscape = {'terrain': ['gfmbsrv'], 'map_resources': trees + [rock],
+                     'tree_stumps': [dict(r, remaining=3) for r in trees]}
+        resources = landscape['map_resources']
+        remove_invalid_trees(landscape)
+        self.assertIs(resources, landscape['map_resources'])
+        self.assertEqual(landscape['map_resources'], trees[:4] + [rock])
+        self.assertEqual([s['x'] for s in landscape['tree_stumps']], [0, 1, 2, 3])
+        before = copy.deepcopy(landscape)
+        remove_invalid_trees(landscape)
+        self.assertEqual(landscape, before)
+
     def test_seed_reproduces_terrain_and_resources(self):
         first = generate_map(120, 1234)
         self.assertEqual(first, generate_map(120, 1234))

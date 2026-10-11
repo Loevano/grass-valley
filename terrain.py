@@ -3,6 +3,19 @@ import math
 import random
 import secrets
 
+TREE_BIOMES = frozenset('gfmb')
+
+
+def remove_invalid_trees(landscape):
+    """Keep saved trees and regrowing stumps on green ground."""
+    terrain = landscape.get('terrain')
+    if not terrain:
+        return
+    for field in ('map_resources', 'tree_stumps'):
+        resources = landscape.get(field, [])
+        resources[:] = [r for r in resources if r['kind'] != 'tree'
+                        or terrain[r['y']][r['x']] in TREE_BIOMES]
+
 
 def ground_variant(x, y):
     """Match the visible ground shade used by the browser."""
@@ -67,7 +80,9 @@ def generate_map(size, seed):
                 resource = {'kind': kind, 'x': x, 'y': y}
                 if kind == 'tree' and not swamp and rng.random() < .06:
                     resource['species'] = 'ancient'
-                resources.append(resource)
+                # Keep the seed's random sequence stable when rejecting a tree.
+                if kind != 'tree' or biome in TREE_BIOMES:
+                    resources.append(resource)
         terrain.append(''.join(row))
     starter = {
         'tree': [(0, 2), (0, 3), (1, 4), (2, 0), (3, 0), (3, 1),
@@ -76,6 +91,10 @@ def generate_map(size, seed):
         'water': [(x, y) for y in range(3) for x in range(9, 9 + rng.randint(1, 3))],
         'rock': [(10, 3), (11, 4), (0, 10)],
     }
+    # Guaranteed starter wood needs green ground too.
+    for x, y in starter['tree']:
+        if x < size and y < size and terrain[y][x] not in TREE_BIOMES:
+            terrain[y] = terrain[y][:x] + 'g' + terrain[y][x + 1:]
     resources.extend({'kind': kind, 'x': x, 'y': y}
                      for kind, tiles in starter.items() for x, y in tiles
                      if x < size and y < size)

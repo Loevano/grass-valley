@@ -8,6 +8,8 @@ from collections import OrderedDict
 from functools import lru_cache
 from pathlib import Path
 
+from terrain import remove_invalid_trees
+
 CHUNK_SIZE = 40
 WORLD_SIZE = 480
 START_OFFSET = 160
@@ -167,7 +169,8 @@ class ChunkMap:
         from progression import SUPPLIES, source_limits
         clock = self.landscape.get('chunk_clock', 0)
         elapsed = max(0, clock - record.get('clock', 0))
-        landscape = {'terrain': ChunkTerrain({key: record}, self.size)}
+        landscape = dict(record, terrain=ChunkTerrain({key: record}, self.size))
+        remove_invalid_trees(landscape)
         for resource in record['map_resources']:
             if resource['kind'] not in SUPPLIES:
                 continue

@@ -19,7 +19,7 @@ import equipment
 import npcs
 from spatial import SpatialIndex
 
-from terrain import ensure_terrain
+from terrain import ensure_terrain, remove_invalid_trees
 from npcs import ensure_npcs
 from shared_world import bind_map, building_range, export_world, new_world, validate_placement, walking_map
 from chunk_world import attach as attach_chunks, parse_keys, parse_versions
@@ -531,6 +531,7 @@ def prepare_landscapes(world, regenerate=False):
     for landscape in landscapes:
         if 'shared_map' not in world:
             ensure_resources(landscape)
+        remove_invalid_trees(landscape)
         ensure_npcs(landscape, obstacles)
         economy.ensure_forage(landscape, buildings if 'shared_map' in world else landscape['buildings'])
         if regenerate:

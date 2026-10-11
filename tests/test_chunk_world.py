@@ -31,6 +31,26 @@ class ExplorableMap(unittest.TestCase):
         self.manager.activate()
         bind_map(self.world)
 
+    def test_saved_chunk_trees_and_stumps_on_sand_are_removed_when_read(self):
+        key = '0,0'
+        record = generate_chunk(42, key)
+        record['terrain'][0] = 'sg' + record['terrain'][0][2:]
+        record['map_resources'] = [{'kind': 'tree', 'x': x, 'y': 0} for x in (0, 1)]
+        record['tree_stumps'] = [{'kind': 'tree', 'x': 0, 'y': 0, 'remaining': 3}]
+        self.manager.memory[key] = json.dumps(record)
+        loaded = self.manager.read(key)
+        self.assertEqual([(r['x'], r['y']) for r in loaded['map_resources']], [(1, 0)])
+        self.assertEqual(loaded['tree_stumps'], [])
+
+    def test_generated_chunks_only_have_trees_on_green_ground(self):
+        for seed in range(5):
+            for key in ('0,0', '3,4', '10,10'):
+                record = generate_chunk(seed, key)
+                for tree in record['map_resources']:
+                    if tree['kind'] == 'tree':
+                        self.assertIn(record['terrain'][tree['y'] % CHUNK_SIZE]
+                                      [tree['x'] % CHUNK_SIZE], 'gfmb')
+
     def test_large_map_generates_only_a_bounded_working_set(self):
         self.assertEqual(self.town['map_size'], WORLD_SIZE)
         self.assertLessEqual(len(self.manager.records), 9)

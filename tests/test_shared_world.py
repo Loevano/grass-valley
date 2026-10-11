@@ -12,6 +12,18 @@ import test_http
 
 
 class SharedMap(unittest.TestCase):
+    def test_existing_world_removes_sandy_trees_before_regrowing_stumps(self):
+        world = self.make_world(count=1)
+        landscape = world['shared_map']
+        x, y = next((x, y) for y, row in enumerate(landscape['terrain'])
+                    for x, biome in enumerate(row) if biome == 's')
+        landscape['map_resources'].append({'kind': 'tree', 'x': x, 'y': y})
+        landscape['tree_stumps'] = [{'kind': 'tree', 'x': x, 'y': y, 'remaining': 3}]
+        server.prepare_landscapes(world, regenerate=True)
+        self.assertFalse(any(r['kind'] == 'tree' and (r['x'], r['y']) == (x, y)
+                             for r in landscape['map_resources']))
+        self.assertEqual(landscape['tree_stumps'], [])
+
     def make_world(self, count=4, seed=42):
         world = new_world(seed)
         for i in range(count):
