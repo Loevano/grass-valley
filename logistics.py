@@ -1,8 +1,26 @@
 """Building inventories and host-controlled transport between workplaces and storage."""
+import math
+
 import progression as economy
 
 BUFFER_SIZE = 50
 PRODUCTION_KINDS = {'woodcutter', 'farm', 'fishing_hut', 'barn', 'orchard', *economy.RECIPES}
+PRODUCTION_GOODS = tuple(dict.fromkeys(('wood', *economy.CROPS, *economy.EDIBLE,
+                                       *(r[1] for r in economy.RECIPES.values()), 'wool', 'manure', 'herbs')))
+
+
+def configure_rules(town, data):
+    key, cap = data.get('resource'), data.get('cap')
+    if key not in PRODUCTION_GOODS:
+        raise ValueError('Choose a production resource.')
+    if cap is not None and (type(cap) not in (int, float) or not math.isfinite(cap) or cap < 0):
+        raise ValueError('Use a non-negative production cap, or leave it blank for unlimited.')
+    caps = town.setdefault('rules', {}).setdefault('production_caps', {})
+    if cap is None:
+        caps.pop(key, None)
+    else:
+        caps[key] = cap
+    return {}
 
 
 def carry_capacity(villager):
@@ -124,6 +142,8 @@ def produce(town, building, villager):
         return 'Workplace buffer full'
     if status != 'Working':
         return status
+    if any(amount > economy.production_room(town, key) + 1e-9 for key, amount in produced.items()):
+        return 'Production cap reached'
     building['input_buffer'] = {k: max(0, economy.quantity(local, k) - produced.get(k, 0)) for k in inputs}
     for key, amount in produced.items():
         record_output(town, building, key, amount, villager)

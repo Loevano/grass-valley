@@ -121,6 +121,18 @@ def quantity(town, key):
     return town.get(key, 0) if key in {'wood', 'food', 'coins'} else goods(town).get(key, 0)
 
 
+def production_room(town, key):
+    """Count available stock, reserved inputs and outputs still being gathered once."""
+    cap = town.get('rules', {}).get('production_caps', {}).get(key)
+    if cap is None:
+        return float('inf')
+    total = quantity(town, key)
+    for building in town.get('buildings', []):
+        total += building.get('pending_output', {}).get(key, 0)
+        total += building.get('input_buffer', {}).get(key, 0)
+    return max(0, cap - total)
+
+
 def afford(town, costs):
     return all(quantity(town, k) >= v for k, v in costs.items())
 
@@ -512,7 +524,10 @@ def player_tick(town, landscape, capacity):
     if source is None or distance(player, source) > 1.8:
         player.pop('activity', None); return
     key = {'tree': 'wood', 'water': 'fish', 'berry_bush': 'berries', 'herb_patch': 'herbs'}[source['kind']]
-    room = storage_room(town, key)
+    cap_room = production_room(town, key)
+    if cap_room <= 0:
+        player['activity_status'] = 'Production cap reached'; return
+    room = min(storage_room(town, key), cap_room)
     if key in EDIBLE:
         room = min(room, (capacity - town['food']) / EDIBLE[key])
     if room <= 0:

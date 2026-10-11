@@ -636,7 +636,11 @@ def tick(world):
                 villager['production_status'] = logistics.produce(town, building, villager)
                 continue
             output = 'wood' if job == 'woodcutting' else 'fish' if job == 'fishing' else source.get('crop', 'vegetables')
-            room = logistics.BUFFER_SIZE - logistics.buffered(building)
+            cap_room = economy.production_room(town, output)
+            if cap_room <= 0:
+                villager['production_status'] = 'Production cap reached'
+                continue
+            room = min(logistics.BUFFER_SIZE - logistics.buffered(building), cap_room)
             if room <= 0:
                 villager['production_status'] = 'Workplace buffer full'
                 continue
@@ -712,6 +716,8 @@ def command(town, data, world=None):
         bind_map(world)
     ensure_resources(town)
     action = data.get('action')
+    if action == 'configure_rule':
+        return logistics.configure_rules(town, data)
     if action in {'claim_local_gift', 'buy_worker_tool', 'trade_local', 'give_worker_tool', 'take_worker_tool', 'transfer_worker_tool',
                   'advance_local_story', 'inspect_story_rock'}:
         return npcs.change(town, data)

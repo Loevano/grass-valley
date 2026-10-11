@@ -38,6 +38,7 @@
 <button id="items-button" aria-controls="items-panel" aria-expanded="false" aria-keyshortcuts="5" title="Items (5)">Items</button>
 <button id="valley-button" aria-controls="valley-panel" aria-expanded="false" aria-keyshortcuts="6" title="Valley (6)">Valley</button>
 <button id="help-button" aria-controls="help-panel" aria-expanded="false" aria-keyshortcuts="7" title="Help (7)">Help</button>
+<button id="rules-button" aria-controls="rules-panel" aria-expanded="false" aria-keyshortcuts="8" title="Rules (8)">Rules</button>
 <button id="settings-button" aria-haspopup="dialog" aria-controls="settings-panel" aria-expanded="false" aria-keyshortcuts="Meta+Comma" title="Settings (⌘,)">Settings</button>
 <span id="mode-hint" role="status">Click a building, villager, or resource to learn more.</span>
 <div id="resources" aria-live="polite">
@@ -59,6 +60,7 @@
 <section id="villagers-panel" hidden><span class="eyebrow">THE HEART OF YOUR TOWN</span><h2>Villagers</h2><p class="muted">Compare every villager’s skills, talents, housing, and work status. Assign jobs directly below.</p><div id="villagers"></div></section>
 <section id="items-panel" hidden aria-labelledby="items-title"><span class="eyebrow">EQUIP YOUR TOWN</span><h2 id="items-title">Items</h2><p class="muted">Give tools to your villagers and take them back to reassign them.</p><div id="items-list"></div></section>
 <section id="resources-panel" hidden aria-labelledby="resources-title"><span class="eyebrow">YOUR SETTLEMENT</span><h2 id="resources-title">Resources</h2><p class="muted">Stored resources in your town. Food includes the edible goods listed below; they share its storage space. Goods awaiting collection at workplaces are shown in their building panels.</p><div id="resources-list"></div></section>
+<section id="rules-panel" hidden aria-labelledby="rules-title"><span class="eyebrow">YOUR TOWN</span><h2 id="rules-title">Rules</h2><h3>Production caps</h3><p class="muted">Pause production when your town reaches a resource target. Production resumes as goods are used. Stored goods, reserved ingredients, and output awaiting delivery count toward the target. Leave blank for unlimited; use 0 to pause. Recipe and animal batches wait until the whole batch fits.</p><div id="rules-list"></div></section>
 <section id="valley-panel" hidden><h2>Across the valley</h2><div id="towns">Waiting for settlers…</div><p class="muted">Visit a friend's town to see it grow. Each town belongs to its founder.</p></section>
 <section id="help-panel" hidden aria-labelledby="help-title">
 <h2 id="help-title">Quick help</h2>
@@ -70,7 +72,7 @@
 <details><summary><svg aria-hidden="true" width="24" height="24" style="vertical-align:middle;margin-right:6px" viewBox="0 0 32 32" fill="none" stroke="#594e39" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="6" width="26" height="20" rx="4" fill="#7899a2"/><path d="M8 12h4m-2-2v4m7-2h3m4 0h1M8 19h16"/></svg>Controls</summary>
 <p><strong>WASD</strong> walk · <strong>F</strong> fish · <strong>C</strong> chop · <strong>G</strong> gather. Work beside a source; move or press the key again to stop. <strong>I</strong> interacts with the nearest local beside you, opening dialogue and trade.</p>
 <p>Scroll to pan; pinch or <strong>Alt/Option-scroll</strong> to zoom. <strong>Y</strong> toggles camera follow.</p>
-<p><strong>1</strong> Worlds · <strong>2</strong> Build · <strong>3</strong> Villagers · <strong>4</strong> Resources · <strong>5</strong> Items · <strong>6</strong> Valley · <strong>7</strong> Help. <strong>Esc</strong> closes or cancels. Change keys in Settings.</p>
+<p><strong>1</strong> Worlds · <strong>2</strong> Build · <strong>3</strong> Villagers · <strong>4</strong> Resources · <strong>5</strong> Items · <strong>6</strong> Valley · <strong>7</strong> Help · <strong>8</strong> Rules. <strong>Esc</strong> closes or cancels. Change keys in Settings.</p>
 </details>
 <details><summary><svg aria-hidden="true" width="24" height="24" style="vertical-align:middle;margin-right:6px" viewBox="0 0 32 32" fill="none" stroke="#594e39" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path fill="#cda875" d="M6 26 22 7l4 4-16 19z"/><path fill="#bacac5" d="m16 5 5-3 10 8-5 6z"/></svg>Building</summary>
 <p>Open <strong>Build</strong>, choose a building, then click a clear tile. <strong>Esc</strong> cancels.</p>

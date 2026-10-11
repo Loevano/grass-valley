@@ -11,6 +11,19 @@ import server
 
 
 class LanHost(unittest.TestCase):
+    def test_production_rules_are_owned_and_saved_with_the_town(self):
+        _, owner = self.call('/api/join', {'name': 'Rules home'})
+        _, friend = self.call('/api/join', {'name': 'Friend'})
+        owner, friend = json.loads(owner), json.loads(friend)
+        rule = {'action': 'configure_rule', 'resource': 'planks', 'cap': 100,
+                'town_id': friend['town_id']}
+        self.assertEqual(self.call('/api/command', rule)[0], 401)
+        self.assertEqual(self.call('/api/command', rule, owner['token'])[0], 200)
+        server.load()
+        self.assertEqual(server.WORLD['towns'][owner['town_id']]['rules']['production_caps'],
+                         {'planks': 100})
+        self.assertNotIn('rules', server.WORLD['towns'][friend['town_id']])
+
     def test_npc_story_catalog_and_progress_are_owned_and_saved(self):
         _, owner = self.call('/api/join', {'name': 'Story home'})
         _, friend = self.call('/api/join', {'name': 'Friend'})

@@ -98,3 +98,5 @@ canvas{cursor:pointer}button:focus-visible,canvas:focus-visible,select:focus-vis
 .villager-equipment{position:relative;display:inline-flex;vertical-align:middle;margin-left:6px;cursor:help}.villager-equipment .illustration{width:26px;height:26px;margin:0;padding:2px}.villager-equipment:hover .skill-tooltip,.villager-equipment:focus .skill-tooltip{display:block}.villager-equipment:focus-visible{outline:2px solid #fff0b1;outline-offset:2px;border-radius:4px}
 
 .villager-equipment .skill-tooltip{width:220px;max-width:220px;text-align:left;font-weight:normal;white-space:normal}
+
+.production-rule{display:grid;grid-template-columns:minmax(0,1fr) 100px auto;align-items:center;gap:8px;margin:12px 0}.production-rule label{margin:0;overflow-wrap:anywhere}.production-rule input,.production-rule button{width:100%;margin:0;padding:8px;font-size:12px}

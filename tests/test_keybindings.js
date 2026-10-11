@@ -164,7 +164,10 @@ function session(saved=null){
   check(new Set(resources.map(row=>row.children[1].textContent)).size===22,'Each resource appears in exactly one section');
   windows.key('4');check(windows.state.panel===null,'4 closes Resources');
   windows.key('3');
-  for(const number of ['8','9'])windows.key(number);
+  windows.key('8');
+  check(windows.state.panel==='rules'&&!windows.document.getElementById('rules-panel').hidden,'8 opens town Rules');
+  windows.key('8');check(windows.state.panel===null,'8 closes town Rules');
+  windows.key('3');windows.key('9');
   check(windows.state.panel==='villagers','Reserved future shortcuts do not change the current panel');
   windows.key('1');check(windows.document.getElementById('world-menu').open,'1 opens Worlds');
   windows.rebind('up','1');windows.rebind('up','9');

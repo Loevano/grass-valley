@@ -593,6 +593,32 @@ function renderResourceList(town){
     $('resources-list').append(group);
   }
 }
+function renderRules(town){
+  const target=$('rules-list');
+  // Keep unfinished edits intact while snapshots refresh.
+  const signature=JSON.stringify([identity?.town_id,town?.rules?.production_caps,world.progression]);
+  if(renderRules.signature===signature)return;
+  if(target.contains?.(document.activeElement))return;
+  renderRules.signature=signature;target.replaceChildren();
+  if(!town)return;
+  const catalog=world.progression || {};
+  const keys=[...new Set(['wood',...Object.keys(catalog.crops || {}),...Object.keys(catalog.edible || {}),
+    ...Object.values(catalog.recipes || {}).map(recipe=>recipe[1]),'wool','manure','herbs'])];
+  for(const key of keys){
+    const row=document.createElement('form');row.className='production-rule';
+    const label=document.createElement('label');label.textContent=goodName(key);label.setAttribute('for','cap-'+key);
+    const input=document.createElement('input');input.id='cap-'+key;input.type='number';input.min='0';input.step='any';
+    input.placeholder='Unlimited';input.value=town.rules?.production_caps?.[key] ?? '';
+    input.setAttribute('aria-label',`${goodName(key)} production cap`);
+    const save=document.createElement('button');save.textContent='Save';
+    row.onsubmit=event=>{event.preventDefault();
+      if(!row.reportValidity())return;
+      const cap=input.value.trim()===''?null:Number(input.value);
+      act({action:'configure_rule',resource:key,cap});
+    };
+    row.append(label,input,save);target.append(row);
+  }
+}
 function materialCosts(spec){return Object.fromEntries(Object.entries(spec).filter(([k])=>['wood','coins','planks','wool','tools'].includes(k)));}
 function canAfford(town,cost){return Object.entries(cost).every(([k,v])=>amountOf(town,k)>=v);}
 function costText(cost){return Object.entries(cost).map(([k,v])=>`${v} ${goodName(k).toLowerCase()}`).join(' + ');}
@@ -791,7 +817,7 @@ function openPanel(next){
   panel=next;selection=null;tool=null;moveIndex=null;buildTile=null;hoverTile=null;
   render();
 }
-for(const name of ['build','villagers','valley','help','resources','items']){
+for(const name of ['build','villagers','valley','help','resources','items','rules']){
   $(name+'-button').onclick=()=>openPanel(panel===name?null:name);
 }
 function updateSettingsButton(){
@@ -817,7 +843,7 @@ window.addEventListener('keydown',event=>{
   if(/^[1-9]$/.test(key)&&!event.ctrlKey&&!event.metaKey&&!event.altKey&&!event.shiftKey){
     if(!event.repeat&&!$('settings-panel').open&&!$('world-menu').open&&!$('delete-world-dialog').open && !$('upgrade-dialog').open
       &&!document.activeElement?.isContentEditable&&!['INPUT','TEXTAREA','SELECT'].includes(document.activeElement?.tagName)){
-      const name=['world-menu','build','villagers','resources','items','valley','help'][Number(key)-1];
+      const name=['world-menu','build','villagers','resources','items','valley','help','rules'][Number(key)-1];
       if(name&&!$(name+'-button').disabled){
         event.preventDefault();clearWalk();$(name+'-button').onclick();
         if(name!=='world-menu')canvas.focus();
@@ -889,6 +915,7 @@ function villagerActivity(town,v,index){
   if(status.startsWith('Waiting for supply'))return 'Waiting for resources';
   if(status.startsWith('Waiting for goods'))return 'Waiting for goods';
   if(status.startsWith('Requires '))return 'Waiting for training';
+  if(status==='Production cap reached')return status;
   if(status==='Storage full')return 'Waiting for storage';
   if(status==='Buy animals first')return 'Waiting for animals';
   if(status.startsWith('Waiting for '))return status.split(':')[0];
@@ -1486,11 +1513,11 @@ function render(){
   renderSelection(town);
   $('join').hidden=!!own || !world.world_id || !!panel;
   $('controls').hidden=panel!=='build' || !own || viewed!==identity?.town_id;
-  for(const name of ['selection','villagers','valley','help','resources','items'])$(name+'-panel').hidden=panel!==name;
+  for(const name of ['selection','villagers','valley','help','resources','items','rules'])$(name+'-panel').hidden=panel!==name;
   $('side-panel').hidden=!panel && $('join').hidden;
   $('side-panel').classList.toggle('villagers-overview',panel==='villagers');
   $('game').classList.toggle('panel-open',!$('side-panel').hidden);
-  for(const name of ['build','villagers','valley','help','resources','items']){
+  for(const name of ['build','villagers','valley','help','resources','items','rules']){
     $(name+'-button').setAttribute('aria-expanded',String(panel===name));
     $(name+'-button').classList.toggle('selected',panel===name);
   }
@@ -1498,6 +1525,8 @@ function render(){
   $('villagers-button').disabled=!town;
   $('resources-button').disabled=!own;
   $('items-button').disabled=!own;
+  $('rules-button').disabled=!own;
+  if(panel==='rules')renderRules(own);
   if(panel==='items')renderItems(own);
   if(panel==='resources')renderResourceList(own);
   $('move').textContent=own?.coins?'Move a building · 1 coin':'Move a building · Free';

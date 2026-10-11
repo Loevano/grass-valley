@@ -272,6 +272,12 @@ the Python host, refresh both browsers, and create a new world to use the shared
   resources disabled. Disabling a resource stops incoming deliveries and keeps
   existing goods available for processing, construction, meals, and sales.
   Old positive allocations become enabled resources; saved stock remains intact.
+- Open **Rules** (8) to set production caps per resource for your own town.
+  Blank means unlimited; 0 pauses that resource. Workers and player gathering stop
+  at the target and resume as stock is used. Stored goods, reserved inputs, and
+  undelivered output count once. Recipe and animal batches wait until the full
+  batch fits; hauling, purchases, and existing stock are preserved. Rules are saved
+  with the town and do not affect other towns.
 - Workplaces keep fixed storage for their relevant inputs and outputs within a
   50-space budget. The hall has 100 wood and 100 food spaces; homes have none.
   Processors fetch ingredients from buildings that actually hold them.
