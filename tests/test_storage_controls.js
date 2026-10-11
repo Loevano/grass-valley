@@ -46,10 +46,10 @@ const run=new Function('document','window','localStorage','setTimeout','clearTim
  check(commands.at(-1).action==='allocate_storage'&&commands.at(-1).allocations.wool===80,'Allocation form submits numeric capacities');
  town.buildings[1].storage_allocations=commands.at(-1).allocations;render();
  check(meters().find(c=>c.attributes['aria-label']==='Wool stored').max===80,'Confirmed allocations update the meters');
- check(panelNodes().find(c=>c.tag==='button'&&c.textContent?.startsWith('Upgrade to level 5')),'Storage can upgrade beyond level 3');
+ check(panelNodes().find(c=>c.tag==='button'&&c.textContent==='Lvl'&&c.title?.startsWith('Upgrade to level 5')),'Storage can upgrade beyond level 3');
  town.buildings[1].level=5;render();
  check($('selection-title').textContent==='Warehouse','Level 5 storage is named Warehouse');
- check(panelNodes().find(c=>c.tag==='button'&&c.textContent?.startsWith('Fully upgraded')).disabled,'Warehouse is the final storage upgrade');
+ check(panelNodes().find(c=>c.tag==='button'&&c.textContent==='Lvl'&&c.title?.startsWith('Fully upgraded')).disabled,'Warehouse is the final storage upgrade');
  viewed='friend';inspect('building',1);
  check(meters().length===10&&!fields().length,'Visitors see storage meters');
  check(!button('Allocate')&&!button('Save allocations'),'Visitors cannot change allocations');

@@ -15,6 +15,8 @@ canvasMock.getContext=()=>new Proxy({}, {get:()=>()=>{}});
 canvasMock.getBoundingClientRect=()=>({left:0,top:0,width:960,height:660});
 const run=new Function('document','window','localStorage','setTimeout','clearTimeout','WorkerAnimation','listeners',
   source.slice(0,source.lastIndexOf('requestAnimationFrame(animate);'))+`
+  function panelNodes(node=$('selection-details')){return Array.from(node.children || []).flatMap(child=>[child,...panelNodes(child)]);}
+
   return (async()=>{
     function check(condition,message){if(!condition)throw Error(message);}
     const town={name:'Our town',wood:65,food:40,coins:20,level:1,harvested:30,
@@ -39,19 +41,19 @@ const run=new Function('document','window','localStorage','setTimeout','clearTim
     check(selection.type==='building'&&$('selection-title').textContent==='Town hall','Clicking the roof selects a building');
     check(!$('hall-details').hidden&&!$('upgrade').disabled,'Owner sees available hall upgrade');
     check($('selection-destroy').hidden,'Town hall has no destroy button');
-    function rangeFact(){return $('selection-details').children.find(child=>child.children?.[1]?.textContent==='Building range');}
+    function rangeFact(){return panelNodes().find(child=>child.children?.[1]?.textContent==='Building range');}
     check(rangeFact().children[0].textContent==='10 tile steps','Hall panel displays its current building range');
     town.level=2;render();
     check(rangeFact().children[0].textContent==='15 tile steps','Hall panel reflects the expanded range');
     town.level=1;render();
     town.wood=0;render();check($('upgrade').disabled,'Hall upgrade requires enough wood');town.wood=65;
     town.level=2;town.harvested=90;town.wood=80;render();
-    check(!$('upgrade').disabled&&$('upgrade').textContent.includes('level 3'),'Level 2 owners can upgrade again');
+    check(!$('upgrade').disabled&&$('upgrade').title.includes('level 3'),'Level 2 owners can upgrade again');
     check($('hall-progress').hidden&&$('progress').textContent.includes('60 coins'),'Next milestone and reward use host requirements');
     world.hall_ready.own=false;render();check($('upgrade').disabled,'Later levels require their own milestone');
     world.hall_ready.own=true;town.wood=79;render();check($('upgrade').disabled,'Later levels require their own wood cost');
     town.wood=80;town.upgrade_remaining=57;render();
-    check($('upgrade').disabled&&$('upgrade').textContent.includes('57s remaining'),'Pending upgrade shows timer and prevents repeat clicks');
+    check($('upgrade').disabled&&$('upgrade').title.includes('57s remaining'),'Pending upgrade shows timer and prevents repeat clicks');
     town.upgrade_remaining=0;town.level=10;render();
     check($('upgrade').disabled&&$('hall-progress').hidden&&$('progress').textContent.includes('planned'),'Maximum level hides milestone and disables upgrade');
     town.level=1;town.harvested=30;town.wood=65;render();
@@ -64,13 +66,46 @@ const run=new Function('document','window','localStorage','setTimeout','clearTim
     check($('selection-title').textContent==='Rock outcrop','Rock opens mining availability information');
     await clickSprite('villager',0);
     check(selection.type==='villager'&&$('selection-title').textContent==='Ada','Moving villager is selectable');
+    const profile=$('selection-details').children[0].children.find(child=>child.tag==='dl');
+    function profileValue(label){const i=profile.children.findIndex(child=>child.textContent===label);return profile.children[i+1].textContent;}
+    check(profileValue('Name')==='Ada'&&profileValue('Job')==='Woodcutting','Villager popup labels name and job');
+    check(profileValue('House type')==='Town hall · shared shelter','Town without cottages shows shared shelter');
+    check(profileValue('Talent')==='No special talent','Missing talents have a readable fallback');
+    town.buildings.push({kind:'home',x:7,y:7,level:2});town.villagers[0].talents={woodcutting:1,farming:-1};render();
+    const updatedProfile=$('selection-details').children[0].children.find(child=>child.tag==='dl');
+    check(updatedProfile.children.some(child=>child.textContent==='Shared cottages · level 2'),'Housing shows completed cottage levels');
+    check(updatedProfile.children.some(child=>child.textContent==='Woodcutting'),'Profile shows the positive talent');
+    town.buildings.pop();
     const job=$('selection-details').children[0].children.find(child=>child.tag==='select');
     job.value='farming';job.onchange();
     check(commands[0].action==='job'&&commands[0].index===0&&commands[0].job==='farming','Inspector assigns the selected villager job');
     draw(.2);render();check(selection.index===0&&$('selection-title').textContent==='Ada','Selection follows animation and refresh');
+    await clickSprite('villager',0);
+    check(selection===null&&panel===null&&$('side-panel').hidden,'Clicking the selected villager toggles the popup closed');
+    await clickSprite('villager',0);
+    check(selection.type==='villager'&&panel==='selection','Clicking again reopens the villager popup');
     inspect('building',1);
     check(!$('selection-destroy').hidden,'Owner can destroy a regular building');
-    check($('selection-details').children.some(child=>child.textContent==='1 assigned worker.'),'Workplace lists its assigned workers');
+    check(panelNodes().some(child=>child.textContent==='1 assigned worker.'),'Workplace lists its assigned workers');
+    check($('close-panel').hidden,'Building inspector omits the Esc button');
+    check($('selection-details').children[0].children[0].textContent==='Storage','Storage appears first');
+    const workerSection=$('selection-details').children[1];
+    check(workerSection.children[0].textContent==='Workers','Workers appear below storage');
+    const assignment=workerSection.children.find(child=>child.className==='worker-assignment');
+    check(assignment.children[0].tag==='select'&&assignment.children[1].textContent==='Add worker','Worker picker and add action share one row');
+    check(workerSection.children.at(-1).className==='workplace-status','Working status follows assignment');
+    check(!panelNodes().some(child=>child.textContent?.includes('Food space is shared')),'Storage omits the long explanatory text');
+    const upgradeActions=panelNodes().find(child=>child.className==='building-upgrade-actions');
+    check(upgradeActions.children.every(child=>child.className==='upgrade-card'),'Level and capacity use consistent upgrade cards');
+    check(upgradeActions.children.map(child=>child.children.at(-1).textContent).join(',')==='Lvl,Capacity','Level card stays before capacity card');
+    check($('selection-level').textContent==='Lv 1','Building level is a compact header badge');
+    const folds=()=>panelNodes().filter(child=>child.tag==='details');
+    check(folds().every(child=>!child.open),'Secondary details start collapsed');
+    const detailsFold=folds().find(child=>child.children[0].textContent==='Building details');
+    detailsFold.open=true;detailsFold.events.toggle();render();
+    check(folds().find(child=>child.children[0].textContent==='Building details').open,'Refresh preserves expanded details');
+    inspect('building',0);inspect('building',1);
+    check(folds().every(child=>!child.open),'Selecting another building resets expanded sections');
     $('selection-move').onclick();
     check(tool==='move'&&moveIndex===1&&panel==='build','Inspector Move starts with the selected building');
     await clickTile(11,10);
@@ -169,12 +204,12 @@ const run=new Function('document','window','localStorage','setTimeout','clearTim
     act=async data=>{commands.push(data);};
     town.buildings.push({kind:'home',x:6,y:3});town.wood=65;
     inspect('building',1);
-    function buildingUpgrade(){return $('selection-details').children.find(child=>child.tag==='button'&&(/Upgrade to level|Fully upgraded/.test(child.textContent)));}
-    check(buildingUpgrade().textContent.includes('20 wood')&&buildingUpgrade().textContent.includes('4 villager spaces'),'Cottage upgrade previews cost and housing');
+    function buildingUpgrade(){return panelNodes().find(child=>child.tag==='button'&&child.textContent==='Lvl');}
+    check(buildingUpgrade().title.includes('20 wood')&&buildingUpgrade().title.includes('4 villager spaces'),'Cottage upgrade previews cost and housing');
     buildingUpgrade().onclick();$('confirm-upgrade').onclick();check(commands.at(-1).action==='upgrade_building'&&commands.at(-1).index===1,'Upgrade targets the selected building');
     town.wood=19;render();check(buildingUpgrade().disabled,'Building upgrade requires wood');
     town.wood=65;town.buildings[1].construction={progress:0,total:30};render();check(buildingUpgrade().disabled,'Unfinished buildings cannot upgrade');
-    delete town.buildings[1].construction;town.buildings[1].level=3;render();check(buildingUpgrade().disabled&&buildingUpgrade().textContent.includes('Fully upgraded'),'Level 3 is the building limit');
+    delete town.buildings[1].construction;town.buildings[1].level=3;render();check(buildingUpgrade().disabled&&buildingUpgrade().title.includes('Fully upgraded'),'Level 3 is the building limit');
     friend.buildings[1].level=1;viewed='friend';inspect('building',1);check(buildingUpgrade().disabled,'Visitor cannot upgrade buildings');
     town.buildings.push({kind:'storehouse',level:3,x:7,y:3});check(storageCapacity(town)===500+50*town.buildings.filter(b=>!['hall','storehouse','home'].includes(b.kind)&&!b.construction).length,'Client storage reflects upgraded storehouses');
     identity=null;render();

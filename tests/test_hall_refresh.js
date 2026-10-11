@@ -38,6 +38,7 @@ const context={document:{createElement:element},$:find,
   renderSettlers(){},renderProfession(){},renderStorage(){}};
 const source=fs.readFileSync('web/app.js','utf8');
 vm.createContext(context);
+vm.runInContext(source.slice(source.indexOf('function upgradePreview('),source.indexOf('function renderUpgradeDialog(')),context);
 const start=source.includes('let buildingFolds=')?source.indexOf('let buildingFolds='):source.indexOf('function renderSelection(');
 vm.runInContext(source.slice(start,source.indexOf('const buildingCategories=')),context);
 function render(){context.renderSelection(town);}
@@ -52,7 +53,7 @@ assert.strictEqual(upgradeButton.onclick,upgradeHandler,'Refresh preserves its a
 town.upgrade_remaining=27;
 render();
 assert(upgradeButton.disabled);
-assert(upgradeButton.textContent.includes('27s remaining'),'Refresh updates upgrade progress');
+assert(upgradeButton.title.includes('27s remaining'),'Refresh updates upgrade progress');
 
 context.selection={type:'building',index:1};render();
 assert.strictEqual(find('hall-details'),hall,'Another building keeps hall controls attached');

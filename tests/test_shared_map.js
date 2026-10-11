@@ -9,6 +9,8 @@ canvas.getContext=()=>new Proxy({}, {get(_,key){return key==='fillText'?(label)=
 canvas.getBoundingClientRect=()=>({left:0,top:0,width:960,height:660});
 const run=new Function('document','window','localStorage','setTimeout','clearTimeout','WorkerAnimation','assert','drawnLabels',
   source.slice(0,source.lastIndexOf('requestAnimationFrame(animate);'))+`
+  function panelNodes(node=$('selection-details')){return Array.from(node.children || []).flatMap(child=>[child,...panelNodes(child)]);}
+
   return (async()=>{
     const landscape={map_size:120,terrain:Array(120).fill('g'.repeat(120)),map_resources:[],npcs:[],terrain_seed:42};
     const town=(name,x,y)=>({...landscape,name,level:1,wood:65,food:40,coins:20,harvested:0,town_origin:{x,y},
@@ -51,7 +53,7 @@ const run=new Function('document','window','localStorage','setTimeout','clearTim
       assert(!insideBuildingRange(own,{x:30+reach,y:31}),'Diagonals count both axes at every level');
     }
     inspect('building',0,'own');
-    assert($('selection-details').children.some(child=>child.textContent?.includes('Each completed hall upgrade adds 5 steps')),'Hall explains range growth');
+    assert(panelNodes().some(child=>child.textContent?.includes('Each completed hall upgrade adds 5 steps')),'Hall explains range growth');
     draw();const friendWorker=workers.get('friend/0');
     draw();draw();assert.equal(workers.get('friend/0'),friendWorker,'Friend animation state survives rendering');
     const wire={world_id:'wire',name:'Wire world',shared_map:landscape,town_sites:[{x:30,y:30}],towns:{own:{...world.towns.own}}};

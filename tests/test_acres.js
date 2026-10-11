@@ -15,6 +15,8 @@ canvasMock.getContext=()=>context;
 canvasMock.getBoundingClientRect=()=>({left:0,top:0,width:720,height:660});
 const run=new Function('document','window','localStorage','setTimeout','clearTimeout','animation',
   source.slice(0,source.lastIndexOf('requestAnimationFrame(animate);'))+`
+ function panelNodes(node=$('selection-details')){return Array.from(node.children || []).flatMap(child=>[child,...panelNodes(child)]);}
+
   return (async()=>{
     function check(condition,message){if(!condition)throw Error(message);}
     const town={name:'Farm town',wood:65,food:40,coins:20,level:1,harvested:0,
@@ -24,7 +26,7 @@ const run=new Function('document','window','localStorage','setTimeout','clearTim
     identity={town_id:'own'};viewed='own';render();
     check(![...$('buildings').children].flatMap(group=>[...group.children]).filter(button=>button.buildingKind).some(b=>b.textContent.startsWith('Acre')),'Acres are built through a farm');
     inspect('building',1);
-    const button=$('selection-details').children.find(b=>b.textContent==='Build acre · 5 wood');
+    const button=panelNodes().find(b=>b.textContent==='Build acre · 5 wood');
     check(button&&!button.disabled,'Farm provides acre construction');
     button.onclick();check(tool==='acre'&&acreFarmIndex===1,'Construction remembers selected farm');
     check(placementValid(town,{x:6,y:3},'acre'),'Nearby open field is valid');
@@ -39,9 +41,9 @@ const run=new Function('document','window','localStorage','setTimeout','clearTim
     $('cancel').onclick();inspect('building',2);
     check($('selection-title').textContent==='Acre','Crop field can be inspected');
     town.wood=0;inspect('building',1);
-    check($('selection-details').children.find(b=>b.textContent==='Build acre · 5 wood').disabled,'Acre button requires wood');
+    check(panelNodes().find(b=>b.textContent==='Build acre · 5 wood').disabled,'Acre button requires wood');
     viewed='friend';inspect('building',1);
-    check(!$('selection-details').children.some(b=>b.textContent==='Build acre · 5 wood'),'Visitors cannot build acres');
+    check(!panelNodes().some(b=>b.textContent==='Build acre · 5 wood'),'Visitors cannot build acres');
     const field={kind:'acre',x:6,y:3,farm_index:1};
     const farmTown={map_size:12,buildings:[town.buildings[0],town.buildings[1],field],map_resources:town.map_resources};
     const state=animation.plan(farmTown,{job:'farming',work_target:field},0);
