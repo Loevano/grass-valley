@@ -41,6 +41,17 @@ const run=new Function('assert',`
     version:'fedcba9876543210',map_resources:[],tree_stumps:[]}});
   hydrateMapChunks(removed);
   assert.deepEqual(removed.shared_map.map_resources,[],'Removal replaces the chunk contents');
+  const explored=snapshot('first',['25,24'],{'25,24':rows},{'25,24':{
+    version:'2222222222222222',map_resources:[{kind:'rock',x:1000,y:960}],tree_stumps:[]}});
+  hydrateMapChunks(explored);
+  assert.equal(explored.shared_map.terrain[960][960],'f','Panning retains previously loaded ground');
+  assert.equal(explored.shared_map.terrain[960][1000],'g','Panning adds newly explored ground');
+  for(let frame=0;frame<20;frame++){
+    const next=snapshot('first',[frame%2?'25,24':'24,24']);
+    hydrateMapChunks(next);
+    assert.strictEqual(next.shared_map.terrain,explored.shared_map.terrain,'Direction reversals reuse hydrated terrain');
+    assert.strictEqual(next.shared_map.map_resources,explored.shared_map.map_resources,'Direction reversals reuse the resource index');
+  }
   for(let x=0;x<48;x++)for(let y=0;y<4;y++){
     const key=x+','+y;
     hydrateMapChunks(snapshot('first',[key],{[key]:rows},{[key]:{
@@ -48,6 +59,8 @@ const run=new Function('assert',`
   }
   assert.equal(chunkTerrainCache.size,128,'Terrain cache is bounded');
   assert.equal(chunkResourceCache.size,128,'Resource cache is bounded');
+  assert.equal(Object.keys(chunkHydratedMap.terrain).length,160,'Evicted terrain leaves the hydrated map');
+  assert.equal(chunkHydratedMap.terrain[960],undefined,'Eviction removes old explored ground');
   hydrateMapChunks(snapshot('second',['24,24']));
   assert.equal(chunkTerrainCache.size,0,'Changing worlds discards the old terrain');
   assert.equal(chunkResourceCache.size,0,'Changing worlds discards the old resources');

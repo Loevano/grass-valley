@@ -33,19 +33,30 @@ function hydrateMapChunks(next){
   if(chunkTerrainWorld!==next.world_id){chunkTerrainCache.clear();chunkResourceCache.clear();chunkTerrainWorld=next.world_id;chunkHydratedMap=null;}
   for(const [key,rows] of Object.entries(landscape.terrain_chunks || {}))chunkTerrainCache.set(key,rows);
   for(const [key,update] of Object.entries(landscape.resource_chunks || {}))chunkResourceCache.set(key,update);
-  const keys=landscape.visible_chunks.join(';');
-  const terrainChunks=landscape.visible_chunks.map(key=>chunkTerrainCache.get(key));
-  const resourceChunks=landscape.visible_chunks.map(key=>chunkResourceCache.get(key));
+  // Keep explored chunks in the hydrated map until actual cache eviction.
+  // A camera request changes what the host sends, not what is still loaded.
+  for(const key of landscape.visible_chunks){
+    for(const cache of [chunkTerrainCache,chunkResourceCache])if(cache.has(key)){
+      const value=cache.get(key);cache.delete(key);cache.set(key,value);
+    }
+  }
+  while(chunkTerrainCache.size>128)chunkTerrainCache.delete(chunkTerrainCache.keys().next().value);
+  while(chunkResourceCache.size>128)chunkResourceCache.delete(chunkResourceCache.keys().next().value);
+  // Stable ordering keeps selection indices and local worker layouts independent
+  // of which side of a chunk boundary the camera happens to be on.
+  const loadedKeys=[...new Set([...chunkTerrainCache.keys(),...chunkResourceCache.keys()])].sort();
+  const keys=loadedKeys.join(';');
+  const terrainChunks=loadedKeys.map(key=>chunkTerrainCache.get(key));
+  const resourceChunks=loadedKeys.map(key=>chunkResourceCache.get(key));
   const sameView=chunkHydratedMap?.keys===keys;
   const sameTerrain=sameView&&terrainChunks.every((rows,i)=>rows===chunkHydratedMap.terrainChunks[i]);
   const sameResources=sameView&&resourceChunks.every((update,i)=>update===chunkHydratedMap.resourceChunks[i]);
   const terrain=sameTerrain?chunkHydratedMap.terrain:{};
   landscape.map_resources=sameResources?chunkHydratedMap.resources:[];
   landscape.tree_stumps=sameResources?chunkHydratedMap.stumps:[];
-  for(const key of landscape.visible_chunks){
+  for(const key of loadedKeys){
     const update=chunkResourceCache.get(key);
     if(update){
-      chunkResourceCache.delete(key);chunkResourceCache.set(key,update);
       if(!sameResources){
         landscape.map_resources.push(...update.map_resources);
         landscape.tree_stumps.push(...update.tree_stumps);
@@ -53,8 +64,6 @@ function hydrateMapChunks(next){
     }
     const rows=chunkTerrainCache.get(key);
     if(!rows)continue;
-    // Keep this response's working set most recently used.
-    chunkTerrainCache.delete(key);chunkTerrainCache.set(key,rows);
     if(sameTerrain)continue;
     const [cx,cy]=key.split(',').map(Number),size=landscape.chunk_size;
     rows.forEach((row,dy)=>{
@@ -62,8 +71,6 @@ function hydrateMapChunks(next){
       for(let dx=0;dx<size;dx++)target[cx*size+dx]=row[dx];
     });
   }
-  while(chunkTerrainCache.size>128)chunkTerrainCache.delete(chunkTerrainCache.keys().next().value);
-  while(chunkResourceCache.size>128)chunkResourceCache.delete(chunkResourceCache.keys().next().value);
   landscape.terrain=terrain;
   chunkHydratedMap={keys,terrainChunks,resourceChunks,terrain,resources:landscape.map_resources,stumps:landscape.tree_stumps};
   delete landscape.terrain_chunks;
