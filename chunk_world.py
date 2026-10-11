@@ -118,7 +118,7 @@ def generate_chunk(seed, key):
             ground = _field(seed, 'ground', x, y, 25)
             lake = _field(seed, 'lake', x, y, 45)
             temperature = _field(seed, 'temperature', x, y, 90)
-            biome = 'i' if temperature < .24 else 'd' if temperature > .65 and wet < .45 else 'b' if wet > .78 else 'f' if wet > .58 else 's' if ground < .3 else 'r' if ground > .75 else 'm' if wet > .4 else 'g'
+            biome = 'i' if temperature < .22 else 'd' if temperature > .65 and wet < .45 else 'b' if wet > .78 else 'f' if wet > .58 else 's' if ground < .3 else 'r' if ground > .75 else 'm' if wet > .4 else 'g'
             kind = 'water' if lake < .25 else 'tree' if biome in ('f', 'b') and rng.random() < .45 else 'rock' if biome == 'r' and rng.random() < .15 else None
             if kind == 'water' and biome not in ('b', 'd', 'i'):
                 biome = 's'
