@@ -76,6 +76,14 @@ animation.advance(farmer,8,true);
 assert(['returning','depositing'].includes(farmer.phase),'Farmer can leave the cluster to deliver grain');
 const builder=animation.plan(clustered,{job:'farming',construction_target:town.buildings[0]},0);
 assert(builder.blocked.has('6,3'),'Building assignments keep construction path rules');
+const delivery=animation.plan(clustered,{job:'farming',logistics_position:{x:6,y:3},
+  logistics_target:{kind:'delivery',x:6,y:4}},0);
+assert(!delivery.blocked.has('6,4'),'Delivery animation can cross completed acres');
+assert.deepStrictEqual(delivery.path,[{x:6,y:4}],'Delivery follows the host path through fields');
+const unfinished=animation.plan({...clustered,buildings:[...clustered.buildings,
+  {kind:'acre',x:6,y:5,construction:{total:30,progress:0}}]},
+  {job:'farming',logistics_position:{x:6,y:4},logistics_target:{kind:'delivery',x:6,y:5}},0);
+assert(unfinished.blocked.has('6,5'),'Delivery animation avoids unfinished acres');
 
 const crops=new Function('ctx','polygon','point','tileW','tileH',
   source.slice(source.indexOf('function buildingLevel('),source.indexOf('function storageCapacity('))+

@@ -71,6 +71,27 @@ class ResourceLogistics(unittest.TestCase):
         self.assertGreater(self.town['wood'], 65)
         self.assertAlmostEqual(self.town['wood'] - 65 + logistics.buffered(b), 3)
 
+    def test_farmer_delivers_through_surrounding_completed_acres(self):
+        farm = self.add('farm', x=8, y=8, output_buffer={'vegetables': 50})
+        self.town['map_resources'] = [{'kind': 'water', 'x': 8, 'y': 9}]
+        for x, y in [(7, 8), (9, 8), (8, 7)]:
+            self.add('acre', x=x, y=y, farm_index=self.town['buildings'].index(farm))
+        farmer = self.assign(0, farm)
+        self.town['food'] = 0
+        self.ticks(10)
+        self.assertGreater(self.town['food'], 0)
+        self.assertLess(logistics.buffered(farm), 50)
+        self.assertGreater(farmer['farming'], 0)
+
+    def test_unfinished_acres_still_block_deliveries(self):
+        farm = self.add('farm', x=8, y=8, output_buffer={'vegetables': 50})
+        self.town['map_resources'] = [{'kind': 'water', 'x': 8, 'y': 9}]
+        for x, y in [(7, 8), (9, 8), (8, 7)]:
+            self.add('acre', x=x, y=y, construction={'total': 30, 'progress': 0})
+        farmer = self.assign(0, farm)
+        self.assertFalse(logistics.start_trip(self.town, self.town, farmer, farm,
+                         self.town['buildings'][0], 'collect', server.construction_route))
+
     def test_hauler_supplies_sawyer_and_collects_planks(self):
         store = self.add('storehouse', x=1, storage_allocations={'wood': 50, 'planks': 50})
         saw = self.add('sawpit')

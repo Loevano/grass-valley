@@ -86,6 +86,9 @@ def storage_for(town, keys, operation):
 
 
 def start_trip(town, landscape, villager, building, storage, operation, route, hauler=False):
+    # Finished fields are walkable, including when carrying goods through a farm.
+    landscape = {**landscape, 'buildings': [b for b in landscape['buildings']
+                 if b['kind'] != 'acre' or 'construction' in b]}
     position = villager.get('logistics_position', villager.get('construction_position', storage if hauler else building))
     first, last = (building, storage) if hauler else (storage, building)
     outward = route(landscape, (round(position['x']), round(position['y'])), first)
@@ -116,7 +119,8 @@ def advance_trip(town, landscape, villager, elapsed):
         villager.pop('logistics_target', None)
         villager['production_status'] = 'Delivery cancelled: building moved or unavailable'
         return True
-    blocked = {(b['x'], b['y']) for b in landscape['buildings'] + landscape['map_resources'] + landscape.get('npcs', [])}
+    obstacles = [b for b in landscape['buildings'] if b['kind'] != 'acre' or 'construction' in b]
+    blocked = {(b['x'], b['y']) for b in obstacles + landscape['map_resources'] + landscape.get('npcs', [])}
     terrain = landscape.get('terrain', [])
     roads = {(r['x'], r['y']) for r in landscape.get('roads', [])}
     path = trip['path']

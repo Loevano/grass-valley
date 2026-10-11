@@ -34,6 +34,7 @@ const WorkerAnimation = (() => {
       if(delta<best){start=tile;best=delta;if(delta===0)break;}
     }
     if(villager.logistics_target){
+      for(const acre of (town.obstacles || town.buildings).filter(b=>b.kind==='acre'&&!b.construction))blocked.delete(key(acre));
       const target=villager.logistics_target,position=villager.logistics_position || start;
       const path=route(position,target,blocked,size,false);
       return {...position,path:path || [],phase:'walking',source:target,home:null,blocked,size,transport:true,elapsed:0,clock:state?.clock || index*.37,facing:state?.facing || 1};
