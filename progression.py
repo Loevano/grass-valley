@@ -22,6 +22,28 @@ ANIMALS = {
     'pig': {'level': 4, 'coins': 8, 'output': 'meat', 'feed': .4},
     'cow': {'level': 5, 'coins': 12, 'output': 'milk', 'feed': .5},
 }
+ANIMAL_GROWTH_SECONDS = 300
+BUTCHER_SECONDS = 60
+ANIMAL_MEAT = {'chicken': 2, 'sheep': 4, 'pig': 8, 'cow': 10}
+
+
+def animal_growth(building, animal):
+    """Fed seconds per animal; animals from older saves are already adults."""
+    count = building.get('animals', {}).get(animal, 0)
+    ages = building.get('animal_growth', {}).get(animal, [])
+    return (ages + [ANIMAL_GROWTH_SECONDS] * count)[:count]
+
+
+def mature_animals(building, animal):
+    return sum(age >= ANIMAL_GROWTH_SECONDS for age in animal_growth(building, animal))
+
+
+def grow_animals(building, seconds):
+    building['animal_growth'] = {
+        animal: [min(ANIMAL_GROWTH_SECONDS, age + seconds) for age in animal_growth(building, animal)]
+        for animal in building.get('animals', {})}
+
+
 PROFESSION_UPGRADES = {
     'axe': {'label': 'Improved axe', 'building': 'woodcutter', 'level': 2, 'skill': 'woodcutting', 'xp': 10, 'wood': 10, 'coins': 5},
     'nets': {'label': 'Fishing nets', 'building': 'fishing_hut', 'level': 2, 'skill': 'fishing', 'xp': 10, 'wood': 10, 'coins': 5},
@@ -641,10 +663,11 @@ def extra_worker(town, villager, building, capacity):
     elif kind == 'barn':
         animals = building.get('animals', {})
         output_amounts = {}
-        for animal, count in animals.items():
-            if count:
-                key = ANIMALS[animal]['output']; output_amounts[key] = output_amounts.get(key, 0) + count * .25 * speed
-        if not output_amounts:
+        for animal in animals:
+            adults = mature_animals(building, animal)
+            if adults and animal != 'pig':
+                key = ANIMALS[animal]['output']; output_amounts[key] = output_amounts.get(key, 0) + adults * .25 * speed
+        if not sum(animals.values()):
             return 'Buy animals first'
         # One barn cycle per tick regardless of the number of assigned workers.
         feed = sum(ANIMALS[a]['feed'] * n for a, n in animals.items())
@@ -668,6 +691,8 @@ def extra_worker(town, villager, building, capacity):
 
 def public_catalog():
     return {'buildings': BUILDINGS, 'crops': CROPS, 'animals': ANIMALS,
+            'animal_growth_seconds': ANIMAL_GROWTH_SECONDS, 'butcher_seconds': BUTCHER_SECONDS,
+            'animal_meat': ANIMAL_MEAT,
             'job_requirements': JOB_REQUIREMENTS, 'talent_roots': TALENT_ROOTS,
             'profession_recipes': PROFESSION_RECIPES, 'storage_keys': STORAGE_KEYS,
             'boats': PLAYER_BOATS, 'fish': FISH, 'upgrades': PROFESSION_UPGRADES, 'recipes': RECIPES, 'edible': EDIBLE,

@@ -624,6 +624,7 @@ def tick(world):
         landscape = world.get('shared_map', town)
         economy.player_tick(town, landscape, capacity(town))
         barn_cycles = set()
+        butcher_cycles = set()
         field_cycles = {}
         # Haulers supply workplaces before this cycle's production consumes inputs.
         for index in sorted(range(len(town['villagers'])), key=lambda i: town['villagers'][i]['job'] != 'hauling'):
@@ -680,6 +681,19 @@ def tick(world):
             if logistics.worker(town, walking, villager, building, construction_route, TICK_SECONDS):
                 continue
             if job in economy.JOB_BUILDINGS:
+                if building['kind'] == 'butcher' and building.get('butchering'):
+                    marker = id(building)
+                    reason = economy.qualification(villager, job)
+                    if reason:
+                        villager['production_status'] = reason
+                    elif marker in butcher_cycles:
+                        villager['production_status'] = 'Animal already being butchered this cycle'
+                    elif villager.get('work_animation', {}).get('phase') != 'working':
+                        villager['production_status'] = 'Walking to butcher shop'
+                    else:
+                        butcher_cycles.add(marker)
+                        villager['production_status'] = logistics.butcher_animal(town, building, villager, TICK_SECONDS)
+                    continue
                 if building['kind'] == 'barn':
                     marker = id(building)
                     if marker in barn_cycles:
@@ -687,6 +701,8 @@ def tick(world):
                         continue
                     barn_cycles.add(marker)
                 villager['production_status'] = logistics.produce(town, building, villager)
+                if building['kind'] == 'barn' and villager['production_status'] == 'Working':
+                    economy.grow_animals(building, TICK_SECONDS)
                 continue
             output = 'wood' if job == 'woodcutting' else 'fish' if job == 'fishing' else source.get('crop', 'vegetables')
             if job == 'fishing':
@@ -1026,14 +1042,37 @@ def command(town, data, world=None):
         economy.spend(town, {'wood': cost})
         building['construction'] = {'progress': 0, 'total': BUILD_SECONDS * level,
                                     'upgrade': {'level': level + 1}}
-    elif action in {'set_crop', 'set_recipe', 'buy_animal', 'breed_animal', 'profession_upgrade'}:
+    elif action in {'set_crop', 'set_recipe', 'buy_animal', 'breed_animal', 'butcher_animal', 'profession_upgrade'}:
         index = data.get('index')
         if type(index) is not int or not 0 <= index < len(town['buildings']):
             raise ValueError('Choose a building first.')
         building = town['buildings'][index]
         if not completed(building):
             raise ValueError('Finish construction first.')
-        if action == 'set_recipe':
+        if action == 'butcher_animal':
+            if building['kind'] != 'butcher':
+                raise ValueError('Choose a butcher shop.')
+            if building.get('butchering'):
+                raise ValueError('Finish butchering the current animal first.')
+            barn_index, animal = data.get('barn_index'), data.get('animal')
+            if type(barn_index) is not int or not 0 <= barn_index < len(town['buildings']):
+                raise ValueError('Choose a barn first.')
+            barn = town['buildings'][barn_index]
+            if barn['kind'] != 'barn' or not completed(barn) or animal not in economy.ANIMALS:
+                raise ValueError('Choose an animal from a completed barn.')
+            ages = economy.animal_growth(barn, animal)
+            adult = next((i for i, age in enumerate(ages) if age >= economy.ANIMAL_GROWTH_SECONDS), None)
+            if adult is None:
+                raise ValueError('Only fully grown animals can be butchered.')
+            if not any(v.get('building_index') == index and v['job'] == 'butchery'
+                       and not economy.qualification(v, 'butchery') for v in town['villagers']):
+                raise ValueError('Assign a qualified butcher first.')
+            ages.pop(adult)
+            barn.setdefault('animal_growth', {})[animal] = ages
+            barn['animals'][animal] -= 1
+            building['butchering'] = {'animal': animal, 'amount': economy.ANIMAL_MEAT[animal],
+                                      'remaining': economy.BUTCHER_SECONDS}
+        elif action == 'set_recipe':
             recipes = economy.PROFESSION_RECIPES.get(building['kind'], [])
             spec = next((r for r in recipes if r['output'] == data.get('recipe')), None)
             if spec is None:
@@ -1068,11 +1107,14 @@ def command(town, data, world=None):
             if sum(animals.values()) >= 4 * building_level(building):
                 raise ValueError('Barn full. Upgrade it for more animal spaces.')
             costs = {'coins': spec['coins']} if action == 'buy_animal' else {'fodder': 3, 'herbs': 1}
-            if action == 'breed_animal' and animals.get(animal, 0) < 2:
-                raise ValueError('Breeding requires two animals of the same kind.')
+            if action == 'breed_animal' and economy.mature_animals(building, animal) < 2:
+                raise ValueError('Breeding requires two fully grown animals of the same kind.')
             if not economy.afford(town, costs):
                 raise ValueError('Missing animal purchase or breeding supplies.')
             economy.spend(town, costs)
+            ages = economy.animal_growth(building, animal)
+            ages.append(0)
+            building.setdefault('animal_growth', {})[animal] = ages
             building.setdefault('animals', {})[animal] = animals.get(animal, 0) + 1
         else:
             key = data.get('upgrade')

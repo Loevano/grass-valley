@@ -395,6 +395,16 @@ the Python host, refresh both browsers, and create a new world to use the shared
 - Barns show each purchased or bred chicken, sheep, pig, and cow with walking,
   pecking, and grazing animations. They roam up to two open tiles from their barn
   and return, avoiding buildings, resources, and impassable ground.
+- Bought and bred animals start young and grow visibly over five minutes of full
+  feeding by barn workers. Growth pauses without a full ration of fodder or
+  vegetables. Only adults produce eggs, wool, or milk and can breed. Existing
+  animals from older saves remain adults. Pigs no longer produce recurring meat.
+  At a butcher shop, select an adult from a barn and choose **Use animal for meat**.
+  This permanently consumes one animal; a qualified butcher needs one minute of
+  work at the shop to produce 2/4/8/10 raw meat for a chicken/sheep/pig/cow.
+  Extra workers cannot duplicate or accelerate the batch. Processing pauses
+  without a worker, and completed meat waits for buffer space or a production cap
+  to allow it. Existing meat recipes resume afterward; hauling works as usual.
 - Select an acre to choose its crop, a barn to buy/breed animals, or a workplace
   to unlock profession improvements. Assign settlers to new production buildings.
   Sawpits use wood; mills use wheat; smokehouses use fish and wood; workshops use

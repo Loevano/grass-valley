@@ -67,12 +67,16 @@ and processed goods let towns develop different specialties.
   consuming 0.1 manure per harvest.
 - A barn holds four animals per building level, up to twelve. Its animals are
   tended once per tick; extra workers do not duplicate their output.
-- Chickens cost 3 coins, sheep 6, pigs 8, and cows 12. Each animal produces 0.25
-  of its output per barn cycle and consumes respectively 0.15, 0.25, 0.4, or 0.5
-  fodder. Vegetables can substitute when there is insufficient fodder.
-- Two animals of the same kind can breed one additional animal for 3 fodder and
-  1 herb, within barn capacity. Pigs supply recurring meat without reducing the
-  saved herd; this is a simplified cozy husbandry model.
+- Chickens cost 3 coins, sheep 6, pigs 8, and cows 12. Animals consume respectively
+  0.15, 0.25, 0.4, or 0.5 fodder per barn cycle; vegetables can substitute.
+  Bought and bred animals require 300 seconds of full feeding to mature, with
+  growth paused when feeding fails. Adult chickens, sheep, and cows produce 0.25
+  eggs, wool, or milk per barn cycle. Animals in older saves remain adults.
+- Two adults of the same kind can breed one young animal for 3 fodder and 1 herb,
+  within barn capacity. Butchers consume a selected adult and spend 60 seconds
+  working to produce raw meat: chicken 2, sheep 4, pig 8, cow 10. Pigs no longer
+  supply recurring meat. One animal can be processed per shop at a time; existing
+  prepared-meat recipes resume after the batch finishes.
 - Goods have individual storage caps matching wood storage. Edible goods also
   count toward the shared Food pantry cap. Food includes the legacy provisions
   reserve; eating, processing, and selling update the pantry and goods together.

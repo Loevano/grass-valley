@@ -13,6 +13,10 @@ const barn={kind:'barn',x:5,y:5,level:3,animals:{chicken:3,sheep:3,pig:3,cow:3}}
 const original=JSON.stringify(barn);
 const animals=sprites([barn],0);
 assert.equal(animals.length,12,'Every animal appears, including upgraded barn capacity');
+const young=sprites([{...barn,animals:{pig:1},animal_growth:{pig:[0]}}],0)[0];
+const halfGrown=sprites([{...barn,animals:{pig:1},animal_growth:{pig:[150]}}],0)[0];
+const adult=sprites([{...barn,animals:{pig:1},animal_growth:{pig:[300]}}],0)[0];
+assert(young.size<halfGrown.size&&halfGrown.size<adult.size,'Fed growth gradually increases visual size');
 for(const species of Object.keys(barn.animals))assert.equal(animals.filter(a=>a.species===species).length,3);
 assert.equal(sprites([{...barn,animals:{}}],0).length,0,'Empty barns have no animals');
 assert.equal(sprites([{...barn,kind:'farm'}],0).length,0,'Other workplaces have no barn animals');

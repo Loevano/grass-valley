@@ -89,6 +89,8 @@ def collection_inventory(building):
 
 def requirements(building, villager):
     kind = building['kind']
+    if kind == 'butcher' and building.get('butchering'):
+        return {}
     if kind in economy.RECIPES:
         if economy.recipe_requirement(villager, building):
             return {}
@@ -156,6 +158,28 @@ def produce(town, building, villager):
         record_output(town, building, key, amount, villager)
     villager[villager['job']] = worker[villager['job']]
     return status
+
+
+def butcher_animal(town, building, villager, seconds):
+    """One shared processing job; completion enters the normal hauling buffer."""
+    task = building['butchering']
+    if task['remaining'] > 0:
+        state = villager.get('work_animation', {})
+        if state.get('phase') != 'working':
+            return 'Waiting for butcher at workplace'
+        task['remaining'] = max(0, task['remaining'] - seconds)
+    if task['remaining'] > 0:
+        return f"Butchering {task['animal']} · {math.ceil(task['remaining'])}s remaining"
+    amount = task['amount']
+    if amount > economy.production_room(town, 'meat') + 1e-9:
+        return 'Production cap reached'
+    if buffered(building) + amount > BUFFER_SIZE + 1e-9:
+        building['buffer_full'] = True
+        return 'Workplace buffer full'
+    record_output(town, building, 'meat', amount)
+    economy.practice(villager, 'butchery')
+    del building['butchering']
+    return 'Working'
 
 
 def storage_for(town, keys, operation):

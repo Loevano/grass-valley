@@ -178,6 +178,9 @@ def advance(town, landscape, villager, building, source, index, seconds):
         phase = state['phase']
         if phase in ('waiting', 'waiting_water'):
             return False
+        if phase == 'working' and building.get('butchering'):
+            # The animal's shared processing timer keeps the butcher at the shop.
+            return False
         duration = .65 if phase in ('depositing', 'collecting_water') else 4 if farming and not state['waterReady'] else 8 if farming else 3.2
         take = min(remaining, max(0, duration - state['elapsed']))
         state['elapsed'] += take

@@ -213,6 +213,7 @@ class Progression(unittest.TestCase):
         barn,index=self.workplace('barn',input_buffer={'fodder':10})
         for _ in range(2):
             command(self.town, {'action':'buy_animal','index':index,'animal':'sheep'})
+        barn['animal_growth']['sheep'] = [economy.ANIMAL_GROWTH_SECONDS] * 2
         command(self.town, {'action':'assign_settler','index':1,'building_index':index})
         tick(self.world)
         self.assertEqual(barn['pending_output']['wool'],.5)

@@ -95,7 +95,7 @@ class AllWorkplaceStorage(unittest.TestCase):
     cases = [('woodcutter', 'wood'), ('fishing_hut', 'fish'), ('orchard', 'fruit')]
     cases += [(kind, recipe[1]) for kind, recipe in economy.RECIPES.items()]
     cases += [(kind, crop) for kind in ('farm', 'acre') for crop in economy.CROPS]
-    cases += [('barn', animal['output']) for animal in economy.ANIMALS.values()]
+    cases += [('barn', spec['output']) for animal, spec in economy.ANIMALS.items() if animal != 'pig']
 
     def workplace(self, kind, output, stored):
         town = server.new_town('All storage')
