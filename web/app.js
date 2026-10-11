@@ -77,7 +77,7 @@ function hydrateMapChunks(next){
   delete landscape.resource_chunks;
 }
 const workers = new Map();
-let workerTown = null, lastFrame = null;
+let workerTown = null, lastFrame = null, animalClock = 0;
 const walkKeys = new Set();
 const defaultBindings={up:'w',left:'a',down:'s',right:'d',camera:'y',fish:'f',chop:'c',gather:'g',build:'b',interact:'i'};
 const bindingLabels={up:'Walk up',left:'Walk left',down:'Walk down',right:'Walk right',camera:'Toggle camera lock',fish:'Fish',chop:'Cut wood',gather:'Gather berries and herbs',build:'Toggle building mode',interact:'Interact with nearby NPC'};
@@ -2594,7 +2594,64 @@ function drawFishingBoat(boat){
   }
   ctx.restore();
 }
+// Animals stay in the barn's front yard; their motion is purely visual.
+function barnAnimalSprites(buildings,time){
+  const sprites=[];
+  for(const barn of buildings){
+    if(barn.kind!=='barn'||(barn.construction&&!barn.construction.upgrade))continue;
+    const stock=[];
+    for(const species of ['chicken','sheep','pig','cow'])
+      for(let i=0;i<(barn.animals?.[species] || 0);i++)stock.push(species);
+    for(const [index,species] of stock.entries()){
+      const phase=time+(barn.x*7+barn.y*11+index*3.17)%13;
+      const cycle=phase%8,walking=cycle<3;
+      const side=(index%4-1.5)*.15+(walking?Math.sin(cycle*2)*.025:0);
+      const front=.3+Math.floor(index/4)*.16;
+      sprites.push({kind:'animal',species,x:barn.x+front+side,y:barn.y+front-side,
+        phase,walking,feeding:cycle>=4&&cycle<7,facing:Math.cos(Math.min(cycle,3)*2)>=0?1:-1,
+        size:stock.length>4?.62:.8});
+    }
+  }
+  return sprites;
+}
+function drawBarnAnimal(animal){
+  const [x,top]=point(animal.x,animal.y),s=tileW/46*animal.size;
+  const chicken=animal.species==='chicken',cow=animal.species==='cow';
+  const stride=animal.walking?Math.sin(animal.phase*12):0;
+  const bob=animal.walking?Math.abs(stride)*.6:Math.sin(animal.phase*2)*.2;
+  const coat={chicken:'#f4deb0',sheep:'#e7e2ce',pig:'#d9968e',cow:'#e5d9bc'}[animal.species];
+  ctx.save();ctx.translate(x,top+tileH/2);ctx.scale(s*animal.facing,s);
+  ctx.fillStyle='#233b3044';ctx.beginPath();ctx.ellipse(0,1,chicken?4:8,2,0,0,Math.PI*2);ctx.fill();
+  ctx.strokeStyle=chicken?'#c59b51':'#655443';ctx.lineWidth=chicken?1:1.5;
+  for(const [index,leg] of (chicken?[-2,2]:[-5,-3,3,5]).entries()){
+    const step=stride*(index%2?1:-1);
+    ctx.beginPath();ctx.moveTo(leg,-4);ctx.lineTo(leg+step,0);ctx.stroke();
+  }
+  ctx.translate(0,-bob);
+  ctx.fillStyle=coat;ctx.beginPath();ctx.ellipse(0,-5,chicken?4:cow?8:7,chicken?3:4,0,0,Math.PI*2);ctx.fill();
+  if(animal.species==='sheep'){
+    for(let tuft=0;tuft<5;tuft++){ctx.beginPath();ctx.arc(-5+tuft*2.5,-8,2.5,0,Math.PI*2);ctx.fill();}
+  }
+  if(cow){ctx.fillStyle='#695447';for(const patch of [-4,2]){ctx.beginPath();ctx.ellipse(patch,-6,2.5,2,.4,0,Math.PI*2);ctx.fill();}}
+  ctx.strokeStyle=chicken?coat:animal.species==='pig'?'#b97472':'#655443';ctx.lineWidth=1;
+  ctx.beginPath();ctx.moveTo(chicken?-3:-7,-6);ctx.quadraticCurveTo(chicken?-7:-10,-10+Math.sin(animal.phase*4),chicken?-6:-9,-5);ctx.stroke();
+  const headX=chicken?4:7,headY=animal.feeding?-3+Math.sin(animal.phase*7):chicken?-9:-7;
+  ctx.fillStyle=animal.species==='sheep'?'#796d59':coat;
+  ctx.beginPath();ctx.ellipse(headX,headY,chicken?2:3,chicken?2:2.6,animal.feeding?.5:0,0,Math.PI*2);ctx.fill();
+  if(chicken){
+    ctx.fillStyle='#b65943';ctx.fillRect(headX-1,headY-3,2,2);
+    ctx.fillStyle='#d8a14d';ctx.beginPath();ctx.moveTo(headX+1,headY);ctx.lineTo(headX+4,headY+1);ctx.lineTo(headX+1,headY+1.5);ctx.fill();
+  }else{
+    ctx.fillStyle=animal.species==='pig'?'#bc7976':coat;
+    ctx.beginPath();ctx.ellipse(headX-1,headY-2.5,2,1,-.5,0,Math.PI*2);ctx.fill();
+    if(animal.species==='pig'){ctx.fillStyle='#bc7976';ctx.fillRect(headX+1,headY,3,2);}
+    if(cow){ctx.strokeStyle='#baa67b';ctx.beginPath();ctx.moveTo(headX,headY-2);ctx.lineTo(headX+1,headY-5);ctx.stroke();}
+  }
+  ctx.fillStyle='#302e27';ctx.beginPath();ctx.arc(headX+1,headY-.7,.55,0,Math.PI*2);ctx.fill();
+  ctx.restore();
+}
 function draw(seconds=0){
+  animalClock+=seconds;
   const rect=canvas.getBoundingClientRect(),dpr=renderPixelRatio();
   const width=Math.round(rect.width*dpr),height=Math.round(rect.height*dpr);
   if(canvas.width!==width||canvas.height!==height){canvas.width=width;canvas.height=height;}
@@ -2714,10 +2771,11 @@ function draw(seconds=0){
   const boats=fishingBoatSprites(entries,resources,villagers);
   const passengers=new Set(boats.flatMap(b=>b.crew));
   const objects=mergeDepthObjects([...buildings,...cropObjects,...boats].filter(visible),visibleResourceObjects(resourceData,rect),
-    [...villagers.filter(v=>!passengers.has(v)),...npcSprites(world.shared_map || town,seconds),...otherPlayers,...(hero?[hero]:[])].filter(visible));
+    [...villagers.filter(v=>!passengers.has(v)),...npcSprites(world.shared_map || town,seconds),...barnAnimalSprites(buildings,animalClock),...otherPlayers,...(hero?[hero]:[])].filter(visible));
   for(const b of objects){
     const [px,py]=point(b.x,b.y),scale=tileW/46;
     if(px < -tileW || px > rect.width+tileW || py < -tileH || py > rect.height+80*scale)continue;
+    if(b.kind==='animal'){drawBarnAnimal(b);continue;}
     if(b.kind==='crop'){drawFarmCrop(b);continue;}
     if(b.kind==='fishing_boat'){
       drawFishingBoat(b);
@@ -2883,7 +2941,7 @@ function drawBuilding(b,town=world.towns[viewed],farmState=null){
   const resolution=2**Math.ceil(Math.log2(Math.max(.5,s*renderPixelRatio())));
   const bytes=128*144*resolution*resolution*4;
   const key=JSON.stringify([b.kind,buildingVisualLevel(b,town),b.kind==='hall'?town?.level || 1:buildingLevel(b),b.settler_level || 1,
-    [...(b.profession_upgrades || [])].sort(),Math.min(4,Object.values(b.animals || {}).reduce((a,n)=>a+n,0)),
+    [...(b.profession_upgrades || [])].sort(),
     usable,resolution,tileW>=32]);
   let sprite=buildingSprites.get(key);
   const [x,top]=point(b.x,b.y);
@@ -2990,7 +3048,6 @@ function paintBuilding(b,town,farmState=null,target=ctx,usable=buildingUsable(to
   ctx.save();ctx.shadowColor='#f1c779';ctx.shadowBlur=9*s;ctx.fillStyle='#edc77d';ctx.fillRect(x-18*s,y-12*s,4*s,5*s);ctx.restore();
   if(['barn','sawpit','mill','smokehouse','workshop','fish_pond','orchard','market','bakery','butcher'].includes(b.kind)){
     ctx.fillStyle='#fff0b1';ctx.font=`${10*s}px sans-serif`;ctx.textAlign='center';ctx.fillText(labels[b.kind],x,y-h-20*s);
-    if(b.kind==='barn'){ctx.fillStyle='#f0e3bc';for(let i=0;i<Math.min(4,Object.values(b.animals || {}).reduce((a,n)=>a+n,0));i++){ctx.beginPath();ctx.ellipse(x-12*s+i*7*s,y+4*s,4*s,3*s,0,0,Math.PI*2);ctx.fill();}}
     if(b.kind==='bakery'){ctx.fillStyle='#d3ab69';ctx.beginPath();ctx.ellipse(x,y-8*s,9*s,5*s,0,0,Math.PI*2);ctx.fill();}
     if(b.kind==='butcher'){ctx.fillStyle='#b66e65';ctx.fillRect(x-7*s,y-14*s,14*s,10*s);ctx.fillStyle='#eadac1';ctx.fillRect(x-2*s,y-12*s,4*s,6*s);}
     if(b.kind==='fish_pond'){ctx.fillStyle='#6ba2af';ctx.beginPath();ctx.ellipse(x,y+5*s,16*s,6*s,0,0,Math.PI*2);ctx.fill();}
