@@ -52,7 +52,7 @@ const run=new Function('document','window','localStorage','setTimeout','clearTim
  town.coins=0;render();check(axe()&&axe().disabled,'Unlocked upgrades stay visible when unaffordable');town.coins=20;
  town.buildings[4].profession_upgrades=['axe'];render();check(axe().textContent.includes('Unlocked')&&axe().disabled,'Purchased upgrades remain visible');
  town.buildings.pop();
- inspect('resource',0);check($('selection-details').children.some(c=>c.children?.[0]?.textContent==='4.0 / 8'),'Sources show their shared supply');
+ inspect('resource',0);check($('selection-details').children.some(c=>c.children?.[0]?.textContent==='4 / 8'),'Sources show their shared supply');
  inspect('player',0);check($('selection-details').children.some(c=>c.className==='player-skills'),'Founder shows saved skill tiles');
  town.player.activity={job:'woodcutting',kind:'tree',x:6,y:7};town.player.activity_status='Working';
  let hero=playerSprite(town,0);check(hero.active&&hero.state.phase==='working'&&hero.villager.job==='woodcutting','Founder action uses the woodcutting animation');

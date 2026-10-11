@@ -140,9 +140,9 @@ function session(saved=null){
   check(resourceGroups.map(group=>group.children[0].textContent).join(',')==='Overview,Materials,Farming supplies,Food types','Resources have clear category headings');
   const resources=resourceGroups.flatMap(group=>group.children.slice(1));
   const resource=label=>resources.find(row=>row.children[1].textContent===label)?.children[0].textContent;
-  check(resource('Wood')==='50.0 / 0'&&resource('Food')==='30.0 / 0','Resources show stored amounts and allocated capacity');
-  check(resource('Coins')==='5.0','Coins do not have a storage limit');
-  check(resource('Fish')==='0.0 / 0'&&resource('Prepared meat')==='0.0 / 0'&&resource('Herbs')==='0.0 / 0','Unproduced resources remain visible');
+  check(resource('Wood')==='50 / 0'&&resource('Food')==='30 / 0','Resources show stored amounts and allocated capacity');
+  check(resource('Coins')==='5','Coins do not have a storage limit');
+  check(resource('Fish')==='0 / 0'&&resource('Prepared meat')==='0 / 0'&&resource('Herbs')==='0 / 0','Unproduced resources remain visible');
   check(resources.length===22,'Resources include all storage categories, edible goods, and coins');
   check(new Set(resources.map(row=>row.children[1].textContent)).size===22,'Each resource appears in exactly one section');
   windows.key('4');check(windows.state.panel===null,'4 closes Resources');

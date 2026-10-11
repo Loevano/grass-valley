@@ -310,9 +310,9 @@ function renderStorage(town,item,index,target=$('selection-details')){
       input.oninput=()=>{input.value=String(Math.max(Number(input.min),Math.min(Number(input.max),Number(input.value))));update();storageDrafts.set(draftKey,Object.fromEntries(keys.map(k=>[k,Number(fields[k].value)])));};row.append(input);
     }else{
       const amount=stock[key] || 0,limit=allocations[key] || 0;
-      count.textContent=`${Number(amount.toFixed(1))} / ${limit}`;
+      count.textContent=`${Math.floor(amount)} / ${limit}`;
       const meter=document.createElement('meter');meter.min=0;meter.max=Math.max(1,limit,amount);meter.value=amount;
-      meter.setAttribute('aria-label',`${goodName(key)} stored`);meter.setAttribute('aria-valuetext',`${Number(amount.toFixed(1))} stored, ${limit} ${item.kind==='storehouse'?'allocated':'fixed'} spaces`);row.append(meter);
+      meter.setAttribute('aria-label',`${goodName(key)} stored`);meter.setAttribute('aria-valuetext',`${Math.floor(amount)} stored, ${limit} ${item.kind==='storehouse'?'allocated':'fixed'} spaces`);row.append(meter);
     }
     target.append(row);
   }
@@ -323,9 +323,9 @@ function renderStorage(town,item,index,target=$('selection-details')){
     save.onclick=()=>{if(viewed!==identity?.town_id)return;act({action:'allocate_storage',index,allocations:Object.fromEntries(keys.map(key=>[key,Number(fields[key].value)]))});storageEditing.delete(draftKey);renderSelection(town);};
     const cancel=document.createElement('button');cancel.textContent='Cancel';cancel.className='quiet';cancel.onclick=()=>{storageEditing.delete(draftKey);storageDrafts.delete(draftKey);renderSelection(town);};
     actions.append(save);actions.append(cancel);target.append(actions);
-  }else summary.textContent=`${Number(Object.values(stock).reduce((sum,n)=>sum+n,0).toFixed(1))} / ${capacity} stored`;
-  for(const [key,n] of Object.entries(stored))if(n>0&&!buildingStorageGoods(item).includes(key))target.append(fact(n.toFixed(1),`${goodName(key)} from previous storage · available to use or haul away`));
-  for(const [key,n] of Object.entries(item.input_buffer || {}))if(n>0)target.append(fact(n.toFixed(1),`${goodName(key)} reserved for production`));
+  }else summary.textContent=`${Math.floor(Object.values(stock).reduce((sum,n)=>sum+n,0))} / ${capacity} stored`;
+  for(const [key,n] of Object.entries(stored))if(n>0&&!buildingStorageGoods(item).includes(key))target.append(fact(String(Math.floor(n)),`${goodName(key)} from previous storage · available to use or haul away`));
+  for(const [key,n] of Object.entries(item.input_buffer || {}))if(n>0)target.append(fact(String(Math.floor(n)),`${goodName(key)} reserved for production`));
 }
 
 function upgradeBenefit(kind,level){
@@ -355,7 +355,7 @@ function renderResourceList(town){
     const heading=document.createElement('h3');heading.textContent=title;group.append(heading);
     for(const key of remaining){
       keys.delete(key);
-      const amount=amountOf(town,key).toFixed(1);
+      const amount=String(Math.floor(amountOf(town,key)));
       group.append(fact(key==='coins'?amount:`${amount} / ${resourceStorage(town,key)}`,goodName(key)));
     }
     $('resources-list').append(group);
@@ -368,7 +368,7 @@ function professionSkill(town,job){return Math.max(town.player?.[job] || 0,...to
 function jobRequirement(v,job){
   return Object.entries(world.progression?.job_requirements?.[job] || {})
     .filter(([skill,amount])=>(v[skill] || 0)<amount)
-    .map(([skill,amount])=>`${amount} ${goodName(skill).toLowerCase()} practice (has ${v[skill] || 0})`).join(', ');
+    .map(([skill,amount])=>`${amount} ${goodName(skill).toLowerCase()} practice (has ${Math.floor(v[skill] || 0)})`).join(', ');
 }
 function workerEfficiency(v,job){
   const root=world.progression?.talent_roots?.[job] || job;
@@ -421,19 +421,19 @@ function fact(value,label){
 }
 function skillBar(label,value){
   const row=document.createElement('div');row.className='skill-row';
-  const caption=document.createElement('small');caption.textContent=`${label} · ${value}`;row.append(caption);
+  const caption=document.createElement('small');caption.textContent=`${label} · ${Math.floor(value)}`;row.append(caption);
   const meter=document.createElement('meter');meter.min=0;meter.max=Math.max(10,Math.ceil((value+1)/10)*10);meter.value=value;
-  meter.setAttribute('aria-label',`${label}: ${value}; scale to ${meter.max}`);row.append(meter);return row;
+  meter.setAttribute('aria-label',`${label}: ${Math.floor(value)}; scale to ${meter.max}`);row.append(meter);return row;
 }
 function villagerSkillIcon(job,label,value){
   const tile=document.createElement('span');tile.className='villager-skill';tile.tabIndex=0;
   const scale=Math.max(10,Math.ceil((value+1)/10)*10);
-  const description=`${label} · ${value} practice`;
+  const description=`${label} · ${Math.floor(value)} practice`;
   tile.title=description;tile.setAttribute('aria-label',description);
   const icon=document.createElement('span');icon.className='villager-skill-art';
   icon.append(illustration(job));
   const fill=illustration(job);fill.className='illustration villager-skill-fill';fill.style.clipPath=`inset(${100-value/scale*100}% 0 0)`;icon.append(fill);tile.append(icon);
-  const number=document.createElement('strong');number.textContent=value;number.setAttribute('aria-hidden','true');tile.append(number);
+  const number=document.createElement('strong');number.textContent=Math.floor(value);number.setAttribute('aria-hidden','true');tile.append(number);
   return tile;
 }
 function notice(message) { $('notice').textContent=message; $('notice').style.display='block'; clearTimeout(notice.timer); notice.timer=setTimeout(()=>$('notice').style.display='none',4500); }
@@ -664,7 +664,7 @@ function renderSettlers(town,item,buildingIndex,target=$('selection-details'),up
     const skills=document.createElement('small');
     const skill={woodcutter:'woodcutting',farm:'farming',acre:'farming',fishing_hut:'fishing'}[item.kind] || world.progression?.buildings[item.kind]?.job;
     const skillLabels={woodcutting:'Woodcutting',farming:'Farming',fishing:'Fishing',hauling:'Hauling',...professionJobs};
-    skills.textContent=(skill?[skill]:['woodcutting','farming','fishing']).map(key=>`${skillLabels[key]} · Lv ${v[key] || 0}`).join(' / ');
+    skills.textContent=(skill?[skill]:['woodcutting','farming','fishing']).map(key=>`${skillLabels[key]} · Lv ${Math.floor(v[key] || 0)}`).join(' / ');
     summary.append(skills);summary.onclick=()=>inspect('villager',i);row.append(summary);
     if(owner){
       const kick=document.createElement('button');kick.className='worker-kick danger';kick.textContent='Kick';
@@ -737,7 +737,7 @@ function renderProfession(town,item,index){
   if(['woodcutter','fishing_hut'].includes(item.kind)){
     const reach=item.profession_upgrades?.includes('boat')?6:3;
     const sources=town.map_resources.filter(r=>r.kind===(item.kind==='woodcutter'?'tree':'water')&&Math.abs(r.x-item.x)+Math.abs(r.y-item.y)<=reach);
-    const note=document.createElement('p');note.textContent=sources.length?`Shared source supply: ${sources[0].supply?.toFixed(1) ?? '—'} / ${sources[0].supply_max ?? '—'}. Regenerates ${sources[0].regeneration ?? '—'} per 3 seconds. Click a source to inspect it. Boat reach: ${reach} steps.`:'No source in reach.';$('selection-details').append(note);
+    const note=document.createElement('p');note.textContent=sources.length?`Shared source supply: ${sources[0].supply == null ? '—' : Math.floor(sources[0].supply)} / ${sources[0].supply_max ?? '—'}. Regenerates ${sources[0].regeneration ?? '—'} per 3 seconds. Click a source to inspect it. Boat reach: ${reach} steps.`:'No source in reach.';$('selection-details').append(note);
   }
 }
 function renderSelection(town){
@@ -765,7 +765,7 @@ function renderSelection(town){
     for(const job of ['fishing','woodcutting','gathering']){
       const xp=town.player?.[job] || 0,level=1+Math.floor(xp/20);
       const tile=document.createElement('div');tile.className='player-skill';tile.tabIndex=0;
-      const description=`${job[0].toUpperCase()+job.slice(1)} · Level ${level} · ${xp%20}/20 practice`;
+      const description=`${job[0].toUpperCase()+job.slice(1)} · Level ${level} · ${Math.floor(xp%20)}/20 practice`;
       tile.title=description;tile.setAttribute('aria-label',description);
       tile.append(illustration(job));
       const number=document.createElement('strong');number.textContent=level;number.setAttribute('aria-hidden','true');tile.append(number);
@@ -798,7 +798,7 @@ function renderSelection(town){
     const swamp=town.terrain?.[item.y]?.[item.x]==='b';
     $('selection-title').textContent=({berry_bush:'Berry bush',herb_patch:'Herb patch'}[item.kind]) || (swamp?{tree:'Swamp willow',water:'Swamp water',rock:'Rock outcrop'}:{tree:'Forest',water:'Water',rock:'Rock outcrop',berry_bush:'Berry bush',herb_patch:'Herb patch'})[item.kind];
     p.textContent={tree:'Renewable wood source. Place a woodcutter within 3 horizontal or vertical tile steps, then assign a villager to woodcutting.',water:'Renewable source for farming and fishing. Farmers fetch water during watering. Place fishing huts within 3 horizontal or vertical tile steps, then assign a villager to fishing.',rock:'This outcrop occupies its tile. Mining is not available yet.',berry_bush:'Stand nearby and press G to gather berries for food.',herb_patch:'Stand nearby and press G to gather herbs for animal breeding.'}[item.kind];
-    if(item.supply_max){$('selection-details').append(fact(`${(item.supply || 0).toFixed(1)} / ${item.supply_max}`,'Shared supply'));$('selection-details').append(fact(`${item.regeneration} per 3 seconds`,'Regeneration'));}
+    if(item.supply_max){$('selection-details').append(fact(`${Math.floor(item.supply || 0)} / ${item.supply_max}`,'Shared supply'));$('selection-details').append(fact(`${item.regeneration} per 3 seconds`,'Regeneration'));}
   }else{
     $('selection-title').textContent=buildingName(item);
     if(item.kind==='home'&&!item.construction)$('selection-details').append(fact(`+${2*(buildingLevel(item)+(item.profession_upgrades?.includes('timber_frame')?1:0))}`,'Villager spaces'));
@@ -960,7 +960,7 @@ function departureMessage(town){
   const departed=town.last_departure;
   if(!departed)return '';
   const role=departed.job==='idle'?'settler':departed.job==='baking'?'baker':departed.job==='butchery'?'butcher':departed.job==='building'?'builder':departed.job;
-  const practice=Object.entries(departed.practice || {}).map(([job,xp])=>`${xp} ${job} practice`).join(', ');
+  const practice=Object.entries(departed.practice || {}).map(([job,xp])=>`${Math.floor(xp)} ${job} practice`).join(', ');
   return `${departed.name}, your ${role}, left after prolonged food shortages. ${practice?`Lost ${practice}. `:''}Their experience is gone; their work needs a new settler.`;
 }
 function updateDepartures(next){
@@ -1019,10 +1019,10 @@ function render(){
   if(own){
     $('resource-wood').textContent=Math.floor(own.wood);
     $('resource-food').textContent=Math.floor(own.food);
-    $('resource-coins').textContent=own.coins;
+    $('resource-coins').textContent=Math.floor(own.coins);
     $('resource-villagers').textContent=own.villagers.length;
     $('goods-list').replaceChildren();
-    for(const [key,value] of Object.entries(own.goods || {}))if(value>0)$('goods-list').append(fact(`${value.toFixed(1)} / ${resourceStorage(own,key)}`,goodName(key)));
+    for(const [key,value] of Object.entries(own.goods || {}))if(value>0)$('goods-list').append(fact(`${Math.floor(value)} / ${resourceStorage(own,key)}`,goodName(key)));
   }
   if(buildTile && (!town || !insideBuildingRange(town,buildTile) || town.buildings.some(b=>b.x===buildTile.x&&b.y===buildTile.y) || town.map_resources.some(r=>r.x===buildTile.x&&r.y===buildTile.y)))buildTile=null;
   for(const group of $('buildings').children){
