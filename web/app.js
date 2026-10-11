@@ -1861,9 +1861,15 @@ function tileAt(event){
   const rect=canvas.getBoundingClientRect(),dx=event.clientX-rect.left-originX,dy=event.clientY-rect.top-originY;
   return {x:Math.floor(dx/tileW+dy/tileH),y:Math.floor(dy/tileH-dx/tileW)};
 }
+function hitTargetAt(px,py){
+  const hits=hitTargets.filter(h=>px>=h.left&&px<=h.right&&py>=h.top&&py<=h.bottom).reverse();
+  const front=hits[0];
+  // Nearby tree canopies must not block a building's clickable area.
+  return front?.type==='resource'?(hits.find(h=>h.type==='building') || front):front;
+}
 canvas.onmousemove=event=>{
   const rect=canvas.getBoundingClientRect(),px=event.clientX-rect.left,py=event.clientY-rect.top;
-  const hit=[...hitTargets].reverse().find(h=>px>=h.left&&px<=h.right&&py>=h.top&&py<=h.bottom);
+  const hit=hitTargetAt(px,py);
   buildingHover=!tool&&hit?.type==='building'?{index:hit.index,townId:hit.townId}:null;
   const town=world.towns[viewed],tile=tileAt(event);
   buildTile=(tool in costs)&&viewed===identity?.town_id&&town&&insideBuildingRange(town,tile)&&tile.x>=0&&tile.y>=0&&tile.x<mapSize(town)&&tile.y<mapSize(town)
@@ -1877,7 +1883,7 @@ canvas.onclick=async event=>{
   const rect=canvas.getBoundingClientRect(),px=event.clientX-rect.left,py=event.clientY-rect.top;
   keyboardTile=null;
   if(!tool){
-    const hit=[...hitTargets].reverse().find(h=>px>=h.left&&px<=h.right&&py>=h.top&&py<=h.bottom);
+    const hit=hitTargetAt(px,py);
     if(hit){inspect(hit.type,hit.index,hit.townId);return;}
   }
   const tile=tileAt(event);
