@@ -13,8 +13,9 @@ for(const [practice,speed] of [[undefined,1.8],[19.99,1.8],[20,2.25],[40,2.7]]){
 const element=tag=>({tag,children:[],append(child){this.children.push(child);},setAttribute(){}});
 const world={progression:{buildings:{},talent_roots:{}}};
 const helpers=source.slice(source.indexOf('function workerEfficiency('),source.indexOf('async function playerAction('));
+const toolSource=source.slice(source.indexOf('const workerTools='),source.indexOf('const equipmentItems='));
 const cardSource=source.slice(source.indexOf('function villagerCard('),source.indexOf('function villagerRow('));
-const card=new Function('document','world','identity','viewed','buildingLevel','goodName','professionJobs','skillBar','villagerActivity','jobRequirement',helpers+cardSource+'return villagerCard;')(
+const card=new Function('document','world','identity','viewed','buildingLevel','goodName','professionJobs','skillBar','villagerActivity','jobRequirement',helpers+toolSource+cardSource+'return villagerCard;')(
   {createElement:element},world,{town_id:'own'},'own',()=>1,key=>key,{},
   (label,value)=>({label,value}),()=> 'Hauling goods',()=> '');
 const details=card(town,villager,0);

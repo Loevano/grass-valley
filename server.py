@@ -15,6 +15,7 @@ from urllib.parse import parse_qs, urlsplit
 import progression as economy
 import logistics
 import equipment
+import npcs
 
 from terrain import ensure_terrain
 from npcs import ensure_npcs
@@ -92,6 +93,10 @@ def feed_settlers(town):
         return
     # Any resident can leave, including an experienced specialist.
     villager = town['villagers'].pop(secrets.randbelow(len(town['villagers'])))
+    if villager.get('worker_tool') in npcs.WORKER_TOOLS:
+        tools = town['player'].setdefault('worker_tools', {})
+        key = villager['worker_tool']
+        tools[key] = tools.get(key, 0) + 1
     town['departure_count'] = town.get('departure_count', 0) + 1
     town['last_departure'] = {
         'name': villager['name'], 'job': villager['job'],
@@ -533,6 +538,7 @@ def tick(world):
         ensure_villager_names(town)
         ensure_resources(town)
         economy.ensure_inventory(town)
+        npcs.advance_trades(town, TICK_SECONDS)
         if town.get('upgrade_remaining'):
             # Resume upgrades from saves made before construction required builders.
             hall = next(b for b in town['buildings'] if b['kind'] == 'hall')
@@ -602,7 +608,7 @@ def tick(world):
                 caught = secrets.randbelow(5) != 0
                 villager['fishing_catch'] = {'attempt': villager.get('fishing_catch', {}).get('attempt', 0) + 1, 'caught': caught}
             rate = .5 if job == 'woodcutting' else 1
-            bonus = production_bonus(building)
+            bonus = production_bonus(building) + npcs.tool_bonus(villager, job)
             if source['kind'] == 'acre':
                 bonus += production_bonus(source)
             upgrades = building.get('profession_upgrades', [])
@@ -661,6 +667,8 @@ def command(town, data, world=None):
         bind_map(world)
     ensure_resources(town)
     action = data.get('action')
+    if action in {'claim_local_gift', 'trade_local', 'give_worker_tool', 'take_worker_tool'}:
+        return npcs.change(town, data)
     if action in {'buy_equipment', 'sell_equipment', 'equip_item', 'unequip_item'}:
         return equipment.change(town, data)
     if action == 'build_boat':

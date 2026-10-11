@@ -138,6 +138,22 @@ window.addEventListener('blur',clearWalk);
 document.addEventListener?.('visibilitychange',clearWalk);
 // Predict only the next host step; never run ahead while waiting for a reply.
 let movementMap=null;
+const workerTools={fine_axe:{name:'Fine axe',job:'woodcutting'},fine_fishing_rod:{name:'Fine fishing rod',job:'fishing'}};
+const localGifts={Sylva:'fine_axe',Reed:'fine_fishing_rod'};
+function localVisitKey(npc){return `${npc.name}:${npc.x}:${npc.y}`;}
+function renderWorkerTools(town,v,index,target){
+  const owner=viewed===identity?.town_id;
+  if(v.worker_tool&&workerTools[v.worker_tool]){
+    const gear=workerTools[v.worker_tool],row=document.createElement('p');
+    row.textContent=`${gear.name} · +25% ${gear.job} output`;
+    if(owner){const button=document.createElement('button');button.textContent='Take back tool';button.onclick=()=>act({action:'take_worker_tool',index});row.append(button);}
+    target.append(row);
+  }else if(owner)for(const [key,gear] of Object.entries(workerTools)){
+    if(!(town.player?.worker_tools?.[key]>0))continue;
+    const button=document.createElement('button');button.textContent=`Give ${gear.name.toLowerCase()} · +25% ${gear.job} output`;
+    button.onclick=()=>act({action:'give_worker_tool',item:key,index});target.append(button);
+  }
+}
 const equipmentItems={
   swamp_boots:{name:'Swamp boots',slot:'feet',biome:'b',price:15},
   desert_clothing:{name:'Desert clothing',slot:'body',price:20},
@@ -312,6 +328,16 @@ function roomAllocations(building){
 function resourceStorage(town,key){
   const group=key in foodGoods()?'food':key;
   return town.buildings.filter(b=>!b.construction&&(key==='food'?buildingStorageKeys(b).includes('food'):buildingStorageGoods(b).includes(key))).reduce((sum,b)=>sum+(roomAllocations(b)[group] || 0),0);
+}
+function localTradeFoodRoom(town){
+  if(town.inventory_version!==1)return Math.max(0,resourceStorage(town,'vegetables')-amountOf(town,'food'));
+  const edible=foodGoods();
+  return town.buildings.filter(b=>!b.construction&&buildingStorageGoods(b).includes('vegetables')).reduce((sum,b)=>{
+    const stock={...b.stored_goods};
+    for(const [key,n] of Object.entries(b.output_buffer || {}))stock[key]=(stock[key] || 0)+n;
+    const used=Object.entries(stock).reduce((n,[key,count])=>n+(key==='food'||key in edible?count*(edible[key] || 1):0),0);
+    return sum+Math.min(Math.max(0,(roomAllocations(b).food || 0)-used),Math.max(0,buildingStorageSize(b)-Object.values(stock).reduce((n,count)=>n+count,0)));
+  },0);
 }
 const storageEditing=new Set();
 const woodReserveDrafts=new Map();
@@ -795,6 +821,7 @@ function villagerCard(town,v,index,withLink=false){
     const detail=document.createElement('dd');detail.textContent=value;profile.append(term);profile.append(detail);
   }
   div.append(profile);
+  renderWorkerTools(town,v,index,div);
   div.append(skillBar('Woodcutting',v.woodcutting));div.append(skillBar('Farming',v.farming));div.append(skillBar('Fishing',v.fishing || 0));
   div.append(skillBar('Hauling',v.hauling || 0));
   const hauling=document.createElement('small');hauling.className='villager-hauling';
@@ -1011,6 +1038,9 @@ function renderSelection(town){
       if(viewed===identity?.town_id&&count){const button=document.createElement('button');button.textContent=equipped?`Unequip ${item.name.toLowerCase()}`:`Equip ${item.name.toLowerCase()}`;button.onclick=()=>act({action:equipped?'unequip_item':'equip_item',item:key});row.append(button);}
       $('selection-details').append(row);
     }
+    for(const [key,gear] of Object.entries(workerTools)){
+      const row=document.createElement('p');row.textContent=`${gear.name} · ${town.player?.worker_tools?.[key] || 0} available · Give to a worker from their panel (+25% ${gear.job} output)`;$('selection-details').append(row);
+    }
     if(viewed===identity?.town_id){
       if(town.player?.boat){const boat=document.createElement('p');boat.textContent='Exploration boat ready. Walk onto water to sail; step ashore to disembark.';$('selection-details').append(boat);}
       else{const boat=document.createElement('button');boat.textContent=town.level<3?'Exploration boat · Requires hall level 3':'Build exploration boat · 20 wood + 10 planks';boat.disabled=town.level<3||amountOf(town,'wood')<20||amountOf(town,'planks')<10;boat.onclick=()=>act({action:'build_boat'});$('selection-details').append(boat);}
@@ -1034,6 +1064,22 @@ function renderSelection(town){
     if(player){
       const nearby=Math.hypot(player.x-item.x,player.y-item.y)<=1.8;
       const hint=document.createElement('p');hint.textContent=nearby?'Trade equipment for coins. Equip purchases from your character panel.':'Walk beside this local to trade equipment.';$('selection-details').append(hint);
+      if(world.shared_map||viewed===identity?.town_id){
+        const progress=own.local_visits?.[localVisitKey(item)] || {},gift=localGifts[item.name];
+        if(gift){
+          const gear=workerTools[gift],note=document.createElement('p');
+          note.textContent=item.name==='Sylva'?'“A sharp axe makes lighter work. Take my spare and pass it to your woodcutter.”':'“This rod has landed many a fine catch. Let one of your fishers put it to use.”';$('selection-details').append(note);
+          const button=document.createElement('button');button.textContent=progress.gift_claimed?`${gear.name} gift collected`:`Accept ${gear.name.toLowerCase()} · Gift for a worker`;
+          button.disabled=!nearby||!!progress.gift_claimed;button.onclick=()=>act({action:'claim_local_gift',npc_index:selection.index});$('selection-details').append(button);
+        }
+        if(['Tobin','Clover'].includes(item.name)){
+          const note=document.createElement('p');note.textContent='“I could use some firewood. Bring me 10 wood and I’ll share 8 food. I restock every five minutes.”';$('selection-details').append(note);
+          const remaining=progress.trade_remaining || 0,button=document.createElement('button');
+          button.textContent=remaining>0?`Restocking · ${Math.ceil(remaining/60)} min remaining`:'Trade 10 wood for 8 food';
+          button.disabled=!nearby||remaining>0||own.wood<10||localTradeFoodRoom(own)<8;
+          button.onclick=()=>act({action:'trade_local',npc_index:selection.index});$('selection-details').append(button);
+        }
+      }
       if(world.shared_map||viewed===identity?.town_id)for(const [key,gear] of Object.entries(equipmentItems)){
         const buy=document.createElement('button');buy.textContent=`Buy ${gear.name.toLowerCase()} · ${gear.price} coins`;buy.disabled=!nearby||own.coins<gear.price;buy.onclick=()=>act({action:'buy_equipment',item:key,npc_index:selection.index});$('selection-details').append(buy);
         const equipped=player.equipment?.[gear.slot]===key;
@@ -1420,7 +1466,7 @@ function npcSprites(town,seconds){
 function villagerAccessories(b){
   // Earned gear stays visible across jobs: tools at 5, clothing at 10, gold accents at 20.
   const v=b.kind==='villager'?b.villager:{};
-  return {axe:v.woodcutting>=5,blouse:v.woodcutting>=10,woodcuttingMaster:v.woodcutting>=20,
+  return {axe:v.woodcutting>=5||v.worker_tool==='fine_axe',blouse:v.woodcutting>=10,woodcuttingMaster:v.woodcutting>=20,
     sickle:v.farming>=5,hat:v.farming>=10,farmingMaster:v.farming>=20,
     pouch:v.fishing>=5,scarf:v.fishing>=10,fishingMaster:v.fishing>=20};
 }
@@ -1644,7 +1690,7 @@ function renderResources(resources){
   }
   return resourceCache;
 }
-function paintGround(target,landscape,water,bounds,offsetX=0,offsetY=0){
+function paintGround(target,landscape,water,bounds,offsetX=0,offsetY=0,region=null){
   const ctx=target,terrainSize=landscape?.map_size || 12;
   const {minX,maxX,minY,maxY}=bounds;
   const point=(x,y)=>[originX+(x-y)*tileW/2+offsetX,originY+(x+y)*tileH/2+offsetY];
@@ -1657,6 +1703,8 @@ function paintGround(target,landscape,water,bounds,offsetX=0,offsetY=0){
     const [px,py]=point(x,y),wet=water.has(`${x},${y}`);
     if(px+tileW/2<0 || px-tileW/2>target.canvas?.width/(window.devicePixelRatio||1)
       || py+tileH+12<0 || py>target.canvas?.height/(window.devicePixelRatio||1))continue;
+    if(region&&(px+tileW/2<region.x || px-tileW/2>region.x+region.width
+      || py+tileH+12<region.y || py>region.y+region.height))continue;
     const variation=(x*17+y*31+x*y*7)%7;
     const diamond=[[px,py],[px+tileW/2,py+tileH/2],[px,py+tileH],[px-tileW/2,py+tileH/2]];
     const biome=landscape?.terrain?.[y]?.[x] || (landscape?.chunked?'v':'g');
@@ -1698,7 +1746,7 @@ function drawGround(rect,dpr,landscape,water,bounds){
   const margin=160;
   if(!groundCache || groundCache.world!==world || groundCache.landscape!==landscape){
     const signature=JSON.stringify([world.world_id,landscape?.terrain,landscape?.terrain_seed,
-      landscape?.map_size,landscape?.map_resources]);
+      landscape?.map_size,[...water].sort()]);
     if(groundCache?.signature!==signature)groundCache=null;
     if(groundCache)Object.assign(groundCache,{world,landscape});
     else{
@@ -1710,19 +1758,48 @@ function drawGround(rect,dpr,landscape,water,bounds){
   const cache=groundCache,dx=originX-cache.originX,dy=originY-cache.originY;
   if(cache.tileW!==tileW || cache.width!==rect.width || cache.height!==rect.height
     || cache.dpr!==dpr || Math.abs(dx)>margin || Math.abs(dy)>margin){
-    cache.surface.width=Math.ceil((rect.width+margin*2)*dpr);
-    cache.surface.height=Math.ceil((rect.height+margin*2)*dpr);
+    const width=Math.ceil((rect.width+margin*2)*dpr),height=Math.ceil((rect.height+margin*2)*dpr);
+    const shiftX=Math.round(dx*dpr),shiftY=Math.round(dy*dpr);
+    const reuse=cache.tileW===tileW&&cache.width===rect.width&&cache.height===rect.height
+      &&cache.dpr===dpr&&Math.abs(shiftX)<width&&Math.abs(shiftY)<height;
+    let regions;
+    if(reuse){
+      // Copy overlapping pixels before clearing and repainting the exposed strips.
+      // Integer device pixels avoid blurring the cache during repeated pans.
+      cache.target.setTransform(1,0,0,1,0,0);
+      cache.target.globalCompositeOperation='copy';
+      cache.target.drawImage(cache.surface,Math.max(0,-shiftX),Math.max(0,-shiftY),
+        width-Math.abs(shiftX),height-Math.abs(shiftY),Math.max(0,shiftX),Math.max(0,shiftY),
+        width-Math.abs(shiftX),height-Math.abs(shiftY));
+      cache.target.globalCompositeOperation='source-over';
+      regions=[];
+      if(shiftX)regions.push({x:shiftX>0?0:(width+shiftX)/dpr,y:0,width:Math.abs(shiftX)/dpr,height:height/dpr});
+      if(shiftY)regions.push({x:Math.max(0,shiftX)/dpr,y:shiftY>0?0:(height+shiftY)/dpr,
+        width:(width-Math.abs(shiftX))/dpr,height:Math.abs(shiftY)/dpr});
+    }else{
+      cache.surface.width=width;cache.surface.height=height;
+      regions=[{x:0,y:0,width:width/dpr,height:height/dpr}];
+    }
+    const nextX=reuse?cache.originX+shiftX/dpr:originX,nextY=reuse?cache.originY+shiftY/dpr:originY;
+    const offsetX=margin+nextX-originX,offsetY=margin+nextY-originY;
     cache.target.setTransform(dpr,0,0,dpr,0,0);
-    const corners=[[-margin-tileW,-margin-100],[rect.width+margin+tileW,-margin-100],
-      [-margin-tileW,rect.height+margin+100],[rect.width+margin+tileW,rect.height+margin+100]]
-      .map(([px,py])=>({x:(px-originX)/tileW+(py-originY)/tileH,y:(py-originY)/tileH-(px-originX)/tileW}));
-    const size=landscape?.map_size || 12;
-    const padded={minX:Math.max(0,Math.floor(Math.min(...corners.map(p=>p.x)))),
-      maxX:Math.min(size-1,Math.ceil(Math.max(...corners.map(p=>p.x)))),
-      minY:Math.max(0,Math.floor(Math.min(...corners.map(p=>p.y)))),
-      maxY:Math.min(size-1,Math.ceil(Math.max(...corners.map(p=>p.y))))};
-    paintGround(cache.target,landscape,water,padded,margin,margin);
-    Object.assign(cache,{originX,originY,tileW,width:rect.width,height:rect.height,dpr});
+    for(const region of regions){
+      cache.target.clearRect(region.x,region.y,region.width,region.height);
+      cache.target.save();cache.target.beginPath();
+      cache.target.rect(region.x,region.y,region.width,region.height);cache.target.clip();
+      const corners=[[region.x-tileW,region.y-tileH-12],[region.x+region.width+tileW,region.y-tileH-12],
+        [region.x-tileW,region.y+region.height],[region.x+region.width+tileW,region.y+region.height]]
+        .map(([px,py])=>({x:(px-originX-offsetX)/tileW+(py-originY-offsetY)/tileH,
+          y:(py-originY-offsetY)/tileH-(px-originX-offsetX)/tileW}));
+      const size=landscape?.map_size || 12;
+      const padded={minX:Math.max(0,Math.floor(Math.min(...corners.map(p=>p.x)))),
+        maxX:Math.min(size-1,Math.ceil(Math.max(...corners.map(p=>p.x)))),
+        minY:Math.max(0,Math.floor(Math.min(...corners.map(p=>p.y)))),
+        maxY:Math.min(size-1,Math.ceil(Math.max(...corners.map(p=>p.y))))};
+      paintGround(cache.target,landscape,water,padded,offsetX,offsetY,region);
+      cache.target.restore();
+    }
+    Object.assign(cache,{originX:nextX,originY:nextY,tileW,width:rect.width,height:rect.height,dpr});
   }
   ctx.drawImage(cache.surface,originX-cache.originX-margin,originY-cache.originY-margin,
     cache.surface.width/dpr,cache.surface.height/dpr);

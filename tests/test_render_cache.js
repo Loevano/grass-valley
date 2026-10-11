@@ -2,11 +2,11 @@
 const fs=require('fs'),assert=require('assert');
 const source=fs.readFileSync('web/app.js','utf8');
 const WorkerAnimation=require('../web/animations.js');
-const elements=new Map(),surfaces=[],fills=[],images=[];
+const elements=new Map(),surfaces=[],fills=[],images=[],copies=[];
 function element(){return {children:[],style:{},classList:{toggle(){}},append(...c){this.children.push(...c);},replaceChildren(){this.children=[];},setAttribute(){},addEventListener(){}};}
 function context(surface,offscreen){
   return new Proxy({canvas:surface,fill(){if(offscreen)surface.paints++;else fills.push(this.fillStyle);},
-    drawImage(...args){images.push(args);}}, {get:(target,key)=>key in target?target[key]:()=>{}});
+    drawImage(...args){if(offscreen)copies.push({args,operation:this.globalCompositeOperation});else images.push(args);}}, {get:(target,key)=>key in target?target[key]:()=>{}});
 }
 const documentMock={getElementById(id){if(!elements.has(id))elements.set(id,element());return elements.get(id);},
   createElement(tag){if(tag!=='canvas')return element();const surface={paints:0};surface.getContext=()=>surface.ctx ||= context(surface,true);surfaces.push(surface);return surface;},querySelectorAll:()=>[]};
@@ -14,7 +14,7 @@ const canvas=documentMock.getElementById('world');canvas.getContext=()=>context(
 let width=960,height=660;
 canvas.getBoundingClientRect=()=>({left:0,top:0,width,height});
 const windowMock={devicePixelRatio:2,addEventListener(){}};
-const run=new Function('document','window','localStorage','setTimeout','clearTimeout','WorkerAnimation','assert','surfaces','fills','images','resize',
+const run=new Function('document','window','localStorage','setTimeout','clearTimeout','WorkerAnimation','assert','surfaces','fills','images','copies','resize',
   source.slice(0,source.lastIndexOf('requestAnimationFrame(animate);'))+`
   const town={map_size:120,terrain:Array(120).fill('g'.repeat(120)),map_resources:[{kind:'tree',x:31,y:31}],
     buildings:[{kind:'hall',x:30,y:30}],villagers:[{name:'Ada',job:'idle'}],food:40,wood:40,level:1};
@@ -30,6 +30,27 @@ const run=new Function('document','window','localStorage','setTimeout','clearTim
   assert(hitTargets.some(t=>t.type==='resource'&&t.index===0),'Resource selection indices survive caching');
   world=JSON.parse(JSON.stringify(world));draw();
   assert.equal(surface.paints,painted,'Polling unchanged terrain preserves ground');
+  camera.x-=1;draw();
+  let beforePan=surface.paints;
+  camera.x+=4;camera.y-=4;draw();
+  assert.equal(copies.length,1,'Panning reuses overlapping ground pixels');
+  assert.equal(copies[0].operation,'copy','Transparent map edges replace old pixels');
+  assert.equal(copies[0].args[5],0,'Leftward ground movement copies to the left edge');
+  assert.equal(copies[0].args[1],432,'Copy source starts at an integer device pixel');
+  assert(surface.paints-beforePan<painted*.3,'Panning paints only the exposed strip');
+  beforePan=surface.paints;camera.x-=4;camera.y+=4;draw();
+  assert.equal(copies.length,2,'Reverse panning also reuses ground');
+  assert.equal(copies[1].args[5],432,'Rightward ground movement offsets the destination');
+  assert(surface.paints-beforePan<painted*.3,'Reverse panning paints only the exposed strip');
+  beforePan=surface.paints;camera.x+=7;camera.y+=7;draw();
+  assert.equal(copies.at(-1).args[2],378,'Vertical panning shifts the source rows');
+  assert(surface.paints-beforePan<painted*.3,'Vertical panning paints only the exposed strip');
+  camera.x+=7;draw();
+  const diagonal=copies.at(-1).args;
+  assert(diagonal[1]>0&&diagonal[2]>0,'Diagonal panning copies both axes');
+  camera.x+=.123;camera.y+=7.321;draw();
+  assert(copies.at(-1).args.slice(1).every(Number.isInteger),'Fractional camera positions copy whole device pixels');
+  camera.x-=21.123;camera.y-=21.321;draw();
   camera.x+=10;draw();assert(surface.paints>painted,'Leaving the padded viewport repaints ground');
   let previous=surface.paints;camera.zoom=.35;draw();assert(surface.paints>previous,'Zoom repaints ground');
   previous=surface.paints;draw();assert.equal(surface.paints,previous,'Repeated zoomed-out frames reuse ground');
@@ -43,6 +64,13 @@ const run=new Function('document','window','localStorage','setTimeout','clearTim
   viewed='friend';draw();assert.equal(surfaces.length,3,'Switching separate maps discards stale ground');
   world=JSON.parse(JSON.stringify(world));world.world_id='another-world';draw();
   assert.equal(surfaces.length,4,'Changing worlds invalidates ground');
+  world=JSON.parse(JSON.stringify(world));world.towns.friend.map_resources=[{kind:'water',x:30,y:30,supply:10}];draw();
+  const waterSurface=surfaces.at(-1),waterPaints=waterSurface.paints,waterSurfaces=surfaces.length;
+  world=JSON.parse(JSON.stringify(world));world.towns.friend.map_resources[0].supply=20;draw();
+  assert.equal(surfaces.length,waterSurfaces,'Supply updates preserve the terrain cache');
+  assert.equal(waterSurface.paints,waterPaints,'Supply updates do not repaint water');
+  world=JSON.parse(JSON.stringify(world));world.towns.friend.map_resources=[];draw();
+  assert.equal(surfaces.length,waterSurfaces+1,'Water layout changes invalidate the terrain');
 `);
-run(documentMock,windowMock,{getItem:()=>null},()=>0,()=>{},WorkerAnimation,assert,surfaces,fills,images,()=>{width=720;height=500;});
+run(documentMock,windowMock,{getItem:()=>null},()=>0,()=>{},WorkerAnimation,assert,surfaces,fills,images,copies,()=>{width=720;height=500;});
 console.log('Render cache checks passed');

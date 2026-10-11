@@ -81,7 +81,13 @@ the Python host, refresh both browsers, and create a new world to use the shared
   Lighter swamp ground is walkable; only the darkest muddy tiles require equipped swamp boots. Existing saved terrain stays as it is.
 - Friendly locals live in each biome, with matching outfits and dialogue. Look for
   Moss the swamp herbalist and Reed the marsh fisher. Click a local to read their
-  introduction. Locals are separate from town workers; their positions are saved.
+  introduction. Sylva gives each town a fine axe and Reed a fine fishing rod once.
+  Walk beside them to accept, then give the tool to a worker from that worker’s
+  panel. Each tool adds 25% output in its matching job; take it back to reassign it.
+  Tobin and Clover each exchange 10 wood for 8 food once every five minutes of
+  running game time, provided you have food storage room. Gifts and restocking
+  are saved per town, so each player can collect their own rewards.
+  Locals are separate from town workers; their positions are saved.
 - Your gold-clad villager is marked **You**. Click the map and hold **WASD** to
   walk in screen directions. Press **Y** to toggle camera lock: when locked, the
   camera follows your movement; when unlocked, walking leaves the camera in place.
