@@ -162,7 +162,10 @@ class ResourceLogistics(unittest.TestCase):
             with self.subTest(kind=kind):
                 for key in (*inputs, output):
                     self.assertGreater(economy.local_room(building, key), 0)
-                self.assertEqual(economy.local_room(building, 'herbs'), 0)
+                if 'herbs' in economy.STORAGE_GOODS[kind]:
+                    self.assertGreater(economy.local_room(building, 'herbs'), 0)
+                else:
+                    self.assertEqual(economy.local_room(building, 'herbs'), 0)
         for kind in ('farm', 'acre'):
             building = {'kind': kind, 'storage_allocations': {'food': 10, 'wheat': 10, 'fodder': 10, 'manure': 10}}
             for key in (*economy.CROPS, 'manure'):

@@ -81,6 +81,54 @@ RECIPES = {
     'workshop': ({'planks': 2, 'wood': 1}, 'tools', 1),
     'fish_pond': ({'fodder': .5}, 'fish', 1),
 }
+# Recipe levels use the whole practice points shown in settler panels.
+# Beginners can make the level-one recipe; levels two to five need 2–5 practice.
+PROFESSION_RECIPES = {
+    'workshop': [
+        {'level': 1, 'inputs': {'planks': 2, 'wood': 1}, 'output': 'tools', 'amount': 1},
+        {'level': 2, 'inputs': {'planks': 1, 'wood': 1}, 'output': 'wooden_bowls', 'amount': 2},
+        {'level': 3, 'inputs': {'planks': 3}, 'output': 'crates', 'amount': 1},
+        {'level': 4, 'inputs': {'planks': 4, 'wool': 1}, 'output': 'furniture', 'amount': 1},
+        {'level': 5, 'inputs': {'planks': 5, 'wool': 2}, 'output': 'carved_furniture', 'amount': 1},
+    ],
+    'bakery': [
+        {'level': 1, 'inputs': {'flour': 2, 'wood': .5}, 'output': 'bread', 'amount': 2},
+        {'level': 2, 'inputs': {'flour': 2, 'milk': 1, 'wood': .5}, 'output': 'bread_rolls', 'amount': 3},
+        {'level': 3, 'inputs': {'flour': 2, 'herbs': 1, 'wood': .5}, 'output': 'herb_bread', 'amount': 2},
+        {'level': 4, 'inputs': {'flour': 2, 'fruit': 2, 'wood': .5}, 'output': 'fruit_pies', 'amount': 2},
+        {'level': 5, 'inputs': {'flour': 2, 'eggs': 2, 'milk': 1, 'wood': .5}, 'output': 'cakes', 'amount': 2},
+    ],
+    'butcher': [
+        {'level': 1, 'inputs': {'meat': 2}, 'output': 'prepared_meat', 'amount': 2},
+        {'level': 2, 'inputs': {'meat': 2, 'herbs': 1}, 'output': 'herbed_meat', 'amount': 2},
+        {'level': 3, 'inputs': {'meat': 2, 'wood': .5}, 'output': 'smoked_meat', 'amount': 2},
+        {'level': 4, 'inputs': {'meat': 2, 'herbs': 1, 'flour': 1}, 'output': 'sausages', 'amount': 3},
+        {'level': 5, 'inputs': {'meat': 2, 'flour': 2, 'eggs': 1, 'wood': .5}, 'output': 'meat_pies', 'amount': 2},
+    ],
+}
+CRAFTED_GOODS = tuple(r['output'] for r in PROFESSION_RECIPES['workshop'][1:])
+EDIBLE.update({r['output']: 1.5 + .25 * (r['level'] - 1)
+               for kind in ('bakery', 'butcher') for r in PROFESSION_RECIPES[kind][1:]})
+
+
+def selected_recipe(building):
+    recipes = PROFESSION_RECIPES.get(building['kind'], [])
+    return next((r for r in recipes if r['output'] == building.get('recipe')), recipes[0] if recipes else None)
+
+
+def recipe_requirement(villager, building):
+    spec = selected_recipe(building)
+    job = BUILDINGS[building['kind']]['job']
+    if spec and spec['level'] > 1 and villager.get(job, 0) < spec['level']:
+        return f"Requires level {spec['level']} {job} ({spec['level']} practice) for {spec['output'].replace('_', ' ')}"
+    return None
+
+
+def production_recipe(building):
+    spec = selected_recipe(building)
+    return (spec['inputs'], spec['output'], spec['amount']) if spec else RECIPES[building['kind']]
+
+
 SUPPLIES = {'tree': (8, .5), 'water': (12, 3.2), 'berry_bush': (6, .3), 'herb_patch': (4, .2)}
 _supply_cache = None
 
@@ -90,9 +138,9 @@ JOB_BUILDINGS = {v['job']: k for k, v in BUILDINGS.items() if 'job' in v}
 # Practice belongs to the individual; town/player skill cannot qualify a worker.
 JOB_REQUIREMENTS = {
     'woodworking': {'woodcutting': 10}, 'milling': {'farming': 10},
-    'preserving': {'fishing': 10}, 'crafting': {'woodworking': 10},
+    'preserving': {'fishing': 10}, 'crafting': {'woodworking': 2},
     'breeding': {'fishing': 20}, 'orcharding': {'farming': 20},
-    'baking': {'milling': 10}, 'butchery': {'husbandry': 10},
+    'baking': {'milling': 2}, 'butchery': {'husbandry': 2},
 }
 TALENT_ROOTS = {'woodworking': 'woodcutting', 'crafting': 'woodcutting',
                 'milling': 'farming', 'orcharding': 'farming', 'baking': 'farming',
@@ -169,7 +217,7 @@ def costs_of(spec):
     return {k: v for k, v in spec.items() if k in {'wood', 'coins', 'planks', 'wool', 'tools'}}
 
 
-STORAGE_KEYS = ('wood', 'food', 'planks', 'wheat', 'fodder', 'flour', 'wool', 'tools', 'manure', 'herbs')
+STORAGE_KEYS = ('wood', 'food', 'planks', 'wheat', 'fodder', 'flour', 'wool', 'tools', 'manure', 'herbs', *CRAFTED_GOODS)
 STORAGE_GOODS = {
     **{kind: (*STORAGE_KEYS, *EDIBLE) for kind in ('hall', 'storehouse', 'market')},
     'home': (),
@@ -181,6 +229,9 @@ STORAGE_GOODS = {
     'orchard': ('fruit',),
     **{kind: (*inputs, output) for kind, (inputs, output, _) in RECIPES.items()},
 }
+for kind, recipes in PROFESSION_RECIPES.items():
+    STORAGE_GOODS[kind] = tuple(dict.fromkeys(k for r in recipes for k in (*r['inputs'], r['output'])))
+
 FIXED_STORAGE = {
     'hall': {'wood': 100, 'food': 100},
     'home': {},
@@ -190,14 +241,14 @@ FIXED_STORAGE = {
     'acre': {'food': 20, 'wheat': 10, 'fodder': 10, 'manure': 10},
     'barn': {'food': 20, 'fodder': 15, 'wool': 10, 'manure': 5},
     'orchard': {'food': 50},
-    'bakery': {'flour': 20, 'wood': 5, 'food': 25},
-    'butcher': {'food': 50},
+    'bakery': {'flour': 15, 'wood': 5, 'herbs': 5, 'food': 25},
+    'butcher': {'food': 30, 'flour': 10, 'herbs': 5, 'wood': 5},
     'sawpit': {'wood': 30, 'planks': 20},
     'mill': {'wheat': 30, 'flour': 20},
     'smokehouse': {'food': 45, 'wood': 5},
-    'workshop': {'planks': 25, 'wood': 15, 'tools': 10},
+    'workshop': {'planks': 15, 'wood': 5, 'tools': 5, 'wool': 5, **{key: 5 for key in CRAFTED_GOODS}},
     'fish_pond': {'fodder': 15, 'food': 35},
-    'market': {key: 5 for key in STORAGE_KEYS},
+    'market': {key: 2.5 if key in CRAFTED_GOODS else 4 for key in STORAGE_KEYS},
 }
 
 
@@ -572,7 +623,10 @@ def extra_worker(town, villager, building, capacity):
     upgrades = building.get('profession_upgrades', [])
     speed = (1.25 if 'saw' in upgrades else 1) * efficiency(villager, villager['job'])
     if kind in RECIPES:
-        inputs, output, amount = RECIPES[kind]
+        reason = recipe_requirement(villager, building)
+        if reason:
+            return reason
+        inputs, output, amount = production_recipe(building)
         amount *= speed
         costs = {k: v * speed for k, v in inputs.items()}
         if not afford(town, costs):
@@ -615,5 +669,6 @@ def extra_worker(town, villager, building, capacity):
 def public_catalog():
     return {'buildings': BUILDINGS, 'crops': CROPS, 'animals': ANIMALS,
             'job_requirements': JOB_REQUIREMENTS, 'talent_roots': TALENT_ROOTS,
+            'profession_recipes': PROFESSION_RECIPES, 'storage_keys': STORAGE_KEYS,
             'boats': PLAYER_BOATS, 'fish': FISH, 'upgrades': PROFESSION_UPGRADES, 'recipes': RECIPES, 'edible': EDIBLE,
             'storage_goods': STORAGE_GOODS, 'fixed_storage': FIXED_STORAGE}

@@ -170,16 +170,22 @@ assigned settler's own practice, never the founder's or another resident's skill
 | Woodworking | 10 woodcutting |
 | Milling | 10 farming |
 | Preserving | 10 fishing |
-| Crafting | 10 woodworking |
+| Crafting | 2 woodworking |
 | Fish breeding | 20 fishing |
 | Orcharding | 20 farming |
-| Baking | 10 milling |
-| Butchery | 10 husbandry |
+| Baking | 2 milling |
+| Butchery | 2 husbandry |
 
 Hall level 4 adds bakeries and butcher shops with two initial worker spaces each.
 Bakeries cost 30 wood and 5 planks, processing 2 flour and 0.5 wood into 2 bread.
 Butcher shops cost 25 wood and 5 planks, processing 2 barn-produced meat into
 2 prepared meat. Both goods contribute 1.5 pantry food per unit and can be sold.
+Workshops, bakeries, and butcher shops each have five selectable recipes. Beginners
+can produce the first recipe; recipes 2–5 require 2–5 personal practice in the
+current profession. Only qualified assigned workers unlock selection, and each
+worker must meet the chosen recipe level. Recipes use existing ingredients and
+new outputs participate in storage, hauling, production caps, food, and trading.
+
 Processing expertise increases batch sizes and ingredient consumption together.
 Farming expertise improves a field's yield while retaining its shared cycle limit;
 barns still have one animal-limited production cycle regardless of worker count.

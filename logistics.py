@@ -6,7 +6,7 @@ import progression as economy
 BUFFER_SIZE = 50
 PRODUCTION_KINDS = {'woodcutter', 'farm', 'fishing_hut', 'barn', 'orchard', *economy.RECIPES}
 PRODUCTION_GOODS = tuple(dict.fromkeys(('wood', *economy.CROPS, *economy.EDIBLE,
-                                       *(r[1] for r in economy.RECIPES.values()), 'wool', 'manure', 'herbs')))
+                                       *(r[1] for r in economy.RECIPES.values()), 'wool', 'manure', 'herbs', *economy.CRAFTED_GOODS)))
 
 
 def configure_rules(town, data):
@@ -90,9 +90,11 @@ def collection_inventory(building):
 def requirements(building, villager):
     kind = building['kind']
     if kind in economy.RECIPES:
+        if economy.recipe_requirement(villager, building):
+            return {}
         speed = economy.efficiency(villager, villager['job'])
         speed *= 1.25 if 'saw' in building.get('profession_upgrades', []) else 1
-        return {key: amount * speed for key, amount in economy.RECIPES[kind][0].items()}
+        return {key: amount * speed for key, amount in economy.production_recipe(building)[0].items()}
     if kind == 'barn':
         feed = sum(economy.ANIMALS[a]['feed'] * n for a, n in building.get('animals', {}).items())
         if not feed:
@@ -126,6 +128,11 @@ def supply_request(town, building, villager):
 
 def produce(town, building, villager):
     """Reuse profession recipes against local inputs; outputs never enter town stock."""
+    reason = economy.qualification(villager, villager['job'])
+    if building['kind'] in economy.RECIPES:
+        reason = reason or economy.recipe_requirement(villager, building)
+    if reason:
+        return reason
     inputs = building.get('input_buffer', {})
     needs = requirements(building, villager)
     missing = [k for k, n in needs.items() if inputs.get(k, 0) + 1e-9 < n]

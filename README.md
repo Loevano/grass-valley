@@ -236,9 +236,9 @@ the Python host, refresh both browsers, and create a new world to use the shared
   and current output; workplace selectors show qualifications and output too.
   Basic woodcutting, farming, fishing, and husbandry train anyone. Advanced roles
   require that settler's own practice: sawpit workers need 10 woodcutting,
-  millers 10 farming, preservers 10 fishing, crafters 10 woodworking,
-  fish breeders 20 fishing, orchard workers 20 farming, bakers 10 milling,
-  and butchers 10 husbandry. Another settler or the player's skill cannot qualify them.
+  millers 10 farming, preservers 10 fishing, crafters 2 woodworking,
+  fish breeders 20 fishing, orchard workers 20 farming, bakers 2 milling,
+  and butchers 2 husbandry. Another settler or the player's skill cannot qualify them.
   Existing settlers gain saved talents when loading; unqualified advanced workers
   pause until trained in the prerequisite job.
 - Hall level 4 unlocks bakeries (30 wood + 5 planks) and butcher shops
@@ -248,6 +248,25 @@ the Python host, refresh both browsers, and create a new world to use the shared
   be sold at a market. Processing skill increases batch size and ingredient use
   together. Farmers' skill improves field yields; animals still limit barn output,
   and only one keeper tends a barn each cycle.
+- Workshops, bakeries, and butcher shops offer five recipes, selected in the
+  workplace panel. Level 1 is available to beginners; levels 2–5 require 2–5
+  practice in crafting, baking, or butchery respectively. Unlocks use qualified
+  workers assigned to that workplace. Each worker must meet the selected recipe's
+  level to produce it. Existing workplaces retain their original recipe by default.
+
+  | Recipe level | Workshop | Bakery | Butcher shop |
+  | --- | --- | --- | --- |
+  | 1 | Tools | Bread | Prepared meat |
+  | 2 | Wooden bowls | Bread rolls | Herbed meat |
+  | 3 | Crates | Herb bread | Smoked meat |
+  | 4 | Furniture | Fruit pies | Sausages |
+  | 5 | Carved furniture | Cakes | Meat pies |
+
+  Recipes show ingredient costs in the selector and use existing town resources.
+  New products can be stored, hauled, capped, and sold at the market. Prepared
+  foods supply 1.75–2.5 pantry food per unit at recipe levels 2–5. Storehouse
+  switches include the new crafted goods. Switching recipes releases unused
+  reserved ingredients for collection without losing them.
 - Open **Villagers** for a screen-wide roster with every resident’s details and job
   controls visible together. The roster scrolls when needed and stacks on smaller
   screens. You can also select one villager on the map to assign a job.

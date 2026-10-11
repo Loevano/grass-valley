@@ -1026,14 +1026,33 @@ def command(town, data, world=None):
         economy.spend(town, {'wood': cost})
         building['construction'] = {'progress': 0, 'total': BUILD_SECONDS * level,
                                     'upgrade': {'level': level + 1}}
-    elif action in {'set_crop', 'buy_animal', 'breed_animal', 'profession_upgrade'}:
+    elif action in {'set_crop', 'set_recipe', 'buy_animal', 'breed_animal', 'profession_upgrade'}:
         index = data.get('index')
         if type(index) is not int or not 0 <= index < len(town['buildings']):
             raise ValueError('Choose a building first.')
         building = town['buildings'][index]
         if not completed(building):
             raise ValueError('Finish construction first.')
-        if action == 'set_crop':
+        if action == 'set_recipe':
+            recipes = economy.PROFESSION_RECIPES.get(building['kind'], [])
+            spec = next((r for r in recipes if r['output'] == data.get('recipe')), None)
+            if spec is None:
+                raise ValueError('Choose a matching workplace recipe.')
+            job = economy.BUILDINGS[building['kind']]['job']
+            workers = [v for v in town['villagers'] if v.get('building_index') == index
+                       and v['job'] == job and not economy.qualification(v, job)]
+            if spec['level'] > 1 and not any(v.get(job, 0) >= spec['level'] for v in workers):
+                raise ValueError(f"Requires an assigned worker with level {spec['level']} {job}.")
+            economy.ensure_inventory(town)
+            # Release obsolete reserved ingredients for collection by workers/haulers.
+            for key in list(building.get('input_buffer', {})):
+                if key not in spec['inputs']:
+                    amount = building['input_buffer'].pop(key)
+                    buffer = building.setdefault('output_buffer', {})
+                    buffer[key] = buffer.get(key, 0) + amount
+                    economy.add_stock(town, key, amount)
+            building['recipe'] = spec['output']
+        elif action == 'set_crop':
             crop = data.get('crop')
             if building['kind'] != 'acre' or crop not in economy.CROPS:
                 raise ValueError('Choose an acre and a crop.')
@@ -1079,7 +1098,7 @@ def command(town, data, world=None):
         key, amount = data.get('resource'), data.get('amount')
         if not any(b['kind'] == 'market' and completed(b) for b in town['buildings']):
             raise ValueError('Build a market stall first.')
-        if key not in {*economy.FISH, 'planks', 'wool', 'flour', 'smoked_fish', 'tools', 'herbs', 'fruit', 'milk', 'eggs', 'meat', 'bread', 'prepared_meat'} or type(amount) is not int or not 1 <= amount <= 10:
+        if key not in {*economy.FISH, 'planks', 'wool', 'flour', 'smoked_fish', 'tools', 'herbs', 'fruit', 'milk', 'eggs', 'meat', 'bread', 'prepared_meat', *(r['output'] for recipes in economy.PROFESSION_RECIPES.values() for r in recipes)} or type(amount) is not int or not 1 <= amount <= 10:
             raise ValueError('Choose goods and a quantity from 1 to 10.')
         if not economy.afford(town, {key: amount}):
             raise ValueError('Not enough goods to sell.')
