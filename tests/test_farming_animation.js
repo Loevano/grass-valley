@@ -98,8 +98,8 @@ const crops=new Function('ctx','polygon','point','tileW','tileH',
   '\nreturn drawFarmCrops;'
 )(ctx,(points,color)=>marks.push({method:'polygon',points,color}),
   (x,y)=>[(x-y)*23,(x+y)*11.5],46,23);
-function fieldAt(elapsed){
-  marks.length=0;crops(fields[0],elapsed===null?null:{elapsed});return marks.slice();
+function fieldAt(elapsed,crop='wheat'){
+  marks.length=0;crops({...fields[0],crop},elapsed===null?null:{elapsed});return marks.slice();
 }
 const soil=fieldAt(0),sown=fieldAt(3),growing=fieldAt(5),ripe=fieldAt(6),cut=fieldAt(7);
 assert(!soil.some(mark=>mark.color==='#efd59a'||mark.color==='#8db568'),'Plowing leaves bare furrows');
@@ -110,4 +110,23 @@ const grain=output=>output.filter(mark=>mark.method==='stroke'&&['#d9bd70','#b8b
 assert.strictEqual(grain(ripe).length,16,'Harvest starts with ripe grain');
 assert.strictEqual(grain(cut).length,8,'Harvest gradually cuts the grain');
 assert.strictEqual(grain(fieldAt(null)).length,16,'Unattended fields keep their normal ripe appearance');
+const ripeCrops=['vegetables','wheat','carrots','fodder'].map(crop=>fieldAt(null,crop));
+for(let i=0;i<ripeCrops.length;i++)for(let j=i+1;j<ripeCrops.length;j++){
+  assert.notDeepStrictEqual(ripeCrops[i],ripeCrops[j],'Each crop has distinct ripe artwork');
+}
+assert(ripeCrops[0].some(mark=>mark.method==='polygon'&&mark.color==='#68934e'),'Vegetables have green leafy heads');
+assert(ripeCrops[1].some(mark=>mark.method==='polygon'&&mark.color==='#efd59a'),'Wheat has golden ears');
+assert(ripeCrops[2].some(mark=>mark.method==='polygon'&&mark.color==='#dd9048'),'Carrots show orange roots');
+assert(ripeCrops[3].some(mark=>mark.method==='stroke'&&mark.color==='#72a65c'),'Fodder has green grass tufts');
+assert.deepStrictEqual(fieldAt(null,null),ripeCrops[0],'Fields without a crop use vegetables');
+assert.deepStrictEqual(fieldAt(null,'unknown'),ripeCrops[0],'Unknown crop types fall back to vegetables');
+for(const crop of ['vegetables','carrots','fodder']){
+  assert.deepStrictEqual(fieldAt(0,crop),soil,'Plowing preserves bare soil for every crop');
+  assert.deepStrictEqual(fieldAt(3,crop),sown,'Every crop is planted progressively');
+  assert.notDeepStrictEqual(fieldAt(5,crop),fieldAt(5.25,crop),'Each growing crop moves during tending');
+  const collected=[];
+  crops({...fields[0],crop},{elapsed:7},plant=>collected.push(plant));
+  assert.strictEqual(collected.length,8,'Harvest removes half of each crop at mid-cycle');
+  assert(collected.every(plant=>plant.cropType===crop),'Depth-sorted plants retain their crop identity');
+}
 console.log('Farming animation checks passed');

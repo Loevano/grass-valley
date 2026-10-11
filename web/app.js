@@ -3003,10 +3003,13 @@ function buildingUsable(town,b){
 function drawFarmCrops(b,state,collectCrop=null){
   const elapsed=state?.elapsed ?? 6;
   const stage=Math.min(3,Math.floor(elapsed/2)),progress=(elapsed%2)/2;
+  const cropType=['vegetables','wheat','carrots','fodder'].includes(b.crop)?b.crop:'vegetables';
+  const colors={vegetables:['#68934e','#8eae60'],wheat:['#d9bd70','#b8b458'],
+    carrots:['#dd9048','#efa754'],fodder:['#72a65c','#9bbf70']}[cropType];
   const [x,y]=point(b.x,b.y),scale=tileW/46;
   polygon([[x,y+tileH*.1],[x+tileW*.4,y+tileH*.5],[x,y+tileH*.9],[x-tileW*.4,y+tileH*.5]],'#80764a','#ab9561');
   if(tileW<32){
-    const color=stage===0?'#655638':stage===1?'#80764a':stage===2?'#8db568':'#d9bd70';
+    const color=stage===0?'#655638':stage===1?'#80764a':stage===2?'#8db568':colors[0];
     polygon([[x,y+tileH*.25],[x+tileW*.28,y+tileH*.5],[x,y+tileH*.75],[x-tileW*.28,y+tileH*.5]],color);
     return;
   }
@@ -3026,10 +3029,10 @@ function drawFarmCrops(b,state,collectCrop=null){
       if(stage===0 || (stage===1&&order>=progress*16) || (state&&stage===3&&order<progress*16))continue;
       const x=b.x-.3+row*.2,y=b.y-.3+crop*.2;
       // Characters' feet sit .15 tile heights ahead of a crop's ground anchor.
-      const stalk={kind:'crop',x,y,depth:x+y-.3,stage,
+      const stalk={kind:'crop',cropType,x,y,depth:x+y-.3,stage,
         height:stage===2?2+progress*4:6,
         sway:state?Math.sin(elapsed*4+order):0,
-        color:stage===2?'#8db568':(row+crop)%2?'#d9bd70':'#b8b458'};
+        color:stage===2?'#8db568':colors[(row+crop)%2]};
       if(collectCrop)collectCrop(stalk);else drawFarmCrop(stalk);
     }
   }
@@ -3039,9 +3042,39 @@ function drawFarmCrop(crop){
   if(crop.stage===1){
     ctx.fillStyle='#efd59a';ctx.fillRect(px-scale,py+tileH/2-scale,2*scale,2*scale);
   }else{
+    const base=py+tileH/2,tip=px+crop.sway*scale;
+    const height=crop.height*scale;
+    if(crop.cropType==='vegetables'){
+      polygon([[px,base],[tip-3*scale,base-height*.5],[tip-scale,base-height],
+        [tip+scale,base-height*.65],[tip+3*scale,base-height*.8],[px+2*scale,base]],crop.color);
+      ctx.strokeStyle='#b5cb83';ctx.lineWidth=scale;
+      ctx.beginPath();ctx.moveTo(px,base);ctx.lineTo(tip,base-height*.8);ctx.stroke();
+      return;
+    }
+    if(crop.cropType==='carrots'){
+      if(crop.stage===3)polygon([[px,base+scale],[px-2*scale,base-2*scale],
+        [px+2*scale,base-2*scale]],crop.color);
+      ctx.strokeStyle=crop.stage===2?crop.color:'#63964c';ctx.lineWidth=scale;
+      ctx.beginPath();
+      for(const spread of [-2,0,2]){
+        ctx.moveTo(px,base-2*scale);ctx.lineTo(tip+spread*scale,base-height+(spread===0?-scale:scale));
+      }
+      ctx.stroke();return;
+    }
+    if(crop.cropType==='fodder'){
+      ctx.strokeStyle=crop.color;ctx.lineWidth=scale;ctx.beginPath();
+      for(const spread of [-3,-1,1,3]){
+        ctx.moveTo(px,base);ctx.lineTo(tip+spread*scale,base-height*(Math.abs(spread)===3?.65:1));
+      }
+      ctx.stroke();return;
+    }
     ctx.strokeStyle=crop.color;ctx.lineWidth=2*scale;
     ctx.beginPath();ctx.moveTo(px,py+tileH/2);
     ctx.lineTo(px+crop.sway*scale,py+tileH/2-crop.height*scale);ctx.stroke();
+    if(crop.stage===3){
+      polygon([[tip,base-height-3*scale],[tip+2*scale,base-height-scale],
+        [tip,base-height+scale],[tip-2*scale,base-height-scale]],'#efd59a');
+    }
   }
 }
 function drawRoad(road){
