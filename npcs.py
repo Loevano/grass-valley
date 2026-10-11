@@ -19,8 +19,28 @@ THEMES = {
 }
 
 
-ROSTER_VERSION = 2
-NEW_LOCALS = {'Bram', 'Fern', 'Runa'}
+# Each newcomer has an offer, using the same saved visit progress as older locals.
+ADDITIONAL_THEMES = {
+    'g': [('Pip', 'Valley provisioner', 'A little firewood keeps my bread oven warm. I can share fresh loaves.'),
+          ('Wren', 'Traveling angler', 'Take my spare rod. There are good fishing waters beyond the valley.')],
+    'f': [('Hazel', 'Forest forager', 'I trade woodland berries for firewood.'),
+          ('Alder', 'Forest woodworker', 'My spare axe deserves a home with a hardworking woodcutter.')],
+    'm': [('Poppy', 'Meadow seed keeper', 'A spare sickle is a fine way to start a new field.'),
+          ('Mabel', 'Meadow poultry keeper', 'My hens lay more eggs than I need. Bring wood for their shelter.')],
+    's': [('Dara', 'Dune outfitter', 'Here is a light desert outfit for your travels. Wear it from your character panel.'),
+          ('Kestrel', 'Dune tool trader', 'A sharp axe is useful even far from the forest. I sell steel and masterwork tools.')],
+    'r': [('Orin', 'Ridge provisioner', 'The ridge gets cold at night. I swap vegetables for fuel.'),
+          ('Petra', 'Ridge trail guide', 'Wet trails call for good boots. Take this spare pair for the darkest swamp ground.')],
+    'b': [('Nell', 'Marsh rod maker', 'I craft steel and masterwork fishing rods for a more generous catch.'),
+          ('Willow', 'Marsh fish trader', 'Bring firewood and I will share fresh fish from the marsh.')],
+}
+for biome, people in ADDITIONAL_THEMES.items():
+    THEMES[biome].extend(people)
+
+ROSTER_VERSION = 3
+NEW_LOCALS = {'Bram', 'Fern', 'Runa'} | {
+    name for people in ADDITIONAL_THEMES.values() for name, _, _ in people}
+
 
 
 def ensure_npcs(town, obstacles=()):
@@ -61,15 +81,26 @@ WORKER_TOOLS = {
     'fine_axe': {'name': 'Fine axe', 'job': 'woodcutting', 'bonus': .25},
     'fine_fishing_rod': {'name': 'Fine fishing rod', 'job': 'fishing', 'bonus': .25},
     'fine_sickle': {'name': 'Fine sickle', 'job': 'farming', 'bonus': .25},
+    'steel_fishing_rod': {'name': 'Steel fishing rod', 'job': 'fishing', 'bonus': .5, 'price': 30},
+    'masterwork_fishing_rod': {'name': 'Masterwork fishing rod', 'job': 'fishing', 'bonus': .75, 'price': 60},
     'steel_axe': {'name': 'Steel axe', 'job': 'woodcutting', 'bonus': .5, 'price': 30},
     'masterwork_axe': {'name': 'Masterwork axe', 'job': 'woodcutting', 'bonus': .75, 'price': 60},
     'steel_sickle': {'name': 'Steel sickle', 'job': 'farming', 'bonus': .5, 'price': 30},
     'masterwork_sickle': {'name': 'Masterwork sickle', 'job': 'farming', 'bonus': .75, 'price': 60},
 }
-GIFTS = {'Sylva': 'fine_axe', 'Reed': 'fine_fishing_rod', 'Fern': 'fine_sickle'}
+GIFTS = {'Sylva': 'fine_axe', 'Reed': 'fine_fishing_rod', 'Fern': 'fine_sickle',
+         'Wren': 'fine_fishing_rod', 'Alder': 'fine_axe', 'Poppy': 'fine_sickle',
+         'Dara': 'desert_clothing', 'Petra': 'swamp_boots'}
 TOOL_SHOPS = {'Bram': ('steel_axe', 'masterwork_axe'),
-              'Runa': ('steel_sickle', 'masterwork_sickle')}
-BARTERERS = {'Tobin', 'Clover'}
+              'Runa': ('steel_sickle', 'masterwork_sickle'),
+              'Nell': ('steel_fishing_rod', 'masterwork_fishing_rod'),
+              'Kestrel': ('steel_axe', 'masterwork_axe')}
+BARTERERS = {
+    'Tobin': (10, 'vegetables', 8), 'Clover': (10, 'vegetables', 8),
+    'Pip': (10, 'bread', 5), 'Hazel': (6, 'berries', 5),
+    'Mabel': (8, 'eggs', 6), 'Orin': (10, 'vegetables', 8),
+    'Willow': (8, 'fish', 6),
+}
 TRADE_SECONDS = 300
 
 # Stages are shared with the inspector; progress and rewards belong to each town.
@@ -247,19 +278,22 @@ def change(town, data):
             raise ValueError('This local has no equipment gift.')
         if progress.get('gift_claimed'):
             raise ValueError('You already collected this local’s gift.')
-        tools = player.setdefault('worker_tools', {})
-        tools[key] = tools.get(key, 0) + 1
+        inventory = player.setdefault('worker_tools' if key in WORKER_TOOLS else 'items', {})
+        inventory[key] = inventory.get(key, 0) + 1
         town.setdefault('local_visits', {}).setdefault(visit_key, {})['gift_claimed'] = True
-    else:
+    elif action == 'trade_local':
         if npc['name'] not in BARTERERS:
             raise ValueError('This local does not trade wood for food.')
         if progress.get('trade_remaining', 0) > 0:
             raise ValueError('This local is restocking. Come back later.')
-        if town['wood'] < 10:
-            raise ValueError('This trade needs 10 wood.')
-        if economy.storage_room(town, 'vegetables') < 8:
-            raise ValueError('Make storage room for 8 food first.')
-        economy.spend(town, {'wood': 10})
-        economy.deliver(town, 'vegetables', 8, 0, record=False)
+        wood, item, amount = BARTERERS[npc['name']]
+        if town['wood'] < wood:
+            raise ValueError(f'This trade needs {wood} wood.')
+        if economy.storage_room(town, item) < amount:
+            raise ValueError(f'Make storage room for {amount} {item} first.')
+        economy.spend(town, {'wood': wood})
+        economy.deliver(town, item, amount, economy.storage_limit(town, item), record=False)
         town.setdefault('local_visits', {}).setdefault(visit_key, {})['trade_remaining'] = TRADE_SECONDS
+    else:
+        raise ValueError('Choose a known local action.')
     return {}

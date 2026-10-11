@@ -171,14 +171,17 @@ let movementMap=null;
 const workerTools={
   fine_axe:{name:'Fine axe',job:'woodcutting',bonus:.25},
   fine_fishing_rod:{name:'Fine fishing rod',job:'fishing',bonus:.25},
+  steel_fishing_rod:{name:'Steel fishing rod',job:'fishing',bonus:.5,price:30},
+  masterwork_fishing_rod:{name:'Masterwork fishing rod',job:'fishing',bonus:.75,price:60},
   fine_sickle:{name:'Fine sickle',job:'farming',bonus:.25},
   steel_axe:{name:'Steel axe',job:'woodcutting',bonus:.5,price:30},
   masterwork_axe:{name:'Masterwork axe',job:'woodcutting',bonus:.75,price:60},
   steel_sickle:{name:'Steel sickle',job:'farming',bonus:.5,price:30},
   masterwork_sickle:{name:'Masterwork sickle',job:'farming',bonus:.75,price:60},
 };
-const localToolShops={Bram:['steel_axe','masterwork_axe'],Runa:['steel_sickle','masterwork_sickle']};
-const localGifts={Sylva:'fine_axe',Reed:'fine_fishing_rod',Fern:'fine_sickle'};
+const localToolShops={Bram:['steel_axe','masterwork_axe'],Runa:['steel_sickle','masterwork_sickle'],Nell:['steel_fishing_rod','masterwork_fishing_rod'],Kestrel:['steel_axe','masterwork_axe']};
+const localGifts={Sylva:'fine_axe',Reed:'fine_fishing_rod',Fern:'fine_sickle',Wren:'fine_fishing_rod',Alder:'fine_axe',Poppy:'fine_sickle',Dara:'desert_clothing',Petra:'swamp_boots'};
+const localBarters={Tobin:[10,'vegetables',8],Clover:[10,'vegetables',8],Pip:[10,'bread',5],Hazel:[6,'berries',5],Mabel:[8,'eggs',6],Orin:[10,'vegetables',8],Willow:[8,'fish',6]};
 function localVisitKey(npc){return `${npc.name}:${npc.x}:${npc.y}`;}
 function localStoryProgress(town,name){
   const npc=(world.shared_map?.npcs || town.npcs || []).find(n=>n.name===name);
@@ -450,15 +453,16 @@ function resourceStorage(town,key){
   const group=key in foodGoods()?'food':key;
   return town.buildings.filter(b=>!b.construction&&(key==='food'?buildingStorageKeys(b).includes('food'):buildingStorageGoods(b).includes(key))).reduce((sum,b)=>sum+(roomAllocations(b)[group] || 0),0);
 }
-function localTradeFoodRoom(town){
-  if(town.inventory_version!==1)return Math.max(0,resourceStorage(town,'vegetables')-amountOf(town,'food'));
+function localTradeFoodRoom(town,key='vegetables'){
+  const value=foodGoods()[key] || 1;
+  if(town.inventory_version!==1)return Math.max(0,resourceStorage(town,key)-amountOf(town,'food'))/value;
   const edible=foodGoods();
-  return town.buildings.filter(b=>!b.construction&&buildingStorageGoods(b).includes('vegetables')).reduce((sum,b)=>{
+  return town.buildings.filter(b=>!b.construction&&buildingStorageGoods(b).includes(key)).reduce((sum,b)=>{
     const stock={...b.stored_goods};
     for(const [key,n] of Object.entries(b.output_buffer || {}))stock[key]=(stock[key] || 0)+n;
     const used=Object.entries(stock).reduce((n,[key,count])=>n+(key==='food'||key in edible?count*(edible[key] || 1):0),0);
     const room=Math.max(0,(roomAllocations(b).food || 0)-used);
-    return sum+(b.kind==='storehouse'?room:Math.min(room,Math.max(0,buildingStorageSize(b)-Object.values(stock).reduce((n,count)=>n+count,0))));
+    return sum+(b.kind==='storehouse'?room/value:Math.min(room/value,Math.max(0,buildingStorageSize(b)-Object.values(stock).reduce((n,count)=>n+count,0))));
   },0);
 }
 function roomEnabled(building){
@@ -754,6 +758,8 @@ const iconPaths = {
   fine_sickle:'<path stroke="#94704c" stroke-width="4" d="M11 29V17"/><path fill="#bacac5" d="M11 18Q2 8 12 3q13-4 17 12Q19 4 11 9q-5 4 0 9z"/>',
   steel_sickle:'<path stroke="#94704c" stroke-width="4" d="M11 29V17"/><path fill="#dce8ed" d="M11 18Q2 8 12 3q13-4 17 12Q19 4 11 9q-5 4 0 9z"/>',
   masterwork_sickle:'<path stroke="#94704c" stroke-width="4" d="M11 29V17"/><path fill="#d9bd70" d="M11 18Q2 8 12 3q13-4 17 12Q19 4 11 9q-5 4 0 9z"/>',
+  steel_fishing_rod:'<path stroke="#bacac5" stroke-width="3" d="M5 29 18 4"/><path d="m18 4 9 3v15q0 6-5 3v-3"/>',
+  masterwork_fishing_rod:'<path stroke="#d9bd70" stroke-width="3" d="M5 29 18 4"/><path d="m18 4 9 3v15q0 6-5 3v-3"/>',
   fine_fishing_rod:'<path stroke="#94704c" stroke-width="3" d="M5 29 18 4"/><path d="m18 4 9 3v15q0 6-5 3v-3"/>',
   swamp_boots:'<path fill="#94704c" d="M4 4h9v16l4 3v5H3v-8zm14 0h9v16l4 3v5H17v-8z"/><path d="M4 10h9m5 0h9M3 25h14m0 0h14"/>',
   desert_clothing:'<path fill="#d6c478" d="m10 4-8 7 4 7 5-3-2 14h14l-2-14 5 3 4-7-8-7-6 3z"/><path d="m10 4 6 9 6-9M10 22h12m-6-9v16"/>',
@@ -1276,9 +1282,9 @@ function renderSelection(town){
         const progress=own.local_visits?.[localVisitKey(item)] || {},gift=localGifts[item.name];
         renderLocalStory(own,item,selection.index,nearby,$('selection-details'));
         if(gift){
-          const gear=workerTools[gift],note=document.createElement('p');
-          note.textContent=`Gift for a worker · +${gear.bonus*100}% ${gear.job} output`;$('selection-details').append(note);
-          const button=document.createElement('button');button.textContent=progress.gift_claimed?`${gear.name} gift collected`:`Accept ${gear.name.toLowerCase()} · Gift for a worker`;
+          const gear=workerTools[gift] || equipmentItems[gift],note=document.createElement('p');
+          note.textContent=workerTools[gift]?`Gift for a worker · +${gear.bonus*100}% ${gear.job} output`:'Free clothing · Equip from your character panel';$('selection-details').append(note);
+          const button=document.createElement('button');button.textContent=progress.gift_claimed?`${gear.name} gift collected`:`Accept ${gear.name.toLowerCase()} · ${workerTools[gift]?'Gift for a worker':'Clothing gift'}`;
           button.disabled=!nearby||!!progress.gift_claimed;button.onclick=()=>act({action:'claim_local_gift',npc_index:selection.index});$('selection-details').append(button);
         }
         for(const key of localToolShops[item.name] || []){
@@ -1287,11 +1293,12 @@ function renderSelection(town){
           button.disabled=!nearby||own.coins<gear.price;
           button.onclick=()=>act({action:'buy_worker_tool',item:key,npc_index:selection.index});$('selection-details').append(button);
         }
-        if(['Tobin','Clover'].includes(item.name)){
-          const note=document.createElement('p');note.textContent='“I could use some firewood. Bring me 10 wood and I’ll share 8 food. I restock every five minutes.”';$('selection-details').append(note);
+        if(localBarters[item.name]){
+          const [wood,good,amount]=localBarters[item.name],label=good==='vegetables'?'food':goodName(good).toLowerCase();
+          const note=document.createElement('p');note.textContent=`“Bring me ${wood} wood and I’ll share ${amount} ${label}. I restock every five minutes.”`;$('selection-details').append(note);
           const remaining=progress.trade_remaining || 0,button=document.createElement('button');
-          button.textContent=remaining>0?`Restocking · ${Math.ceil(remaining/60)} min remaining`:'Trade 10 wood for 8 food';
-          button.disabled=!nearby||remaining>0||own.wood<10||localTradeFoodRoom(own)<8;
+          button.textContent=remaining>0?`Restocking · ${Math.ceil(remaining/60)} min remaining`:`Trade ${wood} wood for ${amount} ${label}`;
+          button.disabled=!nearby||remaining>0||own.wood<wood||localTradeFoodRoom(own,good)<amount;
           button.onclick=()=>act({action:'trade_local',npc_index:selection.index});$('selection-details').append(button);
         }
       }

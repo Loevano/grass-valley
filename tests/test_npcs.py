@@ -21,7 +21,7 @@ class BiomeLocals(unittest.TestCase):
             self.assertTrue(npc['name'] and npc['role'] and npc['dialogue'])
             positions.add(tile)
         self.assertEqual({n['role'] for n in town['npcs'] if n['biome'] == 'b'},
-                         {'Swamp herbalist', 'Marsh fisher'})
+                         {'Swamp herbalist', 'Marsh fisher', 'Marsh rod maker', 'Marsh fish trader'})
 
     def test_spawns_are_saved_deterministic_and_migrate_without_changing_town(self):
         town = new_town('Saved')

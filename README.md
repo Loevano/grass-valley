@@ -93,6 +93,14 @@ the Python host, refresh both browsers, and create a new world to use the shared
   the harvest toolsmith sells steel and masterwork sickles. Steel tools cost 30
   coins and add 50% output; masterwork tools cost 60 coins and add 75%. Each
   villager carries one tool, and its bonus only applies to the matching job.
+  Twelve more locals now live across the six biomes: Pip and Wren, Hazel and
+  Alder, Poppy and Mabel, Dara and Kestrel, Orin and Petra, Nell and Willow.
+  Wren, Alder, and Poppy give spare worker tools; Dara gives desert clothing and
+  Petra gives swamp boots. Nell sells steel/masterwork fishing rods with
+  +50%/+75% fishing output, and Kestrel sells upgraded axes. Pip, Hazel, Mabel,
+  Orin, and Willow trade firewood for bread, berries, eggs, vegetables, and fish.
+  Their panels show exact costs; trades need storage and restock every five
+  minutes. Gifts are once per town and clothing appears in your character inventory.
   Existing saves gain these new locals without moving the original ones.
   Matching workers appear first in the item picker. Select a recipient
   and **Transfer tool** to move an assigned tool directly, or take it back into inventory.
