@@ -68,6 +68,30 @@ const run=new Function('document','window','localStorage','setTimeout','clearTim
     delete worker.worker_tool;target.replaceChildren();renderWorkerTools(town,worker,2,target);
     assert(target.children.length===0,'Visitors cannot give tools');
 
+    town.villagers=[{name:'Ada',job:'woodcutting'},{name:'Reed',job:'fishing',worker_tool:'fine_fishing_rod'}];
+    // The inventory belongs to the owner even when the camera is visiting another town.
+    renderItems(town);
+    const toolCards=$('items-list').children[0].children.slice(2);
+    const axe=toolCards[0],choose=axe.children[1],giveAxe=axe.children[2];
+    assert(axe.children[0].textContent==='Fine axe · 1 available');
+    assert(!choose.disabled&&giveAxe.disabled,'Giving requires an explicit recipient');
+    assert.deepStrictEqual(choose.children.map(c=>c.textContent),['Choose a villager','Ada · Woodcutting'],'Workers already carrying tools are excluded');
+    choose.value='0';choose.onchange();assert(!giveAxe.disabled);giveAxe.onclick();
+    assert.deepStrictEqual(sent.pop(),{action:'give_worker_tool',item:'fine_axe',index:0});
+    const rod=toolCards[1];rod.children[1].children[0].onclick();
+    assert.deepStrictEqual(sent.pop(),{action:'take_worker_tool',index:1});
+    assert(rod.children[2].disabled,'Unavailable tools cannot be assigned');
+    const clothing=$('items-list').children[1];
+    clothing.children[2].children[0].onclick();
+    assert.deepStrictEqual(sent.pop(),{action:'unequip_item',item:'swamp_boots'});
+    assert(clothing.children[3].children[0].disabled,'Unowned clothing cannot be equipped');
+    town.player.worker_tools.fine_axe=0;town.villagers[0].worker_tool='fine_axe';renderItems(town);
+    assert($('items-list').children[0].children[2].children[0].textContent==='Fine axe · 0 available','Refresh reflects assigned inventory');
+    assert($('items-list').children[0].children[2].children[2].disabled,'All equipped villagers leaves no recipients');
+    town.villagers=[];renderItems(town);
+    assert($('items-list').children[0].children[2].children[1].children[0].textContent==='No villagers yet');
+    renderItems(null);assert($('items-list').children.length===0,'Leaving a world clears item inventory');
+
 `);
 run(documentMock,{devicePixelRatio:1,addEventListener(){}},{getItem:()=>null},()=>0,()=>{},assert);
 console.log('Equipment control checks passed');

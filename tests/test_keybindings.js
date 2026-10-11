@@ -123,15 +123,15 @@ function session(saved=null){
   check(oldCustom.state.bindings.build==='b','Older settings receive the default build binding');
   const occupiedBuildKey=session(JSON.stringify({keybindings:{up:'b',left:'a',down:'s',right:'d',camera:'y'}}));
   check(occupiedBuildKey.state.bindings.up==='b'&&occupiedBuildKey.state.bindings.build!=='b','Existing custom bindings keep their keys when adding building mode');
-  const toolbar=read('web/index.html').match(/<button id="(?:world-menu|build|villagers|resources|valley|help)-button"[^>]*>/g);
-  check(toolbar.length===6,'Toolbar exposes all six numbered menus');
+  const toolbar=read('web/index.html').match(/<button id="(?:world-menu|build|villagers|resources|items|valley|help)-button"[^>]*>/g);
+  check(toolbar.length===7,'Toolbar exposes all seven numbered menus');
   toolbar.forEach((button,index)=>check(button.includes(`aria-keyshortcuts="${index+1}"`)&&button.includes(`(${index+1})`),'Menu tooltip and accessible shortcut follow toolbar order'));
   const windows=session();
   windows.key('w');windows.key('2');
   check(windows.state.panel==='build'&&windows.state.held.length===0,'2 opens Build and releases movement');
   windows.state.place();windows.key('2');
   check(windows.state.panel===null&&windows.state.tool===null&&!windows.state.placement,'2 closes Build and cancels placement');
-  for(const [number,name] of [['3','villagers'],['5','valley'],['6','help']]){
+  for(const [number,name] of [['3','villagers'],['5','items'],['6','valley'],['7','help']]){
     windows.key(number);check(windows.state.panel===name,number+' opens '+name);
     windows.key(number,{repeat:true});windows.key(number,{ctrlKey:true});windows.key(number,{metaKey:true});windows.key(number,{altKey:true});windows.key(number,{shiftKey:true});
     check(windows.state.panel===name,'Held or modified number shortcuts do not toggle panels');
@@ -145,7 +145,7 @@ function session(saved=null){
   check(windows.state.panel==='villagers','Window shortcuts work with a focused button');
   windows.document.activeElement=null;
   for(const id of ['settings-panel','world-menu','delete-world-dialog']){
-    windows.document.getElementById(id).open=true;windows.key('6');
+    windows.document.getElementById(id).open=true;windows.key('7');
     check(windows.state.panel==='villagers','Dialogs block number shortcuts');
     windows.document.getElementById(id).open=false;
   }
@@ -164,7 +164,7 @@ function session(saved=null){
   check(new Set(resources.map(row=>row.children[1].textContent)).size===22,'Each resource appears in exactly one section');
   windows.key('4');check(windows.state.panel===null,'4 closes Resources');
   windows.key('3');
-  for(const number of ['7','8','9'])windows.key(number);
+  for(const number of ['8','9'])windows.key(number);
   check(windows.state.panel==='villagers','Reserved future shortcuts do not change the current panel');
   windows.key('1');check(windows.document.getElementById('world-menu').open,'1 opens Worlds');
   windows.rebind('up','1');windows.rebind('up','9');

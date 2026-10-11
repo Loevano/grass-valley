@@ -570,6 +570,40 @@ function renderResourceList(town){
 function materialCosts(spec){return Object.fromEntries(Object.entries(spec).filter(([k])=>['wood','coins','planks','wool','tools'].includes(k)));}
 function canAfford(town,cost){return Object.entries(cost).every(([k,v])=>amountOf(town,k)>=v);}
 function costText(cost){return Object.entries(cost).map(([k,v])=>`${v} ${goodName(k).toLowerCase()}`).join(' + ');}
+function renderItems(town){
+  const target=$('items-list');target.replaceChildren();
+  if(!town)return;
+  const tools=document.createElement('div');tools.className='resource-group';
+  const heading=document.createElement('h3');heading.textContent='Villager tools';tools.append(heading);
+  const hint=document.createElement('p');hint.className='muted';hint.textContent='Collect a fine axe from Sylva or a fine fishing rod from Reed. Each villager can carry one tool; its matching job gains 25% output.';tools.append(hint);
+  for(const [key,gear] of Object.entries(workerTools)){
+    const available=town.player?.worker_tools?.[key] || 0;
+    const row=document.createElement('div');row.className='item-card';
+    const name=document.createElement('strong');name.textContent=`${gear.name} · ${available} available`;row.append(name);
+    for(const [index,v] of town.villagers.entries())if(v.worker_tool===key){
+      const assigned=document.createElement('p');assigned.textContent=`Carried by ${v.name}`;
+      const take=document.createElement('button');take.textContent='Take back tool';take.setAttribute('aria-label',`Take ${gear.name.toLowerCase()} back from ${v.name}`);take.onclick=()=>act({action:'take_worker_tool',index});assigned.append(take);row.append(assigned);
+    }
+    const eligible=town.villagers.map((v,index)=>({v,index})).filter(({v})=>!v.worker_tool);
+    const select=document.createElement('select');select.setAttribute('aria-label',`Villager to receive ${gear.name.toLowerCase()}`);
+    const placeholder=document.createElement('option');placeholder.value='';placeholder.textContent=eligible.length?'Choose a villager':town.villagers.length?'All villagers have a tool':'No villagers yet';select.append(placeholder);select.value='';
+    for(const {v,index} of eligible){const option=document.createElement('option');option.value=String(index);option.textContent=`${v.name} · ${goodName(v.job)}`;select.append(option);}
+    select.disabled=available<1||!eligible.length;row.append(select);
+    const give=document.createElement('button');give.textContent=`Give ${gear.name.toLowerCase()}`;give.disabled=true;
+    select.onchange=()=>{give.disabled=select.disabled||select.value==='';};
+    give.onclick=()=>{if(!give.disabled)act({action:'give_worker_tool',item:key,index:Number(select.value)});};row.append(give);tools.append(row);
+  }
+  target.append(tools);
+  const clothing=document.createElement('div');clothing.className='resource-group';
+  const title=document.createElement('h3');title.textContent='Your equipment';clothing.append(title);
+  const note=document.createElement('p');note.className='muted';note.textContent='Clothing and boots are worn by your adventuring character. Find them in treasure or buy them from a nearby local.';clothing.append(note);
+  for(const [key,item] of Object.entries(equipmentItems)){
+    const count=town.player?.items?.[key] || 0,equipped=town.player?.equipment?.[item.slot]===key;
+    const row=document.createElement('p');row.textContent=`${item.name} · ${count} owned${equipped?' · Equipped':''}`;
+    const button=document.createElement('button');button.textContent=equipped?`Unequip ${item.name.toLowerCase()}`:`Equip ${item.name.toLowerCase()}`;button.disabled=count<1;button.onclick=()=>act({action:equipped?'unequip_item':'equip_item',item:key});row.append(button);clothing.append(row);
+  }
+  target.append(clothing);
+}
 function professionSkill(town,job){return Math.max(town.player?.[job] || 0,...town.villagers.map(v=>v[job] || 0));}
 function jobRequirement(v,job){
   return Object.entries(world.progression?.job_requirements?.[job] || {})
@@ -699,7 +733,7 @@ function openPanel(next){
   panel=next;selection=null;tool=null;moveIndex=null;buildTile=null;hoverTile=null;
   render();
 }
-for(const name of ['build','villagers','valley','help','resources']){
+for(const name of ['build','villagers','valley','help','resources','items']){
   $(name+'-button').onclick=()=>openPanel(panel===name?null:name);
 }
 function updateSettingsButton(){
@@ -725,7 +759,7 @@ window.addEventListener('keydown',event=>{
   if(/^[1-9]$/.test(key)&&!event.ctrlKey&&!event.metaKey&&!event.altKey&&!event.shiftKey){
     if(!event.repeat&&!$('settings-panel').open&&!$('world-menu').open&&!$('delete-world-dialog').open && !$('upgrade-dialog').open
       &&!document.activeElement?.isContentEditable&&!['INPUT','TEXTAREA','SELECT'].includes(document.activeElement?.tagName)){
-      const name=['world-menu','build','villagers','resources','valley','help'][Number(key)-1];
+      const name=['world-menu','build','villagers','resources','items','valley','help'][Number(key)-1];
       if(name&&!$(name+'-button').disabled){
         event.preventDefault();clearWalk();$(name+'-button').onclick();
         if(name!=='world-menu')canvas.focus();
@@ -1346,17 +1380,19 @@ function render(){
   renderSelection(town);
   $('join').hidden=!!own || !world.world_id || !!panel;
   $('controls').hidden=panel!=='build' || !own || viewed!==identity?.town_id;
-  for(const name of ['selection','villagers','valley','help','resources'])$(name+'-panel').hidden=panel!==name;
+  for(const name of ['selection','villagers','valley','help','resources','items'])$(name+'-panel').hidden=panel!==name;
   $('side-panel').hidden=!panel && $('join').hidden;
   $('side-panel').classList.toggle('villagers-overview',panel==='villagers');
   $('game').classList.toggle('panel-open',!$('side-panel').hidden);
-  for(const name of ['build','villagers','valley','help','resources']){
+  for(const name of ['build','villagers','valley','help','resources','items']){
     $(name+'-button').setAttribute('aria-expanded',String(panel===name));
     $(name+'-button').classList.toggle('selected',panel===name);
   }
   $('build-button').disabled=!own || (!world.shared_map && viewed!==identity?.town_id);
   $('villagers-button').disabled=!town;
   $('resources-button').disabled=!own;
+  $('items-button').disabled=!own;
+  if(panel==='items')renderItems(own);
   if(panel==='resources')renderResourceList(own);
   $('move').textContent=own?.coins?'Move a building · 1 coin':'Move a building · Free';
   $('mode-hint').textContent=tool==='move'?(moveIndex===null?'Moving: click a building. Escape to cancel.':'Moving: click open grass to move here. Escape to cancel.'):tool?`Building ${labels[tool].toLowerCase()}: hover over open grass and left-click to build. Escape to cancel.`:'Click a building, villager, or resource to learn more.';
