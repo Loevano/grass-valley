@@ -2,11 +2,12 @@
 const fs=require('fs'),assert=require('assert');
 const source=fs.readFileSync('web/app.js','utf8');
 const WorkerAnimation=require('../web/animations.js');
-const elements=new Map(),surfaces=[],fills=[],images=[],copies=[];
+const elements=new Map(),surfaces=[],fills=[],images=[],copies=[],texts=[];
 function element(){return {children:[],style:{},classList:{toggle(){}},append(...c){this.children.push(...c);},replaceChildren(){this.children=[];},setAttribute(){},addEventListener(){}};}
 function context(surface,offscreen){
   return new Proxy({canvas:surface,fill(){if(offscreen){surface.paints++;(surface.fills ||= []).push(this.fillStyle);}else fills.push(this.fillStyle);},
-    drawImage(...args){if(offscreen)copies.push({args,operation:this.globalCompositeOperation});else images.push(args);}}, {get:(target,key)=>key in target?target[key]:()=>{}});
+    drawImage(...args){if(offscreen)copies.push({args,operation:this.globalCompositeOperation});else images.push(args);},
+    fillText(text){if(!offscreen)texts.push(text);}}, {get:(target,key)=>key in target?target[key]:()=>{}});
 }
 const documentMock={getElementById(id){if(!elements.has(id))elements.set(id,element());return elements.get(id);},
   createElement(tag){if(tag!=='canvas')return element();const surface={paints:0};surface.getContext=()=>surface.ctx ||= context(surface,true);surfaces.push(surface);return surface;},querySelectorAll:()=>[]};
@@ -14,7 +15,7 @@ const canvas=documentMock.getElementById('world');canvas.getContext=()=>context(
 let width=960,height=660,now=0;
 canvas.getBoundingClientRect=()=>({left:0,top:0,width,height});
 const windowMock={devicePixelRatio:2,addEventListener(){}};
-const run=new Function('document','window','localStorage','setTimeout','clearTimeout','WorkerAnimation','assert','surfaces','fills','images','copies','resize','performance','advanceTime',
+const run=new Function('document','window','localStorage','setTimeout','clearTimeout','WorkerAnimation','assert','surfaces','fills','images','copies','resize','performance','advanceTime','texts',
   source.slice(0,source.lastIndexOf('requestAnimationFrame(animate);'))+`
   const town={map_size:120,terrain:Array(120).fill('g'.repeat(120)),map_resources:[{kind:'tree',x:31,y:31}],
     buildings:[{kind:'hall',x:30,y:30}],villagers:[{name:'Ada',job:'idle'}],food:40,wood:40,level:1};
@@ -202,6 +203,20 @@ const run=new Function('document','window','localStorage','setTimeout','clearTim
   assert(!groundCache.surface.fills.includes('#3f6045'),'Removed woodland leaves no stale canopy');
   drawResource=originalDrawResource;
 
+  const labelTown={name:'Neighbor',level:1,map_size:120,terrain:Array(120).fill('g'.repeat(120)),
+    buildings:[{kind:'hall',x:30,y:30}],villagers:[],map_resources:[],player:{x:31,y:30}};
+  world={world_id:'labels',shared_map:{terrain:labelTown.terrain,map_size:120,map_resources:[]},towns:{friend:labelTown}};
+  viewed='friend';identity=null;cameraTown='labels/shared';camera={x:30,y:30,zoom:.35};
+  playerSprite=()=>null;drawVillager=()=>{};remotePlayerSprite=(id,t)=>({...t.player,kind:'player',townId:id});
+  texts.length=0;draw();
+  assert(!texts.includes('Neighbor'),'Distant halls and founders omit automatic labels');
+  selection={type:'player',townId:'friend',index:0};texts.length=0;draw();
+  assert(texts.includes('Neighbor'),'Selected distant founders retain their label');
+  selection={type:'building',index:0};texts.length=0;draw();
+  assert(texts.some(text=>text.includes('Level 1')),'Selected distant halls retain their details');
+  selection=null;camera.zoom=1;texts.length=0;draw();
+  assert.equal(texts.filter(text=>text==='Neighbor').length,2,'Close zoom restores hall and founder labels');
+
 `);
-run(documentMock,windowMock,{getItem:()=>null},()=>0,()=>{},WorkerAnimation,assert,surfaces,fills,images,copies,()=>{width=720;height=500;},{now:()=>now},ms=>{now+=ms;});
+run(documentMock,windowMock,{getItem:()=>null},()=>0,()=>{},WorkerAnimation,assert,surfaces,fills,images,copies,()=>{width=720;height=500;},{now:()=>now},ms=>{now+=ms;},texts);
 console.log('Render cache checks passed');

@@ -2060,6 +2060,23 @@ function visibleResourceObjects(data,rect){
   data.visible={originX,originY,tileW,width:rect.width,height:rect.height,objects};
   return objects;
 }
+function mergeDepthObjects(before,resources,after){
+  const depth=object=>object.depth ?? object.x+object.y;
+  // Resources are already sorted in the spatial cache. Only sort the smaller
+  // live lists, then merge in linear time, preserving snapshot order on ties.
+  before.sort((a,b)=>depth(a)-depth(b));
+  after.sort((a,b)=>depth(a)-depth(b));
+  const lists=[before,resources,after],positions=[0,0,0],objects=[];
+  while(true){
+    let next=-1;
+    for(let i=0;i<lists.length;i++){
+      if(positions[i]>=lists[i].length)continue;
+      if(next<0 || depth(lists[i][positions[i]])<depth(lists[next][positions[next]]))next=i;
+    }
+    if(next<0)return objects;
+    objects.push(lists[next][positions[next]++]);
+  }
+}
 function paintGround(target,landscape,water,bounds,offsetX=0,offsetY=0,region=null,pixelRatio=window.devicePixelRatio||1,forest=null){
   const ctx=target,terrainSize=landscape?.map_size || 12;
   const detailed=tileW>=32;
@@ -2329,11 +2346,13 @@ function draw(seconds=0){
     drawFarmCrops(field,farmer?.state,crop=>cropObjects.push(crop));
   }
   const otherPlayers=world.shared_map?entries.filter(([id,t])=>t.player&&id!==hero?.townId).map(([id,t])=>remotePlayerSprite(id,t,seconds)):[];
-  const objects=[...buildings,...cropObjects,...visibleResourceObjects(resourceData,rect),...villagers,...npcSprites(world.shared_map || town,seconds),...otherPlayers,...(hero?[hero]:[])].filter(b=>{
+  const visible=b=>{
     const [px,py]=point(b.x,b.y);
     return px>=-tileW&&px<=rect.width+tileW&&py>=-tileH&&py<=rect.height+80*tileW/46;
-  });
-  for(const b of objects.sort((a,b)=>(a.depth ?? a.x+a.y)-(b.depth ?? b.x+b.y))){
+  };
+  const objects=mergeDepthObjects([...buildings,...cropObjects].filter(visible),visibleResourceObjects(resourceData,rect),
+    [...villagers,...npcSprites(world.shared_map || town,seconds),...otherPlayers,...(hero?[hero]:[])].filter(visible));
+  for(const b of objects){
     const [px,py]=point(b.x,b.y),scale=tileW/46;
     if(px < -tileW || px > rect.width+tileW || py < -tileH || py > rect.height+80*scale)continue;
     if(b.kind==='crop'){drawFarmCrop(b);continue;}
@@ -2344,8 +2363,10 @@ function draw(seconds=0){
       }
       ctx.strokeStyle='#ffe8a0';ctx.lineWidth=2;ctx.beginPath();ctx.ellipse(px,baseY,10*scale,5*scale,0,0,Math.PI*2);ctx.stroke();
       drawVillager(b);
-      ctx.fillStyle='#fff0b1';ctx.font=`bold ${12*scale}px sans-serif`;ctx.textAlign='center';
-      ctx.fillText(b.townId===identity?.town_id?'You':world.towns[b.townId]?.name || 'Founder',px,baseY-31*scale);
+      if(tileW>=32 || b.townId===identity?.town_id || selection?.type==='player'&&selection.townId===b.townId){
+        ctx.fillStyle='#fff0b1';ctx.font=`bold ${12*scale}px sans-serif`;ctx.textAlign='center';
+        ctx.fillText(b.townId===identity?.town_id?'You':world.towns[b.townId]?.name || 'Founder',px,baseY-31*scale);
+      }
       hitTargets.push({type:'player',index:0,townId:b.townId,left:px-10*scale,right:px+10*scale,top:baseY-27*scale,bottom:baseY+5*scale});
       continue;
     }
@@ -2371,7 +2392,7 @@ function draw(seconds=0){
     if(b.kind==='acre'&&!b.construction)continue;
     const worker=villagers.find(v=>v.active&&v.state.phase==='working'&&v.state.source?.x===b.x&&v.state.source?.y===b.y);
     drawBuilding(b,world.towns[b.townId] || town,worker?.state);
-    if(world.shared_map && b.kind==='hall'){ctx.fillStyle='#fff0b1';ctx.font=`bold ${12*scale}px sans-serif`;ctx.textAlign='center';ctx.fillText(world.towns[b.townId].name,px,py-(buildingHeight(b,owner)+38)*scale);}
+    if(world.shared_map && b.kind==='hall' && tileW>=32){ctx.fillStyle='#fff0b1';ctx.font=`bold ${12*scale}px sans-serif`;ctx.textAlign='center';ctx.fillText(world.towns[b.townId].name,px,py-(buildingHeight(b,owner)+38)*scale);}
   }
   drawBuildingEffects(seconds);
   const hover=buildingHover || (selection?.type==='building'?{index:selection.index,townId:viewed}:null);
