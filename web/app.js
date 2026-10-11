@@ -570,19 +570,29 @@ function renderResourceList(town){
 function materialCosts(spec){return Object.fromEntries(Object.entries(spec).filter(([k])=>['wood','coins','planks','wool','tools'].includes(k)));}
 function canAfford(town,cost){return Object.entries(cost).every(([k,v])=>amountOf(town,k)>=v);}
 function costText(cost){return Object.entries(cost).map(([k,v])=>`${v} ${goodName(k).toLowerCase()}`).join(' + ');}
+function itemCard(key,name,stats,quantity){
+  const card=document.createElement('div');card.className='item-card';
+  const header=document.createElement('div');header.className='item-heading';header.append(illustration(key));
+  const details=document.createElement('div');
+  const title=document.createElement('strong');title.textContent=name;details.append(title);
+  const effect=document.createElement('small');effect.className='item-stats';effect.textContent=stats;details.append(effect);
+  const count=document.createElement('small');count.className='item-quantity';count.textContent=quantity;details.append(count);
+  header.append(details);card.append(header);return card;
+}
 function renderItems(town){
   const target=$('items-list');target.replaceChildren();
   if(!town)return;
   const tools=document.createElement('div');tools.className='resource-group';
   const heading=document.createElement('h3');heading.textContent='Villager tools';tools.append(heading);
-  const hint=document.createElement('p');hint.className='muted';hint.textContent='Collect a fine axe from Sylva or a fine fishing rod from Reed. Each villager can carry one tool; its matching job gains 25% output.';tools.append(hint);
+  const hint=document.createElement('p');hint.className='muted';hint.textContent='One tool per villager. Take it back to reassign it.';tools.append(hint);
   for(const [key,gear] of Object.entries(workerTools)){
     const available=town.player?.worker_tools?.[key] || 0;
-    const row=document.createElement('div');row.className='item-card';
-    const name=document.createElement('strong');name.textContent=`${gear.name} · ${available} available`;row.append(name);
-    for(const [index,v] of town.villagers.entries())if(v.worker_tool===key){
-      const assigned=document.createElement('p');assigned.textContent=`Carried by ${v.name}`;
-      const take=document.createElement('button');take.textContent='Take back tool';take.setAttribute('aria-label',`Take ${gear.name.toLowerCase()} back from ${v.name}`);take.onclick=()=>act({action:'take_worker_tool',index});assigned.append(take);row.append(assigned);
+    const assigned=town.villagers.map((v,index)=>({v,index})).filter(({v})=>v.worker_tool===key);
+    if(available<1&&!assigned.length)continue;
+    const row=itemCard(key,gear.name,`+25% ${gear.job} output`,`${available} available · ${assigned.length} assigned`);
+    for(const {v,index} of assigned){
+      const carrier=document.createElement('p');carrier.textContent=`Carried by ${v.name}`;
+      const take=document.createElement('button');take.textContent='Take back tool';take.setAttribute('aria-label',`Take ${gear.name.toLowerCase()} back from ${v.name}`);take.onclick=()=>act({action:'take_worker_tool',index});carrier.append(take);row.append(carrier);
     }
     const eligible=town.villagers.map((v,index)=>({v,index})).filter(({v})=>!v.worker_tool);
     const select=document.createElement('select');select.setAttribute('aria-label',`Villager to receive ${gear.name.toLowerCase()}`);
@@ -593,16 +603,18 @@ function renderItems(town){
     select.onchange=()=>{give.disabled=select.disabled||select.value==='';};
     give.onclick=()=>{if(!give.disabled)act({action:'give_worker_tool',item:key,index:Number(select.value)});};row.append(give);tools.append(row);
   }
-  target.append(tools);
+  if(tools.children.length>2)target.append(tools);
   const clothing=document.createElement('div');clothing.className='resource-group';
   const title=document.createElement('h3');title.textContent='Your equipment';clothing.append(title);
-  const note=document.createElement('p');note.className='muted';note.textContent='Clothing and boots are worn by your adventuring character. Find them in treasure or buy them from a nearby local.';clothing.append(note);
   for(const [key,item] of Object.entries(equipmentItems)){
     const count=town.player?.items?.[key] || 0,equipped=town.player?.equipment?.[item.slot]===key;
-    const row=document.createElement('p');row.textContent=`${item.name} · ${count} owned${equipped?' · Equipped':''}`;
-    const button=document.createElement('button');button.textContent=equipped?`Unequip ${item.name.toLowerCase()}`:`Equip ${item.name.toLowerCase()}`;button.disabled=count<1;button.onclick=()=>act({action:equipped?'unequip_item':'equip_item',item:key});row.append(button);clothing.append(row);
+    if(count<1)continue;
+    const stats=key==='swamp_boots'?'Feet · Walk on dark swamp ground':'Body · Cosmetic clothing';
+    const row=itemCard(key,item.name,stats,`${count} owned${equipped?' · Equipped':''}`);
+    const button=document.createElement('button');button.textContent=equipped?`Unequip ${item.name.toLowerCase()}`:`Equip ${item.name.toLowerCase()}`;button.onclick=()=>act({action:equipped?'unequip_item':'equip_item',item:key});row.append(button);clothing.append(row);
   }
-  target.append(clothing);
+  if(clothing.children.length>1)target.append(clothing);
+  if(!target.children.length){const empty=document.createElement('p');empty.className='muted';empty.textContent='No items yet. Collect tools from Sylva and Reed, or find equipment in treasure and local trades.';target.append(empty);}
 }
 function professionSkill(town,job){return Math.max(town.player?.[job] || 0,...town.villagers.map(v=>v[job] || 0));}
 function jobRequirement(v,job){
@@ -622,6 +634,10 @@ async function playerAction(action){
   }catch(e){notice(e.message);}
 }
 const iconPaths = {
+  fine_axe:'<path fill="#94704c" d="m6 28 15-24 3 2-15 24z"/><path fill="#bacac5" d="m18 5 7-3 5 9-8 4z"/>',
+  fine_fishing_rod:'<path stroke="#94704c" stroke-width="3" d="M5 29 18 4"/><path d="m18 4 9 3v15q0 6-5 3v-3"/>',
+  swamp_boots:'<path fill="#94704c" d="M4 4h9v16l4 3v5H3v-8zm14 0h9v16l4 3v5H17v-8z"/><path d="M4 10h9m5 0h9M3 25h14m0 0h14"/>',
+  desert_clothing:'<path fill="#d6c478" d="m10 4-8 7 4 7 5-3-2 14h14l-2-14 5 3 4-7-8-7-6 3z"/><path d="m10 4 6 9 6-9M10 22h12m-6-9v16"/>',
   fishing:'<path fill="#7899a2" d="M7 17q7-11 17 0-10 11-17 0z"/><path fill="#cda875" d="m7 17-5-5v10z"/><circle fill="#e8eadb" cx="20" cy="16" r="1.5"/><path d="m12 6 14-3v8q0 4-3 3"/>',
   woodcutting:'<path fill="#94704c" d="m7 27 12-22 3 2-12 22z"/><path fill="#bacac5" d="m18 6 7-3 5 9-8 3z"/>',
   gathering:'<path fill="#719451" d="M16 27V11Q4 2 4 13q0 8 12 8Q28 18 28 8q-12 0-12 9"/><circle fill="#b9866b" cx="9" cy="20" r="4"/><circle fill="#d9bd70" cx="16" cy="23" r="4"/>',

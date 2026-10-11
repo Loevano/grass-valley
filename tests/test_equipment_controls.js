@@ -73,7 +73,9 @@ const run=new Function('document','window','localStorage','setTimeout','clearTim
     renderItems(town);
     const toolCards=$('items-list').children[0].children.slice(2);
     const axe=toolCards[0],choose=axe.children[1],giveAxe=axe.children[2];
-    assert(axe.children[0].textContent==='Fine axe · 1 available');
+    assert(axe.children[0].children[0].innerHTML.includes(iconPaths.fine_axe),'Axe has its own icon');
+    assert(axe.children[0].children[1].children[1].textContent==='+25% woodcutting output');
+    assert(axe.children[0].children[1].children[2].textContent==='1 available · 0 assigned');
     assert(!choose.disabled&&giveAxe.disabled,'Giving requires an explicit recipient');
     assert.deepStrictEqual(choose.children.map(c=>c.textContent),['Choose a villager','Ada · Woodcutting'],'Workers already carrying tools are excluded');
     choose.value='0';choose.onchange();assert(!giveAxe.disabled);giveAxe.onclick();
@@ -82,14 +84,18 @@ const run=new Function('document','window','localStorage','setTimeout','clearTim
     assert.deepStrictEqual(sent.pop(),{action:'take_worker_tool',index:1});
     assert(rod.children[2].disabled,'Unavailable tools cannot be assigned');
     const clothing=$('items-list').children[1];
-    clothing.children[2].children[0].onclick();
+    clothing.children[1].children[1].onclick();
     assert.deepStrictEqual(sent.pop(),{action:'unequip_item',item:'swamp_boots'});
-    assert(clothing.children[3].children[0].disabled,'Unowned clothing cannot be equipped');
+    assert(clothing.children.length===2,'Unowned clothing is hidden');
+    assert(clothing.children[1].children[0].children[1].children[1].textContent==='Feet · Walk on dark swamp ground');
     town.player.worker_tools.fine_axe=0;town.villagers[0].worker_tool='fine_axe';renderItems(town);
-    assert($('items-list').children[0].children[2].children[0].textContent==='Fine axe · 0 available','Refresh reflects assigned inventory');
+    assert($('items-list').children[0].children[2].children[0].children[1].children[2].textContent==='0 available · 1 assigned','Refresh reflects assigned inventory');
     assert($('items-list').children[0].children[2].children[2].disabled,'All equipped villagers leaves no recipients');
-    town.villagers=[];renderItems(town);
+    town.villagers=[];town.player.worker_tools.fine_axe=1;renderItems(town);
     assert($('items-list').children[0].children[2].children[1].children[0].textContent==='No villagers yet');
+    assert($('items-list').children[0].children.length===3,'Unowned tools are hidden');
+    town.player.worker_tools={};town.player.items={};renderItems(town);
+    assert($('items-list').children.length===1&&$('items-list').children[0].textContent.startsWith('No items yet'),'Empty inventory shows a helpful message');
     renderItems(null);assert($('items-list').children.length===0,'Leaving a world clears item inventory');
 
 `);
