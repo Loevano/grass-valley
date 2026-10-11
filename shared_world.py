@@ -5,7 +5,8 @@ import secrets
 from npcs import ensure_npcs
 from terrain import generate_map
 
-MAP_FIELDS = ('map_size', 'terrain_seed', 'terrain', 'map_resources', 'tree_stumps', 'npcs', 'forage_version', 'forage_halls')
+MAP_FIELDS = ('map_size', 'terrain_seed', 'terrain', 'map_resources', 'tree_stumps', 'npcs', 'forage_version', 'forage_halls',
+              'chunked', 'chunk_size', 'chunk_clock')
 TOWN_RADIUS = 15
 HALL_SEPARATION = 40
 
@@ -14,7 +15,7 @@ def building_range(town):
     return 10 + 5 * (town['level'] - 1)
 
 
-def new_world(seed=None):
+def new_world(seed=None, explorable=False, chunk_directory=None):
     seed = secrets.randbits(64) if seed is None else seed
     rng = random.Random(seed)
     sites = [{'x': rng.randint(lo_x, lo_x + 16), 'y': rng.randint(lo_y, lo_y + 16)}
@@ -76,7 +77,11 @@ def new_world(seed=None):
     ensure_npcs(npc_map)
     landscape['npcs'] = [n for n in npc_map['npcs']
                          if all(abs(n['x'] - s['x']) + abs(n['y'] - s['y']) > 6 for s in sites)]
-    return {'towns': {}, 'shared_map': landscape, 'town_sites': sites}
+    world = {'towns': {}, 'shared_map': landscape, 'town_sites': sites}
+    if explorable:
+        from chunk_world import expand_new_world
+        return expand_new_world(world, chunk_directory)
+    return world
 
 
 def bind_map(world):
@@ -88,11 +93,18 @@ def bind_map(world):
 def export_world(world):
     if 'shared_map' not in world:
         return world
-    return dict(world, towns={key: {k: v for k, v in town.items() if k not in MAP_FIELDS}
-                              for key, town in world['towns'].items()})
+    result = {k: v for k, v in world.items() if k != '_chunks'}
+    result['towns'] = {key: {k: v for k, v in town.items() if k not in MAP_FIELDS}
+                       for key, town in world['towns'].items()}
+    if world['shared_map'].get('chunked'):
+        result['shared_map'] = {k: v for k, v in world['shared_map'].items()
+                               if k not in ('terrain', 'map_resources', 'tree_stumps')}
+    return result
 
 
-def walking_map(world, town):
+def walking_map(world, town, local=False):
+    if local and world.get('_chunks'):
+        town = world['_chunks'].movement(town)
     return dict(town, buildings=[b for t in world['towns'].values() for b in t['buildings']],
                 roads=[r for t in world['towns'].values() for r in t.get('roads', [])])
 

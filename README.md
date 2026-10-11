@@ -42,7 +42,8 @@ encrypted transport; do not expose it through router port forwarding.
 
 ## Shared map in new worlds
 
-Worlds created after this update use one shared 120×120 map. Everyone sees the
+New worlds use one shared 1,920×1,920 map, 256 times the area of the original
+120×120 valley. Terrain loads as you explore. Everyone sees the
 same terrain, buildings, workers, and player characters, and can walk between
 towns. Town halls start at randomized locations at least 40 tiles apart, with
 nearby wood, water, and clear paths connecting the towns.
@@ -54,8 +55,15 @@ so moving a hall cannot extend that territory. Halls must stay at least
 40 tiles apart when moved. Only a town's owner can build or manage its workers.
 The building area is highlighted when building or inspecting a hall.
 
+The host generates terrain in 40×40 chunks and keeps only the areas around
+players and town sites in the simulation. Remote terrain is cached on demand;
+the browser retains at most 128 terrain chunks. Resource regeneration catches
+up when a sleeping area becomes active again. Changed chunks save separately.
+Map refreshes send only terrain and resource chunks the browser needs, and walking
+saves with the regular three-second simulation update.
+
 **Valley** centers the camera on a town without changing maps. Existing saved
-worlds keep their separate town maps. Restart
+worlds keep their current maps and dimensions. Restart
 the Python host, refresh both browsers, and create a new world to use the shared map.
 
 ## Play
@@ -302,10 +310,12 @@ the Python host, refresh both browsers, and create a new world to use the shared
   food, buildings, and hall levels remain; paid hall upgrades still finish.
 - Open **Valley** and click another town's name to find it. Only its owner can issue commands for it.
 
-The host saves all worlds automatically in `savegame.json`, which is excluded from
-Git. Your browser stores your town's ownership token. Use the same browser and
+The host saves all worlds automatically in `savegame.json`; new worlds also save
+changed map chunks in `savegame_chunks/`. Both are excluded from Git.
+Your browser stores your town's ownership token. Use the same browser and
 host address to return to your town; clearing site storage loses that association.
-There is no recovery screen yet. Back up the save file while the server is stopped.
+There is no recovery screen yet. Back up both the save file and chunk directory
+while the server is stopped.
 Towns in the open world keep producing while owners are away if the host is running.
 No production occurs while the host is stopped or for worlds that are not open.
 Existing saves keep their resource layout and gain varied ground. Saves without

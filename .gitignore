@@ -3,3 +3,4 @@ __pycache__/
 .DS_Store
 savegame.json
 savegame.json.tmp
+savegame_chunks/

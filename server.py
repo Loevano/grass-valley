@@ -5,11 +5,12 @@ import ipaddress
 import json
 import math
 import secrets
+import shutil
 import threading
 import time
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
-from urllib.parse import urlsplit
+from urllib.parse import parse_qs, urlsplit
 
 import progression as economy
 import logistics
@@ -18,6 +19,7 @@ import equipment
 from terrain import ensure_terrain
 from npcs import ensure_npcs
 from shared_world import bind_map, building_range, export_world, new_world, validate_placement, walking_map
+from chunk_world import attach as attach_chunks, parse_keys, parse_versions
 
 ROOT = Path(__file__).resolve().parent
 SAVE = ROOT / 'savegame.json'
@@ -144,7 +146,8 @@ def ensure_player(town):
         blocked = {(b['x'], b['y']) for b in
                    town['buildings'] + town['map_resources']
                    if b['kind'] != 'tree' and not (b['kind'] == 'water' and player.get('boat'))}
-        tiles = ((x, y) for x in range(size) for y in range(size))
+        terrain = town.get('terrain')
+        tiles = terrain.tiles() if hasattr(terrain, 'tiles') else ((x, y) for x in range(size) for y in range(size))
         for x, y in sorted(tiles, key=lambda p:
                            abs(p[0] - player['x']) + abs(p[1] - player['y'])):
             if walkable(town, x, y, blocked):
@@ -413,8 +416,8 @@ def construction_route(town, start, target):
                 and (not terrain or terrain[y][x] != 'v'))
 
     if not open_tile(start):
-        start = min(((x, y) for x in range(size) for y in range(size)
-                     if open_tile((x, y))), default=None,
+        tiles = terrain.tiles() if hasattr(terrain, 'tiles') else ((x, y) for x in range(size) for y in range(size))
+        start = min((p for p in tiles if open_tile(p)), default=None,
                     key=lambda p: abs(p[0] - start[0]) + abs(p[1] - start[1]))
     if start is None:
         return None
@@ -494,6 +497,9 @@ def construct(town, landscape, workers=None, elapsed=TICK_SECONDS):
 
 
 def prepare_landscapes(world, regenerate=False):
+    if world.get('shared_map', {}).get('chunked'):
+        attach_chunks(world, SAVE.with_name(SAVE.stem + '_chunks'))
+        bind_map(world)
     buildings = [b for t in world['towns'].values() for b in t['buildings']]
     obstacles = buildings + [r for t in world['towns'].values() for r in t.get('roads', [])]
     obstacles += [dict(x=math.floor(t['player']['x'] + .5), y=math.floor(t['player']['y'] + .5))
@@ -520,6 +526,8 @@ def prepare_landscapes(world, regenerate=False):
 
 def tick(world):
     prepare_landscapes(world, regenerate=True)
+    if world.get('shared_map', {}).get('chunked'):
+        world['shared_map']['chunk_clock'] += TICK_SECONDS
     for town in world['towns'].values():
         ensure_villager_names(town)
         ensure_resources(town)
@@ -647,6 +655,9 @@ def validate_building_range(town, x, y):
 
 
 def command(town, data, world=None):
+    if world and world.get('shared_map', {}).get('chunked'):
+        attach_chunks(world, SAVE.with_name(SAVE.stem + '_chunks'))
+        bind_map(world)
     ensure_resources(town)
     action = data.get('action')
     if action in {'buy_equipment', 'sell_equipment', 'equip_item', 'unequip_item'}:
@@ -683,7 +694,7 @@ def command(town, data, world=None):
         return {}
     if world and 'shared_map' in world:
         if action == 'walk':
-            return move_player(walking_map(world, town), data)
+            return move_player(walking_map(world, town, local=True), data)
         if action in {'build', 'move'}:
             validate_placement(world, town, data)
     if action == 'walk':
@@ -703,7 +714,8 @@ def command(town, data, world=None):
             raise ValueError('Choose a tile inside the valley boundary.')
     if action == 'build':
         kind, x, y = data.get('kind'), data.get('x'), data.get('y')
-        if kind not in COSTS or type(x) is not int or type(y) is not int or not (0 <= x < MAP_SIZE and 0 <= y < MAP_SIZE):
+        size = town.get('map_size', MAP_SIZE)
+        if kind not in COSTS or type(x) is not int or type(y) is not int or not (0 <= x < size and 0 <= y < size):
             raise ValueError('Choose a building and a tile inside your town.')
         if any(b['x'] == x and b['y'] == y for b in town['buildings']):
             raise ValueError('That tile is already occupied.')
@@ -731,7 +743,8 @@ def command(town, data, world=None):
         index, x, y = data.get('index'), data.get('x'), data.get('y')
         if type(index) is not int or not 0 <= index < len(town['buildings']):
             raise ValueError('Select a building first.')
-        if type(x) is not int or type(y) is not int or not (0 <= x < MAP_SIZE and 0 <= y < MAP_SIZE):
+        size = town.get('map_size', MAP_SIZE)
+        if type(x) is not int or type(y) is not int or not (0 <= x < size and 0 <= y < size):
             raise ValueError('Choose a tile inside your town.')
         if any(b['x'] == x and b['y'] == y for b in town['buildings']):
             raise ValueError('That tile is already occupied.')
@@ -964,13 +977,35 @@ class Handler(SimpleHTTPRequestHandler):
         self.wfile.write(body)
 
     def do_GET(self):
-        if self.path == '/api/world':
+        route = urlsplit(self.path)
+        if route.path == '/api/world':
+            query = parse_qs(route.query)
+            try:
+                keys = parse_keys(query.get('chunks', [''])[0])
+                # Clients retain a bounded terrain cache; validate each batch.
+                known_value = query.get('known', [''])[0]
+                known = set()
+                parts = known_value.split(';') if known_value else []
+                if len(parts) > 128:
+                    raise ValueError('Too many cached map chunks.')
+                for offset in range(0, len(parts), 49):
+                    known.update(parse_keys(';'.join(parts[offset:offset + 49])))
+                versions = parse_versions(query.get('resources', [''])[0])
+            except ValueError as error:
+                self.reply(400, {'error': str(error)})
+                return
             with LOCK:
+                if query.get('world_id', [ACTIVE_WORLD])[0] != ACTIVE_WORLD:
+                    known, versions = set(), {}
                 prepare_landscapes(WORLD)
                 for town in WORLD['towns'].values():
                     ensure_resources(town)
                     ensure_player(walking_map(WORLD, town) if 'shared_map' in WORLD else town)
-                self.reply(200, dict(export_world(WORLD), hall_upgrades=HALL_UPGRADES, progression=economy.public_catalog(),
+                snapshot = export_world(WORLD)
+                if WORLD.get('_chunks'):
+                    landscape = WORLD['_chunks'].snapshot(keys, known, versions)
+                    snapshot = dict(snapshot, shared_map=landscape)
+                self.reply(200, dict(snapshot, hall_upgrades=HALL_UPGRADES, progression=economy.public_catalog(),
                                      hall_ready={k: economy.milestone(t, t['level'] + 1) for k, t in WORLD['towns'].items()}, world_id=ACTIVE_WORLD,
                                      name=WORLDS[ACTIVE_WORLD]['name'] if ACTIVE_WORLD else None,
                                      players_sampled_at=time.monotonic()))
@@ -1010,6 +1045,7 @@ class Handler(SimpleHTTPRequestHandler):
                 raise ValueError('Invalid request.')
             with LOCK:
                 if self.path in {'/api/worlds/create', '/api/worlds/open', '/api/worlds/delete'}:
+                    deleted_chunks = None
                     if not self.is_host():
                         self.reply(403, {'error': 'Only the host at localhost can manage worlds.'})
                         return
@@ -1029,10 +1065,15 @@ class Handler(SimpleHTTPRequestHandler):
                         else:
                             if data.get('confirmation') != WORLDS[world_id]['name']:
                                 raise ValueError('Type the world name to confirm deletion.')
+                            landscape = WORLDS[world_id]['world'].get('shared_map', {})
+                            if landscape.get('chunked'):
+                                deleted_chunks = SAVE.with_name(SAVE.stem + '_chunks') / str(landscape['terrain_seed'])
                             del WORLDS[world_id]
                             if ACTIVE_WORLD == world_id:
                                 activate(None)
                     save()
+                    if deleted_chunks and deleted_chunks.exists():
+                        shutil.rmtree(deleted_chunks)
                     self.reply(200, {'ok': True})
                 elif self.path in {'/api/join', '/api/command'}:
                     if not ACTIVE_WORLD or data.get('world_id') != ACTIVE_WORLD:
@@ -1044,7 +1085,8 @@ class Handler(SimpleHTTPRequestHandler):
                             self.reply(401, {'error': 'Join this world first.'})
                             return
                         result = command(WORLD['towns'][town_id], data, WORLD)
-                        save()
+                        if data.get('action') != 'walk' or not WORLD.get('_chunks'):
+                            save()
                         self.reply(200, dict(result or {}, ok=True))
                         return
                     name = str(data.get('name', '')).strip()[:24]
@@ -1067,9 +1109,16 @@ class Handler(SimpleHTTPRequestHandler):
 
 def activate(world_id):
     global ACTIVE_WORLD, WORLD, TOKENS
+    if world_id != ACTIVE_WORLD and WORLD.get('_chunks'):
+        WORLD['_chunks'].flush()
+        WORLD.pop('_chunks')
+        for landscape in [WORLD['shared_map'], *WORLD['towns'].values()]:
+            for field in ('terrain', 'map_resources', 'tree_stumps'):
+                landscape.pop(field, None)
     ACTIVE_WORLD = world_id
     entry = WORLDS.get(world_id)
     WORLD, TOKENS = (entry['world'], entry['tokens']) if entry else ({'towns': {}}, {})
+    attach_chunks(WORLD, SAVE.with_name(SAVE.stem + '_chunks'))
     bind_map(WORLD)
 
 
@@ -1088,6 +1137,7 @@ def load():
                              'tokens': stored['tokens']}}
         activate('legacy')
     for entry in WORLDS.values():
+        bind_map(entry['world'])
         for town in entry['world']['towns'].values():
             ensure_villager_names(town)
             for index, villager in enumerate(town['villagers']):
@@ -1095,6 +1145,8 @@ def load():
 
 
 def save():
+    if WORLD.get('_chunks'):
+        WORLD['_chunks'].flush()
     temporary = SAVE.with_suffix('.json.tmp')
     temporary.write_text(json.dumps({'worlds': {key: dict(entry, world=export_world(entry['world']))
                                                 for key, entry in WORLDS.items()},

@@ -1,0 +1,304 @@
+"""Bounded working sets and incremental storage for explorable landscapes."""
+import hashlib
+import json
+import math
+import random
+from collections import OrderedDict
+from functools import lru_cache
+from pathlib import Path
+
+CHUNK_SIZE = 40
+WORLD_SIZE = 1920
+START_OFFSET = 880
+MAX_VIEW_CHUNKS = 49
+
+
+def chunk_key(x, y):
+    return f'{math.floor(x / CHUNK_SIZE)},{math.floor(y / CHUNK_SIZE)}'
+
+
+def parse_keys(value):
+    keys = value.split(';') if value else []
+    if len(keys) > MAX_VIEW_CHUNKS:
+        raise ValueError('Too many map chunks.')
+    result = set()
+    for key in keys:
+        parts = key.split(',')
+        if len(parts) != 2 or not all(p.isdecimal() and len(p) <= 2 for p in parts):
+            raise ValueError('Invalid map chunk.')
+        x, y = map(int, parts)
+        if not (0 <= x < WORLD_SIZE // CHUNK_SIZE and 0 <= y < WORLD_SIZE // CHUNK_SIZE):
+            raise ValueError('Map chunk outside the world.')
+        result.add(f'{x},{y}')
+    return result
+
+
+def parse_versions(value):
+    items = value.split(';') if value else []
+    if len(items) > 128:
+        raise ValueError('Too many cached resource chunks.')
+    versions = {}
+    for item in items:
+        key, separator, version = item.partition(':')
+        if not separator or len(version) != 16 or any(c not in '0123456789abcdef' for c in version):
+            raise ValueError('Invalid resource chunk version.')
+        keys = parse_keys(key)
+        if len(keys) != 1:
+            raise ValueError('Invalid resource chunk key.')
+        key = next(iter(keys))
+        versions[key] = version
+    return versions
+
+
+class TerrainRow:
+    def __init__(self, terrain, y):
+        self.terrain, self.y = terrain, y
+
+    def __len__(self):
+        return WORLD_SIZE
+
+    def __getitem__(self, x):
+        record = self.terrain.records.get(chunk_key(x, self.y))
+        return record['terrain'][self.y % CHUNK_SIZE][x % CHUNK_SIZE] if record else 'v'
+
+
+class ChunkTerrain:
+    """Existing tile lookups work; unloaded tiles are impassable."""
+    def __init__(self, records):
+        self.records = records
+
+    def __len__(self):
+        return WORLD_SIZE
+
+    def __getitem__(self, y):
+        if not 0 <= y < WORLD_SIZE:
+            raise IndexError(y)
+        return TerrainRow(self, y)
+
+    def tiles(self):
+        for key in self.records:
+            cx, cy = map(int, key.split(','))
+            for y in range(cy * CHUNK_SIZE, (cy + 1) * CHUNK_SIZE):
+                for x in range(cx * CHUNK_SIZE, (cx + 1) * CHUNK_SIZE):
+                    yield x, y
+
+
+@lru_cache(maxsize=8192)
+def _value(seed, label, x, y):
+    digest = hashlib.blake2b(f'{seed}:{label}:{x}:{y}'.encode(), digest_size=8).digest()
+    return int.from_bytes(digest, 'big') / 2**64
+
+
+def _field(seed, label, x, y, scale):
+    ix, iy = x // scale, y // scale
+    fx, fy = (x % scale) / scale, (y % scale) / scale
+    fx, fy = fx * fx * (3 - 2 * fx), fy * fy * (3 - 2 * fy)
+    a = _value(seed, label, ix, iy) * (1 - fx) + _value(seed, label, ix + 1, iy) * fx
+    b = _value(seed, label, ix, iy + 1) * (1 - fx) + _value(seed, label, ix + 1, iy + 1) * fx
+    return a * (1 - fy) + b * fy
+
+
+def generate_chunk(seed, key):
+    """Coordinate noise keeps terrain continuous and independent of visit order."""
+    cx, cy = map(int, key.split(','))
+    rng = random.Random(f'{seed}:chunk-v1:{key}')
+    rows, resources = [], []
+    for y in range(cy * CHUNK_SIZE, (cy + 1) * CHUNK_SIZE):
+        row = []
+        for x in range(cx * CHUNK_SIZE, (cx + 1) * CHUNK_SIZE):
+            wet = _field(seed, 'moisture', x, y, 18)
+            ground = _field(seed, 'ground', x, y, 25)
+            lake = _field(seed, 'lake', x, y, 45)
+            biome = 'b' if wet > .78 else 'f' if wet > .58 else 's' if ground < .3 else 'r' if ground > .75 else 'm' if wet > .4 else 'g'
+            kind = 'water' if lake < .25 else 'tree' if biome in ('f', 'b') and rng.random() < .45 else 'rock' if biome == 'r' and rng.random() < .15 else None
+            if kind == 'water' and biome != 'b':
+                biome = 's'
+            row.append(biome)
+            if kind:
+                resources.append({'kind': kind, 'x': x, 'y': y})
+            elif biome in ('g', 'f', 'm', 'b') and rng.random() < .012:
+                resources.append({'kind': rng.choice(['berry_bush', 'herb_patch']), 'x': x, 'y': y})
+        rows.append(''.join(row))
+    return {'terrain': rows, 'map_resources': resources, 'tree_stumps': [], 'clock': 0}
+
+
+class ChunkMap:
+    def __init__(self, world, directory=None, base=None):
+        self.world = world
+        self.landscape = world['shared_map']
+        self.directory = Path(directory) / str(self.landscape['terrain_seed']) if directory else None
+        self.records, self.saved, self.memory = {}, {}, {}
+        self.views = OrderedDict()
+        self.resource_index = None
+        self.base = base
+        self.terrain = ChunkTerrain(self.records)
+
+    def _starter(self):
+        if self.base is None:
+            from shared_world import new_world
+            self.base = new_world(self.landscape['terrain_seed'])['shared_map']
+        return self.base
+
+    def read(self, key):
+        if key in self.records:
+            return self.records[key]
+        if key in self.views:
+            self.views.move_to_end(key)
+            self.catch_up(key, self.views[key])
+            return self.views[key]
+        record = self._read(key)
+        self.catch_up(key, record)
+        self.views[key] = record
+        while len(self.views) > MAX_VIEW_CHUNKS:
+            self.views.popitem(last=False)
+        return record
+
+    def catch_up(self, key, record):
+        from progression import SUPPLIES, source_limits
+        clock = self.landscape.get('chunk_clock', 0)
+        elapsed = max(0, clock - record.get('clock', 0))
+        landscape = {'terrain': ChunkTerrain({key: record})}
+        for resource in record['map_resources']:
+            if resource['kind'] not in SUPPLIES:
+                continue
+            maximum, regeneration = source_limits(landscape, resource)
+            resource.update(supply=min(maximum, resource.get('supply', maximum) + elapsed / 3 * regeneration),
+                            supply_max=maximum, regeneration=regeneration)
+        for stump in record['tree_stumps']:
+            stump['remaining'] = max(3, stump['remaining'] - elapsed)
+        record['clock'] = clock
+
+    def _read(self, key):
+        path = self.directory / f'{key}.json' if self.directory else None
+        if path and path.exists():
+            return json.loads(path.read_text())
+        if key in self.memory:
+            return json.loads(self.memory[key])
+        cx, cy = map(int, key.split(','))
+        x, y = cx * CHUNK_SIZE - START_OFFSET, cy * CHUNK_SIZE - START_OFFSET
+        if 0 <= x < 120 and 0 <= y < 120:
+            base = self._starter()
+            resources = [dict(r, x=r['x'] + START_OFFSET, y=r['y'] + START_OFFSET)
+                         for r in base['map_resources'] if x <= r['x'] < x + CHUNK_SIZE and y <= r['y'] < y + CHUNK_SIZE]
+            return {'terrain': [row[x:x + CHUNK_SIZE].replace('v', 'g') for row in base['terrain'][y:y + CHUNK_SIZE]],
+                    'map_resources': resources, 'tree_stumps': [], 'clock': 0}
+        return generate_chunk(self.landscape['terrain_seed'], key)
+
+    def desired(self):
+        towns = self.world['towns'].values()
+        points = [t['town_origin'] for t in towns] + [t['player'] for t in towns]
+        if not points:
+            points = self.world['town_sites']
+        result = set()
+        for point in points:
+            cx, cy = map(int, chunk_key(point['x'], point['y']).split(','))
+            for x in range(max(0, cx - 1), min(WORLD_SIZE // CHUNK_SIZE, cx + 2)):
+                for y in range(max(0, cy - 1), min(WORLD_SIZE // CHUNK_SIZE, cy + 2)):
+                    result.add(f'{x},{y}')
+        return result
+
+    def sync(self):
+        self.resource_index = None
+        for record in self.records.values():
+            record['map_resources'] = []
+            record['tree_stumps'] = []
+        for field in ('map_resources', 'tree_stumps'):
+            for item in self.landscape.get(field, []):
+                self.records[chunk_key(item['x'], item['y'])][field].append(item)
+
+    def flush(self):
+        if not self.records:
+            return
+        self.sync()
+        clock = self.landscape.get('chunk_clock', 0)
+        for key, record in self.records.items():
+            # Full, untouched supplies do not need a new timestamp every tick.
+            depleted = any(r.get('supply', r.get('supply_max', 0)) < r.get('supply_max', 0)
+                           and r.get('regeneration', 0) for r in record['map_resources'])
+            if depleted or record['tree_stumps']:
+                record['clock'] = clock
+            body = json.dumps(record, separators=(',', ':'))
+            if body == self.saved.get(key):
+                continue
+            if self.directory:
+                self.directory.mkdir(parents=True, exist_ok=True)
+                path = self.directory / f'{key}.json'
+                temporary = path.with_suffix('.json.tmp')
+                temporary.write_text(body)
+                temporary.replace(path)
+            else:
+                self.memory[key] = body
+            self.saved[key] = body
+
+    def activate(self):
+        desired = self.desired()
+        if desired == self.records.keys():
+            return
+        self.flush()
+        for key in self.records.keys() - desired:
+            del self.records[key]
+            self.saved.pop(key, None)
+            self.views.pop(key, None)
+        for key in sorted(desired - self.records.keys()):
+            record = self.read(key)
+            self.views.pop(key, None)
+            self.saved[key] = json.dumps(record, separators=(',', ':'))
+            self.records[key] = record
+        self.landscape.update(terrain=self.terrain,
+                              map_resources=[r for key in sorted(self.records) for r in self.records[key]['map_resources']],
+                              tree_stumps=[r for key in sorted(self.records) for r in self.records[key]['tree_stumps']])
+
+    def movement(self, town):
+        """Movement checks inspect nearby tiles instead of every active resource."""
+        resources = self.landscape['map_resources']
+        if self.resource_index is None or self.resource_index[:2] != (id(resources), len(resources)):
+            index = {}
+            for resource in resources:
+                index.setdefault((resource['x'], resource['y']), []).append(resource)
+            self.resource_index = (id(resources), len(resources), index)
+        index = self.resource_index[2]
+        x, y = math.floor(town['player']['x'] + .5), math.floor(town['player']['y'] + .5)
+        nearby = [r for ty in range(y - 2, y + 3) for tx in range(x - 2, x + 3)
+                  for r in index.get((tx, ty), [])]
+        return dict(town, map_resources=nearby)
+
+    def snapshot(self, keys=(), known=(), versions=None):
+        self.sync()
+        keys = self.records.keys() | set(keys)
+        chunks = {key: self.read(key) for key in sorted(keys)}
+        updates = {}
+        for key, record in chunks.items():
+            payload = {field: record[field] for field in ('map_resources', 'tree_stumps')}
+            body = json.dumps(payload, separators=(',', ':'))
+            version = hashlib.blake2b(body.encode(), digest_size=8).hexdigest()
+            if (versions or {}).get(key) != version:
+                updates[key] = dict(payload, version=version)
+        result = {k: v for k, v in self.landscape.items()
+                  if k not in ('terrain', 'map_resources', 'tree_stumps')}
+        return dict(result, terrain_chunks={key: r['terrain'] for key, r in chunks.items() if key not in known},
+                    resource_chunks=updates, visible_chunks=sorted(keys))
+
+
+def attach(world, directory=None):
+    if not world.get('shared_map', {}).get('chunked'):
+        return None
+    manager = world.get('_chunks')
+    if manager is None:
+        manager = world['_chunks'] = ChunkMap(world, directory)
+    elif directory:
+        manager.directory = Path(directory) / str(manager.landscape['terrain_seed'])
+    manager.activate()
+    return manager
+
+
+def expand_new_world(world, directory=None):
+    base = world['shared_map']
+    for site in world['town_sites']:
+        site['x'] += START_OFFSET
+        site['y'] += START_OFFSET
+    world['shared_map'] = {'map_size': WORLD_SIZE, 'terrain_seed': base['terrain_seed'],
+                           'chunked': 1, 'chunk_size': CHUNK_SIZE, 'chunk_clock': 0,
+                           'npcs': [dict(n, x=n['x'] + START_OFFSET, y=n['y'] + START_OFFSET) for n in base['npcs']]}
+    world['_chunks'] = ChunkMap(world, directory, base)
+    world['_chunks'].activate()
+    return world
