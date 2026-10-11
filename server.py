@@ -1061,6 +1061,9 @@ class Handler(SimpleHTTPRequestHandler):
 
     def reply(self, status, data):
         body = json.dumps(data, separators=(',', ':')).encode()
+        self.reply_body(status, body)
+
+    def reply_body(self, status, body):
         self.send_response(status)
         self.send_header('Content-Type', 'application/json')
         self.send_header('Cache-Control', 'no-store')
@@ -1101,10 +1104,14 @@ class Handler(SimpleHTTPRequestHandler):
                         self.reply(400, {'error': str(error)})
                         return
                     snapshot = dict(snapshot, shared_map=landscape)
-                self.reply(200, dict(snapshot, hall_upgrades=HALL_UPGRADES, progression=economy.public_catalog(), local_stories=npcs.STORIES,
-                                     hall_ready={k: economy.milestone(t, t['level'] + 1) for k, t in WORLD['towns'].items()}, world_id=ACTIVE_WORLD,
-                                     name=WORLDS[ACTIVE_WORLD]['name'] if ACTIVE_WORLD else None,
-                                     players_sampled_at=time.monotonic()))
+                snapshot = dict(snapshot, hall_upgrades=HALL_UPGRADES, progression=economy.public_catalog(), local_stories=npcs.STORIES,
+                                hall_ready={k: economy.milestone(t, t['level'] + 1) for k, t in WORLD['towns'].items()}, world_id=ACTIVE_WORLD,
+                                name=WORLDS[ACTIVE_WORLD]['name'] if ACTIVE_WORLD else None,
+                                players_sampled_at=time.monotonic())
+                # Freeze the mutable world while locked, then release it before
+                # a slow LAN transfer can block movement or simulation ticks.
+                body = json.dumps(snapshot, separators=(',', ':')).encode()
+            self.reply_body(200, body)
         elif self.path == '/api/players':
             with LOCK:
                 snapshot = {'world_id': ACTIVE_WORLD, 'sampled_at': time.monotonic(),
@@ -1114,10 +1121,11 @@ class Handler(SimpleHTTPRequestHandler):
             self.reply(200, snapshot)
         elif self.path == '/api/worlds':
             with LOCK:
-                self.reply(200, {'active_world': ACTIVE_WORLD, 'can_manage': self.is_host(),
-                                 'worlds': [{'id': key, 'name': value['name'],
-                                             'town_count': len(value['world']['towns'])}
-                                            for key, value in WORLDS.items()]})
+                snapshot = {'active_world': ACTIVE_WORLD, 'can_manage': self.is_host(),
+                            'worlds': [{'id': key, 'name': value['name'],
+                                        'town_count': len(value['world']['towns'])}
+                                       for key, value in WORLDS.items()]}
+            self.reply(200, snapshot)
         else:
             super().do_GET()
 

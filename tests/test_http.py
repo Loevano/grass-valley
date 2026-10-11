@@ -1,16 +1,49 @@
 """Exercise the real HTTP host with separate client ownership tokens."""
 import http.client
 import json
+from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 import tempfile
 import threading
 import unittest
+from unittest.mock import patch
 from http.server import ThreadingHTTPServer
 
 import server
 
 
 class LanHost(unittest.TestCase):
+    def test_slow_world_transfer_does_not_block_movement_or_player_snapshots(self):
+        owner = json.loads(self.call('/api/join', {'name': 'LAN home'})[1])
+        original_player = dict(server.WORLD['towns'][owner['town_id']]['player'])
+        sending, release = threading.Event(), threading.Event()
+        original_reply = server.Handler.reply_body
+
+        def slow_reply(handler, status, body):
+            if handler.path == '/api/world':
+                sending.set()
+                if not release.wait(5):
+                    raise TimeoutError('World transfer was not released.')
+            original_reply(handler, status, body)
+
+        with patch.object(server.Handler, 'reply_body', slow_reply), ThreadPoolExecutor(max_workers=1) as client:
+            transfer = client.submit(self.call, '/api/world')
+            try:
+                self.assertTrue(sending.wait(2), 'World snapshot reaches the transfer stage.')
+                status, body = self.call('/api/command', {'action': 'walk', 'dx': 1, 'dy': -1}, owner['token'])
+                self.assertEqual(status, 200)
+                moved_player = json.loads(body)['player']
+                self.assertGreater(moved_player['x'], original_player['x'])
+                status, body = self.call('/api/players')
+                self.assertEqual(status, 200)
+                self.assertEqual(json.loads(body)['players'][owner['town_id']], moved_player)
+            finally:
+                release.set()
+            status, body = transfer.result(timeout=3)
+        self.assertEqual(status, 200)
+        self.assertEqual(json.loads(body)['towns'][owner['town_id']]['player'], original_player,
+                         'The in-flight world snapshot stays consistent while the live player moves.')
+
     def test_production_rules_are_owned_and_saved_with_the_town(self):
         _, owner = self.call('/api/join', {'name': 'Rules home'})
         _, friend = self.call('/api/join', {'name': 'Friend'})
