@@ -531,6 +531,7 @@ def prepare_landscapes(world, regenerate=False):
     for landscape in landscapes:
         if 'shared_map' not in world:
             ensure_resources(landscape)
+        ensure_npcs(landscape, obstacles)
         economy.ensure_forage(landscape, buildings if 'shared_map' in world else landscape['buildings'])
         if regenerate:
             local_obstacles = obstacles if 'shared_map' in world else landscape['buildings'] + landscape.get('roads', [])
@@ -711,7 +712,7 @@ def command(town, data, world=None):
         bind_map(world)
     ensure_resources(town)
     action = data.get('action')
-    if action in {'claim_local_gift', 'trade_local', 'give_worker_tool', 'take_worker_tool', 'transfer_worker_tool',
+    if action in {'claim_local_gift', 'buy_worker_tool', 'trade_local', 'give_worker_tool', 'take_worker_tool', 'transfer_worker_tool',
                   'advance_local_story', 'inspect_story_rock'}:
         return npcs.change(town, data)
     if action in {'buy_equipment', 'sell_equipment', 'equip_item', 'unequip_item'}:

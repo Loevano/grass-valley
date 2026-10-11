@@ -7,8 +7,11 @@ import progression as economy
 
 THEMES = {
     'g': [('Tobin', 'Valley traveler', 'The hall lantern is a welcome sight after a long walk.')],
-    'f': [('Sylva', 'Forest ranger', 'Leave the young trees standing and the forest will always provide.')],
-    'm': [('Clover', 'Meadow beekeeper', 'Follow the flowers. The bees know every quiet corner of this meadow.')],
+    'f': [('Sylva', 'Forest ranger', 'Leave the young trees standing and the forest will always provide.'),
+          ('Bram', 'Forest toolsmith', 'A well-balanced axe saves your woodcutters a lot of effort. I forge steel and masterwork blades.')],
+    'm': [('Clover', 'Meadow beekeeper', 'Follow the flowers. The bees know every quiet corner of this meadow.'),
+          ('Fern', 'Meadow grower', 'Take my spare sickle for one of your farmers. A clean cut makes a generous harvest.'),
+          ('Runa', 'Harvest toolsmith', 'My steel and masterwork sickles help farmers bring in more from every harvest.')],
     's': [('Saffron', 'Dune wanderer', 'Keep water close and watch how the wind shapes the sand.')],
     'r': [('Flint', 'Rock surveyor', 'Every outcrop tells a story. I am still learning to read this one.')],
     'b': [('Moss', 'Swamp herbalist', 'Willow roots love the wet ground. Look for herbs among the reeds.'),
@@ -16,35 +19,56 @@ THEMES = {
 }
 
 
-def ensure_npcs(town):
-    if 'npcs' in town:
+ROSTER_VERSION = 2
+NEW_LOCALS = {'Bram', 'Fern', 'Runa'}
+
+
+def ensure_npcs(town, obstacles=()):
+    if 'npcs' in town and town.get('npc_roster_version', 0) >= ROSTER_VERSION:
         return
+    existing = 'npcs' in town
+    locals_ = town.setdefault('npcs', [])
+    names = {npc['name'] for npc in locals_}
     rng = random.Random(str(town.get('terrain_seed', 0)) + ':npcs')
-    occupied = {(obj['x'], obj['y']) for obj in town['buildings'] + town['map_resources']}
+    occupied = {(obj['x'], obj['y']) for obj in
+                town.get('buildings', []) + town['map_resources'] + locals_
+                + town.get('roads', []) + list(obstacles)}
     player = town.get('player')
     if player:
         occupied.add((round(player['x']), round(player['y'])))
     candidates = {biome: [] for biome in THEMES}
-    for y, row in enumerate(town.get('terrain', [])):
-        for x, biome in enumerate(row):
-            if biome in candidates and (x, y) not in occupied and (x >= 12 or y >= 12):
-                candidates[biome].append((x, y))
-    town['npcs'] = []
+    terrain = town.get('terrain', [])
+    tiles = (sorted(terrain.tiles(), key=lambda p: (p[1], p[0])) if hasattr(terrain, 'tiles')
+             else ((x, y) for y, row in enumerate(terrain) for x in range(len(row))))
+    for x, y in tiles:
+        biome = terrain[y][x]
+        if biome in candidates and (x, y) not in occupied and (x >= 12 or y >= 12):
+            candidates[biome].append((x, y))
     for biome, people in THEMES.items():
         tiles = candidates[biome]
         for name, role, dialogue in people:
+            if name in names or (existing and name not in NEW_LOCALS):
+                continue
             if not tiles:
                 break
             x, y = tiles.pop(rng.randrange(len(tiles)))
             town['npcs'].append({'name': name, 'role': role, 'dialogue': dialogue,
                                  'biome': biome, 'x': x, 'y': y})
+    town['npc_roster_version'] = ROSTER_VERSION
 
 
 WORKER_TOOLS = {
-    'fine_axe': {'name': 'Fine axe', 'job': 'woodcutting'},
-    'fine_fishing_rod': {'name': 'Fine fishing rod', 'job': 'fishing'},
+    'fine_axe': {'name': 'Fine axe', 'job': 'woodcutting', 'bonus': .25},
+    'fine_fishing_rod': {'name': 'Fine fishing rod', 'job': 'fishing', 'bonus': .25},
+    'fine_sickle': {'name': 'Fine sickle', 'job': 'farming', 'bonus': .25},
+    'steel_axe': {'name': 'Steel axe', 'job': 'woodcutting', 'bonus': .5, 'price': 30},
+    'masterwork_axe': {'name': 'Masterwork axe', 'job': 'woodcutting', 'bonus': .75, 'price': 60},
+    'steel_sickle': {'name': 'Steel sickle', 'job': 'farming', 'bonus': .5, 'price': 30},
+    'masterwork_sickle': {'name': 'Masterwork sickle', 'job': 'farming', 'bonus': .75, 'price': 60},
 }
-GIFTS = {'Sylva': 'fine_axe', 'Reed': 'fine_fishing_rod'}
+GIFTS = {'Sylva': 'fine_axe', 'Reed': 'fine_fishing_rod', 'Fern': 'fine_sickle'}
+TOOL_SHOPS = {'Bram': ('steel_axe', 'masterwork_axe'),
+              'Runa': ('steel_sickle', 'masterwork_sickle')}
 BARTERERS = {'Tobin', 'Clover'}
 TRADE_SECONDS = 300
 
@@ -149,7 +173,8 @@ def advance_trades(town, seconds):
 
 
 def tool_bonus(villager, job):
-    return .25 if WORKER_TOOLS.get(villager.get('worker_tool'), {}).get('job') == job else 0
+    tool = WORKER_TOOLS.get(villager.get('worker_tool'), {})
+    return tool.get('bonus', 0) if tool.get('job') == job else 0
 
 
 def change(town, data):
@@ -206,7 +231,17 @@ def change(town, data):
     progress = town.get('local_visits', {}).get(visit_key, {})
     if action == 'advance_local_story':
         return advance_story(town, npc, progress)
-    if action == 'claim_local_gift':
+    if action == 'buy_worker_tool':
+        key = data.get('item')
+        if not isinstance(key, str) or key not in TOOL_SHOPS.get(npc['name'], ()):
+            raise ValueError('This local does not sell that worker tool.')
+        price = WORKER_TOOLS[key]['price']
+        if town['coins'] < price:
+            raise ValueError('Not enough coins for this tool.')
+        town['coins'] -= price
+        tools = player.setdefault('worker_tools', {})
+        tools[key] = tools.get(key, 0) + 1
+    elif action == 'claim_local_gift':
         key = GIFTS.get(npc['name'])
         if not key:
             raise ValueError('This local has no equipment gift.')

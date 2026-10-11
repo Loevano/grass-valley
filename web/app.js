@@ -156,8 +156,17 @@ window.addEventListener('blur',clearWalk);
 document.addEventListener?.('visibilitychange',clearWalk);
 // Predict only the next host step; never run ahead while waiting for a reply.
 let movementMap=null;
-const workerTools={fine_axe:{name:'Fine axe',job:'woodcutting'},fine_fishing_rod:{name:'Fine fishing rod',job:'fishing'}};
-const localGifts={Sylva:'fine_axe',Reed:'fine_fishing_rod'};
+const workerTools={
+  fine_axe:{name:'Fine axe',job:'woodcutting',bonus:.25},
+  fine_fishing_rod:{name:'Fine fishing rod',job:'fishing',bonus:.25},
+  fine_sickle:{name:'Fine sickle',job:'farming',bonus:.25},
+  steel_axe:{name:'Steel axe',job:'woodcutting',bonus:.5,price:30},
+  masterwork_axe:{name:'Masterwork axe',job:'woodcutting',bonus:.75,price:60},
+  steel_sickle:{name:'Steel sickle',job:'farming',bonus:.5,price:30},
+  masterwork_sickle:{name:'Masterwork sickle',job:'farming',bonus:.75,price:60},
+};
+const localToolShops={Bram:['steel_axe','masterwork_axe'],Runa:['steel_sickle','masterwork_sickle']};
+const localGifts={Sylva:'fine_axe',Reed:'fine_fishing_rod',Fern:'fine_sickle'};
 function localVisitKey(npc){return `${npc.name}:${npc.x}:${npc.y}`;}
 function localStoryProgress(town,name){
   const npc=(world.shared_map?.npcs || town.npcs || []).find(n=>n.name===name);
@@ -190,12 +199,12 @@ function renderWorkerTools(town,v,index,target){
   const owner=viewed===identity?.town_id;
   if(v.worker_tool&&workerTools[v.worker_tool]){
     const gear=workerTools[v.worker_tool],row=document.createElement('p');
-    row.textContent=`${gear.name} · +25% ${gear.job} output`;
+    row.textContent=`${gear.name} · +${gear.bonus*100}% ${gear.job} output`;
     if(owner){const button=document.createElement('button');button.textContent='Take back tool';button.onclick=()=>act({action:'take_worker_tool',index});row.append(button);}
     target.append(row);
   }else if(owner)for(const [key,gear] of Object.entries(workerTools)){
     if(!(town.player?.worker_tools?.[key]>0))continue;
-    const button=document.createElement('button');button.textContent=`Give ${gear.name.toLowerCase()} · +25% ${gear.job} output`;
+    const button=document.createElement('button');button.textContent=`Give ${gear.name.toLowerCase()} · +${gear.bonus*100}% ${gear.job} output`;
     button.onclick=()=>act({action:'give_worker_tool',item:key,index});target.append(button);
   }
 }
@@ -649,7 +658,7 @@ function renderItems(town){
     const available=town.player?.worker_tools?.[key] || 0;
     const assigned=town.villagers.map((v,index)=>({v,index})).filter(({v})=>v.worker_tool===key);
     if(available<1&&!assigned.length)continue;
-    const row=itemCard(key,gear.name,`+25% ${gear.job} output`,`${available} available · ${assigned.length} assigned`);
+    const row=itemCard(key,gear.name,`+${gear.bonus*100}% ${gear.job} output`,`${available} available · ${assigned.length} assigned`);
     for(const {v,index} of assigned){
       const carrier=document.createElement('p');carrier.textContent=`Carried by ${v.name}`;
       const take=document.createElement('button');take.textContent='Take back tool';take.setAttribute('aria-label',`Take ${gear.name.toLowerCase()} back from ${v.name}`);take.onclick=()=>act({action:'take_worker_tool',index});carrier.append(take);
@@ -674,7 +683,7 @@ function renderItems(town){
     const button=document.createElement('button');button.textContent=equipped?`Unequip ${item.name.toLowerCase()}`:`Equip ${item.name.toLowerCase()}`;button.onclick=()=>act({action:equipped?'unequip_item':'equip_item',item:key});row.append(button);clothing.append(row);
   }
   if(clothing.children.length>1)target.append(clothing);
-  if(!target.children.length){const empty=document.createElement('p');empty.className='muted';empty.textContent='No items yet. Collect tools from Sylva and Reed, or find equipment in treasure and local trades.';target.append(empty);}
+  if(!target.children.length){const empty=document.createElement('p');empty.className='muted';empty.textContent='No items yet. Collect tools from Sylva, Reed and Fern, or buy stronger tools from Bram and Runa, or find equipment in treasure and local trades.';target.append(empty);}
 }
 function professionSkill(town,job){return Math.max(town.player?.[job] || 0,...town.villagers.map(v=>v[job] || 0));}
 function jobRequirement(v,job){
@@ -695,6 +704,11 @@ async function playerAction(action){
 }
 const iconPaths = {
   fine_axe:'<path fill="#94704c" d="m6 28 15-24 3 2-15 24z"/><path fill="#bacac5" d="m18 5 7-3 5 9-8 4z"/>',
+  steel_axe:'<path fill="#94704c" d="m6 28 15-24 3 2-15 24z"/><path fill="#dce8ed" d="m18 5 7-3 5 9-8 4z"/>',
+  masterwork_axe:'<path fill="#94704c" d="m6 28 15-24 3 2-15 24z"/><path fill="#d9bd70" d="m18 5 7-3 5 9-8 4z"/>',
+  fine_sickle:'<path stroke="#94704c" stroke-width="4" d="M11 29V17"/><path fill="#bacac5" d="M11 18Q2 8 12 3q13-4 17 12Q19 4 11 9q-5 4 0 9z"/>',
+  steel_sickle:'<path stroke="#94704c" stroke-width="4" d="M11 29V17"/><path fill="#dce8ed" d="M11 18Q2 8 12 3q13-4 17 12Q19 4 11 9q-5 4 0 9z"/>',
+  masterwork_sickle:'<path stroke="#94704c" stroke-width="4" d="M11 29V17"/><path fill="#d9bd70" d="M11 18Q2 8 12 3q13-4 17 12Q19 4 11 9q-5 4 0 9z"/>',
   fine_fishing_rod:'<path stroke="#94704c" stroke-width="3" d="M5 29 18 4"/><path d="m18 4 9 3v15q0 6-5 3v-3"/>',
   swamp_boots:'<path fill="#94704c" d="M4 4h9v16l4 3v5H3v-8zm14 0h9v16l4 3v5H17v-8z"/><path d="M4 10h9m5 0h9M3 25h14m0 0h14"/>',
   desert_clothing:'<path fill="#d6c478" d="m10 4-8 7 4 7 5-3-2 14h14l-2-14 5 3 4-7-8-7-6 3z"/><path d="m10 4 6 9 6-9M10 22h12m-6-9v16"/>',
@@ -953,7 +967,7 @@ function villagerRow(town,v,index){
   const gear=workerTools[v.worker_tool];
   if(gear){
     const equipped=document.createElement('span');equipped.className='villager-equipment';equipped.tabIndex=0;equipped.setAttribute('role','img');
-    const description=`${gear.name} · +25% ${gear.job} output · ${v.job===gear.job?'Active for current job':'Inactive for current job'}`;
+    const description=`${gear.name} · +${gear.bonus*100}% ${gear.job} output · ${v.job===gear.job?'Active for current job':'Inactive for current job'}`;
     equipped.title=description;equipped.setAttribute('aria-label',description);equipped.append(illustration(v.worker_tool));
     const tooltip=document.createElement('span');tooltip.className='skill-tooltip';tooltip.textContent=description;tooltip.setAttribute('aria-hidden','true');equipped.append(tooltip);name.append(equipped);
   }
@@ -1165,7 +1179,7 @@ function renderSelection(town){
       const row=document.createElement('p');row.textContent=`Keepsake: ${keepsake}`;$('selection-details').append(row);
     }
     for(const [key,gear] of Object.entries(workerTools)){
-      const row=document.createElement('p');row.textContent=`${gear.name} · ${town.player?.worker_tools?.[key] || 0} available · Give to a worker from their panel (+25% ${gear.job} output)`;$('selection-details').append(row);
+      const row=document.createElement('p');row.textContent=`${gear.name} · ${town.player?.worker_tools?.[key] || 0} available · Give to a worker from their panel (+${gear.bonus*100}% ${gear.job} output)`;$('selection-details').append(row);
     }
     if(viewed===identity?.town_id){
       if(town.player?.boat){const boat=document.createElement('p');boat.textContent='Exploration boat ready. Walk onto water to sail; step ashore to disembark.';$('selection-details').append(boat);}
@@ -1195,9 +1209,15 @@ function renderSelection(town){
         renderLocalStory(own,item,selection.index,nearby,$('selection-details'));
         if(gift){
           const gear=workerTools[gift],note=document.createElement('p');
-          note.textContent=item.name==='Sylva'?'“A sharp axe makes lighter work. Take my spare and pass it to your woodcutter.”':'“This rod has landed many a fine catch. Let one of your fishers put it to use.”';$('selection-details').append(note);
+          note.textContent=`Gift for a worker · +${gear.bonus*100}% ${gear.job} output`;$('selection-details').append(note);
           const button=document.createElement('button');button.textContent=progress.gift_claimed?`${gear.name} gift collected`:`Accept ${gear.name.toLowerCase()} · Gift for a worker`;
           button.disabled=!nearby||!!progress.gift_claimed;button.onclick=()=>act({action:'claim_local_gift',npc_index:selection.index});$('selection-details').append(button);
+        }
+        for(const key of localToolShops[item.name] || []){
+          const gear=workerTools[key],button=document.createElement('button');
+          button.textContent=`Buy ${gear.name.toLowerCase()} · ${gear.price} coins · +${gear.bonus*100}% ${gear.job} output`;
+          button.disabled=!nearby||own.coins<gear.price;
+          button.onclick=()=>act({action:'buy_worker_tool',item:key,npc_index:selection.index});$('selection-details').append(button);
         }
         if(['Tobin','Clover'].includes(item.name)){
           const note=document.createElement('p');note.textContent='“I could use some firewood. Bring me 10 wood and I’ll share 8 food. I restock every five minutes.”';$('selection-details').append(note);
@@ -1786,8 +1806,8 @@ function npcSprites(town,seconds){
 function villagerAccessories(b){
   // Earned gear stays visible across jobs: tools at 5, clothing at 10, gold accents at 20.
   const v=b.kind==='villager'?b.villager:{};
-  return {axe:v.woodcutting>=5||v.worker_tool==='fine_axe',blouse:v.woodcutting>=10,woodcuttingMaster:v.woodcutting>=20,
-    sickle:v.farming>=5,hat:v.farming>=10,farmingMaster:v.farming>=20,
+  return {axe:v.woodcutting>=5||['fine_axe','steel_axe','masterwork_axe'].includes(v.worker_tool),blouse:v.woodcutting>=10,woodcuttingMaster:v.woodcutting>=20,
+    sickle:v.farming>=5||['fine_sickle','steel_sickle','masterwork_sickle'].includes(v.worker_tool),hat:v.farming>=10,farmingMaster:v.farming>=20,
     pouch:v.fishing>=5,scarf:v.fishing>=10,fishingMaster:v.fishing>=20};
 }
 function drawVillager(b){
