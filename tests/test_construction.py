@@ -74,7 +74,7 @@ class Construction(unittest.TestCase):
         self.finish(home)
         self.finish(store)
         self.finish(workplace)
-        self.assertEqual(capacity(self.town), 350)
+        self.assertEqual(capacity(self.town), 300)
         self.assertIsNotNone(work_source(self.town, 'woodcutting', 0))
 
     def test_progress_survives_save_and_relocation(self):
@@ -100,7 +100,7 @@ class Construction(unittest.TestCase):
 
     def test_legacy_buildings_remain_complete(self):
         self.town['buildings'].append({'kind': 'storehouse', 'x': 4, 'y': 6})
-        self.assertEqual(capacity(self.town), 300)
+        self.assertEqual(capacity(self.town), 250)
         construct(self.town, self.town, {0})
         self.assertTrue(all('construction' not in b for b in self.town['buildings']))
 

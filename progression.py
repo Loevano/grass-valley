@@ -167,7 +167,7 @@ def building_storage_keys(building):
 
 
 def storage_size(building):
-    return 0 if building['kind'] == 'home' else 200 if building['kind'] == 'hall' else 100 * building.get('level', 1) if building['kind'] == 'storehouse' else 50
+    return 0 if building['kind'] == 'home' else 200 if building['kind'] == 'hall' else (50, 75, 100, 150, 200)[building.get('level', 1) - 1] if building['kind'] == 'storehouse' else 50
 
 
 def inventory(building):

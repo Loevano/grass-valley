@@ -349,7 +349,7 @@ function buildingVisualLevel(building,town){
 function buildingHeight(building,town){
   return ({hall:42,woodcutter:23,barn:34,mill:40,smokehouse:32,workshop:25,sawpit:16,market:17,fish_pond:18,orchard:20,bakery:30,butcher:25}[building.kind] || 27)+4*(buildingVisualLevel(building,town)-1);
 }
-function buildingStorageSize(building){return building.kind==='home'?0:building.kind==='hall'?200:building.kind==='storehouse'?100*buildingLevel(building):50;}
+function buildingStorageSize(building){return building.kind==='home'?0:building.kind==='hall'?200:building.kind==='storehouse'?[50,75,100,150,200][buildingLevel(building)-1]:50;}
 function storageCapacity(town){return town.buildings.filter(b=>!b.construction).reduce((sum,b)=>sum+buildingStorageSize(b),0);}
 
 const storageKeys=['wood','food','planks','wheat','fodder','flour','wool','tools','manure','herbs'];
@@ -446,7 +446,7 @@ function renderStorage(town,item,index,target=$('selection-details')){
 function upgradeBenefit(kind,level,item){
   if(kind==='home'&&item?.profession_upgrades?.includes('timber_frame'))level++;
   if(kind==='fishing_hut')return `+${25*(level-1)}% food / catch / worker\n${resourceReach({...item,kind,level})} tile reach`;
-  return kind==='barn'?`${4*level} animal spaces`:['sawpit','mill','smokehouse','workshop','fish_pond','orchard','market','bakery','butcher'].includes(kind)?'Separate worker capacity':kind==='home'?`${2*level} spaces\n-${25*(level-1)}% departure`:kind==='storehouse'?`${100*level} capacity per resource${level>=5?'\nWarehouse':''}`:`+${25*(level-1)}% ${kind==='woodcutter'?'wood':kind==='fishing_hut'?'food / catch':kind==='acre'?'field food':'food'} / worker`;
+  return kind==='barn'?`${4*level} animal spaces`:['sawpit','mill','smokehouse','workshop','fish_pond','orchard','market','bakery','butcher'].includes(kind)?'Separate worker capacity':kind==='home'?`${2*level} spaces\n-${25*(level-1)}% departure`:kind==='storehouse'?`${buildingStorageSize({kind,level})} capacity per resource${level>=5?'\nWarehouse':''}`:`+${25*(level-1)}% ${kind==='woodcutter'?'wood':kind==='fishing_hut'?'food / catch':kind==='acre'?'field food':'food'} / worker`;
 }
 let pendingUpgrade=null;
 const professionBenefits={

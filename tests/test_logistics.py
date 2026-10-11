@@ -357,21 +357,21 @@ class ResourceLogistics(unittest.TestCase):
 
     def test_enabled_resources_have_independent_capacity_and_preserve_old_saves(self):
         store = self.add('storehouse', storage_allocations={'wood': 30, 'planks': 40, 'wool': 0})
-        self.assertEqual(economy.storage_allocations(store)['wood'], 100)
-        self.assertEqual(economy.storage_allocations(store)['planks'], 100)
+        self.assertEqual(economy.storage_allocations(store)['wood'], 50)
+        self.assertEqual(economy.storage_allocations(store)['planks'], 50)
         self.assertEqual(economy.storage_allocations(store)['wool'], 0)
         store['stored_goods'] = {'wood': 100, 'planks': 20}
         self.assertEqual(economy.local_room(store, 'wood'), 0)
-        self.assertEqual(economy.local_room(store, 'planks'), 80)
+        self.assertEqual(economy.local_room(store, 'planks'), 30)
         server.command(self.town, {'action': 'configure_storage', 'index': 1,
                                   'enabled': {'wood': True, 'planks': False, 'wool': True}})
         self.assertEqual(store['stored_goods'], {'wood': 100, 'planks': 20})
         self.assertEqual(economy.local_room(store, 'planks'), 0)
-        self.assertEqual(economy.local_room(store, 'wool'), 100)
-        self.assertEqual(economy.storage_limit(self.town, 'wool'), 100)
+        self.assertEqual(economy.local_room(store, 'wool'), 50)
+        self.assertEqual(economy.storage_limit(self.town, 'wool'), 50)
         store['level'] = 2
-        self.assertEqual(economy.local_room(store, 'wood'), 100)
-        self.assertEqual(economy.local_room(store, 'wool'), 200)
+        self.assertEqual(economy.local_room(store, 'wood'), 0)
+        self.assertEqual(economy.local_room(store, 'wool'), 75)
         self.assertEqual(economy.local_room(store, 'planks'), 0)
 
     def test_upgrade_reaches_warehouse_level_five_and_expands_enabled_resources(self):
@@ -385,12 +385,12 @@ class ResourceLogistics(unittest.TestCase):
                     break
                 server.construct(self.town, self.town)
             self.assertEqual(store['level'], level)
-            self.assertEqual(economy.storage_allocations(store)['wood'], 100 * level)
-            self.assertEqual(economy.storage_allocations(store)['planks'], 100 * level)
+            self.assertEqual(economy.storage_allocations(store)['wood'], (50, 75, 100, 150, 200)[level - 1])
+            self.assertEqual(economy.storage_allocations(store)['planks'], (50, 75, 100, 150, 200)[level - 1])
             self.assertEqual(economy.storage_allocations(store)['wheat'], 0)
-        self.assertEqual(economy.storage_size(store), 500)
-        self.assertEqual(economy.storage_allocations(store)['wood'], 500)
-        self.assertEqual(economy.storage_allocations(store)['planks'], 500)
+        self.assertEqual(economy.storage_size(store), 200)
+        self.assertEqual(economy.storage_allocations(store)['wood'], 200)
+        self.assertEqual(economy.storage_allocations(store)['planks'], 200)
         with self.assertRaises(ValueError):
             server.command(self.town, {'action': 'upgrade_building', 'index': index})
 

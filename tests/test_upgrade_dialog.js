@@ -50,7 +50,7 @@ const run=new Function('document','window','localStorage','setTimeout','clearTim
  for(let level=1;level<5;level++){
    town.buildings[3].level=level;showUpgrade({action:'upgrade_building',index:3});
    const row=$('upgrade-benefits').children[0];
-   check(row.children[0].textContent==='Capacity per resource'&&row.children[1].textContent===100*level+' → '+100*(level+1)&&row.children[2].textContent==='+100','Every storage tier shows compact before/after and gain');
+   check(row.children[0].textContent==='Capacity per resource'&&row.children[1].textContent===[50,75,100,150,200][level-1]+' → '+[50,75,100,150,200][level]&&row.children[2].textContent==='+'+([50,75,100,150,200][level]-[50,75,100,150,200][level-1]),'Every storage tier shows compact before/after and gain');
    $('cancel-upgrade').onclick();
  }
  showUpgrade({action:'upgrade_building',index:1});town.buildings.splice(1,1);

@@ -14,7 +14,7 @@ class HaulingSkill(unittest.TestCase):
         self.worker['talents'] = {}
         self.source = {'kind': 'woodcutter', 'x': 3, 'y': 2,
                        'output_buffer': {'wood': 40}, 'stored_goods': {'wood': 40}}
-        self.store = {'kind': 'storehouse', 'x': 1, 'y': 2,
+        self.store = {'kind': 'storehouse', 'level': 3, 'x': 1, 'y': 2,
                       'storage_allocations': {'wood': 200, 'planks': 100}}
         self.town['buildings'].extend([self.source, self.store])
 

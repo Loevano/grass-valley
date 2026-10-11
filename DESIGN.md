@@ -84,7 +84,7 @@ These are starting values to make the prototype playable, **not final design dec
 - New worlds share one 120×120 landscape, with randomized hall sites at least 40 tiles apart. Construction stays within 30 steps of the owner's hall, adding 5 steps per completed hall upgrade, and within the same range of its original site. Existing worlds keep their separate town maps.
 - Cottages, woodcutters, farms, and storehouses occupy one tile each.
 - Move a building instantly for one coin, preserving its identity. If you have no coins, moving is free so rearranging never becomes locked.
-- Every three seconds, assigned workers produce into 50-unit workplace buffers and gain skill if the buffer has room. Local outputs are immediately included in usable town stock; hauling relocates them without adding them twice. Each completed building shows its own inventory. Only storehouses and warehouses can allocate incoming storage; other buildings have fixed capacities for relevant inputs and outputs. Ordinary buildings hold 50 units; processor inputs remain separately reserved.
+- Every three seconds, assigned workers produce into 50-unit workplace buffers and gain skill if the buffer has room. Local outputs are immediately included in usable town stock; hauling relocates them without adding them twice. Each completed building shows its own inventory. Only storehouses and warehouses can enable or disable incoming resources; other buildings have fixed capacities for relevant inputs and outputs. Ordinary buildings hold 50 units; processor inputs remain separately reserved.
 - Town maps contain renewable forests and water, plus rock outcrops. Woodcutters
   need a tree within ten horizontal/vertical tile steps; farmers fetch water during
   the watering stage without a farm-to-water distance limit. Workers animate
@@ -98,7 +98,7 @@ These are starting values to make the prototype playable, **not final design dec
   when crossing shores. Each shared island chest awards 25 coins once.
   Rock mining is not implemented. Existing saves gain
   resources only on unoccupied tiles, preserving their buildings.
-- The hall starts with 100 wood and 100 food spaces. Storehouses add 100 shared spaces per level, allocated between resources; level 5 becomes a 500-space Warehouse. Storage workers collect outputs and distribute inputs along walkable routes. Producers deliver full buffers and fetch inputs themselves when needed. Full storage preserves buffered goods and eventually pauses work.
+- The hall starts with 100 wood and 100 food spaces. Storehouses hold 50/75/100/150/200 of each enabled resource across five levels; level 5 becomes a Warehouse. Each resource has independent capacity, with edible goods grouped as food. Disabled resources keep existing stock available to use. Storage workers collect outputs and distribute inputs along walkable routes. Producers deliver full buffers and fetch inputs themselves when needed. Full storage preserves buffered goods and eventually pauses work.
 - Food is consumed over time. A full minute of missed meals puts settlers at risk
   of leaving with all their skills. Cottage upgrades reduce that risk; the last
   settler stays so the town can recover.

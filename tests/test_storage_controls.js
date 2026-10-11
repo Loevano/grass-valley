@@ -23,12 +23,12 @@ const run=new Function('document','window','localStorage','setTimeout','clearTim
  const toggle=key=>fields().find(c=>c.attributes['aria-label']==='Accept '+key);
  check(meters().length===10&&fields().length===10,'Storage has meters and resource switches');
  check(meters().find(c=>c.attributes['aria-label']==='Food stored').value===16,'Food meter combines weighted edible goods');
- check(meters().find(c=>c.attributes['aria-label']==='Wood stored').max===400,'Each enabled resource has full level capacity');
+ check(meters().find(c=>c.attributes['aria-label']==='Wood stored').max===150,'Each enabled resource has full level capacity');
  check(toggle('Wood').checked&&!toggle('Planks').checked,'Old positive allocations become enabled resources');
  check(Object.values(roomEnabled({kind:'storehouse'})).every(enabled=>!enabled),'New storehouses start with resources disabled');
- check(localTradeFoodRoom({inventory_version:1,buildings:[{kind:'storehouse',storage_enabled:{wood:true,food:true},stored_goods:{wood:100}}]})===100,'Full wood storage leaves independent food room for restocking');
- check(resourceStorage(town,'wool')===400,'Wool has independent level capacity');
- check(resourceStorage(town,'fish')===500,'Food retains fixed hall capacity plus storehouse capacity');
+ check(localTradeFoodRoom({inventory_version:1,buildings:[{kind:'storehouse',storage_enabled:{wood:true,food:true},stored_goods:{wood:100}}]})===50,'Full wood storage leaves independent food room for restocking');
+ check(resourceStorage(town,'wool')===150,'Wool has independent level capacity');
+ check(resourceStorage(town,'fish')===250,'Food retains fixed hall capacity plus storehouse capacity');
  toggle('Planks').checked=true;toggle('Planks').onchange();
  toggle('Wood').checked=false;toggle('Wood').onchange();
  check(commands.at(-1).action==='configure_storage'&&commands.at(-1).enabled.planks&&!commands.at(-1).enabled.wood,'Switches submit enabled resources and preserve other changes');
@@ -36,7 +36,7 @@ const run=new Function('document','window','localStorage','setTimeout','clearTim
  check(!toggle('Wood').checked&&toggle('Planks').checked,'Host-confirmed switches persist');
  check(panelNodes().some(c=>c.textContent==='20 · Disabled'),'Disabled wood retains its inventory');
  check(!panelNodes().some(c=>c.tag==='input'&&c.type==='range'),'Storage has no allocation sliders');
- check(panelNodes().find(c=>c.className==='storage-summary').textContent==='400 capacity per enabled resource','Storage explains per-resource capacity');
+ check(panelNodes().find(c=>c.className==='storage-summary').textContent==='150 capacity per enabled resource','Storage explains per-resource capacity');
  check(panelNodes().find(c=>c.tag==='button'&&c.textContent==='Lvl'&&c.title?.startsWith('Upgrade to level 5')),'Storage can upgrade beyond level 3');
  town.buildings[1].level=5;render();
  check($('selection-title').textContent==='Warehouse','Level 5 storage is named Warehouse');
@@ -60,7 +60,7 @@ const run=new Function('document','window','localStorage','setTimeout','clearTim
  inspect('building',4);
  check(meters().length===1&&meters()[0].attributes['aria-label']==='Food stored','Fishing huts only offer food storage');
  check(roomAllocations(town.buildings[4]).tools===undefined,'Old unrelated allocations are ignored');
- check(resourceStorage(town,'fish')===650&&resourceStorage(town,'bread')===600,'Food capacity respects which edible goods each building accepts');
+ check(resourceStorage(town,'fish')===350&&resourceStorage(town,'bread')===300,'Food capacity respects which edible goods each building accepts');
  check(panelNodes().some(c=>c.textContent?.includes('Tools from previous storage')),'Legacy unrelated goods remain visible');
  check(!button('Allocate')&&roomAllocations(town.buildings[4]).food===50,'Fishing huts ignore old allocations and have fixed food capacity');
  town.buildings.push({kind:'mill',x:1,y:3});inspect('building',5);
