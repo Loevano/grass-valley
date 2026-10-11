@@ -352,7 +352,6 @@ function buildingHeight(building,town){
 function buildingStorageSize(building){return building.kind==='home'?0:building.kind==='hall'?200:building.kind==='storehouse'?100*buildingLevel(building):50;}
 function storageCapacity(town){return town.buildings.filter(b=>!b.construction).reduce((sum,b)=>sum+buildingStorageSize(b),0);}
 
-const storageDrafts=new Map();
 const storageKeys=['wood','food','planks','wheat','fodder','flour','wool','tools','manure','herbs'];
 function buildingName(building){return building.kind==='storehouse'&&buildingLevel(building)>=5?'Warehouse':labels[building.kind];}
 const storageGoods={
@@ -371,6 +370,10 @@ function buildingStorageKeys(building){
   return storageKeys.filter(key=>groups.has(key));
 }
 function roomAllocations(building){
+  if(building.kind==='storehouse'){
+    const enabled=roomEnabled(building);
+    return Object.fromEntries(buildingStorageKeys(building).map(key=>[key,enabled[key]?buildingStorageSize(building):0]));
+  }
   const fixed=world.progression?.fixed_storage || {
     hall:{wood:100,food:100},home:{},woodcutter:{wood:50},fishing_hut:{food:50},
     farm:{food:20,wheat:10,fodder:10,manure:10},acre:{food:20,wheat:10,fodder:10,manure:10},
@@ -379,7 +382,7 @@ function roomAllocations(building){
     smokehouse:{food:45,wood:5},workshop:{planks:25,wood:15,tools:10},fish_pond:{fodder:15,food:35},
     market:Object.fromEntries(storageKeys.map(key=>[key,5]))
   };
-  const allocations=building.kind==='storehouse'?(building.storage_allocations || {}):(fixed[building.kind] || {});
+  const allocations=fixed[building.kind] || {};
   return Object.fromEntries(Object.entries(allocations).filter(([key])=>buildingStorageKeys(building).includes(key)));
 }
 function resourceStorage(town,key){
@@ -393,96 +396,49 @@ function localTradeFoodRoom(town){
     const stock={...b.stored_goods};
     for(const [key,n] of Object.entries(b.output_buffer || {}))stock[key]=(stock[key] || 0)+n;
     const used=Object.entries(stock).reduce((n,[key,count])=>n+(key==='food'||key in edible?count*(edible[key] || 1):0),0);
-    return sum+Math.min(Math.max(0,(roomAllocations(b).food || 0)-used),Math.max(0,buildingStorageSize(b)-Object.values(stock).reduce((n,count)=>n+count,0)));
+    const room=Math.max(0,(roomAllocations(b).food || 0)-used);
+    return sum+(b.kind==='storehouse'?room:Math.min(room,Math.max(0,buildingStorageSize(b)-Object.values(stock).reduce((n,count)=>n+count,0))));
   },0);
 }
-const storageEditing=new Set();
-const woodReserveDrafts=new Map();
+function roomEnabled(building){
+  return Object.fromEntries(buildingStorageKeys(building).map(key=>[key,building.storage_enabled?!!building.storage_enabled[key]:((building.storage_allocations?.[key] || 0)>0)]));
+}
 function renderStorage(town,item,index,target=$('selection-details')){
-  const keys=buildingStorageKeys(item);
-  const capacity=buildingStorageSize(item),allocations=roomAllocations(item);
-  const draftKey=`${world.world_id}/${viewed}/${index}/${item.kind}/${item.x},${item.y}`;
-  const owner=viewed===identity?.town_id,canAllocate=owner&&item.kind==='storehouse',editing=canAllocate&&storageEditing.has(draftKey);
-  const draft=storageDrafts.get(draftKey);
-  if(!editing&&draft&&keys.every(key=>(draft[key] || 0)===(allocations[key] || 0)))storageDrafts.delete(draftKey);
-  const values=editing?(storageDrafts.get(draftKey) || allocations):allocations;
-  const edible=foodGoods();
-  const stock={},minimum={},stored={...item.stored_goods};
-  for(const [key,n] of Object.entries(item.stored_goods || {})){
-    const category=key in edible?'food':key;
-    minimum[category]=(minimum[category] || 0)+n*(edible[key] || 1);
-  }
+  const keys=buildingStorageKeys(item),capacity=buildingStorageSize(item),allocations=roomAllocations(item);
+  const owner=viewed===identity?.town_id,canConfigure=owner&&item.kind==='storehouse';
+  const enabled=roomEnabled(item),edible=foodGoods(),stock={},stored={...item.stored_goods};
   for(const [key,n] of Object.entries(item.output_buffer || {}))stored[key]=(stored[key] || 0)+n;
   for(const [key,n] of Object.entries(stored)){
     const category=key in edible?'food':key;
     stock[category]=(stock[category] || 0)+n*(edible[key] || 1);
   }
-  const heading=document.createElement('div');heading.className='storage-heading';
-  if(canAllocate&&!editing&&keys.length){
-    const button=document.createElement('button');button.textContent='Allocate';
-    button.onclick=()=>{storageEditing.add(draftKey);storageDrafts.set(draftKey,{...allocations});woodReserveDrafts.set(draftKey,{minimum:item.wood_reserve || 0,enabled:!!item.wood_reserve_enabled});renderSelection(town);};heading.append(button);
+  const summary=document.createElement('p');summary.className='storage-summary';
+  summary.textContent=item.kind==='storehouse'?`${capacity} capacity per enabled resource`:`${Math.floor(Object.values(stock).reduce((sum,n)=>sum+n,0))} / ${capacity} stored`;
+  target.append(summary);
+  if(item.kind==='storehouse'){
+    const note=document.createElement('p');note.className='storage-note';
+    note.textContent='Enable resources for incoming deliveries. Disabled goods remain available to use. Food shares one capacity for edible goods.';target.append(note);
   }
-  target.append(heading);
-  const summary=document.createElement('p');summary.className='storage-summary';target.append(summary);
-  if(editing||!keys.length){const note=document.createElement('p');note.className='storage-note';note.textContent=editing?'Assign space for incoming goods.':'This building does not store goods.';target.append(note);}
-  const fields={},counts={};
-  const reserve=woodReserveDrafts.get(draftKey) || {minimum:item.wood_reserve || 0,enabled:!!item.wood_reserve_enabled};
-  let minimumInput,enableInput,woodTrack;
-  const update=()=>{
-    const used=keys.reduce((sum,key)=>sum+Number(fields[key].value),0);
-    summary.textContent=`${used} / ${capacity} allocated · ${Math.max(0,capacity-used)} free`;
-    for(const key of keys){
-      fields[key].max=key==='wood'?String(capacity):String(Math.max(Number(fields[key].min),capacity-used+Number(fields[key].value)));
-      if(key==='wood')fields[key].setAttribute('aria-valuemax',String(capacity-used+Number(fields[key].value)));
-      counts[key].textContent=key==='wood'?`Min ${reserve.minimum} · Max ${fields[key].value}`:`${fields[key].value} spaces`;
-    }
-    if(minimumInput){
-      reserve.minimum=Math.min(reserve.minimum,Number(fields.wood.value));
-      minimumInput.value=String(reserve.minimum);minimumInput.disabled=!reserve.enabled;
-      minimumInput.setAttribute('aria-valuemax',fields.wood.value);
-      woodTrack.style.background=`linear-gradient(to right,#ffffff15 0 ${100*reserve.minimum/capacity}%,#b8c999 ${100*reserve.minimum/capacity}% ${100*Number(fields.wood.value)/capacity}%,#ffffff15 ${100*Number(fields.wood.value)/capacity}% 100%) center / 100% 5px no-repeat`;
-      counts.wood.textContent=`Min ${reserve.minimum}${reserve.enabled?'':' (off)'} · Max ${fields.wood.value}`;
-    }
-  };
   for(const key of keys){
-    const row=document.createElement(key==='wood'&&editing?'div':'label');row.className='storage-row';
-    const caption=document.createElement('span');caption.className='storage-caption';
-    const name=document.createElement('span');name.textContent=goodName(key);
-    const count=document.createElement('span');count.className='storage-count';counts[key]=count;
-    caption.append(name);caption.append(count);row.append(caption);
-    if(editing){
-      const input=document.createElement('input');input.type='range';input.min=String(Math.ceil(minimum[key] || 0));input.max=String(capacity);input.step='1';input.value=String(Math.max(Number(input.min),values[key] || 0));
-      input.setAttribute('aria-label',goodName(key)+' storage allocation');fields[key]=input;
-      input.oninput=()=>{const used=keys.reduce((sum,k)=>sum+Number(fields[k].value),0);const limit=key==='wood'?capacity-used+Number(input.value):Number(input.max);input.value=String(Math.max(Math.ceil(minimum[key] || 0),Math.min(limit,Number(input.value))));update();storageDrafts.set(draftKey,Object.fromEntries(keys.map(k=>[k,Number(fields[k].value)])));};
-      if(key==='wood'){
-        input.min='0';input.setAttribute('aria-valuemin',String(Math.ceil(minimum.wood || 0)));
-        const toggle=document.createElement('label');toggle.className='storage-reserve-enable';
-        enableInput=document.createElement('input');enableInput.type='checkbox';enableInput.checked=reserve.enabled;enableInput.setAttribute('aria-label','Enable wood reserve');
-        const text=document.createElement('span');text.textContent='Enable reserve';toggle.append(enableInput);toggle.append(text);row.append(toggle);
-        woodTrack=document.createElement('div');woodTrack.className='storage-wood-range';
-        minimumInput=document.createElement('input');minimumInput.type='range';minimumInput.min='0';minimumInput.max=String(capacity);minimumInput.step='1';minimumInput.value=String(reserve.minimum);minimumInput.setAttribute('aria-label','Wood reserve minimum');
-        minimumInput.oninput=()=>{reserve.minimum=Math.min(Number(minimumInput.value),Number(fields.wood.value));woodReserveDrafts.set(draftKey,reserve);update();};
-        enableInput.onchange=()=>{reserve.enabled=enableInput.checked;woodReserveDrafts.set(draftKey,reserve);update();};
-        woodTrack.append(input);woodTrack.append(minimumInput);row.append(woodTrack);
-      }else row.append(input);
-    }else{
-      const amount=stock[key] || 0,limit=allocations[key] || 0;
-      count.textContent=`${Math.floor(amount)} / ${limit}`;
-      const meter=document.createElement('meter');meter.min=0;meter.max=Math.max(1,limit,amount);meter.value=amount;
-      meter.setAttribute('aria-label',`${goodName(key)} stored`);meter.setAttribute('aria-valuetext',`${Math.floor(amount)} stored, ${limit} ${item.kind==='storehouse'?'allocated':'fixed'} spaces`);row.append(meter);
+    const row=document.createElement('div');row.className='storage-row';
+    const caption=document.createElement('label');caption.className='storage-caption';
+    const name=document.createElement('span');name.textContent=goodName(key);caption.append(name);
+    if(canConfigure){
+      const toggle=document.createElement('input');toggle.type='checkbox';toggle.checked=enabled[key];
+      toggle.setAttribute('aria-label',`Accept ${goodName(key)}`);
+      toggle.onchange=()=>{
+        if(viewed!==identity?.town_id)return;
+        enabled[key]=toggle.checked;
+        act({action:'configure_storage',index,enabled:{...enabled}});
+      };
+      caption.append(toggle);
     }
-    target.append(row);
+    const amount=stock[key] || 0,limit=allocations[key] || 0;
+    const count=document.createElement('span');count.className='storage-count';
+    count.textContent=item.kind==='storehouse'&&!enabled[key]?`${Math.floor(amount)} · Disabled`:`${Math.floor(amount)} / ${limit}`;caption.append(count);row.append(caption);
+    const meter=document.createElement('meter');meter.min=0;meter.max=Math.max(1,limit,amount);meter.value=amount;
+    meter.setAttribute('aria-label',`${goodName(key)} stored`);meter.setAttribute('aria-valuetext',`${Math.floor(amount)} stored, ${limit} capacity`);row.append(meter);target.append(row);
   }
-  if(editing){
-    update();
-    const actions=document.createElement('div');actions.className='storage-actions';
-    const save=document.createElement('button');save.textContent='Save allocations';
-    save.onclick=()=>{if(viewed!==identity?.town_id)return;act({action:'allocate_storage',index,allocations:Object.fromEntries(keys.map(key=>[key,Number(fields[key].value)])),wood_reserve:reserve.minimum,wood_reserve_enabled:reserve.enabled});storageEditing.delete(draftKey);renderSelection(town);};
-    const cancel=document.createElement('button');cancel.textContent='Cancel';cancel.className='quiet';cancel.onclick=()=>{storageEditing.delete(draftKey);storageDrafts.delete(draftKey);woodReserveDrafts.delete(draftKey);renderSelection(town);};
-    actions.append(save);actions.append(cancel);target.append(actions);
-  }else summary.textContent=`${Math.floor(Object.values(stock).reduce((sum,n)=>sum+n,0))} / ${capacity} stored`;
-  if(item.kind==='storehouse'&&!editing){const note=document.createElement('p');note.className='storage-note';note.textContent=`Wood reserve: ${item.wood_reserve_enabled?`keep at least ${item.wood_reserve || 0}`:'off'}. Builders can always use it for construction and upgrades.`;target.append(note);}
-  if(editing){const note=document.createElement('p');note.className='storage-note';note.textContent='Wood minimum stays in this room for building and upgrades. Maximum allocates storage space. Production takes only wood above the enabled minimum.';target.append(note);}
   for(const [key,n] of Object.entries(stored))if(n>0&&!buildingStorageGoods(item).includes(key))target.append(fact(String(Math.floor(n)),`${goodName(key)} from previous storage · available to use or haul away`));
   for(const [key,n] of Object.entries(item.input_buffer || {}))if(n>0)target.append(fact(String(Math.floor(n)),`${goodName(key)} reserved for production`));
 }
@@ -490,7 +446,7 @@ function renderStorage(town,item,index,target=$('selection-details')){
 function upgradeBenefit(kind,level,item){
   if(kind==='home'&&item?.profession_upgrades?.includes('timber_frame'))level++;
   if(kind==='fishing_hut')return `+${25*(level-1)}% food / catch / worker\n${resourceReach({...item,kind,level})} tile reach`;
-  return kind==='barn'?`${4*level} animal spaces`:['sawpit','mill','smokehouse','workshop','fish_pond','orchard','market','bakery','butcher'].includes(kind)?'Separate worker capacity':kind==='home'?`${2*level} spaces\n-${25*(level-1)}% departure`:kind==='storehouse'?`${100*level} storage spaces${level>=5?'\nWarehouse':''}`:`+${25*(level-1)}% ${kind==='woodcutter'?'wood':kind==='fishing_hut'?'food / catch':kind==='acre'?'field food':'food'} / worker`;
+  return kind==='barn'?`${4*level} animal spaces`:['sawpit','mill','smokehouse','workshop','fish_pond','orchard','market','bakery','butcher'].includes(kind)?'Separate worker capacity':kind==='home'?`${2*level} spaces\n-${25*(level-1)}% departure`:kind==='storehouse'?`${100*level} capacity per resource${level>=5?'\nWarehouse':''}`:`+${25*(level-1)}% ${kind==='woodcutter'?'wood':kind==='fishing_hut'?'food / catch':kind==='acre'?'field food':'food'} / worker`;
 }
 let pendingUpgrade=null;
 const professionBenefits={
@@ -561,9 +517,9 @@ function renderUpgradeDialog(){
     let label='',value=benefit,gain='';
     if(metric||spaces){
       const before=(metric||spaces)[1],after=metric?metric[3]:spaces[2],unit=metric?metric[2]:'spaces';
-      label=({'storage spaces':'Storage capacity',spaces:'Housing capacity','animal spaces':'Animal capacity','departure':'Departure chance'})[unit] || unit;
+      label=({'capacity per resource':'Capacity per resource',spaces:'Housing capacity','animal spaces':'Animal capacity','departure':'Departure chance'})[unit] || unit;
       value=`${before} → ${after}${unit.includes('spaces')?' spaces':''}`;
-      if(unit.includes('spaces'))gain=`+${Number(after)-Number(before)}`;
+      if(unit.includes('spaces')||unit==='capacity per resource')gain=`+${Number(after)-Number(before)}`;
     }else if(colon>=0){label=benefit.slice(0,colon);value=benefit.slice(colon+2);}
     if(label){const name=document.createElement('span');name.className='upgrade-benefit-label';name.textContent=label;row.append(name);}
     const detail=document.createElement('strong');detail.textContent=value;row.append(detail);
@@ -1134,7 +1090,6 @@ function buildingSection(label,folded=false){
   return section;
 }
 function renderSelection(town){
-  if(document.activeElement?.getAttribute?.('aria-label')?.endsWith('storage allocation') || ['Wood reserve minimum','Enable wood reserve'].includes(document.activeElement?.getAttribute?.('aria-label')))return;
   $('selection-panel').classList.toggle('building-info',selection?.type==='building');
   $('selection-art').replaceChildren();$('selection-level').hidden=true;
   // Park hall controls in the hidden attached container before rebuilding cards.
@@ -1292,7 +1247,7 @@ function renderSelection(town){
     if(item.kind==='hall'){
       production.append(fact(`${buildingRange(town)} tile steps`,'Building range'));
     }
-    p.textContent={hall:'Progression: housing / food / professions\nLevels: 1–5\nUpgrade reward: coins',home:'Town limit: 16 villagers\nArrivals require housing + food',storehouse:'Storage: allocate by resource\nHaulers: collect outputs + supply workplaces',woodcutter:'Output: wood\nRequires nearby trees',farm:'Output: crops\nAcres: within 3 tile steps\nWater: fetched by farmers',fishing_hut:'Output: fish\nRequires nearby water',acre:'Workers: farmers\nRequires farm within 3 tile steps\nWater: fetched by farmers'}[item.kind];
+    p.textContent={hall:'Progression: housing / food / professions\nLevels: 1–5\nUpgrade reward: coins',home:'Town limit: 16 villagers\nArrivals require housing + food',storehouse:'Storage: enable resources\nHaulers: collect outputs + supply workplaces',woodcutter:'Output: wood\nRequires nearby trees',farm:'Output: crops\nAcres: within 3 tile steps\nWater: fetched by farmers',fishing_hut:'Output: fish\nRequires nearby water',acre:'Workers: farmers\nRequires farm within 3 tile steps\nWater: fetched by farmers'}[item.kind];
     if(item.kind==='hall'){
       p.textContent+=`\nBuild range: ${buildingRange(town)} tile steps\nDiagonal: 2 steps\nHall upgrade: +5 range`;
       const upgrade=world.hall_upgrades?.find(next=>next.level===town.level+1);

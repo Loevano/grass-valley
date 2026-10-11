@@ -93,7 +93,8 @@ class HaulingSkill(unittest.TestCase):
     def test_mixed_cargo_shares_capacity_and_storage_food_space(self):
         self.source['output_buffer'] = {'bread': 2, 'eggs': 4, 'wood': 40}
         self.source['stored_goods'] = {}
-        self.store['storage_allocations'] = {'food': 3, 'wood': 200}
+        self.store['storage_enabled'] = {'food': True, 'wood': True}
+        self.store['stored_goods'] = {'eggs': 97}
         cargo = logistics.planned_cargo(self.town, self.source, self.store, 'collect', self.worker)
         self.assertEqual(cargo, {'bread': 2, 'wood': 40})
         self.assertEqual(logistics.transfer(self.town, self.source, self.store, 'collect', self.worker), cargo)
@@ -133,7 +134,7 @@ class HaulingSkill(unittest.TestCase):
             'storage': {k: self.store[k] for k in ('kind', 'x', 'y')},
             'operation': 'collect', 'path': [[0, 0], [1, 0], [2, 0]],
             'pickup_step': 0, 'delivery_step': 1, 'delivered': False, 'cargo': {'wood': 50}}
-        self.store['storage_allocations']['wood'] = 3
+        self.store['stored_goods'] = {'wood': 97}
         logistics.advance_trip(self.town, {'buildings': [], 'map_resources': []}, self.worker, .6)
         self.assertEqual(self.worker['logistics_trip']['cargo'], {'wood': 3})
         self.assertTrue(self.worker['logistics_trip']['delivered'])

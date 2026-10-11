@@ -244,7 +244,7 @@ the Python host, refresh both browsers, and create a new world to use the shared
   takes 30 seconds of construction after arrival; the hall
   panel shows remaining time. Closing the host pauses the upgrade.
 - Completed workplaces hold storage: **50 units** in ordinary workplaces,
-  200 in the hall, and 100 per storehouse level. Its **Storage** section shows
+  200 in the hall, and 100 per enabled resource per storehouse level. Its **Storage** section shows
   goods held there. Wood and other products become available for construction,
   meals, and sales when a villager finishes returning and unloading at their workplace.
   Goods still being gathered or carried are not available to spend. The host tracks
@@ -254,35 +254,29 @@ the Python host, refresh both browsers, and create a new world to use the shared
   available stock. Old shared stock is preserved at the hall when loading, and
   old workplace outputs become available once. Demolition preserves available
   goods at the hall.
-- Allocate incoming storage spaces only for goods relevant to each building.
-  Workplaces accept their production inputs and outputs; farms and acres also
-  accept manure. Homes do not store goods. Halls, storehouses, and markets accept
-  all goods. Food spaces cover only the edible goods that building accepts, using
-  their pantry value (a fishing hut accepts fish, for example). Food is consumed
-  from available town stock. The hall starts
-  with 100 wood and 100 food spaces. Each storehouse level adds 100 shared spaces;
-  new and upgraded spaces remain unallocated until you assign them. Allocations
-  cannot exceed a room's capacity or remove space occupied by its delivered goods.
-  Only storehouses and warehouses can change allocations. Other buildings have
-  fixed spaces for their relevant goods within a 50-space budget (the hall has
-  100 wood and 100 food spaces; homes have none). A mill has 30 wheat and 20 flour
-  spaces, for example. Each building holds its own stock. Processors fetch supplies from buildings that actually hold them.
-  Older saved stocks remain intact, including
-  goods above their fixed capacities; spend or haul them away to resume deliveries.
-- In a storehouse or warehouse, select **Allocate** to adjust the wood slider's
-  minimum and maximum. The maximum assigns wood storage space; **Enable reserve**
-  keeps the minimum in that room, so producers and haulers take only surplus wood.
-  Builders can always spend reserved wood on construction and upgrades. Disable
-  the reserve to release it to production. Inputs already delivered to a workplace
-  finish processing normally.
+- Each storehouse has an **enable/disable switch for each resource** in its
+  Storage section. Every enabled resource has its own capacity: **100 per level**,
+  up to **500** in a level-5 Warehouse. Upgrades increase every resource's capacity
+  automatically; resources do not compete for shared space. Food groups edible
+  goods in one capacity, weighted by pantry value. New storehouses start with all
+  resources disabled. Disabling a resource stops incoming deliveries and keeps
+  existing goods available for processing, construction, meals, and sales.
+  Old positive allocations become enabled resources; saved stock remains intact.
+- Workplaces keep fixed storage for their relevant inputs and outputs within a
+  50-space budget. The hall has 100 wood and 100 food spaces; homes have none.
+  Processors fetch ingredients from buildings that actually hold them.
+- Enable only wood in a storehouse near the woods, and only planks in another
+  near the city. The first hauler collects wood from the woodcutter and supplies
+  the sawpit; the second collects finished planks. Builders can use those planks
+  for construction. Assign a hauler to each storehouse to run this chain.
 - Assign settlers to a **Storehouse** as haulers. They collect small batches and
   distribute recipe ingredients and animal feed so producers can keep working.
   Without hauling support, producers fetch their own inputs and deliver outputs
   once their 50-unit buffer fills. Transport takes time and follows open paths;
-  roads speed it up. Full, unallocated, or unreachable storage leaves outputs at
+  roads speed it up. Full, disabled, or unreachable storage leaves outputs at
   their workplace and pauses production when the buffer fills. Moving, upgrading,
   or reassigning during transport preserves goods and cancels affected deliveries.
-- Storehouses upgrade through level 5, becoming a **Warehouse** with 500 spaces.
+- Storehouses upgrade through level 5, becoming a **Warehouse** with 500 capacity per resource.
   Building upgrades increase storage; settler-capacity upgrades add hauler slots.
 - New landscapes contain denser forests, including timber patches beside towns.
   At distant zoom, trees merge into a forest canopy and rock artwork is hidden.
@@ -296,7 +290,7 @@ the Python host, refresh both browsers, and create a new world to use the shared
   starting; buildings pause their benefits and production until work finishes.
   Upgrade progress survives saving, moving, and restarting the host.
   Cottages provide 2/4/6 housing spaces (the town limit stays 16), and storehouses
-  add 100/200/300/400/500 shared storage spaces. Level 5 becomes a Warehouse. Woodcutters, farms, fishing huts,
+  hold 100/200/300/400/500 of each enabled resource. Level 5 becomes a Warehouse. Woodcutters, farms, fishing huts,
   and acres gain 25% production per worker at level 2 and 50% at level 3.
   Farm and acre bonuses add together on that field. Fishing bonuses increase food
   from successful catches; the 80% catch chance stays the same. Workers still need

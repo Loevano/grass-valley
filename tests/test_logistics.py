@@ -83,8 +83,8 @@ class ResourceLogistics(unittest.TestCase):
         economy.ensure_inventory(self.town)
         before = copy.deepcopy(self.town)
         with self.assertRaisesRegex(ValueError, 'Only storehouses'):
-            server.command(self.town, {'action': 'allocate_storage', 'index': 1,
-                                      'allocations': {'tools': 10}})
+            server.command(self.town, {'action': 'configure_storage', 'index': 1,
+                                      'enabled': {'tools': True}})
         self.assertEqual(self.town, before)
         self.assertEqual(economy.local_room(camp, 'tools'), 0)
         self.assertEqual(economy.storage_limit(self.town, 'tools'), 0)
@@ -92,9 +92,9 @@ class ResourceLogistics(unittest.TestCase):
         self.assertEqual(camp['stored_goods'], {'wood': 10})
         self.assertEqual(source['stored_goods']['tools'], 5)
         with self.assertRaises(ValueError):
-            server.command(self.town, {'action': 'allocate_storage', 'index': 1, 'allocations': {'wood': 50}})
+            server.command(self.town, {'action': 'configure_storage', 'index': 1, 'enabled': {'wood': True}})
         with self.assertRaises(ValueError):
-            server.command(self.town, {'action': 'allocate_storage', 'index': 1, 'allocations': {'wood': 9}})
+            server.command(self.town, {'action': 'configure_storage', 'index': 1, 'enabled': {'wood': False}})
 
     def test_fishing_food_space_only_accepts_fish(self):
         hut = self.add('fishing_hut', storage_allocations={'food': 50})
@@ -118,7 +118,7 @@ class ResourceLogistics(unittest.TestCase):
         self.assertEqual(economy.local_room(home, 'fish'), 0)
         for key in ('wood', 'food'):
             with self.assertRaisesRegex(ValueError, 'Only storehouses'):
-                server.command(self.town, {'action': 'allocate_storage', 'index': 1, 'allocations': {key: 10}})
+                server.command(self.town, {'action': 'configure_storage', 'index': 1, 'enabled': {key: True}})
         economy.eat(self.town, 2)
         self.assertEqual(hut['stored_goods']['fish'], 3)
         self.assertEqual(self.town['food'], 3)
@@ -150,7 +150,7 @@ class ResourceLogistics(unittest.TestCase):
                 index = len(self.town['buildings'])
                 self.town['buildings'].append(building)
                 with self.assertRaisesRegex(ValueError, 'Only storehouses'):
-                    server.command(self.town, {'action': 'allocate_storage', 'index': index, 'allocations': {}})
+                    server.command(self.town, {'action': 'configure_storage', 'index': index, 'enabled': {}})
                 self.town['buildings'].pop()
                 self.assertEqual(self.town, before)
         self.assertEqual(economy.storage_allocations({'kind': 'mill'}), {'wheat': 30, 'flour': 20})
@@ -185,74 +185,40 @@ class ResourceLogistics(unittest.TestCase):
         self.assertEqual(self.town['wood'], 15)
         self.assertEqual(self.town['buildings'][0]['stored_goods']['wood'], 15)
 
-    def test_wood_reserve_limits_deliveries_but_allows_upgrades(self):
+    def test_disabling_keeps_stock_available_for_processors_and_building(self):
         economy.ensure_inventory(self.town)
         self.town['buildings'][0]['stored_goods']['wood'] = 0
         self.town['wood'] = 40
-        store = self.add('storehouse', stored_goods={'wood': 40}, storage_allocations={'wood': 100})
+        store = self.add('storehouse', stored_goods={'wood': 40}, storage_allocations={'wood': 100},
+                         wood_reserve=40, wood_reserve_enabled=True)
         saw = self.add('sawpit')
         worker = self.assign(0, saw)
         index = self.town['buildings'].index(store)
-        server.command(self.town, {'action': 'allocate_storage', 'index': index, 'allocations': {'wood': 100},
-                                   'wood_reserve': 25, 'wood_reserve_enabled': True})
+        server.command(self.town, {'action': 'configure_storage', 'index': index, 'enabled': {'wood': False}})
+        self.assertEqual(economy.local_room(store, 'wood'), 0)
+        self.assertEqual(store['stored_goods']['wood'], 40)
+        self.assertNotIn('wood_reserve', store)
         restored = json.loads(json.dumps(self.town))
-        self.assertEqual(restored['buildings'][index]['wood_reserve'], 25)
+        self.assertFalse(economy.storage_enabled(restored['buildings'][index])['wood'])
+        economy.spend(self.town, {'wood': 10})
+        self.assertEqual(store['stored_goods']['wood'], 30)
         logistics.transfer(self.town, saw, store, 'supply', worker)
-        self.assertEqual(saw['input_buffer']['wood'], 15)
-        self.assertEqual(self.town['wood'], 25)
-        self.assertNotIn(store, logistics.storage_for(self.town, ['wood'], 'supply'))
-        logistics.transfer(self.town, saw, store, 'supply', worker)
-        self.assertEqual(saw['input_buffer']['wood'], 15)
-        server.command(self.town, {'action': 'upgrade_building', 'index': index})
-        self.assertEqual(self.town['wood'], 0)
-        self.assertEqual(store['stored_goods']['wood'], 0)
-        self.assertIn('construction', store)
-
-    def test_reserve_is_rechecked_on_arrival_and_surplus_resumes_supply(self):
-        economy.ensure_inventory(self.town)
-        self.town['buildings'][0]['stored_goods']['wood'] = 0
-        self.town['wood'] = 20
-        store = self.add('storehouse', stored_goods={'wood': 20}, storage_allocations={'wood': 100})
-        saw = self.add('sawpit')
-        worker = self.assign(0, saw)
-        self.assertEqual(logistics.supply_request(self.town, saw, worker), {'wood': 20})
-        store.update(wood_reserve=20, wood_reserve_enabled=True)
-        logistics.transfer(self.town, saw, store, 'supply', worker)
-        self.assertNotIn('input_buffer', saw)
-        self.assertEqual(logistics.supply_request(self.town, saw, worker), {})
-        store['stored_goods']['wood'] += 4
-        self.town['wood'] += 4
-        self.assertEqual(logistics.supply_request(self.town, saw, worker), {'wood': 4})
-        logistics.transfer(self.town, saw, store, 'supply', worker)
-        self.assertEqual(store['stored_goods']['wood'], 20)
-        store['wood_reserve_enabled'] = False
-        saw['input_buffer'] = {}
-        logistics.transfer(self.town, saw, store, 'supply', worker)
+        self.assertEqual(saw['input_buffer']['wood'], 30)
         self.assertEqual(store['stored_goods']['wood'], 0)
 
-    def test_wood_reserve_rejects_invalid_commands(self):
-        store = self.add('storehouse')
-        for amount in (None, True, -1, 1.5, '20', 101):
-            with self.subTest(amount=amount):
-                before = copy.deepcopy(self.town)
-                with self.assertRaises(ValueError):
-                    server.command(self.town, {'action': 'allocate_storage', 'index': 1, 'allocations': {'wood': 100},
-                                              'wood_reserve': amount, 'wood_reserve_enabled': True})
-                self.assertEqual(self.town, before)
-        for enabled in (None, 1, 'true'):
+    def test_storage_switches_reject_invalid_commands_without_mutating_stock(self):
+        store = self.add('storehouse', stored_goods={'wood': 20})
+        for enabled in (None, [], {'wood': 1}, {'wood': 'yes'}, {'wood': None}, {'coins': True}):
             before = copy.deepcopy(self.town)
             with self.assertRaises(ValueError):
-                server.command(self.town, {'action': 'allocate_storage', 'index': 1, 'allocations': {'wood': 100},
-                                          'wood_reserve': 20, 'wood_reserve_enabled': enabled})
+                server.command(self.town, {'action': 'configure_storage', 'index': 1, 'enabled': enabled})
             self.assertEqual(self.town, before)
         for index in (None, True, -1, 100, 0):
             with self.assertRaises(ValueError):
-                server.command(self.town, {'action': 'allocate_storage', 'index': index, 'allocations': {'wood': 100},
-                                      'wood_reserve': 25, 'wood_reserve_enabled': True})
+                server.command(self.town, {'action': 'configure_storage', 'index': index, 'enabled': {'wood': True}})
         store['construction'] = {'total': 30, 'progress': 0}
         with self.assertRaises(ValueError):
-            server.command(self.town, {'action': 'allocate_storage', 'index': 1, 'allocations': {'wood': 100},
-                                      'wood_reserve': 20, 'wood_reserve_enabled': True})
+            server.command(self.town, {'action': 'configure_storage', 'index': 1, 'enabled': {'wood': True}})
 
     def test_spending_output_releases_a_full_processor(self):
         saw = self.add('sawpit', input_buffer={'wood': 10})
@@ -324,6 +290,61 @@ class ResourceLogistics(unittest.TestCase):
         self.assertAlmostEqual(remaining + (planks + saw.get('pending_output', {}).get('planks', 0)) * 2, 20)
         self.assertGreater(self.town.get('goods', {}).get('planks', 0), 0)
 
+    def test_two_filtered_storehouses_route_wood_through_sawpit_to_planks(self):
+        camp = self.add('woodcutter', x=2, y=2, output_buffer={'wood': 20})
+        woods = self.add('storehouse', x=1, y=2, storage_enabled={'wood': True})
+        saw = self.add('sawpit', x=4, y=2)
+        city = self.add('storehouse', x=7, y=2, storage_enabled={'planks': True})
+        sawyer = self.assign(0, saw)
+        first = self.assign(1, woods)
+        second = self.assign(2, city)
+        economy.ensure_inventory(self.town)
+        self.town['buildings'][0]['stored_goods']['wood'] = 0
+        self.town['wood'] = 20
+        for _ in range(100):
+            logistics.haul(self.town, self.town, first, woods, server.construction_route, 3)
+            if woods.get('stored_goods', {}).get('wood', 0) > 0:
+                break
+        self.assertEqual(woods['stored_goods']['wood'], 20)
+        self.assertEqual(camp['output_buffer']['wood'], 0)
+        for _ in range(100):
+            logistics.haul(self.town, self.town, first, woods, server.construction_route, 3)
+            if saw.get('input_buffer', {}).get('wood', 0) > 0:
+                break
+        self.assertEqual(saw['input_buffer']['wood'], 20)
+        self.assertEqual(logistics.produce(self.town, saw, sawyer), 'Working')
+        logistics.drop_off(self.town, saw, sawyer)
+        produced = saw['output_buffer']['planks']
+        for _ in range(100):
+            logistics.haul(self.town, self.town, second, city, server.construction_route, 3)
+            if city.get('stored_goods', {}).get('planks', 0) > 0:
+                break
+        self.assertEqual(city['stored_goods']['planks'], produced)
+        self.assertEqual(city['stored_goods'].get('wood', 0), 0)
+        self.assertEqual(woods['stored_goods'].get('planks', 0), 0)
+        economy.spend(self.town, {'planks': produced})
+        self.assertEqual(city['stored_goods']['planks'], 0)
+
+    def test_switching_off_in_transit_rechecks_delivery_and_preserves_goods(self):
+        camp = self.add('woodcutter', x=8, y=2, output_buffer={'wood': 20})
+        store = self.add('storehouse', x=1, y=2, storage_enabled={'wood': True})
+        hauler = self.assign(0, store)
+        economy.ensure_inventory(self.town)
+        self.town['wood'] = 20
+        self.town['buildings'][0]['stored_goods']['wood'] = 0
+        total = self.town['wood']
+        self.assertTrue(logistics.start_trip(self.town, self.town, hauler, camp, store,
+                                            'collect', server.construction_route, hauler=True))
+        server.command(self.town, {'action': 'configure_storage', 'index': 2, 'enabled': {'wood': False}})
+        logistics.advance_trip(self.town, self.town, hauler, 100)
+        self.assertEqual(camp['output_buffer']['wood'], 20)
+        self.assertEqual(store.get('stored_goods', {}).get('wood', 0), 0)
+        self.assertEqual(self.town['wood'], total)
+        server.command(self.town, {'action': 'configure_storage', 'index': 2, 'enabled': {'wood': True}})
+        logistics.haul(self.town, self.town, hauler, store, server.construction_route, 100)
+        self.assertEqual(store['stored_goods']['wood'], 20)
+        self.assertEqual(self.town['wood'], total)
+
     def test_food_and_wool_share_the_same_collection_rules(self):
         store = self.add('storehouse', x=1, storage_allocations={'food': 50, 'wool': 50})
         barn = self.add('barn', output_buffer={'wool': 3, 'eggs': 4})
@@ -334,24 +355,27 @@ class ResourceLogistics(unittest.TestCase):
         self.assertEqual(self.town.get('produced', {}).get('wool', 0), 0)
         self.assertAlmostEqual(self.town['food'], 44 - 8 * .78)
 
-    def test_allocations_share_one_budget_and_cannot_discard_stored_goods(self):
-        store = self.add('storehouse')
-        index = self.town['buildings'].index(store)
-        server.command(self.town, {'action': 'allocate_storage', 'index': index,
-                                  'allocations': {'wood': 30, 'planks': 40, 'wool': 30}})
-        self.assertEqual(economy.storage_limit(self.town, 'planks'), 40)
-        for allocations in ({'wood': 101}, {'wool': -1}, {'wood': True}, {'wood': 1.5}, {'coins': 10}):
-            before = copy.deepcopy(self.town)
-            with self.assertRaises(ValueError):
-                server.command(self.town, {'action': 'allocate_storage', 'index': index, 'allocations': allocations})
-            self.assertEqual(self.town, before)
-        self.town['goods'] = {'planks': 20}
-        store['stored_goods'] = {'planks': 20}
-        with self.assertRaises(ValueError):
-            server.command(self.town, {'action': 'allocate_storage', 'index': index, 'allocations': {'wood': 100}})
+    def test_enabled_resources_have_independent_capacity_and_preserve_old_saves(self):
+        store = self.add('storehouse', storage_allocations={'wood': 30, 'planks': 40, 'wool': 0})
+        self.assertEqual(economy.storage_allocations(store)['wood'], 100)
+        self.assertEqual(economy.storage_allocations(store)['planks'], 100)
+        self.assertEqual(economy.storage_allocations(store)['wool'], 0)
+        store['stored_goods'] = {'wood': 100, 'planks': 20}
+        self.assertEqual(economy.local_room(store, 'wood'), 0)
+        self.assertEqual(economy.local_room(store, 'planks'), 80)
+        server.command(self.town, {'action': 'configure_storage', 'index': 1,
+                                  'enabled': {'wood': True, 'planks': False, 'wool': True}})
+        self.assertEqual(store['stored_goods'], {'wood': 100, 'planks': 20})
+        self.assertEqual(economy.local_room(store, 'planks'), 0)
+        self.assertEqual(economy.local_room(store, 'wool'), 100)
+        self.assertEqual(economy.storage_limit(self.town, 'wool'), 100)
+        store['level'] = 2
+        self.assertEqual(economy.local_room(store, 'wood'), 100)
+        self.assertEqual(economy.local_room(store, 'wool'), 200)
+        self.assertEqual(economy.local_room(store, 'planks'), 0)
 
-    def test_upgrade_reaches_warehouse_level_five_and_leaves_new_spaces_free(self):
-        store = self.add('storehouse', storage_allocations={'wood': 100})
+    def test_upgrade_reaches_warehouse_level_five_and_expands_enabled_resources(self):
+        store = self.add('storehouse', storage_allocations={'wood': 50, 'planks': 50})
         self.town['wood'] = 500
         index = self.town['buildings'].index(store)
         for level in range(2, 6):
@@ -361,8 +385,12 @@ class ResourceLogistics(unittest.TestCase):
                     break
                 server.construct(self.town, self.town)
             self.assertEqual(store['level'], level)
+            self.assertEqual(economy.storage_allocations(store)['wood'], 100 * level)
+            self.assertEqual(economy.storage_allocations(store)['planks'], 100 * level)
+            self.assertEqual(economy.storage_allocations(store)['wheat'], 0)
         self.assertEqual(economy.storage_size(store), 500)
-        self.assertEqual(store['storage_allocations'], {'wood': 100})
+        self.assertEqual(economy.storage_allocations(store)['wood'], 500)
+        self.assertEqual(economy.storage_allocations(store)['planks'], 500)
         with self.assertRaises(ValueError):
             server.command(self.town, {'action': 'upgrade_building', 'index': index})
 

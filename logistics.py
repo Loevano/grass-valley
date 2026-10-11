@@ -18,11 +18,7 @@ def buffered(building):
 
 
 def production_stock(building, key):
-    """Storage reserves protect production inputs, never building costs."""
-    protected = (building['kind'] == 'storehouse' and key == 'wood'
-                 and building.get('wood_reserve_enabled', False))
-    reserve = building.get('wood_reserve', 0) if protected else 0
-    return max(0, economy.inventory(building).get(key, 0) - reserve)
+    return max(0, economy.inventory(building).get(key, 0))
 
 
 def record_output(town, building, key, amount, villager=None):
@@ -317,7 +313,7 @@ def worker(town, landscape, villager, building, route, elapsed):
         if start_trip(town, landscape, villager, building, storage, 'collect' if collect else 'supply', route):
             return advance_trip(town, landscape, villager, elapsed, resume_work=True)
     if collect:
-        villager['production_status'] = 'Workplace buffer full: storage full, unallocated, or unreachable'
+        villager['production_status'] = 'Workplace buffer full: storage full, disabled, or unreachable'
         return True
     villager['production_status'] = 'Waiting for reachable storage with supplies'
     return True
@@ -346,4 +342,4 @@ def haul(town, landscape, villager, storage, route, elapsed):
         if start_trip(town, landscape, villager, building, storage, operation, route, hauler=True):
             advance_trip(town, landscape, villager, elapsed)
             return
-    villager['production_status'] = 'Waiting for goods or storage allocations'
+    villager['production_status'] = 'Waiting for goods or enabled storage resources'

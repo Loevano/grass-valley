@@ -858,38 +858,23 @@ def command(town, data, world=None):
         town['villagers'][index]['job'] = 'idle'
         town['villagers'][index].pop('logistics_trip', None)
         town['villagers'][index].pop('logistics_target', None)
-    elif action == 'allocate_storage':
-        index, allocations = data.get('index'), data.get('allocations')
+    elif action == 'configure_storage':
+        index, enabled = data.get('index'), data.get('enabled')
         if type(index) is not int or not 0 <= index < len(town['buildings']):
             raise ValueError('Choose a storage room first.')
         building = town['buildings'][index]
         if building['kind'] != 'storehouse':
-            raise ValueError('Only storehouses and warehouses can allocate storage.')
+            raise ValueError('Only storehouses and warehouses can configure storage.')
         if not completed(building):
             raise ValueError('Choose a completed storage room.')
-        if (not isinstance(allocations, dict) or any(k not in economy.STORAGE_KEYS or type(n) is not int or n < 0
-                                                   for k, n in allocations.items())):
-            raise ValueError('Allocate whole, non-negative spaces to valid resources.')
         allowed = economy.building_storage_keys(building)
-        if any(k not in allowed for k in allocations):
-            raise ValueError('This building only stores goods relevant to its purpose.')
-        if sum(allocations.values()) > economy.storage_size(building):
-            raise ValueError('Allocations exceed this storage room’s capacity.')
-        for key in allowed:
-            stock = building.get('stored_goods', {})
-            used = sum(n * economy.EDIBLE.get(k, 1) for k, n in stock.items()
-                       if k == key or (key == 'food' and k in economy.EDIBLE))
-            if used > allocations.get(key, 0) + 1e-9:
-                raise ValueError('Spend or move stored goods before reducing their allocation.')
-        reserve = data.get('wood_reserve', building.get('wood_reserve', 0))
-        enabled = data.get('wood_reserve_enabled', building.get('wood_reserve_enabled', False))
-        if type(reserve) is not int or not 0 <= reserve <= allocations.get('wood', 0):
-            raise ValueError('The wood minimum must be a whole number between 0 and its maximum.')
-        if type(enabled) is not bool:
-            raise ValueError('Choose whether the wood reserve is enabled.')
-        building['storage_allocations'] = dict(allocations)
-        building['wood_reserve'] = reserve
-        building['wood_reserve_enabled'] = enabled
+        if (not isinstance(enabled, dict)
+                or any(k not in allowed or type(value) is not bool for k, value in enabled.items())):
+            raise ValueError('Enable or disable valid storage resources.')
+        building['storage_enabled'] = {k: enabled.get(k, False) for k in allowed}
+        building.pop('storage_allocations', None)
+        building.pop('wood_reserve', None)
+        building.pop('wood_reserve_enabled', None)
     elif action == 'upgrade_capacity':
         index = data.get('index')
         if type(index) is not int or not 0 <= index < len(town['buildings']):

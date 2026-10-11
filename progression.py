@@ -227,14 +227,24 @@ def local_room(building, key):
     group = 'food' if key in EDIBLE else key
     used = sum(n * EDIBLE.get(k, 1) for k, n in stock.items() if k == group or (group == 'food' and k in EDIBLE))
     allocated = max(0, storage_allocations(building).get(group, 0) - used) / EDIBLE.get(key, 1)
+    if building['kind'] == 'storehouse':
+        return allocated
     return min(allocated, max(0, storage_size(building) - sum(stock.values())))
 
 
 def storage_allocations(building):
     if building['kind'] != 'storehouse':
         return dict(FIXED_STORAGE.get(building['kind'], {}))
-    allocations = building.get('storage_allocations', {})
-    return {k: n for k, n in allocations.items() if k in building_storage_keys(building)}
+    enabled = storage_enabled(building)
+    return {k: storage_size(building) if enabled[k] else 0 for k in building_storage_keys(building)}
+
+
+def storage_enabled(building):
+    """Old positive allocations become switches without changing saved inventory."""
+    enabled = building.get('storage_enabled')
+    if enabled is None:
+        enabled = {k: n > 0 for k, n in building.get('storage_allocations', {}).items()}
+    return {k: enabled.get(k, False) for k in building_storage_keys(building)}
 
 
 def storage_limit(town, key):
