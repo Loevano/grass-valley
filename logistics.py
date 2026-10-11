@@ -5,14 +5,6 @@ BUFFER_SIZE = 50
 PRODUCTION_KINDS = {'woodcutter', 'farm', 'fishing_hut', 'barn', 'orchard', *economy.RECIPES}
 
 
-def carry_capacity(villager):
-    return BUFFER_SIZE * economy.efficiency(villager, 'hauling')
-
-
-def travel_speed(villager):
-    return 1.8 * (1 + .25 * (villager.get('hauling', 0) // 20))
-
-
 def buffered(building):
     return sum(economy.inventory(building).values())
 
@@ -152,7 +144,7 @@ def advance_trip(town, landscape, villager, elapsed, resume_work=False):
             villager.pop('logistics_target', None)
             villager['production_status'] = 'Delivery blocked; finding another route'
             return True
-        duration = 1 / (travel_speed(villager) * (1.5 if tile in roads else 1))
+        duration = 1 / (1.8 * (1.5 if tile in roads else 1))
         if remaining < duration:
             break
         remaining -= duration
@@ -178,19 +170,15 @@ def advance_trip(town, landscape, villager, elapsed, resume_work=False):
 
 def transfer(town, building, storage, operation, villager):
     economy.ensure_inventory(town)
-    remaining = carry_capacity(villager)
-    total_moved = 0
     if operation == 'collect':
         for field in ('output_buffer', 'stored_goods'):
             buffer = building.get(field, {})
             for key, amount in list(buffer.items()):
-                moved = min(amount, economy.local_room(storage, key), remaining)
+                moved = min(amount, economy.local_room(storage, key))
                 if moved > 0:
                     target = storage.setdefault('stored_goods', {})
                     target[key] = target.get(key, 0) + moved
                     buffer[key] -= moved
-                    remaining -= moved
-                    total_moved += moved
                     building.pop('buffer_full', None)
     else:
         # The assigned producer's practice determines the recipe, not the hauler's.
@@ -200,11 +188,6 @@ def transfer(town, building, storage, operation, villager):
         request = supply_request(town, building, producer)
         request = {k: min(n, production_stock(storage, k)) for k, n in request.items()
                    if production_stock(storage, k) > 0}
-        # Share one carrying limit across all ingredients in the batch.
-        for key, amount in request.items():
-            request[key] = min(amount, remaining)
-            remaining -= request[key]
-            total_moved += request[key]
         if request:
             for key, amount in request.items():
                 economy.withdraw(town, key, amount, source=storage)
@@ -212,8 +195,6 @@ def transfer(town, building, storage, operation, villager):
             inputs = building.setdefault('input_buffer', {})
             for key, amount in request.items():
                 inputs[key] = inputs.get(key, 0) + amount
-    if total_moved > 0:
-        economy.practice(villager, 'hauling')
 
 
 def worker(town, landscape, villager, building, route, elapsed):

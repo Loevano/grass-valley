@@ -86,7 +86,8 @@ the Python host, refresh both browsers, and create a new world to use the shared
   (15 coins) unlock the darkest swamp tiles. Sand is walkable without equipment;
   desert clothing (20 coins) can still be worn. The planned desert biome will have
   windy patches deeper inside it that require goggles. Boats allow sailing on water.
-  Walk beside any local, click them, and buy or sell gear; sale prices are half
+  Walk beside any local and press **I** (or click them) to read dialogue and buy or sell gear.
+  **I** selects the nearest local within trading distance; change it in Settings. Sale prices are half
   the purchase price, rounded down. Remove worn gear before selling your last copy,
   and return to safe ground before removing protective clothing. Island treasure
   includes an equipment item alongside its 25 coins. Items and worn gear are saved

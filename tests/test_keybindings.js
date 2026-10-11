@@ -155,7 +155,10 @@ function session(saved=null){
   windows.rebind('up','0');check(windows.state.bindings.up==='0','0 remains available for gameplay bindings');
   const numericBindings=session(JSON.stringify({keybindings:{up:'1',left:'2',down:'3',right:'4',camera:'5',fish:'6',chop:'7',gather:'8',build:'9'}}));
   check(Object.values(numericBindings.state.bindings).every(key=>!/^[1-9]$/.test(key)),'Saved bindings release reserved window keys');
-  check(new Set(Object.values(numericBindings.state.bindings)).size===9,'Migrated bindings remain unique');
+  check(new Set(Object.values(numericBindings.state.bindings)).size===Object.keys(numericBindings.state.bindings).length,'Migrated bindings remain unique');
+  check(state.bindings.interact==='i','NPC interaction defaults to I');
+  rebind('interact','o');check(state.bindings.interact==='o','NPC interaction can be rebound');
+  check(document.getElementById('movement-hint').textContent.includes('O interact'),'Movement hint reflects interaction binding');
   const malformed=session('{broken');check(malformed.state.bindings.camera==='y','Malformed storage falls back to defaults');
   const invalid=session(JSON.stringify({keybindings:{up:'w',left:'a',down:'s',right:'d',camera:'d'}}));
   check(invalid.state.bindings.camera==='y','Invalid stored duplicates fall back to defaults');

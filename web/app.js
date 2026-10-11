@@ -17,8 +17,8 @@ const mapSize = town => town?.map_size || 120;
 const workers = new Map();
 let workerTown = null, lastFrame = null;
 const walkKeys = new Set();
-const defaultBindings={up:'w',left:'a',down:'s',right:'d',camera:'y',fish:'f',chop:'c',gather:'g',build:'b'};
-const bindingLabels={up:'Walk up',left:'Walk left',down:'Walk down',right:'Walk right',camera:'Toggle camera lock',fish:'Fish',chop:'Cut wood',gather:'Gather berries and herbs',build:'Toggle building mode'};
+const defaultBindings={up:'w',left:'a',down:'s',right:'d',camera:'y',fish:'f',chop:'c',gather:'g',build:'b',interact:'i'};
+const bindingLabels={up:'Walk up',left:'Walk left',down:'Walk down',right:'Walk right',camera:'Toggle camera lock',fish:'Fish',chop:'Cut wood',gather:'Gather berries and herbs',build:'Toggle building mode',interact:'Interact with nearby NPC'};
 let keybindings={...defaultBindings}, cameraLocked=true;
 try{
   const saved=JSON.parse(localStorage.getItem('lantern-settings') || 'null');
@@ -52,8 +52,8 @@ function renderSettings(){
   $('camera-lock-button').textContent=`Camera lock: ${cameraLocked?'On':'Off'}`;
   $('camera-lock-button').setAttribute('aria-pressed',String(cameraLocked));
   for(const action of Object.keys(defaultBindings))$('binding-'+action).value=keybindings[action].toUpperCase();
-  $('world').setAttribute('aria-label',`Town grid. Use ${['up','left','down','right'].map(action=>keybindings[action].toUpperCase()).join(', ')} to walk. Press ${keybindings.camera.toUpperCase()} to toggle camera lock. Use arrow keys and Enter to inspect tiles.`);
-  $('movement-hint').textContent=`Click map · ${['up','left','down','right'].map(action=>keybindings[action].toUpperCase()).join('/')} to walk · ${keybindings.camera.toUpperCase()} camera lock · ${keybindings.fish.toUpperCase()} fish · ${keybindings.chop.toUpperCase()} chop · ${keybindings.gather.toUpperCase()} gather · ${keybindings.build.toUpperCase()} building mode`;
+  $('world').setAttribute('aria-label',`Town grid. Use ${['up','left','down','right'].map(action=>keybindings[action].toUpperCase()).join(', ')} to walk. Press ${keybindings.camera.toUpperCase()} to toggle camera lock. Press ${keybindings.interact.toUpperCase()} to interact with a nearby NPC. Use arrow keys and Enter to inspect tiles.`);
+  $('movement-hint').textContent=`Click map · ${['up','left','down','right'].map(action=>keybindings[action].toUpperCase()).join('/')} to walk · ${keybindings.camera.toUpperCase()} camera lock · ${keybindings.fish.toUpperCase()} fish · ${keybindings.chop.toUpperCase()} chop · ${keybindings.gather.toUpperCase()} gather · ${keybindings.build.toUpperCase()} building mode · ${keybindings.interact.toUpperCase()} interact`;
 }
 for(const action of Object.keys(defaultBindings)){
   const label=document.createElement('label');label.textContent=bindingLabels[action];label.setAttribute('for','binding-'+action);
@@ -665,6 +665,18 @@ window.addEventListener('keydown',event=>{
   if(key===keybindings.build&&!event.repeat&&!event.ctrlKey&&!event.metaKey&&!event.altKey&&canControlPlayer(true)){
     event.preventDefault();openPanel(panel==='build'?null:'build');canvas.focus();return;
   }
+  if(key===keybindings.interact&&!event.repeat&&!event.ctrlKey&&!event.metaKey&&!event.altKey&&canControlPlayer()){
+    event.preventDefault();clearWalk();
+    const town=world.towns[identity.town_id],landscape=world.shared_map || town;
+    let nearest=-1,distance=Infinity;
+    (landscape.npcs || []).forEach((npc,index)=>{
+      const next=Math.hypot(npc.x-town.player.x,npc.y-town.player.y);
+      if(next<=1.8&&next<distance){nearest=index;distance=next;}
+    });
+    if(nearest<0)notice('Walk beside a local to interact.');
+    else inspect('npc',nearest);
+    return;
+  }
   if(!event.repeat&&!event.ctrlKey&&!event.metaKey&&!event.altKey&&canControlPlayer()){
     const actions=[['fish','f',['water'],'No water to fish.'],['gather','g',['chest','berry_bush','herb_patch'],'No loot, berries, or herbs nearby.'],['chop','c',['tree'],'No wood to cut.'],['mine','m',['rock'],'No stone to mine.']];
     const action=actions.find(([name,fallback])=>key===(keybindings[name] || fallback));
@@ -732,9 +744,6 @@ function villagerCard(town,v,index,withLink=false){
   }
   div.append(profile);
   div.append(skillBar('Woodcutting',v.woodcutting));div.append(skillBar('Farming',v.farming));div.append(skillBar('Fishing',v.fishing || 0));
-  div.append(skillBar('Hauling',v.hauling || 0));
-  const hauling=document.createElement('small');hauling.className='villager-hauling';
-  hauling.textContent=`Hauling: ${(50*workerEfficiency(v,'hauling')).toFixed(0)} goods per trip · ${(1.8*(1+.25*Math.floor((v.hauling || 0)/20))).toFixed(2)} tiles/s before road bonuses. Successful deliveries earn practice; every 20 practice adds 50 carrying capacity and 25% base travel speed.`;div.append(hauling);
   for(const [job,label] of Object.entries(professionJobs))if(v[job] || v.job===job)div.append(skillBar(label,v[job] || 0));
   const traits=document.createElement('small');traits.className='villager-talents';
   traits.textContent=Object.entries(v.talents || {}).map(([job,value])=>`${value>0?'Strength':'Weakness'}: ${goodName(job)} (${value>0?'+':'−'}25%)`).join(' · ');div.append(traits);
@@ -810,7 +819,7 @@ function renderSettlers(town,item,buildingIndex,target=$('selection-details'),up
     const summary=document.createElement('button');summary.className='worker-summary';
     const name=document.createElement('strong');name.textContent=v.name;summary.append(name);
     const skills=document.createElement('small');
-    const skill={storehouse:'hauling',woodcutter:'woodcutting',farm:'farming',acre:'farming',fishing_hut:'fishing'}[item.kind] || world.progression?.buildings[item.kind]?.job;
+    const skill={woodcutter:'woodcutting',farm:'farming',acre:'farming',fishing_hut:'fishing'}[item.kind] || world.progression?.buildings[item.kind]?.job;
     const skillLabels={woodcutting:'Woodcutting',farming:'Farming',fishing:'Fishing',hauling:'Hauling',...professionJobs};
     skills.textContent=(skill?[skill]:['woodcutting','farming','fishing']).map(key=>`${skillLabels[key]} · Lv ${Math.floor(v[key] || 0)}`).join(' / ');
     summary.append(skills);summary.onclick=()=>inspect('villager',i);row.append(summary);

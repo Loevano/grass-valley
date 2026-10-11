@@ -43,7 +43,7 @@ const WorkerAnimation = (() => {
       const remaining=trip?.path.slice(state?0:(trip.step || 0)).map(([x,y])=>({x,y}));
       const path=route(start,remaining?.[0] || target,blocked,size,false);
       const deliveryPath=path===null?[]:[...approach,...path,...(remaining?.slice(1) || [])];
-      return {...position,path:deliveryPath,phase:path===null?'waiting':'walking',source:target,home:null,blocked,size,transport:true,transportSpeed:1+.25*Math.floor((villager.hauling || 0)/20),elapsed:0,clock:state?.clock || index*.37,facing:state?.facing || 1};
+      return {...position,path:deliveryPath,phase:path===null?'waiting':'walking',source:target,home:null,blocked,size,transport:true,elapsed:0,clock:state?.clock || index*.37,facing:state?.facing || 1};
     }
     const source=villager.construction_target || (villager.job==='idle'?null:villager.work_target);
     const kind=villager.job==='woodcutting'?'woodcutter':villager.job==='fishing'?'fishing_hut':'farm';
@@ -113,7 +113,7 @@ const WorkerAnimation = (() => {
       while(state.path.length&&remaining>0){
         const next=state.path[0],dx=next.x-state.x,dy=next.y-state.y,length=Math.hypot(dx,dy);
         if(dx-dy!==0)state.facing=dx-dy>0?1:-1;
-        const speed=1.8*(state.transport?(state.transportSpeed || 1):1)*(state.roads?.has(`${Math.floor(state.x+.5)},${Math.floor(state.y+.5)}`)?1.5:1);
+        const speed=1.8*(state.roads?.has(`${Math.floor(state.x+.5)},${Math.floor(state.y+.5)}`)?1.5:1);
         const travel=Math.min(remaining*speed,.05,length);
         remaining-=travel/speed;
         if(length<=travel+1e-9){state.x=next.x;state.y=next.y;state.path.shift();}
