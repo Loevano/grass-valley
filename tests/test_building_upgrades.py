@@ -95,11 +95,11 @@ class BuildingUpgrades(unittest.TestCase):
             tick({'towns': {'a': self.town}})
         self.assertEqual(len(self.town['villagers']), 9)
         storage = self.add('storehouse')
-        self.assertEqual(capacity(self.town), 300)
+        self.assertEqual(capacity(self.town), 350)
         self.upgrade(storage)
-        self.assertEqual(capacity(self.town), 400)
+        self.assertEqual(capacity(self.town), 450)
         self.upgrade(storage)
-        self.assertEqual(capacity(self.town), 500)
+        self.assertEqual(capacity(self.town), 550)
 
     @patch('server.secrets.randbelow', return_value=1)
     def test_each_workplace_boosts_only_its_workers(self, _roll):
@@ -118,7 +118,7 @@ class BuildingUpgrades(unittest.TestCase):
                 self.town['wood'] = self.town['food'] = 30
                 tick({'towns': {'a': self.town}})
                 upkeep = 5 * .12 + 2 * .18 if resource == 'food' else 0
-                self.assertAlmostEqual(self.town[resource], 30 - upkeep)
+                self.assertAlmostEqual(self.town[resource], 30 + base * 2.25 - upkeep)
                 output = 'wood' if resource == 'wood' else 'fish' if job == 'fishing' else 'vegetables'
                 self.assertAlmostEqual(sum(b.get('output_buffer', {}).get(output, 0) for b in self.town['buildings']), base * 2.25)
 
@@ -143,11 +143,11 @@ class BuildingUpgrades(unittest.TestCase):
         command(self.town, {'action': 'job', 'index': 0, 'job': 'farming'})
         self.town['food'] = 30
         tick({'towns': {'a': self.town}})
-        self.assertAlmostEqual(self.town['food'], 30 - .78)
+        self.assertAlmostEqual(self.town['food'], 30 + 1.5 - .78)
         self.assertEqual(self.town['buildings'][farm]['output_buffer']['vegetables'], 1.5)
         self.town['food'] = 99.9
         tick({'towns': {'a': self.town}})
-        self.assertAlmostEqual(self.town['food'], 99.9 - .78)
+        self.assertAlmostEqual(self.town['food'], 99.9 + 1.5 - .78)
         self.assertEqual(self.town['buildings'][farm]['output_buffer']['vegetables'], 3)
         self.town['map_resources'] = []
         tick({'towns': {'a': self.town}})

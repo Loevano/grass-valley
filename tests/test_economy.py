@@ -26,7 +26,7 @@ class EconomyRules(unittest.TestCase):
         command(self.town, {'action': 'job', 'index': 0, 'job': 'woodcutting'})
         wood = self.town['wood']
         tick(self.world)
-        self.assertEqual(self.town['wood'], wood)
+        self.assertEqual(self.town['wood'], wood + .5)
         self.assertEqual(self.town['buildings'][1]['output_buffer']['wood'], .5)
         self.assertEqual(self.town['harvested'], .5)
 
@@ -53,7 +53,7 @@ class EconomyRules(unittest.TestCase):
         del self.town['villagers'][0]['fishing']  # Older saves have no fishing skill.
         food = self.town['food']
         tick(self.world)
-        self.assertLess(self.town['food'], food)
+        self.assertAlmostEqual(self.town['food'], food + 1 - .78)
         self.assertEqual(self.town['buildings'][1]['output_buffer']['fish'], 1)
         self.assertEqual(self.town['villagers'][0]['fishing'], .1)
         self.assertEqual(self.town['villagers'][0]['work_target']['kind'], 'water')

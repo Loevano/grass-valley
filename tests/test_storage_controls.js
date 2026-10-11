@@ -53,6 +53,14 @@ const run=new Function('document','window','localStorage','setTimeout','clearTim
  viewed='friend';inspect('building',1);
  check(meters().length===10&&!fields().length,'Visitors see storage meters');
  check(!button('Allocate')&&!button('Save allocations'),'Visitors cannot change allocations');
+ viewed='own';
+ town.buildings.push({kind:'woodcutter',x:3,y:3,output_buffer:{wood:2.5},stored_goods:{wood:1}});
+ inspect('building',2);
+ check(meters().length===10,'Every completed building shows its inventory');
+ check(meters().find(c=>c.attributes['aria-label']==='Wood stored').value===3.5,'Camp inventory combines produced and delivered wood');
+ town.buildings[2].output_buffer.wood=3;render();
+ check(meters().find(c=>c.attributes['aria-label']==='Wood stored').value===4,'Camp storage increases on the next host update');
+ button('Allocate').onclick();check(fields().length===10,'Camp storage supports incoming allocations');
  const transportTown={map_size:12,terrain:['g'.repeat(12)].flatMap(r=>Array(12).fill(r)),buildings:[{kind:'hall',x:5,y:5}],map_resources:[]};
  const v={job:'hauling',logistics_position:{x:2,y:2},logistics_target:{x:3,y:2}};
  const state=WorkerAnimation.plan(transportTown,v,0);

@@ -107,7 +107,12 @@ def afford(town, costs):
 
 
 def spend(town, costs):
+    ensure_inventory(town)
     for key, amount in costs.items():
+        if key == 'food':
+            eat(town, amount)
+            continue
+        withdraw(town, key, amount)
         if key in {'wood', 'food', 'coins'}:
             town[key] -= amount
         else:
@@ -123,7 +128,63 @@ STORAGE_KEYS = ('wood', 'food', 'planks', 'wheat', 'fodder', 'flour', 'wool', 't
 
 
 def storage_size(building):
-    return 200 if building['kind'] == 'hall' else 100 * building.get('level', 1)
+    return 200 if building['kind'] == 'hall' else 100 * building.get('level', 1) if building['kind'] == 'storehouse' else 50
+
+
+def inventory(building):
+    result = dict(building.get('stored_goods', {}))
+    for key, amount in building.get('output_buffer', {}).items():
+        result[key] = result.get(key, 0) + amount
+    return result
+
+
+def add_stock(town, key, amount):
+    if key in {'wood', 'food'}:
+        town[key] += amount
+    else:
+        town.setdefault('goods', {})[key] = quantity(town, key) + amount
+        town['food'] += amount * EDIBLE.get(key, 0)
+
+
+def ensure_inventory(town):
+    """Locate old shared stock at the hall and count old workplace outputs once."""
+    if town.get('inventory_version') == 1 or 'buildings' not in town:
+        return
+    hall = next((b for b in town['buildings'] if b['kind'] == 'hall'), None)
+    if hall is None:
+        return
+    stock = hall.setdefault('stored_goods', {})
+    stock.update(town.get('goods', {}))
+    stock['wood'] = town.get('wood', 0)
+    stock['food'] = max(0, town.get('food', 0) - sum(n * EDIBLE.get(k, 0) for k, n in stock.items()))
+    for building in town['buildings']:
+        for key, amount in building.get('output_buffer', {}).items():
+            add_stock(town, key, amount)
+    town['inventory_version'] = 1
+
+
+def withdraw(town, key, amount, source=None):
+    """Remove available stock; processor input buffers are already reserved."""
+    buildings = [source] if source is not None else town.get('buildings', [])
+    remaining = amount
+    for building in buildings:
+        for field in ('stored_goods', 'output_buffer'):
+            stock = building.get(field, {})
+            take = min(remaining, stock.get(key, 0))
+            if take:
+                stock[key] -= take
+                building.pop('buffer_full', None)
+            remaining -= take
+        if remaining <= 1e-9:
+            break
+
+
+def local_room(building, key):
+    stock = inventory(building)
+    group = 'food' if key in EDIBLE else key
+    used = sum(n * EDIBLE.get(k, 1) for k, n in stock.items() if k == group or (group == 'food' and k in EDIBLE))
+    allocated = max(0, storage_allocations(building).get(group, 0) - used) / EDIBLE.get(key, 1)
+    return min(allocated, max(0, storage_size(building) - sum(stock.values())))
 
 
 def storage_allocations(building):
@@ -133,19 +194,39 @@ def storage_allocations(building):
 def storage_limit(town, key):
     key = 'food' if key in EDIBLE else key
     return sum(storage_allocations(b).get(key, 0) for b in town['buildings']
-               if b['kind'] in {'hall', 'storehouse'} and 'construction' not in b)
+               if 'construction' not in b)
 
 
 def storage_room(town, key):
+    if town.get('inventory_version') == 1:
+        return sum(local_room(b, key) for b in town['buildings'] if 'construction' not in b)
     group = 'food' if key in EDIBLE else key
     room = storage_limit(town, group) - quantity(town, group)
     return max(0, room / EDIBLE.get(key, 1))
 
 
 def deliver(town, key, amount, capacity, record=True):
+    if town.get('inventory_version') == 1:
+        remaining = amount
+        for building in town['buildings']:
+            if 'construction' in building:
+                continue
+            take = min(remaining, local_room(building, key))
+            if take > 0:
+                stock = building.setdefault('stored_goods', {})
+                stock[key] = stock.get(key, 0) + take
+                remaining -= take
+        amount -= remaining
+        add_stock(town, key, amount)
+        if record:
+            totals = town.setdefault('produced', {})
+            totals[key] = totals.get(key, 0) + amount
+            if key == 'wood':
+                town['harvested'] += amount
+        return amount
     room = (storage_room(town, key) if not town.get('_local_production')
             else capacity - quantity(town, key))
-    if key in EDIBLE:
+    if key in EDIBLE and town.get('inventory_version') != 1:
         room = min(room, (capacity - town['food']) / EDIBLE[key])
     amount = max(0, min(amount, room))
     if key == 'wood':
@@ -165,9 +246,14 @@ def deliver(town, key, amount, capacity, record=True):
 def eat(town, amount):
     # Preserve some processed food for crafting/trading; consume fresh food first.
     remaining = min(town['food'], amount)
+    untyped = max(0, town['food'] - sum(quantity(town, k) * value for k, value in EDIBLE.items()))
+    take = min(remaining, untyped)
+    withdraw(town, 'food', take)
+    remaining -= take
     for key, value in EDIBLE.items():
         take = min(quantity(town, key), remaining / value)
         if take:
+            withdraw(town, key, take)
             town['goods'][key] -= take
             remaining -= take * value
     town['food'] = max(0, town['food'] - amount)

@@ -224,14 +224,16 @@ function buildingVisualLevel(building,town){
 function buildingHeight(building,town){
   return ({hall:42,woodcutter:23,barn:34,mill:40,smokehouse:32,workshop:25,sawpit:16,market:17,fish_pond:18,orchard:20,bakery:30,butcher:25}[building.kind] || 27)+4*(buildingVisualLevel(building,town)-1);
 }
-function storageCapacity(town){return 200+100*town.buildings.filter(b=>b.kind==='storehouse'&&!b.construction).reduce((sum,b)=>sum+buildingLevel(b),0);}
+function buildingStorageSize(building){return building.kind==='hall'?200:building.kind==='storehouse'?100*buildingLevel(building):50;}
+function storageCapacity(town){return town.buildings.filter(b=>!b.construction).reduce((sum,b)=>sum+buildingStorageSize(b),0);}
+
 const storageDrafts=new Map();
 const storageKeys=['wood','food','planks','wheat','fodder','flour','wool','tools','manure','herbs'];
 function buildingName(building){return building.kind==='storehouse'&&buildingLevel(building)>=5?'Warehouse':labels[building.kind];}
 function roomAllocations(building){return building.storage_allocations || (building.kind==='hall'?{wood:100,food:100}:{});}
 function resourceStorage(town,key){
   if(key in (world.progression?.edible || {vegetables:1,carrots:1,fish:1,berries:1,eggs:1,meat:1,milk:1,fruit:1,smoked_fish:1.5,bread:1.5,prepared_meat:1.5}))key='food';
-  return town.buildings.filter(b=>['hall','storehouse'].includes(b.kind)&&!b.construction).reduce((sum,b)=>sum+(roomAllocations(b)[key] || 0),0);
+  return town.buildings.filter(b=>!b.construction).reduce((sum,b)=>sum+(roomAllocations(b)[key] || 0),0);
 }
 const storageEditing=new Set();
 function renderStorage(town,item,index,target=$('selection-details')){
@@ -793,13 +795,7 @@ function renderSelection(town){
     if(!item.construction&&world.progression?.buildings[item.kind])p.textContent=productionDescription(item);
     $('selection-details').append(p);
     renderProfession(town,item,selection.index);
-    if(!item.construction&&['hall','storehouse'].includes(item.kind))renderStorage(town,item,selection.index);
-    if(!item.construction&&['woodcutter','farm','fishing_hut','barn','sawpit','mill','smokehouse','workshop','fish_pond','orchard','bakery','butcher'].includes(item.kind)){
-      const output=item.output_buffer || {},inputs=item.input_buffer || {};
-      $('selection-details').append(fact(`${Object.values(output).reduce((sum,n)=>sum+n,0).toFixed(1)} / 50`,'Workplace output buffer'));
-      for(const [key,n] of Object.entries(output))if(n>0)$('selection-details').append(fact(n.toFixed(1),`${goodName(key)} awaiting collection`));
-      for(const [key,n] of Object.entries(inputs))if(n>0)$('selection-details').append(fact(n.toFixed(1),`${goodName(key)} supplied locally`));
-    }
+    if(!item.construction)renderStorage(town,item,selection.index);
     if(costs[item.kind]){
       const level=buildingLevel(item),cost=costs[item.kind]*level,maxLevel=item.kind==='storehouse'?5:3;
       $('selection-details').append(fact(level,'Building level'));

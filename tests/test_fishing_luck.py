@@ -21,7 +21,7 @@ class FishingLuck(unittest.TestCase):
         food = self.town['food']
         with patch('server.secrets.randbelow', side_effect=[1, 0]) as roll:
             tick(self.world)
-            self.assertAlmostEqual(self.town['food'], food - self.upkeep)
+            self.assertAlmostEqual(self.town['food'], food + 1 - self.upkeep)
             self.assertEqual(self.town['buildings'][1]['output_buffer']['fish'], 1)
             self.assertEqual(self.fisher['fishing_catch'], {'attempt': 1, 'caught': True})
             food = self.town['food']
@@ -38,7 +38,7 @@ class FishingLuck(unittest.TestCase):
             with self.subTest(result=result), patch('server.secrets.randbelow', return_value=result):
                 food = self.town['food']
                 tick(self.world)
-                self.assertAlmostEqual(self.town['food'], food - self.upkeep)
+                self.assertAlmostEqual(self.town['food'], food + 2 - self.upkeep)
                 self.assertEqual(self.town['buildings'][1]['output_buffer']['fish'], result * 2)
                 self.assertTrue(self.fisher['fishing_catch']['caught'])
 

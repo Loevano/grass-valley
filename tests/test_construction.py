@@ -74,7 +74,7 @@ class Construction(unittest.TestCase):
         self.finish(home)
         self.finish(store)
         self.finish(workplace)
-        self.assertEqual(capacity(self.town), 300)
+        self.assertEqual(capacity(self.town), 400)
         self.assertIsNotNone(work_source(self.town, 'woodcutting', 0))
 
     def test_progress_survives_save_and_relocation(self):

@@ -1,4 +1,4 @@
-"""Workplace buffers and host-controlled transport to shared town storage."""
+"""Building inventories and host-controlled transport between workplaces and storage."""
 import progression as economy
 
 BUFFER_SIZE = 50
@@ -6,12 +6,14 @@ PRODUCTION_KINDS = {'woodcutter', 'farm', 'fishing_hut', 'barn', 'orchard', *eco
 
 
 def buffered(building):
-    return sum(building.get('output_buffer', {}).values())
+    return sum(economy.inventory(building).values())
 
 
 def record_output(town, building, key, amount):
+    economy.ensure_inventory(town)
     buffer = building.setdefault('output_buffer', {})
     buffer[key] = buffer.get(key, 0) + amount
+    economy.add_stock(town, key, amount)
     totals = town.setdefault('produced', {})
     totals[key] = totals.get(key, 0) + amount
     if key == 'wood':
@@ -79,10 +81,9 @@ def produce(town, building, villager):
 
 
 def storage_for(town, keys, operation):
-    group_keys = {'food' if k in economy.EDIBLE else k for k in keys}
-    return [b for b in town['buildings'] if b['kind'] in {'hall', 'storehouse'}
-            and 'construction' not in b
-            and any(economy.storage_allocations(b).get(k, 0) for k in group_keys)]
+    return [b for b in town['buildings'] if 'construction' not in b
+            and any((economy.local_room(b, k) if operation == 'collect' else economy.inventory(b).get(k, 0)) > 0
+                    for k in keys)]
 
 
 def start_trip(town, landscape, villager, building, storage, operation, route, hauler=False):
@@ -157,15 +158,16 @@ def advance_trip(town, landscape, villager, elapsed):
 
 
 def transfer(town, building, storage, operation, villager):
+    economy.ensure_inventory(town)
     if operation == 'collect':
-        buffer = building.get('output_buffer', {})
-        for key, amount in list(buffer.items()):
-            group = 'food' if key in economy.EDIBLE else key
-            if economy.storage_allocations(storage).get(group, 0):
-                moved = economy.deliver(town, key, amount, sum(economy.storage_size(b) for b in town['buildings']
-                                        if b['kind'] in {'hall', 'storehouse'} and 'construction' not in b), record=False)
-                buffer[key] = max(0, amount - moved)
-                if moved:
+        for field in ('output_buffer', 'stored_goods'):
+            buffer = building.get(field, {})
+            for key, amount in list(buffer.items()):
+                moved = min(amount, economy.local_room(storage, key))
+                if moved > 0:
+                    target = storage.setdefault('stored_goods', {})
+                    target[key] = target.get(key, 0) + moved
+                    buffer[key] -= moved
                     building.pop('buffer_full', None)
     else:
         # The assigned producer's practice determines the recipe, not the hauler's.
@@ -173,9 +175,12 @@ def transfer(town, building, storage, operation, villager):
                          and town['buildings'][v['building_index']] is building
                          and v['job'] in economy.JOB_BUILDINGS), villager)
         request = supply_request(town, building, producer)
-        request = {k: n for k, n in request.items() if economy.storage_allocations(storage).get('food' if k in economy.EDIBLE else k, 0)}
+        stock = economy.inventory(storage)
+        request = {k: min(n, stock.get(k, 0)) for k, n in request.items() if stock.get(k, 0) > 0}
         if request:
-            economy.spend(town, request)
+            for key, amount in request.items():
+                economy.withdraw(town, key, amount, source=storage)
+                economy.add_stock(town, key, -amount)
             inputs = building.setdefault('input_buffer', {})
             for key, amount in request.items():
                 inputs[key] = inputs.get(key, 0) + amount
@@ -188,11 +193,11 @@ def worker(town, landscape, villager, building, route, elapsed):
     request = supply_request(town, building, villager) if not collect else {}
     if not collect and not request:
         return False
-    keys = building.get('output_buffer', {}) if collect else request
-    stores = storage_for(town, keys, 'collect' if collect else 'supply')
+    keys = economy.inventory(building) if collect else request
+    stores = [b for b in storage_for(town, keys, 'collect' if collect else 'supply') if b is not building]
     stores.sort(key=lambda b: abs(b['x'] - building['x']) + abs(b['y'] - building['y']))
     for storage in stores:
-        if collect and not any(economy.storage_room(town, k) > 0 for k, n in keys.items() if n):
+        if collect and not any(economy.local_room(storage, k) > 0 for k, n in keys.items() if n):
             continue
         if start_trip(town, landscape, villager, building, storage, 'collect' if collect else 'supply', route):
             advance_trip(town, landscape, villager, elapsed)
@@ -209,7 +214,7 @@ def haul(town, landscape, villager, storage, route, elapsed):
         return
     candidates = []
     for i, b in enumerate(town['buildings']):
-        if b['kind'] not in PRODUCTION_KINDS or 'construction' in b:
+        if b is storage or b['kind'] == 'storehouse' or 'construction' in b:
             continue
         producers = [v for v in town['villagers'] if v.get('building_index') == i
                      and v['job'] in economy.JOB_BUILDINGS]
@@ -218,8 +223,8 @@ def haul(town, landscape, villager, storage, route, elapsed):
             if request and storage in storage_for(town, request, 'supply'):
                 candidates.append((0, b, 'supply'))
                 break
-        outputs = {k: n for k, n in b.get('output_buffer', {}).items() if n > 0
-                   and economy.storage_room(town, k) > 0}
+        outputs = {k: n for k, n in economy.inventory(b).items() if n > 0
+                   and economy.local_room(storage, k) > 0}
         if outputs and storage in storage_for(town, outputs, 'collect'):
             candidates.append((1, b, 'collect'))
     candidates.sort(key=lambda c: (c[0], -buffered(c[1]), abs(storage['x'] - c[1]['x']) + abs(storage['y'] - c[1]['y'])))

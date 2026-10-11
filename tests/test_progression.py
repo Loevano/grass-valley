@@ -95,6 +95,7 @@ class Progression(unittest.TestCase):
         tick(self.world)
         self.assertEqual(self.town['goods']['herbs'],1)
         self.town['goods']['herbs']=100
+        self.town['buildings'][0]['stored_goods']['herbs']=100
         tick(self.world)
         self.assertEqual(self.town['player']['gathering'],1)
         self.assertEqual(self.town['player']['activity_status'],'Storage full')
@@ -133,7 +134,7 @@ class Progression(unittest.TestCase):
             v['job']='woodcutting';v['woodcutting']=0
         self.town['wood']=0
         tick(self.world)
-        self.assertEqual(self.town['wood'],0)
+        self.assertEqual(self.town['wood'],.5)
         self.assertEqual(self.town['buildings'][1]['output_buffer']['wood'],.5)
         self.assertEqual(sum(v['woodcutting'] for v in self.town['villagers']),.1)
 
@@ -143,7 +144,7 @@ class Progression(unittest.TestCase):
         tick(self.world)
         self.assertEqual(b['input_buffer']['wood'],8)
         self.assertEqual(b['output_buffer']['planks'],1)
-        self.assertEqual(self.town['goods'].get('planks',0),0)
+        self.assertEqual(self.town['goods'].get('planks',0),1)
         b['output_buffer']['planks']=50
         tick(self.world)
         self.assertEqual(b['input_buffer']['wood'],8)
@@ -207,7 +208,7 @@ class Progression(unittest.TestCase):
                 construct(self.town, self.town)
                 if 'construction' not in b:break
         tick(self.world)
-        self.assertEqual(self.town['wood'],20)
+        self.assertEqual(self.town['wood'],20.625)
         self.assertEqual(b['output_buffer']['wood'],.625)
         with self.assertRaisesRegex(ValueError,'Already unlocked'):
             command(self.town, {'action':'profession_upgrade','index':index,'upgrade':'axe'})
@@ -216,19 +217,19 @@ class Progression(unittest.TestCase):
         self.town.update(level=5,goods={},food=0,wood=0)
         b,index=self.workplace('smokehouse',input_buffer={'fish':2,'wood':.5})
         tick(self.world)
-        self.assertEqual(self.town['food'],0)
+        self.assertAlmostEqual(self.town['food'],3 - .78)
         self.assertEqual(b['input_buffer']['fish'],0)
-        self.assertEqual(b['output_buffer']['smoked_fish'],2)
+        self.assertAlmostEqual(b['output_buffer']['smoked_fish'],2 - .78 / 1.5)
         import logistics
         logistics.transfer(self.town,b,self.town['buildings'][0],'collect',self.town['villagers'][0])
-        self.assertEqual(self.town['food'],3)
+        self.assertAlmostEqual(self.town['food'],3 - .78)
         self.town['buildings'].append({'kind':'market','x':4,'y':5})
         command(self.town, {'action':'sell_goods','resource':'smoked_fish','amount':1})
-        self.assertEqual(self.town['food'],1.5)
-        self.assertEqual(self.town['goods']['smoked_fish'],1)
+        self.assertAlmostEqual(self.town['food'],1.5 - .78)
+        self.assertAlmostEqual(self.town['goods']['smoked_fish'],1 - .78 / 1.5)
         economy.eat(self.town,1.5)
         self.assertEqual(self.town['food'],0)
-        self.assertEqual(self.town['goods']['smoked_fish'],0)
+        self.assertAlmostEqual(self.town['goods']['smoked_fish'],0)
 
     def test_forage_is_saved_and_added_for_towns_founded_after_world_initialization(self):
         landscape={'map_resources':[], 'terrain':['g'*120]*120,'map_size':120,'npcs':[]}

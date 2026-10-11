@@ -340,8 +340,7 @@ def new_town(name, world=None):
 
 
 def capacity(town):
-    return 200 + 100 * sum(building_level(b) for b in town['buildings']
-                           if b['kind'] == 'storehouse' and completed(b))
+    return sum(economy.storage_size(b) for b in town['buildings'] if completed(b))
 
 
 def completed(building):
@@ -463,6 +462,7 @@ def tick(world):
     prepare_landscapes(world, regenerate=True)
     for town in world['towns'].values():
         ensure_resources(town)
+        economy.ensure_inventory(town)
         if town.get('upgrade_remaining'):
             # Resume upgrades from saves made before construction required builders.
             hall = next(b for b in town['buildings'] if b['kind'] == 'hall')
@@ -667,7 +667,12 @@ def command(town, data, world=None):
             raise ValueError('Select a building first.')
         if town['buildings'][index]['kind'] == 'hall':
             raise ValueError('The town hall cannot be destroyed.')
-        town['buildings'].pop(index)
+        economy.ensure_inventory(town)
+        removed = town['buildings'].pop(index)
+        hall = next(b for b in town['buildings'] if b['kind'] == 'hall')
+        for key, amount in economy.inventory(removed).items():
+            stock = hall.setdefault('stored_goods', {})
+            stock[key] = stock.get(key, 0) + amount
         for villager in town['villagers']:
             assigned = villager.get('building_index')
             if type(assigned) is int and assigned >= index:
@@ -695,7 +700,7 @@ def command(town, data, world=None):
         if type(index) is not int or not 0 <= index < len(town['buildings']):
             raise ValueError('Choose a storage room first.')
         building = town['buildings'][index]
-        if building['kind'] not in {'hall', 'storehouse'} or not completed(building):
+        if not completed(building):
             raise ValueError('Choose a completed storage room.')
         if (not isinstance(allocations, dict) or any(k not in economy.STORAGE_KEYS or type(n) is not int or n < 0
                                                    for k, n in allocations.items())):
@@ -703,8 +708,10 @@ def command(town, data, world=None):
         if sum(allocations.values()) > economy.storage_size(building):
             raise ValueError('Allocations exceed this storage room’s capacity.')
         for key in economy.STORAGE_KEYS:
-            limit = economy.storage_limit(town, key) - economy.storage_allocations(building).get(key, 0) + allocations.get(key, 0)
-            if economy.quantity(town, key) > limit + 1e-9:
+            stock = building.get('stored_goods', {})
+            used = sum(n * economy.EDIBLE.get(k, 1) for k, n in stock.items()
+                       if k == key or (key == 'food' and k in economy.EDIBLE))
+            if used > allocations.get(key, 0) + 1e-9:
                 raise ValueError('Spend or move stored goods before reducing their allocation.')
         building['storage_allocations'] = dict(allocations)
     elif action == 'upgrade_capacity':
@@ -718,7 +725,7 @@ def command(town, data, world=None):
         cost = 20 * level
         if town['wood'] < cost:
             raise ValueError('Gather more wood first.')
-        town['wood'] -= cost
+        economy.spend(town, {'wood': cost})
         building['construction'] = {'progress': 0, 'total': BUILD_SECONDS * level,
                                     'upgrade': {'settler_level': level + 1}}
     elif action == 'job':
@@ -756,7 +763,7 @@ def command(town, data, world=None):
         cost = COSTS[building['kind']] * level
         if town['wood'] < cost:
             raise ValueError(f'Gather {cost} wood to upgrade this building.')
-        town['wood'] -= cost
+        economy.spend(town, {'wood': cost})
         building['construction'] = {'progress': 0, 'total': BUILD_SECONDS * level,
                                     'upgrade': {'level': level + 1}}
     elif action in {'set_crop', 'buy_animal', 'breed_animal', 'profession_upgrade'}:

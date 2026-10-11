@@ -178,18 +178,24 @@ the Python host, refresh both browsers, and create a new world to use the shared
 - Hall upgrades also require a builder at the hall. The first requires housing and reliable food, costs 40 wood, and
   takes 30 seconds of construction after arrival; the hall
   panel shows remaining time. Closing the host pauses the upgrade.
-- Workplaces hold up to **50 output units** locally. Wood, planks, crops, fish,
-  food, wool, and other products only enter the shared town stock after delivery.
-  Processors and barns also keep up to 50 input units locally. Buffered food is
-  unavailable for meals until delivered; milestones count goods when produced.
-- Select the town hall or a completed **Storehouse** to allocate storage spaces
+- Every completed building holds storage: **50 units** in ordinary buildings,
+  200 in the hall, and 100 per storehouse level. Its **Storage** section shows
+  goods held there. Wood and other products become available for construction,
+  meals, and sales immediately when produced at their workplace. Hauling relocates
+  those goods without increasing the town total again. Processors and barns also
+  reserve up to 50 input units locally; reserved ingredients are excluded from
+  available stock. Old shared stock is preserved at the hall when loading, and
+  old workplace outputs become available once. Demolition preserves available
+  goods at the hall.
+- Select any completed building to allocate incoming storage spaces
   between wood, food, planks, wheat, fodder, flour, wool, tools, manure, and herbs.
   Food spaces cover all edible goods, using their pantry value. The hall starts
   with 100 wood and 100 food spaces. Each storehouse level adds 100 shared spaces;
   new and upgraded spaces remain unallocated until you assign them. Allocations
-  cannot exceed a room's capacity or remove space needed by existing town stock.
-  Town stock is shared between storage rooms; allocations determine which rooms
-  can accept or supply each resource. Older saved stocks remain intact, including
+  cannot exceed a room's capacity or remove space occupied by its delivered goods.
+  Each building holds its own stock; allocations determine which resources it
+  accepts. Processors fetch supplies from buildings that actually hold them.
+  Older saved stocks remain intact, including
   goods above their new allocations; spend them or allocate more space to resume deliveries.
 - Assign settlers to a **Storehouse** as haulers. They collect small batches and
   distribute recipe ingredients and animal feed so producers can keep working.
