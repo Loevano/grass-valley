@@ -23,36 +23,45 @@ const run=new Function('document','window','localStorage','setTimeout','clearTim
   draw();
   assert.equal(groundSurfaces().length,1);const surface=groundCache.surface,painted=surface.paints;
   assert(painted>0,'Ground is painted into the cache');
+  assert.equal(surface.width,(960+768)*2,'Terrain is pre-rendered 384 pixels beyond each viewport edge');
+  assert.equal(surface.height,(660+768)*2,'The larger buffer covers vertical scrolling too');
   assert(!fills.includes('#68865a'),'Ground is composited instead of painted on the main canvas');
   draw();assert.equal(surface.paints,painted,'Standing still reuses ground');
   camera.x+=1;draw();assert.equal(surface.paints,painted,'Small camera movements reuse padded ground');
-  assert.equal(images.filter(args=>args[0]===surface).at(-1)[1],-160-tileW/2,'Cached ground follows horizontal camera translation');
-  assert.equal(images.filter(args=>args[0]===surface).at(-1)[2],-160-tileH/2,'Cached ground follows vertical camera translation');
+  assert.equal(images.filter(args=>args[0]===surface).at(-1)[1],-384-tileW/2,'Cached ground follows horizontal camera translation');
+  assert.equal(images.filter(args=>args[0]===surface).at(-1)[2],-384-tileH/2,'Cached ground follows vertical camera translation');
   assert(hitTargets.some(t=>t.type==='resource'&&t.index===0),'Resource selection indices survive caching');
   world=JSON.parse(JSON.stringify(world));draw();
   assert.equal(surface.paints,painted,'Polling unchanged terrain preserves ground');
   camera.x-=1;draw();
   let beforePan=surface.paints;
   camera.x+=4;camera.y-=4;draw();
-  assert.equal(copies.length,1,'Panning reuses overlapping ground pixels');
+  assert.equal(copies.length,1,'Panning refills the buffer before its edge reaches the viewport');
   assert.equal(copies[0].operation,'copy','Transparent map edges replace old pixels');
   assert.equal(copies[0].args[5],0,'Leftward ground movement copies to the left edge');
-  assert.equal(copies[0].args[1],432,'Copy source starts at an integer device pixel');
-  assert(surface.paints-beforePan<painted*.3,'Panning paints only the exposed strip');
-  beforePan=surface.paints;camera.x-=4;camera.y+=4;draw();
-  assert.equal(copies.length,2,'Reverse panning also reuses ground');
-  assert.equal(copies[1].args[5],432,'Rightward ground movement offsets the destination');
-  assert(surface.paints-beforePan<painted*.3,'Reverse panning paints only the exposed strip');
-  beforePan=surface.paints;camera.x+=7;camera.y+=7;draw();
-  assert.equal(copies.at(-1).args[2],378,'Vertical panning shifts the source rows');
-  assert(surface.paints-beforePan<painted*.3,'Vertical panning paints only the exposed strip');
-  camera.x+=7;draw();
-  const diagonal=copies.at(-1).args;
-  assert(diagonal[1]>0&&diagonal[2]>0,'Diagonal panning copies both axes');
-  camera.x+=.123;camera.y+=7.321;draw();
+  assert.equal(copies[0].args[1],192,'Routine refills are limited to 96 CSS pixels');
+  assert(surface.paints-beforePan<painted*.15,'Refills paint only a small exposed strip');
+  const coversViewport=()=>{
+    const image=images.filter(args=>args[0]===surface).at(-1);
+    assert(image[1]<=0&&image[2]<=0&&image[1]+image[3]>=960&&image[2]+image[4]>=660,
+      'Pre-rendered ground covers the entire viewport during fast scrolling');
+  };
+  for(let frame=0;frame<40;frame++){
+    camera.x+=40/tileW;camera.y-=40/tileW;draw();coversViewport();
+  }
+  beforePan=surface.paints;
+  for(let frame=0;frame<40;frame++){
+    camera.x-=40/tileW;camera.y+=40/tileW;draw();coversViewport();
+  }
+  assert(surface.paints>beforePan,'Reverse panning replenishes the buffer');
+  assert(copies.some(copy=>copy.args[5]===192),'Reverse refills shift pixels to the right');
+  camera.x+=10;camera.y+=10;draw();coversViewport();
+  assert(copies.at(-1).args[2]>0,'Vertical scrolling replenishes the buffer');
+  camera.x+=7.123;camera.y+=7.321;draw();coversViewport();
   assert(copies.at(-1).args.slice(1).every(Number.isInteger),'Fractional camera positions copy whole device pixels');
-  camera.x-=21.123;camera.y-=21.321;draw();
-  camera.x+=10;draw();assert(surface.paints>painted,'Leaving the padded viewport repaints ground');
+  beforePan=surface.paints;camera.x+=30;camera.y-=30;draw();coversViewport();
+  assert(surface.paints>beforePan,'Large camera jumps catch up immediately');
+  camera={x:30,y:30,zoom:1};draw();
   let previous=surface.paints;camera.zoom=.35;draw();assert(surface.paints>previous,'Zoom repaints ground');
   previous=surface.paints;draw();assert.equal(surface.paints,previous,'Repeated zoomed-out frames reuse ground');
   assert.equal(groundCache.dpr,1,'Distant ground uses a smaller texture on Retina displays');
@@ -62,7 +71,7 @@ const run=new Function('document','window','localStorage','setTimeout','clearTim
   camera.zoom=.36;draw();
   assert.equal(surface.paints,previous,'Small zoom steps scale cached ground during the gesture');
   const zoomImage=images.filter(args=>args[0]===surface).at(-1),ratio=tileW/groundCache.tileW;
-  const cachedX=160+groundCache.originX,cachedY=160+groundCache.originY+15*groundCache.tileW;
+  const cachedX=384+groundCache.originX,cachedY=384+groundCache.originY+15*groundCache.tileW;
   const live=point(30,30);
   assert(Math.abs(zoomImage[1]+cachedX*ratio-live[0])<1e-6,'Scaled ground aligns with live objects horizontally');
   assert(Math.abs(zoomImage[2]+cachedY*ratio-live[1])<1e-6,'Scaled ground aligns with live objects vertically');

@@ -1916,45 +1916,55 @@ function paintGround(target,landscape,water,bounds,offsetX=0,offsetY=0,region=nu
     ctx.closePath();ctx.fillStyle=fill;ctx.fill();
     if(stroke){ctx.strokeStyle=stroke;ctx.stroke();}
   };
-  for(let x=minX;x<=maxX;x++)for(let y=minY;y<=maxY;y++){
-    const [px,py]=point(x,y),wet=water.has(`${x},${y}`);
-    if(px+tileW/2<0 || px-tileW/2>target.canvas?.width/pixelRatio
-      || py+tileH+12<0 || py>target.canvas?.height/pixelRatio)continue;
-    if(region&&(px+tileW/2<region.x || px-tileW/2>region.x+region.width
-      || py+tileH+12<region.y || py>region.y+region.height))continue;
-    const variation=(x*17+y*31+x*y*7)%7;
-    const diamond=[[px,py],[px+tileW/2,py+tileH/2],[px,py+tileH],[px-tileW/2,py+tileH/2]];
-    const biome=landscape?.terrain?.[y]?.[x] || (landscape?.chunked?'v':'g');
-    if(biome==='v')continue;
-    // Ground thickness appears only at the actual valley boundary.
-    const land=(tx,ty)=>tx>=0&&ty>=0&&tx<terrainSize&&ty<terrainSize&&landscape?.terrain?.[ty]?.[tx]!=='v'
-      &&(!landscape?.chunked||!!landscape.terrain?.[ty]?.[tx]);
-    if(!land(x+1,y))polygon([diamond[1],diamond[2],[diamond[2][0],diamond[2][1]+12],[diamond[1][0],diamond[1][1]+12]],'#344b35');
-    if(!land(x,y+1))polygon([diamond[2],diamond[3],[diamond[3][0],diamond[3][1]+12],[diamond[2][0],diamond[2][1]+12]],'#405438');
-    const palette={g:['#68865a','#69875b','#668358'],f:['#506f4a','#55764c','#5a7b50'],
-      m:['#83945e','#899b65','#80915b'],s:['#b4a575','#bdad7d','#b8a878'],r:['#8b8d7c','#969785','#858978'],b:['#59674b','#626f50','#536247']};
-    const neighbors=[[x,y-1],[x+1,y],[x,y+1],[x-1,y]];
-    const shores=neighbors.map(([tx,ty])=>!water.has(`${tx},${ty}`));
-    const depth=shores.filter(Boolean).length;
-    const waterColor=biome==='b'?(depth?'#718565':'#4e6857'):(depth?'#6299a1':'#447d91');
-    polygon(diamond,wet?waterColor:palette[biome][groundVariant(x,y)],null);
-    if(detailed&&biome==='b'&&variation%3===0){
-      ctx.strokeStyle='#9b9f69';ctx.lineWidth=tileW/46;
-      for(let reed=0;reed<3;reed++){const rx=px+(reed-1)*tileW*.07,ry=py+tileH*.7;ctx.beginPath();ctx.moveTo(rx,ry);ctx.lineTo(rx+(reed-1)*tileW*.025,ry-tileH*.4);ctx.stroke();}
-      if(wet){ctx.fillStyle='#a3ad74';ctx.beginPath();ctx.ellipse(px+tileW*.17,py+tileH*.55,tileW*.065,tileH*.075,0,0,Math.PI*2);ctx.fill();}
-    }
-    if(detailed&&!wet&&variation===0){ctx.fillStyle='#8fa574';ctx.fillRect(px-5*tileW/46,py+tileH*.5,2*tileW/46,2*tileW/46);ctx.fillStyle='#d7c78a';ctx.fillRect(px+4*tileW/46,py+tileH*.65,2*tileW/46,2*tileW/46);}
-    if(detailed&&!wet&&(x===0||y===0||x===terrainSize-1||y===terrainSize-1)&&variation%2===0){ctx.strokeStyle='#9caf77';ctx.lineWidth=tileW/46;ctx.beginPath();ctx.moveTo(px-6*tileW/46,py+tileH*.65);ctx.lineTo(px-9*tileW/46,py+tileH*.4);ctx.moveTo(px-6*tileW/46,py+tileH*.65);ctx.lineTo(px-4*tileW/46,py+tileH*.35);ctx.stroke();}
-    if(detailed&&wet){
-      ctx.strokeStyle='#b4d7ce99';ctx.lineWidth=tileW/46;
-      for(let edge=0;edge<4;edge++)if(shores[edge]){
-        ctx.beginPath();ctx.moveTo(...diamond[edge]);ctx.lineTo(...diamond[(edge+1)%4]);ctx.stroke();
+  // Restrict each column to the visible strip instead of traversing the much
+  // larger axis-aligned bounds of an isometric rectangle.
+  const area=region || {x:0,y:0,width:(target.canvas?.width || canvas.width)/pixelRatio,
+    height:(target.canvas?.height || canvas.height)/pixelRatio};
+  const left=area.x-tileW/2,right=area.x+area.width+tileW/2;
+  const top=area.y-tileH-12,bottom=area.y+area.height;
+  for(let x=minX;x<=maxX;x++){
+    const start=Math.max(minY,Math.ceil(x-2*(right-originX-offsetX)/tileW),Math.ceil(2*(top-originY-offsetY)/tileH-x));
+    const end=Math.min(maxY,Math.floor(x-2*(left-originX-offsetX)/tileW),Math.floor(2*(bottom-originY-offsetY)/tileH-x));
+    for(let y=start;y<=end;y++){
+      const [px,py]=point(x,y),wet=water.has(`${x},${y}`);
+      if(px+tileW/2<0 || px-tileW/2>target.canvas?.width/pixelRatio
+        || py+tileH+12<0 || py>target.canvas?.height/pixelRatio)continue;
+      if(region&&(px+tileW/2<region.x || px-tileW/2>region.x+region.width
+        || py+tileH+12<region.y || py>region.y+region.height))continue;
+      const variation=(x*17+y*31+x*y*7)%7;
+      const diamond=[[px,py],[px+tileW/2,py+tileH/2],[px,py+tileH],[px-tileW/2,py+tileH/2]];
+      const biome=landscape?.terrain?.[y]?.[x] || (landscape?.chunked?'v':'g');
+      if(biome==='v')continue;
+      // Ground thickness appears only at the actual valley boundary.
+      const land=(tx,ty)=>tx>=0&&ty>=0&&tx<terrainSize&&ty<terrainSize&&landscape?.terrain?.[ty]?.[tx]!=='v'
+        &&(!landscape?.chunked||!!landscape.terrain?.[ty]?.[tx]);
+      if(!land(x+1,y))polygon([diamond[1],diamond[2],[diamond[2][0],diamond[2][1]+12],[diamond[1][0],diamond[1][1]+12]],'#344b35');
+      if(!land(x,y+1))polygon([diamond[2],diamond[3],[diamond[3][0],diamond[3][1]+12],[diamond[2][0],diamond[2][1]+12]],'#405438');
+      const palette={g:['#68865a','#69875b','#668358'],f:['#506f4a','#55764c','#5a7b50'],
+        m:['#83945e','#899b65','#80915b'],s:['#b4a575','#bdad7d','#b8a878'],r:['#8b8d7c','#969785','#858978'],b:['#59674b','#626f50','#536247']};
+      const neighbors=[[x,y-1],[x+1,y],[x,y+1],[x-1,y]];
+      const shores=neighbors.map(([tx,ty])=>!water.has(`${tx},${ty}`));
+      const depth=shores.filter(Boolean).length;
+      const waterColor=biome==='b'?(depth?'#718565':'#4e6857'):(depth?'#6299a1':'#447d91');
+      polygon(diamond,wet?waterColor:palette[biome][groundVariant(x,y)],null);
+      if(detailed&&biome==='b'&&variation%3===0){
+        ctx.strokeStyle='#9b9f69';ctx.lineWidth=tileW/46;
+        for(let reed=0;reed<3;reed++){const rx=px+(reed-1)*tileW*.07,ry=py+tileH*.7;ctx.beginPath();ctx.moveTo(rx,ry);ctx.lineTo(rx+(reed-1)*tileW*.025,ry-tileH*.4);ctx.stroke();}
+        if(wet){ctx.fillStyle='#a3ad74';ctx.beginPath();ctx.ellipse(px+tileW*.17,py+tileH*.55,tileW*.065,tileH*.075,0,0,Math.PI*2);ctx.fill();}
       }
-      const ripple=((x*73856093)^(y*19349663)^(landscape?.terrain_seed || 0))>>>0;
-      if(ripple%5===0){
-        const offset=(ripple%13-6)*tileW/70;
-        ctx.beginPath();ctx.moveTo(px-tileW*.14+offset,py+tileH*.5);
-        ctx.quadraticCurveTo(px+offset,py+tileH*.38,px+tileW*.12+offset,py+tileH*.55);ctx.stroke();
+      if(detailed&&!wet&&variation===0){ctx.fillStyle='#8fa574';ctx.fillRect(px-5*tileW/46,py+tileH*.5,2*tileW/46,2*tileW/46);ctx.fillStyle='#d7c78a';ctx.fillRect(px+4*tileW/46,py+tileH*.65,2*tileW/46,2*tileW/46);}
+      if(detailed&&!wet&&(x===0||y===0||x===terrainSize-1||y===terrainSize-1)&&variation%2===0){ctx.strokeStyle='#9caf77';ctx.lineWidth=tileW/46;ctx.beginPath();ctx.moveTo(px-6*tileW/46,py+tileH*.65);ctx.lineTo(px-9*tileW/46,py+tileH*.4);ctx.moveTo(px-6*tileW/46,py+tileH*.65);ctx.lineTo(px-4*tileW/46,py+tileH*.35);ctx.stroke();}
+      if(detailed&&wet){
+        ctx.strokeStyle='#b4d7ce99';ctx.lineWidth=tileW/46;
+        for(let edge=0;edge<4;edge++)if(shores[edge]){
+          ctx.beginPath();ctx.moveTo(...diamond[edge]);ctx.lineTo(...diamond[(edge+1)%4]);ctx.stroke();
+        }
+        const ripple=((x*73856093)^(y*19349663)^(landscape?.terrain_seed || 0))>>>0;
+        if(ripple%5===0){
+          const offset=(ripple%13-6)*tileW/70;
+          ctx.beginPath();ctx.moveTo(px-tileW*.14+offset,py+tileH*.5);
+          ctx.quadraticCurveTo(px+offset,py+tileH*.38,px+tileW*.12+offset,py+tileH*.55);ctx.stroke();
+        }
       }
     }
   }
@@ -1972,17 +1982,20 @@ function groundLayout(landscape,water,bounds){
   return JSON.stringify([world.world_id,landscape?.terrain_seed,size,rows]);
 }
 function drawGround(rect,dpr,landscape,water,bounds){
-  const margin=160;
+  const margin=384;
   // Distant terrain needs fewer pixels; keep live objects and the UI sharp.
   if(tileW<32)dpr=Math.min(dpr,1);
   if(!groundCache || groundCache.world!==world || groundCache.landscape!==landscape){
-    const signature=groundCache&&groundLayout(landscape,water,groundCache.bounds);
-    if(groundCache?.signature!==signature)groundCache=null;
-    if(groundCache)Object.assign(groundCache,{world,landscape});
+    // Snapshots retain their terrain and water sets. Compare only when a new
+    // snapshot arrives, keeping fingerprint scans out of scrolling frames.
+    const changed=groundCache&&(groundCache.world.world_id!==world.world_id
+      ||groundLayout(groundCache.landscape,groundCache.water,groundCache.bounds)!==groundLayout(landscape,water,groundCache.bounds));
+    if(changed)groundCache=null;
+    if(groundCache)Object.assign(groundCache,{world,landscape,water});
     else{
       const surface=document.createElement('canvas'),target=surface.getContext?.('2d');
       if(!target){paintGround(ctx,landscape,water,bounds);return;}
-      groundCache={surface,target,world,landscape};
+      groundCache={surface,target,world,landscape,water};
     }
   }
   const cache=groundCache,now=performance.now();
@@ -1997,9 +2010,12 @@ function drawGround(rect,dpr,landscape,water,bounds){
     ||left>0||top>0||left+cache.surface.width/dpr*ratio<rect.width
     ||top+cache.surface.height/dpr*ratio<rect.height);
   if(!cache.tileW || cache.detailed!==(tileW>=32) || repaintZoom || cache.width!==rect.width || cache.height!==rect.height
-    || cache.dpr!==dpr || (!zooming&&(Math.abs(dx)>margin || Math.abs(dy)>margin))){
+    || cache.dpr!==dpr || (!zooming&&(Math.abs(dx)>margin/2 || Math.abs(dy)>margin/2))){
     const width=Math.ceil((rect.width+margin*2)*dpr),height=Math.ceil((rect.height+margin*2)*dpr);
-    const shiftX=Math.round(dx*dpr),shiftY=Math.round(dy*dpr);
+    // Refill ahead of the viewport in small strips while its spare margin
+    // absorbs fast scrolling. Large jumps catch up immediately for coverage.
+    const step=delta=>Math.abs(delta)>margin?delta:Math.max(-96,Math.min(96,delta));
+    const shiftX=Math.round(step(dx)*dpr),shiftY=Math.round(step(dy)*dpr);
     const reuse=cache.detailed===(tileW>=32)&&cache.tileW===tileW&&cache.width===rect.width&&cache.height===rect.height
       &&cache.dpr===dpr&&Math.abs(shiftX)<width&&Math.abs(shiftY)<height;
     let regions;
@@ -2043,7 +2059,6 @@ function drawGround(rect,dpr,landscape,water,bounds){
     }
     Object.assign(cache,{originX:nextX,originY:nextY,detailed:tileW>=32,tileW,width:rect.width,height:rect.height,dpr});
     cache.bounds=regionBounds({x:0,y:0,width:width/dpr,height:height/dpr});
-    cache.signature=groundLayout(landscape,water,cache.bounds);
   }
   const scale=tileW/cache.tileW;
   ctx.drawImage(cache.surface,originX-(cache.originX+margin)*scale,originY-(cache.originY+margin)*scale,
