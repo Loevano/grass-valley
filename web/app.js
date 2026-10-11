@@ -1514,6 +1514,8 @@ function polygon(points,fill,stroke){ctx.beginPath();points.forEach(([x,y],i)=>i
 // Share static resource artwork across tiles and frames. Resolution buckets keep
 // zooming sharp without generating a new canvas for every wheel event.
 const resourceSprites=new Map();
+const resourceSpriteLimit=512,resourceSpriteByteLimit=64*1024*1024;
+let resourceSpriteBytes=0;
 // Coordinates keep formations stable in existing saves and streamed chunks.
 function rockVariant(r){
   const hash=(Math.imul(r.x,73856093)^Math.imul(r.y,19349663))>>>0;
@@ -1611,10 +1613,20 @@ function drawResource(r,joined=null){
   const detailed=tileW>=32;
   const willow=r.kind==='tree'&&(world.shared_map || world.towns[viewed])?.terrain?.[r.y]?.[r.x]==='b';
   const resolution=2**Math.ceil(Math.log2(Math.max(.5,s*(window.devicePixelRatio || 1))));
-  const variant=r.kind==='tree'?`${r.species==='ancient'}/${willow}/${(r.x+r.y)%2}`:r.kind==='rock'?`${rockVariant(r)%48}/${joined?JSON.stringify(joined):''}`:r.kind;
+  const variant=r.kind==='tree'?`${r.species==='ancient'}/${willow}/${(r.x+r.y)%2}`:r.kind==='rock'?(joined?`joined/${JSON.stringify([joined.mask,joined.heights,joined.inset || null])}`:`single/${rockVariant(r)%48}`):r.kind;
   const key=`${r.kind}/${variant}/${resolution}/${detailed}`;
   let sprite=resourceSprites.get(key);
   if(!sprite){
+    const bytes=60*112*resolution*resolution*4;
+    // Oversized zoom textures use direct drawing instead of exceeding the budget.
+    if(bytes>resourceSpriteByteLimit){
+      ctx.save();ctx.translate(x,y);ctx.scale(s,s);paintResource(ctx,r,willow,detailed,joined);ctx.restore();return;
+    }
+    while(resourceSprites.size>=resourceSpriteLimit || resourceSpriteBytes+bytes>resourceSpriteByteLimit){
+      const oldest=resourceSprites.keys().next().value,evicted=resourceSprites.get(oldest);
+      resourceSpriteBytes-=evicted.width*evicted.height*4;
+      resourceSprites.delete(oldest);
+    }
     const surface=document.createElement('canvas'),target=surface.getContext?.('2d');
     if(!target){
       ctx.save();ctx.translate(x,y);ctx.scale(s,s);paintResource(ctx,r,willow,detailed,joined);ctx.restore();return;
@@ -1624,7 +1636,7 @@ function drawResource(r,joined=null){
     target.setTransform(resolution,0,0,resolution,30*resolution,80*resolution);
     paintResource(target,r,willow,detailed,joined);
     sprite=surface;resourceSprites.set(key,sprite);
-    if(resourceSprites.size>64)resourceSprites.delete(resourceSprites.keys().next().value);
+    resourceSpriteBytes+=bytes;
   }else{
     resourceSprites.delete(key);resourceSprites.set(key,sprite);
   }

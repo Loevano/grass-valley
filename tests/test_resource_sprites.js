@@ -3,7 +3,7 @@ const fs=require('fs'),assert=require('assert');
 const source=fs.readFileSync('web/app.js','utf8');
 const helpers=source.slice(source.indexOf('const resourceSprites='),source.indexOf('function animatedVillagers('));
 const surfaces=[],images=[];
-const main={drawImage(...args){images.push(args);}};
+const main=new Proxy({drawImage(...args){images.push(args);}}, {get:(target,key)=>key in target?target[key]:()=>{}});
 const documentMock={createElement(){
   const surface={paints:0,colors:[],points:[],paths:[],ellipses:[]};
   surface.getContext=()=>new Proxy({fill(){surface.paints++;surface.colors.push(this.fillStyle);surface.paths.push(surface.path || []);},
@@ -101,7 +101,7 @@ new Function('document','ctx','window','assert','surfaces','images',`
   world.shared_map.terrain[10][10]='b';tileW=54;drawResource(tree);
   assert(images.at(-1)[0].colors.includes('#64784c'),'Biome changes select the correct tree sprite');
   const rock={kind:'rock',x:201,y:20};drawResource(rock);
-  const originalRock=images.at(-1)[0];resourceSprites.clear();drawResource(rock);
+  const originalRock=images.at(-1)[0];resourceSprites.clear();resourceSpriteBytes=0;drawResource(rock);
   assert.deepEqual(images.at(-1)[0].paths,originalRock.paths,'Evicted rock artwork regenerates with the same shapes');
   assert.deepEqual(images.at(-1)[0].colors,originalRock.colors,'Evicted rock artwork regenerates with the same colors');
   const join={mask:6,heights:[23,24,38,25]};drawResource(rock,join);
@@ -111,12 +111,27 @@ new Function('document','ctx','window','assert','surfaces','images',`
   assert.strictEqual(images.at(-1)[0],joinedSprite,'Identical topology reuses joined rock artwork');
   drawResource(rock,{...join,heights:[23,24,31,25]});
   assert.notStrictEqual(images.at(-1)[0],joinedSprite,'Changed neighboring rocks invalidate the joined sprite');
+  drawResource({...rock,x:202},{inset:undefined,heights:[...join.heights],mask:join.mask});
+  assert.strictEqual(images.at(-1)[0],joinedSprite,'Joined artwork shares sprites across coordinate variants and property order');
+  tileW=54;
+  const crowded=Array.from({length:96},(_,i)=>({mask:6,heights:[20+i/10,24,38,25]}));
+  for(const topology of crowded)drawResource(rock,topology);
+  const warmed=surfaces.length;
+  for(let frame=0;frame<5;frame++)for(const topology of crowded)drawResource(rock,topology);
+  assert.equal(surfaces.length,warmed,'More than 64 visible joined sprites stay warm across repeated frames');
   for(let resolution=1;resolution<=128;resolution*=2){
     tileW=46*resolution;
     for(const kind of ['tree','rock','berry_bush','herb_patch','chest'])
       for(const species of ['ordinary','ancient'])
         for(let x=10;x<=13;x++)drawResource({kind,species,x,y:10});
   }
-  assert.equal(resourceSprites.size,64,'The sprite cache stays bounded across resolution changes');
+  assert(resourceSprites.size<=resourceSpriteLimit,'The sprite cache stays bounded across resolution changes');
+  const bytes=[...resourceSprites.values()].reduce((sum,sprite)=>sum+sprite.width*sprite.height*4,0);
+  assert.equal(resourceSpriteBytes,bytes,'Eviction tracks retained texture memory');
+  assert(bytes<=resourceSpriteByteLimit,'High-resolution textures stay within the memory budget');
+  assert(surfaces.every(sprite=>sprite.width*sprite.height*4<=resourceSpriteByteLimit),'Oversized textures are never allocated');
+  tileW=54;drawResource(rock,join);
+  assert.deepEqual(images.at(-1)[0].paths,joinedSprite.paths,'Eviction preserves joined rock artwork');
+  assert.deepEqual(images.at(-1)[0].colors,joinedSprite.colors,'Eviction preserves joined rock shading');
 `)(documentMock,main,{devicePixelRatio:2},assert,surfaces,images);
 console.log('Resource sprite cache checks passed');
