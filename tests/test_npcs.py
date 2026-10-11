@@ -12,6 +12,20 @@ from chunk_world import chunk_key
 
 
 class BiomeLocals(unittest.TestCase):
+    def test_saved_clothing_locals_explain_perks_without_moving_or_resetting_visits(self):
+        town = new_town('Clothing')
+        locals_ = [npc for npc in town['npcs'] if npc['name'] in {'Dara', 'Petra'}]
+        for npc in locals_:
+            npc['dialogue'] = 'Old clothing introduction'
+        town['local_visits'] = {local_key(npc): {'gift_claimed': True} for npc in locals_}
+        before = copy.deepcopy(town)
+        ensure_npcs(town)
+        self.assertEqual(town['local_visits'], before['local_visits'])
+        for npc, old in zip(town['npcs'], before['npcs']):
+            self.assertEqual((npc['x'], npc['y']), (old['x'], old['y']))
+            if npc['name'] in {'Dara', 'Petra'}:
+                self.assertIn('20% more', npc['dialogue'])
+
     def test_chunked_relocation_reads_saved_resources_and_preserves_visits(self):
         world = new_world(seed=42, explorable=True)
         world['towns']['one'] = new_town('one', world)

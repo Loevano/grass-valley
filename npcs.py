@@ -27,10 +27,10 @@ ADDITIONAL_THEMES = {
           ('Alder', 'Forest woodworker', 'My spare axe deserves a home with a hardworking woodcutter.')],
     'm': [('Poppy', 'Meadow seed keeper', 'A spare sickle is a fine way to start a new field.'),
           ('Mabel', 'Meadow poultry keeper', 'My hens lay more eggs than I need. Bring wood for their shelter.')],
-    's': [('Dara', 'Dune outfitter', 'Here is a light desert outfit for your travels. Wear it from your character panel.'),
+    's': [('Dara', 'Dune outfitter', 'Take my spare desert outfit, or buy another. Wear it to gather 20% more berries.'),
           ('Kestrel', 'Dune tool trader', 'A sharp axe is useful even far from the forest. I sell steel and masterwork tools.')],
     'r': [('Orin', 'Ridge provisioner', 'The ridge gets cold at night. I swap vegetables for fuel.'),
-          ('Petra', 'Ridge trail guide', 'Wet trails call for good boots. Take this spare pair for the darkest swamp ground.')],
+          ('Petra', 'Ridge trail guide', 'Take my spare swamp boots, or buy another pair. Wear them to reach dark swamp ground and gather 20% more herbs.')],
     'b': [('Nell', 'Marsh rod maker', 'I craft steel and masterwork fishing rods for a more generous catch.'),
           ('Willow', 'Marsh fish trader', 'Bring firewood and I will share fresh fish from the marsh.')],
 }
@@ -44,6 +44,11 @@ NEW_LOCALS = {'Bram', 'Fern', 'Runa'} | {
 
 
 def ensure_npcs(town, obstacles=()):
+    clothing_dialogue = {name: dialogue for people in THEMES.values()
+                         for name, _, dialogue in people if name in {'Dara', 'Petra'}}
+    for npc in town.get('npcs', []):
+        if npc['name'] in clothing_dialogue and 'dialogue' in npc:
+            npc['dialogue'] = clothing_dialogue[npc['name']]
     placed = town.get('npc_placement_version', 0) >= 1
     roster_current = 'npcs' in town and town.get('npc_roster_version', 0) >= ROSTER_VERSION
     if roster_current and placed:

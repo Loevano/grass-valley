@@ -224,9 +224,14 @@ function renderWorkerTools(town,v,index,target){
   }
 }
 const equipmentItems={
-  swamp_boots:{name:'Swamp boots',slot:'feet',biome:'b',price:15},
-  desert_clothing:{name:'Desert clothing',slot:'body',price:20},
+  swamp_boots:{name:'Swamp boots',slot:'feet',biome:'b',price:15,perk:'Walk on dark swamp ground · +20% herbs gathered'},
+  desert_clothing:{name:'Desert clothing',slot:'body',price:20,perk:'+20% berries gathered'},
 };
+function clothingTraderItems(npc){
+  if(npc.name==='Dara'||npc.village==='Sunwell')return ['desert_clothing'];
+  if(npc.name==='Petra'||npc.village==='Reedhaven')return ['swamp_boots'];
+  return [];
+}
 function groundVariant(x,y){return ((x*17+y*31+x*y*7)%7)%3;}
 function biomeProtected(player,biome,x,y){return (biome==='b'&&groundVariant(x,y)!==2)||Object.entries(equipmentItems).every(([key,item])=>!item.biome||item.biome!==biome||player?.equipment?.[item.slot]===key);}
 function mapRoads(town){return world.shared_map?Object.values(world.towns).flatMap(t=>t.roads || []):town?.roads || [];}
@@ -519,9 +524,9 @@ const professionBenefits={
   nets:'+25% food / catch',
   wool_nets:'+25% food / catch\nStacks with nets',
   tools:'+25% wood / worker\nStacks with axe',
-  boat:'+3 tile reach\nDepth 2 water · Trout (1.5 food / 2 coins)',
-  improved_boat:'+2 additional tile reach\nDepth 3 water · Salmon (2 food / 3 coins)\n+25% fish / catch',
-  master_boat:'+2 additional tile reach\nDepth 4 water · Sturgeon (3 food / 5 coins)\n+25% fish / catch (total boat bonus: +50%)',
+  boat:'1 fisherman aboard · Other fishers use the dock\n+3 tile reach\nDepth 2 water · Trout (1.5 food / 2 coins)',
+  improved_boat:'2 fishermen aboard\n+2 additional tile reach\nDepth 3 water · Salmon (2 food / 3 coins)\n+25% fish / catch',
+  master_boat:'3 fishermen aboard\n+2 additional tile reach\nDepth 4 water · Sturgeon (3 food / 5 coins)\n+25% fish / catch (total boat bonus: +50%)',
   saw:'+25% plank processing speed',
   timber_frame:'+2 spaces'
 };
@@ -727,7 +732,7 @@ function renderItems(town){
   for(const [key,item] of Object.entries(equipmentItems)){
     const count=town.player?.items?.[key] || 0,equipped=town.player?.equipment?.[item.slot]===key;
     if(count<1)continue;
-    const stats=key==='swamp_boots'?'Feet · Walk on dark swamp ground':'Body · Cosmetic clothing';
+    const stats=`${item.slot==='feet'?'Feet':'Body'} · ${item.perk}`;
     const row=itemCard(key,item.name,stats,`${count} owned${equipped?' · Equipped':''}`);
     const button=document.createElement('button');button.textContent=equipped?`Unequip ${item.name.toLowerCase()}`:`Equip ${item.name.toLowerCase()}`;button.onclick=()=>act({action:equipped?'unequip_item':'equip_item',item:key});row.append(button);clothing.append(row);
   }
@@ -1139,7 +1144,7 @@ function renderProfession(town,item,index,target,upgrades,details,boats){
   if(!catalog)return;
   if(boats){
     const note=document.createElement('p');
-    note.textContent=fishingBoatLevel(item)?`Boat owned by this hut · Tier ${fishingBoatLevel(item)}/3 · Reach ${resourceReach(item)} tiles · Maximum depth ${fishingBoatLevel(item)+1}. Prefers deeper water; ${['','trout','salmon','sturgeon'][fishingBoatLevel(item)]} require this depth. Click its boat on the map to manage it.`:'No boat owned · Buy one boat for this fishing hut. It appears beside nearby water immediately.';
+    note.textContent=fishingBoatLevel(item)?`Boat owned by this hut · Tier ${fishingBoatLevel(item)}/3 · Crew ${fishingBoatLevel(item)} · Other fishers use the dock · Reach ${resourceReach(item)} tiles · Maximum depth ${fishingBoatLevel(item)+1}. Prefers deeper water; ${['','trout','salmon','sturgeon'][fishingBoatLevel(item)]} require this depth. Click its boat on the map to manage it.`:'No boat owned · Buy one boat for this fishing hut. It appears beside nearby water immediately.';
     boats.append(note);
   }
   if(item.kind==='acre'){
@@ -1227,10 +1232,10 @@ function renderSelection(town){
       skills.append(tile);
     }
     $('selection-details').append(skills);
-    const gear=document.createElement('p');gear.textContent='Equipment: wear swamp boots to enter the darkest swamp ground. Sand and lighter swamp ground are walkable without gear. Find gear in treasure or trade with a nearby local.';$('selection-details').append(gear);
+    const gear=document.createElement('p');gear.textContent='Equipment: wear swamp boots to enter the darkest swamp ground. Swamp boots also give +20% herbs; desert clothing gives +20% berries when gathering. Equip clothing to receive its perk. Find gear in treasure or trade with Dara, Petra, or the Sunwell and Reedhaven traders.';$('selection-details').append(gear);
     for(const [key,item] of Object.entries(equipmentItems)){
       const count=town.player?.items?.[key] || 0,equipped=town.player?.equipment?.[item.slot]===key;
-      const row=document.createElement('p');row.textContent=`${item.name} · ${count} owned${equipped?' · Equipped':''}`;
+      const row=document.createElement('p');row.textContent=`${item.name} · ${item.perk} · ${count} owned${equipped?' · Equipped':''}`;
       if(viewed===identity?.town_id&&count){const button=document.createElement('button');button.textContent=equipped?`Unequip ${item.name.toLowerCase()}`:`Equip ${item.name.toLowerCase()}`;button.onclick=()=>act({action:equipped?'unequip_item':'equip_item',item:key});row.append(button);}
       $('selection-details').append(row);
     }
@@ -1286,13 +1291,14 @@ function renderSelection(town){
     const dialogue=document.createElement('p');dialogue.textContent='“'+item.dialogue+'”';
     $('selection-details').append(illustration('villagers'));$('selection-details').append(role);$('selection-details').append(dialogue);
     if(player){
-      const hint=document.createElement('p');hint.textContent=nearby?'Trade equipment for coins. Equip purchases from your character panel.':'Walk beside this local to trade equipment.';$('selection-details').append(hint);
+      const clothingOffers=clothingTraderItems(item);
+      if(clothingOffers.length){const hint=document.createElement('p');hint.textContent=nearby?'I trade clothing for coins. Wear it from your character panel to gain its gathering perk.':'Walk beside this local to trade clothing.';$('selection-details').append(hint);}
       if(world.shared_map||viewed===identity?.town_id){
         const gift=localGifts[item.name];
         renderLocalStory(own,item,selection.index,nearby,$('selection-details'));
         if(gift){
           const gear=workerTools[gift] || equipmentItems[gift],note=document.createElement('p');
-          note.textContent=workerTools[gift]?`Gift for a worker · +${gear.bonus*100}% ${gear.job} output`:'Free clothing · Equip from your character panel';$('selection-details').append(note);
+          note.textContent=workerTools[gift]?`Gift for a worker · +${gear.bonus*100}% ${gear.job} output`:`Clothing gift · ${gear.perk} · Equip from your character panel`;$('selection-details').append(note);
           const button=document.createElement('button');button.textContent=progress.gift_claimed?`${gear.name} gift collected`:`Accept ${gear.name.toLowerCase()} · ${workerTools[gift]?'Gift for a worker':'Clothing gift'}`;
           button.disabled=!nearby||!!progress.gift_claimed;button.onclick=()=>act({action:'claim_local_gift',npc_index:selection.index});$('selection-details').append(button);
         }
@@ -1311,7 +1317,8 @@ function renderSelection(town){
           button.onclick=()=>act({action:'trade_local',npc_index:selection.index});$('selection-details').append(button);
         }
       }
-      if(world.shared_map||viewed===identity?.town_id)for(const [key,gear] of Object.entries(equipmentItems)){
+      if(world.shared_map||viewed===identity?.town_id)for(const key of clothingOffers){
+        const gear=equipmentItems[key],note=document.createElement('p');note.textContent=`${gear.name} · ${gear.perk} while equipped`;$('selection-details').append(note);
         const buy=document.createElement('button');buy.textContent=`Buy ${gear.name.toLowerCase()} · ${gear.price} coins`;buy.disabled=!nearby||own.coins<gear.price;buy.onclick=()=>act({action:'buy_equipment',item:key,npc_index:selection.index});$('selection-details').append(buy);
         const equipped=player.equipment?.[gear.slot]===key;
         const sell=document.createElement('button');sell.textContent=`Sell ${gear.name.toLowerCase()} · ${Math.floor(gear.price/2)} coins`;sell.disabled=!nearby||(player.items?.[key] || 0)<=Number(equipped);sell.onclick=()=>act({action:'sell_equipment',item:key,npc_index:selection.index});$('selection-details').append(sell);
@@ -1869,7 +1876,7 @@ function animatedVillagers(town, seconds, townId=viewed, frameLayout=null){
   return town.villagers.map((villager,index)=>{
     const task=JSON.stringify([villager.job,villager.building_index,villager.work_target?tiles([villager.work_target]):null,
       villager.construction_target?tiles([villager.construction_target]):null,
-      villager.job==='fishing'?town.buildings.filter(b=>b.kind==='fishing_hut').map(b=>[b.level,b.profession_upgrades]):null]);
+      villager.job==='fishing'?[town.villagers.map(v=>[v.job,v.building_index]),town.buildings.filter(b=>b.kind==='fishing_hut').map(b=>[b.level,b.profession_upgrades])]:null]);
     const trip=villager.logistics_trip;
     // Polling advances the host's step; keep the visible trip running continuously.
     const signature=JSON.stringify([task,trip?[trip.id,trip.operation,trip.workplace,trip.storage,trip.path]:villager.logistics_target]);
@@ -2539,9 +2546,10 @@ function fishingBoatSprites(entries,resources,villagers=[]){
   }
   return fishingBoatSprites.docked.map((boat,index)=>{
     const {hut}=huts[index];
-    const passenger=villagers.find(v=>v.townId===boat.townId&&v.state.boating&&v.state.home?.x===hut.x&&v.state.home?.y===hut.y
+    const crew=villagers.filter(v=>v.townId===boat.townId&&v.state.boating&&v.state.home?.x===hut.x&&v.state.home?.y===hut.y
       &&waterTiles.has(`${Math.floor(v.x+.5)},${Math.floor(v.y+.5)}`));
-    return {...boat,passenger,x:passenger?passenger.x:boat.x,y:passenger?passenger.y:boat.y};
+    const passenger=crew[0];
+    return {...boat,passenger,crew,x:passenger?passenger.x:boat.x,y:passenger?passenger.y:boat.y};
   });
 }
 function drawFishingBoat(boat){
@@ -2637,8 +2645,12 @@ function draw(seconds=0){
   const villagers=entries.flatMap(([id,t])=>animatedVillagers(t,seconds,id,
     t?.chunked?townWorkerLayout(t,buildings,resources):workerLayout));
   const drawnPiers=new Set();
-  for(const worker of villagers){
-    const pier=worker.state.pier;
+  if(draw.pierLayout!==workerLayout){
+    draw.pierLayout=workerLayout;
+    draw.piers=entries.flatMap(([,t])=>t.buildings.filter(b=>b.kind==='fishing_hut'&&(!b.construction||b.construction.upgrade))
+      .map(hut=>WorkerAnimation.fishingPier({...t,obstacles:buildings},hut)));
+  }
+  for(const pier of [...draw.piers,...villagers.map(worker=>worker.state.pier)]){
     if(!pier?.length)continue;
     const id=JSON.stringify(pier);
     if(drawnPiers.has(id))continue;
@@ -2673,7 +2685,7 @@ function draw(seconds=0){
     return px>=-tileW&&px<=rect.width+tileW&&py>=-tileH&&py<=rect.height+80*tileW/46;
   };
   const boats=fishingBoatSprites(entries,resources,villagers);
-  const passengers=new Set(boats.map(b=>b.passenger).filter(Boolean));
+  const passengers=new Set(boats.flatMap(b=>b.crew));
   const objects=mergeDepthObjects([...buildings,...cropObjects,...boats].filter(visible),visibleResourceObjects(resourceData,rect),
     [...villagers.filter(v=>!passengers.has(v)),...npcSprites(world.shared_map || town,seconds),...otherPlayers,...(hero?[hero]:[])].filter(visible));
   for(const b of objects){
@@ -2682,7 +2694,10 @@ function draw(seconds=0){
     if(b.kind==='crop'){drawFarmCrop(b);continue;}
     if(b.kind==='fishing_boat'){
       drawFishingBoat(b);
-      if(b.passenger)drawVillager({...b.passenger,state:{...b.passenger.state,path:[]}});
+      for(const [seat,passenger] of b.crew.entries()){
+        const offset=(seat-(b.crew.length-1)/2)*.28;
+        drawVillager({...passenger,x:b.x+offset,y:b.y-offset,state:{...passenger.state,path:[]}});
+      }
       hitTargets.push({type:'building',index:b.objectIndex,townId:b.townId,left:px-25*scale,right:px+25*scale,top:py+(tileH/2)-(b.level>=2?32:10)*scale,bottom:py+tileH/2+13*scale});
       continue;
     }

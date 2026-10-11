@@ -143,9 +143,12 @@ the Python host, refresh both browsers, and create a new world to use the shared
   world. Movement pauses while typing, placing buildings, or using world menus.
 - Select **You** to inspect your equipment and equip or remove items. Swamp boots
   (15 coins) unlock the darkest swamp tiles. Sand is walkable without equipment;
-  desert clothing (20 coins) can still be worn. Desert dunes and ice fields are
+  desert clothing (20 coins) gives +20% berries per gathering cycle while equipped.
+  Swamp boots also give +20% herbs per gathering cycle. Desert dunes and ice fields are
   walkable without protective clothing. Boats allow sailing on water.
-  Walk beside any local and press **I** (or click them) to read dialogue and buy or sell gear.
+  Walk beside a local and press **I** (or click them) to discover their offers.
+  Dara and Sunwell traders buy and sell desert clothing; Petra and Reedhaven traders
+  buy and sell swamp boots. Clothing perks appear in their offers and your inventory.
   **I** selects the nearest local within trading distance; change it in Settings. Sale prices are half
   the purchase price, rounded down. Remove worn gear before selling your last copy,
   and return to safe ground before removing protective clothing. Island treasure

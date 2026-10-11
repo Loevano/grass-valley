@@ -10,7 +10,7 @@ class Equipment(unittest.TestCase):
     def setUp(self):
         self.town = new_town('Explorer')
         self.town.update(terrain=['g' * 120] * 120, map_resources=[], coins=50,
-                         npcs=[{'name': 'Tobin', 'x': 5, 'y': 8}])
+                         npcs=[{'name': 'Petra', 'x': 5, 'y': 8}])
 
     def action(self, action, item='swamp_boots', **extra):
         return command(self.town, {'action': action, 'item': item, 'npc_index': 0, **extra})
@@ -43,6 +43,25 @@ class Equipment(unittest.TestCase):
         self.assertEqual(self.town['coins'], 34)
         self.reject('equip_item')
         self.reject('sell_equipment')
+
+    def test_only_specialists_trade_their_own_clothing(self):
+        for npc, allowed in [({'name': 'Dara'}, 'desert_clothing'),
+                             ({'name': 'Petra'}, 'swamp_boots'),
+                             ({'name': 'Zara', 'village': 'Sunwell'}, 'desert_clothing'),
+                             ({'name': 'Fen', 'village': 'Reedhaven'}, 'swamp_boots')]:
+            with self.subTest(npc=npc):
+                self.town['npcs'][0] = dict(npc, x=5, y=8)
+                self.town['coins'] = 50
+                other = 'swamp_boots' if allowed == 'desert_clothing' else 'desert_clothing'
+                self.reject('buy_equipment', other)
+                self.reject('sell_equipment', other)
+                self.action('buy_equipment', allowed)
+                self.action('sell_equipment', allowed)
+        for npc in [{'name': 'Tobin'}, {'name': 'Eira', 'village': 'Frostbrook'}]:
+            self.town['npcs'][0] = dict(npc, x=5, y=8)
+            for key in ['swamp_boots', 'desert_clothing']:
+                self.reject('buy_equipment', key)
+                self.reject('sell_equipment', key)
 
     def test_biome_access_requires_equipping_and_keeps_boat_rules(self):
         self.town['terrain'][5] = 'g' * 6 + 'b' + 'g' * 113

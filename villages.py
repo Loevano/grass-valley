@@ -3,16 +3,20 @@
 VILLAGE_RADIUS = 24
 THEMES = (
     ('Reedhaven', 'b', -80, 40, ('Fen', 'Lily'),
-     'Our raised cottages keep the marsh at bay. Come into the clearing to trade for swamp boots.'),
+     'Our raised cottages keep the marsh at bay. I trade swamp boots: wear them to reach dark swamp ground and gather 20% more herbs.'),
     ('Sunwell', 'd', 200, 40, ('Zara', 'Amir'),
-     'Welcome to Sunwell. The dunes stretch beyond our sandstone homes. I sell light desert clothing for the journey.'),
+     'Welcome to Sunwell. The dunes stretch beyond our sandstone homes. I trade desert clothing: wear it to gather 20% more berries.'),
     ('Frostbrook', 'i', 40, -80, ('Eira', 'Boreal'),
-     'Our snowy village is a warm stop on the ice fields. Stay awhile and browse our travel supplies.'),
+     'Our snowy village is a warm stop on the ice fields. Stay awhile and rest before your next journey.'),
 )
 
 
 def ensure_villages(world):
     landscape = world['shared_map']
+    dialogue_by_village = {name: dialogue for name, _, _, _, _, dialogue in THEMES}
+    for npc in landscape.get('npcs', []):
+        if npc.get('village') in dialogue_by_village:
+            npc['dialogue'] = dialogue_by_village[npc['village']]
     if 'villages' in landscape:
         return
     offset = landscape.get('starter_offset', 880)

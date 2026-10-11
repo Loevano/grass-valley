@@ -1,7 +1,7 @@
 """Town professions, finite renewable supplies, and founder activities (hall 1–5)."""
 from collections import deque
 import secrets
-from equipment import find_item
+from equipment import find_item, gathering_bonus
 
 BUILDINGS = {
     'barn': {'label': 'Barn', 'level': 2, 'wood': 25, 'job': 'husbandry', 'slots': 2},
@@ -552,7 +552,9 @@ def player_tick(town, landscape, capacity):
     boat_bonus = .25 * max(0, player_boat_level(player) - 1) if job == 'fishing' and any(
         r['kind'] == 'water' and (r['x'], r['y']) == (int(player['x'] + .5), int(player['y'] + .5))
         for r in landscape['map_resources']) else 0
-    amount = min(room, (1 if key != 'wood' else .5) * (1 + player.get(job, 0) // 20) * (1 + boat_bonus))
+    clothing_bonus = gathering_bonus(player, key) if job == 'gathering' else 0
+    amount = min(room, (1 if key != 'wood' else .5) * (1 + player.get(job, 0) // 20)
+                 * (1 + boat_bonus) * (1 + clothing_bonus))
     amount = take_supply(landscape, source, amount)
     caught = job != 'fishing' or secrets.randbelow(5) != 0
     if caught:

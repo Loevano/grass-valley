@@ -31,12 +31,23 @@ const run=new Function('document','window','localStorage','setTimeout','clearTim
     selection={type:'player',index:0};renderSelection(town);
     assert($('selection-details').children.some(c=>c.children?.some(b=>b.textContent==='Unequip swamp boots')));
     town.local_visits={'Tobin:5:8':{met:true}};selection={type:'npc',index:0};renderSelection(town);
+    assert(!$('selection-details').children.some(c=>c.textContent?.startsWith('Buy swamp boots')||c.textContent?.startsWith('Buy desert clothing')),'Other locals have no generic clothing shop');
+    town.npcs[0].name='Petra';town.local_visits['Petra:5:8']={met:true};renderSelection(town);
     assert($('selection-details').children.some(c=>c.textContent==='Buy swamp boots · 15 coins'&&!c.disabled));
+    assert(!$('selection-details').children.some(c=>c.textContent==='Buy desert clothing · 20 coins'));
+    assert($('selection-details').children.some(c=>c.textContent?.includes('+20% herbs')),'Specialist explains the perk');
     assert($('selection-details').children.some(c=>c.textContent==='Sell swamp boots · 7 coins'&&c.disabled),'Worn last copy cannot be sold');
     town.player.x=10;renderSelection(town);
     assert($('selection-details').children.some(c=>c.textContent==='Buy swamp boots · 15 coins'&&c.disabled),'Trading requires proximity');
     town.player.x=5;town.coins=0;renderSelection(town);
+    town.npcs[0].name='Dara';town.local_visits['Dara:5:8']={met:true};renderSelection(town);
     assert($('selection-details').children.some(c=>c.textContent==='Buy desert clothing · 20 coins'&&c.disabled),'Trading respects affordability');
+    assert($('selection-details').children.some(c=>c.textContent?.includes('+20% berries')));
+    for(const [village,key] of [['Sunwell','desert clothing'],['Reedhaven','swamp boots']]){
+      town.npcs[0].name='Resident';town.npcs[0].village=village;town.local_visits['Resident:5:8']={met:true};renderSelection(town);
+      assert($('selection-details').children.some(c=>c.textContent?.startsWith('Buy '+key)),'Village residents offer regional clothing');
+    }
+    delete town.npcs[0].village;
     const sent=[];act=data=>sent.push(data);
     town.npcs[0].name='Sylva';town.local_visits['Sylva:5:8']={met:true};town.player.y=8;renderSelection(town);
     const gift=$('selection-details').children.find(c=>c.textContent==='Accept fine axe · Gift for a worker');
@@ -97,7 +108,7 @@ const run=new Function('document','window','localStorage','setTimeout','clearTim
     clothing.children[1].children[1].onclick();
     assert.deepStrictEqual(sent.pop(),{action:'unequip_item',item:'swamp_boots'});
     assert(clothing.children.length===2,'Unowned clothing is hidden');
-    assert(clothing.children[1].children[0].children[1].children[1].textContent==='Feet · Walk on dark swamp ground');
+    assert(clothing.children[1].children[0].children[1].children[1].textContent==='Feet · Walk on dark swamp ground · +20% herbs gathered');
     town.player.worker_tools.fine_axe=0;town.villagers[0].worker_tool='fine_axe';renderItems(town);
     assert($('items-list').children[0].children[2].children[0].children[1].children[2].textContent==='0 available · 1 assigned','Refresh reflects assigned inventory');
     assert($('items-list').children[0].children[2].children[2].disabled,'All equipped villagers leaves no recipients');

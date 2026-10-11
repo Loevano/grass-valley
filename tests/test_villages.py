@@ -6,7 +6,7 @@ import unittest
 
 import server
 from chunk_world import CHUNK_SIZE, attach, chunk_key, generate_chunk
-from equipment import change, protected
+from equipment import change, protected, trader_items
 from shared_world import bind_map, export_world, new_world
 from villages import apply_villages, ensure_villages
 
@@ -46,11 +46,17 @@ class WildernessVillages(unittest.TestCase):
         for village in world['shared_map']['villages']:
             npc = next(n for n in town['npcs'] if n.get('village') == village['name'])
             index = town['npcs'].index(npc)
-            with self.assertRaisesRegex(ValueError, 'beside'):
-                change(town, {'action': 'buy_equipment', 'item': 'swamp_boots', 'npc_index': index})
+            for item in trader_items(npc):
+                with self.assertRaisesRegex(ValueError, 'beside'):
+                    change(town, {'action': 'buy_equipment', 'item': item, 'npc_index': index})
             town['player'].update(x=npc['x'], y=npc['y']+1)
             town['coins'] = 100
-            change(town, {'action': 'buy_equipment', 'item': 'swamp_boots', 'npc_index': index})
+            for item in ['swamp_boots', 'desert_clothing']:
+                if item in trader_items(npc):
+                    change(town, {'action': 'buy_equipment', 'item': item, 'npc_index': index})
+                else:
+                    with self.assertRaisesRegex(ValueError, 'does not trade'):
+                        change(town, {'action': 'buy_equipment', 'item': item, 'npc_index': index})
             world['_chunks'].activate()
             bind_map(world)
             hut = next(r for r in town['map_resources'] if r.get('village') == village['name'])
@@ -87,8 +93,18 @@ class WildernessVillages(unittest.TestCase):
             for obstacle in world['towns']['own']['buildings'] + world['towns']['own']['roads']:
                 self.assertTrue(abs(village['x']-obstacle['x']) > 26 or abs(village['y']-obstacle['y']) > 26)
         before = copy.deepcopy(world['shared_map']['villages'])
+        residents = [npc for npc in world['shared_map']['npcs'] if npc.get('village')]
+        positions = [(npc['x'], npc['y']) for npc in residents]
+        for npc in residents:
+            npc['dialogue'] = 'Old travel supplies offer'
         ensure_villages(world)
         self.assertEqual(world['shared_map']['villages'], before)
+        self.assertEqual([(npc['x'], npc['y']) for npc in residents], positions)
+        for npc in residents:
+            if npc['village'] in {'Sunwell', 'Reedhaven'}:
+                self.assertIn('20% more', npc['dialogue'])
+            else:
+                self.assertIn('rest', npc['dialogue'])
 
     def test_coordinate_noise_produces_desert_and_ice(self):
         biomes = set()

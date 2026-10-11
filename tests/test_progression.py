@@ -107,6 +107,42 @@ class Progression(unittest.TestCase):
             command(self.town, {'action':'fish'})
         self.assertEqual(self.town,before)
 
+    def test_clothing_gathering_perks_require_equipping_and_matching_goods(self):
+        self.town['buildings'].append({'kind': 'storehouse', 'x': 3, 'y': 3,
+                                      'storage_allocations': {'herbs': 100}})
+        for good, item, position in [
+                ('berries', 'desert_clothing', (3, 7)),
+                ('herbs', 'swamp_boots', (5, 9))]:
+            for worn, expected in [({}, 1), ({'body': 'desert_clothing'}, 1.2 if good == 'berries' else 1),
+                                   ({'feet': 'swamp_boots'}, 1.2 if good == 'herbs' else 1),
+                                   ({'body': 'desert_clothing', 'feet': 'swamp_boots'}, 1.2)]:
+                with self.subTest(good=good, worn=worn):
+                    town = copy.deepcopy(self.town)
+                    town['player'].update(x=position[0], y=position[1], equipment=worn,
+                                          items={item: 1}, gathering=0)
+                    economy.start_activity(town, town, 'gather')
+                    before = economy.quantity(town, good)
+                    economy.player_tick(town, town, 100)
+                    self.assertAlmostEqual(economy.quantity(town, good) - before, expected)
+                    self.assertEqual(town['player']['gathering'], 1)
+
+    def test_clothing_bonus_respects_supply_storage_and_production_caps(self):
+        for limit in ['supply', 'storage', 'cap']:
+            with self.subTest(limit=limit):
+                town = copy.deepcopy(self.town)
+                town['player'].update(x=5, y=9, equipment={'feet': 'swamp_boots'})
+                town['buildings'].append({'kind': 'storehouse', 'x': 3, 'y': 3,
+                                          'storage_allocations': {'herbs': 100}})
+                if limit == 'storage':
+                    town['goods']['herbs'] = 49
+                if limit == 'cap':
+                    town['rules'] = {'production_caps': {'herbs': 1}}
+                source = next(r for r in town['map_resources'] if r['kind'] == 'herb_patch')
+                source['supply'] = 1 if limit == 'supply' else 10
+                economy.start_activity(town, town, 'gather')
+                economy.player_tick(town, town, 100)
+                self.assertAlmostEqual(economy.quantity(town, 'herbs'), 50 if limit == 'storage' else 1)
+
     @patch('progression.secrets.randbelow', return_value=1)
     def test_connected_pond_is_shared_across_players_and_regenerates_once(self, _roll):
         friend=copy.deepcopy(self.town)

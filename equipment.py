@@ -5,9 +5,25 @@ from terrain import ground_variant
 
 
 ITEMS = {
-    'swamp_boots': {'name': 'Swamp boots', 'slot': 'feet', 'biome': 'b', 'price': 15},
-    'desert_clothing': {'name': 'Desert clothing', 'slot': 'body', 'price': 20},
+    'swamp_boots': {'name': 'Swamp boots', 'slot': 'feet', 'biome': 'b', 'price': 15,
+                    'gather_good': 'herbs', 'gather_bonus': .2},
+    'desert_clothing': {'name': 'Desert clothing', 'slot': 'body', 'price': 20,
+                        'gather_good': 'berries', 'gather_bonus': .2},
 }
+
+
+def trader_items(npc):
+    if npc.get('name') == 'Dara' or npc.get('village') == 'Sunwell':
+        return ('desert_clothing',)
+    if npc.get('name') == 'Petra' or npc.get('village') == 'Reedhaven':
+        return ('swamp_boots',)
+    return ()
+
+
+def gathering_bonus(player, good):
+    return sum(item['gather_bonus'] for key, item in ITEMS.items()
+               if item['gather_good'] == good
+               and player.get('equipment', {}).get(item['slot']) == key)
 
 
 def protected(player, biome, x, y):
@@ -36,6 +52,8 @@ def change(town, data):
         if type(index) is not int or not 0 <= index < len(locals_):
             raise ValueError('Choose a local trader.')
         trader = locals_[index]
+        if key not in trader_items(trader):
+            raise ValueError('This local does not trade that clothing.')
         if math.hypot(player['x'] - trader['x'], player['y'] - trader['y']) > 1.8:
             raise ValueError('Walk beside the local to trade.')
         if action == 'buy_equipment':
