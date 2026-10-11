@@ -68,8 +68,8 @@ class BuildingRange(unittest.TestCase):
         command(self.town, {'action': 'job', 'index': 0, 'job': 'woodcutting'})
         wood = self.town['wood']
         tick({'towns': {'owner': self.town}})
-        self.assertGreater(self.town['wood'], wood)
-        self.assertGreater(self.town['buildings'][1]['output_buffer']['wood'], 0)
+        self.assertEqual(self.town['wood'], wood)
+        self.assertGreater(self.town['buildings'][1]['pending_output']['wood'], 0)
         with self.assertRaisesRegex(ValueError, 'within 30 tile steps'):
             command(self.town, {'action': 'move', 'index': 0, 'x': 21, 'y': 20})
         command(self.town, {'action': 'move', 'index': 0, 'x': 1, 'y': 1})

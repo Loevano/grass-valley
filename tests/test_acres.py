@@ -33,8 +33,8 @@ class FarmAcres(unittest.TestCase):
         command(self.town, {'action': 'job', 'index': 0, 'job': 'farming'})
         food = self.town['food']
         tick({'towns': {'a': self.town}})
-        self.assertAlmostEqual(self.town['food'], food + 1 - .78)
-        self.assertEqual(self.town['buildings'][1]['output_buffer']['vegetables'], 1)
+        self.assertAlmostEqual(self.town['food'], food - .78)
+        self.assertEqual(self.town['buildings'][1]['pending_output']['vegetables'], 1)
         self.assertEqual(self.town['villagers'][0]['work_target'], acre)
         self.assertEqual(self.town['villagers'][0]['farming'], 1.04)
 

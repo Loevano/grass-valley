@@ -222,6 +222,8 @@ def local_room(building, key):
     if not accepts_storage(building, key):
         return 0
     stock = inventory(building)
+    for pending_key, pending_amount in building.get('pending_output', {}).items():
+        stock[pending_key] = stock.get(pending_key, 0) + pending_amount
     group = 'food' if key in EDIBLE else key
     used = sum(n * EDIBLE.get(k, 1) for k, n in stock.items() if k == group or (group == 'food' and k in EDIBLE))
     allocated = max(0, storage_allocations(building).get(group, 0) - used) / EDIBLE.get(key, 1)

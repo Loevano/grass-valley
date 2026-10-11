@@ -36,9 +36,9 @@ class ResourceLogistics(unittest.TestCase):
         self.town['map_resources'] = [{'kind': 'tree', 'x': 3, 'y': 1}]
         v = self.assign(0, b)
         self.ticks()
-        self.assertEqual(b['output_buffer']['wood'], .5)
-        self.assertEqual(self.town['wood'], 65.5)
-        b['output_buffer']['wood'] = 50
+        self.assertEqual(b['pending_output']['wood'], .5)
+        self.assertEqual(self.town['wood'], 65)
+        b.setdefault('output_buffer', {})['wood'] = 50
         self.town['buildings'][0]['stored_goods']['wood'] = 100
         self.town['wood'] = 150
         skill = v['woodcutting']
@@ -54,6 +54,9 @@ class ResourceLogistics(unittest.TestCase):
         self.assign(0, camp)
         self.ticks()
         logistics.record_output(self.town, camp, 'wood', 19.5)
+        with self.assertRaisesRegex(ValueError, 'Missing building materials'):
+            server.command(self.town, {'action': 'build', 'kind': 'home', 'x': 4, 'y': 4})
+        logistics.drop_off(self.town, camp, self.town['villagers'][0])
         server.command(self.town, {'action': 'build', 'kind': 'home', 'x': 4, 'y': 4})
         self.assertEqual(self.town['wood'], 0)
         self.assertEqual(camp['output_buffer']['wood'], 0)
@@ -268,7 +271,7 @@ class ResourceLogistics(unittest.TestCase):
         v = self.assign(0, b)
         self.town.update(harvested=50, produced={'wood': 50})
         self.ticks(3)
-        self.assertEqual(self.town['wood'], 50 + logistics.buffered(b))
+        self.assertEqual(self.town['wood'], 50 + sum(economy.inventory(b).values()))
         self.assertLess(logistics.buffered(b), 50)
         self.assertEqual(self.town['harvested'], 50 + logistics.buffered(b))
         self.assertEqual(self.town['produced']['wood'], self.town['harvested'])
@@ -284,7 +287,7 @@ class ResourceLogistics(unittest.TestCase):
         self.ticks(6)
         self.assertEqual(producer['woodcutting'], .24)
         self.assertGreater(self.town['wood'], 65)
-        self.assertAlmostEqual(self.town['wood'] - 65, 3)
+        self.assertAlmostEqual(self.town['wood'] - 65 + sum(b.get('pending_output', {}).values()), 3)
         self.assertGreater(store['stored_goods']['wood'], 0)
 
     def test_farmer_delivers_through_surrounding_completed_acres(self):
@@ -318,7 +321,7 @@ class ResourceLogistics(unittest.TestCase):
         self.assertGreater(v['woodworking'], 0)
         planks = self.town.get('goods', {}).get('planks', 0)
         remaining = self.town['wood'] + saw.get('input_buffer', {}).get('wood', 0)
-        self.assertAlmostEqual(remaining + planks * 2, 20)
+        self.assertAlmostEqual(remaining + (planks + saw.get('pending_output', {}).get('planks', 0)) * 2, 20)
         self.assertGreater(self.town.get('goods', {}).get('planks', 0), 0)
 
     def test_food_and_wool_share_the_same_collection_rules(self):
@@ -387,7 +390,7 @@ class ResourceLogistics(unittest.TestCase):
         self.assertEqual(saved['towns']['a']['villagers'][0]['logistics_trip'], v['logistics_trip'])
         for _ in range(18):
             server.tick(saved)
-        self.assertEqual(saved['towns']['a']['wood'], 50 + logistics.buffered(saved['towns']['a']['buildings'][-1]))
+        self.assertEqual(saved['towns']['a']['wood'], 50 + sum(economy.inventory(saved['towns']['a']['buildings'][-1]).values()))
         b['x'] = 21
         self.ticks()
         self.assertEqual(b['output_buffer']['wood'], 50)
@@ -428,7 +431,7 @@ class ResourceLogistics(unittest.TestCase):
         self.assertEqual(v.get('woodworking', 0), 0)
         self.ticks(3)
         self.assertEqual(store['stored_goods']['planks'], 49.5)
-        self.assertEqual(self.town['goods']['planks'], 49.5 + logistics.buffered(saw))
+        self.assertEqual(self.town['goods']['planks'], 49.5 + sum(economy.inventory(saw).values()))
         self.assertNotIn('buffer_full', saw)
 
     def test_food_uses_one_shared_allocation_and_preserves_undelivered_goods(self):

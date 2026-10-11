@@ -1,0 +1,144 @@
+"""Host-owned workplace animation and drop-off timing."""
+from collections import deque
+import math
+
+
+def route(start, target, blocked, size, terrain, adjacent=True, bounds=None):
+    start = (round(start['x']), round(start['y']))
+    queue, previous = deque([start]), {start: None}
+    while queue:
+        tile = queue.popleft()
+        reached = tile in target if isinstance(target, set) else abs(tile[0] - target['x']) + abs(tile[1] - target['y']) == int(adjacent)
+        if reached:
+            path = []
+            while previous[tile] is not None:
+                path.append({'x': tile[0], 'y': tile[1]})
+                tile = previous[tile]
+            return list(reversed(path))
+        x, y = tile
+        for next_tile in ((x + 1, y), (x, y + 1), (x - 1, y), (x, y - 1)):
+            nx, ny = next_tile
+            if bounds and not (bounds[0] <= nx <= bounds[1] and bounds[2] <= ny <= bounds[3]):
+                continue
+            if (0 <= nx < size and 0 <= ny < size and next_tile not in blocked
+                    and next_tile not in previous and (not terrain or terrain[ny][nx] != 'v')
+                    and (not bounds or terrain[ny][nx])):
+                previous[next_tile] = tile
+                queue.append(next_tile)
+    return None
+
+
+def advance(town, landscape, villager, building, source, index, seconds):
+    """Return True only when the worker finishes unloading at its workplace."""
+    spec = [villager['job'], building['kind'], building['x'], building['y'], source['kind'], source['x'], source['y']]
+    state = villager.get('work_animation')
+    size, terrain = landscape.get('map_size', 120), landscape.get('terrain', [])
+    blocked = {(b['x'], b['y']) for b in landscape['buildings'] + landscape['map_resources'] + landscape.get('npcs', [])}
+    farming = villager['job'] == 'farming'
+    hall = next(b for b in town['buildings'] if b['kind'] == 'hall')
+    center = town.get('town_origin', hall)
+    bounds = (max(0, center['x'] - 60), min(size - 1, center['x'] + 60),
+              max(0, center['y'] - 60), min(size - 1, center['y'] + 60)) if landscape.get('chunked') else None
+    if farming:
+        blocked.difference_update((b['x'], b['y']) for b in landscape['buildings'] if b['kind'] == 'acre' and 'construction' not in b)
+    work_spot = source if farming and source['kind'] == 'acre' else None
+    if villager['job'] == 'fishing':
+        # The hut's pier permits walking onto a reachable water tile.
+        pier_blocked = blocked - {(building['x'], building['y'])}
+        pier_blocked.difference_update((r['x'], r['y']) for r in landscape['map_resources']
+                                      if r['kind'] == 'water' and abs(r['x'] - building['x']) + abs(r['y'] - building['y']) <= 3)
+        pier = route(building, source, pier_blocked, size, terrain, False, bounds)
+        if pier is not None and len(pier) <= 3:
+            blocked.discard((building['x'], building['y']))
+            blocked.difference_update((p['x'], p['y']) for p in pier)
+            work_spot = source
+    def travel(start, target, adjacent=True):
+        return route(start, target, blocked, size, terrain, adjacent, bounds)
+    if not state or state['task'] != spec or state['phase'] in ('waiting', 'waiting_water'):
+        position = (villager.get('logistics_position') or state or villager.get('construction_position')
+                    or {'x': hall['x'] - 2 + index % 5, 'y': hall['y'] + 3 + index // 5})
+        x, y = round(position['x']), round(position['y'])
+        if (x, y) in blocked or not (0 <= x < size and 0 <= y < size) or (terrain and terrain[y][x] == 'v'):
+            candidates = ((cx, cy) for cx in range(max(0, x - 60), min(size, x + 61))
+                          for cy in range(max(0, y - 60), min(size, y + 61)))
+            spot = min((p for p in candidates if p not in blocked and (not terrain or terrain[p[1]][p[0]] != 'v')),
+                       key=lambda p: abs(p[0] - x) + abs(p[1] - y), default=None)
+            if spot is None:
+                return False
+            x, y = spot
+        state = {'task': spec, 'x': x, 'y': y, 'elapsed': 0, 'waterReady': False,
+                 'version': (state or {}).get('version', 0), 'facing': 1}
+        path = travel(state, work_spot or source, not work_spot)
+        state.update(path=path or [], phase='waiting' if path is None else 'walking' if path else 'working')
+        villager['work_animation'] = state
+    state['version'] += 1
+    roads = {(r['x'], r['y']) for r in landscape.get('roads', []) if 'construction' not in r}
+    remaining = seconds
+    while remaining > 1e-9:
+        if state['path']:
+            target = state['path'][0]
+            if (target['x'], target['y']) in blocked or (terrain and terrain[target['y']][target['x']] == 'v'):
+                villager.pop('work_animation', None)
+                return False
+            dx, dy = target['x'] - state['x'], target['y'] - state['y']
+            distance = math.hypot(dx, dy)
+            speed = 1.8 * (1.5 if (math.floor(state['x'] + .5), math.floor(state['y'] + .5)) in roads else 1)
+            # Match the browser's small movement steps and road boundaries.
+            movement = min(distance, .05, remaining * speed)
+            remaining -= movement / speed
+            if dx != dy:
+                state['facing'] = 1 if dx - dy > 0 else -1
+            if distance <= movement + 1e-9:
+                state.update(x=target['x'], y=target['y'])
+                state['path'].pop(0)
+            else:
+                state['x'] += dx / distance * movement
+                state['y'] += dy / distance * movement
+            if not state['path']:
+                phase = state['phase']
+                state['phase'] = {'returning': 'depositing', 'fetching_water': 'collecting_water'}.get(phase, 'working')
+                state['elapsed'] = 0
+                if phase == 'returning_water':
+                    state['waterReady'] = True
+                    state['elapsed'] = 4
+            continue
+        phase = state['phase']
+        if phase in ('waiting', 'waiting_water'):
+            return False
+        duration = .65 if phase in ('depositing', 'collecting_water') else 4 if farming and not state['waterReady'] else 8 if farming else 3.2
+        take = min(remaining, max(0, duration - state['elapsed']))
+        state['elapsed'] += take
+        remaining -= take
+        if state['elapsed'] + 1e-9 < duration:
+            break
+        if phase == 'depositing':
+            path = travel(state, work_spot or source, not work_spot)
+            state.update(path=path or [], phase='waiting' if path is None else 'walking' if path else 'working', elapsed=0, waterReady=False)
+            return True
+        if phase == 'collecting_water':
+            path = travel(state, work_spot or source, not work_spot)
+            state.update(path=path or [], phase='waiting_water' if path is None else 'returning_water' if path else 'working', elapsed=4)
+            state['waterReady'] = path is not None and not path
+        elif farming and not state['waterReady']:
+            banks = {}
+            for water in landscape['map_resources']:
+                if water['kind'] != 'water':
+                    continue
+                for dx, dy in ((1, 0), (0, 1), (-1, 0), (0, -1)):
+                    bank = {'x': water['x'] + dx, 'y': water['y'] + dy}
+                    if (bank['x'], bank['y']) not in blocked:
+                        banks[(bank['x'], bank['y'])] = water
+            path = travel(state, set(banks), False) if banks else None
+            if path is None:
+                state['phase'] = 'waiting_water'
+                return False
+            bank = path[-1] if path else state
+            water = banks[(round(bank['x']), round(bank['y']))]
+            state.update(path=path, waterSource=water, phase='fetching_water' if path else 'collecting_water', elapsed=0)
+        else:
+            if villager['job'] == 'fishing' and not any(villager.get('pending_output', {}).values()):
+                state['elapsed'] = 0
+                continue
+            path = [] if source is building else travel(state, building)
+            state.update(path=path or [], phase='waiting' if path is None else 'returning' if path else 'depositing', elapsed=0)
+    return False

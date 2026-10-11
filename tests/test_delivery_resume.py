@@ -39,7 +39,7 @@ class ProducerDeliveryResume(unittest.TestCase):
         self.assertNotIn('logistics_trip', bram)
         self.assertEqual(bram['production_status'], 'Working')
         self.assertAlmostEqual(bram['farming'], 15.03)
-        self.assertAlmostEqual(self.town['buildings'][1]['output_buffer']['vegetables'], 50)
+        self.assertAlmostEqual(sum(self.town['buildings'][1].get(field, {}).get('vegetables', 0) for field in ('output_buffer', 'pending_output')), 50)
 
     def test_cancelled_delivery_does_not_resume_production(self):
         bram = self.town['villagers'][3]

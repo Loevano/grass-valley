@@ -63,8 +63,8 @@ class VillageRules(unittest.TestCase):
         command(self.town, {'action': 'job', 'index': 0, 'job': 'woodcutting'})
         wood, skill = self.town['wood'], self.town['villagers'][0]['woodcutting']
         tick({'towns': {'absent-owner': self.town}})
-        self.assertEqual(self.town['wood'], wood + .5)
-        self.assertGreater(self.town['buildings'][1]['output_buffer']['wood'], 0)
+        self.assertEqual(self.town['wood'], wood)
+        self.assertGreater(self.town['buildings'][1]['pending_output']['wood'], 0)
         self.assertEqual(self.town['villagers'][0]['woodcutting'], skill + .04)
 
     def test_destroy_removes_each_building_kind_without_refund(self):
@@ -192,8 +192,8 @@ class VillageRules(unittest.TestCase):
         self.assertEqual(self.town['villagers'][0]['production_status'], 'Waiting for trees within 10 tiles')
         command(self.town, {'action': 'move', 'index': 1, 'x': 2, 'y': 2})
         tick({'towns': {'a': self.town}})
-        self.assertEqual(self.town['wood'], before[0] + .5)
-        self.assertGreater(self.town['buildings'][1]['output_buffer']['wood'], 0)
+        self.assertEqual(self.town['wood'], before[0])
+        self.assertGreater(self.town['buildings'][1]['pending_output']['wood'], 0)
         self.assertEqual(self.town['villagers'][0]['work_target']['kind'], 'tree')
 
     def test_woodcutters_report_regrowth_and_resume_when_tree_returns(self):
@@ -216,13 +216,13 @@ class VillageRules(unittest.TestCase):
         command(self.town, {'action': 'job', 'index': 0, 'job': 'farming'})
         food = self.town['food']
         tick({'towns': {'a': self.town}})
-        self.assertAlmostEqual(self.town['food'], food + 1 - .78)
-        self.assertGreater(self.town['buildings'][1]['output_buffer']['vegetables'], 0)
+        self.assertAlmostEqual(self.town['food'], food - .78)
+        self.assertGreater(self.town['buildings'][1]['pending_output']['vegetables'], 0)
         self.assertEqual(self.town['villagers'][0]['work_target']['kind'], 'farm')
         command(self.town, {'action': 'move', 'index': 1, 'x': 5, 'y': 2})
         food, skill = self.town['food'], self.town['villagers'][0]['farming']
         tick({'towns': {'a': self.town}})
-        self.assertAlmostEqual(self.town['food'], food + 1 - .78)
+        self.assertAlmostEqual(self.town['food'], food - .78)
         self.assertGreater(self.town['villagers'][0]['farming'], skill)
         self.assertEqual(self.town['villagers'][0]['work_target']['kind'], 'farm')
 

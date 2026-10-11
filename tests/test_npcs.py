@@ -176,11 +176,11 @@ class LocalOffers(unittest.TestCase):
                 worker.update(job=job, worker_tool=item)
                 with patch('server.secrets.randbelow', return_value=1):
                     tick({'towns': {'own': town}})
-                self.assertAlmostEqual(town['buildings'][1]['output_buffer'][output], rate * 1.25)
+                self.assertAlmostEqual(town['buildings'][1]['pending_output'][output], rate * 1.25)
                 worker['worker_tool'] = 'fine_axe' if job == 'fishing' else 'fine_fishing_rod'
                 with patch('server.secrets.randbelow', return_value=1):
                     tick({'towns': {'own': town}})
-                self.assertAlmostEqual(town['buildings'][1]['output_buffer'][output], rate * 2.25)
+                self.assertAlmostEqual(town['buildings'][1]['pending_output'][output], rate * 2.25)
 
     def test_departing_worker_returns_gift_tool(self):
         town = self.town

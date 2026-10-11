@@ -240,7 +240,9 @@ the Python host, refresh both browsers, and create a new world to use the shared
 - Completed workplaces hold storage: **50 units** in ordinary workplaces,
   200 in the hall, and 100 per storehouse level. Its **Storage** section shows
   goods held there. Wood and other products become available for construction,
-  meals, and sales immediately when produced at their workplace. Hauling relocates
+  meals, and sales when a villager finishes returning and unloading at their workplace.
+  Goods still being gathered or carried are not available to spend. The host tracks
+  these work cycles, including water trips, and preserves them in saves. Hauling relocates
   those goods without increasing the town total again. Processors and barns also
   reserve up to 50 input units locally; reserved ingredients are excluded from
   available stock. Old shared stock is preserved at the hall when loading, and

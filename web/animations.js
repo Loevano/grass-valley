@@ -120,6 +120,8 @@ const WorkerAnimation = (() => {
   }
   function advance(state, seconds, active) {
     if(state.storagePaused&&!state.transport&&!state.construction)return;
+    // A completed host-owned drop-off waits for the next authoritative cycle.
+    if(state.hostWork&&state.phase==='depositing'&&state.elapsed>=.65)return;
     if(active || state.path.length || !state.source)state.clock+=seconds;
     if(state.path.length){
       let remaining=seconds;
@@ -165,6 +167,7 @@ const WorkerAnimation = (() => {
       if(path===null)return;
       state.path=path;state.phase=path.length?'returning':'depositing';state.elapsed=0;
     }else if(state.phase==='depositing'&&state.elapsed>=.65){
+      if(state.hostWork){state.elapsed=.65;return;}
       const path=route(state,state.workSpot || state.source,state.blocked,state.size,!state.workSpot,state.bounds);
       state.path=path || [];state.phase=path===null?'waiting':path.length?'walking':'working';state.elapsed=0;state.fishingCaught=null;state.waterReady=false;
     }

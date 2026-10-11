@@ -1742,9 +1742,20 @@ function animatedVillagers(town, seconds, townId=viewed, frameLayout=null){
     }
     state.roads=roads;
     state.storagePaused=!!villager.production_status?.startsWith('Waiting for storage space');
+    const hostWork=villager.work_animation;
+    if(hostWork&&!state.transport&&!villager.logistics_target&&!villager.construction_target){
+      if(state.hostVersion!==hostWork.version || state.hostTask!==JSON.stringify(hostWork.task)){
+        Object.assign(state,{x:hostWork.x,y:hostWork.y,phase:hostWork.phase,
+          elapsed:hostWork.phase==='collecting_water'?0:hostWork.elapsed,waterElapsed:hostWork.elapsed,
+          waterReady:hostWork.waterReady,waterSource:hostWork.waterSource,facing:hostWork.facing,
+          fishingCaught:null,
+          path:hostWork.path.map(p=>({...p})),hostWork:true,hostVersion:hostWork.version,
+          hostTask:JSON.stringify(hostWork.task)});
+      }
+    }
     const resource=villager.job==='woodcutting'?'wood':'food';
-    state.latestFishingCatch=villager.fishing_catch;
-    const active=!!villager.construction_target || (villager.production_status==='Working' || villager.production_status?.startsWith('No catch') || (!villager.production_status&&town[resource]<resourceStorage(town,resource)));
+    state.latestFishingCatch=hostWork?{caught:Object.values(villager.pending_output || {}).some(n=>n>0)}:villager.fishing_catch;
+    const active=!!villager.construction_target || Object.values(villager.pending_output || {}).some(n=>n>0) || (villager.production_status==='Working' || villager.production_status?.startsWith('No catch') || (!villager.production_status&&town[resource]<resourceStorage(town,resource)));
     WorkerAnimation.advance(state,seconds,active);
     return {kind:'villager',townId,villager,index,x:state.x,y:state.y,state,active};
   });

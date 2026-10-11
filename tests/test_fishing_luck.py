@@ -21,8 +21,8 @@ class FishingLuck(unittest.TestCase):
         food = self.town['food']
         with patch('server.secrets.randbelow', side_effect=[1, 0]) as roll:
             tick(self.world)
-            self.assertAlmostEqual(self.town['food'], food + 1 - self.upkeep)
-            self.assertEqual(self.town['buildings'][1]['output_buffer']['fish'], 1)
+            self.assertAlmostEqual(self.town['food'], food - self.upkeep)
+            self.assertEqual(self.town['buildings'][1]['pending_output']['fish'], 1)
             self.assertEqual(self.fisher['fishing_catch'], {'attempt': 1, 'caught': True})
             food = self.town['food']
             tick(self.world)
@@ -36,10 +36,12 @@ class FishingLuck(unittest.TestCase):
         self.fisher['fishing'] = 20
         for result in [1, 2, 3, 4]:
             with self.subTest(result=result), patch('server.secrets.randbelow', return_value=result):
+                self.setUp()
+                self.fisher['fishing'] = 20
                 food = self.town['food']
                 tick(self.world)
-                self.assertAlmostEqual(self.town['food'], food + 2 - self.upkeep)
-                self.assertEqual(self.town['buildings'][1]['output_buffer']['fish'], result * 2)
+                self.assertAlmostEqual(self.town['food'], food - self.upkeep)
+                self.assertEqual(self.town['buildings'][1]['pending_output']['fish'], 2)
                 self.assertTrue(self.fisher['fishing_catch']['caught'])
 
     def test_full_storage_and_missing_workplace_do_not_roll(self):

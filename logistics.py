@@ -14,7 +14,7 @@ def travel_speed(villager):
 
 
 def buffered(building):
-    return sum(economy.inventory(building).values())
+    return sum(economy.inventory(building).values()) + sum(building.get('pending_output', {}).values())
 
 
 def production_stock(building, key):
@@ -25,15 +25,52 @@ def production_stock(building, key):
     return max(0, economy.inventory(building).get(key, 0) - reserve)
 
 
-def record_output(town, building, key, amount):
+def record_output(town, building, key, amount, villager=None):
     economy.ensure_inventory(town)
-    buffer = building.setdefault('output_buffer', {})
+    buffer = building.setdefault('pending_output' if villager is not None else 'output_buffer', {})
     buffer[key] = buffer.get(key, 0) + amount
-    economy.add_stock(town, key, amount)
+    if villager is None:
+        economy.add_stock(town, key, amount)
+    else:
+        pending = villager.setdefault('pending_output', {})
+        for orphan_key, orphan_amount in building.pop('orphaned_output', {}).items():
+            pending[orphan_key] = pending.get(orphan_key, 0) + orphan_amount
+        pending[key] = pending.get(key, 0) + amount
+        villager['pending_workplace'] = {k: building[k] for k in ('kind', 'x', 'y')}
     totals = town.setdefault('produced', {})
     totals[key] = totals.get(key, 0) + amount
     if key == 'wood':
         town['harvested'] += amount
+
+
+def drop_off(town, building, villager):
+    """Make only this worker's completed delivery available to the town."""
+    pending = building.get('pending_output', {})
+    for key, amount in villager.pop('pending_output', {}).items():
+        amount = min(amount, pending.get(key, 0))
+        pending[key] = pending.get(key, 0) - amount
+        buffer = building.setdefault('output_buffer', {})
+        buffer[key] = buffer.get(key, 0) + amount
+        economy.add_stock(town, key, amount)
+    villager.pop('pending_workplace', None)
+
+
+def cancel_output(town, villager):
+    spec = villager.pop('pending_workplace', None)
+    goods = villager.pop('pending_output', {})
+    building = next((b for b in town['buildings'] if spec and all(b.get(k) == v for k, v in spec.items())), None)
+    if building:
+        orphaned = building.setdefault('orphaned_output', {})
+        for key, amount in goods.items():
+            orphaned[key] = orphaned.get(key, 0) + amount
+    villager.pop('work_animation', None)
+
+
+def collection_inventory(building):
+    result = economy.inventory(building)
+    for key, amount in building.get('orphaned_output', {}).items():
+        result[key] = result.get(key, 0) + amount
+    return result
 
 
 def requirements(building, villager):
@@ -93,7 +130,7 @@ def produce(town, building, villager):
         return status
     building['input_buffer'] = {k: max(0, economy.quantity(local, k) - produced.get(k, 0)) for k in inputs}
     for key, amount in produced.items():
-        record_output(town, building, key, amount)
+        record_output(town, building, key, amount, villager)
     villager[villager['job']] = worker[villager['job']]
     return status
 
@@ -202,7 +239,7 @@ def transfer(town, building, storage, operation, villager):
     remaining = carry_capacity(villager)
     total_moved = 0
     if operation == 'collect':
-        for field in ('output_buffer', 'stored_goods'):
+        for field in ('output_buffer', 'stored_goods', 'orphaned_output'):
             buffer = building.get(field, {})
             for key, amount in list(buffer.items()):
                 moved = min(amount, economy.local_room(storage, key), remaining)
@@ -210,6 +247,9 @@ def transfer(town, building, storage, operation, villager):
                     target = storage.setdefault('stored_goods', {})
                     target[key] = target.get(key, 0) + moved
                     buffer[key] -= moved
+                    if field == 'orphaned_output':
+                        building['pending_output'][key] -= moved
+                        economy.add_stock(town, key, moved)
                     remaining -= moved
                     total_moved += moved
                     building.pop('buffer_full', None)
@@ -245,7 +285,7 @@ def worker(town, landscape, villager, building, route, elapsed):
     request = supply_request(town, building, villager) if not collect else {}
     if not collect and not request:
         return False
-    keys = economy.inventory(building) if collect else request
+    keys = collection_inventory(building) if collect else request
     stores = [b for b in storage_for(town, keys, 'collect' if collect else 'supply') if b is not building]
     stores.sort(key=lambda b: abs(b['x'] - building['x']) + abs(b['y'] - building['y']))
     for storage in stores:
@@ -274,7 +314,7 @@ def haul(town, landscape, villager, storage, route, elapsed):
             if request and storage in storage_for(town, request, 'supply'):
                 candidates.append((0, b, 'supply'))
                 break
-        outputs = {k: n for k, n in economy.inventory(b).items() if n > 0
+        outputs = {k: n for k, n in collection_inventory(b).items() if n > 0
                    and economy.local_room(storage, k) > 0}
         if outputs and storage in storage_for(town, outputs, 'collect'):
             candidates.append((1, b, 'collect'))

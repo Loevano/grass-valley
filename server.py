@@ -14,6 +14,7 @@ from urllib.parse import parse_qs, urlsplit
 
 import progression as economy
 import logistics
+import work_cycles
 import equipment
 import npcs
 from spatial import SpatialIndex
@@ -94,6 +95,7 @@ def feed_settlers(town):
         return
     # Any resident can leave, including an experienced specialist.
     villager = town['villagers'].pop(secrets.randbelow(len(town['villagers'])))
+    logistics.cancel_output(town, villager)
     if villager.get('worker_tool') in npcs.WORKER_TOOLS:
         tools = town['player'].setdefault('worker_tools', {})
         key = villager['worker_tool']
@@ -280,6 +282,7 @@ def assign_settler(town, worker_index, building_index):
     reason = economy.qualification(villager, BUILDING_JOBS.get(building['kind'], 'idle'))
     if reason:
         raise ValueError(reason)
+    logistics.cancel_output(town, villager)
     villager['building_index'] = building_index
     villager['job'] = BUILDING_JOBS.get(building['kind'], 'idle')
     villager.pop('logistics_trip', None)
@@ -574,10 +577,22 @@ def tick(world):
             villager = town['villagers'][index]
             job = villager['job']
             assignment = work_assignment(town, job, index, town_spatial) if job != 'idle' else None
+            finishing_output = False
+            if not assignment and villager.get('pending_output') and villager.get('work_animation', {}).get('task', [None])[0] == job:
+                spec = villager['pending_workplace']
+                workplace = next((b for b in town['buildings'] if completed(b) and all(b.get(k) == v for k, v in spec.items())), None)
+                if workplace:
+                    task = villager['work_animation']['task']
+                    assignment = workplace, {'kind': task[4], 'x': task[5], 'y': task[6]}
+                    finishing_output = True
             source = assignment[1] if assignment else None
+            pending_workplace = villager.get('pending_workplace')
+            if pending_workplace and (not assignment or any(assignment[0].get(k) != v for k, v in pending_workplace.items())):
+                logistics.cancel_output(town, villager)
             villager['work_target'] = source
             villager.pop('production_status', None)
             if not source:
+                villager.pop('work_animation', None)
                 villager.pop('logistics_trip', None)
                 villager.pop('logistics_target', None)
                 reason = economy.qualification(villager, job)
@@ -602,6 +617,13 @@ def tick(world):
                 villager['production_status'] = 'Waiting for storage space'
                 if logistics.buffered(building) >= logistics.BUFFER_SIZE - 1e-9 or building.get('buffer_full', False):
                     villager['production_status'] += ': workplace buffer full'
+                continue
+            if villager.get('logistics_trip'):
+                villager.pop('work_animation', None)
+            elif work_cycles.advance(town, walking, villager, building, source, index, TICK_SECONDS):
+                logistics.drop_off(town, building, villager)
+            if finishing_output:
+                villager['production_status'] = 'Returning gathered goods'
                 continue
             if logistics.worker(town, walking, villager, building, construction_route, TICK_SECONDS):
                 continue
@@ -649,7 +671,7 @@ def tick(world):
                 villager['production_status'] = 'Waiting for supply to regenerate'
                 continue
             if caught:
-                logistics.record_output(town, building, output, amount)
+                logistics.record_output(town, building, output, amount, villager)
             economy.practice(villager, job)
             villager['production_status'] = 'Working' if caught else 'No catch — trying again'
         feed_settlers(town)
@@ -790,6 +812,10 @@ def command(town, data, world=None):
             validate_acre(town, town['buildings'][index].get('farm_index'), x, y)
         # Rearranging must remain possible even after spending the starting coins.
         town['coins'] = max(0, town['coins'] - 1)
+        moved = town['buildings'][index]
+        for villager in town['villagers']:
+            if villager.get('pending_workplace') == {k: moved[k] for k in ('kind', 'x', 'y')}:
+                logistics.cancel_output(town, villager)
         town['buildings'][index].update(x=x, y=y)
     elif action == 'destroy':
         index = data.get('index')
@@ -798,11 +824,20 @@ def command(town, data, world=None):
         if town['buildings'][index]['kind'] == 'hall':
             raise ValueError('The town hall cannot be destroyed.')
         economy.ensure_inventory(town)
+        removed = town['buildings'][index]
+        for villager in town['villagers']:
+            if villager.get('pending_workplace') == {k: removed[k] for k in ('kind', 'x', 'y')}:
+                logistics.cancel_output(town, villager)
         removed = town['buildings'].pop(index)
         hall = next(b for b in town['buildings'] if b['kind'] == 'hall')
         for key, amount in economy.inventory(removed).items():
             stock = hall.setdefault('stored_goods', {})
             stock[key] = stock.get(key, 0) + amount
+        # Demolition salvages unfinished goods at the hall as well.
+        for key, amount in removed.get('pending_output', {}).items():
+            stock = hall.setdefault('stored_goods', {})
+            stock[key] = stock.get(key, 0) + amount
+            economy.add_stock(town, key, amount)
         for villager in town['villagers']:
             assigned = villager.get('building_index')
             if type(assigned) is int and assigned >= index:
@@ -821,6 +856,7 @@ def command(town, data, world=None):
         index = data.get('index')
         if type(index) is not int or not 0 <= index < len(town['villagers']):
             raise ValueError('Choose a settler first.')
+        logistics.cancel_output(town, town['villagers'][index])
         town['villagers'][index].pop('building_index', None)
         town['villagers'][index]['job'] = 'idle'
         town['villagers'][index].pop('logistics_trip', None)
@@ -889,6 +925,7 @@ def command(town, data, world=None):
                 raise ValueError('No free settler spaces. Upgrade a building or remove a settler first.')
             assign_settler(town, index, current if current in choices else choices[0])
         else:
+            logistics.cancel_output(town, town['villagers'][index])
             town['villagers'][index].pop('building_index', None)
             town['villagers'][index].pop('logistics_trip', None)
             town['villagers'][index].pop('logistics_target', None)
