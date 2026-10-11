@@ -271,9 +271,20 @@ function renderResourceList(town){
   if(!town)return;
   const edible=world.progression?.edible || {vegetables:1,carrots:1,fish:1,berries:1,eggs:1,meat:1,milk:1,fruit:1,smoked_fish:1.5,bread:1.5,prepared_meat:1.5};
   const keys=new Set([...storageKeys,'coins',...Object.keys(edible),...Object.keys(town.goods || {})]);
-  for(const key of keys){
-    const amount=amountOf(town,key).toFixed(1);
-    $('resources-list').append(fact(key==='coins'?amount:`${amount} / ${resourceStorage(town,key)}`,goodName(key)));
+  const groups=[['Overview',['food','coins']],['Materials',['wood','planks','wool','tools']],
+    ['Farming supplies',['wheat','fodder','flour','manure','herbs']],['Food types',Object.keys(edible)]];
+  groups.push(['Other resources',[...keys].filter(key=>!groups.some(([,members])=>members.includes(key)))]);
+  for(const [title,members] of groups){
+    const remaining=members.filter(key=>keys.has(key));
+    if(!remaining.length)continue;
+    const group=document.createElement('div');group.className='resource-group';
+    const heading=document.createElement('h3');heading.textContent=title;group.append(heading);
+    for(const key of remaining){
+      keys.delete(key);
+      const amount=amountOf(town,key).toFixed(1);
+      group.append(fact(key==='coins'?amount:`${amount} / ${resourceStorage(town,key)}`,goodName(key)));
+    }
+    $('resources-list').append(group);
   }
 }
 function materialCosts(spec){return Object.fromEntries(Object.entries(spec).filter(([k])=>['wood','coins','planks','wool','tools'].includes(k)));}
