@@ -141,33 +141,6 @@ let movementMap=null;
 const workerTools={fine_axe:{name:'Fine axe',job:'woodcutting'},fine_fishing_rod:{name:'Fine fishing rod',job:'fishing'}};
 const localGifts={Sylva:'fine_axe',Reed:'fine_fishing_rod'};
 function localVisitKey(npc){return `${npc.name}:${npc.x}:${npc.y}`;}
-function localStoryProgress(town,name){
-  const npc=(world.shared_map?.npcs || town.npcs || []).find(n=>n.name===name);
-  return npc?town.local_visits?.[localVisitKey(npc)] || {}:{};
-}
-function storyObjectives(stage,town,progress){
-  const goals=Object.entries(stage.costs || {}).map(([key,amount])=>`${amount} ${goodName(key).toLowerCase()} (${Math.floor(amountOf(town,key))} available)`);
-  if(stage.roads)goals.push(`${Math.min(stage.roads,(town.roads || []).filter(r=>!r.construction).length)} / ${stage.roads} completed road tiles`);
-  if(stage.rocks)goals.push(`${progress.story_rocks?.length || 0} / ${stage.rocks} outcrops examined`);
-  return goals.join(' · ');
-}
-function renderLocalStory(town,npc,index,nearby,target){
-  const story=world.local_stories?.[npc.name];
-  if(!story)return;
-  const progress=town.local_visits?.[localVisitKey(npc)] || {},stageIndex=progress.story_stage || 0;
-  const stage=story.stages[stageIndex];
-  if(!stage)return;
-  const title=document.createElement('p');title.textContent=`${story.title} · ${stage.button?`Step ${stageIndex+1} / ${story.stages.length-1}`:'Completed'}`;target.append(title);
-  const dialogue=document.createElement('p');dialogue.textContent='“'+stage.dialogue+'”';target.append(dialogue);
-  const reward=document.createElement('p');reward.textContent=`${stage.button?'Reward':'Received'}: ${story.reward} coins · ${story.keepsake}`;target.append(reward);
-  if(!stage.button)return;
-  const objectives=document.createElement('p');objectives.textContent=storyObjectives(stage,town,progress) || 'Speak with this local to begin.';target.append(objectives);
-  const button=document.createElement('button');button.textContent=stage.button;
-  button.disabled=!nearby||!canAfford(town,stage.costs || {})
-    ||(town.roads || []).filter(r=>!r.construction).length<(stage.roads || 0)
-    ||(progress.story_rocks?.length || 0)<(stage.rocks || 0);
-  button.onclick=()=>act({action:'advance_local_story',npc_index:index});target.append(button);
-}
 function renderWorkerTools(town,v,index,target){
   const owner=viewed===identity?.town_id;
   if(v.worker_tool&&workerTools[v.worker_tool]){
@@ -1134,14 +1107,6 @@ function renderSelection(town){
       if(viewed===identity?.town_id&&count){const button=document.createElement('button');button.textContent=equipped?`Unequip ${item.name.toLowerCase()}`:`Equip ${item.name.toLowerCase()}`;button.onclick=()=>act({action:equipped?'unequip_item':'equip_item',item:key});row.append(button);}
       $('selection-details').append(row);
     }
-    for(const [name,story] of Object.entries(world.local_stories || {})){
-      const progress=localStoryProgress(town,name),stage=story.stages[progress.story_stage || 0];
-      if(!progress.story_stage||!stage?.button)continue;
-      const row=document.createElement('p');row.textContent=`${story.title} · ${name}: ${storyObjectives(stage,town,progress)} · Return to ${name} to continue.`;$('selection-details').append(row);
-    }
-    for(const keepsake of town.player?.keepsakes || []){
-      const row=document.createElement('p');row.textContent=`Keepsake: ${keepsake}`;$('selection-details').append(row);
-    }
     for(const [key,gear] of Object.entries(workerTools)){
       const row=document.createElement('p');row.textContent=`${gear.name} · ${town.player?.worker_tools?.[key] || 0} available · Give to a worker from their panel (+25% ${gear.job} output)`;$('selection-details').append(row);
     }
@@ -1170,7 +1135,6 @@ function renderSelection(town){
       const hint=document.createElement('p');hint.textContent=nearby?'Trade equipment for coins. Equip purchases from your character panel.':'Walk beside this local to trade equipment.';$('selection-details').append(hint);
       if(world.shared_map||viewed===identity?.town_id){
         const progress=own.local_visits?.[localVisitKey(item)] || {},gift=localGifts[item.name];
-        renderLocalStory(own,item,selection.index,nearby,$('selection-details'));
         if(gift){
           const gear=workerTools[gift],note=document.createElement('p');
           note.textContent=item.name==='Sylva'?'“A sharp axe makes lighter work. Take my spare and pass it to your woodcutter.”':'“This rod has landed many a fine catch. Let one of your fishers put it to use.”';$('selection-details').append(note);
@@ -1206,15 +1170,6 @@ function renderSelection(town){
     }
     $('selection-title').textContent=({berry_bush:'Berry bush',herb_patch:'Herb patch'}[item.kind]) || (swamp?{tree:'Swamp willow',water:'Swamp water',rock:'Rock outcrop'}:{tree:'Forest',water:'Water',rock:'Rock outcrop',berry_bush:'Berry bush',herb_patch:'Herb patch'})[item.kind];
     p.textContent={tree:'Renewable wood source. Place a woodcutter within 10 horizontal or vertical tile steps, then assign a villager to woodcutting.',water:'Uses: farming / fishing\nFishing hut reach: 3 tile steps\nFarmers fetch water when watering',rock:'Occupied tile\nMining: unavailable',berry_bush:`Food: berries\nGather: stand nearby · ${keybindings.gather.toUpperCase()}`,herb_patch:`Use: animal breeding\nGather: stand nearby · ${keybindings.gather.toUpperCase()}`}[item.kind];
-    if(item.kind==='rock'&&(world.shared_map||viewed===identity?.town_id)){
-      const own=world.towns[identity?.town_id],progress=own?localStoryProgress(own,'Flint'):{};
-      if(progress.story_stage===1){
-        const recorded=progress.story_rocks?.includes(`${item.x}:${item.y}`),button=document.createElement('button');
-        button.textContent=recorded?'Outcrop markings recorded':`Examine markings · ${progress.story_rocks?.length || 0} / 3`;
-        button.disabled=recorded||(progress.story_rocks?.length || 0)>=3||!own.player||Math.hypot(own.player.x-item.x,own.player.y-item.y)>1.8;
-        button.onclick=()=>act({action:'inspect_story_rock',x:item.x,y:item.y});$('selection-details').append(button);
-      }
-    }
     if(item.kind==='tree'){
       $('selection-title').textContent=swamp?'Swamp willow':item.species==='ancient'?'Ancient tree':'Forest';
       p.textContent=`Chop: ${keybindings.chop.toUpperCase()} / nearby woodcutter\nWoodcutter reach: 10 tile steps\nFelling: leaves a stump, clears tile\nRegrowth: ${swamp||item.species==='ancient'?15:5} min · all ground\nRegrowth requires an empty tile`;
