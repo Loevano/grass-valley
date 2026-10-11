@@ -86,12 +86,12 @@ These are starting values to make the prototype playable, **not final design dec
 - Move a building instantly for one coin, preserving its identity. If you have no coins, moving is free so rearranging never becomes locked.
 - Every three seconds, assigned workers produce into 50-unit workplace buffers and gain skill if the buffer has room. Local outputs are immediately included in usable town stock; hauling relocates them without adding them twice. Each completed building shows its own inventory. Only storehouses and warehouses can allocate incoming storage; other buildings have fixed capacities for relevant inputs and outputs. Ordinary buildings hold 50 units; processor inputs remain separately reserved.
 - Town maps contain renewable forests and water, plus rock outcrops. Woodcutters
-  need a tree within three horizontal/vertical tile steps; farmers fetch water during
+  need a tree within ten horizontal/vertical tile steps; farmers fetch water during
   the watering stage without a farm-to-water distance limit. Workers animate
   walking around obstacles, gathering beside the source, and delivering supplies. Animation is cosmetic; the host still controls
   production every three seconds. Buildings use open grass tiles.
-  Trees disappear when felled and regrow only on unoccupied dark forest/swamp
-  tiles after five minutes (fifteen for willows and ancient trees, which hold
+  Trees leave visible stumps when felled and regrow on any unoccupied ground
+  tile after five minutes (fifteen for willows and ancient trees, which hold
   five times the wood). Buildings and roads pause regrowth. New shared worlds
   contain a large lake with three loot islands. Exploration boats unlock at
   hall level 3, cost 20 wood and 10 planks, and automatically embark/disembark

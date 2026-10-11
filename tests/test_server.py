@@ -1,7 +1,7 @@
 import copy
 import unittest
 
-from server import construct, capacity, command, ensure_resources, new_town, tick
+from server import construct, capacity, command, ensure_resources, new_town, tick, settler_building, work_assignment
 
 
 class VillageRules(unittest.TestCase):
@@ -168,7 +168,20 @@ class VillageRules(unittest.TestCase):
                     command(self.town, dict(action, x=tile['x'], y=tile['y']))
                 self.assertEqual(self.town, before)
 
+    def test_woodcutter_reach_counts_ten_total_tile_steps(self):
+        camp = {'kind': 'woodcutter', 'x': 6, 'y': 6}
+        self.town['buildings'].append(camp)
+        self.town['villagers'][0]['job'] = 'woodcutting'
+        tree = {'kind': 'tree', 'x': 12, 'y': 10}
+        self.town['map_resources'] = [tree]
+        self.assertEqual(settler_building(self.town, 0), 1)
+        self.assertEqual(work_assignment(self.town, 'woodcutting', 0), (camp, tree))
+        tree['y'] = 11
+        self.assertIsNone(settler_building(self.town, 0))
+        self.assertIsNone(work_assignment(self.town, 'woodcutting', 0))
+
     def test_woodcutting_pauses_outside_forest_reach_and_resumes_after_move(self):
+        self.town['map_resources'] = [{'kind': 'tree', 'x': 0, 'y': 1}]
         command(self.town, {'action': 'build', 'kind': 'woodcutter', 'x': 6, 'y': 6})
         self.finish_construction()
         command(self.town, {'action': 'job', 'index': 0, 'job': 'woodcutting'})
@@ -176,7 +189,7 @@ class VillageRules(unittest.TestCase):
         tick({'towns': {'a': self.town}})
         self.assertEqual(before, (self.town['wood'], self.town['villagers'][0]['woodcutting']))
         self.assertIsNone(self.town['villagers'][0]['work_target'])
-        self.assertEqual(self.town['villagers'][0]['production_status'], 'Waiting for trees within 3 tiles')
+        self.assertEqual(self.town['villagers'][0]['production_status'], 'Waiting for trees within 10 tiles')
         command(self.town, {'action': 'move', 'index': 1, 'x': 2, 'y': 2})
         tick({'towns': {'a': self.town}})
         self.assertEqual(self.town['wood'], before[0] + .5)
@@ -184,6 +197,7 @@ class VillageRules(unittest.TestCase):
         self.assertEqual(self.town['villagers'][0]['work_target']['kind'], 'tree')
 
     def test_woodcutters_report_regrowth_and_resume_when_tree_returns(self):
+        self.town['map_resources'] = []
         self.town['buildings'].append({'kind': 'woodcutter', 'x': 6, 'y': 6})
         command(self.town, {'action': 'assign_settler', 'index': 0, 'building_index': 1})
         self.town['tree_stumps'] = [{'kind': 'tree', 'x': 6, 'y': 7, 'remaining': 6}]

@@ -107,7 +107,7 @@ the Python host, refresh both browsers, and create a new world to use the shared
   hall within its current range shifts the building area to its new location.
 - Open **Build**, choose a building, hover over open grass to highlight its tile, then left-click
   to place it and spend wood. Keep clicking open tiles to place more of the selected building,
-  or **Cancel selection** to clear it. Place woodcutters within three horizontal/vertical tile steps
+  or **Cancel selection** to clear it. Place woodcutters within ten horizontal/vertical tile steps
   of trees; farmers can fetch water farther away during the watering stage.
 - Choose **Dirt road** in Build to place free road construction sites on open ground within
   your town’s building area. Each tile takes 10 seconds of builder work after arrival.
@@ -120,10 +120,10 @@ the Python host, refresh both browsers, and create a new world to use the shared
   finishing over 30 seconds. Housing, storage, and workplaces activate only on
   completion. Progress survives saving, moving a site, and restarting the host.
 - Trees are felled when their remaining wood reaches zero, freeing their tile for
-  building. They regrow after five minutes on dark forest or swamp ground while
+  building and leaving a visible stump. They regrow after five minutes on all ground while
   the tile is unoccupied. Buildings and roads pause regrowth until removed.
   Swamp willows and rare ancient trees take five times as much chopping and
-  fifteen minutes to regrow. Trees on lighter ground do not regrow.
+  fifteen minutes to regrow.
   Water regenerates its shared supply. Rock outcrops cannot be mined yet.
 - New shared worlds have a large lake with three treasure islands. At hall level 3,
   select **You** and build an **Exploration boat** for 20 wood and 10 planks.

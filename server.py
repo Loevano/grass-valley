@@ -103,6 +103,7 @@ def feed_settlers(town):
 
 MAP_SIZE = 120
 RESOURCE_REACH = 3
+WOODCUTTER_REACH = 10
 
 
 def hall_upgrade(town):
@@ -246,7 +247,7 @@ def settler_building(town, worker_index):
                   if b['kind'] == kind and completed(b)
                   and (kind == 'farm' or any(r['kind'] == source and
                           abs(r['x'] - b['x']) + abs(r['y'] - b['y']) <=
-                          (6 if kind == 'fishing_hut' and 'boat' in b.get('profession_upgrades', []) else RESOURCE_REACH)
+                          (WOODCUTTER_REACH if kind == 'woodcutter' else 6 if kind == 'fishing_hut' and 'boat' in b.get('profession_upgrades', []) else RESOURCE_REACH)
                           for r in town['map_resources']))]
     return workplaces[worker_index % len(workplaces)] if workplaces else None
 
@@ -332,7 +333,7 @@ def work_assignment(town, job, worker_index):
     for farm_index, b in enumerate(town['buildings']):
         if b['kind'] != building or not completed(b) or (explicit is not None and farm_index != explicit):
             continue
-        reach = 6 if job == 'fishing' and 'boat' in b.get('profession_upgrades', []) else RESOURCE_REACH
+        reach = WOODCUTTER_REACH if job == 'woodcutting' else 6 if job == 'fishing' and 'boat' in b.get('profession_upgrades', []) else RESOURCE_REACH
         nearby = [r for r in town['map_resources'] if r['kind'] == source
                   and abs(r['x'] - b['x']) + abs(r['y'] - b['y']) <= reach]
         if nearby or job == 'farming':
@@ -564,11 +565,11 @@ def tick(world):
                     if camp_index is not None:
                         camp = town['buildings'][camp_index]
                         if camp['kind'] == 'woodcutter' and completed(camp):
-                            nearby = lambda r: abs(r['x'] - camp['x']) + abs(r['y'] - camp['y']) <= RESOURCE_REACH
+                            nearby = lambda r: abs(r['x'] - camp['x']) + abs(r['y'] - camp['y']) <= WOODCUTTER_REACH
                             if not any(r['kind'] == 'tree' and nearby(r) for r in town['map_resources']):
                                 regrowing = any(nearby(r) for r in landscape.get('tree_stumps', []))
                                 villager['production_status'] = ('Waiting for trees to regrow' if regrowing
-                                                                 else 'Waiting for trees within 3 tiles')
+                                                                 else 'Waiting for trees within 10 tiles')
                 continue
             building = assignment[0]
             if job == 'hauling':

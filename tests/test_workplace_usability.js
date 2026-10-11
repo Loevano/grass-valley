@@ -11,12 +11,13 @@ const {usable,draw}=new Function('ctx','polygon','point','tileW','tileH','colors
   {farm:'#bc9b5c',woodcutter:'#947b55',fishing_hut:'#7899a2',home:'#c5ad80'});
 for(const [kind,resource] of [['fishing_hut','water'],['woodcutter','tree']]){
   const building={kind,x:5,y:5};
-  const town={map_resources:[{kind:resource,x:7,y:7}]};
-  assert(!usable(town,building),'Two across and two down is out of reach');
+  const reach=kind==='woodcutter'?10:3;
+  const town={map_resources:[{kind:resource,x:5+reach,y:6}]};
+  assert(!usable(town,building),'Sources beyond the workplace range are out of reach');
   fills.length=0;draw(building,town);
   assert(fills.includes('#c76d64')&&fills.includes('#a34f49'),'Unusable walls and roof are red');
   building.x=6;
-  assert(usable(town,building),'Moving within three total steps enables work');
+  assert(usable(town,building),'Moving to the exact range boundary enables work');
   fills.length=0;draw(building,town);
   assert(!fills.includes('#c76d64')&&!fills.includes('#a34f49'),'Usable buildings regain their normal colors');
   town.map_resources=[];

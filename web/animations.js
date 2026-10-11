@@ -57,7 +57,7 @@ const WorkerAnimation = (() => {
     const kind=villager.job==='woodcutting'?'woodcutter':villager.job==='fishing'?'fishing_hut':'farm';
     // Match the host's workplace selection, including multiple assigned workers.
     const workplaces=town.buildings.filter(b=>b.kind===kind&&!b.construction&&(kind==='farm'||town.map_resources.some(r=>
-      r.kind===(kind==='woodcutter'?'tree':'water')&&distance(b,r)<=3)));
+      r.kind===(kind==='woodcutter'?'tree':'water')&&distance(b,r)<=(kind==='woodcutter'?10:3))));
     const assigned=Number.isInteger(villager.building_index)?town.buildings[villager.building_index]:null;
     const workplace=(assigned?.kind==='acre'?town.buildings[assigned.farm_index]:assigned) || (source?.kind==='acre'?town.buildings[source.farm_index]:workplaces[index%workplaces.length]);
     const home=villager.construction_target || workplace || town.buildings.find(b=>b.kind==='hall');

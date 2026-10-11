@@ -432,11 +432,9 @@ def take_supply(landscape, source, amount):
     if kind == 'tree' and available - taken <= 1e-9:
         landscape['map_resources'].remove(source)
         _supply_cache = None
-        terrain = landscape.get('terrain')
-        if terrain and terrain[source['y']][source['x']] in ('f', 'b'):
-            stump = {k: source[k] for k in ('kind', 'x', 'y', 'species') if k in source}
-            stump['remaining'] = 300 if source_limits(landscape, source)[0] == 8 else 900
-            landscape.setdefault('tree_stumps', []).append(stump)
+        stump = {k: source[k] for k in ('kind', 'x', 'y', 'species') if k in source}
+        stump['remaining'] = 300 if source_limits(landscape, source)[0] == 8 else 900
+        landscape.setdefault('tree_stumps', []).append(stump)
     return taken
 
 

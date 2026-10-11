@@ -15,7 +15,7 @@ class Wilderness(unittest.TestCase):
             tree['species'] = species
         return {'terrain': [biome * 5] * 5, 'map_resources': [tree]}, tree
 
-    def test_felling_and_regrowth_only_on_dark_ground(self):
+    def test_felling_leaves_stumps_and_regrows_on_every_ground(self):
         for biome in 'fgmsrb':
             landscape, tree = self.landscape(biome)
             maximum = economy.source_limits(landscape, tree)[0]
@@ -23,17 +23,14 @@ class Wilderness(unittest.TestCase):
             self.assertEqual(landscape['map_resources'], [])
             self.assertEqual(economy.take_supply(landscape, tree, 1), 0)
             saved = json.loads(json.dumps(landscape))
-            if biome in 'fb':
-                seconds = saved['tree_stumps'][0]['remaining']
-                for _ in range(seconds // 3 - 1):
-                    economy.renew(saved)
-                self.assertEqual(saved['map_resources'], [])
+            self.assertEqual(len(saved['tree_stumps']), 1)
+            seconds = saved['tree_stumps'][0]['remaining']
+            for _ in range(seconds // 3 - 1):
                 economy.renew(saved)
-                self.assertEqual(saved['map_resources'][0]['supply'], maximum)
-            else:
-                for _ in range(301):
-                    economy.renew(saved)
-                self.assertEqual(saved['map_resources'], [])
+            self.assertEqual(saved['map_resources'], [])
+            economy.renew(saved)
+            self.assertEqual(saved['map_resources'][0]['supply'], maximum)
+            self.assertEqual(saved['tree_stumps'], [])
 
     def test_buildings_roads_and_occupants_pause_regrowth(self):
         landscape, tree = self.landscape()
