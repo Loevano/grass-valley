@@ -55,6 +55,10 @@ const run=new Function('document','window','localStorage','setTimeout','clearTim
   camera.x+=10;draw();assert(surface.paints>painted,'Leaving the padded viewport repaints ground');
   let previous=surface.paints;camera.zoom=.35;draw();assert(surface.paints>previous,'Zoom repaints ground');
   previous=surface.paints;draw();assert.equal(surface.paints,previous,'Repeated zoomed-out frames reuse ground');
+  assert.equal(groundCache.dpr,1,'Distant ground uses a smaller texture on Retina displays');
+  assert.equal(canvas.width,1920,'Live artwork keeps the full display resolution');
+  for(const type of ['resource','building','villager'])
+    assert(hitTargets.some(target=>target.type===type),'Simplified distant artwork preserves '+type+' selection');
   camera.zoom=.36;draw();
   assert.equal(surface.paints,previous,'Small zoom steps scale cached ground during the gesture');
   const zoomImage=images.filter(args=>args[0]===surface).at(-1),ratio=tileW/groundCache.tileW;
@@ -65,6 +69,13 @@ const run=new Function('document','window','localStorage','setTimeout','clearTim
   advanceTime(151);draw();
   assert(surface.paints>previous,'Ground repaints at the final resolution after zoom settles');
   assert.equal(groundCache.tileW,tileW,'The settled zoom uses a sharp ground texture');
+  camera.zoom=.6;draw();previous=surface.paints;
+  assert(groundCache.detailed,'Normal zoom retains ground decorations');
+  assert.equal(groundCache.dpr,2,'Close-up ground restores Retina resolution');
+  camera.zoom=.59;draw();
+  assert(surface.paints>previous&&!groundCache.detailed,'Crossing the detail threshold repaints simpler terrain immediately');
+  previous=surface.paints;camera.zoom=.6;draw();
+  assert(surface.paints>previous&&groundCache.detailed,'Zooming back in restores terrain details immediately');
   window.devicePixelRatio=1;draw();assert(surface.paints>previous,'Retina scale changes repaint ground');
   previous=surface.paints;resize();draw();assert(surface.paints>previous,'Window resizing repaints ground');
   panel='build';fills.length=0;draw();assert(fills.includes('#e4c98022'),'Build range remains above cached terrain');

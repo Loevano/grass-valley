@@ -45,6 +45,13 @@ new Function('document','ctx','window','assert','surfaces','images',`
   assert(surfaces.at(-1).width>sprite.width,'Close zoom uses a sharper texture');
   const close=surfaces.at(-1);
   assert(close.transform[0]>=tileW/46*window.devicePixelRatio,'Textures cover the display resolution');
+  tileW=31;drawResource(tree);const simple=images.at(-1)[0];
+  tileW=33;drawResource(tree);const detailed=images.at(-1)[0];
+  assert.notStrictEqual(simple,detailed,'Detail tiers use distinct sprites even within the same resolution bucket');
+  assert(simple.paints<detailed.paints,'Distant trees use fewer artwork layers');
+  tileW=31;drawResource(tree);
+  assert.strictEqual(images.at(-1)[0],simple,'Zooming back out reuses the simpler tree sprite');
+  tileW=135;
   window.devicePixelRatio=1;drawResource(tree);
   assert.notEqual(images.at(-1)[0],close,'Display scale changes select an appropriate texture');
   world.shared_map.terrain[10][10]='b';tileW=54;drawResource(tree);
