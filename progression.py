@@ -1,6 +1,7 @@
 """Town professions, finite renewable supplies, and founder activities (hall 1–5)."""
 from collections import deque
 import secrets
+from equipment import find_item
 
 BUILDINGS = {
     'barn': {'label': 'Barn', 'level': 2, 'wood': 25, 'job': 'husbandry', 'slots': 2},
@@ -446,8 +447,9 @@ def start_activity(town, landscape, action):
         if chest:
             landscape['map_resources'].remove(chest)
             town['coins'] += 25
+            found = find_item(player, chest)
             player.pop('activity', None)
-            player['activity_status'] = 'Found 25 coins'
+            player['activity_status'] = f'Found 25 coins and {found.lower()}'
             return
     if action == 'stop_activity':
         player.pop('activity', None); player.pop('activity_status', None)

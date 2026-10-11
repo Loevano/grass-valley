@@ -66,7 +66,7 @@ def new_world(seed=None):
                     for dx in range(-2, 3) for dy in range(-2, 3) if dx * dx + dy * dy <= 5}
     resources = [r for r in resources if (r['x'], r['y']) not in lake]
     for x, y in sorted(lake):
-        rows[y][x] = 's'
+        rows[y][x] = 'g' if (x, y) in island_tiles else 's'
         if (x, y) not in island_tiles:
             resources.append({'kind': 'water', 'x': x, 'y': y})
     resources.extend({'kind': 'chest', 'x': x, 'y': y} for x, y in islands)

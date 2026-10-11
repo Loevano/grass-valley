@@ -93,6 +93,11 @@ window.addEventListener('blur',clearWalk);
 document.addEventListener?.('visibilitychange',clearWalk);
 // Predict only the next host step; never run ahead while waiting for a reply.
 let movementMap=null;
+const equipmentItems={
+  swamp_boots:{name:'Swamp boots',slot:'feet',biome:'b',price:15},
+  desert_clothing:{name:'Desert clothing',slot:'body',biome:'s',price:20},
+};
+function biomeProtected(player,biome){return Object.entries(equipmentItems).every(([key,item])=>item.biome!==biome||player?.equipment?.[item.slot]===key);}
 function mapRoads(town){return world.shared_map?Object.values(world.towns).flatMap(t=>t.roads || []):town?.roads || [];}
 function roadSpeed(town,position){return mapRoads(town).some(r=>!r.construction&&r.x===Math.floor(position.x+.5)&&r.y===Math.floor(position.y+.5))?1.5:1;}
 // Measure screen distance for the 2:1 isometric projection, preserving sideways speed.
@@ -100,7 +105,7 @@ function playerMovementDistance(dx,dy){return Math.hypot(dx-dy,(dx+dy)*.5)/Math.
 function predictPlayerStep(town,player,dx,dy){
   if(movementMap?.world!==world || movementMap.town!==town || movementMap.boat!==!!town.player?.boat){
     const buildings=world.shared_map?Object.values(world.towns).flatMap(t=>t.buildings || []):town.buildings || [];
-    movementMap={world,town,boat:!!town.player?.boat,blocked:new Set([...buildings,...(town.map_resources || [])]
+    movementMap={world,town,boat:!!town.player?.boat,water:new Set((town.map_resources || []).filter(r=>r.kind==='water').map(r=>`${r.x},${r.y}`)),blocked:new Set([...buildings,...(town.map_resources || [])]
       .filter(b=>b.kind!=='tree'&&!(b.kind==='water'&&town.player?.boat)).map(b=>`${b.x},${b.y}`))};
   }
   const size=town.map_size || 12,terrain=town.terrain;
@@ -109,7 +114,8 @@ function predictPlayerStep(town,player,dx,dy){
     for(let tx=Math.floor(x+.5)-1;tx<=Math.floor(x+.5)+1;tx++){
       for(let ty=Math.floor(y+.5)-1;ty<=Math.floor(y+.5)+1;ty++){
         const outside=tx>=0&&ty>=0&&tx<size&&ty<size&&terrain?.[ty]?.[tx]==='v';
-        if((movementMap.blocked.has(`${tx},${ty}`)||outside)&&Math.abs(x-tx)<.68&&Math.abs(y-ty)<.68)return false;
+        const hazardous=!movementMap.water.has(`${tx},${ty}`)&&!biomeProtected(town.player,terrain?.[ty]?.[tx]);
+        if((movementMap.blocked.has(`${tx},${ty}`)||outside||hazardous)&&Math.abs(x-tx)<.68&&Math.abs(y-ty)<.68)return false;
       }
     }
     return true;
@@ -163,7 +169,7 @@ function playerSprite(town,seconds){
   if(playerTown===identity?.town_id&&s.following&&(dx||dy||distance>.001)){
     if(typeof camera!=='undefined'){camera.x=s.x;camera.y=s.y;}
   }
-  return {kind:'player',townId:playerTown,x:s.x,y:s.y,index:1,state:s,villager:{job:activity?.job || 'idle'},active:working};
+  return {kind:'player',townId:playerTown,x:s.x,y:s.y,index:1,state:s,villager:{job:activity?.job || 'idle'},active:working,equipment:town.player.equipment};
 }
 // Remote founders use small, frequent snapshots instead of the map refresh.
 const remotePlayers=new Map();
@@ -214,7 +220,7 @@ function remotePlayerSprite(townId,town,seconds){
   const activity=town.player.activity;state.source=activity;state.castTarget=activity;state.activityElapsed=state.clock%3;
   const active=!!activity&&!town.player.activity_status?.includes('full')&&!town.player.activity_status?.includes('Waiting');
   state.phase=active&&!state.path.length?'working':'idle';
-  return {kind:'player',townId,x:state.x,y:state.y,index:1,villager:{job:activity?.job || 'idle'},active,state};
+  return {kind:'player',townId,x:state.x,y:state.y,index:1,villager:{job:activity?.job || 'idle'},active,state,equipment:town.player.equipment};
 }
 const labels = {road:'Dirt road',hall:'Town hall',home:'Cottage',woodcutter:'Woodcutter',farm:'Farm',storehouse:'Storehouse',fishing_hut:'Fishing hut',acre:'Acre'};
 function buildingLevel(building){return building.level || 1;}
@@ -839,6 +845,13 @@ function renderSelection(town){
       skills.append(tile);
     }
     $('selection-details').append(skills);
+    const gear=document.createElement('p');gear.textContent='Equipment: wear swamp boots to enter swamp ground and desert clothing to cross sandy desert ground. Find gear in treasure or trade with a nearby local.';$('selection-details').append(gear);
+    for(const [key,item] of Object.entries(equipmentItems)){
+      const count=town.player?.items?.[key] || 0,equipped=town.player?.equipment?.[item.slot]===key;
+      const row=document.createElement('p');row.textContent=`${item.name} · ${count} owned${equipped?' · Equipped':''}`;
+      if(viewed===identity?.town_id&&count){const button=document.createElement('button');button.textContent=equipped?`Unequip ${item.name.toLowerCase()}`:`Equip ${item.name.toLowerCase()}`;button.onclick=()=>act({action:equipped?'unequip_item':'equip_item',item:key});row.append(button);}
+      $('selection-details').append(row);
+    }
     if(viewed===identity?.town_id){
       if(town.player?.boat){const boat=document.createElement('p');boat.textContent='Exploration boat ready. Walk onto water to sail; step ashore to disembark.';$('selection-details').append(boat);}
       else{const boat=document.createElement('button');boat.textContent=town.level<3?'Exploration boat · Requires hall level 3':'Build exploration boat · 20 wood + 10 planks';boat.disabled=town.level<3||amountOf(town,'wood')<20||amountOf(town,'planks')<10;boat.onclick=()=>act({action:'build_boat'});$('selection-details').append(boat);}
@@ -857,7 +870,18 @@ function renderSelection(town){
     $('selection-title').textContent=item.name;
     const role=document.createElement('p');role.textContent=item.role;
     const dialogue=document.createElement('p');dialogue.textContent='“'+item.dialogue+'”';
-    $('selection-details').append(illustration('villagers'));$('selection-details').append(role);$('selection-details').append(dialogue);return;
+    $('selection-details').append(illustration('villagers'));$('selection-details').append(role);$('selection-details').append(dialogue);
+    const own=world.towns[identity?.town_id],player=own?.player;
+    if(player){
+      const nearby=Math.hypot(player.x-item.x,player.y-item.y)<=1.8;
+      const hint=document.createElement('p');hint.textContent=nearby?'Trade equipment for coins. Equip purchases from your character panel.':'Walk beside this local to trade equipment.';$('selection-details').append(hint);
+      if(world.shared_map||viewed===identity?.town_id)for(const [key,gear] of Object.entries(equipmentItems)){
+        const buy=document.createElement('button');buy.textContent=`Buy ${gear.name.toLowerCase()} · ${gear.price} coins`;buy.disabled=!nearby||own.coins<gear.price;buy.onclick=()=>act({action:'buy_equipment',item:key,npc_index:selection.index});$('selection-details').append(buy);
+        const equipped=player.equipment?.[gear.slot]===key;
+        const sell=document.createElement('button');sell.textContent=`Sell ${gear.name.toLowerCase()} · ${Math.floor(gear.price/2)} coins`;sell.disabled=!nearby||(player.items?.[key] || 0)<=Number(equipped);sell.onclick=()=>act({action:'sell_equipment',item:key,npc_index:selection.index});$('selection-details').append(sell);
+      }
+    }
+    return;
   }
   if(selection.type==='villager'){
     $('selection-title').textContent=item.name;$('selection-details').append(villagerCard(town,item,selection.index));return;
@@ -867,7 +891,7 @@ function renderSelection(town){
   if(selection.type==='resource'){
     const swamp=town.terrain?.[item.y]?.[item.x]==='b';
     if(item.kind==='chest'){
-      $('selection-title').textContent='Island treasure';p.textContent='Stand beside this chest and press G to claim 25 coins. Each chest can be claimed once across the shared world.';$('selection-details').append(p);
+      $('selection-title').textContent='Island treasure';p.textContent='Stand beside this chest and press G to claim 25 coins and an equipment item. Each chest can be claimed once across the shared world.';$('selection-details').append(p);
       if(viewed===identity?.town_id){const button=document.createElement('button');button.textContent='Collect loot';button.onclick=()=>playerAction('gather');$('selection-details').append(button);}return;
     }
     $('selection-title').textContent=({berry_bush:'Berry bush',herb_patch:'Herb patch'}[item.kind]) || (swamp?{tree:'Swamp willow',water:'Swamp water',rock:'Rock outcrop'}:{tree:'Forest',water:'Water',rock:'Rock outcrop',berry_bush:'Berry bush',herb_patch:'Herb patch'})[item.kind];
@@ -1228,6 +1252,9 @@ function drawVillager(b){
   const bob=walking?Math.abs(stride)*1.2:fishing?reel*1.5:farming?farmSwing*(farmStage===0?2:1):chopping?swing*2.5:working?swing:Math.sin(s.clock*2)*.3;
   ctx.translate(0,-bob);
   ctx.fillStyle=b.kind==='npc'?npcColors[b.biome][0]:b.kind==='player'?'#d6b85d':['#7899a2','#b9866b','#a0a16b','#947ca0','#c6aa62'][b.index%5];ctx.fillRect(-4,-13,8,10);
+  const gear=b.kind==='player'?b.equipment:null;
+  if(gear?.feet==='swamp_boots'){ctx.fillStyle='#52715d';ctx.fillRect(-5,-5,4,6);ctx.fillRect(1,-5,4,6);}
+  if(gear?.body==='desert_clothing'){polygon([[-5,-13],[5,-13],[6,-2],[-6,-2]],'#ead8ae');}
   if(accessories.blouse){
     polygon([[-4,-13],[4,-13],[7,-9],[5,-7],[3,-10],[4,-3],[-4,-3],[-3,-10],[-5,-7],[-7,-9]],'#b8c6ad');
     polygon([[-3,-13],[0,-10],[3,-13]],'#eee0bd');
@@ -1239,6 +1266,7 @@ function drawVillager(b){
   ctx.fillStyle=['#e7c68c','#c99f79','#ad795c'][b.index%3];ctx.beginPath();ctx.arc(0,-17,4,0,Math.PI*2);ctx.fill();
   ctx.fillStyle=['#584638','#aa7846','#363c36','#d3bc8c'][b.index%4];ctx.beginPath();ctx.arc(0,-18,4,Math.PI,Math.PI*2);ctx.fill();
   if(b.index%2)ctx.fillRect(-4,-18,2,7);
+  if(gear?.body==='desert_clothing'){ctx.fillStyle='#ead8ae';ctx.fillRect(-5,-21,10,3);ctx.fillRect(-5,-19,2,8);}
   if(accessories.hat){polygon([[-6,-19],[0,-23],[6,-19]],'#ccb779');ctx.fillStyle='#ccb779';ctx.fillRect(-7,-19,14,2);}
   if(accessories.farmingMaster){ctx.fillStyle='#e8bd55';ctx.fillRect(-5,-20,10,1);}
   if(b.kind==='npc'){

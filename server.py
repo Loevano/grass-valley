@@ -13,6 +13,7 @@ from urllib.parse import urlsplit
 
 import progression as economy
 import logistics
+import equipment
 
 from terrain import ensure_terrain
 from npcs import ensure_npcs
@@ -93,7 +94,7 @@ def hall_upgrade(town):
     return upgrade
 
 
-def walkable(town, x, y, blocked=None):
+def walkable(town, x, y, blocked=None, water=None):
     size = town.get('map_size', 12)
     radius = .18
     if not (radius - .5 <= x <= size - .5 - radius
@@ -104,11 +105,16 @@ def walkable(town, x, y, blocked=None):
                    town['buildings'] + town['map_resources']
                    if b['kind'] != 'tree' and not (b['kind'] == 'water' and town.get('player', {}).get('boat'))}
     terrain = town.get('terrain')
+    if water is None:
+        water = {(r['x'], r['y']) for r in town['map_resources'] if r['kind'] == 'water'}
     for tx in range(math.floor(x + .5) - 1, math.floor(x + .5) + 2):
         for ty in range(math.floor(y + .5) - 1, math.floor(y + .5) + 2):
             outside = (terrain and 0 <= tx < size and 0 <= ty < size
                        and terrain[ty][tx] == 'v')
-            if ((tx, ty) in blocked or outside) and (abs(x - tx) < .5 + radius
+            hazardous = (terrain and 0 <= ty < len(terrain) and 0 <= tx < len(terrain[ty])
+                         and (tx, ty) not in water
+                         and not equipment.protected(town.get('player', {}), terrain[ty][tx]))
+            if ((tx, ty) in blocked or outside or hazardous) and (abs(x - tx) < .5 + radius
                                        and abs(y - ty) < .5 + radius):
                 return False
     return True
@@ -145,13 +151,14 @@ def move_player(town, data):
                    town['buildings'] + town['map_resources']
                    if b['kind'] != 'tree' and not (b['kind'] == 'water' and player.get('boat'))}
         # Small steps prevent tunnelling through obstacles; slide along walls.
+        water = {(r['x'], r['y']) for r in town['map_resources'] if r['kind'] == 'water'}
         for _ in range(5):
             speed = 1.5 if (math.floor(player['x'] + .5), math.floor(player['y'] + .5)) in roads else 1
             x = player['x'] + dx / length * .06 * speed
-            if walkable(town, x, player['y'], blocked):
+            if walkable(town, x, player['y'], blocked, water):
                 player['x'] = x
             y = player['y'] + dy / length * .06 * speed
-            if walkable(town, player['x'], y, blocked):
+            if walkable(town, player['x'], y, blocked, water):
                 player['y'] = y
         if dx != dy:
             player['facing'] = 1 if dx > dy else -1
@@ -615,6 +622,8 @@ def validate_building_range(town, x, y):
 def command(town, data, world=None):
     ensure_resources(town)
     action = data.get('action')
+    if action in {'buy_equipment', 'sell_equipment', 'equip_item', 'unequip_item'}:
+        return equipment.change(town, data)
     if action == 'build_boat':
         if town['level'] < 3:
             raise ValueError('Exploration boats require town hall level 3.')
