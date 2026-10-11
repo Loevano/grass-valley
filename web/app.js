@@ -1048,7 +1048,7 @@ function productionDescription(item){
   if(recipe)return `${costText(recipe[0])} → ${recipe[2]} ${goodName(recipe[1]).toLowerCase()} / worker cycle\nSkill: larger batches + more ingredients\nRequires qualified workers`;
   return {barn:'Output: eggs, wool, meat, milk\nFeed: fodder / vegetables\n4 animals / level\nOutput limited by animals',orchard:'Output: fruit\nRequires workers',market:'Goods → coins\nPlayer trading: planned'}[item.kind] || 'Requires workers';
 }
-function renderProfession(town,item,index,target,upgrades,details){
+function renderProfession(town,item,index,target,upgrades,details,boats){
   if(item.construction)return;
   const owner=viewed===identity?.town_id;
   const catalog=world.progression;
@@ -1075,11 +1075,12 @@ function renderProfession(town,item,index,target,upgrades,details){
   }
   for(const [key,spec] of Object.entries(catalog.upgrades))if(spec.building===item.kind){
     const unlocked=item.profession_upgrades?.includes(key);
-    if(!unlocked&&(town.level<spec.level || professionSkill(town,spec.skill)<(spec.xp || 0) || spec.requires&&!item.profession_upgrades?.includes(spec.requires)))continue;
-    const button=document.createElement('button');button.textContent=unlocked?`${spec.label} · Unlocked`:key==='boat'?`Buy ${spec.label.toLowerCase()}`:spec.label;
+    const fishingBoat=item.kind==='fishing_hut'&&['boat','improved_boat','master_boat'].includes(key);
+    if(!fishingBoat&&!unlocked&&(town.level<spec.level || professionSkill(town,spec.skill)<(spec.xp || 0) || spec.requires&&!item.profession_upgrades?.includes(spec.requires)))continue;
+    const button=document.createElement('button');button.textContent=unlocked?`${spec.label} · Unlocked`:fishingBoat?`${key==='boat'?'Buy':'Upgrade to'} ${spec.label.toLowerCase()}`:spec.label;
     button.className='upgrade-button';
     button.disabled=!owner || unlocked;button.onclick=()=>{if(!button.disabled)showUpgrade({action:'profession_upgrade',index,upgrade:key});};
-    upgrades.append(upgradeCard(button,upgradePreview({action:'profession_upgrade',index,upgrade:key},town,item),{status:unlocked?'Unlocked':''}));
+    (fishingBoat?boats:upgrades).append(upgradeCard(button,upgradePreview({action:'profession_upgrade',index,upgrade:key},town,item),{status:unlocked?'Unlocked':''}));
   }
   if(item.kind==='market'&&owner)for(const key of ['planks','wool','flour','smoked_fish','tools','herbs','fruit','milk','eggs','meat','bread','prepared_meat']){
     const button=document.createElement('button');button.textContent=`Sell 1 ${goodName(key).toLowerCase()} · ${key==='tools'?3:1} coin${key==='tools'?'s':''}`;button.disabled=amountOf(town,key)<1;button.onclick=()=>act({action:'sell_goods',resource:key,amount:1});target.append(button);
@@ -1255,6 +1256,7 @@ function renderSelection(town){
     const workers=buildingSection(['hall','home'].includes(item.kind)?'Settlers':'Workers');
     const production=buildingSection(['hall','home','storehouse'].includes(item.kind)?'Benefits':'Production');
     const upgrades=buildingSection('Upgrades'),details=buildingSection('Building details',true),storageOverview=buildingSection('Storage');
+    const boats=item.kind==='fishing_hut'?buildingSection('Fishing boats'):null;
     const upgradeActions=document.createElement('div');upgradeActions.className='building-upgrade-actions';
     const assigned=town.villagers.filter((v,i)=>settlerBuilding(town,v,i)===selection.index);
     const status=document.createElement('p');status.className='workplace-status';
@@ -1295,7 +1297,7 @@ function renderSelection(town){
     }
     if(!item.construction&&world.progression?.buildings[item.kind])p.textContent=productionDescription(item);
     details.append(p);
-    renderProfession(town,item,selection.index,production,upgrades,details);
+    renderProfession(town,item,selection.index,production,upgrades,details,boats);
     if(!item.construction){
       renderStorage(town,item,selection.index,storageOverview);
     }
@@ -1326,6 +1328,7 @@ function renderSelection(town){
     if(!item.construction)$('selection-details').append(storageOverview);
     $('selection-details').append(workers);
     if(production.children.length>1)$('selection-details').append(production);
+    if(boats?.children.length>1)$('selection-details').append(boats);
     if(item.kind==='hall'){
       const preview=upgradePreview({action:'upgrade'},town,item);
       upgradeActions.append(upgradeCard($('upgrade'),preview,{title:preview?`Upgrade to level ${town.level+1}`:`Town hall · Level ${town.level}`,status:town.upgrade_remaining?`Upgrading · ${town.upgrade_remaining}s remaining`:preview?'':'Further hall progression is planned.'}));
