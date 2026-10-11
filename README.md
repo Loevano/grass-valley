@@ -352,6 +352,12 @@ you can answer later.
 
 ## Check the simulation
 
+Profile a synthetic four-player starting world with ticks, saves, cached map
+polls, and movement using `python3 profile_server.py`. Add `--profile` to show
+the most expensive functions or `--ticks 50` for a longer run. It uses temporary
+saves and reports median/p95 timings; it does not load or modify your game.
+This measures server work, excluding network latency and browser rendering.
+
 ```sh
 python3 -m unittest discover -s tests -v
 ```

@@ -978,7 +978,7 @@ class Handler(SimpleHTTPRequestHandler):
             super().log_request(code, size)
 
     def reply(self, status, data):
-        body = json.dumps(data).encode()
+        body = json.dumps(data, separators=(',', ':')).encode()
         self.send_response(status)
         self.send_header('Content-Type', 'application/json')
         self.send_header('Cache-Control', 'no-store')

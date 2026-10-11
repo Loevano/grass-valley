@@ -3,6 +3,7 @@ import hashlib
 import json
 import math
 import random
+from copy import deepcopy
 from collections import OrderedDict
 from functools import lru_cache
 from pathlib import Path
@@ -129,6 +130,8 @@ class ChunkMap:
         self.directory = Path(directory) / str(self.landscape['terrain_seed']) if directory else None
         self.records, self.saved, self.memory = {}, {}, {}
         self.views = OrderedDict()
+        self.snapshots = {}
+        self.membership = None
         self.resource_index = None
         self.base = base
         self.terrain = ChunkTerrain(self.records)
@@ -144,7 +147,8 @@ class ChunkMap:
             return self.records[key]
         if key in self.views:
             self.views.move_to_end(key)
-            self.catch_up(key, self.views[key])
+            if self.views[key].get('clock') != self.landscape.get('chunk_clock', 0):
+                self.catch_up(key, self.views[key])
             return self.views[key]
         record = self._read(key)
         self.catch_up(key, record)
@@ -198,6 +202,13 @@ class ChunkMap:
         return result
 
     def sync(self):
+        # Supply changes are visible through shared resource references. Regroup
+        # only when a resource is added, removed, replaced, or moved.
+        membership = tuple(tuple((id(item), item['x'], item['y'])
+                                 for item in self.landscape.get(field, []))
+                           for field in ('map_resources', 'tree_stumps'))
+        if membership == self.membership:
+            return
         self.resource_index = None
         for record in self.records.values():
             record['map_resources'] = []
@@ -205,6 +216,7 @@ class ChunkMap:
         for field in ('map_resources', 'tree_stumps'):
             for item in self.landscape.get(field, []):
                 self.records[chunk_key(item['x'], item['y'])][field].append(item)
+        self.membership = membership
 
     def flush(self):
         if not self.records:
@@ -235,6 +247,7 @@ class ChunkMap:
         if desired == self.records.keys():
             return
         self.flush()
+        self.membership = None
         for key in self.records.keys() - desired:
             del self.records[key]
             self.saved.pop(key, None)
@@ -267,10 +280,17 @@ class ChunkMap:
         keys = self.records.keys() | set(keys)
         chunks = {key: self.read(key) for key in sorted(keys)}
         updates = {}
+        # Retain only the active area and this request's bounded camera view.
+        self.snapshots = {key: value for key, value in self.snapshots.items() if key in keys}
         for key, record in chunks.items():
             payload = {field: record[field] for field in ('map_resources', 'tree_stumps')}
-            body = json.dumps(payload, separators=(',', ':'))
-            version = hashlib.blake2b(body.encode(), digest_size=8).hexdigest()
+            cached = self.snapshots.get(key)
+            if cached is None or cached[0] != payload:
+                body = json.dumps(payload, separators=(',', ':'))
+                version = hashlib.blake2b(body.encode(), digest_size=8).hexdigest()
+                # Resources mutate in place; cached data must be independent.
+                cached = self.snapshots[key] = (deepcopy(payload), version)
+            payload, version = cached
             if (versions or {}).get(key) != version:
                 updates[key] = dict(payload, version=version)
         result = {k: v for k, v in self.landscape.items()

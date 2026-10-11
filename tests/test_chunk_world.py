@@ -50,11 +50,56 @@ class ExplorableMap(unittest.TestCase):
             second = self.manager.snapshot({'1,1'}, first['visible_chunks'])
             self.assertEqual(generate.call_count, 1)
         self.assertEqual(set(self.manager.records), active)
+
         self.assertEqual(second['terrain_chunks'], {})
         for x in range(10):
             self.manager.snapshot({f'{x},{y}' for y in range(10)})
         self.assertLessEqual(len(self.manager.views), 49)
         self.assertEqual(set(self.manager.records), active)
+
+    def test_unchanged_snapshots_reuse_versions_and_detect_in_place_supply_changes(self):
+        first = self.manager.snapshot()
+        versions = {key: value['version'] for key, value in first['resource_chunks'].items()}
+        resource = next(r for r in self.town['map_resources'] if r.get('supply', 0) > 1)
+        key = chunk_key(resource['x'], resource['y'])
+        original = json.loads(json.dumps(first))
+        with patch('chunk_world.json.dumps', wraps=json.dumps) as encode:
+            self.assertEqual(self.manager.snapshot(versions=versions)['resource_chunks'], {})
+            encode.assert_not_called()
+            resource['supply'] -= 1
+            changed = self.manager.snapshot(versions=versions)['resource_chunks']
+            self.assertEqual(set(changed), {key})
+            self.assertNotEqual(changed[key]['version'], versions[key])
+            self.assertEqual(encode.call_count, 1)
+        self.assertEqual(first, original)
+
+    def test_sync_detects_replacements_and_moves_without_a_length_change(self):
+        self.manager.snapshot()
+        resources = self.town['map_resources']
+        original = resources[0]
+        key = chunk_key(original['x'], original['y'])
+        replacement = dict(original, supply=0)
+        resources[0] = replacement
+        self.manager.sync()
+        self.assertTrue(any(r is replacement for r in self.manager.records[key]['map_resources']))
+        other = next(k for k in self.manager.records if k != key)
+        cx, cy = map(int, other.split(','))
+        replacement.update(x=cx * CHUNK_SIZE, y=cy * CHUNK_SIZE)
+        self.manager.sync()
+        self.assertFalse(any(r is replacement for r in self.manager.records[key]['map_resources']))
+        self.assertTrue(any(r is replacement for r in self.manager.records[other]['map_resources']))
+
+    def test_camera_cache_is_bounded_and_catches_up_only_when_time_advances(self):
+        self.manager.snapshot({'1,1'})
+        with patch.object(self.manager, 'catch_up', wraps=self.manager.catch_up) as catch_up:
+            self.manager.snapshot({'1,1'})
+            catch_up.assert_not_called()
+            self.world['shared_map']['chunk_clock'] += 3
+            self.manager.snapshot({'1,1'})
+            self.assertEqual(catch_up.call_count, 1)
+        for x in range(5):
+            self.manager.snapshot({f'{x},0'})
+        self.assertLessEqual(len(self.manager.snapshots), len(self.manager.records) + 1)
 
     def test_removals_and_regrowth_survive_eviction_and_reload(self):
         self.visit(200, 200)

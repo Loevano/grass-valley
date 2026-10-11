@@ -391,10 +391,13 @@ def source_limits(landscape, source):
 
 
 def renew(landscape, obstacles=()):
-    occupied = {(r['x'], r['y']) for r in landscape['map_resources']}
-    occupied.update((r['x'], r['y']) for r in obstacles)
+    stumps = landscape.get('tree_stumps', [])
+    occupied = set()
+    if stumps:
+        occupied = {(r['x'], r['y']) for r in landscape['map_resources']}
+        occupied.update((r['x'], r['y']) for r in obstacles)
     remaining = []
-    for stump in landscape.get('tree_stumps', []):
+    for stump in stumps:
         x, y = stump['x'], stump['y']
         if (x, y) in occupied:
             remaining.append(stump)
@@ -409,12 +412,14 @@ def renew(landscape, obstacles=()):
         landscape['tree_stumps'][:] = remaining
     for kind, _, members in supply_groups(landscape):
         maximum, regeneration = source_limits(landscape, members[0])
-        root = min(members, key=lambda r: (r['x'], r['y']))
+        root = members[0] if len(members) == 1 else min(members, key=lambda r: (r['x'], r['y']))
         available = min(maximum, root.get('supply', maximum) + regeneration)
         if kind == 'tree' and root.get('supply_max', maximum) != maximum:
             available = min(maximum, root.get('supply', maximum) * maximum / root['supply_max'])
         for r in members:
-            r.update(supply=available, supply_max=maximum, regeneration=regeneration)
+            if (r.get('supply') != available or r.get('supply_max') != maximum
+                    or r.get('regeneration') != regeneration):
+                r.update(supply=available, supply_max=maximum, regeneration=regeneration)
 
 
 def take_supply(landscape, source, amount):
