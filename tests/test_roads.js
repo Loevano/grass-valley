@@ -26,12 +26,6 @@ return (async()=>{
   const pending=predictPlayerStep(town,town.player,1,-1);
   assert(Math.abs(Math.hypot(pending.x-5,pending.y-7)-.3)<1e-9);
   delete town.roads[0].construction;
-  town.roads[0].construction={progress:9,total:10};
-  assert.equal(roadSpeed(world.towns.own,town.player),1,'Unfinished shared roads do not boost walking');
-  world={world_id:'roads',towns:{own:town}};
-  const pending=predictPlayerStep(town,town.player,1,-1);
-  assert(Math.abs(Math.hypot(pending.x-5,pending.y-7)-.3)<1e-9);
-  delete town.roads[0].construction;
   world={world_id:'roads',towns:{own:town}};
   const drawBuildingOriginal=drawBuilding,previewBuildings=[];
   drawBuilding=(building,...args)=>{previewBuildings.push(building.kind);drawBuildingOriginal(building,...args);};
@@ -52,9 +46,6 @@ return (async()=>{
   assert.equal(sent.x,6);assert.equal(sent.y,8);
   tool=null;await selectTile(5,7);
   assert.equal(selection.type,'road','Road tile opens its inspector');
-  town.roads[0].construction={progress:3,total:10};
-  renderSelection(town);
-  assert(document.getElementById('selection-details').children.some(c=>c.textContent?.includes('7s of builder work remaining')));
   town.roads[0].construction={progress:3,total:10};
   renderSelection(town);
   assert(document.getElementById('selection-details').children.some(c=>c.textContent?.includes('7s of builder work remaining')));
