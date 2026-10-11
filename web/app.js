@@ -2332,6 +2332,44 @@ function paintGround(target,landscape,water,bounds,offsetX=0,offsetY=0,region=nu
         ctx.quadraticCurveTo(px,py+tileH*.35,px+tileW*.18,py+tileH*.55);
         ctx.stroke();
       }
+      if(detailed&&!wet&&biome==='d'){
+        // Sparse, seeded plants stay inside their tile for ground-cache scrolling.
+        const plant=((x*73856093)^(y*19349663)^(landscape?.terrain_seed || 0))>>>0;
+        if(plant%5===0){
+          const mirror=plant&1?1:-1;
+          const p=(dx,dy)=>[px+dx*tileW*mirror,py+dy*tileH];
+          polygon([p(-.12,.72),p(0,.67),p(.19,.74),p(.06,.81)],'#ad8d554d');
+          if(plant%3===0){
+            // A small branching cactus with a sunlit rib and sandy spines.
+            polygon([p(-.04,.74),p(-.04,.31),p(-.015,.25),p(.025,.25),
+              p(.05,.31),p(.05,.74)],'#577b4e');
+            polygon([p(-.04,.58),p(-.13,.58),p(-.16,.53),p(-.16,.4),
+              p(-.1,.4),p(-.1,.5),p(-.04,.5)],'#577b4e');
+            polygon([p(.04,.63),p(.14,.63),p(.17,.58),p(.17,.46),
+              p(.11,.46),p(.11,.56),p(.04,.56)],'#668b56');
+            ctx.strokeStyle='#9daf71';ctx.lineWidth=tileW/65;
+            ctx.beginPath();ctx.moveTo(...p(0,.7));ctx.lineTo(...p(0,.32));ctx.stroke();
+            ctx.fillStyle='#ddce96';
+            for(const [dx,dy] of [[-.025,.4],[.04,.51],[-.12,.46],[.14,.54]]){
+              const [sx,sy]=p(dx,dy);ctx.fillRect(sx,sy,tileW/90,tileW/90);
+            }
+          }else if(plant%3===1){
+            // Pointed agave leaves form a low, spreading rosette.
+            for(const [dx,dy] of [[-.2,.48],[-.1,.36],[0,.3],[.11,.39],[.21,.52]]){
+              polygon([p(-.035,.74),p(dx,dy),p(.04,.73)],dx<0?'#6e8760':'#89966b');
+            }
+            polygon([p(-.025,.75),p(.015,.44),p(.045,.74)],'#b0b081');
+          }else{
+            ctx.strokeStyle='#927a4e';ctx.lineWidth=tileW/60;
+            ctx.beginPath();
+            for(const [dx,dy] of [[-.17,.51],[-.08,.43],[.02,.4],[.12,.47],[.18,.58]]){
+              ctx.moveTo(...p(0,.74));ctx.lineTo(...p(dx*.5,.6));ctx.lineTo(...p(dx,dy));
+              ctx.moveTo(...p(dx*.5,.6));ctx.lineTo(...p(dx*.8-.035,dy+.07));
+            }
+            ctx.stroke();
+          }
+        }
+      }
       if(detailed&&biome==='b'&&variation%3===0){
         ctx.strokeStyle='#9b9f69';ctx.lineWidth=tileW/46;
         for(let reed=0;reed<3;reed++){const rx=px+(reed-1)*tileW*.07,ry=py+tileH*.7;ctx.beginPath();ctx.moveTo(rx,ry);ctx.lineTo(rx+(reed-1)*tileW*.025,ry-tileH*.4);ctx.stroke();}
