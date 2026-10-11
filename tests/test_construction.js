@@ -40,6 +40,13 @@ const run=new Function('document','window','localStorage','setTimeout','clearTim
   assert.strictEqual(state.phase,'working','Builders remain at the site rather than delivering resources');
   worker.construction_target=null;
   assert(!WorkerAnimation.plan(town,worker,0,state).construction,'Completion releases idle helpers');
+  worker.job='hauling';worker.construction_target={kind:'home',x:6,y:6};
+  worker.logistics_target={x:8,y:6};worker.logistics_trip={path:[[7,6],[8,6]],cargo:{wood:5}};
+  const helper=WorkerAnimation.plan(town,worker,0);
+  assert(helper.construction&&!helper.transport,'Workplace helpers show construction while their delivery is paused');
+  worker.construction_target=null;
+  assert(WorkerAnimation.plan(town,worker,0).transport,'Delivery animation resumes after helping');
+  delete worker.logistics_target;delete worker.logistics_trip;worker.job='idle';
   site.kind='farm';inspect('building',1);
   assert(!panelNodes().some(c=>c.textContent==='Build acre · 5 wood'),'Unfinished farms cannot add acres');
   assert(!acrePlacementValid(town,{x:6,y:7},1));

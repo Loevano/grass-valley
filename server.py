@@ -253,7 +253,7 @@ def settler_building(town, worker_index):
             'fishing': 'fishing_hut', **economy.JOB_BUILDINGS}.get(villager['job'])
     source = 'tree' if kind == 'woodcutter' else 'water'
     workplaces = [i for i, b in enumerate(town['buildings'])
-                  if b['kind'] == kind and completed(b)
+                  if b['kind'] == kind and (completed(b) or 'upgrade' in b['construction'])
                   and (kind == 'farm' or any(r['kind'] == source and
                           abs(r['x'] - b['x']) + abs(r['y'] - b['y']) <=
                           resource_reach(b)
@@ -470,9 +470,25 @@ def construction_route(town, start, target):
 
 
 def construct(town, landscape, workers=None, elapsed=TICK_SECONDS):
+    helpers = {}
     if workers is None:
         workers = {i for i, v in enumerate(town['villagers'])
                    if v['job'] in {'idle', 'building'}}
+        for index in range(len(town['villagers'])):
+            if index in workers:
+                continue
+            workplace = settler_building(town, index)
+            if type(workplace) is not int or not 0 <= workplace < len(town['buildings']):
+                continue
+            building = town['buildings'][workplace]
+            if building['kind'] == 'acre' and 'upgrade' not in building.get('construction', {}):
+                workplace = building.get('farm_index')
+                if type(workplace) is not int or not 0 <= workplace < len(town['buildings']):
+                    continue
+                building = town['buildings'][workplace]
+            if 'upgrade' in building.get('construction', {}):
+                helpers[index] = workplace
+                workers.add(index)
     claimed = set()
     hall = next(b for b in town['buildings'] if b['kind'] == 'hall')
     for index, villager in enumerate(town['villagers']):
@@ -487,6 +503,8 @@ def construct(town, landscape, workers=None, elapsed=TICK_SECONDS):
         start = (position['x'], position['y'])
         for site_index, site in enumerate(town['buildings'] + town.get('roads', [])):
             if completed(site) or site_index in claimed:
+                continue
+            if index in helpers and site_index != helpers[index]:
                 continue
             path = construction_route(landscape, start, site)
             if path is None:
@@ -607,6 +625,10 @@ def tick(world):
         for index in sorted(range(len(town['villagers'])), key=lambda i: town['villagers'][i]['job'] != 'hauling'):
             villager = town['villagers'][index]
             job = villager['job']
+            if villager.get('construction_target'):
+                villager['work_target'] = None
+                villager['production_status'] = 'Helping with construction'
+                continue
             assignment = work_assignment(town, job, index, town_spatial) if job != 'idle' else None
             finishing_output = False
             if not assignment and villager.get('pending_output') and villager.get('work_animation', {}).get('task', [None])[0] == job:

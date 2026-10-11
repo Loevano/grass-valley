@@ -599,7 +599,7 @@ function renderUpgradeDialog(){
     $('upgrade-benefits').append(row);
   }
   $('upgrade-cost').textContent=costText(preview.cost);
-  $('upgrade-time').textContent=`${preview.seconds} seconds`;
+  $('upgrade-time').textContent=preview.seconds?`${preview.seconds} seconds of work, plus travel and waiting`:'0 seconds';
   $('upgrade-requirements').textContent=preview.requirements;
   $('upgrade-requirements').hidden=$('upgrade-requirements-label').hidden=!preview.requirements;
   $('confirm-upgrade').textContent=`${command.upgrade==='boat'?'Buy boat':'Upgrade'} for ${costText(preview.cost)}`;
@@ -1070,7 +1070,7 @@ const settlerSpaces={hall:1,home:2,storehouse:1,woodcutter:1,fishing_hut:1,farm:
 function settlerBuilding(town,v,index){
   if(Number.isInteger(v.building_index))return v.building_index;
   const kind={woodcutting:'woodcutter',farming:'farm',fishing:'fishing_hut'}[v.job];
-  const places=town.buildings.map((b,i)=>({b,i})).filter(({b})=>b.kind===kind&&!b.construction&&buildingUsable(town,b));
+  const places=town.buildings.map((b,i)=>({b,i})).filter(({b})=>b.kind===kind&&(!b.construction||b.construction.upgrade)&&buildingUsable(town,b));
   return places.length?places[index%places.length].i:null;
 }
 function renderSettlers(town,item,buildingIndex,target=$('selection-details'),upgrades=target,details=target){
@@ -1403,8 +1403,8 @@ function renderSelection(town){
     $('selection-destroy').hidden=viewed!==identity?.town_id || item.kind==='hall';
     if(item.construction){
       const c=item.construction,stage=c.progress===0?'Waiting for a builder':c.upgrade?'Upgrading':c.progress<c.total/3?'Foundations':c.progress<c.total*2/3?'Framing':'Finishing';
-      status.textContent=`${stage} · ${Math.floor(c.progress/c.total*100)}% complete · ${Math.ceil(c.total-c.progress)}s remaining`;
-      p.textContent='Builders: priority\nIdle villagers: automatic help\nBenefits: on completion';
+      status.textContent=`${stage} · ${Math.floor(c.progress/c.total*100)}% complete · ${Math.ceil(c.total-c.progress)}s remaining of work`;
+      p.textContent='Builders: priority\nIdle villagers: automatic help\nAssigned workers: help upgrade their workplace, then resume their jobs\nTime: excludes travel and waiting\nBenefits: on completion';
       const progress=document.createElement('progress');progress.max=c.total;progress.value=c.progress;progress.setAttribute('aria-label',`${labels[item.kind]} construction`);workers.append(progress);
     }
     if(!item.construction&&world.progression?.buildings[item.kind])p.textContent=productionDescription(item);

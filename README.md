@@ -336,6 +336,11 @@ the Python host, refresh both browsers, and create a new world to use the shared
   building price multiplied by its current level; the panel previews the benefit.
   Profession upgrades take 30 seconds of builder work. Materials are paid when
   starting; buildings pause their benefits and production until work finishes.
+  Assigned workers automatically help upgrade their own workplace, then resume
+  their jobs; farmers assigned to acres also help upgrade their parent farm.
+  Dedicated builders keep priority, and resting villagers help automatically.
+  Each site has one worker at a time. Remaining time counts work, excluding
+  travel and waiting for an available worker or reachable route.
   Upgrade progress survives saving, moving, and restarting the host.
   Cottages provide 2/4/6 housing spaces (the town limit stays 16), and storehouses
   hold 50/75/100/150/200 of each enabled resource. Level 5 becomes a Warehouse. Woodcutters, farms, fishing huts,

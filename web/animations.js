@@ -71,7 +71,7 @@ const WorkerAnimation = (() => {
   }
   function plan(town, villager, index, state) {
     const blocked=new Set([...(town.obstacles || town.buildings),...town.map_resources,...(town.npcs || [])].map(key));
-    if(villager.logistics_target || (villager.job==='farming'&&!villager.construction_target)){
+    if(!villager.construction_target&&(villager.logistics_target || villager.job==='farming')){
       for(const acre of (town.obstacles || town.buildings).filter(b=>b.kind==='acre'&&!b.construction))blocked.delete(key(acre));
     }
     const hall=town.home_hall || town.buildings.find(b=>b.kind==='hall');
@@ -99,7 +99,7 @@ const WorkerAnimation = (() => {
     }
     let position=state?{x:state.x,y:state.y}:start;
     let approach=distance(position,start)>1e-9?[start]:[];
-    if(villager.logistics_target){
+    if(villager.logistics_target&&!villager.construction_target){
       const target=villager.logistics_target,trip=villager.logistics_trip;
       const remaining=trip?.path.slice(state?0:(trip.step || 0)).map(([x,y])=>({x,y}));
       const path=route(start,remaining?.[0] || target,blocked,size,false,bounds);

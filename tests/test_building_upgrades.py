@@ -87,6 +87,93 @@ class BuildingUpgrades(unittest.TestCase):
             self.upgrade(index)
         self.assertEqual(self.town, before)
 
+    def test_farm_workers_upgrade_and_resume_without_reassignment(self):
+        farm = self.add('farm')
+        self.town['map_resources'] = [{'kind': 'water', 'x': 7, 'y': 2}]
+        for villager in self.town['villagers']:
+            villager.update(job='farming', building_index=farm)
+        command(self.town, {'action': 'upgrade_building', 'index': farm})
+        self.assertEqual(self.town['villagers'][0]['construction_target']['kind'], 'farm')
+        tick({'towns': {'a': self.town}})
+        self.assertFalse(self.town['buildings'][farm].get('pending_output'))
+        for _ in range(30):
+            tick({'towns': {'a': self.town}})
+        self.assertEqual(self.town['buildings'][farm]['level'], 2)
+        self.assertGreater(self.town['produced']['vegetables'], 0)
+        for villager in self.town['villagers']:
+            self.assertEqual(villager['job'], 'farming')
+            self.assertEqual(villager['building_index'], farm)
+            self.assertNotIn('construction_target', villager)
+
+    def test_acre_worker_helps_parent_farm_and_own_capacity_upgrade(self):
+        farm = self.add('farm')
+        acre = self.add('acre', farm_index=farm)
+        self.town['buildings'][acre]['y'] = 3
+        for villager in self.town['villagers']:
+            villager['job'] = 'fishing'
+        self.town['villagers'][0].update(job='farming', building_index=acre)
+        for action, site in [('upgrade_building', farm), ('upgrade_capacity', acre)]:
+            command(self.town, {'action': action, 'index': site})
+            self.assertEqual(self.town['villagers'][0]['construction_target']['kind'],
+                             self.town['buildings'][site]['kind'])
+            for _ in range(30):
+                construct(self.town, self.town)
+            self.assertNotIn('construction', self.town['buildings'][site])
+        self.assertEqual(self.town['buildings'][acre]['settler_level'], 2)
+        self.assertEqual(self.town['villagers'][0]['building_index'], acre)
+
+    def test_helpers_only_upgrade_their_workplace_and_builders_keep_priority(self):
+        other = self.add('home', construction={'progress': 0, 'total': BUILD_SECONDS})
+        farm = self.add('farm')
+        for villager in self.town['villagers']:
+            villager.update(job='farming', building_index=farm)
+        command(self.town, {'action': 'upgrade_building', 'index': farm})
+        for _ in range(30):
+            construct(self.town, self.town)
+        self.assertEqual(self.town['buildings'][farm]['level'], 2)
+        self.assertEqual(self.town['buildings'][other]['construction']['progress'], 0)
+        del self.town['buildings'][other]['construction']
+        self.town['villagers'][4]['job'] = 'building'
+        command(self.town, {'action': 'upgrade_building', 'index': farm})
+        self.assertIn('construction_target', self.town['villagers'][4])
+        self.assertTrue(all('construction_target' not in v for v in self.town['villagers'][:4]))
+
+    def test_legacy_farm_assignment_stays_available_during_upgrade(self):
+        farm = self.add('farm')
+        for villager in self.town['villagers']:
+            villager['job'] = 'farming'
+        command(self.town, {'action': 'upgrade_building', 'index': farm})
+        self.town = json.loads(json.dumps(self.town))
+        for _ in range(30):
+            construct(self.town, self.town)
+        self.assertEqual(self.town['buildings'][farm]['level'], 2)
+
+    def test_hauler_pauses_delivery_without_losing_cargo_while_upgrading(self):
+        store = self.add('storehouse')
+        for villager in self.town['villagers']:
+            villager['job'] = 'farming'
+        hauler = self.town['villagers'][0]
+        hauler.update(job='hauling', building_index=store)
+        command(self.town, {'action': 'upgrade_building', 'index': store})
+        trip = {'cargo': {'wood': 5}, 'operation': 'collect'}
+        hauler['logistics_trip'] = copy.deepcopy(trip)
+        tick({'towns': {'a': self.town}})
+        self.assertEqual(hauler['logistics_trip'], trip)
+        self.assertEqual(hauler['production_status'], 'Helping with construction')
+        self.assertEqual(hauler['job'], 'hauling')
+
+    def test_profession_worker_helps_equipment_upgrade(self):
+        camp = self.add('woodcutter')
+        self.town.update(level=2, coins=20)
+        self.town['map_resources'] = [{'kind': 'tree', 'x': 7, 'y': 2}]
+        for villager in self.town['villagers']:
+            villager.update(job='woodcutting', building_index=camp, woodcutting=10)
+        command(self.town, {'action': 'profession_upgrade', 'index': camp, 'upgrade': 'axe'})
+        for _ in range(30):
+            construct(self.town, self.town)
+        self.assertIn('axe', self.town['buildings'][camp]['profession_upgrades'])
+        self.assertTrue(all(v['job'] == 'woodcutting' for v in self.town['villagers']))
+
     def test_housing_and_storage_benefits(self):
         index = self.add('home')
         self.upgrade(index)
