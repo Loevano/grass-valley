@@ -176,11 +176,25 @@ class VillageRules(unittest.TestCase):
         tick({'towns': {'a': self.town}})
         self.assertEqual(before, (self.town['wood'], self.town['villagers'][0]['woodcutting']))
         self.assertIsNone(self.town['villagers'][0]['work_target'])
+        self.assertEqual(self.town['villagers'][0]['production_status'], 'Waiting for trees within 3 tiles')
         command(self.town, {'action': 'move', 'index': 1, 'x': 2, 'y': 2})
         tick({'towns': {'a': self.town}})
         self.assertEqual(self.town['wood'], before[0] + .5)
         self.assertGreater(self.town['buildings'][1]['output_buffer']['wood'], 0)
         self.assertEqual(self.town['villagers'][0]['work_target']['kind'], 'tree')
+
+    def test_woodcutters_report_regrowth_and_resume_when_tree_returns(self):
+        self.town['buildings'].append({'kind': 'woodcutter', 'x': 6, 'y': 6})
+        command(self.town, {'action': 'assign_settler', 'index': 0, 'building_index': 1})
+        self.town['tree_stumps'] = [{'kind': 'tree', 'x': 6, 'y': 7, 'remaining': 6}]
+        world = {'towns': {'a': self.town}}
+        tick(world)
+        worker = self.town['villagers'][0]
+        self.assertIsNone(worker['work_target'])
+        self.assertEqual(worker['production_status'], 'Waiting for trees to regrow')
+        tick(world)
+        self.assertEqual(worker['work_target']['kind'], 'tree')
+        self.assertEqual(worker['production_status'], 'Working')
 
     def test_farming_workplace_does_not_require_nearby_water(self):
         command(self.town, {'action': 'build', 'kind': 'farm', 'x': 6, 'y': 2})

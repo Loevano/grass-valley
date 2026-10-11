@@ -551,6 +551,16 @@ def tick(world):
                 reason = economy.qualification(villager, job)
                 if reason:
                     villager['production_status'] = reason
+                elif job == 'woodcutting':
+                    camp_index = settler_building(town, index)
+                    if camp_index is not None:
+                        camp = town['buildings'][camp_index]
+                        if camp['kind'] == 'woodcutter' and completed(camp):
+                            nearby = lambda r: abs(r['x'] - camp['x']) + abs(r['y'] - camp['y']) <= RESOURCE_REACH
+                            if not any(r['kind'] == 'tree' and nearby(r) for r in town['map_resources']):
+                                regrowing = any(nearby(r) for r in landscape.get('tree_stumps', []))
+                                villager['production_status'] = ('Waiting for trees to regrow' if regrowing
+                                                                 else 'Waiting for trees within 3 tiles')
                 continue
             building = assignment[0]
             if job == 'hauling':
