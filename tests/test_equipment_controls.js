@@ -30,7 +30,7 @@ const run=new Function('document','window','localStorage','setTimeout','clearTim
     town.player.y=7;
     selection={type:'player',index:0};renderSelection(town);
     assert($('selection-details').children.some(c=>c.children?.some(b=>b.textContent==='Unequip swamp boots')));
-    selection={type:'npc',index:0};renderSelection(town);
+    town.local_visits={'Tobin:5:8':{met:true}};selection={type:'npc',index:0};renderSelection(town);
     assert($('selection-details').children.some(c=>c.textContent==='Buy swamp boots · 15 coins'&&!c.disabled));
     assert($('selection-details').children.some(c=>c.textContent==='Sell swamp boots · 7 coins'&&c.disabled),'Worn last copy cannot be sold');
     town.player.x=10;renderSelection(town);
@@ -38,15 +38,15 @@ const run=new Function('document','window','localStorage','setTimeout','clearTim
     town.player.x=5;town.coins=0;renderSelection(town);
     assert($('selection-details').children.some(c=>c.textContent==='Buy desert clothing · 20 coins'&&c.disabled),'Trading respects affordability');
     const sent=[];act=data=>sent.push(data);
-    town.npcs[0].name='Sylva';town.player.y=8;renderSelection(town);
+    town.npcs[0].name='Sylva';town.local_visits['Sylva:5:8']={met:true};town.player.y=8;renderSelection(town);
     const gift=$('selection-details').children.find(c=>c.textContent==='Accept fine axe · Gift for a worker');
     assert(gift&&!gift.disabled,'Nearby ranger offers axe gift');gift.onclick();
     assert.deepStrictEqual(sent.pop(),{action:'claim_local_gift',npc_index:0});
     town.local_visits={'Sylva:5:8':{gift_claimed:true}};renderSelection(town);
     assert($('selection-details').children.some(c=>c.textContent==='Fine axe gift collected'&&c.disabled));
-    town.npcs[0].name='Reed';renderSelection(town);
+    town.npcs[0].name='Reed';town.local_visits['Reed:5:8']={met:true};renderSelection(town);
     assert($('selection-details').children.some(c=>c.textContent==='Accept fine fishing rod · Gift for a worker'));
-    town.npcs[0].name='Tobin';town.buildings=[{kind:'hall',stored_goods:{wood:65,food:40}}];town.inventory_version=1;renderSelection(town);
+    town.npcs[0].name='Tobin';town.local_visits['Tobin:5:8']={met:true};town.buildings=[{kind:'hall',stored_goods:{wood:65,food:40}}];town.inventory_version=1;renderSelection(town);
     const trade=$('selection-details').children.find(c=>c.textContent==='Trade 10 wood for 8 food');
     assert(trade&&!trade.disabled,'Barter enabled with wood and food storage room');trade.onclick();
     assert.deepStrictEqual(sent.pop(),{action:'trade_local',npc_index:0});

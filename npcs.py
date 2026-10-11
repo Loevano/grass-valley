@@ -44,8 +44,19 @@ NEW_LOCALS = {'Bram', 'Fern', 'Runa'} | {
 
 
 def ensure_npcs(town, obstacles=()):
-    if 'npcs' in town and town.get('npc_roster_version', 0) >= ROSTER_VERSION:
-        return
+    placed = town.get('npc_placement_version', 0) >= 1
+    roster_current = 'npcs' in town and town.get('npc_roster_version', 0) >= ROSTER_VERSION
+    if roster_current and placed:
+        return {}
+    # Reserve space for the full canopy, including trees that will regrow.
+    trees = [r for r in town['map_resources'] + town.get('tree_stumps', [])
+             if r.get('kind') == 'tree']
+    # In isometric projection, trees in front share the NPC's screen column.
+    obscured = {(r['x'] + dx, r['y'] + dy) for r in trees
+                for dx in range(-4, 1) for dy in range(-4, 1)
+                if abs(dx - dy) <= 1 and -(dx + dy) <= (7 if r.get('species') == 'ancient' else 5)}
+    hidden = [n for n in town.get('npcs', [])
+              if not placed and (n['x'], n['y']) in obscured]
     existing = 'npcs' in town
     locals_ = town.setdefault('npcs', [])
     names = {npc['name'] for npc in locals_}
@@ -56,15 +67,26 @@ def ensure_npcs(town, obstacles=()):
     player = town.get('player')
     if player:
         occupied.add((round(player['x']), round(player['y'])))
+    blocked = occupied | obscured
     candidates = {biome: [] for biome in THEMES}
     terrain = town.get('terrain', [])
     tiles = (sorted(terrain.tiles(), key=lambda p: (p[1], p[0])) if hasattr(terrain, 'tiles')
              else ((x, y) for y, row in enumerate(terrain) for x in range(len(row))))
     for x, y in tiles:
         biome = terrain[y][x]
-        if biome in candidates and (x, y) not in occupied and (x >= 12 or y >= 12):
+        if biome in candidates and (x, y) not in blocked and (x >= 12 or y >= 12):
             candidates[biome].append((x, y))
-    for biome, people in THEMES.items():
+    moved = {}
+    for npc in hidden:
+        tiles = candidates.get(npc.get('biome'), [])
+        if not tiles:
+            continue
+        x, y = min(tiles, key=lambda p: ((p[0] - npc['x']) ** 2 + (p[1] - npc['y']) ** 2, p[1], p[0]))
+        old_key = local_key(npc)
+        npc.update(x=x, y=y)
+        tiles.remove((x, y))
+        moved[old_key] = local_key(npc)
+    for biome, people in (() if roster_current else THEMES.items()):
         tiles = candidates[biome]
         for name, role, dialogue in people:
             if name in names or (existing and name not in NEW_LOCALS):
@@ -75,6 +97,16 @@ def ensure_npcs(town, obstacles=()):
             town['npcs'].append({'name': name, 'role': role, 'dialogue': dialogue,
                                  'biome': biome, 'x': x, 'y': y})
     town['npc_roster_version'] = ROSTER_VERSION
+    town['npc_placement_version'] = 1
+    move_local_visits(town, moved)
+    return moved
+
+
+def move_local_visits(town, moved):
+    visits = town.get('local_visits', {})
+    for old_key, new_key in moved.items():
+        if old_key in visits:
+            visits[new_key] = visits.pop(old_key)
 
 
 WORKER_TOOLS = {
@@ -260,6 +292,9 @@ def change(town, data):
         raise ValueError('Walk beside the local to interact.')
     visit_key = local_key(npc)
     progress = town.get('local_visits', {}).get(visit_key, {})
+    if action == 'interact_local':
+        town.setdefault('local_visits', {}).setdefault(visit_key, {})['met'] = True
+        return {}
     if action == 'advance_local_story':
         return advance_story(town, npc, progress)
     if action == 'buy_worker_tool':

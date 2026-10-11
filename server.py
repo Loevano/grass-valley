@@ -22,7 +22,7 @@ from spatial import SpatialIndex
 from terrain import ensure_terrain, remove_invalid_trees
 from npcs import ensure_npcs
 from shared_world import bind_map, building_range, export_world, new_world, validate_placement, walking_map
-from chunk_world import attach as attach_chunks, parse_keys, parse_versions
+from chunk_world import CHUNK_SIZE, ChunkTerrain, attach as attach_chunks, chunk_key, parse_keys, parse_versions
 
 ROOT = Path(__file__).resolve().parent
 SAVE = ROOT / 'savegame.json'
@@ -540,7 +540,28 @@ def prepare_landscapes(world, regenerate=False):
         if 'shared_map' not in world:
             ensure_resources(landscape)
         remove_invalid_trees(landscape)
-        ensure_npcs(landscape, obstacles)
+        npc_map = landscape
+        if landscape.get('chunked') and not landscape.get('npc_placement_version'):
+            # Saved NPCs may live in sleeping chunks outside the active towns.
+            manager = world['_chunks']
+            records = dict(manager.records)
+            for npc in landscape.get('npcs', []):
+                for dx in (-CHUNK_SIZE, 0, CHUNK_SIZE):
+                    for dy in (-CHUNK_SIZE, 0, CHUNK_SIZE):
+                        x, y = npc['x'] + dx, npc['y'] + dy
+                        if 0 <= x < manager.size and 0 <= y < manager.size:
+                            key = chunk_key(x, y)
+                            records[key] = manager.read(key)
+            npc_map = dict(landscape, terrain=ChunkTerrain(records, manager.size),
+                           map_resources=[r for record in records.values() for r in record['map_resources']],
+                           tree_stumps=[r for record in records.values() for r in record['tree_stumps']])
+        moved = ensure_npcs(npc_map, obstacles)
+        if npc_map is not landscape:
+            for field in ('npcs', 'npc_roster_version', 'npc_placement_version'):
+                landscape[field] = npc_map[field]
+        if 'shared_map' in world:
+            for town in world['towns'].values():
+                npcs.move_local_visits(town, moved)
         economy.ensure_forage(landscape, buildings if 'shared_map' in world else landscape['buildings'])
         if regenerate:
             local_obstacles = obstacles if 'shared_map' in world else landscape['buildings'] + landscape.get('roads', [])
@@ -741,7 +762,7 @@ def command(town, data, world=None):
     if action == 'configure_rule':
         return logistics.configure_rules(town, data)
     if action in {'claim_local_gift', 'buy_worker_tool', 'trade_local', 'give_worker_tool', 'take_worker_tool', 'transfer_worker_tool',
-                  'advance_local_story', 'inspect_story_rock'}:
+                  'advance_local_story', 'inspect_story_rock', 'interact_local'}:
         return npcs.change(town, data)
     if action in {'buy_equipment', 'sell_equipment', 'equip_item', 'unequip_item'}:
         return equipment.change(town, data)

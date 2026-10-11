@@ -334,6 +334,7 @@ def expand_new_world(world, directory=None):
         site['y'] += START_OFFSET
     world['shared_map'] = {'map_size': WORLD_SIZE, 'terrain_seed': base['terrain_seed'],
                            'chunked': 1, 'chunk_size': CHUNK_SIZE, 'chunk_clock': 0, 'starter_offset': START_OFFSET,
+                           'npc_placement_version': base.get('npc_placement_version', 0),
                            'npcs': [dict(n, x=n['x'] + START_OFFSET, y=n['y'] + START_OFFSET) for n in base['npcs']]}
     ensure_villages(world)
     world['_chunks'] = ChunkMap(world, directory, base)

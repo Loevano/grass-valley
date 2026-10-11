@@ -5,7 +5,7 @@ import secrets
 from npcs import ensure_npcs
 from terrain import generate_map
 
-MAP_FIELDS = ('map_size', 'terrain_seed', 'terrain', 'map_resources', 'tree_stumps', 'npcs', 'npc_roster_version', 'forage_version', 'forage_halls',
+MAP_FIELDS = ('map_size', 'terrain_seed', 'terrain', 'map_resources', 'tree_stumps', 'npcs', 'npc_roster_version', 'npc_placement_version', 'forage_version', 'forage_halls',
               'chunked', 'chunk_size', 'chunk_clock', 'starter_offset', 'villages')
 TOWN_RADIUS = 15
 HALL_SEPARATION = 40
@@ -76,6 +76,7 @@ def new_world(seed=None, explorable=False, chunk_directory=None):
     npc_map = dict(landscape, buildings=[])
     ensure_npcs(npc_map)
     landscape['npc_roster_version'] = npc_map['npc_roster_version']
+    landscape['npc_placement_version'] = npc_map['npc_placement_version']
     landscape['npcs'] = [n for n in npc_map['npcs']
                          if all(abs(n['x'] - s['x']) + abs(n['y'] - s['y']) > 6 for s in sites)]
     world = {'towns': {}, 'shared_map': landscape, 'town_sites': sites}

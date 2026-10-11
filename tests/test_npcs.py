@@ -6,10 +6,68 @@ from unittest.mock import patch
 import progression as economy
 
 from npcs import advance_trades, ensure_npcs, local_key
-from server import command, ensure_resources, new_town, tick
+from server import command, ensure_resources, new_town, prepare_landscapes, tick
+from shared_world import bind_map, new_world
+from chunk_world import chunk_key
 
 
 class BiomeLocals(unittest.TestCase):
+    def test_chunked_relocation_reads_saved_resources_and_preserves_visits(self):
+        world = new_world(seed=42, explorable=True)
+        world['towns']['one'] = new_town('one', world)
+        landscape = world['shared_map']
+        npc = next(n for n in landscape['npcs'] if n['name'] == 'Sylva')
+        old_key = local_key(npc)
+        world['towns']['one']['local_visits'] = {old_key: {'gift_claimed': True}}
+        landscape.pop('npc_placement_version')
+        key = chunk_key(npc['x'], npc['y'])
+        record = world['_chunks'].read(key)
+        tree = {'kind': 'tree', 'x': npc['x'], 'y': npc['y']}
+        record['map_resources'].append(tree)
+        if key in world['_chunks'].records:
+            landscape['map_resources'].append(tree)
+        prepare_landscapes(world)
+        self.assertNotEqual(local_key(npc), old_key)
+        self.assertEqual(world['towns']['one']['local_visits'], {local_key(npc): {'gift_claimed': True}})
+
+    def test_shared_relocation_preserves_every_towns_visit_progress(self):
+        world = new_world(seed=42)
+        world['towns'] = {name: new_town(name, world) for name in ('one', 'two')}
+        landscape = world['shared_map']
+        npc = next(n for n in landscape['npcs'] if n['name'] == 'Sylva')
+        old_key = local_key(npc)
+        for town in world['towns'].values():
+            town['local_visits'] = {old_key: {'met': True, 'story_stage': 2}}
+        landscape.pop('npc_placement_version')
+        landscape['map_resources'].append({'kind': 'tree', 'x': npc['x'], 'y': npc['y']})
+        prepare_landscapes(world)
+        bind_map(world)
+        self.assertNotEqual(local_key(npc), old_key)
+        for town in world['towns'].values():
+            self.assertEqual(town['local_visits'], {local_key(npc): {'met': True, 'story_stage': 2}})
+
+    def test_canopies_and_regrowing_trees_do_not_cover_new_or_saved_locals(self):
+        town = {'terrain': ['g' * 24] * 24, 'buildings': [],
+                'map_resources': [{'kind': 'tree', 'x': 15, 'y': 15}],
+                'tree_stumps': [{'kind': 'tree', 'x': 20, 'y': 20}],
+                'npcs': [{'name': 'Tobin', 'biome': 'g', 'x': 14, 'y': 14}],
+                'npc_roster_version': 3,
+                'local_visits': {'Tobin:14:14': {'met': True, 'gift_claimed': True, 'story_stage': 2}}}
+        ensure_npcs(town)
+        npc = town['npcs'][0]
+        self.assertNotEqual((npc['x'], npc['y']), (14, 14))
+        self.assertEqual(town['local_visits'], {local_key(npc):
+                         {'met': True, 'gift_claimed': True, 'story_stage': 2}})
+        saved = copy.deepcopy(town)
+        ensure_npcs(town)
+        self.assertEqual(town, saved)
+        del town['npcs']
+        ensure_npcs(town)
+        for npc in town['npcs']:
+            for tree in town['map_resources'] + town['tree_stumps']:
+                dx, dy = tree['x'] - npc['x'], tree['y'] - npc['y']
+                self.assertFalse(dx >= 0 and dy >= 0 and abs(dx - dy) <= 1 and dx + dy <= 5)
+
     def test_locals_match_biomes_and_spawn_on_clear_tiles(self):
         town = new_town('Locals')
         occupied = {(b['x'], b['y']) for b in town['buildings'] + town['map_resources']}
@@ -72,6 +130,20 @@ class LocalOffers(unittest.TestCase):
         with self.assertRaises(ValueError):
             self.action(action, **data)
         self.assertEqual(self.town, before)
+
+    def test_talking_requires_proximity_and_saves_personal_discovery(self):
+        self.reject('interact_local', npc_index=True)
+        self.town['player']['x'] = 30
+        self.reject('interact_local', npc_index=0)
+        self.town['player']['x'] = 5
+        other = copy.deepcopy(self.town)
+        self.action('interact_local', npc_index=0)
+        key = local_key(self.town['npcs'][0])
+        self.assertTrue(self.town['local_visits'][key]['met'])
+        self.assertNotIn(key, other.get('local_visits', {}))
+        self.town = json.loads(json.dumps(self.town))
+        self.action('interact_local', npc_index=0)
+        self.assertEqual(self.town['local_visits'][key], {'met': True})
 
     def test_gifts_require_proximity_and_are_once_per_town_after_reload(self):
         self.reject('claim_local_gift', npc_index=True)

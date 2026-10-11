@@ -927,7 +927,7 @@ window.addEventListener('keydown',event=>{
       if(next<=1.8&&next<distance){nearest=index;distance=next;}
     });
     if(nearest<0)notice('Walk beside a local to interact.');
-    else inspect('npc',nearest);
+    else {inspect('npc',nearest);act({action:'interact_local',npc_index:nearest});}
     return;
   }
   if(!event.repeat&&!event.ctrlKey&&!event.metaKey&&!event.altKey&&canControlPlayer()){
@@ -1271,15 +1271,24 @@ function renderSelection(town){
   if(!item){selection=null;panel=null;return;}
   if(selection.type==='npc'){
     $('selection-title').textContent=item.name;
+    const own=world.towns[identity?.town_id],player=own?.player;
+    const nearby=!!player&&Math.hypot(player.x-item.x,player.y-item.y)<=1.8;
+    const progress=own?.local_visits?.[localVisitKey(item)] || {};
+    if(!Object.keys(progress).length){
+      $('selection-details').append(illustration('villagers'));
+      const hint=document.createElement('p');hint.textContent='Talk to this local to discover what they offer.';$('selection-details').append(hint);
+      const button=document.createElement('button');button.textContent=nearby?'Talk':`Walk beside this local and press ${keybindings.interact.toUpperCase()} to talk`;
+      button.disabled=!nearby||!world.shared_map&&viewed!==identity?.town_id;
+      button.onclick=()=>act({action:'interact_local',npc_index:selection.index});$('selection-details').append(button);
+      return;
+    }
     const role=document.createElement('p');role.textContent=item.role;
     const dialogue=document.createElement('p');dialogue.textContent='“'+item.dialogue+'”';
     $('selection-details').append(illustration('villagers'));$('selection-details').append(role);$('selection-details').append(dialogue);
-    const own=world.towns[identity?.town_id],player=own?.player;
     if(player){
-      const nearby=Math.hypot(player.x-item.x,player.y-item.y)<=1.8;
       const hint=document.createElement('p');hint.textContent=nearby?'Trade equipment for coins. Equip purchases from your character panel.':'Walk beside this local to trade equipment.';$('selection-details').append(hint);
       if(world.shared_map||viewed===identity?.town_id){
-        const progress=own.local_visits?.[localVisitKey(item)] || {},gift=localGifts[item.name];
+        const gift=localGifts[item.name];
         renderLocalStory(own,item,selection.index,nearby,$('selection-details'));
         if(gift){
           const gear=workerTools[gift] || equipmentItems[gift],note=document.createElement('p');
@@ -1912,7 +1921,7 @@ const npcColors={g:['#a97b58','#c7a06d'],f:['#416951','#70906a'],m:['#b29b4a','#
   s:['#be986a','#e6c79a'],r:['#717b88','#acb4bd'],b:['#586b4b','#a1a474'],d:['#c18d58','#f0dab0'],i:['#658da2','#e0edf0']};
 function npcSprites(town,seconds){
   npcClock+=seconds;
-  return (town?.npcs || []).map((npc,index)=>({...npc,kind:'npc',index,villager:{job:'idle'},active:false,
+  return (tileW<32?[]:town?.npcs || []).map((npc,index)=>({...npc,kind:'npc',index,villager:{job:'idle'},active:false,
     state:{path:[],phase:'idle',clock:npcClock+index*.7,facing:index%2?1:-1}}));
 }
 function villagerAccessories(b){
@@ -3078,7 +3087,7 @@ async function selectTile(x,y){
     if(world.shared_map){
       for(const [id,t] of Object.entries(world.towns)){const i=t.buildings.findIndex(b=>b.x===x&&b.y===y);if(i>=0){inspect('building',i,id);return;}}
     }
-    if(npc>=0)inspect('npc',npc);
+    if(npc>=0&&tileW>=32)inspect('npc',npc);
     else if(index>=0)inspect('building',index);
     else if(resource>=0)inspect('resource',resource);
     else {
