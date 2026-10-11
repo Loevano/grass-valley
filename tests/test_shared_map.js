@@ -15,7 +15,7 @@ const run=new Function('document','window','localStorage','setTimeout','clearTim
     const landscape={map_size:120,terrain:Array(120).fill('g'.repeat(120)),map_resources:[],npcs:[],terrain_seed:42};
     const town=(name,x,y)=>({...landscape,name,level:1,wood:65,food:40,coins:20,harvested:0,town_origin:{x,y},
       player:{x,y:y+2,facing:1},buildings:[{kind:'hall',x,y}],villagers:[{name:'Ada',job:'idle',woodcutting:0,farming:0}]});
-    world={world_id:'shared',name:'Shared valley',shared_map:landscape,town_sites:[{x:30,y:30}],towns:{own:town('Home',30,30),friend:town('Friend',80,30)}};
+    world={world_id:'shared',name:'Shared valley',shared_map:landscape,town_sites:[{x:30,y:30}],towns:{own:town('Home',30,30),friend:town('Friend',90,30)}};
     identity={town_id:'own'};viewed='own';
     draw();
     assert.equal(camera.x,30,'Camera starts at the owning player');
@@ -38,12 +38,12 @@ const run=new Function('document','window','localStorage','setTimeout','clearTim
     clearWalk();
     openPanel('build');assert.equal(viewed,'own','Build returns to your own town controls');
     assert(placementValid(world.towns.own,{x:31,y:30},'home'));
-    assert(!placementValid(world.towns.own,{x:50,y:30},'home'),'Cannot build in wilderness');
+    assert(!placementValid(world.towns.own,{x:61,y:30},'home'),'Cannot build in wilderness');
     world.towns.own.level=2;
-    assert(insideBuildingRange(world.towns.own,{x:45,y:30}),'Upgraded hall supports 15 steps');
+    assert(insideBuildingRange(world.towns.own,{x:65,y:30}),'Upgraded hall supports 35 steps');
     world.towns.own.buildings[0].x=35;
-    assert(!insideBuildingRange(world.towns.own,{x:50,y:30}),'Moving a hall cannot expand original territory');
-    for(const [level,reach] of [[3,20],[4,25],[5,30]]){
+    assert(!insideBuildingRange(world.towns.own,{x:66,y:30}),'Moving a hall cannot expand original territory');
+    for(const [level,reach] of [[1,30],[2,35],[3,40],[4,45],[5,50]]){
       const own=world.towns.own;own.level=level;own.buildings[0].x=30;
       assert.equal(buildingRange(own),reach);
       assert(placementValid(own,{x:30+reach,y:30},'home'),'Upgrades expand shared-map construction territory');

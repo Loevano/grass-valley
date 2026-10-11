@@ -42,9 +42,9 @@ const run=new Function('document','window','localStorage','setTimeout','clearTim
     check(!$('hall-details').hidden&&!$('upgrade').disabled,'Owner sees available hall upgrade');
     check($('selection-destroy').hidden,'Town hall has no destroy button');
     function rangeFact(){return panelNodes().find(child=>child.children?.[1]?.textContent==='Building range');}
-    check(rangeFact().children[0].textContent==='10 tile steps','Hall panel displays its current building range');
+    check(rangeFact().children[0].textContent==='30 tile steps','Hall panel displays its current building range');
     town.level=2;render();
-    check(rangeFact().children[0].textContent==='15 tile steps','Hall panel reflects the expanded range');
+    check(rangeFact().children[0].textContent==='35 tile steps','Hall panel reflects the expanded range');
     town.level=1;render();
     town.wood=0;render();check(!$('upgrade').disabled,'Hall preview remains available without wood');
     $('upgrade').onclick();check($('upgrade-dialog').open&&$('confirm-upgrade').disabled,'Unaffordable hall opens popup with confirmation disabled');
@@ -111,8 +111,8 @@ const run=new Function('document','window','localStorage','setTimeout','clearTim
     check(folds().every(child=>!child.open),'Selecting another building resets expanded sections');
     $('selection-move').onclick();
     check(tool==='move'&&moveIndex===1&&panel==='build','Inspector Move starts with the selected building');
-    await clickTile(11,10);
-    check(moveIndex===1&&commands.length===1&&$('notice').textContent.includes('within 10 tile steps'),'Out-of-range moves keep selection and show the limit');
+    await clickTile(21,20);
+    check(moveIndex===1&&commands.length===1&&$('notice').textContent.includes('within 30 tile steps'),'Out-of-range moves keep selection and show the limit');
     await clickTile(8,8);
     check(commands[1].action==='move'&&commands[1].index===1&&commands[1].x===8,'Movement sends the selected building and destination');
     [...$('buildings').children].flatMap(group=>[...group.children]).filter(button=>button.buildingKind)[0].onclick();const [hoverX,hoverY]=point(8,8);canvas.onmousemove({clientX:hoverX,clientY:hoverY+tileH/2});

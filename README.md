@@ -48,9 +48,9 @@ same terrain, buildings, workers, and player characters, and can walk between
 towns. Town halls start at randomized locations at least 40 tiles apart, with
 nearby wood, water, and clear paths connecting the towns.
 
-Build within 10 horizontal/vertical tile steps of your hall, adding 5 steps with
-each completed upgrade (10, 15, 20, 25, 30 at levels 1–5). Construction also stays
-within the greater of 15 steps or the hall's range of your original town site,
+Build within 30 horizontal/vertical tile steps of your hall, adding 5 steps with
+each completed upgrade (30, 35, 40, 45, 50 at levels 1–5). Construction also stays
+within the same range of your original town site,
 so moving a hall cannot extend that territory. Halls must stay at least
 40 tiles apart when moved. Only a town's owner can build or manage its workers.
 The building area is highlighted when building or inspecting a hall.
@@ -106,7 +106,7 @@ the Python host, refresh both browsers, and create a new world to use the shared
   and return to safe ground before removing protective clothing. Island treasure
   includes an equipment item alongside its 25 coins. Items and worn gear are saved
   per character; settlers keep their existing movement rules.
-- The town hall allows new buildings and moves within 10 horizontal/vertical tile
+- The town hall allows new buildings and moves within 30 horizontal/vertical tile
   steps (a diagonal counts as two). Each completed upgrade adds 5 steps to the range.
   Click the hall to see its range; the map highlights it while inspecting the hall
   or opening Build. Existing buildings outside the range keep working. Moving the

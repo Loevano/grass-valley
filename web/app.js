@@ -1938,7 +1938,7 @@ function acrePlacementValid(town,tile,index){
   const farm=town.buildings[index];
   return farm?.kind==='farm'&&!farm.construction&&Math.abs(tile.x-farm.x)+Math.abs(tile.y-farm.y)<=3;
 }
-function buildingRange(town){return 10+5*(town.level-1);}
+function buildingRange(town){return 30+5*(town.level-1);}
 function insideBuildingRange(town,tile){
   const hall=town.buildings.find(b=>b.kind==='hall');
   const origin=town.town_origin;

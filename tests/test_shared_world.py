@@ -64,7 +64,7 @@ class SharedMap(unittest.TestCase):
         server.command(town, {'action': 'build', 'kind': 'home', 'x': x, 'y': y}, world)
         before = copy.deepcopy(world)
         with self.assertRaisesRegex(ValueError, 'territory'):
-            server.command(town, {'action': 'move', 'index': 1, 'x': x + 20, 'y': y}, world)
+            server.command(town, {'action': 'move', 'index': 1, 'x': x + 30, 'y': y}, world)
         self.assertEqual(world, before)
 
     def test_walking_visits_other_town_and_collides_with_its_buildings(self):
@@ -99,7 +99,7 @@ class SharedMap(unittest.TestCase):
         town['level'] = 2
         before = copy.deepcopy(world)
         with self.assertRaisesRegex(ValueError, 'territory'):
-            server.command(town, {'action': 'build', 'kind': 'home', 'x': 46, 'y': 30}, world)
+            server.command(town, {'action': 'build', 'kind': 'home', 'x': 66, 'y': 30}, world)
         self.assertEqual(world, before)
 
     def test_save_reload_stores_map_once_and_restores_shared_references(self):
@@ -126,7 +126,7 @@ class SharedMap(unittest.TestCase):
         town['town_origin'] = {'x': 30, 'y': 30}
         town['buildings'] = [{'kind': 'hall', 'x': 30, 'y': 30}]
         town['player'].update(x=30., y=32.)
-        for level, reach in ((3, 20), (4, 25), (5, 30)):
+        for level, reach in ((1, 30), (2, 35), (3, 40), (4, 45), (5, 50)):
             with self.subTest(level=level):
                 town.update(level=level, wood=100)
                 town['buildings'][0]['x'] = 30

@@ -38,10 +38,10 @@ class HallLevels(unittest.TestCase):
                 for _ in range(upgrade['seconds'] // 3 - 1):
                     tick(self.world)
                 self.assertEqual(self.town['level'], upgrade['level'] - 1)
-                self.assertEqual(building_range(self.town), 10 + 5 * (upgrade['level'] - 2))
+                self.assertEqual(building_range(self.town), 30 + 5 * (upgrade['level'] - 2))
                 tick(self.world)
                 self.assertEqual(self.town['level'], upgrade['level'])
-                self.assertEqual(building_range(self.town), 10 + 5 * (upgrade['level'] - 1))
+                self.assertEqual(building_range(self.town), 30 + 5 * (upgrade['level'] - 1))
                 self.assertEqual(self.town['coins'], coins + upgrade['coins'])
                 tick(self.world)
                 self.assertEqual(self.town['coins'], coins + upgrade['coins'])

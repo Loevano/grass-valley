@@ -18,7 +18,7 @@ const run=new Function('document','window','localStorage','setTimeout','clearTim
   source.slice(0,source.lastIndexOf('requestAnimationFrame(animate);'))+`
   return (async()=>{
     function check(condition,message){if(!condition)throw Error(message);}
-    const town={name:'Test town',wood:65,food:40,coins:20,level:1,harvested:0,
+    const town={map_size:120,name:'Test town',wood:65,food:40,coins:20,level:1,harvested:0,
       buildings:[{kind:'hall',x:5,y:5}],map_resources:[{kind:'tree',x:0,y:0}],villagers:[]};
     world={world_id:'test',towns:{own:town,friend:{...town,name:'Friend'}}};
     identity={town_id:'own',token:'test'};viewed='own';
@@ -36,14 +36,15 @@ const run=new Function('document','window','localStorage','setTimeout','clearTim
     function hover(x,y){canvas.onmousemove(pointer(x,y));draw();} // Paint the next animation frame.
     [...$('buildings').children].flatMap(group=>[...group.children]).filter(button=>button.buildingKind)[0].onclick();
     check(tool==='home','Choosing a cottage activates its tool');
-    fills.length=0;hover(11,10);
+    camera={x:15,y:15,zoom:.5};draw();
+    fills.length=0;hover(21,20);
     check(buildTile===null&&fills.includes('#c76d6455'),'Beyond the hall range previews red');
     check(fills.includes('#e4c98022'),'Build panel highlights the hall building area');
-    await click(11,10);
-    check(commands.length===0&&$('notice').textContent.includes('within 10 tile steps'),'Out-of-range clicks explain the limit without submitting');
-    check(placementValid(town,{x:10,y:10},'home'),'Ten combined steps is inside the range');
+    await click(21,20);
+    check(commands.length===0&&$('notice').textContent.includes('within 30 tile steps'),'Out-of-range clicks explain the limit without submitting');
+    check(placementValid(town,{x:20,y:20},'home'),'Thirty combined steps is inside the range');
     town.level=2;
-    check(placementValid(town,{x:11,y:10},'home'),'Upgraded hall expands client placement range');
+    check(placementValid(town,{x:21,y:20},'home'),'Upgraded hall expands client placement range');
     town.level=1;
     fills.length=0;inspect('building',0);
     check(fills.includes('#e4c98022'),'Inspecting the hall highlights its building range');

@@ -12,7 +12,7 @@ HALL_SEPARATION = 40
 
 
 def building_range(town):
-    return 10 + 5 * (town['level'] - 1)
+    return 30 + 5 * (town['level'] - 1)
 
 
 def new_world(seed=None, explorable=False, chunk_directory=None):

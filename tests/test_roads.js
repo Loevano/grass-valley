@@ -9,7 +9,7 @@ documentMock.getElementById('world').getBoundingClientRect=()=>({left:0,top:0,wi
 
 const run=new Function('document','window','localStorage','assert','fills',source.slice(0,source.lastIndexOf('requestAnimationFrame(animate);'))+`
 return (async()=>{
-  const town={level:1,wood:0,coins:0,food:20,villagers:[],player:{x:5,y:7,facing:1},map_size:12,terrain:Array(12).fill('g'.repeat(12)),buildings:[{kind:'hall',x:5,y:5}],map_resources:[],roads:[{x:5,y:7}]};
+  const town={level:1,wood:0,coins:0,food:20,villagers:[],player:{x:5,y:7,facing:1},map_size:120,terrain:Array(120).fill('g'.repeat(120)),buildings:[{kind:'hall',x:5,y:5}],map_resources:[],roads:[{x:5,y:7}]};
   world={world_id:'roads',towns:{own:town}};identity={town_id:'own'};viewed='own';
   const boosted=predictPlayerStep(town,town.player,1,-1);
   assert(Math.abs(Math.hypot(boosted.x-5,boosted.y-7)-.45)<1e-9);
@@ -34,7 +34,7 @@ return (async()=>{
   assert.equal(fills.filter(color=>color==='#c6aa7e').length,2,'Road preview uses the same surface artwork as placed roads');
   assert.deepEqual(previewBuildings,['hall'],'Road hover never renders a house');
   assert(fills.includes('#d6d8a366'),'Valid road hover retains placement feedback');
-  hoverTile={x:11,y:11};fills.length=0;draw();
+  camera.zoom=.5;hoverTile={x:21,y:20};fills.length=0;draw();
   assert(fills.includes('#c76d6455'),'Invalid road hover retains placement feedback');
   assert.equal(fills.filter(color=>color==='#b99c70').length,2,'Invalid road hover still previews a road');
   tool='home';hoverTile={x:6,y:8};previewBuildings.length=0;draw();
