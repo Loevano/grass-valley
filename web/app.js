@@ -732,6 +732,9 @@ function villagerCard(town,v,index,withLink=false){
   }
   div.append(profile);
   div.append(skillBar('Woodcutting',v.woodcutting));div.append(skillBar('Farming',v.farming));div.append(skillBar('Fishing',v.fishing || 0));
+  div.append(skillBar('Hauling',v.hauling || 0));
+  const hauling=document.createElement('small');hauling.className='villager-hauling';
+  hauling.textContent=`Hauling: ${(50*workerEfficiency(v,'hauling')).toFixed(0)} goods per trip · ${(1.8*(1+.25*Math.floor((v.hauling || 0)/20))).toFixed(2)} tiles/s before road bonuses. Successful deliveries earn practice; every 20 practice adds 50 carrying capacity and 25% base travel speed.`;div.append(hauling);
   for(const [job,label] of Object.entries(professionJobs))if(v[job] || v.job===job)div.append(skillBar(label,v[job] || 0));
   const traits=document.createElement('small');traits.className='villager-talents';
   traits.textContent=Object.entries(v.talents || {}).map(([job,value])=>`${value>0?'Strength':'Weakness'}: ${goodName(job)} (${value>0?'+':'−'}25%)`).join(' · ');div.append(traits);
@@ -807,7 +810,7 @@ function renderSettlers(town,item,buildingIndex,target=$('selection-details'),up
     const summary=document.createElement('button');summary.className='worker-summary';
     const name=document.createElement('strong');name.textContent=v.name;summary.append(name);
     const skills=document.createElement('small');
-    const skill={woodcutter:'woodcutting',farm:'farming',acre:'farming',fishing_hut:'fishing'}[item.kind] || world.progression?.buildings[item.kind]?.job;
+    const skill={storehouse:'hauling',woodcutter:'woodcutting',farm:'farming',acre:'farming',fishing_hut:'fishing'}[item.kind] || world.progression?.buildings[item.kind]?.job;
     const skillLabels={woodcutting:'Woodcutting',farming:'Farming',fishing:'Fishing',hauling:'Hauling',...professionJobs};
     skills.textContent=(skill?[skill]:['woodcutting','farming','fishing']).map(key=>`${skillLabels[key]} · Lv ${Math.floor(v[key] || 0)}`).join(' / ');
     summary.append(skills);summary.onclick=()=>inspect('villager',i);row.append(summary);
