@@ -439,6 +439,10 @@ def construction_route(town, start, target):
     else:
         blocked = {(b['x'], b['y']) for b in town['buildings'] + town['map_resources']}
         blocked.update((n['x'], n['y']) for n in town.get('npcs', []))
+    # Completed fields are walkable, including around farms awaiting upgrades.
+    # Subtraction leaves the spatial index's cached obstacles unchanged.
+    blocked = blocked.difference((b['x'], b['y']) for b in town['buildings']
+                                 if b['kind'] == 'acre' and completed(b))
     terrain = town.get('terrain', [])
 
     def open_tile(p):

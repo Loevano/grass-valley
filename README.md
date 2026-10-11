@@ -341,6 +341,7 @@ the Python host, refresh both browsers, and create a new world to use the shared
   Dedicated builders keep priority, and resting villagers help automatically.
   Each site has one worker at a time. Remaining time counts work, excluding
   travel and waiting for an available worker or reachable route.
+  Builders can cross completed acres to reach farms surrounded by fields.
   Upgrade progress survives saving, moving, and restarting the host.
   Cottages provide 2/4/6 housing spaces (the town limit stays 16), and storehouses
   hold 50/75/100/150/200 of each enabled resource. Level 5 becomes a Warehouse. Woodcutters, farms, fishing huts,

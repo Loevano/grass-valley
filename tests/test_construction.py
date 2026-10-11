@@ -2,7 +2,8 @@ import json
 import unittest
 
 from server import (BUILD_SECONDS, COSTS, capacity, command, construct,
-                    new_town, tick, work_source)
+                    construction_route, new_town, tick, work_source)
+from spatial import SpatialIndex
 
 
 class Construction(unittest.TestCase):
@@ -61,6 +62,34 @@ class Construction(unittest.TestCase):
         construct(self.town, self.town, {0})
         self.assertEqual(site['construction']['progress'], 0)
         self.assertNotIn('construction_target', self.town['villagers'][0])
+
+    def test_farm_surrounded_by_completed_acres_can_upgrade(self):
+        farm = {'kind': 'farm', 'x': 8, 'y': 8}
+        self.town['buildings'].append(farm)
+        self.town['buildings'].extend({'kind': 'acre', 'x': x, 'y': y, 'farm_index': 1}
+                                      for x, y in [(7, 8), (9, 8), (8, 7), (8, 9)])
+        for villager in self.town['villagers']:
+            villager.update(job='farming', building_index=1)
+        command(self.town, dict(action='upgrade_capacity', index=1))
+        spatial = SpatialIndex(self.town['map_resources'])
+        landscape = dict(self.town, _spatial_index=spatial)
+        obstacles = spatial.blocked(landscape).copy()
+        self.assertIsNotNone(construction_route(self.town, (6, 8), farm))
+        self.assertIsNotNone(construction_route(landscape, (6, 8), farm))
+        self.assertEqual(spatial.blocked(landscape), obstacles)
+        for _ in range(30):
+            construct(self.town, landscape)
+        self.assertNotIn('construction', farm)
+        self.assertEqual(farm['settler_level'], 2)
+        self.assertTrue(all(v['job'] == 'farming' for v in self.town['villagers']))
+
+    def test_unfinished_acres_still_block_construction_routes(self):
+        farm = {'kind': 'farm', 'x': 8, 'y': 8}
+        self.town['buildings'].append(farm)
+        self.town['buildings'].extend({'kind': 'acre', 'x': x, 'y': y,
+                                      'construction': {'progress': 0, 'total': BUILD_SECONDS}}
+                                     for x, y in [(7, 8), (9, 8), (8, 7), (8, 9)])
+        self.assertIsNone(construction_route(self.town, (6, 8), farm))
 
     def test_incomplete_buildings_have_no_housing_storage_or_production(self):
         home = self.build()

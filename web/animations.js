@@ -71,7 +71,7 @@ const WorkerAnimation = (() => {
   }
   function plan(town, villager, index, state) {
     const blocked=new Set([...(town.obstacles || town.buildings),...town.map_resources,...(town.npcs || [])].map(key));
-    if(!villager.construction_target&&(villager.logistics_target || villager.job==='farming')){
+    if(villager.construction_target || villager.logistics_target || villager.job==='farming'){
       for(const acre of (town.obstacles || town.buildings).filter(b=>b.kind==='acre'&&!b.construction))blocked.delete(key(acre));
     }
     const hall=town.home_hall || town.buildings.find(b=>b.kind==='hall');

@@ -47,6 +47,14 @@ const run=new Function('document','window','localStorage','setTimeout','clearTim
   worker.construction_target=null;
   assert(WorkerAnimation.plan(town,worker,0).transport,'Delivery animation resumes after helping');
   delete worker.logistics_target;delete worker.logistics_trip;worker.job='idle';
+  const surrounded={...town,buildings:[town.buildings[0],
+    {kind:'farm',x:8,y:8,construction:{progress:0,total:30,upgrade:{settler_level:2}}},
+    ...[[7,8],[9,8],[8,7],[8,9]].map(([x,y])=>({kind:'acre',x,y}))]};
+  const builder={job:'building',construction_target:{kind:'farm',x:8,y:8}};
+  const farmPlan=WorkerAnimation.plan(surrounded,builder,0);
+  assert.notStrictEqual(farmPlan.phase,'waiting','Builders can reach farms surrounded by completed acres');
+  assert(farmPlan.path.some(p=>surrounded.buildings.some(b=>b.kind==='acre'&&b.x===p.x&&b.y===p.y)),
+    'Construction animation crosses fields to reach the farm');
   site.kind='farm';inspect('building',1);
   assert(!panelNodes().some(c=>c.textContent==='Build acre · 5 wood'),'Unfinished farms cannot add acres');
   assert(!acrePlacementValid(town,{x:6,y:7},1));

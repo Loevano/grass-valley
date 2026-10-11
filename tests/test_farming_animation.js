@@ -82,7 +82,7 @@ assert.strictEqual(farmer.x,6);assert.strictEqual(farmer.y,3);
 for(let i=0;i<300&&!['returning','depositing'].includes(farmer.phase);i++)animation.advance(farmer,.1,true);
 assert(['returning','depositing'].includes(farmer.phase),'Farmer can leave the cluster to deliver grain');
 const builder=animation.plan(clustered,{job:'farming',construction_target:town.buildings[0]},0);
-assert(builder.blocked.has('6,3'),'Building assignments keep construction path rules');
+assert(!builder.blocked.has('6,3'),'Construction workers can cross completed acres');
 const delivery=animation.plan(clustered,{job:'farming',logistics_position:{x:6,y:3},
   logistics_target:{kind:'delivery',x:6,y:4}},0);
 assert(!delivery.blocked.has('6,4'),'Delivery animation can cross completed acres');
