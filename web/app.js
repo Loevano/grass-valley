@@ -2328,15 +2328,15 @@ function paintGround(target,landscape,water,bounds,offsetX=0,offsetY=0,region=nu
           ctx.quadraticCurveTo(...p(-.22,.64),...p(-.35,.56));
           ctx.closePath();ctx.fillStyle='#f4fbf0a6';ctx.fill();
         }
-        if(frost%4===0){
-          ctx.strokeStyle='#7fabbc88';ctx.lineWidth=tileW/70;
-          ctx.beginPath();ctx.moveTo(...p(-.21,.57));ctx.lineTo(...p(-.02,.63));
-          ctx.lineTo(...p(.12,.45));ctx.lineTo(...p(.26,.5));
-          ctx.moveTo(...p(-.02,.63));ctx.lineTo(...p(.06,.78));ctx.stroke();
+        if(frost%13===0){
+          ctx.strokeStyle='#7fabbc88';ctx.lineWidth=tileW/60;
+          ctx.beginPath();ctx.moveTo(...p(-.27,.56));ctx.lineTo(...p(-.025,.64));
+          ctx.lineTo(...p(.15,.41));ctx.lineTo(...p(.33,.5));
+          ctx.moveTo(...p(-.025,.64));ctx.lineTo(...p(.075,.83));ctx.stroke();
           ctx.strokeStyle='#f4ffffb3';ctx.beginPath();
-          ctx.moveTo(...p(-.2,.54));ctx.lineTo(...p(-.03,.6));ctx.lineTo(...p(.1,.43));ctx.stroke();
+          ctx.moveTo(...p(-.26,.53));ctx.lineTo(...p(-.035,.61));ctx.lineTo(...p(.13,.39));ctx.stroke();
         }
-        if(frost%5===0){
+        if(frost%17===0){
           const [sx,sy]=p(.2,.59);ctx.strokeStyle='#f7ffffcc';ctx.lineWidth=tileW/60;
           ctx.beginPath();ctx.moveTo(sx-tileW*.035,sy);ctx.lineTo(sx+tileW*.035,sy);
           ctx.moveTo(sx,sy-tileH*.07);ctx.lineTo(sx,sy+tileH*.07);ctx.stroke();
