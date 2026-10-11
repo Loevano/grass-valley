@@ -5,8 +5,9 @@ const helpers=source.slice(source.indexOf('const resourceSprites='),source.index
 const surfaces=[],images=[];
 const main={drawImage(...args){images.push(args);}};
 const documentMock={createElement(){
-  const surface={paints:0,colors:[]};
+  const surface={paints:0,colors:[],points:[]};
   surface.getContext=()=>new Proxy({fill(){surface.paints++;surface.colors.push(this.fillStyle);},
+    moveTo(x,y){surface.points.push([x,y]);},lineTo(x,y){surface.points.push([x,y]);},
     setTransform(...args){surface.transform=args;}},{get:(target,key)=>key in target?target[key]:()=>{}});
   surfaces.push(surface);return surface;
 }};
@@ -36,6 +37,28 @@ new Function('document','ctx','window','assert','surfaces','images',`
     drawResource({...tree,kind,supply:1});
     assert.equal(surface.paints,paints,'Supply changes reuse '+kind+' artwork');
   }
+  const formations=new Map();
+  for(let x=0;x<60;x++){
+    const rock={kind:'rock',x,y:20};drawResource(rock);
+    const sprite=images.at(-1)[0],variant=rockVariant(rock)%6;
+    if(formations.has(variant))assert.strictEqual(sprite,formations.get(variant),'Matching rock formations share cached artwork');
+    formations.set(variant,sprite);
+    drawResource(JSON.parse(JSON.stringify(rock)));
+    assert.strictEqual(images.at(-1)[0],sprite,'Reloaded coordinates preserve rock appearance');
+  }
+  assert.equal(formations.size,6,'The landscape contains all six rock formations');
+  assert.equal(new Set([...formations.values()].map(sprite=>JSON.stringify(sprite.points))).size,6,'Each formation has a distinct silhouette');
+  assert([...formations.values()].some(sprite=>sprite.points.some(([x,y])=>y<-35)),'Large outcrops rise above the original small rocks');
+  for(const sprite of formations.values())
+    assert(sprite.points.every(([x,y])=>x>=-30&&x<=30&&y>=-80&&y<=24),'Rock formations fit inside their cached texture');
+  tileW=31;
+  for(const [variant,detailedSprite] of formations){
+    const x=Array.from({length:60},(_,x)=>x).find(x=>rockVariant({x,y:20})%6===variant);
+    drawResource({kind:'rock',x,y:20});const simple=images.at(-1)[0];
+    assert.deepEqual(simple.points.slice(0,6),detailedSprite.points.slice(0,6),'Zoomed-out rocks retain their formation silhouette');
+    assert(simple.paints<detailedSprite.paints,'Distant rocks skip facets and surface details');
+  }
+  tileW=54;
   const count=surfaces.length;
   tileW=50;drawResource(tree);
   assert.equal(surfaces.length,count,'Nearby zoom levels reuse a resolution bucket');

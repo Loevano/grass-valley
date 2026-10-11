@@ -1515,12 +1515,44 @@ function polygon(points,fill,stroke){ctx.beginPath();points.forEach(([x,y],i)=>i
 // Share static resource artwork across tiles and frames. Resolution buckets keep
 // zooming sharp without generating a new canvas for every wheel event.
 const resourceSprites=new Map();
+// Coordinates keep formations stable in existing saves and streamed chunks.
+function rockVariant(r){
+  const hash=(Math.imul(r.x,73856093)^Math.imul(r.y,19349663))>>>0;
+  return (hash^(hash>>>16))>>>0;
+}
+const rockFormations=[
+  [[0,2,21,30]],                         // Broad boulder.
+  [[0,5,22,17],[-14,11,6,8]],            // Low slab and a loose fragment.
+  [[-9,0,12,33],[10,7,12,24]],           // Split outcrop.
+  [[-11,1,10,19],[9,3,12,23],[-2,12,10,14]], // Rubble cluster.
+  [[-10,5,11,22],[5,0,14,39],[17,12,6,10]], // Jagged ridge.
+  [[1,1,14,42],[-13,11,8,13]]            // Tall standing stone.
+];
+function paintRock(ctx,r,detailed,polygon){
+  const variant=rockVariant(r),formation=rockFormations[variant%rockFormations.length];
+  const colors=variant%2?['#87918f','#b4b9ac','#65736f']:['#969487','#c0bba7','#777b70'];
+  if(detailed){
+    ctx.fillStyle='#223b2955';ctx.beginPath();ctx.ellipse(0,13,23,6,0,0,Math.PI*2);ctx.fill();
+  }
+  for(const [x,y,w,h] of formation){
+    const left=[x-w,y-h*.28],peak=[x-w*.2,y-h],right=[x+w,y-h*.5];
+    const seam=[x-w*.1,y-h*.12],foot=[x+w*.15,y+5],edge=[x+w*.85,y+1];
+    polygon([[x-w,y+1],left,peak,right,edge,foot],colors[0],detailed?'#647166':null);
+    if(!detailed)continue;
+    polygon([left,peak,right,seam],colors[1]);
+    polygon([seam,right,edge,foot],colors[2]);
+    ctx.strokeStyle='#56645e';ctx.lineWidth=.8;
+    ctx.beginPath();ctx.moveTo(peak[0]+w*.2,peak[1]+h*.18);
+    ctx.lineTo(x+w*.15,y-h*.4);ctx.lineTo(seam[0]+2,seam[1]-2);ctx.stroke();
+    if(variant%3===0)polygon([[x-w*.7,y],[x-w*.4,y-3],[x+w*.1,y+3],[x-w*.4,y+3]],'#75825b');
+  }
+}
 function drawResource(r){
   const [x,y]=point(r.x,r.y),s=tileW/46;
   const detailed=tileW>=32;
   const willow=r.kind==='tree'&&(world.shared_map || world.towns[viewed])?.terrain?.[r.y]?.[r.x]==='b';
   const resolution=2**Math.ceil(Math.log2(Math.max(.5,s*(window.devicePixelRatio || 1))));
-  const variant=r.kind==='tree'?`${r.species==='ancient'}/${willow}/${(r.x+r.y)%2}`:r.kind;
+  const variant=r.kind==='tree'?`${r.species==='ancient'}/${willow}/${(r.x+r.y)%2}`:r.kind==='rock'?rockVariant(r)%6:r.kind;
   const key=`${r.kind}/${variant}/${resolution}/${detailed}`;
   let sprite=resourceSprites.get(key);
   if(!sprite){
@@ -1546,6 +1578,7 @@ function paintResource(ctx,r,willow,detailed=true){
     if(stroke){ctx.strokeStyle=stroke;ctx.stroke();}
   };
   ctx.save();
+  if(r.kind==='rock'){paintRock(ctx,r,detailed,polygon);ctx.restore();return;}
   if(!detailed&&r.kind!=='chest'){
     if(r.kind==='tree'){
       if(r.species==='ancient')ctx.scale(1.35,1.35);
@@ -2143,8 +2176,9 @@ function draw(seconds=0){
     const centerX=px+(character?(b.index%3-1)*3:0);
     const baseY=py+(character?tileH*.65+Math.floor(b.index/3):tileH/2);
     const owner=world.towns[b.townId] || town;
-    const height=b.kind==='tree'?(b.species==='ancient'?94:70):character?26:b.kind==='acre'?0:type==='building'?buildingHeight(b,owner)+(b.kind==='hall'?(owner?.level>=4?35:33):18):45;
-    hitTargets.push({type,index,townId:b.townId || viewed,left:centerX-(character?9*scale:tileW*.45),right:centerX+(character?9*scale:tileW*.45),top:baseY-height*scale,bottom:baseY+(character?5*scale:tileH/2)});
+    const height=b.kind==='tree'?(b.species==='ancient'?94:70):character?26:b.kind==='acre'?0:b.kind==='rock'?56:type==='building'?buildingHeight(b,owner)+(b.kind==='hall'?(owner?.level>=4?35:33):18):45;
+    const halfWidth=character?9*scale:b.kind==='rock'?24*scale:tileW*.45;
+    hitTargets.push({type,index,townId:b.townId || viewed,left:centerX-halfWidth,right:centerX+halfWidth,top:baseY-height*scale,bottom:baseY+(character?5*scale:tileH/2)});
     if(character&&selection?.type===type&&selection.index===b.index&&(!world.shared_map||b.townId===viewed||type==='npc')){
       ctx.fillStyle='#fff0b144';ctx.strokeStyle='#fff0b1';ctx.lineWidth=2;ctx.beginPath();ctx.ellipse(centerX,baseY,12*scale,6*scale,0,0,Math.PI*2);ctx.fill();ctx.stroke();
     }
