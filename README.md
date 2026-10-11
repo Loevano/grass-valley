@@ -162,6 +162,16 @@ the Python host, refresh both browsers, and create a new world to use the shared
   beside an island chest and press **G** (or choose **Collect loot**) for 25 coins.
   Each chest can be claimed once across the whole world; boat ownership and
   collected loot are saved. Existing landscapes keep their layout.
+  You can also **Buy exploration boat** for 20 coins in the **You** panel.
+  Both exploration and fishing-hut boats have three tiers. Fishing-hut boats
+  start with the existing 10-plank purchase at hall level 3 and 20 fishing practice;
+  improved boats need hall level 4 and 30 fishing practice (15 planks + 20 coins),
+  and masterwork boats need hall level 5 and 40 practice (20 planks + 40 coins).
+  Fishing-hut boats add 3, 5, then 7 tiles of reach; the two upgrades add 25%
+  then 50% fish per catch. Exploration upgrades add 25% then 50% sailing speed
+  and fish per catch while afloat. Each upgrade requires the previous tier.
+  Fishing-hut upgrades use builders; exploration purchases and upgrades apply
+  immediately. Existing boats keep their ownership and start at tier 1.
 - Select a farm and choose **Build acre · 5 wood**, then click open ground within
   three tile steps of that farm. Farmers tend its acres and deliver food back to
   the farm. Farmers fetch reachable water when watering; the farm can be farther

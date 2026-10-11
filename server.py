@@ -182,7 +182,8 @@ def move_player(town, data):
         # Small steps prevent tunnelling through obstacles; slide along walls.
         water = {(r['x'], r['y']) for r in town['map_resources'] if r['kind'] == 'water'}
         for _ in range(5):
-            speed = 1.5 if (math.floor(player['x'] + .5), math.floor(player['y'] + .5)) in roads else 1
+            tile = (math.floor(player['x'] + .5), math.floor(player['y'] + .5))
+            speed = (1 + .25 * max(0, economy.player_boat_level(player) - 1)) if tile in water else 1.5 if tile in roads else 1
             x = player['x'] + dx / length * .06 * speed
             if walkable(town, x, player['y'], blocked, water):
                 player['x'] = x
@@ -382,7 +383,8 @@ def resource_reach(building):
     if building['kind'] == 'woodcutter':
         return WOODCUTTER_REACH
     if building['kind'] == 'fishing_hut':
-        return RESOURCE_REACH + building_level(building) - 1 + (3 if 'boat' in building.get('profession_upgrades', []) else 0)
+        boat_level = economy.fishing_boat_level(building)
+        return RESOURCE_REACH + building_level(building) - 1 + (3 + 2 * (boat_level - 1) if boat_level else 0)
     return RESOURCE_REACH
 
 
@@ -654,6 +656,8 @@ def tick(world):
                 bonus += production_bonus(source)
             upgrades = building.get('profession_upgrades', [])
             bonus += .25 * sum(u in upgrades for u in ('axe', 'nets', 'wool_nets', 'tools'))
+            if job == 'fishing':
+                bonus += .25 * max(0, economy.fishing_boat_level(building) - 1)
             amount = min(room, rate * (1 + bonus) * economy.efficiency(villager, job))
             if job == 'farming':
                 # Acres bound farming output; manure improves each field's yield.
@@ -708,11 +712,30 @@ def command(town, data, world=None):
         bind_map(world)
     ensure_resources(town)
     action = data.get('action')
+    if action == 'configure_rule':
+        return logistics.configure_rules(town, data)
     if action in {'claim_local_gift', 'buy_worker_tool', 'trade_local', 'give_worker_tool', 'take_worker_tool', 'transfer_worker_tool',
                   'advance_local_story', 'inspect_story_rock'}:
         return npcs.change(town, data)
     if action in {'buy_equipment', 'sell_equipment', 'equip_item', 'unequip_item'}:
         return equipment.change(town, data)
+    if action in {'buy_boat', 'upgrade_boat'}:
+        player = town['player']
+        level = economy.player_boat_level(player)
+        if action == 'buy_boat' and level:
+            raise ValueError('You already have an exploration boat.')
+        if action == 'upgrade_boat' and not level:
+            raise ValueError('Buy or build an exploration boat first.')
+        spec = economy.PLAYER_BOATS.get(level + 1)
+        if spec is None:
+            raise ValueError('Your boat is fully upgraded.')
+        if town['level'] < spec['level'] or economy.skill(town, 'fishing') < spec['xp']:
+            raise ValueError('Develop fishing and upgrade the town hall first.')
+        if not economy.afford(town, economy.costs_of(spec)):
+            raise ValueError('Missing boat purchase or upgrade materials.')
+        economy.spend(town, economy.costs_of(spec))
+        player.update(boat=True, boat_level=level + 1)
+        return {'player': dict(player)}
     if action == 'build_boat':
         if town['level'] < 3:
             raise ValueError('Exploration boats require town hall level 3.')
@@ -966,6 +989,8 @@ def command(town, data, world=None):
                 raise ValueError('Choose a matching profession upgrade.')
             if town['level'] < spec['level'] or economy.skill(town, spec.get('skill', '')) < spec.get('xp', 0):
                 raise ValueError('Develop the profession and upgrade the town hall first.')
+            if spec.get('requires') and spec['requires'] not in building.get('profession_upgrades', []):
+                raise ValueError('Purchase the previous boat tier first.')
             if key in building.get('profession_upgrades', []):
                 raise ValueError('Already unlocked.')
             if not economy.afford(town, economy.costs_of(spec)):

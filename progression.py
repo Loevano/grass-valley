@@ -26,11 +26,29 @@ PROFESSION_UPGRADES = {
     'axe': {'label': 'Improved axe', 'building': 'woodcutter', 'level': 2, 'skill': 'woodcutting', 'xp': 10, 'wood': 10, 'coins': 5},
     'nets': {'label': 'Fishing nets', 'building': 'fishing_hut', 'level': 2, 'skill': 'fishing', 'xp': 10, 'wood': 10, 'coins': 5},
     'boat': {'label': 'Fishing boat', 'building': 'fishing_hut', 'level': 3, 'skill': 'fishing', 'xp': 20, 'planks': 10},
+    'improved_boat': {'label': 'Improved fishing boat', 'building': 'fishing_hut', 'level': 4, 'skill': 'fishing', 'xp': 30, 'requires': 'boat', 'planks': 15, 'coins': 20},
+    'master_boat': {'label': 'Masterwork fishing boat', 'building': 'fishing_hut', 'level': 5, 'skill': 'fishing', 'xp': 40, 'requires': 'improved_boat', 'planks': 20, 'coins': 40},
     'wool_nets': {'label': 'Durable wool nets', 'building': 'fishing_hut', 'level': 3, 'skill': 'fishing', 'xp': 20, 'wool': 5},
     'tools': {'label': 'Crafted axe', 'building': 'woodcutter', 'level': 4, 'skill': 'woodcutting', 'xp': 30, 'tools': 3},
     'saw': {'label': 'Improved saw', 'building': 'sawpit', 'level': 5, 'skill': 'woodworking', 'xp': 20, 'tools': 3},
     'timber_frame': {'label': 'Timber framing', 'building': 'home', 'level': 5, 'planks': 10},
 }
+PLAYER_BOATS = {
+    1: {'label': 'Exploration boat', 'level': 3, 'xp': 0, 'coins': 20},
+    2: {'label': 'Improved exploration boat', 'level': 4, 'xp': 30, 'planks': 15, 'coins': 20},
+    3: {'label': 'Masterwork exploration boat', 'level': 5, 'xp': 40, 'planks': 20, 'coins': 40},
+}
+
+
+def fishing_boat_level(building):
+    upgrades = building.get('profession_upgrades', [])
+    return 3 if 'master_boat' in upgrades else 2 if 'improved_boat' in upgrades else 1 if 'boat' in upgrades else 0
+
+
+def player_boat_level(player):
+    return player.get('boat_level', 1) if player.get('boat') else 0
+
+
 HALL_UPGRADES = [
     {'level': 2, 'wood': 40, 'seconds': 30, 'coins': 30, 'milestone': 'Housing and reliable food'},
     {'level': 3, 'wood': 60, 'seconds': 60, 'coins': 40, 'milestone': 'Develop two professions (10 practice each)'},
@@ -502,7 +520,10 @@ def player_tick(town, landscape, capacity):
     if source.get('supply', 0) <= 0:
         player['activity_status'] = 'Waiting for supply to regenerate'; return
     job = activity['job']
-    amount = min(room, (1 if key != 'wood' else .5) * (1 + player.get(job, 0) // 20))
+    boat_bonus = .25 * max(0, player_boat_level(player) - 1) if job == 'fishing' and any(
+        r['kind'] == 'water' and (r['x'], r['y']) == (int(player['x'] + .5), int(player['y'] + .5))
+        for r in landscape['map_resources']) else 0
+    amount = min(room, (1 if key != 'wood' else .5) * (1 + player.get(job, 0) // 20) * (1 + boat_bonus))
     amount = take_supply(landscape, source, amount)
     caught = job != 'fishing' or secrets.randbelow(5) != 0
     if caught:
@@ -563,5 +584,5 @@ def extra_worker(town, villager, building, capacity):
 def public_catalog():
     return {'buildings': BUILDINGS, 'crops': CROPS, 'animals': ANIMALS,
             'job_requirements': JOB_REQUIREMENTS, 'talent_roots': TALENT_ROOTS,
-            'upgrades': PROFESSION_UPGRADES, 'recipes': RECIPES, 'edible': EDIBLE,
+            'boats': PLAYER_BOATS, 'upgrades': PROFESSION_UPGRADES, 'recipes': RECIPES, 'edible': EDIBLE,
             'storage_goods': STORAGE_GOODS, 'fixed_storage': FIXED_STORAGE}

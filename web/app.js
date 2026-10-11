@@ -215,6 +215,12 @@ const equipmentItems={
 function groundVariant(x,y){return ((x*17+y*31+x*y*7)%7)%3;}
 function biomeProtected(player,biome,x,y){return (biome==='b'&&groundVariant(x,y)!==2)||Object.entries(equipmentItems).every(([key,item])=>!item.biome||item.biome!==biome||player?.equipment?.[item.slot]===key);}
 function mapRoads(town){return world.shared_map?Object.values(world.towns).flatMap(t=>t.roads || []):town?.roads || [];}
+function playerBoatLevel(player){return player?.boat?player.boat_level || 1:0;}
+function playerTravelSpeed(town,position){
+  const level=playerBoatLevel(town.player);
+  if(level&&(town.map_resources || []).some(r=>r.kind==='water'&&r.x===Math.floor(position.x+.5)&&r.y===Math.floor(position.y+.5)))return 1+.25*(level-1);
+  return roadSpeed(town,position);
+}
 function roadSpeed(town,position){return mapRoads(town).some(r=>!r.construction&&r.x===Math.floor(position.x+.5)&&r.y===Math.floor(position.y+.5))?1.5:1;}
 // Measure screen distance for the 2:1 isometric projection, preserving sideways speed.
 function playerMovementDistance(dx,dy){return Math.hypot(dx-dy,(dx+dy)*.5)/Math.SQRT2;}
@@ -239,7 +245,7 @@ function predictPlayerStep(town,player,dx,dy){
   const predicted={...player},length=playerMovementDistance(dx,dy);
   if(length){
     for(let step=0;step<5;step++){
-      const speed=roadSpeed(town,predicted);
+      const speed=playerTravelSpeed(town,predicted);
       const x=predicted.x+dx/length*.06*speed;if(open(x,predicted.y))predicted.x=x;
       const y=predicted.y+dy/length*.06*speed;if(open(predicted.x,y))predicted.y=y;
     }
@@ -274,7 +280,7 @@ function playerSprite(town,seconds){
       .finally(()=>{clearTimeout(timeout);walkingRequest=false;});
   }
   const distance=playerMovementDistance(s.target.x-s.x,s.target.y-s.y);
-  const travel=Math.min(1,distance?seconds*3*roadSpeed(town,s)/distance:0);
+  const travel=Math.min(1,distance?seconds*3*playerTravelSpeed(town,s)/distance:0);
   s.x+=(s.target.x-s.x)*travel;s.y+=(s.target.y-s.y)*travel;
   s.facing=s.target.facing;s.clock+=seconds;s.path=distance>.001?[s.target]:[];s.phase='idle';
   const activity=town.player.activity;
@@ -340,8 +346,12 @@ function remotePlayerSprite(townId,town,seconds){
 }
 const labels = {road:'Dirt road',hall:'Town hall',home:'Cottage',woodcutter:'Woodcutter',farm:'Farm',storehouse:'Storehouse',fishing_hut:'Fishing hut',acre:'Acre'};
 function buildingLevel(building){return building.level || 1;}
+function fishingBoatLevel(building){
+  const upgrades=building.profession_upgrades || [];
+  return upgrades.includes('master_boat')?3:upgrades.includes('improved_boat')?2:upgrades.includes('boat')?1:0;
+}
 function resourceReach(building){
-  return building.kind==='woodcutter'?10:building.kind==='fishing_hut'?3+buildingLevel(building)-1+(building.profession_upgrades?.includes('boat')?3:0):3;
+  return building.kind==='woodcutter'?10:building.kind==='fishing_hut'?3+buildingLevel(building)-1+(fishingBoatLevel(building)?3+2*(fishingBoatLevel(building)-1):0):3;
 }
 function buildingVisualLevel(building,town){
   return building.kind==='hall'?Math.min(5,town?.level || 1):Math.min(3,buildingLevel(building));
@@ -455,6 +465,8 @@ const professionBenefits={
   wool_nets:'+25% food / catch\nStacks with nets',
   tools:'+25% wood / worker\nStacks with axe',
   boat:'+3 tile reach',
+  improved_boat:'+2 additional tile reach\n+25% fish / catch',
+  master_boat:'+2 additional tile reach\n+25% fish / catch (total boat bonus: +50%)',
   saw:'+25% plank processing speed',
   timber_frame:'+2 spaces'
 };
@@ -473,7 +485,7 @@ function upgradePreview(command,town,item){
   if(command.action==='profession_upgrade'){
     const spec=world.progression?.upgrades?.[command.upgrade];
     if(!spec)return null;
-    return {title:spec.label,benefits:[professionBenefits[command.upgrade] || spec.label],cost:materialCosts(spec),seconds:30,requirements:`Hall level ${spec.level}${spec.xp?` · ${spec.xp} ${goodName(spec.skill).toLowerCase()} practice`:''}`,ready:town.level>=spec.level&&professionSkill(town,spec.skill)>=(spec.xp || 0)&&!item.profession_upgrades?.includes(command.upgrade)};
+    return {title:spec.label,benefits:[professionBenefits[command.upgrade] || spec.label],cost:materialCosts(spec),seconds:30,requirements:`Hall level ${spec.level}${spec.xp?` · ${spec.xp} ${goodName(spec.skill).toLowerCase()} practice`:''}${spec.requires?` · ${world.progression.upgrades[spec.requires]?.label || goodName(spec.requires)}`:''}`,ready:town.level>=spec.level&&professionSkill(town,spec.skill)>=(spec.xp || 0)&&(!spec.requires||item.profession_upgrades?.includes(spec.requires))&&!item.profession_upgrades?.includes(command.upgrade)};
   }
   const capacity=command.action==='upgrade_capacity',level=capacity?item.settler_level || 1:buildingLevel(item);
   const currentBenefits=upgradeBenefit(item.kind,level,item).split('\n'),nextBenefits=upgradeBenefit(item.kind,level+1,item).split('\n');
@@ -1063,8 +1075,8 @@ function renderProfession(town,item,index,target,upgrades,details){
   }
   for(const [key,spec] of Object.entries(catalog.upgrades))if(spec.building===item.kind){
     const unlocked=item.profession_upgrades?.includes(key);
-    if(!unlocked&&(town.level<spec.level || professionSkill(town,spec.skill)<(spec.xp || 0)))continue;
-    const button=document.createElement('button');button.textContent=unlocked?`${spec.label} · Unlocked`:spec.label;
+    if(!unlocked&&(town.level<spec.level || professionSkill(town,spec.skill)<(spec.xp || 0) || spec.requires&&!item.profession_upgrades?.includes(spec.requires)))continue;
+    const button=document.createElement('button');button.textContent=unlocked?`${spec.label} · Unlocked`:key==='boat'?`Buy ${spec.label.toLowerCase()}`:spec.label;
     button.className='upgrade-button';
     button.disabled=!owner || unlocked;button.onclick=()=>{if(!button.disabled)showUpgrade({action:'profession_upgrade',index,upgrade:key});};
     upgrades.append(upgradeCard(button,upgradePreview({action:'profession_upgrade',index,upgrade:key},town,item),{status:unlocked?'Unlocked':''}));
@@ -1143,8 +1155,18 @@ function renderSelection(town){
       const row=document.createElement('p');row.textContent=`${gear.name} · ${town.player?.worker_tools?.[key] || 0} available · Give to a worker from their panel (+${gear.bonus*100}% ${gear.job} output)`;$('selection-details').append(row);
     }
     if(viewed===identity?.town_id){
-      if(town.player?.boat){const boat=document.createElement('p');boat.textContent='Exploration boat ready. Walk onto water to sail; step ashore to disembark.';$('selection-details').append(boat);}
-      else{const boat=document.createElement('button');boat.textContent=town.level<3?'Exploration boat · Requires hall level 3':'Build exploration boat · 20 wood + 10 planks';boat.disabled=town.level<3||amountOf(town,'wood')<20||amountOf(town,'planks')<10;boat.onclick=()=>act({action:'build_boat'});$('selection-details').append(boat);}
+      if(town.player?.boat){
+        const level=playerBoatLevel(town.player),boat=document.createElement('p');
+        boat.textContent=`${world.progression?.boats?.[level]?.label || 'Exploration boat'} · Tier ${level}/3 · +${25*(level-1)}% sailing speed and fish per catch while afloat. Walk onto water to sail; step ashore to disembark.`;$('selection-details').append(boat);
+      }
+      const nextBoat=world.progression?.boats?.[playerBoatLevel(town.player)+1];
+      if(nextBoat){
+        const owned=!!town.player?.boat,button=document.createElement('button'),cost=materialCosts(nextBoat);
+        button.textContent=`${owned?'Upgrade to':'Buy'} ${nextBoat.label.toLowerCase()} · ${costText(cost)} · Hall ${nextBoat.level}${nextBoat.xp?` · ${nextBoat.xp} fishing practice`:''}`;
+        button.disabled=town.level<nextBoat.level||professionSkill(town,'fishing')<nextBoat.xp||!canAfford(town,cost);
+        button.onclick=()=>act({action:owned?'upgrade_boat':'buy_boat'});$('selection-details').append(button);
+      }
+      if(!town.player?.boat){const boat=document.createElement('button');boat.textContent=town.level<3?'Exploration boat · Requires hall level 3':'Build exploration boat · 20 wood + 10 planks';boat.disabled=town.level<3||amountOf(town,'wood')<20||amountOf(town,'planks')<10;boat.onclick=()=>act({action:'build_boat'});$('selection-details').append(boat);}
     }
     if(town.player?.activity){
       const state=document.createElement('p');state.textContent=`${goodName(town.player.activity.job)} · ${town.player.activity_status || 'Working'}`;$('selection-details').append(state);
@@ -1208,7 +1230,7 @@ function renderSelection(town){
       if(viewed===identity?.town_id){const button=document.createElement('button');button.textContent='Collect loot';button.onclick=()=>playerAction('gather');$('selection-details').append(button);}return;
     }
     $('selection-title').textContent=({berry_bush:'Berry bush',herb_patch:'Herb patch'}[item.kind]) || (swamp?{tree:'Swamp willow',water:'Swamp water',rock:'Rock outcrop'}:{tree:'Forest',water:'Water',rock:'Rock outcrop',berry_bush:'Berry bush',herb_patch:'Herb patch'})[item.kind];
-    p.textContent={tree:'Renewable wood source. Place a woodcutter within 10 horizontal or vertical tile steps, then assign a villager to woodcutting.',water:'Uses: farming / fishing\nFishing hut reach: 3–5 tile steps (+3 with boat)\nFarmers fetch water when watering',rock:'Occupied tile\nMining: unavailable',berry_bush:`Food: berries\nGather: stand nearby · ${keybindings.gather.toUpperCase()}`,herb_patch:`Use: animal breeding\nGather: stand nearby · ${keybindings.gather.toUpperCase()}`}[item.kind];
+    p.textContent={tree:'Renewable wood source. Place a woodcutter within 10 horizontal or vertical tile steps, then assign a villager to woodcutting.',water:'Uses: farming / fishing\nFishing hut reach: 3–5 tile steps (+3 / +5 / +7 with boat tiers)\nFarmers fetch water when watering',rock:'Occupied tile\nMining: unavailable',berry_bush:`Food: berries\nGather: stand nearby · ${keybindings.gather.toUpperCase()}`,herb_patch:`Use: animal breeding\nGather: stand nearby · ${keybindings.gather.toUpperCase()}`}[item.kind];
     if(item.kind==='rock'&&(world.shared_map||viewed===identity?.town_id)){
       const own=world.towns[identity?.town_id],progress=own?localStoryProgress(own,'Flint'):{};
       if(progress.story_stage===1){
@@ -2401,7 +2423,7 @@ function draw(seconds=0){
     if(b.kind==='player'){
       const baseY=py+tileH*.65;
       if(world.towns[b.townId]?.player?.boat&&water.has(`${Math.floor(b.x+.5)},${Math.floor(b.y+.5)}`)){
-        polygon([[px-20*scale,baseY],[px-10*scale,baseY+10*scale],[px+12*scale,baseY+10*scale],[px+21*scale,baseY-2*scale]],'#805838','#d4af6b');
+        polygon([[px-20*scale,baseY],[px-10*scale,baseY+10*scale],[px+12*scale,baseY+10*scale],[px+21*scale,baseY-2*scale]],playerBoatLevel(world.towns[b.townId].player)===3?'#a57641':playerBoatLevel(world.towns[b.townId].player)===2?'#986b47':'#805838','#d4af6b');
       }
       ctx.strokeStyle='#ffe8a0';ctx.lineWidth=2;ctx.beginPath();ctx.ellipse(px,baseY,10*scale,5*scale,0,0,Math.PI*2);ctx.stroke();
       drawVillager(b);
@@ -2705,9 +2727,13 @@ function paintBuilding(b,town,farmState=null,target=ctx,usable=buildingUsable(to
       ctx.beginPath();ctx.moveTo(x-16*s,y-16*s+i*4*s);ctx.lineTo(x-4*s,y-13*s+i*4*s);ctx.stroke();
     }
   }
-  if(upgrades.includes('boat')){
+  if(fishingBoatLevel(b)){
     paintPolygon([[x+2*s,y+8*s],[x+9*s,y+13*s],[x+21*s,y+7*s],[x+15*s,y+5*s]],'#b08a59','#644f3b');
     ctx.strokeStyle='#e0ce97';ctx.lineWidth=2*s;ctx.beginPath();ctx.moveTo(x+9*s,y+6*s);ctx.lineTo(x+19*s,y+15*s);ctx.stroke();
+    if(fishingBoatLevel(b)>=2){
+      ctx.fillStyle='#dfd6ac';ctx.fillRect(x+10*s,y-8*s,2*s,16*s);
+      paintPolygon([[x+12*s,y-8*s],[x+12*s,y+3*s],[x+22*s,y+3*s]],fishingBoatLevel(b)===3?'#d4af6b':'#ece3c5');
+    }
   }
 
   ctx.save();ctx.translate(x,y);ctx.scale(s,s);

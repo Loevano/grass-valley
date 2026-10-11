@@ -44,6 +44,9 @@ const run=new Function('document','window','localStorage','setTimeout','clearTim
     assert.notStrictEqual(appearance(building),appearance({...building,profession_upgrades:[upgrade]}),upgrade+' adds visible equipment');
     assert.notStrictEqual(appearance({...building,level:3}),appearance({...building,level:3,profession_upgrades:[upgrade]}),upgrade+' stays visible on upgraded buildings');
   }
+  const fishingHut={kind:'fishing_hut',x:5,y:5};
+  const boatTiers=[['boat'],['boat','improved_boat'],['boat','improved_boat','master_boat']].map(profession_upgrades=>appearance({...fishingHut,profession_upgrades}));
+  assert.strictEqual(new Set(boatTiers).size,3,'Each fishing boat tier has visible upgrades');
   const visitor={...town,level:5,buildings:[hall],map_resources:[]};
   town.buildings=[{kind:'home',x:4,y:5,level:3}];
   world={world_id:'test',shared_map:town,town_sites:[{x:5,y:5}],towns:{own:town,visitor}};
