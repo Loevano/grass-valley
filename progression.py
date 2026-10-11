@@ -56,8 +56,22 @@ HALL_UPGRADES = [
     {'level': 5, 'wood': 80, 'planks': 15, 'seconds': 120, 'coins': 60, 'milestone': 'Produce flour, smoked fish, or crafted tools'},
 ]
 # Food is the aggregate pantry, including these goods and legacy untyped provisions.
+FISH = {
+    'fish': {'label': 'Fish', 'depth': 1, 'boat': 0, 'food': 1, 'coins': 1},
+    'trout': {'label': 'Trout', 'depth': 2, 'boat': 1, 'food': 1.5, 'coins': 2},
+    'salmon': {'label': 'Salmon', 'depth': 3, 'boat': 2, 'food': 2, 'coins': 3},
+    'sturgeon': {'label': 'Sturgeon', 'depth': 4, 'boat': 3, 'food': 3, 'coins': 5},
+}
 EDIBLE = {'vegetables': 1, 'carrots': 1, 'fish': 1, 'berries': 1, 'eggs': 1,
-          'meat': 1, 'milk': 1, 'fruit': 1, 'smoked_fish': 1.5, 'bread': 1.5, 'prepared_meat': 1.5}
+          'meat': 1, 'milk': 1, 'fruit': 1, 'smoked_fish': 1.5, 'bread': 1.5, 'prepared_meat': 1.5,
+          **{key: spec['food'] for key, spec in FISH.items()}}
+
+
+def fishing_catch(building, depth):
+    tier = fishing_boat_level(building)
+    return next(key for key, spec in reversed(list(FISH.items())) if tier >= spec['boat'] and depth >= spec['depth'])
+
+
 RECIPES = {
     'bakery': ({'flour': 2, 'wood': .5}, 'bread', 2),
     'butcher': ({'meat': 2}, 'prepared_meat', 2),
@@ -160,7 +174,7 @@ STORAGE_GOODS = {
     **{kind: (*STORAGE_KEYS, *EDIBLE) for kind in ('hall', 'storehouse', 'market')},
     'home': (),
     'woodcutter': ('wood',),
-    'fishing_hut': ('fish',),
+    'fishing_hut': tuple(FISH),
     'farm': (*CROPS, 'manure'),
     'acre': (*CROPS, 'manure'),
     'barn': ('fodder', 'vegetables', 'manure', *(a['output'] for a in ANIMALS.values())),
@@ -599,5 +613,5 @@ def extra_worker(town, villager, building, capacity):
 def public_catalog():
     return {'buildings': BUILDINGS, 'crops': CROPS, 'animals': ANIMALS,
             'job_requirements': JOB_REQUIREMENTS, 'talent_roots': TALENT_ROOTS,
-            'boats': PLAYER_BOATS, 'upgrades': PROFESSION_UPGRADES, 'recipes': RECIPES, 'edible': EDIBLE,
+            'boats': PLAYER_BOATS, 'fish': FISH, 'upgrades': PROFESSION_UPGRADES, 'recipes': RECIPES, 'edible': EDIBLE,
             'storage_goods': STORAGE_GOODS, 'fixed_storage': FIXED_STORAGE}

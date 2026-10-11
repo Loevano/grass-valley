@@ -22,7 +22,25 @@ class SpatialIndex:
             self.cells.setdefault((x // CELL_SIZE, y // CELL_SIZE), []).append((order, resource))
             self.resource_tiles.add((x, y))
         self.resource_count = len(self.resources)
+        self.depths = None
         self.obstacles.clear()
+
+    def water_depths(self):
+        """Tile distance from the nearest bank; shoreline water has depth 1."""
+        self.refresh()
+        if self.depths is not None:
+            return self.depths
+        water = {(r['x'], r['y']) for r in self.resources if r['kind'] == 'water'}
+        depths = {p: 1 for p in water if any(q not in water for q in
+                  ((p[0] + 1, p[1]), (p[0] - 1, p[1]), (p[0], p[1] + 1), (p[0], p[1] - 1)))}
+        queue = list(depths)
+        for x, y in queue:
+            for p in ((x + 1, y), (x - 1, y), (x, y + 1), (x, y - 1)):
+                if p in water and p not in depths:
+                    depths[p] = depths[(x, y)] + 1
+                    queue.append(p)
+        self.depths = depths
+        return depths
 
     def nearby(self, kind, x, y, reach):
         self.refresh()

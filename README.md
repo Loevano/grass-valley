@@ -172,8 +172,13 @@ the Python host, refresh both browsers, and create a new world to use the shared
   and fish per catch while afloat. Each upgrade requires the previous tier.
   Each fishing hut buys and owns its own boat. The initial purchase applies
   immediately and shows a full-size boat on nearby water; click it to manage its
-  hut. Assigned fishers sail it to farther connected water within the hut's reach,
+  hut. Assigned fishers prefer deeper connected water within the hut's reach,
   fish offshore, and return to unload their catch. Idle boats stay by the bank.
+  Depth counts tile steps from the nearest bank, including island shores.
+  Boat tiers can sail in depth 2, 3, and 4 water, respectively, unlocking trout
+  (1.5 food / 2 coins), salmon (2 food / 3 coins), and sturgeon (3 food / 5 coins).
+  Shallow water still produces ordinary fish (1 food / 1 coin). These fish share
+  food storage, can be hauled and eaten, and can be sold at a market stall.
   Boat upgrades use builders; exploration purchases and upgrades apply
   immediately. Existing boats keep their ownership and start at tier 1.
 - Select a farm and choose **Build acre · 5 wood**, then click open ground within

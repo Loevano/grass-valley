@@ -365,16 +365,16 @@ function storageCapacity(town){return town.buildings.filter(b=>!b.construction).
 const storageKeys=['wood','food','planks','wheat','fodder','flour','wool','tools','manure','herbs'];
 function buildingName(building){return building.kind==='storehouse'&&buildingLevel(building)>=5?'Warehouse':labels[building.kind];}
 const storageGoods={
-  hall:[...storageKeys,'vegetables','carrots','fish','berries','eggs','meat','milk','fruit','smoked_fish','bread','prepared_meat'],
-  storehouse:[...storageKeys,'vegetables','carrots','fish','berries','eggs','meat','milk','fruit','smoked_fish','bread','prepared_meat'],
-  market:[...storageKeys,'vegetables','carrots','fish','berries','eggs','meat','milk','fruit','smoked_fish','bread','prepared_meat'],
-  home:[],woodcutter:['wood'],fishing_hut:['fish'],farm:['vegetables','wheat','carrots','fodder','manure'],acre:['vegetables','wheat','carrots','fodder','manure'],
+  hall:[...storageKeys,'vegetables','carrots','fish','trout','salmon','sturgeon','berries','eggs','meat','milk','fruit','smoked_fish','bread','prepared_meat'],
+  storehouse:[...storageKeys,'vegetables','carrots','fish','trout','salmon','sturgeon','berries','eggs','meat','milk','fruit','smoked_fish','bread','prepared_meat'],
+  market:[...storageKeys,'vegetables','carrots','fish','trout','salmon','sturgeon','berries','eggs','meat','milk','fruit','smoked_fish','bread','prepared_meat'],
+  home:[],woodcutter:['wood'],fishing_hut:['fish','trout','salmon','sturgeon'],farm:['vegetables','wheat','carrots','fodder','manure'],acre:['vegetables','wheat','carrots','fodder','manure'],
   barn:['fodder','vegetables','manure','eggs','wool','meat','milk'],orchard:['fruit'],
   bakery:['flour','wood','bread'],butcher:['meat','prepared_meat'],sawpit:['wood','planks'],mill:['wheat','flour'],
   smokehouse:['fish','wood','smoked_fish'],workshop:['planks','wood','tools'],fish_pond:['fodder','fish']
 };
 function buildingStorageGoods(building){return (world.progression?.storage_goods || storageGoods)[building.kind] || [];}
-function foodGoods(){return world.progression?.edible || {vegetables:1,carrots:1,fish:1,berries:1,eggs:1,meat:1,milk:1,fruit:1,smoked_fish:1.5,bread:1.5,prepared_meat:1.5};}
+function foodGoods(){return world.progression?.edible || {vegetables:1,carrots:1,fish:1,trout:1.5,salmon:2,sturgeon:3,berries:1,eggs:1,meat:1,milk:1,fruit:1,smoked_fish:1.5,bread:1.5,prepared_meat:1.5};}
 function buildingStorageKeys(building){
   const edible=foodGoods(),groups=new Set(buildingStorageGoods(building).map(key=>key in edible?'food':key));
   return storageKeys.filter(key=>groups.has(key));
@@ -464,9 +464,9 @@ const professionBenefits={
   nets:'+25% food / catch',
   wool_nets:'+25% food / catch\nStacks with nets',
   tools:'+25% wood / worker\nStacks with axe',
-  boat:'+3 tile reach',
-  improved_boat:'+2 additional tile reach\n+25% fish / catch',
-  master_boat:'+2 additional tile reach\n+25% fish / catch (total boat bonus: +50%)',
+  boat:'+3 tile reach\nDepth 2 water · Trout (1.5 food / 2 coins)',
+  improved_boat:'+2 additional tile reach\nDepth 3 water · Salmon (2 food / 3 coins)\n+25% fish / catch',
+  master_boat:'+2 additional tile reach\nDepth 4 water · Sturgeon (3 food / 5 coins)\n+25% fish / catch (total boat bonus: +50%)',
   saw:'+25% plank processing speed',
   timber_frame:'+2 spaces'
 };
@@ -575,7 +575,7 @@ function amountOf(town,key){return ['wood','food','coins'].includes(key)?town[ke
 function renderResourceList(town){
   $('resources-list').replaceChildren();
   if(!town)return;
-  const edible=world.progression?.edible || {vegetables:1,carrots:1,fish:1,berries:1,eggs:1,meat:1,milk:1,fruit:1,smoked_fish:1.5,bread:1.5,prepared_meat:1.5};
+  const edible=foodGoods();
   const keys=new Set([...storageKeys,'coins',...Object.keys(edible),...Object.keys(town.goods || {})]);
   const groups=[['Overview',['food','coins']],['Materials',['wood','planks','wool','tools']],
     ['Farming supplies',['wheat','fodder','flour','manure','herbs']],['Food types',Object.keys(edible)]];
@@ -1082,7 +1082,7 @@ function renderProfession(town,item,index,target,upgrades,details,boats){
   if(!catalog)return;
   if(boats){
     const note=document.createElement('p');
-    note.textContent=fishingBoatLevel(item)?`Boat owned by this hut · Tier ${fishingBoatLevel(item)}/3. Click its boat on the map to manage it.`:'No boat owned · Buy one boat for this fishing hut. It appears beside nearby water immediately.';
+    note.textContent=fishingBoatLevel(item)?`Boat owned by this hut · Tier ${fishingBoatLevel(item)}/3 · Reach ${resourceReach(item)} tiles · Maximum depth ${fishingBoatLevel(item)+1}. Prefers deeper water; ${['','trout','salmon','sturgeon'][fishingBoatLevel(item)]} require this depth. Click its boat on the map to manage it.`:'No boat owned · Buy one boat for this fishing hut. It appears beside nearby water immediately.';
     boats.append(note);
   }
   if(item.kind==='acre'){
@@ -1114,8 +1114,9 @@ function renderProfession(town,item,index,target,upgrades,details,boats){
     button.disabled=!owner || unlocked;button.onclick=()=>{if(!button.disabled)showUpgrade({action:'profession_upgrade',index,upgrade:key});};
     (fishingBoat?boats:upgrades).append(upgradeCard(button,upgradePreview({action:'profession_upgrade',index,upgrade:key},town,item),{status:unlocked?'Unlocked':''}));
   }
-  if(item.kind==='market'&&owner)for(const key of ['planks','wool','flour','smoked_fish','tools','herbs','fruit','milk','eggs','meat','bread','prepared_meat']){
-    const button=document.createElement('button');button.textContent=`Sell 1 ${goodName(key).toLowerCase()} · ${key==='tools'?3:1} coin${key==='tools'?'s':''}`;button.disabled=amountOf(town,key)<1;button.onclick=()=>act({action:'sell_goods',resource:key,amount:1});target.append(button);
+  if(item.kind==='market'&&owner)for(const key of ['fish','trout','salmon','sturgeon','planks','wool','flour','smoked_fish','tools','herbs','fruit','milk','eggs','meat','bread','prepared_meat']){
+    const price=catalog.fish?.[key]?.coins ?? ({trout:2,salmon:3,sturgeon:5}[key] || (key==='tools'?3:1));
+    const button=document.createElement('button');button.textContent=`Sell 1 ${goodName(key).toLowerCase()} · ${price} coin${price===1?'':'s'}`;button.disabled=amountOf(town,key)<1;button.onclick=()=>act({action:'sell_goods',resource:key,amount:1});target.append(button);
   }
   if(['woodcutter','fishing_hut'].includes(item.kind)){
     const reach=resourceReach(item);

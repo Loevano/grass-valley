@@ -5,6 +5,17 @@ const WorkerAnimation = (() => {
   const neighbors = p => [{x:p.x+1,y:p.y},{x:p.x,y:p.y+1},{x:p.x-1,y:p.y},{x:p.x,y:p.y-1}];
   const boatLevel = b => b?.profession_upgrades?.includes('master_boat')?3:b?.profession_upgrades?.includes('improved_boat')?2:b?.profession_upgrades?.includes('boat')?1:0;
   const fishingReach = b => 2+(b.level || 1)+(boatLevel(b)?3+2*(boatLevel(b)-1):0);
+  function waterDepths(resources){
+    const water=new Set(resources.filter(r=>r.kind==='water').map(key)),depths=new Map(),queue=[];
+    for(const tile of water){
+      const [x,y]=tile.split(',').map(Number),p={x,y};
+      if(neighbors(p).some(next=>!water.has(key(next)))){depths.set(tile,1);queue.push(p);}
+    }
+    for(const tile of queue)for(const next of neighbors(tile)){
+      if(water.has(key(next))&&!depths.has(key(next))){depths.set(key(next),depths.get(key(tile))+1);queue.push(next);}
+    }
+    return depths;
+  }
   function route(start, target, blocked, size=120, adjacent=true, bounds=null) {
     const queue = [start], previous = new Map([[key(start),null]]);
     for(let i=0;i<queue.length;i++){
@@ -90,8 +101,9 @@ const WorkerAnimation = (() => {
     }
     const boating=!villager.construction_target&&villager.job==='fishing'&&source&&home?.kind==='fishing_hut'&&boatLevel(home)>0;
     if(boating){
+      const depths=waterDepths(town.map_resources);
       const water=new Set(town.map_resources.filter(r=>r.kind==='water'&&distance(home,r)<=fishingReach(home)
-        &&town.terrain?.[r.y]?.[r.x]!=='v').map(key));
+        &&depths.get(key(r))<=boatLevel(home)+1&&town.terrain?.[r.y]?.[r.x]!=='v').map(key));
       const occupied=new Set([...(town.obstacles || town.buildings),...(town.npcs || [])].map(key));
       const queue=[source],seen=new Set([key(source)]);
       for(const tile of queue){
@@ -229,6 +241,6 @@ const WorkerAnimation = (() => {
       state.path=path || [];state.phase=path===null?'waiting':path.length?'walking':'working';state.elapsed=0;state.fishingCaught=null;state.waterReady=false;
     }
   }
-  return {route,plan,advance};
+  return {route,plan,advance,waterDepths};
 })();
 if(typeof module!=='undefined')module.exports=WorkerAnimation;

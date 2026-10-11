@@ -79,6 +79,56 @@ class Boats(unittest.TestCase):
         self.assertTrue(unloaded)
         self.assertEqual((fisher['work_animation']['x'], fisher['work_animation']['y']), tiles[0])
 
+    def test_upgrades_choose_deeper_water_and_catch_better_species(self):
+        upgrades = []
+        for tier, (upgrade, species) in enumerate(zip(('boat', 'improved_boat', 'master_boat'), ('trout', 'salmon', 'sturgeon')), 1):
+            upgrades.append(upgrade)
+            with self.subTest(tier=tier):
+                town = new_town('Deep fishing')
+                town.update(npcs=[], terrain=['g' * 120] * 120,
+                            map_resources=[{'kind': 'water', 'x': x, 'y': y} for x in range(3, 18) for y in range(1, 16)])
+                hut = {'kind': 'fishing_hut', 'x': 2, 'y': 8, 'profession_upgrades': list(upgrades)}
+                town['buildings'].append(hut)
+                worker = town['villagers'][0]
+                worker.update(job='fishing', building_index=1, talents={})
+                for spatial in (None, SpatialIndex(town['map_resources'])):
+                    source = work_assignment(town, 'fishing', 0, spatial)[1]
+                    depth = SpatialIndex(town['map_resources']).water_depths()[(source['x'], source['y'])]
+                    self.assertEqual(depth, tier + 1)
+                    self.assertEqual(abs(source['x'] - hut['x']) + abs(source['y'] - hut['y']), resource_reach(hut))
+                with patch('server.secrets.randbelow', return_value=1):
+                    tick({'towns': {'a': town}})
+                self.assertEqual(hut['pending_output'], {species: 1 + .25 * (tier - 1)})
+                self.assertTrue(economy.accepts_storage(hut, species))
+                depths = SpatialIndex(town['map_resources']).water_depths()
+                allowed = work_cycles.fishing_water(hut, town['map_resources'], set(), resource_reach(hut), depths=depths)
+                self.assertTrue(all(depths[(r['x'], r['y'])] <= tier + 1 for r in allowed))
+
+    def test_depth_accounts_for_islands_and_refreshes_with_water_layout(self):
+        resources = [{'kind': 'water', 'x': x, 'y': y} for x in range(7) for y in range(7)]
+        spatial = SpatialIndex(resources)
+        self.assertEqual(spatial.water_depths()[(3, 3)], 4)
+        self.assertIs(spatial.water_depths(), spatial.water_depths())
+        resources.remove(next(r for r in resources if (r['x'], r['y']) == (3, 3)))
+        self.assertEqual(spatial.water_depths()[(3, 2)], 1)
+
+    def test_premium_fish_food_storage_and_market_values(self):
+        economy.ensure_inventory(self.town)
+        self.town['buildings'].append({'kind': 'market', 'x': 2, 'y': 2})
+        hut = {'kind': 'fishing_hut', 'x': 6, 'y': 2, 'stored_goods': {'sturgeon': 16}}
+        self.assertAlmostEqual(economy.local_room(hut, 'sturgeon'), 2 / 3)
+        for key, spec in economy.FISH.items():
+            with self.subTest(species=key):
+                economy.add_stock(self.town, key, 1)
+                self.town['buildings'][0].setdefault('stored_goods', {})[key] = 1
+                food, coins = self.town['food'], self.town['coins']
+                command(self.town, {'action': 'sell_goods', 'resource': key, 'amount': 1})
+                self.assertEqual(self.town['coins'] - coins, spec['coins'])
+                self.assertAlmostEqual(food - self.town['food'], spec['food'])
+        for tier, upgrades in enumerate(([], ['boat'], ['boat', 'improved_boat'], ['boat', 'improved_boat', 'master_boat'])):
+            self.assertEqual(economy.fishing_catch({'profession_upgrades': upgrades}, 1), 'fish')
+            self.assertEqual(economy.fishing_catch({'profession_upgrades': upgrades}, 10), list(economy.FISH)[tier])
+
     def reject(self, data, message):
         before = copy.deepcopy(self.town)
         with self.assertRaisesRegex(ValueError, message):
@@ -207,6 +257,7 @@ class Boats(unittest.TestCase):
         self.assertFalse(self.town['player'].get('boat'))
 
     def test_hut_upgrades_increase_catches_and_stack_with_nets(self):
+        self.town['map_resources'] = [{'kind': 'water', 'x': 7, 'y': 2}]
         self.town['buildings'].append({'kind': 'fishing_hut', 'x': 6, 'y': 2,
                                       'profession_upgrades': ['boat', 'improved_boat', 'master_boat', 'nets']})
         self.town['villagers'][0].update(job='fishing', talents={})

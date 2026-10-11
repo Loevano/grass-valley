@@ -349,8 +349,9 @@ def work_assignment(town, job, worker_index, spatial=None):
                    and abs(r['x'] - b['x']) + abs(r['y'] - b['y']) <= reach])
         boating = job == 'fishing' and economy.fishing_boat_level(b)
         if boating:
+            depths = (spatial or SpatialIndex(town['map_resources'])).water_depths()
             occupied = {(item['x'], item['y']) for item in town['buildings'] + town.get('npcs', [])}
-            nearby = work_cycles.fishing_water(b, nearby, occupied, reach)
+            nearby = work_cycles.fishing_water(b, nearby, occupied, reach, depths=depths)
         if nearby or job == 'farming':
             if job == 'farming':
                 acres = [a for a in town['buildings'] if a['kind'] == 'acre' and completed(a)
@@ -362,7 +363,8 @@ def work_assignment(town, job, worker_index, spatial=None):
                     acres = [assigned_acre]
                 nearby = [acres[worker_index % len(acres)]] if acres else [b]
             workplaces.append((b, min(nearby, key=lambda r:
-                                      (r.get('supply', 1) <= 0, (-1 if boating else 1) * (abs(r['x'] - b['x']) + abs(r['y'] - b['y']))))))
+                                      (r.get('supply', 1) <= 0, -depths.get((r['x'], r['y']), 1) if boating else 0,
+                                       (-1 if boating else 1) * (abs(r['x'] - b['x']) + abs(r['y'] - b['y']))))))
     if not workplaces:
         return None
     assignment = workplaces[worker_index % len(workplaces)]
@@ -640,6 +642,9 @@ def tick(world):
                 villager['production_status'] = logistics.produce(town, building, villager)
                 continue
             output = 'wood' if job == 'woodcutting' else 'fish' if job == 'fishing' else source.get('crop', 'vegetables')
+            if job == 'fishing':
+                depth = town_spatial.water_depths().get((source['x'], source['y']), 1)
+                output = economy.fishing_catch(building, depth)
             cap_room = economy.production_room(town, output)
             if cap_room <= 0:
                 villager['production_status'] = 'Production cap reached'
@@ -1014,12 +1019,12 @@ def command(town, data, world=None):
         key, amount = data.get('resource'), data.get('amount')
         if not any(b['kind'] == 'market' and completed(b) for b in town['buildings']):
             raise ValueError('Build a market stall first.')
-        if key not in {'planks', 'wool', 'flour', 'smoked_fish', 'tools', 'herbs', 'fruit', 'milk', 'eggs', 'meat', 'bread', 'prepared_meat'} or type(amount) is not int or not 1 <= amount <= 10:
+        if key not in {*economy.FISH, 'planks', 'wool', 'flour', 'smoked_fish', 'tools', 'herbs', 'fruit', 'milk', 'eggs', 'meat', 'bread', 'prepared_meat'} or type(amount) is not int or not 1 <= amount <= 10:
             raise ValueError('Choose goods and a quantity from 1 to 10.')
         if not economy.afford(town, {key: amount}):
             raise ValueError('Not enough goods to sell.')
         economy.spend(town, {key: amount})
-        town['coins'] += amount * (3 if key == 'tools' else 1)
+        town['coins'] += amount * economy.FISH.get(key, {}).get('coins', 3 if key == 'tools' else 1)
     elif action == 'upgrade':
         hall = next(b for b in town['buildings'] if b['kind'] == 'hall')
         if town.get('upgrade_remaining') or not completed(hall):

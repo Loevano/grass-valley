@@ -3,12 +3,14 @@ from collections import deque
 import math
 
 import progression as economy
+from spatial import SpatialIndex
 
 
-def fishing_water(building, water, occupied, reach, terrain=None):
+def fishing_water(building, water, occupied, reach, terrain=None, depths=None):
     """Water reachable by boat from the hut's nearest bank, within its reach."""
     tiles = {(r['x'], r['y']): r for r in water
              if (r['x'], r['y']) not in occupied
+             and (depths is None or depths.get((r['x'], r['y']), 1) <= economy.fishing_boat_level(building) + 1)
              and (not terrain or terrain[r['y']][r['x']] != 'v')
              and abs(r['x'] - building['x']) + abs(r['y'] - building['y']) <= reach}
     if not tiles:
@@ -68,7 +70,8 @@ def advance(town, landscape, villager, building, source, index, seconds):
     if boating:
         reach = 2 + building.get('level', 1) + 3 + 2 * (economy.fishing_boat_level(building) - 1)
         occupied = {(b['x'], b['y']) for b in landscape['buildings'] + landscape.get('npcs', [])}
-        water = fishing_water(building, [r for r in landscape['map_resources'] if r['kind'] == 'water'], occupied, reach, terrain)
+        depths = landscape.get('_spatial_index', SpatialIndex(landscape['map_resources'])).water_depths()
+        water = fishing_water(building, [r for r in landscape['map_resources'] if r['kind'] == 'water'], occupied, reach, terrain, depths)
         water_tiles = {(r['x'], r['y']) for r in water}
         berth = water[0] if water else source
         land_blocked = blocked - {(building['x'], building['y']), (berth['x'], berth['y'])}

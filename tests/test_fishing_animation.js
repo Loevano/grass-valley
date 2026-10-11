@@ -116,4 +116,20 @@ assert.deepStrictEqual(offshore.path[0],{x:5,y:4},'Retargeting continues to the 
 const resumed=animation.plan(sailingTown,{job:'fishing',building_index:0,work_target:sailingTown.map_resources.at(-1),
   logistics_position:{x:5,y:3}},0);
 assert.deepStrictEqual([resumed.x,resumed.y],[5,3],'A saved offshore position resumes on water');
+const lake={map_size:24,buildings:[],map_resources:[]};
+for(let x=3;x<18;x++)for(let y=1;y<16;y++)lake.map_resources.push({kind:'water',x,y});
+const depths=animation.waterDepths(lake.map_resources);
+assert.strictEqual(depths.get('3,8'),1,'Water beside the bank is shallow');
+assert.strictEqual(depths.get('10,8'),8,'Water gets deeper toward the center of the lake');
+for(let tier=1;tier<=3;tier++){
+  lake.buildings=[{kind:'fishing_hut',x:2,y:8,profession_upgrades:['boat','improved_boat','master_boat'].slice(0,tier)}];
+  const target=lake.map_resources.find(r=>r.x===3+tier&&r.y===8);
+  const fisher=animation.plan(lake,{job:'fishing',building_index:0,work_target:target,logistics_position:{x:2,y:9}},0);
+  assert(fisher.path.length,'Every boat tier can reach its unlocked fishing depth');
+  assert(fisher.path.every(p=>!depths.has(p.x+','+p.y)||depths.get(p.x+','+p.y)<=tier+1),'Boats stay within their tier depth limit');
+  for(let i=0;i<300&&fisher.path.length;i++)animation.advance(fisher,.1,true);
+  assert.deepStrictEqual([fisher.x,fisher.y],[target.x,target.y],'Boat reaches deeper water after upgrading');
+}
+const island=lake.map_resources.filter(r=>r.x!==10||r.y!==8);
+assert.strictEqual(animation.waterDepths(island).get('10,7'),1,'Island shores make adjacent water shallow');
 console.log('Fishing animation checks passed');
