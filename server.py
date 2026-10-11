@@ -252,6 +252,20 @@ def assign_settler(town, worker_index, building_index):
     villager.pop('logistics_target', None)
 
 
+def fill_cottages(town):
+    waiting = iter(i for i, villager in enumerate(town['villagers'])
+                   if villager['job'] == 'idle' and 'building_index' not in villager)
+    for building_index, building in enumerate(town['buildings']):
+        if building['kind'] != 'home' or not completed(building):
+            continue
+        spaces = settler_capacity(building) - len(assigned_settlers(town, building_index))
+        for _ in range(spaces):
+            worker_index = next(waiting, None)
+            if worker_index is None:
+                return
+            assign_settler(town, worker_index, building_index)
+
+
 def work_assignment(town, job, worker_index):
     if job == 'hauling':
         index = town['villagers'][worker_index].get('building_index')
@@ -570,6 +584,7 @@ def tick(world):
             town['villagers'].append({'name': 'Settler ' + str(town['settler_serial']),
                                      'job': 'idle', 'woodcutting': 0, 'farming': 0, 'fishing': 0})
             economy.ensure_talents(town['villagers'][-1], len(town['villagers']) - 1)
+        fill_cottages(town)
         if town['harvested'] >= 30 and 'Timber roots' not in town['achievements']:
             town['achievements'].append('Timber roots')
 
