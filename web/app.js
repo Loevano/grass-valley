@@ -611,8 +611,15 @@ function settlerBuilding(town,v,index){
   const places=town.buildings.map((b,i)=>({b,i})).filter(({b})=>b.kind===kind&&!b.construction&&buildingUsable(town,b));
   return places.length?places[index%places.length].i:null;
 }
-function renderSettlers(town,item,buildingIndex){
+function renderSettlers(town,item,buildingIndex,target=$('selection-details'),upgrades=target,details=target){
   const owner=viewed===identity?.town_id;
+  if(item.kind==='hall'){
+    target.append(fact(owner?'You':'Town founder','Resident'));
+    const resident=document.createElement('button');resident.textContent=owner?'You':'Town founder';
+    resident.onclick=()=>inspect('player');target.append(resident);
+    const note=document.createElement('p');note.textContent='Only the town owner’s controllable character can settle here. Assign other settlers to cottages or workplaces.';
+    details.append(note);return;
+  }
   const level=item.settler_level || 1,capacity=settlerSpaces[item.kind]*level;
   const assigned=town.villagers.map((v,i)=>({v,i})).filter(({v,i})=>settlerBuilding(town,v,i)===buildingIndex);
   $('selection-details').append(fact(`${assigned.length} / ${capacity}`,'Settler spaces'));

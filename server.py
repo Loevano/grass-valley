@@ -175,6 +175,16 @@ def map_resources(buildings):
 
 
 def ensure_resources(town):
+    # Older saves could assign residents to the founder's town hall.
+    for villager in town['villagers']:
+        index = villager.get('building_index')
+        if (type(index) is int and 0 <= index < len(town['buildings'])
+                and town['buildings'][index]['kind'] == 'hall'):
+            villager.pop('building_index')
+            villager['job'] = 'idle'
+            villager.pop('work_target', None)
+            villager.pop('logistics_trip', None)
+            villager.pop('logistics_target', None)
     if 'town_origin' in town:
         return
     if 'map_resources' not in town:
@@ -191,6 +201,8 @@ def ensure_resources(town):
 
 
 def settler_capacity(building):
+    if building['kind'] == 'hall':
+        return 0
     return SETTLER_SPACES[building['kind']] * building.get('settler_level', 1)
 
 
@@ -222,6 +234,8 @@ def assign_settler(town, worker_index, building_index):
     if type(building_index) is not int or not 0 <= building_index < len(town['buildings']):
         raise ValueError('Choose a building first.')
     building = town['buildings'][building_index]
+    if building['kind'] == 'hall':
+        raise ValueError('Only your controllable character can settle in the town hall.')
     if not completed(building):
         raise ValueError('Finish construction before assigning settlers.')
     others = [i for i in assigned_settlers(town, building_index) if i != worker_index]
@@ -719,6 +733,8 @@ def command(town, data, world=None):
         if type(index) is not int or not 0 <= index < len(town['buildings']):
             raise ValueError('Choose a building first.')
         building = town['buildings'][index]
+        if building['kind'] == 'hall':
+            raise ValueError('The town hall is reserved for your controllable character.')
         level = building.get('settler_level', 1)
         if not completed(building) or level >= 3:
             raise ValueError('Capacity cannot be upgraded at this time.')

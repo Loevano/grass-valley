@@ -110,16 +110,18 @@ the Python host, refresh both browsers, and create a new world to use the shared
 - Click a building, moving villager, or resource to open its information panel.
   Click the town hall for milestone progress and its upgrade. Close panels with
   **Close panel** or Escape. On small screens, panels appear as a bottom drawer.
-- Every finished building has an **Add settler** control, an assigned roster, and
-  removal controls. Woodcutters, fishing huts, halls, storehouses, and acres start
-  with 1 space, cottages with 2, and farms with 4. Upgrade settler capacity twice
+- Every finished building except the town hall has an **Add settler** control,
+  an assigned roster, and removal controls. Woodcutters, fishing huts, storehouses,
+  and acres start with 1 space, cottages with 2, and farms with 4. Upgrade settler capacity twice
   for 20 then 40 wood to reach twice then three times the initial spaces. Capacity
   upgrades take 30 then 60 seconds of builder work and do not increase housing,
   storage, or the town population limit.
   Assignment transfers an existing resident; it does not create a new settler.
   Workplaces set the appropriate job; acres assign farmers to that specific field.
-  Settlers assigned to halls, cottages, or storehouses rest and help construction
-  automatically. Moving preserves assignments; destroying a building releases them.
+  The town hall is reserved for your controllable character and has no resident
+  assignment or settler-capacity upgrades. Settlers assigned to cottages rest
+  and help construction automatically. Moving preserves assignments; destroying
+  a building releases them.
 - Settlers have permanent natural strengths and weaknesses: +25% or −25%
   output and practice gained in one profession family. Every 20 practice in
   their current job adds another base output multiplier. Neutral settlers gain

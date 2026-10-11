@@ -24,6 +24,8 @@ class BuildingSettlers(unittest.TestCase):
 
     def test_every_building_supports_assignment_with_its_own_capacity(self):
         for kind, spaces in SETTLER_SPACES.items():
+            if kind == 'hall':
+                continue
             with self.subTest(kind=kind):
                 self.town['buildings'].append({'kind': kind, 'x': 4, 'y': 4})
                 index = len(self.town['buildings']) - 1
@@ -35,10 +37,11 @@ class BuildingSettlers(unittest.TestCase):
                 self.assertEqual(len(self.town['villagers']), 5)
 
     def test_full_building_rejects_both_direct_and_roster_assignments(self):
-        self.assign(0, 0)
+        self.assign(0, 4)
+        self.assign(2, 4)
         before = copy.deepcopy(self.town)
         with self.assertRaises(ValueError):
-            self.assign(1, 0)
+            self.assign(1, 4)
         self.assertEqual(before, self.town)
         for i in range(4):
             self.assign(i, 1)
@@ -71,20 +74,36 @@ class BuildingSettlers(unittest.TestCase):
             command(self.town, {'action': 'upgrade_capacity', 'index': 4})
         self.assertEqual(self.town['wood'], 0)
 
-    def test_hall_capacity_upgrade_does_not_award_hall_level_or_coins(self):
+    def test_hall_is_reserved_for_controllable_character(self):
         self.town['wood'] = 100
-        coins = self.town['coins']
-        command(self.town, {'action': 'upgrade_capacity', 'index': 0})
-        with self.assertRaises(ValueError):
-            command(self.town, {'action': 'upgrade'})
-        for _ in range(100):
-            construct(self.town, self.town)
-            if 'construction' not in self.town['buildings'][0]:
-                break
-        self.assertEqual(self.town['level'], 1)
-        self.assertEqual(self.town['coins'], coins)
-        self.assertEqual(settler_capacity(self.town['buildings'][0]), 2)
-        self.assertEqual(self.town.get('upgrade_remaining', 0), 0)
+        for level in (1, 2, 3):
+            self.town['buildings'][0]['settler_level'] = level
+            self.assertEqual(settler_capacity(self.town['buildings'][0]), 0)
+            for index in range(len(self.town['villagers'])):
+                before = copy.deepcopy(self.town)
+                with self.assertRaisesRegex(ValueError, 'controllable character'):
+                    self.assign(index, 0)
+                self.assertEqual(before, self.town)
+            before = copy.deepcopy(self.town)
+            with self.assertRaisesRegex(ValueError, 'controllable character'):
+                command(self.town, {'action': 'upgrade_capacity', 'index': 0})
+            self.assertEqual(before, self.town)
+
+    def test_legacy_hall_residents_are_released_after_loading(self):
+        from server import ensure_resources
+        for shared in (False, True):
+            with self.subTest(shared=shared):
+                town = json.loads(json.dumps(self.town))
+                if shared:
+                    town['town_origin'] = {'x': 5, 'y': 5}
+                town['villagers'][0].update(building_index=0, work_target=town['buildings'][0])
+                town['villagers'][1]['building_index'] = 4
+                ensure_resources(town)
+                self.assertNotIn('building_index', town['villagers'][0])
+                self.assertNotIn('work_target', town['villagers'][0])
+                self.assertEqual(town['villagers'][0]['job'], 'idle')
+                self.assertEqual(town['villagers'][1]['building_index'], 4)
+                self.assertEqual(assigned_settlers(town, 0), [])
 
     def test_assignment_and_production_follow_selected_farm_after_save_and_move(self):
         self.assign(0, 2)
