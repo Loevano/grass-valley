@@ -55,6 +55,12 @@ const run=new Function('document','window','localStorage','setTimeout','clearTim
   assert.notDeepStrictEqual([docked[0].x,docked[0].y],[docked[1].x,docked[1].y],'Boats use separate nearby berths');
   assert(docked.every(b=>town.map_resources.some(r=>r.kind==='water'&&r.x===b.x&&r.y===b.y)),'Boats float on water');
   assert.strictEqual(JSON.stringify(docked),JSON.stringify(fishingBoatSprites([['own',JSON.parse(JSON.stringify(town))]],town.map_resources)),'Berths remain stable after reload');
+  const sailor={townId:'own',x:4.5,y:6,state:{boating:true,home:town.buildings[0]}};
+  const sailing=fishingBoatSprites([['own',town]],town.map_resources,[sailor]);
+  assert.deepStrictEqual([sailing[0].x,sailing[0].y],[sailor.x,sailor.y],'Boat follows its fisher continuously on water');
+  assert.strictEqual(sailing[0].passenger,sailor,'Fisher rides in the hut-owned boat');
+  assert(!sailing[1].passenger,'Another hut keeps its own docked boat');
+  assert(!fishingBoatSprites([['own',town]],town.map_resources,[{...sailor,x:4,y:5}])[0].passenger,'Boat stays docked while its fisher walks on land');
   const crowded=fishingBoatSprites([['own',town]], [{kind:'water',x:5,y:6}]);
   assert(crowded.every(b=>Math.floor(b.x+.5)===5&&Math.floor(b.y+.5)===6),'Shared berths keep every boat on the water tile');
   const boatLooks=[1,2,3].map(level=>{marks.length=0;drawFishingBoat({...docked[0],level});return JSON.stringify(marks);});

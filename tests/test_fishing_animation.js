@@ -83,4 +83,28 @@ assert.deepStrictEqual(animation.plan(separated,{job:'fishing',work_target:separ
 const narrow=animation.plan({...pond,map_resources:[pond.map_resources[0]]},
   {job:'fishing',work_target:pond.map_resources[0]},0);
 assert.deepStrictEqual(narrow.castTarget,pond.map_resources[0],'A small pool keeps the float in the available water');
+
+const sailingTown={map_size:16,buildings:[{kind:'fishing_hut',x:2,y:2,profession_upgrades:['boat']}],
+  map_resources:[[3,2],[3,3],[3,4],[4,4],[5,4],[5,3],[5,2]].map(([x,y])=>({kind:'water',x,y}))};
+const sailor=animation.plan(sailingTown,{job:'fishing',building_index:0,work_target:sailingTown.map_resources.at(-1),
+  logistics_position:{x:2,y:3}},0);
+assert(sailor.boating,'Boat-equipped fishers sail to their target');
+assert.strictEqual(sailor.pier.length,0,'Boats do not extend the walking pier offshore');
+const sea=new Set(sailingTown.map_resources.map(r=>r.x+','+r.y));
+const boarding=sailor.path.findIndex(p=>sea.has(p.x+','+p.y));
+assert(boarding>=0);
+assert(sailor.path.slice(boarding).every(p=>sea.has(p.x+','+p.y)),'Sailing follows the curved water rather than crossing land');
+for(let i=0;i<300&&sailor.path.length;i++)animation.advance(sailor,.1,true);
+assert.deepStrictEqual([sailor.x,sailor.y],[5,2],'Boat arrives at the offshore fishing spot');
+const pausedElapsed=sailor.elapsed;
+animation.advance(sailor,1,false);
+assert.strictEqual(sailor.elapsed,pausedElapsed,'Full storage pauses fishing offshore');
+animation.advance(sailor,3.3,true);
+assert.strictEqual(sailor.phase,'returning');
+assert(sailor.path.every(p=>sea.has(p.x+','+p.y)),'Catch returns through connected water to the berth');
+for(let i=0;i<300&&sailor.path.length;i++)animation.advance(sailor,.1,true);
+assert.strictEqual(sailor.phase,'depositing');
+assert.deepStrictEqual([sailor.x,sailor.y],[3,2],'Catch unloads beside the hut');
+animation.advance(sailor,.7,true);
+assert.strictEqual(sailor.phase,'walking','Boat departs again after unloading');
 console.log('Fishing animation checks passed');

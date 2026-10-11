@@ -3,8 +3,11 @@ import json
 import unittest
 from unittest.mock import patch
 
+import work_cycles
 import progression as economy
-from server import command, construct, move_player, new_town, resource_reach, tick
+from server import (command, construct, move_player, new_town, resource_reach,
+                    tick, work_assignment)
+from spatial import SpatialIndex
 
 
 class Boats(unittest.TestCase):
@@ -13,6 +16,68 @@ class Boats(unittest.TestCase):
         self.town.update(level=5, coins=200, wood=200, goods={'planks': 100},
                          npcs=[], terrain=['g' * 120] * 120)
         self.town['player']['fishing'] = 40
+
+    def test_fishers_sail_offshore_and_return_to_unload(self):
+        hut = {'kind': 'fishing_hut', 'x': 6, 'y': 2, 'profession_upgrades': ['boat']}
+        self.town['buildings'].append(hut)
+        water = [{'kind': 'water', 'x': x, 'y': 2} for x in range(7, 13)]
+        self.town['map_resources'] = water + [{'kind': 'water', 'x': 6, 'y': 6}]
+        fisher = self.town['villagers'][0]
+        fisher.update(job='fishing', building_index=1, pending_output={'fish': 1},
+                      logistics_position={'x': 6, 'y': 3})
+        for spatial in (None, SpatialIndex(self.town['map_resources'])):
+            self.assertEqual(work_assignment(self.town, 'fishing', 0, spatial), (hut, water[-1]))
+        phases, positions = set(), set()
+        for _ in range(500):
+            unloaded = work_cycles.advance(self.town, self.town, fisher, hut, water[-1], 0, .1)
+            state = fisher['work_animation']
+            phases.add(state['phase'])
+            positions.add((round(state['x']), round(state['y'])))
+            if unloaded:
+                break
+        self.assertTrue(unloaded)
+        self.assertTrue({'working', 'returning', 'depositing'} <= phases)
+        self.assertIn((12, 2), positions)
+        self.assertLessEqual(abs(state['x'] - hut['x']) + abs(state['y'] - hut['y']), 1)
+        self.assertEqual(state['phase'], 'walking')
+
+    def test_boat_tiers_reach_farther_and_prefer_available_fish(self):
+        hut = {'kind': 'fishing_hut', 'x': 6, 'y': 2}
+        self.town['buildings'].append(hut)
+        self.town['villagers'][0].update(job='fishing', building_index=1)
+        self.town['map_resources'] = [{'kind': 'water', 'x': x, 'y': 2} for x in range(7, 18)]
+        for tier, upgrades in enumerate((['boat'], ['boat', 'improved_boat'], ['boat', 'improved_boat', 'master_boat']), 1):
+            hut['profession_upgrades'] = upgrades
+            source = work_assignment(self.town, 'fishing', 0)[1]
+            self.assertEqual(source['x'], 6 + 4 + 2 * tier)
+            source['supply'] = 0
+            self.assertEqual(work_assignment(self.town, 'fishing', 0)[1]['x'], source['x'] - 1)
+            source.pop('supply')
+
+    def test_sailing_follows_curved_water_and_resumes_after_save(self):
+        hut = {'kind': 'fishing_hut', 'x': 2, 'y': 2, 'profession_upgrades': ['boat']}
+        self.town['buildings'].append(hut)
+        tiles = [(3, 2), (3, 3), (3, 4), (4, 4), (5, 4), (5, 3), (5, 2)]
+        self.town['map_resources'] = [{'kind': 'water', 'x': x, 'y': y} for x, y in tiles]
+        source = self.town['map_resources'][-1]
+        fisher = self.town['villagers'][0]
+        fisher.update(job='fishing', pending_output={'fish': 1}, logistics_position={'x': 2, 'y': 3})
+        work_cycles.advance(self.town, self.town, fisher, hut, source, 0, .1)
+        path = [(p['x'], p['y']) for p in fisher['work_animation']['path']]
+        self.assertEqual(path[path.index(tiles[0]):], tiles)
+        for step in range(500):
+            if step == 50:
+                self.town = json.loads(json.dumps(self.town))
+                fisher = self.town['villagers'][0]
+                hut = self.town['buildings'][1]
+                source = self.town['map_resources'][-1]
+            unloaded = work_cycles.advance(self.town, self.town, fisher, hut, source, 0, .1)
+            if fisher['work_animation']['phase'] == 'returning':
+                self.assertTrue(all((p['x'], p['y']) in tiles for p in fisher['work_animation']['path']))
+            if unloaded:
+                break
+        self.assertTrue(unloaded)
+        self.assertEqual((fisher['work_animation']['x'], fisher['work_animation']['y']), tiles[0])
 
     def reject(self, data, message):
         before = copy.deepcopy(self.town)

@@ -172,7 +172,9 @@ the Python host, refresh both browsers, and create a new world to use the shared
   and fish per catch while afloat. Each upgrade requires the previous tier.
   Each fishing hut buys and owns its own boat. The initial purchase applies
   immediately and shows a full-size boat on nearby water; click it to manage its
-  hut. Boat upgrades use builders; exploration purchases and upgrades apply
+  hut. Assigned fishers sail it to farther connected water within the hut's reach,
+  fish offshore, and return to unload their catch. Idle boats stay by the bank.
+  Boat upgrades use builders; exploration purchases and upgrades apply
   immediately. Existing boats keep their ownership and start at tier 1.
 - Select a farm and choose **Build acre · 5 wood**, then click open ground within
   three tile steps of that farm. Farmers tend its acres and deliver food back to

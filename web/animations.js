@@ -3,6 +3,8 @@ const WorkerAnimation = (() => {
   const key = p => `${p.x},${p.y}`;
   const distance = (a,b) => Math.abs(a.x-b.x)+Math.abs(a.y-b.y);
   const neighbors = p => [{x:p.x+1,y:p.y},{x:p.x,y:p.y+1},{x:p.x-1,y:p.y},{x:p.x,y:p.y-1}];
+  const boatLevel = b => b?.profession_upgrades?.includes('master_boat')?3:b?.profession_upgrades?.includes('improved_boat')?2:b?.profession_upgrades?.includes('boat')?1:0;
+  const fishingReach = b => 2+(b.level || 1)+(boatLevel(b)?3+2*(boatLevel(b)-1):0);
   function route(start, target, blocked, size=120, adjacent=true, bounds=null) {
     const queue = [start], previous = new Map([[key(start),null]]);
     for(let i=0;i<queue.length;i++){
@@ -19,6 +21,18 @@ const WorkerAnimation = (() => {
       }
     }
     return null;
+  }
+  function travel(start,target,state,adjacent=true){
+    if(!state.sailing)return route(start,target,state.blocked,state.size,adjacent,state.bounds);
+    const {water,berth,landBlocked,seaBlocked,seaBounds}=state.sailing;
+    const afloat=water.has(key({x:Math.round(start.x),y:Math.round(start.y)}));
+    if(target===state.source&&afloat)return route(start,target,seaBlocked,state.size,false,seaBounds);
+    const outbound=target===state.source;
+    const approach=outbound?route(start,berth,landBlocked,state.size,false,state.bounds):
+      afloat?route(start,berth,seaBlocked,state.size,false,seaBounds):[];
+    const sailing=outbound?route(berth,target,seaBlocked,state.size,false,seaBounds):
+      route(afloat?berth:start,target,landBlocked,state.size,true,state.bounds);
+    return approach===null||sailing===null?null:[...approach,...sailing];
   }
   function plan(town, villager, index, state) {
     const blocked=new Set([...(town.obstacles || town.buildings),...town.map_resources,...(town.npcs || [])].map(key));
@@ -64,17 +78,45 @@ const WorkerAnimation = (() => {
     const kind=villager.job==='woodcutting'?'woodcutter':villager.job==='fishing'?'fishing_hut':'farm';
     // Match the host's workplace selection, including multiple assigned workers.
     const workplaces=town.buildings.filter(b=>b.kind===kind&&!b.construction&&(kind==='farm'||town.map_resources.some(r=>
-      r.kind===(kind==='woodcutter'?'tree':'water')&&distance(b,r)<=(kind==='woodcutter'?10:3))));
+      r.kind===(kind==='woodcutter'?'tree':'water')&&distance(b,r)<=(kind==='woodcutter'?10:kind==='fishing_hut'?fishingReach(b):3))));
     const assigned=Number.isInteger(villager.building_index)?town.buildings[villager.building_index]:null;
     const workplace=(assigned?.kind==='acre'?town.buildings[assigned.farm_index]:assigned) || (source?.kind==='acre'?town.buildings[source.farm_index]:workplaces[index%workplaces.length]);
     const home=villager.construction_target || workplace || town.buildings.find(b=>b.kind==='hall');
-    let pier=[],workSpot=null;
+    let pier=[],workSpot=null,sailing=null;
     if(!villager.construction_target&&villager.job==='farming'&&source?.kind==='acre'){
       // Farmers tend the field itself rather than working outside its boundary.
       for(const acre of town.buildings.filter(b=>b.kind==='acre'&&!b.construction))blocked.delete(key(acre));
       workSpot=source;
     }
-    if(!villager.construction_target&&villager.job==='fishing'&&source&&home?.kind==='fishing_hut'){
+    const boating=!villager.construction_target&&villager.job==='fishing'&&source&&home?.kind==='fishing_hut'&&boatLevel(home)>0;
+    if(boating){
+      const water=new Set(town.map_resources.filter(r=>r.kind==='water'&&distance(home,r)<=fishingReach(home)
+        &&town.terrain?.[r.y]?.[r.x]!=='v').map(key));
+      const occupied=new Set([...(town.obstacles || town.buildings),...(town.npcs || [])].map(key));
+      const queue=[source],seen=new Set([key(source)]);
+      for(const tile of queue){
+        if(!water.has(key(tile))||occupied.has(key(tile)))continue;
+        blocked.delete(key(tile));
+        for(const next of neighbors(tile))if(water.has(key(next))&&!occupied.has(key(next))&&!seen.has(key(next))){
+          seen.add(key(next));queue.push(next);
+        }
+      }
+      const connected=queue.filter(tile=>water.has(key(tile))&&!occupied.has(key(tile)));
+      const berth=connected.sort((a,b)=>distance(home,a)-distance(home,b)||a.y-b.y||a.x-b.x)[0] || source;
+      const seaBounds={minX:Math.max(0,home.x-fishingReach(home)),maxX:Math.min(size-1,home.x+fishingReach(home)),
+        minY:Math.max(0,home.y-fishingReach(home)),maxY:Math.min(size-1,home.y+fishingReach(home))};
+      const seaBlocked=new Set(),landBlocked=new Set([...(town.obstacles || town.buildings),...town.map_resources,...(town.npcs || [])].map(key));
+      landBlocked.delete(key(home));landBlocked.delete(key(berth));
+      const connectedWater=new Set(connected.map(key));
+      for(let x=seaBounds.minX;x<=seaBounds.maxX;x++)for(let y=seaBounds.minY;y<=seaBounds.maxY;y++){
+        if(!connectedWater.has(`${x},${y}`))seaBlocked.add(`${x},${y}`);
+      }
+      // Preserve terrain blockers for the land approach to the berth.
+      for(const tile of blocked)if(!water.has(tile))landBlocked.add(tile);
+      landBlocked.delete(key(home));
+      sailing={water:connectedWater,berth,landBlocked,seaBlocked,seaBounds};
+      blocked.delete(key(home));workSpot=source;
+    }else if(!villager.construction_target&&villager.job==='fishing'&&source&&home?.kind==='fishing_hut'){
       // A hut can occupy the only bank tile; its pier provides access over water.
       const pierBlocked=new Set(blocked);
       pierBlocked.delete(key(home));
@@ -87,7 +129,8 @@ const WorkerAnimation = (() => {
         for(const tile of pier)blocked.delete(key(tile));
       }
     }
-    let path=source?route(start,workSpot || source,blocked,size,!workSpot,bounds):home?route(start,home,blocked,size,true,bounds):[];
+    const routing={blocked,size,bounds,sailing,source};
+    let path=source?travel(start,workSpot || source,routing,!workSpot):home?route(start,home,blocked,size,true,bounds):[];
     if(path!==null)path=[...approach,...path];
     let castTarget=villager.job==='fishing'?source:null;
     if(villager.job==='fishing'&&source){
@@ -104,7 +147,7 @@ const WorkerAnimation = (() => {
       }
     }
     return {...position,phase:path===null?'waiting':path.length?'walking':source?'working':'idle',
-      path:path || [],source,home,pier,workSpot,castTarget,fishingCaught:null,blocked,size,bounds,workDuration:villager.job==='farming'?8:3.2,
+      path:path || [],source,home,pier,workSpot,castTarget,fishingCaught:null,blocked,size,bounds,boating,sailing,workDuration:villager.job==='farming'?8:3.2,
       farming:villager.job==='farming'&&!villager.construction_target,water:town.map_resources.filter(r=>r.kind==='water'),waterReady:false,
       stationary:!!source&&source.kind===workplace?.kind&&distance(source,workplace)===0&&!villager.construction_target,
       construction:!!villager.construction_target,elapsed:0,clock:state?.clock || index*.37,facing:state?.facing || 1};
@@ -169,12 +212,12 @@ const WorkerAnimation = (() => {
     }
     if(state.phase==='working'&&state.elapsed>=(state.workDuration || 3.2)){
       if(state.fishingCaught===false){state.elapsed=0;state.fishingCaught=null;return;}
-      const path=state.stationary?[]:state.home?route(state,state.home,state.blocked,state.size,true,state.bounds):null;
+      const path=state.stationary?[]:state.home?travel(state,state.home,state):null;
       if(path===null)return;
       state.path=path;state.phase=path.length?'returning':'depositing';state.elapsed=0;
     }else if(state.phase==='depositing'&&state.elapsed>=.65){
       if(state.hostWork){state.elapsed=.65;return;}
-      const path=route(state,state.workSpot || state.source,state.blocked,state.size,!state.workSpot,state.bounds);
+      const path=travel(state,state.workSpot || state.source,state,!state.workSpot);
       state.path=path || [];state.phase=path===null?'waiting':path.length?'walking':'working';state.elapsed=0;state.fishingCaught=null;state.waterReady=false;
     }
   }

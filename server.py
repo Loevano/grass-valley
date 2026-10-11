@@ -347,6 +347,10 @@ def work_assignment(town, job, worker_index, spatial=None):
         nearby = (spatial.nearby(source, b['x'], b['y'], reach) if spatial is not None else
                   [r for r in town['map_resources'] if r['kind'] == source
                    and abs(r['x'] - b['x']) + abs(r['y'] - b['y']) <= reach])
+        boating = job == 'fishing' and economy.fishing_boat_level(b)
+        if boating:
+            occupied = {(item['x'], item['y']) for item in town['buildings'] + town.get('npcs', [])}
+            nearby = work_cycles.fishing_water(b, nearby, occupied, reach)
         if nearby or job == 'farming':
             if job == 'farming':
                 acres = [a for a in town['buildings'] if a['kind'] == 'acre' and completed(a)
@@ -358,7 +362,7 @@ def work_assignment(town, job, worker_index, spatial=None):
                     acres = [assigned_acre]
                 nearby = [acres[worker_index % len(acres)]] if acres else [b]
             workplaces.append((b, min(nearby, key=lambda r:
-                                      (r.get('supply', 1) <= 0, abs(r['x'] - b['x']) + abs(r['y'] - b['y'])))))
+                                      (r.get('supply', 1) <= 0, (-1 if boating else 1) * (abs(r['x'] - b['x']) + abs(r['y'] - b['y']))))))
     if not workplaces:
         return None
     assignment = workplaces[worker_index % len(workplaces)]

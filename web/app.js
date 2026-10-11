@@ -1769,7 +1769,8 @@ function animatedVillagers(town, seconds, townId=viewed, frameLayout=null){
   const layout=frameLayout ?? JSON.stringify([tiles(world.shared_map?Object.values(world.towns).flatMap(t=>t.buildings):town.buildings),tiles(town.map_resources)]);
   return town.villagers.map((villager,index)=>{
     const task=JSON.stringify([villager.job,villager.building_index,villager.work_target?tiles([villager.work_target]):null,
-      villager.construction_target?tiles([villager.construction_target]):null]);
+      villager.construction_target?tiles([villager.construction_target]):null,
+      villager.job==='fishing'?town.buildings.filter(b=>b.kind==='fishing_hut').map(b=>[b.level,b.profession_upgrades]):null]);
     const trip=villager.logistics_trip;
     // Polling advances the host's step; keep the visible trip running continuously.
     const signature=JSON.stringify([task,trip?[trip.id,trip.operation,trip.workplace,trip.storage,trip.path]:villager.logistics_target]);
@@ -2338,8 +2339,8 @@ function drawGround(rect,dpr,landscape,water,bounds,forest=null){
   ctx.drawImage(cache.surface,originX-(cache.originX+margin)*scale,originY-(cache.originY+margin)*scale,
     cache.surface.width/dpr*scale,cache.surface.height/dpr*scale);
 }
-function fishingBoatSprites(entries,resources){
-  const water=resources.filter(r=>r.kind==='water'),berths=new Map(),boats=[];
+function fishingBoatSprites(entries,resources,villagers=[]){
+  const water=resources.filter(r=>r.kind==='water'),waterTiles=new Set(water.map(r=>`${r.x},${r.y}`)),berths=new Map(),boats=[];
   for(const [townId,town] of entries)for(const [index,hut] of (town?.buildings || []).entries()){
     if(hut.kind!=='fishing_hut'||!fishingBoatLevel(hut))continue;
     const nearby=water.filter(r=>Math.abs(r.x-hut.x)+Math.abs(r.y-hut.y)<=resourceReach(hut))
@@ -2347,8 +2348,11 @@ function fishingBoatSprites(entries,resources){
     const berth=nearby.find(r=>!berths.has(`${r.x},${r.y}`)) || nearby[0];
     const key=berth?`${berth.x},${berth.y}`:`shore:${townId}/${index}`,count=berths.get(key) || 0;
     berths.set(key,count+1);
+    const passenger=villagers.find(v=>v.townId===townId&&v.state.boating&&v.state.home?.x===hut.x&&v.state.home?.y===hut.y
+      &&waterTiles.has(`${Math.floor(v.x+.5)},${Math.floor(v.y+.5)}`));
     boats.push({kind:'fishing_boat',townId,objectIndex:index,level:fishingBoatLevel(hut),
-      x:berth?berth.x+(count ? .35*Math.sin(count*2.4) : 0):hut.x+.7,y:berth?berth.y+(count ? .35*Math.cos(count*2.4) : 0):hut.y+.4});
+      passenger,x:passenger?passenger.x:berth?berth.x+(count ? .35*Math.sin(count*2.4) : 0):hut.x+.7,
+      y:passenger?passenger.y:berth?berth.y+(count ? .35*Math.cos(count*2.4) : 0):hut.y+.4});
   }
   return boats;
 }
@@ -2480,15 +2484,17 @@ function draw(seconds=0){
     const [px,py]=point(b.x,b.y);
     return px>=-tileW&&px<=rect.width+tileW&&py>=-tileH&&py<=rect.height+80*tileW/46;
   };
-  const boats=fishingBoatSprites(entries,resources);
+  const boats=fishingBoatSprites(entries,resources,villagers);
+  const passengers=new Set(boats.map(b=>b.passenger).filter(Boolean));
   const objects=mergeDepthObjects([...buildings,...cropObjects,...boats].filter(visible),visibleResourceObjects(resourceData,rect),
-    [...villagers,...npcSprites(world.shared_map || town,seconds),...otherPlayers,...(hero?[hero]:[])].filter(visible));
+    [...villagers.filter(v=>!passengers.has(v)),...npcSprites(world.shared_map || town,seconds),...otherPlayers,...(hero?[hero]:[])].filter(visible));
   for(const b of objects){
     const [px,py]=point(b.x,b.y),scale=tileW/46;
     if(px < -tileW || px > rect.width+tileW || py < -tileH || py > rect.height+80*scale)continue;
     if(b.kind==='crop'){drawFarmCrop(b);continue;}
     if(b.kind==='fishing_boat'){
       drawFishingBoat(b);
+      if(b.passenger)drawVillager({...b.passenger,state:{...b.passenger.state,path:[]}});
       hitTargets.push({type:'building',index:b.objectIndex,townId:b.townId,left:px-25*scale,right:px+25*scale,top:py+(tileH/2)-(b.level>=2?32:10)*scale,bottom:py+tileH/2+13*scale});
       continue;
     }
