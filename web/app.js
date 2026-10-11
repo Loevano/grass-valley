@@ -2261,7 +2261,7 @@ function paintGround(target,landscape,water,bounds,offsetX=0,offsetY=0,region=nu
   const ctx=target,terrainSize=landscape?.map_size || 12;
   const detailed=tileW>=32;
   const palette={g:['#68865a','#69875b','#668358'],f:['#506f4a','#55764c','#5a7b50'],
-    m:['#83945e','#899b65','#80915b'],s:['#b4a575','#bdad7d','#b8a878'],r:['#8b8d7c','#969785','#858978'],b:['#59674b','#626f50','#536247'],d:['#d6b575','#dfbf80','#cfac6b'],i:['#c7e0e8','#d8eaf0','#b9d5e1']};
+    m:['#83945e','#899b65','#80915b'],s:['#b4a575','#bdad7d','#b8a878'],r:['#8b8d7c','#969785','#858978'],b:['#59674b','#626f50','#536247'],d:['#d6b575','#dfbf80','#cfac6b'],i:['#c6e2e8','#d4e9ed','#bcd9e3']};
   const land=(tx,ty)=>tx>=0&&ty>=0&&tx<terrainSize&&ty<terrainSize&&landscape?.terrain?.[ty]?.[tx]!=='v'
     &&(!landscape?.chunked||!!landscape.terrain?.[ty]?.[tx]);
   const {minX,maxX,minY,maxY}=bounds;
@@ -2291,19 +2291,45 @@ function paintGround(target,landscape,water,bounds,offsetX=0,offsetY=0,region=nu
       const biome=landscape?.terrain?.[y]?.[x] || (landscape?.chunked?'v':'g');
       if(biome==='v')continue;
       // Ground thickness appears only at the actual valley boundary.
-      if(!land(x+1,y))polygon([diamond[1],diamond[2],[diamond[2][0],diamond[2][1]+12],[diamond[1][0],diamond[1][1]+12]],'#344b35');
-      if(!land(x,y+1))polygon([diamond[2],diamond[3],[diamond[3][0],diamond[3][1]+12],[diamond[2][0],diamond[2][1]+12]],'#405438');
+      if(!land(x+1,y))polygon([diamond[1],diamond[2],[diamond[2][0],diamond[2][1]+12],[diamond[1][0],diamond[1][1]+12]],biome==='i'?'#729ead':'#344b35');
+      if(!land(x,y+1))polygon([diamond[2],diamond[3],[diamond[3][0],diamond[3][1]+12],[diamond[2][0],diamond[2][1]+12]],biome==='i'?'#94bac7':'#405438');
       const shores=wet?[!water.has(`${x},${y-1}`),!water.has(`${x+1},${y}`),
         !water.has(`${x},${y+1}`),!water.has(`${x-1},${y}`)]:null;
       const shallow=shores?.some(Boolean);
       const waterColor=biome==='b'?(shallow?'#718565':'#4e6857'):(shallow?'#6299a1':'#447d91');
       const canopy=!detailed&&forest?.has(`${x},${y}`);
       polygon(diamond,wet?waterColor:canopy?(biome==='b'?'#4b6549':'#3f6045'):palette[biome][groundVariant(x,y)],null);
-      if(detailed&&!wet&&(biome==='d'||biome==='i')&&variation%3===0){
-        ctx.strokeStyle=biome==='d'?'#b9965d':'#94bdce';ctx.lineWidth=tileW/46;
+      if(detailed&&!wet&&biome==='i'){
+        // Stable, tile-local frost stays inside the cached ground footprint.
+        const frost=((x*73856093)^(y*19349663)^(landscape?.terrain_seed || 0))>>>0;
+        const mirror=frost&1?1:-1;
+        const p=(dx,dy)=>[px+dx*tileW*mirror,py+dy*tileH];
+        polygon([p(-.34,.48),p(-.06,.19),p(.28,.48),p(.03,.73)],'#edfaff38');
+        if(frost%3!==0){
+          ctx.beginPath();ctx.moveTo(...p(-.35,.56));
+          ctx.quadraticCurveTo(...p(-.14,.31),...p(.16,.53));
+          ctx.quadraticCurveTo(...p(.04,.49),...p(-.03,.72));
+          ctx.quadraticCurveTo(...p(-.22,.64),...p(-.35,.56));
+          ctx.closePath();ctx.fillStyle='#f4fbf0a6';ctx.fill();
+        }
+        if(frost%4===0){
+          ctx.strokeStyle='#7fabbc88';ctx.lineWidth=tileW/70;
+          ctx.beginPath();ctx.moveTo(...p(-.21,.57));ctx.lineTo(...p(-.02,.63));
+          ctx.lineTo(...p(.12,.45));ctx.lineTo(...p(.26,.5));
+          ctx.moveTo(...p(-.02,.63));ctx.lineTo(...p(.06,.78));ctx.stroke();
+          ctx.strokeStyle='#f4ffffb3';ctx.beginPath();
+          ctx.moveTo(...p(-.2,.54));ctx.lineTo(...p(-.03,.6));ctx.lineTo(...p(.1,.43));ctx.stroke();
+        }
+        if(frost%5===0){
+          const [sx,sy]=p(.2,.59);ctx.strokeStyle='#f7ffffcc';ctx.lineWidth=tileW/60;
+          ctx.beginPath();ctx.moveTo(sx-tileW*.035,sy);ctx.lineTo(sx+tileW*.035,sy);
+          ctx.moveTo(sx,sy-tileH*.07);ctx.lineTo(sx,sy+tileH*.07);ctx.stroke();
+        }
+      }
+      if(detailed&&!wet&&biome==='d'&&variation%3===0){
+        ctx.strokeStyle='#b9965d';ctx.lineWidth=tileW/46;
         ctx.beginPath();ctx.moveTo(px-tileW*.18,py+tileH*.55);
-        if(biome==='d')ctx.quadraticCurveTo(px,py+tileH*.35,px+tileW*.18,py+tileH*.55);
-        else{ctx.lineTo(px,py+tileH*.7);ctx.lineTo(px+tileW*.1,py+tileH*.48);}
+        ctx.quadraticCurveTo(px,py+tileH*.35,px+tileW*.18,py+tileH*.55);
         ctx.stroke();
       }
       if(detailed&&biome==='b'&&variation%3===0){
@@ -2312,7 +2338,7 @@ function paintGround(target,landscape,water,bounds,offsetX=0,offsetY=0,region=nu
         if(wet){ctx.fillStyle='#a3ad74';ctx.beginPath();ctx.ellipse(px+tileW*.17,py+tileH*.55,tileW*.065,tileH*.075,0,0,Math.PI*2);ctx.fill();}
       }
       if(detailed&&!wet&&!['d','i'].includes(biome)&&variation===0){ctx.fillStyle='#8fa574';ctx.fillRect(px-5*tileW/46,py+tileH*.5,2*tileW/46,2*tileW/46);ctx.fillStyle='#d7c78a';ctx.fillRect(px+4*tileW/46,py+tileH*.65,2*tileW/46,2*tileW/46);}
-      if(detailed&&!wet&&(x===0||y===0||x===terrainSize-1||y===terrainSize-1)&&variation%2===0){ctx.strokeStyle='#9caf77';ctx.lineWidth=tileW/46;ctx.beginPath();ctx.moveTo(px-6*tileW/46,py+tileH*.65);ctx.lineTo(px-9*tileW/46,py+tileH*.4);ctx.moveTo(px-6*tileW/46,py+tileH*.65);ctx.lineTo(px-4*tileW/46,py+tileH*.35);ctx.stroke();}
+      if(detailed&&!wet&&biome!=='i'&&(x===0||y===0||x===terrainSize-1||y===terrainSize-1)&&variation%2===0){ctx.strokeStyle='#9caf77';ctx.lineWidth=tileW/46;ctx.beginPath();ctx.moveTo(px-6*tileW/46,py+tileH*.65);ctx.lineTo(px-9*tileW/46,py+tileH*.4);ctx.moveTo(px-6*tileW/46,py+tileH*.65);ctx.lineTo(px-4*tileW/46,py+tileH*.35);ctx.stroke();}
       if(detailed&&wet){
         ctx.strokeStyle='#b4d7ce99';ctx.lineWidth=tileW/46;
         for(let edge=0;edge<4;edge++)if(shores[edge]){
