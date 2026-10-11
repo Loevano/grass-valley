@@ -180,7 +180,7 @@ the Python host, refresh both browsers, and create a new world to use the shared
 - Hall upgrades also require a builder at the hall. The first requires housing and reliable food, costs 40 wood, and
   takes 30 seconds of construction after arrival; the hall
   panel shows remaining time. Closing the host pauses the upgrade.
-- Every completed building holds storage: **50 units** in ordinary buildings,
+- Completed workplaces hold storage: **50 units** in ordinary workplaces,
   200 in the hall, and 100 per storehouse level. Its **Storage** section shows
   goods held there. Wood and other products become available for construction,
   meals, and sales immediately when produced at their workplace. Hauling relocates
@@ -189,9 +189,12 @@ the Python host, refresh both browsers, and create a new world to use the shared
   available stock. Old shared stock is preserved at the hall when loading, and
   old workplace outputs become available once. Demolition preserves available
   goods at the hall.
-- Select any completed building to allocate incoming storage spaces
-  between wood, food, planks, wheat, fodder, flour, wool, tools, manure, and herbs.
-  Food spaces cover all edible goods, using their pantry value. The hall starts
+- Allocate incoming storage spaces only for goods relevant to each building.
+  Workplaces accept their production inputs and outputs; farms and acres also
+  accept manure. Homes do not store goods. Halls, storehouses, and markets accept
+  all goods. Food spaces cover only the edible goods that building accepts, using
+  their pantry value (a fishing hut accepts fish, for example). Food is consumed
+  from available town stock. The hall starts
   with 100 wood and 100 food spaces. Each storehouse level adds 100 shared spaces;
   new and upgraded spaces remain unallocated until you assign them. Allocations
   cannot exceed a room's capacity or remove space occupied by its delivered goods.

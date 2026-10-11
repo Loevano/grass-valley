@@ -125,10 +125,30 @@ def costs_of(spec):
 
 
 STORAGE_KEYS = ('wood', 'food', 'planks', 'wheat', 'fodder', 'flour', 'wool', 'tools', 'manure', 'herbs')
+STORAGE_GOODS = {
+    **{kind: (*STORAGE_KEYS, *EDIBLE) for kind in ('hall', 'storehouse', 'market')},
+    'home': (),
+    'woodcutter': ('wood',),
+    'fishing_hut': ('fish',),
+    'farm': (*CROPS, 'manure'),
+    'acre': (*CROPS, 'manure'),
+    'barn': ('fodder', 'vegetables', 'manure', *(a['output'] for a in ANIMALS.values())),
+    'orchard': ('fruit',),
+    **{kind: (*inputs, output) for kind, (inputs, output, _) in RECIPES.items()},
+}
+
+
+def accepts_storage(building, key):
+    return key in STORAGE_GOODS.get(building['kind'], ())
+
+
+def building_storage_keys(building):
+    groups = {'food' if k in EDIBLE else k for k in STORAGE_GOODS.get(building['kind'], ())}
+    return tuple(k for k in STORAGE_KEYS if k in groups)
 
 
 def storage_size(building):
-    return 200 if building['kind'] == 'hall' else 100 * building.get('level', 1) if building['kind'] == 'storehouse' else 50
+    return 0 if building['kind'] == 'home' else 200 if building['kind'] == 'hall' else 100 * building.get('level', 1) if building['kind'] == 'storehouse' else 50
 
 
 def inventory(building):
@@ -180,6 +200,8 @@ def withdraw(town, key, amount, source=None):
 
 
 def local_room(building, key):
+    if not accepts_storage(building, key):
+        return 0
     stock = inventory(building)
     group = 'food' if key in EDIBLE else key
     used = sum(n * EDIBLE.get(k, 1) for k, n in stock.items() if k == group or (group == 'food' and k in EDIBLE))
@@ -188,20 +210,22 @@ def local_room(building, key):
 
 
 def storage_allocations(building):
-    return building.get('storage_allocations', {'wood': 100, 'food': 100} if building['kind'] == 'hall' else {})
+    allocations = building.get('storage_allocations', {'wood': 100, 'food': 100} if building['kind'] == 'hall' else {})
+    return {k: n for k, n in allocations.items() if k in building_storage_keys(building)}
 
 
 def storage_limit(town, key):
-    key = 'food' if key in EDIBLE else key
-    return sum(storage_allocations(b).get(key, 0) for b in town['buildings']
-               if 'construction' not in b)
+    group = 'food' if key in EDIBLE else key
+    return sum(storage_allocations(b).get(group, 0) for b in town['buildings']
+               if 'construction' not in b and (accepts_storage(b, key)
+                   or (key == 'food' and 'food' in building_storage_keys(b))))
 
 
 def storage_room(town, key):
     if town.get('inventory_version') == 1:
         return sum(local_room(b, key) for b in town['buildings'] if 'construction' not in b)
     group = 'food' if key in EDIBLE else key
-    room = storage_limit(town, group) - quantity(town, group)
+    room = storage_limit(town, key) - quantity(town, group)
     return max(0, room / EDIBLE.get(key, 1))
 
 
@@ -460,4 +484,5 @@ def extra_worker(town, villager, building, capacity):
 def public_catalog():
     return {'buildings': BUILDINGS, 'crops': CROPS, 'animals': ANIMALS,
             'job_requirements': JOB_REQUIREMENTS, 'talent_roots': TALENT_ROOTS,
-            'upgrades': PROFESSION_UPGRADES, 'recipes': RECIPES, 'edible': EDIBLE}
+            'upgrades': PROFESSION_UPGRADES, 'recipes': RECIPES, 'edible': EDIBLE,
+            'storage_goods': STORAGE_GOODS}

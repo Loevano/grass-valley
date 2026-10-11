@@ -224,26 +224,45 @@ function buildingVisualLevel(building,town){
 function buildingHeight(building,town){
   return ({hall:42,woodcutter:23,barn:34,mill:40,smokehouse:32,workshop:25,sawpit:16,market:17,fish_pond:18,orchard:20,bakery:30,butcher:25}[building.kind] || 27)+4*(buildingVisualLevel(building,town)-1);
 }
-function buildingStorageSize(building){return building.kind==='hall'?200:building.kind==='storehouse'?100*buildingLevel(building):50;}
+function buildingStorageSize(building){return building.kind==='home'?0:building.kind==='hall'?200:building.kind==='storehouse'?100*buildingLevel(building):50;}
 function storageCapacity(town){return town.buildings.filter(b=>!b.construction).reduce((sum,b)=>sum+buildingStorageSize(b),0);}
 
 const storageDrafts=new Map();
 const storageKeys=['wood','food','planks','wheat','fodder','flour','wool','tools','manure','herbs'];
 function buildingName(building){return building.kind==='storehouse'&&buildingLevel(building)>=5?'Warehouse':labels[building.kind];}
-function roomAllocations(building){return building.storage_allocations || (building.kind==='hall'?{wood:100,food:100}:{});}
+const storageGoods={
+  hall:[...storageKeys,'vegetables','carrots','fish','berries','eggs','meat','milk','fruit','smoked_fish','bread','prepared_meat'],
+  storehouse:[...storageKeys,'vegetables','carrots','fish','berries','eggs','meat','milk','fruit','smoked_fish','bread','prepared_meat'],
+  market:[...storageKeys,'vegetables','carrots','fish','berries','eggs','meat','milk','fruit','smoked_fish','bread','prepared_meat'],
+  home:[],woodcutter:['wood'],fishing_hut:['fish'],farm:['vegetables','wheat','carrots','fodder','manure'],acre:['vegetables','wheat','carrots','fodder','manure'],
+  barn:['fodder','vegetables','manure','eggs','wool','meat','milk'],orchard:['fruit'],
+  bakery:['flour','wood','bread'],butcher:['meat','prepared_meat'],sawpit:['wood','planks'],mill:['wheat','flour'],
+  smokehouse:['fish','wood','smoked_fish'],workshop:['planks','wood','tools'],fish_pond:['fodder','fish']
+};
+function buildingStorageGoods(building){return (world.progression?.storage_goods || storageGoods)[building.kind] || [];}
+function foodGoods(){return world.progression?.edible || {vegetables:1,carrots:1,fish:1,berries:1,eggs:1,meat:1,milk:1,fruit:1,smoked_fish:1.5,bread:1.5,prepared_meat:1.5};}
+function buildingStorageKeys(building){
+  const edible=foodGoods(),groups=new Set(buildingStorageGoods(building).map(key=>key in edible?'food':key));
+  return storageKeys.filter(key=>groups.has(key));
+}
+function roomAllocations(building){
+  const allocations=building.storage_allocations || (building.kind==='hall'?{wood:100,food:100}:{});
+  return Object.fromEntries(Object.entries(allocations).filter(([key])=>buildingStorageKeys(building).includes(key)));
+}
 function resourceStorage(town,key){
-  if(key in (world.progression?.edible || {vegetables:1,carrots:1,fish:1,berries:1,eggs:1,meat:1,milk:1,fruit:1,smoked_fish:1.5,bread:1.5,prepared_meat:1.5}))key='food';
-  return town.buildings.filter(b=>!b.construction).reduce((sum,b)=>sum+(roomAllocations(b)[key] || 0),0);
+  const group=key in foodGoods()?'food':key;
+  return town.buildings.filter(b=>!b.construction&&(key==='food'?buildingStorageKeys(b).includes('food'):buildingStorageGoods(b).includes(key))).reduce((sum,b)=>sum+(roomAllocations(b)[group] || 0),0);
 }
 const storageEditing=new Set();
 function renderStorage(town,item,index,target=$('selection-details')){
-  const capacity=item.kind==='hall'?200:item.kind==='storehouse'?100*buildingLevel(item):50,allocations=roomAllocations(item);
+  const keys=buildingStorageKeys(item);
+  const capacity=buildingStorageSize(item),allocations=roomAllocations(item);
   const draftKey=`${world.world_id}/${viewed}/${index}/${item.kind}/${item.x},${item.y}`;
   const owner=viewed===identity?.town_id,editing=owner&&storageEditing.has(draftKey);
   const draft=storageDrafts.get(draftKey);
-  if(!editing&&draft&&storageKeys.every(key=>(draft[key] || 0)===(allocations[key] || 0)))storageDrafts.delete(draftKey);
+  if(!editing&&draft&&keys.every(key=>(draft[key] || 0)===(allocations[key] || 0)))storageDrafts.delete(draftKey);
   const values=editing?(storageDrafts.get(draftKey) || allocations):allocations;
-  const edible=world.progression?.edible || {vegetables:1,carrots:1,fish:1,berries:1,eggs:1,meat:1,milk:1,fruit:1,smoked_fish:1.5,bread:1.5,prepared_meat:1.5};
+  const edible=foodGoods();
   const stock={},minimum={},stored={...item.stored_goods};
   for(const [key,n] of Object.entries(item.stored_goods || {})){
     const category=key in edible?'food':key;
@@ -255,23 +274,23 @@ function renderStorage(town,item,index,target=$('selection-details')){
     stock[category]=(stock[category] || 0)+n*(edible[key] || 1);
   }
   const heading=document.createElement('div');heading.className='storage-heading';
-  if(owner&&!editing){
+  if(owner&&!editing&&keys.length){
     const button=document.createElement('button');button.textContent='Allocate';
     button.onclick=()=>{storageEditing.add(draftKey);storageDrafts.set(draftKey,{...allocations});renderSelection(town);};heading.append(button);
   }
   target.append(heading);
   const summary=document.createElement('p');summary.className='storage-summary';target.append(summary);
-  const note=document.createElement('p');note.className='storage-note';note.textContent=editing?'Assign space for incoming goods. Food includes all edible goods.':'Stored / allocated spaces · Food includes all edible goods.';target.append(note);
+  const note=document.createElement('p');note.className='storage-note';note.textContent=keys.length?(editing?'Assign space for incoming goods relevant to this building.':'Stored / allocated spaces')+(keys.includes('food')?' · Food space is shared by the edible goods this building accepts.':''):'This building does not store goods.';target.append(note);
   const fields={},counts={};
   const update=()=>{
-    const used=storageKeys.reduce((sum,key)=>sum+Number(fields[key].value),0);
+    const used=keys.reduce((sum,key)=>sum+Number(fields[key].value),0);
     summary.textContent=`${used} / ${capacity} allocated · ${Math.max(0,capacity-used)} free`;
-    for(const key of storageKeys){
+    for(const key of keys){
       fields[key].max=String(Math.max(Number(fields[key].min),capacity-used+Number(fields[key].value)));
       counts[key].textContent=`${fields[key].value} spaces`;
     }
   };
-  for(const key of storageKeys){
+  for(const key of keys){
     const row=document.createElement('label');row.className='storage-row';
     const caption=document.createElement('span');caption.className='storage-caption';
     const name=document.createElement('span');name.textContent=goodName(key);
@@ -280,7 +299,7 @@ function renderStorage(town,item,index,target=$('selection-details')){
     if(editing){
       const input=document.createElement('input');input.type='range';input.min=String(Math.ceil(minimum[key] || 0));input.max=String(capacity);input.step='1';input.value=String(Math.max(Number(input.min),values[key] || 0));
       input.setAttribute('aria-label',goodName(key)+' storage allocation');fields[key]=input;
-      input.oninput=()=>{input.value=String(Math.max(Number(input.min),Math.min(Number(input.max),Number(input.value))));update();storageDrafts.set(draftKey,Object.fromEntries(storageKeys.map(k=>[k,Number(fields[k].value)])));};row.append(input);
+      input.oninput=()=>{input.value=String(Math.max(Number(input.min),Math.min(Number(input.max),Number(input.value))));update();storageDrafts.set(draftKey,Object.fromEntries(keys.map(k=>[k,Number(fields[k].value)])));};row.append(input);
     }else{
       const amount=stock[key] || 0,limit=allocations[key] || 0;
       count.textContent=`${Number(amount.toFixed(1))} / ${limit}`;
@@ -293,10 +312,11 @@ function renderStorage(town,item,index,target=$('selection-details')){
     update();
     const actions=document.createElement('div');actions.className='storage-actions';
     const save=document.createElement('button');save.textContent='Save allocations';
-    save.onclick=()=>{if(viewed!==identity?.town_id)return;act({action:'allocate_storage',index,allocations:Object.fromEntries(storageKeys.map(key=>[key,Number(fields[key].value)]))});storageEditing.delete(draftKey);renderSelection(town);};
+    save.onclick=()=>{if(viewed!==identity?.town_id)return;act({action:'allocate_storage',index,allocations:Object.fromEntries(keys.map(key=>[key,Number(fields[key].value)]))});storageEditing.delete(draftKey);renderSelection(town);};
     const cancel=document.createElement('button');cancel.textContent='Cancel';cancel.className='quiet';cancel.onclick=()=>{storageEditing.delete(draftKey);storageDrafts.delete(draftKey);renderSelection(town);};
     actions.append(save);actions.append(cancel);target.append(actions);
   }else summary.textContent=`${Number(Object.values(stock).reduce((sum,n)=>sum+n,0).toFixed(1))} / ${capacity} stored`;
+  for(const [key,n] of Object.entries(stored))if(n>0&&!buildingStorageGoods(item).includes(key))target.append(fact(n.toFixed(1),`${goodName(key)} from previous storage · available to use or haul away`));
   for(const [key,n] of Object.entries(item.input_buffer || {}))if(n>0)target.append(fact(n.toFixed(1),`${goodName(key)} reserved for production`));
 }
 

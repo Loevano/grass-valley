@@ -719,9 +719,12 @@ def command(town, data, world=None):
         if (not isinstance(allocations, dict) or any(k not in economy.STORAGE_KEYS or type(n) is not int or n < 0
                                                    for k, n in allocations.items())):
             raise ValueError('Allocate whole, non-negative spaces to valid resources.')
+        allowed = economy.building_storage_keys(building)
+        if any(k not in allowed for k in allocations):
+            raise ValueError('This building only stores goods relevant to its purpose.')
         if sum(allocations.values()) > economy.storage_size(building):
             raise ValueError('Allocations exceed this storage room’s capacity.')
-        for key in economy.STORAGE_KEYS:
+        for key in allowed:
             stock = building.get('stored_goods', {})
             used = sum(n * economy.EDIBLE.get(k, 1) for k, n in stock.items()
                        if k == key or (key == 'food' and k in economy.EDIBLE))

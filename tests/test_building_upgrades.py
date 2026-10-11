@@ -95,11 +95,11 @@ class BuildingUpgrades(unittest.TestCase):
             tick({'towns': {'a': self.town}})
         self.assertEqual(len(self.town['villagers']), 9)
         storage = self.add('storehouse')
-        self.assertEqual(capacity(self.town), 350)
+        self.assertEqual(capacity(self.town), 300)
         self.upgrade(storage)
-        self.assertEqual(capacity(self.town), 450)
+        self.assertEqual(capacity(self.town), 400)
         self.upgrade(storage)
-        self.assertEqual(capacity(self.town), 550)
+        self.assertEqual(capacity(self.town), 500)
 
     @patch('server.secrets.randbelow', return_value=1)
     def test_each_workplace_boosts_only_its_workers(self, _roll):

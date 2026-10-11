@@ -74,18 +74,78 @@ class ResourceLogistics(unittest.TestCase):
         self.assertEqual(restored['wood'], 2)
         self.assertEqual(sum(economy.inventory(b).get('wood', 0) for b in restored['buildings']), 2)
 
-    def test_each_building_can_allocate_space_and_receive_goods(self):
-        home = self.add('home')
-        camp = self.add('woodcutter', output_buffer={'wood': 10})
-        server.command(self.town, {'action': 'allocate_storage', 'index': 1, 'allocations': {'wood': 50}})
-        logistics.transfer(self.town, camp, home, 'collect', self.town['villagers'][0])
-        self.assertEqual(economy.storage_size(home), 50)
-        self.assertEqual(home['stored_goods']['wood'], 10)
-        self.assertEqual(self.town['wood'], 75)
+    def test_workplace_allocations_and_deliveries_only_accept_relevant_goods(self):
+        camp = self.add('woodcutter', storage_allocations={'wood': 50, 'tools': 50})
+        source = self.add('storehouse', stored_goods={'wood': 10, 'tools': 5})
+        economy.ensure_inventory(self.town)
         before = copy.deepcopy(self.town)
+        with self.assertRaisesRegex(ValueError, 'relevant'):
+            server.command(self.town, {'action': 'allocate_storage', 'index': 1,
+                                      'allocations': {'tools': 10}})
+        self.assertEqual(self.town, before)
+        self.assertEqual(economy.local_room(camp, 'tools'), 0)
+        self.assertEqual(economy.storage_limit(self.town, 'tools'), 0)
+        logistics.transfer(self.town, source, camp, 'collect', self.town['villagers'][0])
+        self.assertEqual(camp['stored_goods'], {'wood': 10})
+        self.assertEqual(source['stored_goods']['tools'], 5)
+        server.command(self.town, {'action': 'allocate_storage', 'index': 1, 'allocations': {'wood': 50}})
         with self.assertRaises(ValueError):
             server.command(self.town, {'action': 'allocate_storage', 'index': 1, 'allocations': {'wood': 9}})
-        self.assertEqual(self.town, before)
+
+    def test_fishing_food_space_only_accepts_fish(self):
+        hut = self.add('fishing_hut', storage_allocations={'food': 50})
+        source = self.add('storehouse', stored_goods={'fish': 5, 'bread': 4, 'food': 3})
+        self.assertEqual(economy.local_room(hut, 'bread'), 0)
+        self.assertEqual(economy.local_room(hut, 'food'), 0)
+        self.assertEqual(economy.storage_limit(self.town, 'fish'), 150)
+        self.assertEqual(economy.storage_limit(self.town, 'bread'), 100)
+        logistics.transfer(self.town, source, hut, 'collect', self.town['villagers'][0])
+        self.assertEqual(hut['stored_goods'], {'fish': 5})
+        self.assertEqual(source['stored_goods'], {'fish': 0, 'bread': 4, 'food': 3})
+
+    def test_home_has_no_storage_and_food_is_consumed_from_workplaces(self):
+        home = self.add('home', storage_allocations={'wood': 25, 'food': 25})
+        hut = self.add('fishing_hut', stored_goods={'fish': 5})
+        economy.ensure_inventory(self.town)
+        self.town['buildings'][0]['stored_goods']['food'] = 0
+        self.town.update(food=5, goods={'fish': 5})
+        self.assertEqual(economy.storage_size(home), 0)
+        self.assertEqual(economy.storage_allocations(home), {})
+        self.assertEqual(economy.local_room(home, 'fish'), 0)
+        for key in ('wood', 'food'):
+            with self.assertRaisesRegex(ValueError, 'relevant'):
+                server.command(self.town, {'action': 'allocate_storage', 'index': 1, 'allocations': {key: 10}})
+        economy.eat(self.town, 2)
+        self.assertEqual(hut['stored_goods']['fish'], 3)
+        self.assertEqual(self.town['food'], 3)
+
+    def test_legacy_unrelated_goods_survive_reload_and_can_be_hauled_away(self):
+        camp = self.add('woodcutter', stored_goods={'wool': 5}, storage_allocations={'wool': 50})
+        store = self.add('storehouse', storage_allocations={'wool': 100})
+        economy.ensure_inventory(self.town)
+        server.command(self.town, {'action': 'allocate_storage', 'index': 1, 'allocations': {'wood': 50}})
+        restored = json.loads(json.dumps(self.town))
+        economy.ensure_inventory(restored)
+        self.assertEqual(restored['buildings'][1]['stored_goods']['wool'], 5)
+        logistics.transfer(self.town, camp, store, 'collect', self.town['villagers'][0])
+        self.assertEqual(store['stored_goods']['wool'], 5)
+        self.assertEqual(camp['stored_goods']['wool'], 0)
+
+    def test_processor_and_farming_storage_accepts_inputs_and_outputs(self):
+        for kind, (inputs, output, _) in economy.RECIPES.items():
+            building = {'kind': kind, 'storage_allocations': {k: 10 for k in economy.STORAGE_KEYS}}
+            with self.subTest(kind=kind):
+                for key in (*inputs, output):
+                    self.assertGreater(economy.local_room(building, key), 0)
+                self.assertEqual(economy.local_room(building, 'herbs'), 0)
+        for kind in ('farm', 'acre'):
+            building = {'kind': kind, 'storage_allocations': {'food': 10, 'wheat': 10, 'fodder': 10, 'manure': 10}}
+            for key in (*economy.CROPS, 'manure'):
+                self.assertGreater(economy.local_room(building, key), 0)
+        for kind in ('hall', 'storehouse', 'market'):
+            building = {'kind': kind, 'storage_allocations': {'herbs': 10, 'food': 10}}
+            self.assertGreater(economy.local_room(building, 'herbs'), 0)
+            self.assertGreater(economy.local_room(building, 'bread'), 0)
 
     def test_supply_comes_from_the_building_visited(self):
         store = self.add('storehouse', storage_allocations={'wood': 100})

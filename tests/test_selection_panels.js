@@ -176,7 +176,7 @@ const run=new Function('document','window','localStorage','setTimeout','clearTim
     town.wood=65;town.buildings[1].construction={progress:0,total:30};render();check(buildingUpgrade().disabled,'Unfinished buildings cannot upgrade');
     delete town.buildings[1].construction;town.buildings[1].level=3;render();check(buildingUpgrade().disabled&&buildingUpgrade().textContent.includes('Fully upgraded'),'Level 3 is the building limit');
     friend.buildings[1].level=1;viewed='friend';inspect('building',1);check(buildingUpgrade().disabled,'Visitor cannot upgrade buildings');
-    town.buildings.push({kind:'storehouse',level:3,x:7,y:3});check(storageCapacity(town)===500+50*town.buildings.filter(b=>!['hall','storehouse'].includes(b.kind)&&!b.construction).length,'Client storage reflects upgraded storehouses');
+    town.buildings.push({kind:'storehouse',level:3,x:7,y:3});check(storageCapacity(town)===500+50*town.buildings.filter(b=>!['hall','storehouse','home'].includes(b.kind)&&!b.construction).length,'Client storage reflects upgraded storehouses');
     identity=null;render();
   })();`);
 run(documentMock,{devicePixelRatio:1,addEventListener(key,callback){listeners[key]=callback;}},{getItem:()=>null},()=>0,()=>{},animation,listeners)
