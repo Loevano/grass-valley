@@ -18,27 +18,53 @@ Current values below come from [server/server.py](../server/server.py),
 | Skilled villagers matter | Training should create valuable specialists while allowing recovery after a loss. | Time to qualify, time to useful recipes, and replacement time. |
 | Waiting should have a purpose | Material shortages and travel should create choices the player can act on. | Why work pauses and what the player can improve or do elsewhere. |
 
-## Current base rates
+## Shared assumptions and full-chain totals
 
 Neutral talent, practice below 20, no tools or upgrades, and uninterrupted active
 work are assumed. Travel, supply regeneration, hauling, food, and storage limits
 make actual elapsed time longer. Practice means the game's saved skill points (XP).
 
-| Activity | Base work | Output or practice | Ideal rate |
-| --- | --- | --- | --- |
-| Settler woodcutting | Three-second productive cycle | 0.5 wood; 0.04 practice | 10 wood/minute; 0.8 practice/minute |
-| One sawpit worker | Six-second completed batch | 2 wood → 1 plank; 0.08 practice | Uses 20 wood/minute; makes 10 planks/minute |
-| One mill worker | Three-second completed batch | 2 wheat → 2 flour; 0.04 practice | Uses 40 wheat/minute; makes 40 flour/minute |
-| One baker, basic bread | Six-second completed batch | 2 flour + 0.5 wood → 2 bread; 0.08 practice | Uses 20 flour + 5 wood/minute; makes 20 bread/minute |
-| One butcher, prepared meat | Six-second completed batch | 2 meat → 2 prepared meat; 0.1 practice | Uses 20 meat/minute; makes 20 prepared meat/minute |
-| Manually ordered animal butchery | 60 seconds at the shop, one animal per shop at a time | 1 butchery practice; meat varies by animal | One completed animal/minute while continuously supplied |
-| Animal maturity | 300 fully fed seconds | Young animal becomes eligible for butchery | Five fed minutes; growth pauses without feed |
-
 Talents apply a 0.75× or 1.25× modifier to output and practice. Every 20 practice
 adds another base output multiplier. Processing expertise and the improved saw
 increase batch output **and inputs**; they do not make materials free.
 
-## How many woodcutters for a sawpit?
+`active minutes to target = remaining practice ÷ practice per active minute`
+
+**Total production time cost** adds the active work needed to produce every
+consumed input and complete the final recipe. Totals use **worker-seconds**:
+12 seconds of woodcutting plus six seconds of sawing costs 18 worker-seconds,
+even when several workers shorten the elapsed wait. These are ideal production
+budgets using the base rates below, not measured end-to-end completion times.
+
+**Total reward** lists the final goods, retained byproducts, and practice earned
+across the whole chain. Consumed intermediate goods are not counted again.
+Practice totals sum the listed skills for comparison; each worker keeps their
+own skill progress. Food value describes the final goods and does not add another
+item to the reward.
+
+Workers are already qualified and buildings are available. Building construction,
+qualification training, animal purchase/capture, travel, hauling, regeneration,
+blocked work, and ongoing settler food consumption are outside these production
+totals. Farming assumes no manure fertilization. Livestock tending and feed
+production are included in the meat examples. Recalculate for upgrades, talents,
+practice, shared barn work, or different recipes.
+
+## Wood
+
+### Current base rates
+
+| Activity | Base work | Output or practice | Ideal rate |
+| --- | --- | --- | --- |
+| Settler woodcutting | Three-second productive cycle | 0.5 wood; 0.04 practice | 10 wood/minute; 0.8 practice/minute |
+| One sawpit worker | Six-second completed batch | 2 wood → 1 plank; 0.08 practice | Uses 20 wood/minute; makes 10 planks/minute |
+
+### Total production time cost vs total reward
+
+| Full chain | Work breakdown | Total production time cost | Total reward |
+| --- | --- | --- | --- |
+| Tree → wood → 1 plank | Gather 2 wood: 12s; saw: 6s | 18 worker-seconds | 1 plank; 0.24 practice (0.16 woodcutting + 0.08 woodworking) |
+
+### How many woodcutters for a sawpit?
 
 ```mermaid
 flowchart LR
@@ -65,13 +91,76 @@ productive fraction`. Add construction and other consumers to demand. A surplus
 can cover interruptions, but its desired size remains open; more workers cannot
 solve an exhausted forest or blocked storage.
 
-## Training time and manual butcher rewards
-
-`active minutes to target = remaining practice ÷ practice per active minute`
+### Training
 
 | Milestone from zero practice | Current neutral requirement | Ideal active time | Limitation |
 | --- | --- | --- | --- |
 | Qualify for woodworking | 10 woodcutting | 12.5 minutes | Requires productive chopping, not simply assignment. |
+
+## Grains
+
+### Current base rates
+
+| Activity | Base work | Output or practice | Ideal rate |
+| --- | --- | --- | --- |
+| One mill worker | Three-second completed batch | 2 wheat → 2 flour; 0.04 practice | Uses 40 wheat/minute; makes 40 flour/minute |
+| One baker, basic bread | Six-second completed batch | 2 flour + 0.5 wood → 2 bread; 0.08 practice | Uses 20 flour + 5 wood/minute; makes 20 bread/minute |
+
+### Total production time cost vs total reward
+
+| Full chain | Work breakdown | Total production time cost | Total reward |
+| --- | --- | --- | --- |
+| Wheat → 2 flour | Grow 2 wheat: 6s; mill: 3s | 9 worker-seconds | 2 flour; 0.12 practice (0.08 farming + 0.04 milling) |
+| Wheat + wood → flour → 2 bread | Grow 2 wheat: 6s; mill: 3s; gather 0.5 wood: 3s; bake: 6s | 18 worker-seconds | 2 bread (3 food value); 0.24 practice (0.08 farming + 0.04 milling + 0.04 woodcutting + 0.08 baking) |
+
+The base farming reference is one wheat per three-second productive cycle;
+watering, field occupancy, and delivery add elapsed time. Bread's wood input is
+included even though it comes from another sector.
+
+### Training
+
+Qualifying for milling requires 10 farming practice: 12.5 ideal active minutes
+at neutral talent. Baking then requires 2 milling practice: 2.5 ideal active
+minutes of flour production, with wheat already supplied.
+
+## Meat
+
+### Current base rates
+
+| Activity | Base work | Output or practice | Ideal rate |
+| --- | --- | --- | --- |
+| One butcher, prepared meat | Six-second completed batch | 2 meat → 2 prepared meat; 0.1 practice | Uses 20 meat/minute; makes 20 prepared meat/minute |
+| Manually ordered animal butchery | 60 seconds at the shop, one animal per shop at a time | 1 butchery practice; meat varies by animal | One completed animal/minute while continuously supplied |
+| Animal maturity | 300 fully fed seconds | Young animal becomes eligible for butchery | Five fed minutes; growth pauses without feed |
+
+### Total production time cost vs total reward
+
+These examples start with one newly acquired young animal, alone in a barn,
+and end after all its raw meat becomes basic prepared meat. Each animal needs
+100 successful three-second tending cycles to reach 300 fed seconds. Feed per
+cycle is 0.15 for chickens, 0.25 for sheep, 0.4 for pigs, and 0.5 for cows.
+Growing vegetables or fodder at one unit per three-second productive cycle costs
+three worker-seconds per feed unit. Feeding produces 0.1 manure per animal per
+cycle, so each example retains 10 manure. No extra adult tending is included.
+
+| Full chain | Work breakdown | Total production time cost | Total reward |
+| --- | --- | --- | --- |
+| Feed → young chicken → meat → prepared meat | Grow 15 feed: 45s; tend: 300s; butcher: 60s; prepare: 6s | 411 worker-seconds (6m 51s) | 2 prepared meat (3 food value) + 10 manure; 5.7 practice (0.6 farming + 4 husbandry + 1.1 butchery) |
+| Feed → young sheep → meat → prepared meat | Grow 25 feed: 75s; tend: 300s; butcher: 60s; prepare: 12s | 447 worker-seconds (7m 27s) | 4 prepared meat (6 food value) + 1 hide + 10 manure; 6.2 practice (1 farming + 4 husbandry + 1.2 butchery) |
+| Feed → young pig → meat → prepared meat | Grow 40 feed: 120s; tend: 300s; butcher: 60s; prepare: 24s | 504 worker-seconds (8m 24s) | 8 prepared meat (12 food value) + 2 hides + 10 manure; 7 practice (1.6 farming + 4 husbandry + 1.4 butchery) |
+| Feed → young cow → meat → prepared meat | Grow 50 feed: 150s; tend: 300s; butcher: 60s; prepare: 30s | 540 worker-seconds (9m) | 10 prepared meat (15 food value) + 3 hides + 10 manure; 7.5 practice (2 farming + 4 husbandry + 1.5 butchery) |
+
+A barn tends all its animals in one shared cycle. For a same-age herd tended by
+one worker, count the 300 seconds of tending and its 4 husbandry practice once
+for the group; sum feed production,
+manual butchery, meat preparation, and byproducts per animal. Mature animals held
+longer require more feed and may provide eggs, wool, milk, or meat. Those extra
+cycles and rewards must be counted together.
+
+### Training time and manual butcher rewards
+
+| Milestone from zero practice | Current neutral requirement | Ideal active time | Limitation |
+| --- | --- | --- | --- |
 | Qualify for butchery | 2 husbandry | 2.5 minutes | Requires successful animal tending. |
 | Unlock butcher recipe 2 | 2 butchery | Two completed animals, or two minutes of continuous prepared-meat processing | Starts after qualification; animals and ingredients must be available. |
 | Reach butcher recipe 5 | 5 butchery | Five completed animals, or five minutes of continuous processing | Manual selections and feeding/growth add elapsed time. |
@@ -89,6 +178,34 @@ in parallel, so do not add five growth minutes to every animal when estimating a
 | How soon should a useful recipe unlock? | Start with 2–5 completed animals for early recipe milestones; the neutral current values already match this. | Proposed target; play experience unmeasured |
 | Should bigger animals earn more XP? | Compare fixed XP per task with XP reflecting time, feed investment, or output. | Open; current reward is fixed |
 | Is 20 manual selections a satisfying efficiency milestone? | Review alongside earlier recipe rewards and the cost of replacing a trained butcher. | Open |
+
+## Fish
+
+### Current base rates
+
+| Activity | Base work | Output or practice | Ideal rate |
+| --- | --- | --- | --- |
+| Settler fishing, ordinary fish | Three-second productive attempt; 90% catch chance | 1 fish on success; 0.04 practice per supplied attempt, including misses | Expected 18 fish/minute; 0.8 practice/minute |
+| One smokehouse worker | Six-second completed batch | 2 raw fish + 0.5 wood → 2 smoked fish; 0.08 practice | Uses 20 raw fish + 5 wood/minute; makes 20 smoked fish/minute |
+
+### Total production time cost vs total reward
+
+| Full chain | Work breakdown | Total production time cost | Total reward |
+| --- | --- | --- | --- |
+| Ordinary fish + wood → 2 smoked fish | Catch 2 fish: expected 6.67s; gather 0.5 wood: 3s; smoke: 6s | Expected 15.67 worker-seconds | 2 smoked fish (3 food value); expected 0.209 practice (0.089 fishing + 0.04 woodcutting + 0.08 preserving) |
+
+Expected fishing work is `required fish ÷ (fish per successful attempt × catch
+probability) × seconds per attempt`. Misses use work time and still earn practice;
+an individual batch can take more or fewer attempts. This uses settler fishing,
+whose base catch chance differs from the player's manual fishing. Pier movement,
+boat voyages, fish-stock recovery, and delivery add elapsed time. Higher-tier
+fish, boats, and breeding ponds need their own chain totals.
+
+### Training
+
+Qualifying for preserving requires 10 fishing practice: 12.5 ideal active minutes
+at neutral talent. Fish breeding requires 20 fishing practice: 25 ideal active
+minutes. Productive supplied attempts earn practice even when they miss.
 
 ## Progression pacing to try
 
