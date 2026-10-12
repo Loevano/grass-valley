@@ -258,9 +258,9 @@ function predictPlayerStep(town,player,dx,dy){
     movementMap=scene?{world,town,boat:!!town.player?.boat,water:scene.water,blocked:{has(key){
       if(scene.playerBuildings.has(key))return true;
       const [x,y]=key.split(',').map(Number),resource=ClientScene.resourceAt(x,y);
-      return !!resource&&resource.kind!=='tree'&&!(resource.kind==='water'&&town.player?.boat);
+      return !!resource&&resource.kind!=='tree'&&resource.kind!=='berry_bush'&&!(resource.kind==='water'&&town.player?.boat);
     }}}:{world,town,boat:!!town.player?.boat,water:new Set((town.map_resources || []).filter(r=>r.kind==='water').map(r=>`${r.x},${r.y}`)),blocked:new Set([...buildings,...(town.map_resources || [])]
-      .filter(b=>b.kind!=='tree'&&!(b.kind==='water'&&town.player?.boat)).map(b=>`${b.x},${b.y}`))};
+      .filter(b=>b.kind!=='tree'&&b.kind!=='berry_bush'&&!(b.kind==='water'&&town.player?.boat)).map(b=>`${b.x},${b.y}`))};
   }
   const size=town.map_size || 12,terrain=town.terrain;
   const open=(x,y)=>{

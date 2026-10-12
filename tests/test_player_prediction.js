@@ -4,7 +4,7 @@ const source=fs.readFileSync('web/app.js','utf8'),elements=new Map();
 function element(){return {children:[],style:{},classList:{toggle(){}},append(...c){this.children.push(...c);},replaceChildren(){this.children=[];},setAttribute(){},addEventListener(){}};}
 const documentMock={getElementById(id){if(!elements.has(id))elements.set(id,element());return elements.get(id);},createElement:element,querySelectorAll:()=>[]};
 documentMock.getElementById('world').getContext=()=>new Proxy({}, {get:()=>()=>{}});
-const run=new Function('document','window','localStorage','setTimeout','clearTimeout','assert',
+const run=new Function('document','window','localStorage','setTimeout','clearTimeout','assert','ClientScene',
   source.slice(0,source.lastIndexOf('requestAnimationFrame(animate);'))+`
   return (async()=>{
     const town={player:{x:5,y:7,facing:1},map_size:12,terrain:Array(12).fill('g'.repeat(12)),buildings:[],map_resources:[]};
@@ -132,11 +132,21 @@ const run=new Function('document','window','localStorage','setTimeout','clearTim
     assert.equal(predictPlayerStep(blockedTown,{x:3.3,y:3,facing:1},1,0).x,3.3,'Prediction respects water collision radius');
     const forest={...blockedTown,map_resources:[{kind:'tree',x:4,y:3}]};world={world_id:'forest',towns:{own:forest}};
     assert(predictPlayerStep(forest,{x:3.3,y:3,facing:1},1,0).x>3.3,'Trees remain walkable');
+    const bushes={...blockedTown,map_resources:[{kind:'berry_bush',x:4,y:3}]};
+    world={world_id:'bushes',towns:{own:bushes}};
+    assert(predictPlayerStep(bushes,{x:3.3,y:3,facing:1},1,0).x>3.3,'Bushes allow predicted movement');
+    world={world_id:'bush-scene',shared_map:{},towns:{own:bushes}};
+    ClientScene.current={world,water:new Set(),roads:new Set(),playerBuildings:new Set()};
+    ClientScene.resourceAt=()=>bushes.map_resources[0];
+    assert(predictPlayerStep(bushes,{x:3.3,y:3,facing:1},1,0).x>3.3,'Prepared scenes also allow movement through bushes');
+    ClientScene.current.playerBuildings.add('4,3');
+    assert.equal(predictPlayerStep(bushes,{x:3.3,y:3,facing:1},1,0).x,3.3,'Buildings still block movement on bush tiles');
+    ClientScene.current=null;
     world={world_id:'shared',shared_map:{},towns:{own:forest,friend:{buildings:[{kind:'hall',x:4,y:3}]}}};
     assert.equal(predictPlayerStep(forest,{x:3.3,y:3,facing:1},1,0).x,3.3,'Other towns buildings block predicted movement');
     assert.equal(predictPlayerStep(forest,{x:11.3,y:3,facing:1},1,0).x,11.3,'Prediction stays inside map boundaries');
     const voidTown={...town,terrain:Array(12).fill('ggggvggggggg')};world={world_id:'outline',towns:{own:voidTown}};
     assert.equal(predictPlayerStep(voidTown,{x:3.3,y:3,facing:1},1,0).x,3.3,'Prediction stays inside irregular terrain');
   })();`);
-run(documentMock,{addEventListener(){}},{getItem:()=>null},()=>0,()=>{},assert)
+run(documentMock,{addEventListener(){}},{getItem:()=>null},()=>0,()=>{},assert,{current:null})
   .then(()=>console.log('Player prediction checks passed')).catch(error=>{console.error(error);process.exitCode=1;});

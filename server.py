@@ -154,7 +154,7 @@ def walkable(town, x, y, blocked=None, water=None):
     if blocked is None:
         blocked = {(b['x'], b['y']) for b in
                    town['buildings'] + town['map_resources']
-                   if b['kind'] != 'tree' and not (b['kind'] == 'water' and town.get('player', {}).get('boat'))}
+                   if b['kind'] not in {'tree', 'berry_bush'} and not (b['kind'] == 'water' and town.get('player', {}).get('boat'))}
     terrain = town.get('terrain')
     if water is None:
         water = {(r['x'], r['y']) for r in town['map_resources'] if r['kind'] == 'water'}
@@ -177,7 +177,7 @@ def ensure_player(town):
         size = town.get('map_size', 12)
         blocked = {(b['x'], b['y']) for b in
                    town['buildings'] + town['map_resources']
-                   if b['kind'] != 'tree' and not (b['kind'] == 'water' and player.get('boat'))}
+                   if b['kind'] not in {'tree', 'berry_bush'} and not (b['kind'] == 'water' and player.get('boat'))}
         terrain = town.get('terrain')
         tiles = terrain.tiles() if hasattr(terrain, 'tiles') else ((x, y) for x in range(size) for y in range(size))
         for x, y in sorted(tiles, key=lambda p:
@@ -201,7 +201,7 @@ def move_player(town, data):
         player.pop('activity_status', None)
         blocked = {(b['x'], b['y']) for b in
                    town['buildings'] + town['map_resources']
-                   if b['kind'] != 'tree' and not (b['kind'] == 'water' and player.get('boat'))}
+                   if b['kind'] not in {'tree', 'berry_bush'} and not (b['kind'] == 'water' and player.get('boat'))}
         # Small steps prevent tunnelling through obstacles; slide along walls.
         water = {(r['x'], r['y']) for r in town['map_resources'] if r['kind'] == 'water'}
         for _ in range(5):

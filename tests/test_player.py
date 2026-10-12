@@ -47,20 +47,24 @@ class PlayerMovement(unittest.TestCase):
                 self.assertGreaterEqual(player['y'], 5.68)
                 self.assertTrue(walkable(self.town, player['x'], player['y']))
 
-    def test_player_can_walk_through_trees(self):
+    def test_player_can_walk_through_trees_and_bushes(self):
         self.town['buildings'] = []
-        self.town['map_resources'] = [{'kind': 'tree', 'x': 5, 'y': 5}]
-        self.town['player'] = {'x': 5., 'y': 7., 'facing': 1}
-        self.assertTrue(walkable(self.town, 5, 5))
-        for _ in range(10):
-            player = self.walk(0, -1)
-        self.assertAlmostEqual(player['y'], 7 - 3 * math.sqrt(8 / 5))
+        for kind in ['tree', 'berry_bush']:
+            with self.subTest(kind=kind):
+                self.town['map_resources'] = [{'kind': kind, 'x': 5, 'y': 5}]
+                self.town['player'] = {'x': 5., 'y': 7., 'facing': 1}
+                self.assertTrue(walkable(self.town, 5, 5))
+                for _ in range(10):
+                    player = self.walk(0, -1)
+                self.assertAlmostEqual(player['y'], 7 - 3 * math.sqrt(8 / 5))
 
-    def test_player_in_tree_is_not_relocated(self):
+    def test_player_in_tree_or_bush_is_not_relocated(self):
         self.town['buildings'] = []
-        self.town['map_resources'] = [{'kind': 'tree', 'x': 5, 'y': 7}]
-        player = copy.deepcopy(self.town['player'])
-        self.assertEqual(ensure_player(self.town), player)
+        for kind in ['tree', 'berry_bush']:
+            with self.subTest(kind=kind):
+                self.town['map_resources'] = [{'kind': kind, 'x': 5, 'y': 7}]
+                player = copy.deepcopy(self.town['player'])
+                self.assertEqual(ensure_player(self.town), player)
 
     def test_world_bounds_stop_character(self):
         self.town['player'] = {'x': 0., 'y': 0., 'facing': 1}
