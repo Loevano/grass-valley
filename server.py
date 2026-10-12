@@ -1502,11 +1502,15 @@ def lantern_simulation():
 
 
 def simulation():
+    next_tick = time.monotonic() + TICK_SECONDS
     while True:
-        time.sleep(TICK_SECONDS)
+        time.sleep(max(0, next_tick - time.monotonic()))
         with LOCK:
             tick(WORLD)
             save()
+        # Work and lock contention belong inside the three-second interval.
+        # If a tick overruns, resume now without replaying a backlog of ticks.
+        next_tick = max(next_tick + TICK_SECONDS, time.monotonic())
 
 
 WORLD, TOKENS = {'towns': {}}, {}
