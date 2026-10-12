@@ -1100,7 +1100,7 @@ function villagerRow(town,v,index){
   }
   row.append(name);
   const job=document.createElement('td');
-  const label=document.createElement('span');label.textContent=v.job==='idle'&&v.construction_target?'Builder (automatic)':{idle:'Resting',building:'Builder',woodcutting:'Woodcutting',farming:'Farming',fishing:'Fishing',hauling:'Hauling',...professionJobs}[v.job] || goodName(v.job);job.append(label);row.append(job);
+  row.append(job);
   const housing=document.createElement('td');
   const homes=town.buildings.filter(b=>b.kind==='home'&&!b.construction);
   housing.textContent=`Shared, lvl ${homes.length?[...new Set(homes.map(buildingLevel))].sort((a,b)=>a-b).join(', '):town.level}`;row.append(housing);
