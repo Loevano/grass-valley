@@ -70,12 +70,18 @@ const ClientScene = (() => {
         let row='';for(let x=bounds.minX;x<=bounds.maxX;x++)row+=source.terrain?.[y]?.[x] || 'v';
         rows.push(row);if(y%8===0)yield;
       }
-      const layout=JSON.stringify([geometry(obstacles),geometry(localResources),geometry(npcs),rows,bounds]);
+      const localRoads=(landscape?[...scene.roads]:(town.roads || []).filter(r=>!r.construction).map(tile)).filter(k=>{
+        const [x,y]=k.split(',').map(Number);return near({x,y});
+      }).sort();
+      const occupancy=JSON.stringify([geometry(obstacles),geometry(localResources),geometry(npcs),rows,bounds]);
+      // Avoid escaping the large occupancy signature a second time: layout
+      // strings also appear in every worker's resumable planning job key.
+      const layout=localRoads.length?occupancy+'|roads:'+localRoads.join(';'):occupancy;
       const old=previous?.world.world_id===world.world_id?previous.regions.get(id):null;
       const roster=JSON.stringify(town.villagers.map(v=>v.name));
       if(old&&old.roster!==roster)scene.resetTowns.push(id);
       let blocked;
-      if(old?.layout===layout)blocked=old.blocked;
+      if(old?.occupancy===occupancy)blocked=old.blocked;
       else{
         blocked=new Set([...obstacles,...localResources,...npcs].map(tile));
         for(let y=bounds.minY;y<=bounds.maxY;y++){
@@ -87,7 +93,7 @@ const ClientScene = (() => {
         }
       }
       const routing={...town,...source,buildings:town.buildings,obstacles,map_resources:localResources,npcs,
-        home_hall:town.buildings.find(b=>b.kind==='hall'),navigation:{blocked,bounds,overlay:()=>new Overlay(blocked)}};
+        home_hall:town.buildings.find(b=>b.kind==='hall'),navigation:{blocked,bounds,roads:new Set(localRoads),overlay:()=>new Overlay(blocked)}};
       const tiles=items=>items.map(({kind,x,y,farm_index,construction})=>[kind,x,y,farm_index,!!construction]);
       const crew=town.villagers.map(v=>[v.job,v.building_index]);
       const huts=town.buildings.filter(b=>b.kind==='fishing_hut').map(b=>[b.level,b.profession_upgrades]);
@@ -97,7 +103,7 @@ const ClientScene = (() => {
         const trip=villager.logistics_trip;
         scene.tasks.set(villager,{task,signature:JSON.stringify([task,trip?[trip.id,trip.operation,trip.workplace,trip.storage,trip.path]:villager.logistics_target])});
       }
-      scene.regions.set(id,{layout,blocked,routing,roster});
+      scene.regions.set(id,{layout,occupancy,blocked,routing,roster});
       yield;
     }
     scene.geometry=world.world_id+'|'+scene.geometry+'|'+[...scene.regions].map(([id,r])=>id+':'+r.layout).join('|');

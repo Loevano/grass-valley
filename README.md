@@ -196,6 +196,9 @@ the Python host, refresh both browsers, and create a new world to use the shared
 - Choose **Dirt road** in Build to place free road construction sites on open ground within
   your town’s building area. Each tile takes 10 seconds of builder work after arrival.
   Players and settlers walk 50% faster on completed road tiles.
+  Settlers choose routes by travel time, taking a longer road path when it gets
+  them there sooner. Unfinished roads provide no routing bonus; cached routes
+  account for changes to completed roads.
   Everyone can use roads in the shared valley. Click a road to inspect it; its
   owner can remove it for free. Roads are saved with the town.
 - New buildings and acres start as construction sites. Idle villagers automatically

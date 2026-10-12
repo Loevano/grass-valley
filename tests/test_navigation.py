@@ -1,4 +1,5 @@
 import json
+import random
 import unittest
 from unittest.mock import patch
 
@@ -15,9 +16,115 @@ class ShortestRouteCache(unittest.TestCase):
         self.blocked = {(2, y) for y in range(3)}
         self.target = {'x': 4, 'y': 0}
 
-    def route(self, start=(0, 0), target=None, adjacent=False, bounds=None):
+    def route(self, start=(0, 0), target=None, adjacent=False, bounds=None, roads=(), road_mode='smooth'):
         return self.cache.route(start, target or self.target, self.blocked, 12,
-                                self.terrain, adjacent, bounds)
+                                self.terrain, adjacent, bounds, roads, road_mode)
+
+    def test_longer_road_route_wins_only_when_faster(self):
+        self.blocked = set()
+        target = {'x': 8, 'y': 0}
+        roads = {(x, 1) for x in range(9)}
+        expected = [{'x': x, 'y': 1} for x in range(9)] + [target]
+        for mode in ('smooth', 'departure', 'arrival'):
+            with self.subTest(mode=mode):
+                self.assertEqual(self.route(target=target, roads=roads, road_mode=mode), expected)
+        # A road two rows away adds too much travel to justify the detour.
+        far_roads = {(x, 2) for x in range(9)}
+        self.assertEqual(len(self.route(target=target, roads=far_roads)), 8)
+
+    def test_road_edits_invalidate_cached_routes_and_preserve_other_workers(self):
+        self.blocked = set()
+        roads = set()
+        with patch.object(self.cache, 'search', wraps=self.cache.search) as search:
+            direct = self.route(target={'x': 8, 'y': 0}, roads=roads)
+            roads.update((x, 1) for x in range(9))
+            fast = self.route(target={'x': 8, 'y': 0}, roads=roads)
+            self.assertEqual(len(fast), 10)
+            fast[0]['x'] = 99
+            self.assertEqual(self.route(target={'x': 8, 'y': 0}, roads=roads)[0], {'x': 0, 'y': 1})
+            self.assertEqual(search.call_count, 2)
+            roads.clear()
+            self.assertEqual(self.route(target={'x': 8, 'y': 0}, roads=roads), direct)
+
+    def test_adjacent_goals_and_water_banks_are_chosen_by_time(self):
+        self.blocked = set()
+        roads = {(x, 1) for x in range(9)}
+        path = self.route(target={'x': 8, 'y': 0}, roads=roads, adjacent=True)
+        self.assertEqual(path[-1], {'x': 8, 'y': 1})
+        self.assertEqual(len(path), 9)
+        path = self.route(target={(0, 4), (5, 0)}, roads={(x, 0) for x in range(6)})
+        self.assertEqual(path[-1], {'x': 5, 'y': 0})
+
+    def test_adjacent_arrival_matches_builder_hauler_and_smooth_timing(self):
+        town = {'map_size': 12, 'buildings': [], 'map_resources': [], 'terrain': self.terrain,
+                'roads': [{'x': 1, 'y': 1}]}
+        target = {'x': 2, 'y': 1}
+        # Builders do not gain speed from a road they stop on; haulers and
+        # smooth walkers do. These queries must not share a cached result.
+        self.assertEqual(server.construction_route(town, (0, 2), target)[-1], (2, 2))
+        self.assertEqual(server.logistics_route(town, (0, 2), target)[-1], (1, 1))
+        self.assertEqual(work_cycles.route({'x': 0, 'y': 2}, target, set(), 12,
+                                           self.terrain, roads={(1, 1)})[-1], {'x': 1, 'y': 1})
+
+    def test_weighted_search_matches_exhaustive_costs_on_small_maps(self):
+        rng = random.Random(42)
+        for mode in ('smooth', 'departure', 'arrival'):
+            for _ in range(12):
+                tiles = [(x, y) for x in range(5) for y in range(5)]
+                blocked = {p for p in tiles if p not in ((0, 0), (4, 4)) and rng.random() < .2}
+                roads = {p for p in tiles if p not in blocked and rng.random() < .5}
+                def cost(a, b):
+                    before, after = (2 if a in roads else 3), (2 if b in roads else 3)
+                    return 2 * before if mode == 'departure' else 2 * after if mode == 'arrival' else before + after
+                # Bellman-Ford reference: exhaustive relaxation, independent of
+                # the production heap and heuristic, including disconnected maps.
+                costs = {(0, 0): 0}
+                for _ in tiles:
+                    for a in tiles:
+                        if a not in costs or a in blocked:
+                            continue
+                        for b in tiles:
+                            if b not in blocked and abs(a[0] - b[0]) + abs(a[1] - b[1]) == 1:
+                                costs[b] = min(costs.get(b, float('inf')), costs[a] + cost(a, b))
+                path = self.cache.route((0, 0), {'x': 4, 'y': 4}, blocked, 5, [], False, roads=roads, road_mode=mode)
+                if (4, 4) not in costs:
+                    self.assertIsNone(path)
+                else:
+                    points = [(0, 0)] + [(p['x'], p['y']) for p in path]
+                    self.assertEqual(sum(cost(a, b) for a, b in zip(points, points[1:])), costs[(4, 4)])
+
+    def test_host_routes_use_completed_shared_roads_and_ignore_construction(self):
+        town = {'map_size': 12, 'buildings': [], 'map_resources': [], 'terrain': self.terrain,
+                'roads': [{'x': x, 'y': 1, 'construction': {'progress': 9, 'total': 10}} for x in range(9)]}
+        target = {'x': 8, 'y': 0}
+        before = json.dumps(town)
+        self.assertEqual(len(server.construction_route(town, (0, 0), target)), 8)
+        self.assertEqual(json.dumps(town), before)
+        for road in town['roads']:
+            del road['construction']
+        for routing in (server.construction_route, server.logistics_route):
+            before = json.dumps(town)
+            path = routing(town, (0, 0), target)
+            self.assertGreater(len(path), 8)
+            self.assertIn((0, 1), path)
+            self.assertEqual(json.dumps(town), before)
+        from shared_world import walking_map
+        friend = dict(town)
+        own = dict(town, roads=[])
+        walking = walking_map({'towns': {'own': own, 'friend': friend}}, own)
+        self.assertEqual(server.construction_route(walking, (0, 0), target),
+                         server.construction_route(town, (0, 0), target))
+        # A completed road can shorten the next work leg without changing
+        # snapshots or the existing per-worker movement state.
+        worker = {'job': 'woodcutting', 'construction_position': {'x': 0, 'y': 0}}
+        hall = {'kind': 'hall', 'x': 10, 'y': 10}
+        camp = {'kind': 'woodcutter', 'x': 10, 'y': 9}
+        source = dict(kind='tree', **target)
+        own.update(buildings=[hall, camp], roads=friend['roads'], map_resources=[source])
+        before = json.dumps(own)
+        work_cycles.advance(own, own, worker, camp, source, 0, 0)
+        self.assertEqual(worker['work_animation']['path'][0], {'x': 0, 'y': 1})
+        self.assertEqual(json.dumps(own), before)
 
     def test_shortest_detour_is_reused_without_sharing_mutable_paths(self):
         with patch.object(self.cache, 'search', wraps=self.cache.search) as search:

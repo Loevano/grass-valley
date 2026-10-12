@@ -7,6 +7,7 @@ const WorkerAnimation={...animation,plan(...args){plans++;return animation.plan(
 new Function('WorkerAnimation','assert','planCount',`
   let world,viewed='own',workerTown=null;
   const workers=new Map();
+  ${source.slice(source.indexOf('function mapRoads('),source.indexOf('function playerBoatLevel('))}
   ${source.slice(source.indexOf('function animatedVillagers('),source.indexOf('let npcClock='))}
   const terrain={};
   for(let y=900;y<=1020;y++){terrain[y]={};for(let x=900;x<=1020;x++)terrain[y][x]='g';}
@@ -46,5 +47,14 @@ new Function('WorkerAnimation','assert','planCount',`
   const updated=frame();
   assert(updated[0].state.roads.has('961,962'),'Road snapshots update the shared index');
   assert(!updated[0].state.roads.has('962,962'),'Unfinished roads do not speed workers');
+  assert.equal(planCount(),14,'Completed roads update worker route costs');
+  snapshot().roads[1].construction.progress=9;frame();
+  assert.equal(planCount(),14,'Road construction progress preserves existing routes');
+  delete snapshot().roads[1].construction;frame();
+  assert.equal(planCount(),16,'Road completion replans worker routes');
+  snapshot().roads.shift();frame();
+  assert.equal(planCount(),18,'Road removal replans worker routes');
+  snapshot().roads.push({x:1100,y:1100});frame();
+  assert.equal(planCount(),18,'Distant roads cannot invalidate local routes');
 `)(WorkerAnimation,assert,()=>plans);
 console.log('Camera exploration worker layout checks passed');

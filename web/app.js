@@ -2112,7 +2112,7 @@ function animatedVillagers(town, seconds, townId=viewed, frameLayout=null){
   }
   const roads=animatedVillagers.roadSets.get(roadKey);
   const tiles=items=>items.map(({kind,x,y,farm_index,construction})=>[kind,x,y,farm_index,!!construction]);
-  const layout=frameLayout ?? JSON.stringify([tiles(world.shared_map?Object.values(world.towns).flatMap(t=>t.buildings):town.buildings),tiles(town.map_resources)]);
+  const layout=frameLayout ?? JSON.stringify([tiles(world.shared_map?Object.values(world.towns).flatMap(t=>t.buildings):town.buildings),tiles(town.map_resources),[...roads].sort()]);
   // Names are unique within a town and survive arrivals/departures. Remap the
   // index-based rendering slots without restarting surviving residents.
   if(animatedVillagers.rosterWorld!==townKey){animatedVillagers.rosterWorld=townKey;animatedVillagers.rosters=new Map();}
@@ -2164,7 +2164,7 @@ function animatedVillagers(town, seconds, townId=viewed, frameLayout=null){
       }else{
         const visible=state?.playbackQueue?{x:state.x,y:state.y,path:state.path,phase:state.phase,elapsed:state.elapsed,clock:state.clock,
           playbackQueue:state.playbackQueue,hostVersion:state.hostVersion,hostTask:state.hostTask}:{};
-        state=Object.assign(WorkerAnimation.plan(world.shared_map?{...town,obstacles:Object.values(world.towns).flatMap(t=>t.buildings),home_hall:town.buildings.find(b=>b.kind==='hall')}:town,villager,index,state),visible,{signature,layout,task});workers.set(workerKey,state);
+        state=Object.assign(WorkerAnimation.plan(world.shared_map?{...town,roads:mapRoads(town),obstacles:Object.values(world.towns).flatMap(t=>t.buildings),home_hall:town.buildings.find(b=>b.kind==='hall')}:town,villager,index,state),visible,{signature,layout,task});workers.set(workerKey,state);
       }
     }
     state.roads=roads;
@@ -2218,7 +2218,7 @@ function townWorkerLayout(town,buildings,resources){
     for(let x=Math.max(0,center.x-60);x<=Math.min(town.map_size-1,center.x+60);x++)row+=town.terrain?.[y]?.[x] || 'v';
     terrain.push(row);
   }
-  const layout=JSON.stringify([tiles(buildings),tiles(resources),terrain]);
+  const layout=JSON.stringify([tiles(buildings),tiles(resources),terrain,tiles(mapRoads(town).filter(r=>!r.construction))]);
   townWorkerLayout.layouts.set(town,layout);return layout;
 }
 let npcClock=0;

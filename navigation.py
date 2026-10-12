@@ -1,5 +1,6 @@
-"""Bounded, derived shortest-path caches; never stored in world snapshots."""
+"""Bounded, derived travel-time route caches; never stored in world snapshots."""
 from collections import OrderedDict, deque
+import heapq
 
 
 class RouteCache:
@@ -7,7 +8,8 @@ class RouteCache:
         self.graph_limit, self.route_limit, self.step_limit = graphs, routes, steps
         self.graphs = OrderedDict()
 
-    def route(self, start, target, blocked, size, terrain, adjacent=True, bounds=None):
+    def route(self, start, target, blocked, size, terrain, adjacent=True, bounds=None,
+              roads=(), road_mode='smooth'):
         # Chunk records are sparse. Include loaded chunk keys as well as terrain
         # rows so loading/evicting terrain cannot reuse an obsolete route.
         if hasattr(terrain, 'records'):
@@ -15,7 +17,8 @@ class RouteCache:
                                   for key, record in terrain.records.items()))
         else:
             ground = tuple(terrain)
-        graph = size, frozenset(blocked), ground, bounds
+        roads = frozenset(roads)
+        graph = size, frozenset(blocked), ground, bounds, roads
         if graph not in self.graphs:
             self.graphs[graph] = [OrderedDict(), 0]
             if len(self.graphs) > self.graph_limit:
@@ -23,12 +26,12 @@ class RouteCache:
         self.graphs.move_to_end(graph)
         paths = self.graphs[graph]
         goals = frozenset(target) if isinstance(target, set) else (target['x'], target['y'])
-        key = start, goals, adjacent
+        key = start, goals, adjacent, road_mode if roads else None
         if key in paths[0]:
             paths[0].move_to_end(key)
             path = paths[0][key]
         else:
-            path = self.search(start, target, blocked, size, terrain, adjacent, bounds)
+            path = self.search(start, target, blocked, size, terrain, adjacent, bounds, roads, road_mode)
             cost = len(path) if path is not None else 1
             if cost <= self.step_limit:
                 paths[0][key] = path
@@ -40,10 +43,23 @@ class RouteCache:
         return None if path is None else [{'x': x, 'y': y} for x, y in path]
 
     @staticmethod
-    def search(start, target, blocked, size, terrain, adjacent, bounds):
+    def search(start, target, blocked, size, terrain, adjacent, bounds, roads=(), road_mode='smooth'):
         queue, previous = deque([start]), {start: None}
-        while queue:
-            tile = queue.popleft()
+        costs, order = {start: 0}, 0
+        # A road step costs 4 units versus 6 on open ground (50% faster).
+        # Smooth walkers spend half an edge on each tile. Builders time the
+        # departure tile; haulers time the arrival tile. Keep those host rules.
+        def heuristic(tile):
+            return 0 if isinstance(target, set) else 4 * max(0, abs(tile[0] - target['x']) + abs(tile[1] - target['y']) - int(adjacent))
+
+        heap = [(heuristic(start), 0, 0, start)] if roads else []
+        while (heap if roads else queue):
+            if roads:
+                _, _, cost, tile = heapq.heappop(heap)
+                if costs[tile] != cost:
+                    continue
+            else:
+                tile = queue.popleft()
             reached = tile in target if isinstance(target, set) else abs(tile[0] - target['x']) + abs(tile[1] - target['y']) == int(adjacent)
             if reached:
                 path = []
@@ -57,10 +73,21 @@ class RouteCache:
                 if bounds and not (bounds[0] <= nx <= bounds[1] and bounds[2] <= ny <= bounds[3]):
                     continue
                 if (0 <= nx < size and 0 <= ny < size and next_tile not in blocked
-                        and next_tile not in previous and (not terrain or terrain[ny][nx] != 'v')
+                        and (roads or next_tile not in previous) and (not terrain or terrain[ny][nx] != 'v')
                         and (not bounds or not terrain or terrain[ny][nx])):
+                    if not roads:
+                        previous[next_tile] = tile
+                        queue.append(next_tile)
+                        continue
+                    departure, arrival = (2 if tile in roads else 3), (2 if next_tile in roads else 3)
+                    weight = 2 * departure if road_mode == 'departure' else 2 * arrival if road_mode == 'arrival' else departure + arrival
+                    next_cost = cost + weight
+                    if next_cost >= costs.get(next_tile, float('inf')):
+                        continue
                     previous[next_tile] = tile
-                    queue.append(next_tile)
+                    costs[next_tile] = next_cost
+                    order += 1
+                    heapq.heappush(heap, (next_cost + heuristic(next_tile), order, next_cost, next_tile))
         return None
 
 

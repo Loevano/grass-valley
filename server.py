@@ -458,7 +458,7 @@ def completed(building):
     return 'construction' not in building
 
 
-def construction_route(town, start, target):
+def construction_route(town, start, target, road_mode='departure'):
     size = town.get('map_size', MAP_SIZE)
     spatial = town.get('_spatial_index')
     if spatial is not None:
@@ -483,8 +483,13 @@ def construction_route(town, start, target):
                     key=lambda p: abs(p[0] - start[0]) + abs(p[1] - start[1]))
     if start is None:
         return None
-    path = routes.route(start, target, blocked, size, terrain)
+    roads = {(r['x'], r['y']) for r in town.get('roads', []) if completed(r)}
+    path = routes.route(start, target, blocked, size, terrain, roads=roads, road_mode=road_mode)
     return None if path is None else [start] + [(p['x'], p['y']) for p in path]
+
+
+def logistics_route(town, start, target):
+    return construction_route(town, start, target, road_mode='arrival')
 
 
 def construct(town, landscape, workers=None, elapsed=TICK_SECONDS):
@@ -693,7 +698,7 @@ def tick(world):
                 continue
             building = assignment[0]
             if job == 'hauling':
-                logistics.haul(town, walking, villager, building, construction_route, TICK_SECONDS)
+                logistics.haul(town, walking, villager, building, logistics_route, TICK_SECONDS)
                 continue
             if villager.get('logistics_trip'):
                 villager.pop('work_animation', None)
@@ -702,7 +707,7 @@ def tick(world):
             if finishing_output:
                 villager['production_status'] = 'Returning gathered goods'
                 continue
-            if logistics.worker(town, walking, villager, building, construction_route, TICK_SECONDS):
+            if logistics.worker(town, walking, villager, building, logistics_route, TICK_SECONDS):
                 continue
             if job in economy.JOB_BUILDINGS:
                 if building['kind'] == 'butcher' and building.get('butchering'):

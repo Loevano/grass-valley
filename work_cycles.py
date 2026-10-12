@@ -42,9 +42,9 @@ def fishing_water(building, water, occupied, reach, terrain=None, depths=None):
     return [tiles[tile] for tile in queue]
 
 
-def route(start, target, blocked, size, terrain, adjacent=True, bounds=None):
+def route(start, target, blocked, size, terrain, adjacent=True, bounds=None, roads=()):
     start = (round(start['x']), round(start['y']))
-    return routes.route(start, target, blocked, size, terrain, adjacent, bounds)
+    return routes.route(start, target, blocked, size, terrain, adjacent, bounds, roads)
 
 
 def advance(town, landscape, villager, building, source, index, seconds):
@@ -72,6 +72,7 @@ def _advance(town, landscape, villager, building, source, index, seconds):
         spec.extend([building.get('level', 1), economy.fishing_boat_level(building), boating])
     state = villager.get('work_animation')
     size, terrain = landscape.get('map_size', 120), landscape.get('terrain', [])
+    roads = {(r['x'], r['y']) for r in landscape.get('roads', []) if 'construction' not in r}
     blocked = {(b['x'], b['y']) for b in landscape['buildings'] + landscape['map_resources'] + landscape.get('npcs', [])}
     farming = villager['job'] == 'farming'
     hall = next(b for b in town['buildings'] if b['kind'] == 'hall')
@@ -113,13 +114,13 @@ def _advance(town, landscape, villager, building, source, index, seconds):
             if outbound and afloat:
                 return route(start, source, sea_blocked, size, terrain, False, sea_bounds)
             if outbound:
-                approach = route(start, berth, land_blocked, size, terrain, False, bounds)
+                approach = route(start, berth, land_blocked, size, terrain, False, bounds, roads)
                 sailing = route(berth, source, sea_blocked, size, terrain, False, sea_bounds)
             else:
                 approach = route(start, berth, sea_blocked, size, terrain, False, sea_bounds) if afloat else []
-                sailing = route(berth if afloat else start, building, land_blocked, size, terrain, True, bounds)
+                sailing = route(berth if afloat else start, building, land_blocked, size, terrain, True, bounds, roads)
             return None if approach is None or sailing is None else approach + sailing
-        return route(start, target, blocked, size, terrain, adjacent, bounds)
+        return route(start, target, blocked, size, terrain, adjacent, bounds, roads)
     if not state or state['task'] != spec or state['phase'] in ('waiting', 'waiting_water'):
         position = (state or villager.get('logistics_position') or villager.get('construction_position')
                     or {'x': hall['x'] - 2 + index % 5, 'y': hall['y'] + 3 + index // 5})
@@ -142,7 +143,6 @@ def _advance(town, landscape, villager, building, source, index, seconds):
         state.update(path=path or [], phase='waiting' if path is None else 'walking' if path else 'working')
         villager['work_animation'] = state
     state['version'] += 1
-    roads = {(r['x'], r['y']) for r in landscape.get('roads', []) if 'construction' not in r}
     remaining = seconds
     state['playback'] = [_sample(state, 0)]
     last_phase, last_length = state['phase'], len(state['path'])

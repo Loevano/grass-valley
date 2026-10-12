@@ -53,10 +53,11 @@ const WorkerAnimation = (() => {
     }
     return depths;
   }
-  function* routeSteps(start, target, blocked, size=120, adjacent=true, bounds=null) {
+  function* routeSteps(start, target, blocked, size=120, adjacent=true, bounds=null, roads=null, roadMode='smooth') {
     const cache=cachedRoutes(blocked);
     const cacheKey=cache?JSON.stringify([key(start),target instanceof Set?[...target].sort():key(target),size,adjacent,
-      bounds?[bounds.minX,bounds.maxX,bounds.minY,bounds.maxY]:null,[...blocked.added].sort(),[...blocked.removed].sort()]):null;
+      bounds?[bounds.minX,bounds.maxX,bounds.minY,bounds.maxY]:null,[...blocked.added].sort(),[...blocked.removed].sort(),
+      roads?.size?[...roads].sort():[],roads?.size?roadMode:null]):null;
     const copy=path=>path===null?null:path.map(p=>({...p}));
     if(cache?.paths.has(cacheKey)){
       const path=cache.paths.get(cacheKey);cache.paths.delete(cacheKey);cache.paths.set(cacheKey,path);
@@ -75,36 +76,70 @@ const WorkerAnimation = (() => {
       }
       return path;
     };
-    const queue = [start], previous = new Map([[key(start),null]]);
-    for(let i=0;i<queue.length;i++){
-      if(i%128===127)yield;
-      const p=queue[i];
+    const weighted=!!roads?.size,previous=new Map([[key(start),null]]),costs=new Map([[key(start),0]]);
+    const heuristic=p=>target instanceof Set?0:4*Math.max(0,distance(p,target)-(adjacent?1:0));
+    const queue=weighted?[{p:start,cost:0,rank:heuristic(start),order:0}]:[start];
+    let cursor=0,inspected=0,order=0;
+    // Stable min-heap for travel-time A*. Uniform maps retain the cheaper BFS.
+    const less=(a,b)=>a.rank<b.rank||(a.rank===b.rank&&a.order<b.order);
+    const push=entry=>{
+      let i=queue.length;queue.push(entry);
+      while(i>0){const parent=(i-1)>>1;if(!less(entry,queue[parent]))break;queue[i]=queue[parent];i=parent;}
+      queue[i]=entry;
+    };
+    const pop=()=>{
+      const first=queue[0],last=queue.pop();
+      if(queue.length){
+        let i=0;
+        while(i*2+1<queue.length){
+          let child=i*2+1;if(child+1<queue.length&&less(queue[child+1],queue[child]))child++;
+          if(!less(queue[child],last))break;queue[i]=queue[child];i=child;
+        }
+        queue[i]=last;
+      }
+      return first;
+    };
+    while(weighted?queue.length:cursor<queue.length){
+      if(++inspected%128===0)yield;
+      const entry=weighted?pop():null,p=weighted?entry.p:queue[cursor++];
+      if(weighted&&entry.cost!==costs.get(key(p)))continue;
       if(target instanceof Set?target.has(key(p)):distance(p,target)===(adjacent?1:0)){
         const path=[];
         for(let step=p;previous.get(key(step));step=previous.get(key(step)))path.push(step);
         return remember(path.reverse());
       }
       for(const next of neighbors(p)){
-        if(next.x<0||next.y<0||next.x>=size||next.y>=size||blocked.has(key(next))||previous.has(key(next)))continue;
+        if(next.x<0||next.y<0||next.x>=size||next.y>=size||blocked.has(key(next))||(!weighted&&previous.has(key(next))))continue;
         if(bounds&&(next.x<bounds.minX||next.x>bounds.maxX||next.y<bounds.minY||next.y>bounds.maxY))continue;
-        previous.set(key(next),p);queue.push(next);
+        if(weighted){
+          // Six cost units per normal step; road tiles cost four. Smooth
+          // walkers cross halfway through each tile. Match host trip timing.
+          const departure=roads.has(key(p))?2:3,arrival=roads.has(key(next))?2:3;
+          const weight=roadMode==='departure'?2*departure:roadMode==='arrival'?2*arrival:departure+arrival;
+          const cost=entry.cost+weight;
+          if(cost>=(costs.get(key(next)) ?? Infinity))continue;
+          costs.set(key(next),cost);previous.set(key(next),p);
+          push({p:next,cost,rank:cost+heuristic(next),order:++order});
+        }else{previous.set(key(next),p);queue.push(next);}
       }
     }
     return remember(null);
   }
   function* travelSteps(start,target,state,adjacent=true){
-    if(!state.sailing)return (yield* routeSteps(start,target,state.blocked,state.size,adjacent,state.bounds));
+    if(!state.sailing)return (yield* routeSteps(start,target,state.blocked,state.size,adjacent,state.bounds,state.roads,state.roadMode));
     const {water,berth,landBlocked,seaBlocked,seaBounds}=state.sailing;
     const afloat=water.has(key({x:Math.round(start.x),y:Math.round(start.y)}));
     if(target===state.source&&afloat)return (yield* routeSteps(start,target,seaBlocked,state.size,false,seaBounds));
     const outbound=target===state.source;
-    const approach=outbound?(yield* routeSteps(start,berth,landBlocked,state.size,false,state.bounds)):
+    const approach=outbound?(yield* routeSteps(start,berth,landBlocked,state.size,false,state.bounds,state.roads)):
       afloat?(yield* routeSteps(start,berth,seaBlocked,state.size,false,seaBounds)):[];
     const sailing=outbound?(yield* routeSteps(berth,target,seaBlocked,state.size,false,seaBounds)):
-      (yield* routeSteps(afloat?berth:start,target,landBlocked,state.size,true,state.bounds));
+      (yield* routeSteps(afloat?berth:start,target,landBlocked,state.size,true,state.bounds,state.roads));
     return approach===null||sailing===null?null:[...approach,...sailing];
   }
   function* planSteps(town, villager, index, state) {
+    const roads=town.navigation?.roads || new Set((town.roads || []).filter(r=>!r.construction).map(key));
+    const roadMode=villager.construction_target?'departure':'smooth';
     const blocked=town.navigation?town.navigation.overlay():new Set([...(town.obstacles || town.buildings),...town.map_resources,...(town.npcs || [])].map(key));
     if(villager.construction_target || villager.logistics_target || villager.job==='farming'){
       for(const acre of (town.obstacles || town.buildings).filter(b=>b.kind==='acre'&&!b.construction))blocked.delete(key(acre));
@@ -139,9 +174,9 @@ const WorkerAnimation = (() => {
     if(villager.logistics_target&&!villager.construction_target){
       const target=villager.logistics_target,trip=villager.logistics_trip;
       const remaining=trip?.path.slice(state?0:(trip.step || 0)).map(([x,y])=>({x,y}));
-      const path=(yield* routeSteps(start,remaining?.[0] || target,blocked,size,false,bounds));
+      const path=(yield* routeSteps(start,remaining?.[0] || target,blocked,size,false,bounds,roads,'arrival'));
       const deliveryPath=path===null?[]:[...approach,...path,...(remaining?.slice(1) || [])];
-      return {...position,path:deliveryPath,phase:path===null?'waiting':'walking',source:target,home:null,blocked,size,bounds,transport:true,
+      return {...position,path:deliveryPath,phase:path===null?'waiting':'walking',source:target,home:null,blocked,size,bounds,roads,roadMode:'arrival',transport:true,
         transportCargo:trip?.cargo || {},pickupRemaining:(trip?.path.length || 1)-1-(trip?.pickup_step ?? 0),
         deliveryRemaining:(trip?.path.length || 1)-1-(trip?.delivery_step ?? 0),
         transportSpeed:1+.25*Math.floor((villager.hauling || 0)/20),elapsed:0,clock:state?.clock || index*.37,facing:state?.facing || 1};
@@ -211,8 +246,8 @@ const WorkerAnimation = (() => {
       if(!state)position=start;
       approach=distance(position,start)>1e-9?[start]:[];
     }
-    const routing={blocked,size,bounds,sailing,source};
-    let path=source?(yield* travelSteps(start,workSpot || source,routing,!workSpot)):home?(yield* routeSteps(start,home,blocked,size,true,bounds)):[];
+    const routing={blocked,size,bounds,sailing,source,roads,roadMode};
+    let path=source?(yield* travelSteps(start,workSpot || source,routing,!workSpot)):home?(yield* routeSteps(start,home,blocked,size,true,bounds,roads)):[];
     if(path!==null)path=[...approach,...path];
     let castTarget=villager.job==='fishing'?source:null;
     if(villager.job==='fishing'&&source){
@@ -229,7 +264,7 @@ const WorkerAnimation = (() => {
       }
     }
     return {...position,phase:path===null?'waiting':path.length?'walking':source?'working':'idle',
-      path:path || [],source,home,pier,workSpot,castTarget,fishingCaught:null,blocked,size,bounds,boating,sailing,workDuration:villager.job==='farming'?8:3.2,
+      path:path || [],source,home,pier,workSpot,castTarget,fishingCaught:null,blocked,size,bounds,roads,roadMode,boating,sailing,workDuration:villager.job==='farming'?8:3.2,
       farming:villager.job==='farming'&&!villager.construction_target,water:town.map_resources.filter(r=>r.kind==='water'),waterReady:false,
       stationary:!!source&&source.kind===workplace?.kind&&distance(source,workplace)===0&&!villager.construction_target,
       construction:!!villager.construction_target,elapsed:0,clock:state?.clock || index*.37,facing:state?.facing || 1};
@@ -240,7 +275,7 @@ const WorkerAnimation = (() => {
     for(const water of state.water)for(const bank of neighbors(water)){
       if(bank.x>=0&&bank.y>=0&&bank.x<state.size&&bank.y<state.size&&!state.blocked.has(key(bank)))banks.set(key(bank),water);
     }
-    const path=(yield* routeSteps(state,new Set(banks.keys()),state.blocked,state.size,false,state.bounds));
+    const path=(yield* routeSteps(state,new Set(banks.keys()),state.blocked,state.size,false,state.bounds,state.roads));
     if(path===null){state.phase='waiting_water';return;}
     const bank=path.at(-1) || state;
     state.waterSource=banks.get(key(bank));state.path=path;state.waterElapsed=0;
@@ -279,7 +314,7 @@ const WorkerAnimation = (() => {
     if(state.phase==='collecting_water'){
       state.waterElapsed+=seconds;
       if(state.waterElapsed>=.65){
-        const path=(yield* routeSteps(state,state.workSpot || state.source,state.blocked,state.size,!state.workSpot,state.bounds));
+        const path=(yield* routeSteps(state,state.workSpot || state.source,state.blocked,state.size,!state.workSpot,state.bounds,state.roads));
         state.path=path || [];state.phase=path===null?'waiting_water':path.length?'returning_water':'working';
         state.waterReady=path!==null&&!path.length;
       }
