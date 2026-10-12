@@ -5,6 +5,14 @@ const WorkerAnimation = (() => {
   const neighbors = p => [{x:p.x+1,y:p.y},{x:p.x,y:p.y+1},{x:p.x-1,y:p.y},{x:p.x,y:p.y-1}];
   const boatLevel = b => b?.profession_upgrades?.includes('master_boat')?3:b?.profession_upgrades?.includes('improved_boat')?2:b?.profession_upgrades?.includes('boat')?1:0;
   const fishingReach = b => 2+(b.level || 1)+(boatLevel(b)?3+2*(boatLevel(b)-1):0);
+  // Scene occupancy is immutable and reused only while local geometry matches.
+  // Per-worker exceptions form part of the key; plain mutable Sets bypass caching.
+  const routeCaches=new WeakMap();
+  function cachedRoutes(blocked){
+    if(!blocked.base||!blocked.added||!blocked.removed)return null;
+    if(!routeCaches.has(blocked.base))routeCaches.set(blocked.base,{paths:new Map(),steps:0});
+    return routeCaches.get(blocked.base);
+  }
   function fishingBoating(town,home,index){
     const huts=town.buildings.filter(b=>b.kind==='fishing_hut'&&(!b.construction||b.construction.upgrade)
       &&town.map_resources.some(r=>r.kind==='water'&&distance(b,r)<=fishingReach(b)));
@@ -46,14 +54,35 @@ const WorkerAnimation = (() => {
     return depths;
   }
   function* routeSteps(start, target, blocked, size=120, adjacent=true, bounds=null) {
+    const cache=cachedRoutes(blocked);
+    const cacheKey=cache?JSON.stringify([key(start),target instanceof Set?[...target].sort():key(target),size,adjacent,
+      bounds?[bounds.minX,bounds.maxX,bounds.minY,bounds.maxY]:null,[...blocked.added].sort(),[...blocked.removed].sort()]):null;
+    const copy=path=>path===null?null:path.map(p=>({...p}));
+    if(cache?.paths.has(cacheKey)){
+      const path=cache.paths.get(cacheKey);cache.paths.delete(cacheKey);cache.paths.set(cacheKey,path);
+      return copy(path);
+    }
+    const remember=path=>{
+      if(cache&&(path?.length || 1)<=32768){
+        // Concurrent resumable searches can finish the same query.
+        const old=cache.paths.get(cacheKey);
+        if(cache.paths.has(cacheKey))cache.steps-=old?.length || 1;
+        cache.paths.delete(cacheKey);cache.paths.set(cacheKey,copy(path));cache.steps+=path?.length || 1;
+        while(cache.paths.size>256||cache.steps>32768){
+          const oldest=cache.paths.keys().next().value;
+          cache.steps-=cache.paths.get(oldest)?.length || 1;cache.paths.delete(oldest);
+        }
+      }
+      return path;
+    };
     const queue = [start], previous = new Map([[key(start),null]]);
     for(let i=0;i<queue.length;i++){
       if(i%128===127)yield;
       const p=queue[i];
       if(target instanceof Set?target.has(key(p)):distance(p,target)===(adjacent?1:0)){
         const path=[];
-        for(let step=p;previous.get(key(step));step=previous.get(key(step)))path.unshift(step);
-        return path;
+        for(let step=p;previous.get(key(step));step=previous.get(key(step)))path.push(step);
+        return remember(path.reverse());
       }
       for(const next of neighbors(p)){
         if(next.x<0||next.y<0||next.x>=size||next.y>=size||blocked.has(key(next))||previous.has(key(next)))continue;
@@ -61,7 +90,7 @@ const WorkerAnimation = (() => {
         previous.set(key(next),p);queue.push(next);
       }
     }
-    return null;
+    return remember(null);
   }
   function* travelSteps(start,target,state,adjacent=true){
     if(!state.sailing)return (yield* routeSteps(start,target,state.blocked,state.size,adjacent,state.bounds));

@@ -1,8 +1,8 @@
 """Host-owned workplace animation and drop-off timing."""
-from collections import deque
 import math
 
 import progression as economy
+from navigation import routes
 from spatial import SpatialIndex
 
 
@@ -44,27 +44,7 @@ def fishing_water(building, water, occupied, reach, terrain=None, depths=None):
 
 def route(start, target, blocked, size, terrain, adjacent=True, bounds=None):
     start = (round(start['x']), round(start['y']))
-    queue, previous = deque([start]), {start: None}
-    while queue:
-        tile = queue.popleft()
-        reached = tile in target if isinstance(target, set) else abs(tile[0] - target['x']) + abs(tile[1] - target['y']) == int(adjacent)
-        if reached:
-            path = []
-            while previous[tile] is not None:
-                path.append({'x': tile[0], 'y': tile[1]})
-                tile = previous[tile]
-            return list(reversed(path))
-        x, y = tile
-        for next_tile in ((x + 1, y), (x, y + 1), (x - 1, y), (x, y - 1)):
-            nx, ny = next_tile
-            if bounds and not (bounds[0] <= nx <= bounds[1] and bounds[2] <= ny <= bounds[3]):
-                continue
-            if (0 <= nx < size and 0 <= ny < size and next_tile not in blocked
-                    and next_tile not in previous and (not terrain or terrain[ny][nx] != 'v')
-                    and (not bounds or terrain[ny][nx])):
-                previous[next_tile] = tile
-                queue.append(next_tile)
-    return None
+    return routes.route(start, target, blocked, size, terrain, adjacent, bounds)
 
 
 def advance(town, landscape, villager, building, source, index, seconds):

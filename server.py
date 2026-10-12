@@ -1,6 +1,5 @@
 """Lantern Vale: a small, authoritative LAN village prototype."""
 import argparse
-from collections import deque
 import ipaddress
 import json
 import math
@@ -20,6 +19,7 @@ import npcs
 import trading
 import horses
 import quests
+from navigation import routes
 import lanterns
 from spatial import SpatialIndex
 
@@ -482,21 +482,8 @@ def construction_route(town, start, target):
                     key=lambda p: abs(p[0] - start[0]) + abs(p[1] - start[1]))
     if start is None:
         return None
-    queue, previous = deque([start]), {start: None}
-    while queue:
-        p = queue.popleft()
-        if abs(p[0] - target['x']) + abs(p[1] - target['y']) == 1:
-            path = [p]
-            while previous[p] is not None:
-                p = previous[p]
-                path.append(p)
-            return list(reversed(path))
-        for next_tile in [(p[0]+1, p[1]), (p[0], p[1]+1),
-                          (p[0]-1, p[1]), (p[0], p[1]-1)]:
-            if next_tile not in previous and open_tile(next_tile):
-                previous[next_tile] = p
-                queue.append(next_tile)
-    return None
+    path = routes.route(start, target, blocked, size, terrain)
+    return None if path is None else [start] + [(p['x'], p['y']) for p in path]
 
 
 def construct(town, landscape, workers=None, elapsed=TICK_SECONDS):
