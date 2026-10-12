@@ -1382,7 +1382,7 @@ function renderProfession(town,item,index,target,upgrades,details,boats,unlocked
       const ages=animalAges(item,animal),duration=catalog.animal_growth_seconds || 300;
       const adults=ages.filter(age=>age>=duration).length;
       target.append(fact(`${adults} adult · ${ages.length-adults} growing`,`${goodName(animal)} → ${animal==='horse'?'Riding / breeding':animal==='pig'?'Meat and hides at butcher':goodName(spec.output)}`));
-      ages.forEach((age,i)=>{if(age<duration){const growth=document.createElement('small');growth.textContent=`${goodName(animal)} ${i+1} · ${Math.floor(age/duration*100)}% grown · ${Math.ceil(duration-age)}s of full feeding left`;target.append(growth);}});
+      ages.forEach(age=>{if(age<duration){const growth=document.createElement('small');growth.style.display='block';growth.textContent=`${Math.floor(age/duration*100)}%`;target.append(growth);}});
       if(owner){
         const buy=document.createElement('button');buy.textContent=`Buy ${animal} · ${spec.coins} coins${town.level<spec.level?` · Hall ${spec.level}`:''}`;
         buy.hidden=animal==='horse';buy.disabled=town.level<spec.level || town.coins<spec.coins || Object.values(item.animals || {}).reduce((a,n)=>a+n,0)>=4*buildingLevel(item);buy.onclick=()=>act({action:'buy_animal',index,animal});target.append(buy);
