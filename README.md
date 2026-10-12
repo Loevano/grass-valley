@@ -129,7 +129,24 @@ the Python host, refresh both browsers, and create a new world to use the shared
   Each story awards coins and a keepsake once per town. Progress, examined rocks,
   and rewards survive reloads; shared-world players complete their own stories.
   Select **You** to review active objectives and collected keepsakes. Flint’s map
-  hints at a future cooperative adventure; its doorway is not enterable yet.
+  leads into **The Sealed Quarry**, the first cooperative puzzle prototype.
+- Select **You**, then **The Sealed Quarry · Puzzle prototype** to open its separate
+  adventure board. Entry is available immediately for playtesting; completing
+  Flint’s survey is optional. At least two founders must each choose **Enter quarry**
+  before movement unlocks. Use two browser profiles or a normal and private window
+  to test locally with separate towns in the same world.
+  One founder holds the floor plate while a companion crosses the gate, securing
+  it open for everyone. Beyond the gate, read the inscription and touch the three
+  runes in the hinted order, then recover the lantern stone from the chest.
+  Incorrect sequences reset without a penalty. Every expedition member receives
+  20 coins and a lantern-stone keepsake once, including members who already left.
+  **Close map** keeps you inside; reopen from You. **Leave expedition** returns
+  control to the valley, and triggers a safety counterweight if only one founder
+  remains, allowing them to finish. Members can rejoin an unfinished expedition.
+  Positions, gate state, rune progress, and completion save with the world. Town
+  production continues during the adventure. There is one expedition per world;
+  replay it in a new world. Browser disconnection keeps your place in the expedition;
+  use **Leave expedition** before disconnecting if your companion still needs the gate.
 - Your gold-clad villager is marked **You**. Click the map and hold **WASD** to
   walk in screen directions. Press **Y** to toggle camera lock: when locked, the
   camera follows your movement; when unlocked, walking leaves the camera in place.

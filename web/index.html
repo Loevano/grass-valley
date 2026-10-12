@@ -100,5 +100,17 @@
 </aside>
 </main>
 <div id="notice" role="status" aria-live="polite"></div>
-<script src="animations.js"></script><script src="app.js"></script>
+<dialog id="quarry-dialog" aria-labelledby="quarry-title">
+<span class="eyebrow">FLINT’S CHARCOAL MAP · PUZZLE PROTOTYPE</span><h2 id="quarry-title">The Sealed Quarry</h2>
+<p>Two founders enter together. Hold the floor plate while a companion crosses and secures the gate. Read the inscription beyond it to open the rune seal.</p>
+<p id="quarry-status" role="status" aria-live="polite"></p>
+<p id="quarry-objective"></p>
+<p id="quarry-party"></p><div id="quarry-board" aria-label="Quarry map"></div>
+<p class="muted">P: floor plate · G: gate · ☀ / ♣ / ☾: runes · I: inscription · T: chest. Your marker is gold. Use your movement keys or the direction buttons to walk one tile. Stand on or beside an object to use it.</p>
+<div id="quarry-directions" class="quarry-actions"></div><div id="quarry-objects" class="quarry-actions"></div>
+<p id="quarry-reward"></p><p id="quarry-error" role="alert"></p>
+<div class="quarry-actions"><button id="quarry-enter">Enter quarry</button><button id="quarry-leave" class="quiet">Leave expedition</button><button id="quarry-close" class="quiet">Close map</button></div>
+<p class="muted">Closing this map keeps you in the expedition; reopen it from You. Leave expedition to return to the valley. Progress survives reloads. If a companion leaves, a safety counterweight lets the remaining player finish.</p>
+</dialog>
+<script src="animations.js"></script><script src="app.js"></script><script src="quarry.js"></script>
 </body></html>

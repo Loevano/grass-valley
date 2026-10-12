@@ -19,6 +19,7 @@ import equipment
 import npcs
 import trading
 import horses
+import quests
 from spatial import SpatialIndex
 
 from terrain import ensure_terrain, remove_invalid_trees, ensure_industry
@@ -820,6 +821,10 @@ def command(town, data, world=None):
         bind_map(world)
     ensure_resources(town)
     action = data.get('action')
+    if action in {'join_quarry', 'leave_quarry', 'quarry_walk', 'quarry_interact'}:
+        return quests.change(town, data, world)
+    if world and quests.inside(world, town) and action in {'walk', 'fish', 'chop', 'gather'}:
+        raise ValueError('Leave the quarry before exploring the valley.')
     if action == 'walk' and 'steps' in data:
         steps = data['steps']
         if (not isinstance(steps, list) or not 1 <= len(steps) <= 5
@@ -1268,7 +1273,7 @@ class Handler(SimpleHTTPRequestHandler):
                         self.reply(400, {'error': str(error)})
                         return
                     snapshot = dict(snapshot, shared_map=landscape)
-                snapshot = dict(snapshot, hall_upgrades=HALL_UPGRADES, progression=economy.public_catalog(), local_stories=npcs.STORIES,
+                snapshot = dict(snapshot, hall_upgrades=HALL_UPGRADES, progression=economy.public_catalog(), local_stories=npcs.STORIES, quarry_catalog=quests.CATALOG,
                                 hall_ready={k: economy.milestone(t, t['level'] + 1) for k, t in WORLD['towns'].items()}, world_id=ACTIVE_WORLD,
                                 name=WORLDS[ACTIVE_WORLD]['name'] if ACTIVE_WORLD else None,
                                 players_sampled_at=time.monotonic())

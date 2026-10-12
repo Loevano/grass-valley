@@ -158,6 +158,7 @@ let playerView = null, walkingRequest = false, walkCooldown = 0;
 function clearWalk(){walkKeys.clear();walkCooldown=0;}
 function canControlPlayer(allowBuilding=false){
   return (world.shared_map || viewed===identity?.town_id) && !!world.towns[identity?.town_id]?.player && (allowBuilding || !tool)
+    && !world.quarry?.members?.[identity?.town_id]?.inside && !$('quarry-dialog')?.open
     && !$('world-menu').open && !$('delete-world-dialog').open && !$('upgrade-dialog').open
     && !$('settings-panel').open && !document.activeElement?.isContentEditable
     && !['INPUT','TEXTAREA','SELECT'].includes(document.activeElement?.tagName)
@@ -912,6 +913,7 @@ $('settings-button').onclick=()=>{
 $('close-settings').onclick=()=>{ $('settings-panel').close();updateSettingsButton(); };
 $('settings-panel').addEventListener('close',updateSettingsButton);
 window.addEventListener('keydown',event=>{
+  if($('quarry-dialog')?.open)return;
   const key=event.key.toLowerCase();
   if(key===','&&event.metaKey&&!event.ctrlKey&&!event.altKey&&!event.shiftKey){
     event.preventDefault();
@@ -1379,6 +1381,8 @@ function renderSelection(town){
       const row=document.createElement('p');row.textContent=`${gear.name} · ${town.player?.worker_tools?.[key] || 0} available · Give to a worker from their panel (+${gear.bonus*100}% ${gear.job} output)`;$('selection-details').append(row);
     }
     if(viewed===identity?.town_id){
+      const quarry=document.createElement('button');quarry.textContent='The Sealed Quarry · Puzzle prototype';
+      quarry.onclick=()=>openQuarry();$('selection-details').append(quarry);
       if(town.player?.leading_horse){const note=document.createElement('p');note.textContent='Leading a wild horse. Walk beside your stable and select it to settle the horse.';$('selection-details').append(note);}
       if(town.player?.horse){const button=document.createElement('button');button.textContent=town.player.mounted?'Dismount horse':'Mount horse · +75% land speed';button.onclick=()=>act({action:'toggle_mount'});$('selection-details').append(button);}
       if(town.player?.boat){
@@ -1732,6 +1736,7 @@ async function refresh(){
   try{await refreshing;}finally{refreshing=null;}
 }
 function render(){
+  if(typeof renderQuarry==='function')renderQuarry();
   renderUpgradeDialog();
   const own=world.towns[identity?.town_id], town=world.towns[viewed];
   draw();

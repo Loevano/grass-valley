@@ -135,6 +135,16 @@ worlds; workers keep their assigned jobs.
 
 ## Suggested development stages
 
+The first puzzle prototype is **The Sealed Quarry**, opened from the founder’s
+You panel on a separate tile board. Two founders explicitly enter before it starts.
+A pressure plate opens a gate; crossing secures it permanently. A carved inscription
+hints at a three-rune sequence, with harmless retries. Each enrolled founder earns
+20 coins and a lantern-stone keepsake on completion, once per world. Party positions,
+gate state, rune sequence, and completion persist. A departing member triggers a
+safety counterweight if only one remains, so that founder can finish alone. Closing
+the board preserves membership; leaving returns valley movement. Entry bypasses
+Flint’s survey for playtesting. Combat and a valley entrance remain future work.
+
 1. Play and refine the village prototype; settle the unanswered town questions.
 2. Add a shared valley with town entrances, movement, and resource gathering.
 3. Add trading and one cooperative quest area with active combat and individual loot.

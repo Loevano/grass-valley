@@ -175,7 +175,7 @@ STORIES = {
              'rocks': 3, 'button': 'Compare the markings'},
             {'dialogue': 'The lines join! They mark a doorway beneath the ridge. Bring two wood for charcoal, and I will copy the route for you. We should gather companions before venturing inside.',
              'costs': {'wood': 2}, 'button': 'Make a charcoal map'},
-            {'dialogue': 'Here is our map. The doorway remains sealed, but we now know where a future expedition should begin. Until then, keep the route safe.'},
+            {'dialogue': 'Here is our map. Gather a companion and open The Sealed Quarry from your You panel. The old gate needs two pairs of hands, and the carvings beyond it may explain what the quarry keepers left behind.'},
         ],
     },
 }
