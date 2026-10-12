@@ -423,6 +423,9 @@ function remotePlayerSprite(townId,town,seconds){
 }
 const labels = {road:'Dirt road',hall:'Town hall',home:'Cottage',woodcutter:'Woodcutter',farm:'Farm',storehouse:'Storehouse',fishing_hut:'Fishing hut',acre:'Acre'};
 function buildingLevel(building){return building.level || 1;}
+function housingCapacity(town){
+  return 5+2*town.buildings.filter(b=>b.kind==='home'&&!b.construction).reduce((sum,b)=>sum+buildingLevel(b)+(b.profession_upgrades?.includes('timber_frame')?1:0),0);
+}
 function fishingBoatLevel(building){
   const upgrades=building.profession_upgrades || [];
   return upgrades.includes('master_boat')?3:upgrades.includes('improved_boat')?2:upgrades.includes('boat')?1:0;
@@ -1845,7 +1848,8 @@ function render(){
     $('resource-wood').textContent=Math.floor(own.wood);
     $('resource-food').textContent=Math.floor(own.food);
     $('resource-coins').textContent=Math.floor(own.coins);
-    $('resource-villagers').textContent=own.villagers.length;
+    $('resource-villagers').textContent=`${own.villagers.length}/${housingCapacity(own)}`;
+    $('resource-villagers').title='Current villagers / total housing capacity';
     $('goods-list').replaceChildren();
     for(const [key,value] of Object.entries(own.goods || {}))if(value>0)$('goods-list').append(fact(`${Math.floor(value)} / ${Math.floor(resourceStorage(own,key))}`,goodName(key)));
   }
@@ -1876,7 +1880,7 @@ function render(){
   if(town&&!town.villagers.length){const empty=document.createElement('p');empty.textContent='No villagers yet. Build housing and keep food available to welcome new residents.';$('villagers').append(empty);}
   if(town?.villagers.length)$('villagers').append(villagersTable(town));
   if(town){
-    const spaces=5+2*town.buildings.filter(b=>b.kind==='home'&&!b.construction).reduce((sum,b)=>sum+buildingLevel(b)+(b.profession_upgrades?.includes('timber_frame')?1:0),0);
+    const spaces=housingCapacity(town);
     const housing=document.createElement('p');housing.textContent=`Housing · ${town.villagers.length} residents / ${spaces} spaces. New settlers need a free space and at least 20 food after meals; each arrival uses 10 food.`;$('villagers').append(housing);
   }
   if(town?.food_shortage_seconds){
