@@ -303,12 +303,55 @@ const WorkerAnimation = (() => {
       state.path=path || [];state.phase=path===null?'waiting':path.length?'walking':'working';state.elapsed=0;state.fishingCaught=null;state.waterReady=false;
     }
   }
+  // Play confirmed host waypoints one simulation cycle behind. No route searches.
+  function playback(state, host, seconds) {
+    const task=JSON.stringify(host.task);
+    if(state.hostTask===task&&host.version<state.hostVersion)return;
+    const first=state.playbackQueue===undefined;
+    if(!state.playbackQueue)state.playbackQueue=[];
+    if(state.hostVersion!==host.version || state.hostTask!==task){
+      if(state.hostVersion===undefined&&first){
+        Object.assign(state,{x:host.x,y:host.y,phase:host.phase,elapsed:host.elapsed,path:[]});
+      }else if(host.playback?.length){
+        const samples=host.playback.map(p=>({...p}));
+        // Task changes and recovery can relocate the host. Blend from the visible
+        // endpoint rather than applying that relocation in a single frame.
+        const tail=state.playbackQueue.at(-1)?.samples.at(-1) || state;
+        samples[0]={...samples[0],x:tail.x,y:tail.y};
+        state.playbackQueue.push({samples,time:0,index:0});
+        // A background tab may miss updates. Bound retained presentation history.
+        if(state.playbackQueue.length>3){
+          state.playbackQueue.splice(0,state.playbackQueue.length-3);
+          Object.assign(state.playbackQueue[0],{time:0,index:0});
+          Object.assign(state.playbackQueue[0].samples[0],{x:state.x,y:state.y});
+        }
+      }
+      state.hostVersion=host.version;state.hostTask=task;state.hostWork=true;
+    }
+    let remaining=seconds;
+    while(state.playbackQueue.length){
+      const chunk=state.playbackQueue[0],end=chunk.samples.at(-1).time;
+      const take=Math.min(remaining,Math.max(0,end-chunk.time));chunk.time+=take;remaining-=take;
+      while(chunk.index+1<chunk.samples.length&&chunk.samples[chunk.index+1].time<=chunk.time)chunk.index++;
+      const a=chunk.samples[chunk.index],b=chunk.samples[chunk.index+1] || a;
+      const fraction=b.time>a.time?(chunk.time-a.time)/(b.time-a.time):0;
+      Object.assign(state,{x:a.x+(b.x-a.x)*fraction,y:a.y+(b.y-a.y)*fraction,
+        phase:a.phase,elapsed:(a.elapsed || 0)+(a.x===b.x&&a.y===b.y?chunk.time-a.time:0),
+        waterElapsed:(a.elapsed || 0)+chunk.time-a.time,waterReady:a.waterReady,waterSource:a.waterSource,
+        facing:b.x-b.y!==a.x-a.y?(b.x-b.y>a.x-a.y?1:-1):a.facing,
+        path:a.x!==b.x||a.y!==b.y?[{x:b.x,y:b.y}]:[]});
+      state.clock+=take;
+      if(chunk.time<end)break;
+      state.playbackQueue.shift();
+      if(remaining<=0)break;
+    }
+  }
   function finish(steps){let result;do{result=steps.next();}while(!result.done);return result.value;}
   const route=(...args)=>finish(routeSteps(...args));
   const plan=(...args)=>finish(planSteps(...args));
   const advance=(...args)=>finish(advanceSteps(...args));
   const waterDepths=(...args)=>finish(waterDepthsSteps(...args));
   const fishingPier=(...args)=>finish(fishingPierSteps(...args));
-  return {route,plan,advance,waterDepths,fishingPier,routeSteps,planSteps,advanceSteps};
+  return {playback,route,plan,advance,waterDepths,fishingPier,routeSteps,planSteps,advanceSteps};
 })();
 if(typeof module!=='undefined')module.exports=WorkerAnimation;

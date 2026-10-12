@@ -32,6 +32,21 @@ class WorkplaceDropoff(unittest.TestCase):
             phases.add(worker['work_animation']['phase'])
         self.fail('Worker never finished unloading')
 
+    def test_playback_records_confirmed_turns_without_per_step_history(self):
+        work_cycles.advance(self.town, self.town, self.worker, self.building, self.source, 0, 3)
+        state = self.worker['work_animation']
+        samples = state['playback']
+        self.assertEqual(samples[0]['time'], 0)
+        self.assertEqual(samples[-1]['time'], 3)
+        self.assertEqual((samples[-1]['x'], samples[-1]['y']), (state['x'], state['y']))
+        self.assertLess(len(samples), 12)
+        self.assertEqual([p['time'] for p in samples], sorted(p['time'] for p in samples))
+        for a, b in zip(samples, samples[1:]):
+            self.assertTrue(a['x'] == b['x'] or a['y'] == b['y'], 'Turns retain their waypoint')
+        first = json.dumps(samples)
+        work_cycles.advance(self.town, self.town, self.worker, self.building, self.source, 0, 3)
+        self.assertEqual(json.dumps(samples), first, 'Later cycles cannot mutate earlier playback')
+
     def test_stock_changes_after_return_and_unloading_only(self):
         before = self.town['wood']
         logistics.record_output(self.town, self.building, 'wood', 5, self.worker)

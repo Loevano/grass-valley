@@ -15,7 +15,7 @@ after.towns.own={departure_count:1,last_departure:{name:'Ada',job:'baking',pract
 harness.setWorld(before);
 harness.updateDepartures(after);
 assert.equal(harness.state().selection,null,'Departure clears an index-based villager selection');
-assert.equal(harness.state().workers.size,0,'Departure resets animation state after roster indices shift');
+assert.equal(harness.state().workers.size,1,'Departure preserves surviving villager animation state');
 assert(harness.state().notices[0].includes('Ada, your baker'),'Notice names the lost specialist');
 assert(harness.state().notices[0].includes('80 baking practice'),'Notice includes lost experience');
 assert(harness.state().notices[0].includes('food shortages'),'Old departures default to food shortages');

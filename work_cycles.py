@@ -48,6 +48,23 @@ def route(start, target, blocked, size, terrain, adjacent=True, bounds=None):
 
 
 def advance(town, landscape, villager, building, source, index, seconds):
+    """Record a compact, confirmed movement timeline for delayed browser playback."""
+    previous = villager.get('work_animation', {}).get('playback')
+    finished = _advance(town, landscape, villager, building, source, index, seconds)
+    state = villager.get('work_animation')
+    if state and state.get('playback') is not previous:
+        state['playback'].append(_sample(state, seconds))
+    return finished
+
+
+def _sample(state, time):
+    sample = {key: state.get(key) for key in ('x', 'y', 'phase', 'elapsed', 'facing',
+              'waterReady', 'waterSource')}
+    sample['time'] = time
+    return sample
+
+
+def _advance(town, landscape, villager, building, source, index, seconds):
     """Return True only when the worker finishes unloading at its workplace."""
     boating = villager['job'] == 'fishing' and fishing_boating(town, building, index)
     spec = [villager['job'], building['kind'], building['x'], building['y'], source['kind'], source['x'], source['y']]
@@ -127,7 +144,12 @@ def advance(town, landscape, villager, building, source, index, seconds):
     state['version'] += 1
     roads = {(r['x'], r['y']) for r in landscape.get('roads', []) if 'construction' not in r}
     remaining = seconds
+    state['playback'] = [_sample(state, 0)]
+    last_phase, last_length = state['phase'], len(state['path'])
     while remaining > 1e-9:
+        if state['phase'] != last_phase or len(state['path']) != last_length:
+            state['playback'].append(_sample(state, seconds - remaining))
+            last_phase, last_length = state['phase'], len(state['path'])
         if state['path']:
             target = state['path'][0]
             if (target['x'], target['y']) in blocked or (terrain and terrain[target['y']][target['x']] == 'v'):

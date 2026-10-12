@@ -1738,8 +1738,6 @@ function updateDepartures(next){
   for(const [id,town] of Object.entries(next.towns)){
     const previous=world.towns[id];
     if(!previous || (town.departure_count || 0)<=(previous.departure_count || 0))continue;
-    workers.clear();
-    if(typeof ClientScene!=='undefined')ClientScene.queue.clear();
     if(viewed===id&&selection?.type==='villager')selection=null;
     if(id===identity?.town_id)notice(departureMessage(town));
   }
@@ -1780,10 +1778,6 @@ async function refresh(){
       if(next.world_id===world.world_id)for(const [id,t] of Object.entries(next.towns)){
         const live=world.towns[id]?.player;
         if(live&&live!==playerRefs.get(id))t.player={...t.player,x:live.x,y:live.y,facing:live.facing};
-      }
-      for(const id of result.value.resetTowns){
-        if(!next.shared_map&&id===viewed){workers.clear();ClientScene.queue.clear();}
-        else for(const key of workers.keys())if(String(key).startsWith(id+'/')){workers.delete(key);ClientScene.queue.cancel('plan/'+key);ClientScene.queue.cancel('advance/'+key);}
       }
       ClientScene.commit(result.value);resourceCache=result.value.resourceData;
     }
@@ -2119,6 +2113,26 @@ function animatedVillagers(town, seconds, townId=viewed, frameLayout=null){
   const roads=animatedVillagers.roadSets.get(roadKey);
   const tiles=items=>items.map(({kind,x,y,farm_index,construction})=>[kind,x,y,farm_index,!!construction]);
   const layout=frameLayout ?? JSON.stringify([tiles(world.shared_map?Object.values(world.towns).flatMap(t=>t.buildings):town.buildings),tiles(town.map_resources)]);
+  // Names are unique within a town and survive arrivals/departures. Remap the
+  // index-based rendering slots without restarting surviving residents.
+  if(animatedVillagers.rosterWorld!==townKey){animatedVillagers.rosterWorld=townKey;animatedVillagers.rosters=new Map();}
+  const names=town.villagers.map((v,i)=>v.name || i),roster=JSON.stringify(names);
+  const previousRoster=animatedVillagers.rosters.get(townId);
+  if(previousRoster&&previousRoster.signature!==roster){
+    const key=i=>world.shared_map?`${townId}/${i}`:i;
+    const retained=new Map();
+    previousRoster.names.forEach((name,i)=>{
+      const state=workers.get(key(i));
+      if(typeof ClientScene!=='undefined'){ClientScene.queue.cancel('plan/'+key(i));ClientScene.queue.cancel('advance/'+key(i));}
+      if(state){
+        if(state.pendingPlan||state.pendingAdvance)state.signature=null;
+        state.pendingPlan=null;state.pendingAdvance=false;retained.set(name,state);
+      }
+      workers.delete(key(i));
+    });
+    names.forEach((name,i)=>{if(retained.has(name))workers.set(key(i),retained.get(name));});
+  }
+  animatedVillagers.rosters.set(townId,{signature:roster,names});
   return town.villagers.map((villager,index)=>{
     const prepared=typeof ClientScene!=='undefined'?ClientScene.current?.tasks.get(villager):null;
     const task=prepared?.task ?? JSON.stringify([villager.job,villager.building_index,villager.work_target?tiles([villager.work_target]):null,
@@ -2143,18 +2157,27 @@ function animatedVillagers(town, seconds, townId=viewed, frameLayout=null){
           workers.set(workerKey,state);
           ClientScene.queue.schedule('plan/'+workerKey,version,WorkerAnimation.planSteps(region.routing,villager,index,previous),planned=>{
             if(workers.get(workerKey)!==state)return;
-            Object.assign(state,planned,{signature,layout,task,pendingPlan:null});
+            const visible=state.playbackQueue?{x:state.x,y:state.y,path:state.path,phase:state.phase,elapsed:state.elapsed,clock:state.clock}:{};
+            Object.assign(state,planned,visible,{signature,layout,task,pendingPlan:null,transport:!!planned.transport});
           });
         }
       }else{
-        state=Object.assign(WorkerAnimation.plan(world.shared_map?{...town,obstacles:Object.values(world.towns).flatMap(t=>t.buildings),home_hall:town.buildings.find(b=>b.kind==='hall')}:town,villager,index,state),{signature,layout,task});workers.set(workerKey,state);
+        const visible=state?.playbackQueue?{x:state.x,y:state.y,path:state.path,phase:state.phase,elapsed:state.elapsed,clock:state.clock,
+          playbackQueue:state.playbackQueue,hostVersion:state.hostVersion,hostTask:state.hostTask}:{};
+        state=Object.assign(WorkerAnimation.plan(world.shared_map?{...town,obstacles:Object.values(world.towns).flatMap(t=>t.buildings),home_hall:town.buildings.find(b=>b.kind==='hall')}:town,villager,index,state),visible,{signature,layout,task});workers.set(workerKey,state);
       }
     }
     state.roads=roads;
     if(state.transport&&trip?.cargo&&state.signature===signature)state.transportCargo=trip.cargo;
     state.storagePaused=!!villager.production_status?.startsWith('Waiting for storage space');
     const hostWork=villager.work_animation;
-    if(hostWork&&!state.pendingPlan&&!state.pendingAdvance&&!state.transport&&!villager.logistics_target&&!villager.construction_target){
+    const confirmedPlayback=hostWork?.playback?.length&&!state.transport&&!villager.logistics_target&&!villager.construction_target;
+    if(!confirmedPlayback&&state.playbackQueue){
+      state.playbackQueue=[];state.hostVersion=undefined;state.hostTask=null;state.hostWork=false;
+    }
+    if(confirmedPlayback){
+      WorkerAnimation.playback(state,hostWork,seconds);
+    }else if(hostWork&&!state.pendingPlan&&!state.pendingAdvance&&!state.transport&&!villager.logistics_target&&!villager.construction_target){
       if(state.hostVersion!==hostWork.version || state.hostTask!==JSON.stringify(hostWork.task)){
         Object.assign(state,{x:hostWork.x,y:hostWork.y,phase:hostWork.phase,
           elapsed:hostWork.phase==='collecting_water'?0:hostWork.elapsed,waterElapsed:hostWork.elapsed,
@@ -2169,7 +2192,9 @@ function animatedVillagers(town, seconds, townId=viewed, frameLayout=null){
     const butchering=villager.job==='butchery'&&town.buildings[villager.building_index]?.butchering;
     state.workDuration=butchering?(world.progression?.butcher_seconds || 60):villager.job==='farming'?8:3.2;
     const active=!!villager.construction_target || Object.values(villager.pending_output || {}).some(n=>n>0) || (villager.production_status==='Working' || villager.production_status?.startsWith('Butchering ') || villager.production_status?.startsWith('No catch') || (!villager.production_status&&town[resource]<resourceStorage(town,resource)));
-    if(typeof ClientScene!=='undefined'&&ClientScene.region(town)){
+    if(confirmedPlayback){
+      // Confirmed playback already advanced the sprite; never predict a work cycle.
+    }else if(typeof ClientScene!=='undefined'&&ClientScene.region(town)){
       if(!state.pendingPlan&&!state.pendingAdvance){
         const steps=WorkerAnimation.advanceSteps(state,seconds,active),first=steps.next();
         if(!first.done){state.pendingAdvance=true;ClientScene.queue.schedule('advance/'+workerKey,state,steps,()=>{state.pendingAdvance=false;});}
