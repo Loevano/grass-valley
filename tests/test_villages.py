@@ -26,8 +26,17 @@ class WildernessVillages(unittest.TestCase):
                            for cy in range((y-24)//CHUNK_SIZE, (y+24)//CHUNK_SIZE+1)
                            for cx in range((x-24)//CHUNK_SIZE, (x+24)//CHUNK_SIZE+1)]
                 resources = [r for record in records for r in record['map_resources']]
-                structures = [r for r in resources if r.get('village') == village['name']]
-                self.assertEqual(len(structures), 10)
+                structures = [r for r in resources if r.get('village') == village['name']
+                              and r['kind'] in ('village_hut', 'village_market')]
+                self.assertEqual(len(structures), 14)
+                self.assertEqual(sum(r.get('variant') == 'hall' for r in structures), 1)
+                self.assertEqual(sum(r['kind'] == 'village_market' for r in structures), 3)
+                self.assertTrue(any(r.get('animals') for r in structures))
+                planted = [r for r in resources if r.get('village') == village['name']
+                           and r['kind'] in ('tree', 'herb_patch', 'berry_bush')]
+                self.assertEqual(len(planted), 6)
+                if village['biome'] == 'd':
+                    self.assertTrue(all(r.get('species') == 'palm' for r in planted if r['kind'] == 'tree'))
                 blocked = {(r['x'], r['y']) for r in resources}
                 for npc in residents:
                     self.assertNotIn((npc['x'], npc['y']), blocked)
@@ -155,6 +164,18 @@ class WildernessVillages(unittest.TestCase):
             ensure_villages(world)
             self.assertEqual(village['layout_version'], 1)
             self.assertEqual(sum(n.get('village') == village['name'] for n in landscape['npcs']), 2)
+
+    def test_new_layout_preserves_harvested_plants_on_repeated_reads(self):
+        world = new_world(42, explorable=True)
+        village = world['shared_map']['villages'][0]
+        x, y = village['x']-5, village['y']-4
+        key = chunk_key(x, y)
+        record = world['_chunks'].read(key)
+        record['map_resources'] = [r for r in record['map_resources'] if (r['x'], r['y']) != (x, y)]
+        record['tree_stumps'].append({'kind': 'tree', 'x': x, 'y': y, 'remaining': 300})
+        before = copy.deepcopy(record)
+        apply_villages(record, key, world['shared_map']['villages'], CHUNK_SIZE)
+        self.assertEqual(record, before)
 
     def test_coordinate_noise_produces_desert_and_ice(self):
         biomes = set()

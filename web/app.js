@@ -185,6 +185,7 @@ const workerTools={
 const localToolShops={Bram:['steel_axe','masterwork_axe'],Runa:['steel_sickle','masterwork_sickle'],Nell:['steel_fishing_rod','masterwork_fishing_rod'],Kestrel:['steel_axe','masterwork_axe']};
 const localGifts={Sylva:'fine_axe',Reed:'fine_fishing_rod',Fern:'fine_sickle',Wren:'fine_fishing_rod',Alder:'fine_axe',Poppy:'fine_sickle',Dara:'desert_clothing',Petra:'swamp_boots'};
 const localBarters={Tobin:[10,'vegetables',8],Clover:[10,'vegetables',8],Pip:[10,'bread',5],Hazel:[6,'berries',5],Mabel:[8,'eggs',6],Orin:[10,'vegetables',8],Willow:[8,'fish',6]};
+function npcPosition(npc){return npc.routine || npc;}
 function localVisitKey(npc){return `${npc.name}:${npc.x}:${npc.y}`;}
 function localStoryProgress(town,name){
   const npc=(world.shared_map?.npcs || town.npcs || []).find(n=>n.name===name);
@@ -983,7 +984,7 @@ window.addEventListener('keydown',event=>{
     const town=world.towns[identity.town_id],landscape=world.shared_map || town;
     let nearest=-1,distance=Infinity;
     (landscape.npcs || []).forEach((npc,index)=>{
-      const next=Math.hypot(npc.x-town.player.x,npc.y-town.player.y);
+      const position=npcPosition(npc),next=Math.hypot(position.x-town.player.x,position.y-town.player.y);
       if(next<=1.8&&next<distance){nearest=index;distance=next;}
     });
     if(nearest<0)notice('Walk beside a local to interact.');
@@ -1450,7 +1451,7 @@ function renderSelection(town){
   if(selection.type==='npc'){
     $('selection-title').textContent=item.name;
     const own=world.towns[identity?.town_id],player=own?.player;
-    const nearby=!!player&&Math.hypot(player.x-item.x,player.y-item.y)<=1.8;
+    const position=npcPosition(item),nearby=!!player&&Math.hypot(player.x-position.x,player.y-position.y)<=1.8;
     const progress=own?.local_visits?.[localVisitKey(item)] || {};
     if(!Object.keys(progress).length){
       $('selection-details').append(illustration('villagers'));
@@ -1993,7 +1994,7 @@ function drawResource(r,joined=null){
   const detailed=tileW>=32;
   const willow=r.kind==='tree'&&(world.shared_map || world.towns[viewed])?.terrain?.[r.y]?.[r.x]==='b';
   const resolution=2**Math.ceil(Math.log2(Math.max(.5,s*renderPixelRatio())));
-  const variant=r.kind==='tree'?`${r.species==='ancient'}/${willow}/${(r.x+r.y)%2}`:r.kind==='rock'?(joined?`joined/${JSON.stringify([joined.mask,joined.heights,joined.inset || null])}`:`single/${rockVariant(r)%48}`):`${r.kind}/${r.biome || ''}/${r.variant || ''}`;
+  const variant=r.kind==='tree'?`${r.species==='ancient'}/${r.species==='palm'}/${willow}/${(r.x+r.y)%2}`:r.kind==='rock'?(joined?`joined/${JSON.stringify([joined.mask,joined.heights,joined.inset || null])}`:`single/${rockVariant(r)%48}`):`${r.kind}/${r.biome || ''}/${r.variant || ''}`;
   const key=`${r.kind}/${r.ore || ''}/${variant}/${resolution}/${detailed}`;
   let sprite=resourceSprites.get(key);
   if(!sprite){
@@ -2041,7 +2042,16 @@ function paintResource(ctx,r,willow,detailed=true,joined=null){
     polygon([[-22,-30],[0,-47],[22,-30],[0,-17]],roof,'#56625e');
     ctx.fillStyle='#4b514a';ctx.fillRect(-10,-16,6,18);
     ctx.fillStyle='#f4d58c';ctx.fillRect(5,-13,6,7);
-    if(r.variant==='inn'){
+    if(r.variant==='hall'){
+      polygon([[-27,-31],[0,-56],[27,-31],[0,-14]],roof,'#56625e');
+      ctx.fillStyle='#75593e';ctx.fillRect(-1,-67,2,13);
+      polygon([[1,-67],[13,-63],[1,-59]],ice?'#6595ac':desert?'#c47853':'#a4b572');
+      ctx.fillStyle='#f4d58c';ctx.fillRect(-15,-22,5,7);
+    }else if(r.variant==='barn'){
+      ctx.fillStyle='#65513b';ctx.fillRect(-12,-19,10,24);
+      polygon([[-12,-19],[-2,-19],[-2,5],[-12,5]],'#806447','#e0c79d');
+      ctx.strokeStyle='#e0c79d';ctx.beginPath();ctx.moveTo(-12,-19);ctx.lineTo(-2,5);ctx.moveTo(-2,-19);ctx.lineTo(-12,5);ctx.stroke();
+    }else if(r.variant==='inn'){
       ctx.fillStyle=ice?'#7796a4':desert?'#a8784e':'#746044';ctx.fillRect(8,-48,5,15);
       ctx.fillStyle='#f4d58c';ctx.fillRect(-16,-25,5,5);
       ctx.fillStyle='#806240';ctx.fillRect(18,-12,2,19);
@@ -2056,6 +2066,14 @@ function paintResource(ctx,r,willow,detailed=true,joined=null){
       ctx.fillStyle='#654e37';ctx.fillRect(-17,3,34,5);
       ctx.fillStyle='#e2bd77';ctx.fillRect(-12,-1,7,4);ctx.fillStyle='#7d985e';ctx.fillRect(3,-1,7,4);
     }
+    ctx.restore();return;
+  }
+  if(r.kind==='tree'&&r.species==='palm'){
+    polygon([[-3,12],[3,12],[6,-30],[1,-31]],'#b28b5e','#806447');
+    for(const [dx,dy] of [[-23,4],[-18,-9],[0,-18],[19,-11],[24,3],[10,12]]){
+      polygon([[3,-31],[dx,-31+dy],[dx*.65,-25+dy],[3,-27]],dx<0?'#65894f':'#4f7745');
+    }
+    ctx.fillStyle='#997049';ctx.beginPath();ctx.arc(3,-28,3,0,Math.PI*2);ctx.fill();
     ctx.restore();return;
   }
   if(r.kind==='rock'){
@@ -2236,14 +2254,36 @@ function townWorkerLayout(town,buildings,resources){
 let npcClock=0;
 const npcColors={g:['#a97b58','#c7a06d'],f:['#416951','#70906a'],m:['#b29b4a','#e2cc80'],
   s:['#be986a','#e6c79a'],r:['#717b88','#acb4bd'],b:['#586b4b','#a1a474'],d:['#c18d58','#f0dab0'],i:['#658da2','#e0edf0']};
+const npcSamples=new WeakMap();
 function npcSprites(town,seconds){
   npcClock+=seconds;
-  return (tileW<32?[]:town?.npcs || []).map((npc,index)=>({...npc,kind:'npc',index,villager:{job:'idle'},active:false,
-    state:{path:[],phase:'idle',clock:npcClock+index*.7,facing:index%2?1:-1}}));
+  return (tileW<32?[]:town?.npcs || []).map((npc,index)=>{
+    const routine=npc.routine;
+    if(!routine)return {...npc,kind:'npc',index,villager:{job:'idle'},active:false,
+      state:{path:[],phase:'idle',clock:npcClock+index*.7,facing:index%2?1:-1}};
+    if(!npcSamples.has(routine))npcSamples.set(routine,npcClock);
+    // Extrapolate only the host's published route; snapshots stay untouched.
+    let remaining=Math.min(2,npcClock-npcSamples.get(routine)),x=routine.x,y=routine.y;
+    const path=routine.paused?[]:routine.path || [];
+    let walking=false,facing=routine.facing;
+    for(const [tx,ty] of path){
+      const dx=tx-x,dy=ty-y,distance=Math.hypot(dx,dy),duration=distance/.65;
+      const progress=duration?Math.min(1,remaining/duration):1;
+      x+=dx*progress;y+=dy*progress;facing=dx-dy>=0?1:-1;
+      if(progress<1){walking=true;break;}
+      remaining=Math.max(0,remaining-duration);
+    }
+    const active=!routine.paused&&!walking&&routine.phase==='working';
+    return {...npc,x,y,kind:'npc',index,active,
+      villager:{job:routine.job,woodcutting:5,fishing:5,crafting:5,husbandry:5,baking:5},
+      state:{x,y,path:walking?[path[0]]:[],phase:active?'working':'idle',
+        elapsed:routine.elapsed+Math.min(2,npcClock-npcSamples.get(routine)),clock:npcClock,
+        source:routine.source,facing}};
+  });
 }
 function villagerAccessories(b){
   // Only the current profession's practice earns its tools and clothing.
-  const v=b.kind==='villager'?b.villager:{};
+  const v=b.kind==='villager'||b.kind==='npc'&&b.routine?b.villager:{};
   const job=v.job,level=v[job] || 0;
   const outfits={
     woodcutting:{color:'#78966b'},farming:{color:'#a0a16b'},fishing:{color:'#709ba8'},
@@ -2566,10 +2606,11 @@ function* prepareResourceData(resources,detailed=true,previous=resourceCache){
   if(previous?.resources!==resources || previous.count!==resources.length || previous.detailed!==detailed){
     const layout=JSON.stringify(resources.map(({kind,x,y,farm_index,construction})=>[kind,x,y,farm_index,!!construction]));
     const sameLayout=previous?.layout===layout&&previous.detailed===detailed;
-    const water=new Set(),objects=[],indexes=new Map(),buckets=new Map();
+    const water=new Set(),objects=[],indexes=new Map(),buckets=new Map(),villageBarns=[];
     for(const [index,r] of resources.entries()){
       if(index%256===255)yield;
       indexes.set(r,index);
+      if(r.village&&r.animals)villageBarns.push(r);
       if(r.kind==='water')water.add(`${r.x},${r.y}`);else{
         objects.push(r);
         const key=`${Math.floor(r.x/16)},${Math.floor(r.y/16)}`;
@@ -2619,7 +2660,7 @@ function* prepareResourceData(resources,detailed=true,previous=resourceCache){
       });
       rockJoins.set(r,{mask,heights,inset});
     }
-    previous={resources,count:resources.length,detailed,forest,water:sameLayout?previous.water:water,objects,indexes,buckets,rockJoins,layout};
+    previous={resources,count:resources.length,detailed,forest,water:sameLayout?previous.water:water,objects,indexes,buckets,rockJoins,layout,villageBarns};
   }
   return previous;
 }
@@ -2962,6 +3003,14 @@ function drawFishingBoat(boat){
   }
   ctx.restore();
 }
+// Reuse the combined list so animal routing caches stay warm between frames.
+function villageAnimalBuildings(buildings,data){
+  const barns=data.villageBarns || [];
+  const cached=villageAnimalBuildings.cache;
+  if(cached?.buildings===buildings&&cached.barns===barns)return cached.result;
+  const result=barns.length?[...buildings,...barns]:buildings;
+  villageAnimalBuildings.cache={buildings,barns,result};return result;
+}
 // Animals roam nearby open tiles; their motion is purely visual.
 function barnAnimalSprites(buildings,time,landscape={}){
   const sprites=[],size=landscape.map_size || 120;
@@ -2969,7 +3018,7 @@ function barnAnimalSprites(buildings,time,landscape={}){
   const prepared=typeof ClientScene!=='undefined';
   const blocked=prepared?null:new Set([...buildings,...(landscape.map_resources || []),...(landscape.npcs || [])].map(key));
   for(const barn of buildings){
-    if(!['barn','stable'].includes(barn.kind)||(barn.construction&&!barn.construction.upgrade))continue;
+    if(!['barn','stable','village_hut'].includes(barn.kind)||(barn.construction&&!barn.construction.upgrade))continue;
     if(!Object.values(barn.animals || {}).some(n=>n>0))continue;
     // A small breadth-first search keeps every trip connected to the barn.
     const routes=prepared?ClientScene.animalRoutes(buildings,landscape,barn):[[]],queue=[{x:barn.x,y:barn.y,path:[]}],seen=new Set([key(barn)]);
@@ -2985,7 +3034,7 @@ function barnAnimalSprites(buildings,time,landscape={}){
     }
     routes.sort((a,b)=>b.length-a.length);
     const stock=[];
-    for(const species of (barn.kind==='stable'?['horse']:['chicken','sheep','pig','cow']))
+    for(const species of (barn.village?['chicken','sheep','pig','cow','horse']:barn.kind==='stable'?['horse']:['chicken','sheep','pig','cow']))
       for(let i=0;i<(barn.animals?.[species] || 0);i++)stock.push({species,growth:Math.min(1,(barn.animal_growth?.[species]?.[i] ?? 300)/300)});
     for(const [index,{species,growth}] of stock.entries()){
       const phase=time+(barn.x*7+barn.y*11+index*3.17)%13,cycle=phase%16;
@@ -3161,7 +3210,7 @@ function draw(seconds=0){
   const boats=fishingBoatSprites(entries,resources,villagers);
   const passengers=new Set(boats.flatMap(b=>b.crew));
   const objects=mergeDepthObjects([...buildings,...cropObjects,...boats].filter(visible),visibleResourceObjects(resourceData,rect),
-    [...villagers.filter(v=>!passengers.has(v)),...npcSprites(world.shared_map || town,typeof ClientScene==='undefined'?seconds:0),...barnAnimalSprites(buildings,animalClock,world.shared_map || town),...otherPlayers,...(hero?[hero]:[])].filter(visible));
+    [...villagers.filter(v=>!passengers.has(v)),...npcSprites(world.shared_map || town,typeof ClientScene==='undefined'?seconds:0),...barnAnimalSprites(villageAnimalBuildings(buildings,resourceData),animalClock,world.shared_map || town),...otherPlayers,...(hero?[hero]:[])].filter(visible));
   for(const b of objects){
     const position=b.kind==='wild_horse'?wildHorsePosition(b):[b.x,b.y];
     const [px,py]=point(position[0],position[1]),scale=tileW/46;
@@ -3613,7 +3662,7 @@ async function selectTile(x,y){
   const town=world.towns[viewed];
   if(!town || x<0||y<0||x>=mapSize(town)||y>=mapSize(town))return;
   if(town.terrain?.[y]?.[x]==='v')return;
-  const npc=(town.npcs || []).findIndex(n=>n.x===x&&n.y===y);
+  const npc=(town.npcs || []).findIndex(n=>{const p=npcPosition(n);return Math.round(p.x)===x&&Math.round(p.y)===y;});
   const resource=town.map_resources.findIndex(r=>r.x===x&&r.y===y);
   const index=town.buildings.findIndex(b=>b.x===x&&b.y===y);
   if(!tool){

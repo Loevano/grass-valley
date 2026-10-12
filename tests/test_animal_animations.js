@@ -69,4 +69,14 @@ assert.notEqual(render(moving),render(later),'Legs and body animate between fram
 assert.notEqual(render(resting),render(moving),'Feeding and walking have different poses');
 assert.equal(new Set(['chicken','sheep','pig','cow'].map(species=>render({...moving,species}))).size,4,'Each species has distinct artwork');
 assert.equal(JSON.stringify(barn),original,'Animation leaves authoritative stock and production untouched');
+const shelter={...barn,kind:'village_hut',village:'Sunwell',animals:{horse:2,chicken:2}};
+const shelterBefore=JSON.stringify(shelter),stock=sprites([shelter],4);
+assert.equal(stock.filter(a=>a.species==='horse').length,2,'Caravan shelters show their horses');
+assert.equal(stock.filter(a=>a.species==='chicken').length,2,'Village shelters support mixed herds');
+assert(stock.some(a=>a.walking),'Village animals roam between feeding stops');
+assert.equal(JSON.stringify(shelter),shelterBefore,'Village stock remains authoritative');
+const combined=new Function(source.slice(source.indexOf('function villageAnimalBuildings('),source.indexOf('function barnAnimalSprites('))+'return villageAnimalBuildings;')();
+const buildings=[barn],data={villageBarns:[shelter]};
+assert.strictEqual(combined(buildings,data),combined(buildings,data),'Village herds retain animal routing caches across frames');
+assert.deepEqual(combined(buildings,data),[barn,shelter]);
 console.log('Animal animation checks passed');

@@ -230,6 +230,11 @@ def inspect_story_rock(town, data):
     return {}
 
 
+def position(npc):
+    state = npc.get('routine', npc)
+    return state['x'], state['y']
+
+
 def local_key(npc):
     return f"{npc['name']}:{npc['x']}:{npc['y']}"
 
@@ -293,7 +298,8 @@ def change(town, data):
     if type(index) is not int or not 0 <= index < len(locals_):
         raise ValueError('Choose a local.')
     npc = locals_[index]
-    if math.hypot(player['x'] - npc['x'], player['y'] - npc['y']) > 1.8:
+    x, y = position(npc)
+    if math.hypot(player['x'] - x, player['y'] - y) > 1.8:
         raise ValueError('Walk beside the local to interact.')
     visit_key = local_key(npc)
     progress = town.get('local_visits', {}).get(visit_key, {})

@@ -69,7 +69,16 @@ saves with the regular three-second simulation update.
 
 Explorable worlds also have three small wilderness villages: Reedhaven in the
 swamp, Sunwell in the desert, and Frostbrook on the snowy ice fields. Each has
-eight themed cottages and workshops, an inn, a market, and eight residents.
+eight themed cottages and workshops, an inn, a village hall, an animal shelter,
+a three-stall market square, and eight residents. Willows, oasis palms, winter
+pines, herb beds, berry shrubs, and a small fishing pool fill pockets between
+the buildings.
+Residents walk between home, work, the market, and their hall. Boatwrights and
+winter woodworkers chop, fishers cast their rods, herbalists gather, and keepers
+tend animals. Chickens and marsh pigs, caravan horses, or winter sheep roam beside
+the village shelters. Residents pause beside visitors for conversation and trade.
+These ambient routines are saved and run while the host is active; their work
+does not consume shared resources or produce goods for player towns.
 Marsh herbalists and boatwrights, desert caravan folk, and winter craftspeople
 share connected rumors about a missing herb boat, an overdue caravan, and a silent
 watchpost. These are story hooks for future quests; they do not yet offer objectives

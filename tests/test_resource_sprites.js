@@ -45,7 +45,7 @@ new Function('document','ctx','window','assert','surfaces','images',`
   for(const biome of ['b','d','i']){
     const cottage={kind:'village_hut',biome,x:10,y:10};drawResource(cottage);
     const cottageSprite=images.at(-1)[0];
-    for(const variant of ['inn','workshop']){
+    for(const variant of ['inn','workshop','hall','barn']){
       drawResource({...cottage,variant});const landmark=images.at(-1)[0];
       assert.notStrictEqual(landmark,cottageSprite,'Village landmarks retain their own cached artwork');
       drawResource({...cottage,variant,x:20,label:'Another name'});

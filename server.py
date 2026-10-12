@@ -22,6 +22,7 @@ import quests
 import player_login
 from navigation import routes
 import lanterns
+import village_life
 from spatial import SpatialIndex
 
 from terrain import ensure_terrain, remove_invalid_trees, ensure_industry
@@ -1456,6 +1457,7 @@ def lantern_simulation():
         with LOCK:
             now = time.monotonic()
             lanterns.advance(WORLD, now - previous)
+            village_life.advance(WORLD, now - previous)
             previous = now
 
 

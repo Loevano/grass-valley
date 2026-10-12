@@ -54,7 +54,9 @@ def change(town, data):
         trader = locals_[index]
         if key not in trader_items(trader):
             raise ValueError('This local does not trade that clothing.')
-        if math.hypot(player['x'] - trader['x'], player['y'] - trader['y']) > 1.8:
+        position = trader.get('routine', trader)
+        x, y = position['x'], position['y']
+        if math.hypot(player['x'] - x, player['y'] - y) > 1.8:
             raise ValueError('Walk beside the local to trade.')
         if action == 'buy_equipment':
             if town['coins'] < item['price']:

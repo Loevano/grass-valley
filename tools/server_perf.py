@@ -45,6 +45,20 @@ def run(source, cycles):
         entries = {'benchmark': {'name': 'Benchmark', 'world': world, 'tokens': tokens}}
         with patch.multiple(server, WORLD=world, TOKENS=tokens, SAVE=root / 'save.json', WORLDS=entries, ACTIVE_WORLD='benchmark'):
             server.prepare_landscapes(world)
+            life = getattr(server, 'village_life', None)
+            if life:
+                for _ in range(200):
+                    life.advance(world, .05)
+            life_samples = []
+            for _ in range(200):
+                started = time.perf_counter()
+                if life:
+                    life.advance(world, .05)
+                life_samples.append((time.perf_counter()-started)*1000)
+            metrics['server.village_life.p95_ms'] = percentile(life_samples, .95)
+            metrics['server.village_life.max_ms'] = max(life_samples)
+            checks.append({'scenario': 'village_life', 'ok': not life or all(
+                'routine' in npc for npc in world['shared_map']['npcs'] if npc.get('village'))})
             host = ThreadingHTTPServer(('127.0.0.1', 0), server.Handler)
             thread = threading.Thread(target=host.serve_forever, daemon=True)
             thread.start()

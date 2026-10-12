@@ -30,7 +30,15 @@ function fixture(large){
       villagers:Array.from({length:large?50:5},(_,v)=>({name:`Worker ${i}/${v}`,job:'idle',woodcutting:0,farming:0,fishing:0})),
       player:{x:center.x-1,y:center.y-1,facing:1,equipment:{}}};
   }
-  world.shared_map={chunked:true,chunk_size:40,map_size:size,terrain_seed:42,npcs:[],visible_chunks:Object.keys(terrain_chunks),terrain_chunks,resource_chunks};
+  const npcs=Array.from({length:8},(_,index)=>({name:`Local ${index}`,village:'Fixture village',
+    role:'Village craftsperson',biome:'b',x:74+index%4,y:74+Math.floor(index/4),
+    routine:{x:74+index%4,y:74+Math.floor(index/4),job:index%2?'woodcutting':'husbandry',
+      phase:index%2?'working':'walking',elapsed:2,facing:1,paused:false,
+      path:index%2?[]:[[76+index%4,74+Math.floor(index/4)]],source:{x:73,y:73}}}));
+  resource_chunks['1,1'].map_resources.push(
+    {kind:'village_hut',variant:'barn',village:'Fixture village',biome:'b',x:75,y:78,animals:{chicken:3,pig:1}},
+    {kind:'village_hut',variant:'hall',village:'Fixture village',biome:'b',x:73,y:78});
+  world.shared_map={chunked:true,chunk_size:40,map_size:size,terrain_seed:42,npcs,visible_chunks:Object.keys(terrain_chunks),terrain_chunks,resource_chunks};
   return world;
 }
 const server=http.createServer((req,res)=>{

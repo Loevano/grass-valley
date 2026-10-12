@@ -43,6 +43,16 @@ BASE_BUILDINGS = (('village_hut', -3, -2), ('village_hut', 3, -2),
 EXTRA_BUILDINGS = (('village_hut', -7, -4), ('village_hut', 7, -4),
                    ('village_hut', -7, 6), ('village_hut', 7, 6),
                    ('village_hut', -3, -7), ('village_hut', 3, 8))
+LIFE_BUILDINGS = (('village_hut', -3, 8, 'hall', 'Village hall'),
+                  ('village_hut', -7, -7, 'barn', 'Animal shelter'),
+                  ('village_market', 3, 5, 'stall', 'Produce stall'),
+                  ('village_market', 5, 3, 'stall', 'Travelers’ stall'))
+PLANTINGS = (('tree', -5, -4), ('tree', 5, -4),
+             ('herb_patch', -5, 6), ('berry_bush', 5, 6),
+             ('herb_patch', 3, -6), ('berry_bush', -4, 7), ('water', 7, -7))
+VILLAGE_ANIMALS = {'b': {'chicken': 3, 'pig': 1},
+                   'd': {'horse': 2, 'chicken': 2},
+                   'i': {'sheep': 3, 'chicken': 1}}
 LANDMARKS = {
     'Reedhaven': ('Willow Still', 'Reedworks', 'Lantern Rest'),
     'Sunwell': ('Sunwell cistern', 'Dune Loom', 'Amber Rest'),
@@ -79,6 +89,7 @@ def ensure_villages(world):
             npc['dialogue'] = dialogue_by_village[npc['village']]
     if 'villages' in landscape:
         expand_villages(world)
+        ensure_village_life(world)
         return
     offset = landscape.get('starter_offset', 880)
     size = landscape['map_size']
@@ -114,12 +125,26 @@ def ensure_villages(world):
             break
     landscape['villages'] = villages
     expand_villages(world)
+    ensure_village_life(world)
+
+
+def ensure_village_life(world):
+    obstacles = [item for town in world['towns'].values()
+                 for field in ('buildings', 'roads') for item in town.get(field, [])]
+    for village in world['shared_map']['villages']:
+        if 'life_version' in village or village.get('layout_version') != 2:
+            continue
+        footprints = {(village['x'] + dx, village['y'] + dy)
+                      for _, dx, dy in PLANTINGS}
+        footprints.update((village['x'] + dx, village['y'] + dy)
+                          for _, dx, dy, _, _ in LIFE_BUILDINGS)
+        village['life_version'] = 0 if any((o['x'], o['y']) in footprints for o in obstacles) else 1
 
 
 def apply_villages(record, key, villages, chunk_size):
     """Overlay once per saved chunk, preserving subsequent resource changes."""
     previous_version = record.get('village_version', 0)
-    if previous_version == 2:
+    if previous_version == 3:
         return record
     cx, cy = map(int, key.split(','))
     left, top = cx * chunk_size, cy * chunk_size
@@ -127,7 +152,9 @@ def apply_villages(record, key, villages, chunk_size):
     for village in villages:
         vx, vy = village['x'], village['y']
         expanded = village.get('layout_version') == 2
-        if previous_version == 1 and not expanded:
+        if previous_version >= 2 or (previous_version == 1 and not expanded):
+            if village.get('life_version') == 1:
+                add_village_life(record, village, left, top, chunk_size)
             continue
         if (left > vx + VILLAGE_RADIUS or left + chunk_size <= vx - VILLAGE_RADIUS
                 or top > vy + VILLAGE_RADIUS or top + chunk_size <= vy - VILLAGE_RADIUS):
@@ -162,7 +189,39 @@ def apply_villages(record, key, villages, chunk_size):
                     structure.update(variant={4: 'workshop', 8: 'workshop', 9: 'inn'}[index],
                                      label=LANDMARKS[village['name']][{4: 0, 8: 1, 9: 2}[index]])
                 record['map_resources'].append(structure)
+        if village.get('life_version') == 1:
+            # Commit the terrain first so planted green pockets survive below.
+            record['terrain'] = [''.join(row) for row in rows]
+            add_village_life(record, village, left, top, chunk_size)
+            rows = [list(row) for row in record['terrain']]
     if rows is not None:
         record['terrain'] = [''.join(row) for row in rows]
-    record['village_version'] = 2
+    record['village_version'] = 3
     return record
+
+
+def add_village_life(record, village, left, top, chunk_size):
+    rows = [list(row) for row in record['terrain']]
+    additions = []
+    vx, vy = village['x'], village['y']
+    for kind, dx, dy, variant, label in LIFE_BUILDINGS:
+        x, y = vx + dx, vy + dy
+        if left <= x < left + chunk_size and top <= y < top + chunk_size:
+            structure = dict(kind=kind, x=x, y=y, biome=village['biome'],
+                             village=village['name'], variant=variant, label=label)
+            if variant == 'barn':
+                structure['animals'] = VILLAGE_ANIMALS[village['biome']]
+            additions.append(structure)
+    for kind, dx, dy in PLANTINGS:
+        x, y = vx + dx, vy + dy
+        if left <= x < left + chunk_size and top <= y < top + chunk_size:
+            rows[y-top][x-left] = village['biome'] if kind == 'water' or (kind == 'tree' and village['biome'] == 'b') else 'g'
+            plant = dict(kind=kind, x=x, y=y, village=village['name'])
+            if kind == 'tree' and village['biome'] == 'd':
+                plant['species'] = 'palm'
+            additions.append(plant)
+    occupied = {(r['x'], r['y']) for r in additions}
+    for field in ('map_resources', 'tree_stumps'):
+        record[field] = [r for r in record[field] if (r['x'], r['y']) not in occupied]
+    record['map_resources'].extend(additions)
+    record['terrain'] = [''.join(row) for row in rows]
