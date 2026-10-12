@@ -84,6 +84,8 @@ const run=new Function('document','window','localStorage','setTimeout','clearTim
   beforePan=surface.paints;camera.x+=30;camera.y-=30;draw();coversViewport();
   assert(surface.paints>beforePan,'Large camera jumps catch up immediately');
   camera={x:30,y:30,zoom:1};draw();
+  // Placement mode retains detailed interactions even at distant zoom.
+  tool='move';
   let previous=surface.paints;camera.zoom=.35;draw();assert(surface.paints>previous,'Zoom repaints ground');
   previous=surface.paints;draw();assert.equal(surface.paints,previous,'Repeated zoomed-out frames reuse ground');
   assert.equal(groundCache.dpr,1,'Distant ground uses a smaller texture on Retina displays');
@@ -100,7 +102,7 @@ const run=new Function('document','window','localStorage','setTimeout','clearTim
   advanceTime(151);draw();
   assert(surface.paints>previous,'Ground repaints at the final resolution after zoom settles');
   assert.equal(groundCache.tileW,tileW,'The settled zoom uses a sharp ground texture');
-  camera.zoom=.6;draw();previous=surface.paints;
+  tool=null;camera.zoom=.6;draw();previous=surface.paints;
   assert(groundCache.detailed,'Normal zoom retains ground decorations');
   assert.equal(groundCache.dpr,2,'Close-up ground restores Retina resolution');
   camera.zoom=.59;draw();
@@ -192,7 +194,7 @@ const run=new Function('document','window','localStorage','setTimeout','clearTim
   const forestTown={map_size:120,terrain:Array(120).fill('g'.repeat(120)),
     buildings:[],villagers:[],map_resources:[...forestTrees,{kind:'rock',x:35,y:30},{kind:'rock',x:36,y:30},{kind:'chest',x:34,y:34}],level:1};
   world={world_id:'forest-test',towns:{own:forestTown}};viewed='own';cameraTown='forest-test/own';
-  camera={x:30,y:30,zoom:.35};
+  camera={x:30,y:30,zoom:.35};tool='move';
   const resourceDraws=[],originalDrawResource=drawResource;
   drawResource=(resource,...args)=>{resourceDraws.push(resource.kind);originalDrawResource(resource,...args);};
   draw();
@@ -239,14 +241,14 @@ const run=new Function('document','window','localStorage','setTimeout','clearTim
   const labelTown={name:'Neighbor',level:1,map_size:120,terrain:Array(120).fill('g'.repeat(120)),
     buildings:[{kind:'hall',x:30,y:30}],villagers:[],map_resources:[],player:{x:31,y:30}};
   world={world_id:'labels',shared_map:{terrain:labelTown.terrain,map_size:120,map_resources:[]},towns:{friend:labelTown}};
-  viewed='friend';identity=null;cameraTown='labels/shared';camera={x:30,y:30,zoom:.35};
+  viewed='friend';identity=null;tool=null;cameraTown='labels/shared';camera={x:30,y:30,zoom:.35};
   playerSprite=()=>null;drawVillager=()=>{};remotePlayerSprite=(id,t)=>({...t.player,kind:'player',townId:id});
   texts.length=0;draw();
-  assert(!texts.includes('Neighbor'),'Distant halls and founders omit automatic labels');
+  assert.equal(texts.filter(text=>text==='Neighbor').length,1,'Overview labels the hall once and hides the founder');
   selection={type:'player',townId:'friend',index:0};texts.length=0;draw();
-  assert(texts.includes('Neighbor'),'Selected distant founders retain their label');
+  assert(texts.includes('Neighbor'),'Overview retains the town marker when founder selection changes');
   selection={type:'building',index:0};texts.length=0;draw();
-  assert(texts.some(text=>text.includes('Level 1')),'Selected distant halls retain their details');
+  assert(texts.includes('Neighbor'),'Selected overview halls retain their town name');
   selection=null;camera.zoom=1;texts.length=0;draw();
   assert.equal(texts.filter(text=>text==='Neighbor').length,2,'Close zoom restores hall and founder labels');
 

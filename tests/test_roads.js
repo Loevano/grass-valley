@@ -44,7 +44,7 @@ return (async()=>{
   tool='road';await buildAt(6,8);
   assert.equal(sent.action,'build_road','Zero-cost road tool can place roads');
   assert.equal(sent.x,6);assert.equal(sent.y,8);
-  tool=null;await selectTile(5,7);
+  tool=null;camera.zoom=1;await selectTile(5,7);
   assert.equal(selection.type,'road','Road tile opens its inspector');
   town.roads[0].construction={progress:3,total:10};
   renderSelection(town);

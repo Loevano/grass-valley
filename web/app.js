@@ -1832,7 +1832,7 @@ async function refresh(){
       const playerRefs=new Map(Object.entries(world.towns).map(([id,t])=>[id,t.player]));
       const preparation=(function*(){
         const scene=yield* ClientScene.prepare(next);
-        scene.resourceData=yield* prepareResourceData(next.shared_map?.map_resources || next.towns[viewed || identities[next.world_id]?.town_id || Object.keys(next.towns)[0]]?.map_resources || [],tileW>=32);
+        if(!mapOverview())scene.resourceData=yield* prepareResourceData(next.shared_map?.map_resources || next.towns[viewed || identities[next.world_id]?.town_id || Object.keys(next.towns)[0]]?.map_resources || [],tileW>=32);
         return scene;
       })();let result;
       do{
@@ -2677,6 +2677,82 @@ function drawProfessionAction(job,time){
 // A padded viewport keeps static ground reusable during walking and panning.
 // One canvas bounds memory usage even on Retina displays.
 let groundCache=null,resourceCache=null;
+let overviewCache=null,overviewFrame=null,overviewActive=false;
+function mapOverview(rect=canvas.getBoundingClientRect()){
+  return Math.min(54,(rect.width-30)/12)*camera.zoom<32&&!tool&&panel!=='build';
+}
+function townOutline(buildings){
+  // Include the whole footprint, including one-building and collinear towns.
+  const tiles=new Map();
+  for(const {x,y} of buildings)for(const [dx,dy] of [[0,0],[1,0],[1,1],[0,1]])tiles.set(`${x+dx},${y+dy}`,[x+dx,y+dy]);
+  const points=[...tiles.values()].sort((a,b)=>a[0]-b[0]||a[1]-b[1]);
+  const cross=(a,b,c)=>(b[0]-a[0])*(c[1]-a[1])-(b[1]-a[1])*(c[0]-a[0]);
+  const half=items=>{
+    const result=[];
+    for(const p of items){while(result.length>1&&cross(result.at(-2),result.at(-1),p)<=0)result.pop();result.push(p);}
+    return result.slice(0,-1);
+  };
+  return points.length<3?points:[...half(points),...half(points.slice().reverse())];
+}
+function prepareOverview(resources){
+  if(overviewCache?.worldId!==world.world_id)overviewCache={worldId:world.world_id,towns:new Map()};
+  const cache=overviewCache;
+  if(cache.world!==world||cache.viewed!==viewed){
+    const entries=world.shared_map?Object.entries(world.towns):world.towns[viewed]?[[viewed,world.towns[viewed]]]:[];
+    const towns=new Map();
+    for(const [id,town] of entries){
+      const hallIndex=town.buildings.findIndex(b=>b.kind==='hall'),hall=town.buildings[hallIndex];
+      const footprint=JSON.stringify(town.buildings.map(b=>[b.x,b.y]));
+      const signature=JSON.stringify([town.name,town.level,hallIndex,footprint]);
+      const old=cache.towns.get(id);
+      towns.set(id,old?.signature===signature?old:{signature,footprint,name:town.name,hallIndex,hall:hall?{x:hall.x,y:hall.y}:null,
+        outline:old?.footprint===footprint?old.outline:townOutline(town.buildings)});
+    }
+    cache.towns=towns;cache.world=world;cache.viewed=viewed;
+  }
+  if(cache.resources!==resources){
+    const water=new Set(resources.filter(r=>r.kind==='water').map(r=>`${r.x},${r.y}`));
+    if(!cache.water||cache.water.size!==water.size||[...water].some(key=>!cache.water.has(key)))cache.water=water;
+    cache.resources=resources;
+  }
+  return cache;
+}
+function drawOverview(rect,dpr,landscape,resources,bounds){
+  const cache=prepareOverview(resources);
+  const towns=[...cache.towns.values()];
+  const key=JSON.stringify([camera.x,camera.y,tileW,rect.width,rect.height,dpr,viewed,identity?.town_id,selection,buildingHover]);
+  const terrainUnchanged=groundCache&&!groundCache.detailed&&groundCache.world.world_id===world.world_id
+    &&((groundCache.landscape===landscape&&groundCache.water===cache.water&&groundCache.forest===null)
+      ||groundMatchesCache(landscape,cache.water,groundCache.bounds,null,groundCache));
+  if(terrainUnchanged)Object.assign(groundCache,{world,landscape,water:cache.water,forest:null});
+  const zoomSettling=groundCache&&groundCache.tileW!==tileW&&performance.now()-groundCache.zoomUpdatedAt>=150;
+  if(overviewFrame?.cache===cache&&overviewFrame.key===key&&terrainUnchanged&&!zoomSettling
+    &&towns.length===overviewFrame.towns.length&&towns.every((town,i)=>town===overviewFrame.towns[i]))return;
+  ctx.setTransform(dpr,0,0,dpr,0,0);ctx.clearRect(0,0,rect.width,rect.height);hitTargets=[];
+  drawGround(rect,dpr,landscape,cache.water,bounds,null);
+  for(const [id,town] of cache.towns){
+    const selected=id===viewed&&selection?.type==='building'&&selection.index===town.hallIndex;
+    const hovered=buildingHover?.townId===id&&buildingHover.index===town.hallIndex;
+    const color=selected||hovered?'#fff0b1':id===identity?.town_id?'#e4c980':'#b4d0c3';
+    ctx.save();ctx.lineWidth=selected||hovered?2:1.25;
+    if(town.outline.length)polygon(town.outline.map(([x,y])=>point(x,y)),selected?'#e4c98022':'#00000000',color);
+    if(town.hall){
+      const [px,top]=point(town.hall.x,town.hall.y),py=top+tileH/2;
+      if(px>=-100&&px<=rect.width+100&&py>=-30&&py<=rect.height+30){
+        // Fixed-size hall glyph and text stay readable across overview scales.
+        polygon([[px-7,py-2],[px,py-9],[px+7,py-2]],color,'#233b30');
+        ctx.fillStyle=color;ctx.fillRect(px-5,py-2,10,8);
+        ctx.fillStyle='#233b30';ctx.fillRect(px-1.5,py+1,3,5);
+        ctx.font='bold 12px sans-serif';ctx.textAlign='center';ctx.strokeStyle='#233b30';ctx.lineWidth=3;
+        ctx.strokeText(town.name || 'Town',px,py-14);ctx.fillStyle=color;ctx.fillText(town.name || 'Town',px,py-14);
+        const labelWidth=ctx.measureText(town.name || 'Town')?.width || 40;
+        hitTargets.push({type:'building',index:town.hallIndex,townId:id,left:px-Math.max(10,labelWidth/2),right:px+Math.max(10,labelWidth/2),top:py-28,bottom:py+9});
+      }
+    }
+    ctx.restore();
+  }
+  overviewFrame={cache,key,towns};
+}
 function renderResources(resources,detailed=true){
   if(typeof ClientScene!=='undefined'&&resourceCache?.resources===resources&&resourceCache.count===resources.length){
     if(resourceCache.detailed!==detailed){
@@ -3219,7 +3295,6 @@ function draw(seconds=0){
   const rect=canvas.getBoundingClientRect(),dpr=renderPixelRatio();
   const width=Math.round(rect.width*dpr),height=Math.round(rect.height*dpr);
   if(canvas.width!==width||canvas.height!==height){canvas.width=width;canvas.height=height;}
-  ctx.setTransform(dpr,0,0,dpr,0,0);ctx.clearRect(0,0,rect.width,rect.height);
   const townKey=`${world.world_id}/${world.shared_map?'shared':viewed}`;
   const town=world.towns[viewed], own=world.towns[identity?.town_id];
   const hero=frameActors?.world===world?frameActors.hero:playerSprite(world.shared_map?(own || town):town,seconds);
@@ -3236,13 +3311,17 @@ function draw(seconds=0){
     originX=rect.width/2-(hero.x-hero.y)*tileW/2;
     originY=rect.height/2-(hero.x+hero.y)*tileH/2-tileH/2;
   }
-  hitTargets=[];
   const resources=world.shared_map?.map_resources || town?.map_resources || [];
-  const resourceData=renderResources(resources,tileW>=32),water=resourceData.water;
   const corners=[[-tileW,-100],[rect.width+tileW,-100],[-tileW,rect.height+100],[rect.width+tileW,rect.height+100]]
     .map(([px,py])=>({x:(px-originX)/tileW+(py-originY)/tileH,y:(py-originY)/tileH-(px-originX)/tileW}));
   const size=mapSize(town),minX=Math.max(0,Math.floor(Math.min(...corners.map(p=>p.x)))),maxX=Math.min(size-1,Math.ceil(Math.max(...corners.map(p=>p.x))));
   const minY=Math.max(0,Math.floor(Math.min(...corners.map(p=>p.y)))),maxY=Math.min(size-1,Math.ceil(Math.max(...corners.map(p=>p.y))));
+  if(mapOverview(rect)){
+    drawOverview(rect,dpr,world.shared_map || town,resources,{minX,maxX,minY,maxY});return;
+  }
+  overviewFrame=null;
+  ctx.setTransform(dpr,0,0,dpr,0,0);ctx.clearRect(0,0,rect.width,rect.height);hitTargets=[];
+  const resourceData=renderResources(resources,tileW>=32),water=resourceData.water;
   const showBuildingRange=town && (panel==='build' || (selection?.type==='building' && town.buildings[selection.index]?.kind==='hall'));
   const preview=hoverTile || keyboardTile;
   const previewKind=tool in costs?tool:tool==='move'&&moveIndex!==null?town?.buildings[moveIndex]?.kind:null;
@@ -3789,6 +3868,11 @@ async function selectTile(x,y){
   const town=world.towns[viewed];
   if(!town || x<0||y<0||x>=mapSize(town)||y>=mapSize(town))return;
   if(town.terrain?.[y]?.[x]==='v')return;
+  if(mapOverview()){
+    const entries=world.shared_map?Object.entries(world.towns):[[viewed,town]];
+    for(const [id,t] of entries){const i=t.buildings.findIndex(b=>b.kind==='hall'&&b.x===x&&b.y===y);if(i>=0){inspect('building',i,id);return;}}
+    openPanel(null);return;
+  }
   const npc=(town.npcs || []).findIndex(n=>{const p=npcPosition(n);return Math.round(p.x)===x&&Math.round(p.y)===y;});
   const resource=town.map_resources.findIndex(r=>r.x===x&&r.y===y);
   const index=town.buildings.findIndex(b=>b.x===x&&b.y===y);
@@ -3896,6 +3980,14 @@ window.addEventListener('resize',()=>draw());
 function updateActors(seconds){
   const town=world.towns[viewed],own=world.towns[identity?.town_id];
   const hero=playerSprite(world.shared_map?(own || town):town,seconds);
+  const overview=mapOverview();
+  if(overview!==overviewActive){
+    // Drop suspended visual jobs so detailed playback resumes from current state.
+    ClientScene.queue.clear();workers.clear();overviewActive=overview;
+  }
+  if(overview){
+    buildingEffects.length=0;frameActors={world,hero,villagers:[],otherPlayers:[]};return;
+  }
   const entries=world.shared_map?Object.entries(world.towns):town?[[viewed,town]]:[];
   const buildings=ClientScene.current?.buildings || [];
   const villagers=entries.flatMap(([id,t])=>animatedVillagers(t,seconds,id,

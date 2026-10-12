@@ -5,13 +5,13 @@ and cache rules are in [Backend](BACKEND.md#cached-zoomed-out-map).
 
 | Order | Improvement | Status | Goal |
 | --- | --- | --- | --- |
-| 1 | Cached zoomed-out town overview | Planned; not implemented | Show the landscape and city sizes without refreshing animated scene detail. |
+| 1 | Cached zoomed-out town overview | Implemented | Show the landscape and city sizes without refreshing animated scene detail. |
 | 2 | Coherent terrain regions and water | Planned; not implemented | Create recognizable large regions, rivers, and lakes while retaining smaller local patches. |
 | 3 | Production line balancing | Planned; not implemented | Develop clear wood, farming, and fishing chains with capped staffing, useful crafted items, and simple upgrades. |
 
 ## Cached zoomed-out town overview
 
-| Part | Planned behavior |
+| Part | Behavior |
 | --- | --- |
 | Terrain | Display simple terrain blocks, loading missing chunks and caching unchanged artwork. |
 | Town markers | Render only town halls as static markers, with town names. |
@@ -30,10 +30,21 @@ and cache rules are in [Backend](BACKEND.md#cached-zoomed-out-map).
 - New terrain loads as needed; switching worlds displays the correct map and towns.
 - Returning to detailed zoom shows the current game state.
 
-The zoom threshold, outline shape, and inclusion of acres, roads, and construction
-sites still need decisions. A lightweight overview request/change mechanism is
-proposed; the existing API does not yet provide it. When implementation begins,
-follow the project's correctness and performance validation requirements.
+The overview starts below a 32-pixel tile width. Town outlines are convex hulls
+of whole building footprints, including acres and construction sites; roads are
+excluded. Names and hall glyphs stay readable and selectable. Building placement
+and move tools retain the detailed scene at every zoom level.
+
+Terrain uses the bounded chunk cache and padded ground canvas. Each town reuses
+its summary and outline until its name, hall, level, or building positions change.
+Idle overview frames do not clear or redraw the map, prepare worker animation
+jobs, or draw individual objects. Pan, zoom, resize, hover, selection, visible
+terrain changes, and changed town summaries trigger a redraw. Detailed playback
+restarts from current state on leaving the overview.
+
+The existing world API still refreshes host state and interface data, including
+collision indexes used by founder movement. A lightweight overview request/change
+mechanism remains future work; this feature does not reduce snapshot traffic.
 
 ## Coherent terrain regions and water
 

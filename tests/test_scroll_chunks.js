@@ -43,12 +43,16 @@ new Function('document','window','localStorage','setTimeout','clearTimeout','Wor
     assert.strictEqual(workers.get('own/0'),worker,'Exploration preserves worker routes and animation state');
   }
   assert.deepEqual(counts(),before,'Revisiting downloaded chunks causes no terrain painting or worker planning');
-  assert(hitTargets.some(target=>target.type==='resource'),'Retained forest tiles remain selectable');
+  assert(hitTargets.some(target=>target.type==='building'),'Overview retains the town marker while revisiting chunks');
+  assert(!hitTargets.some(target=>target.type==='resource'),'Overview omits individual forest tiles');
   const changed=snapshot(keys(22));
   changed.shared_map.resource_chunks={'24,24':{version:'removed',map_resources:[],tree_stumps:[]}};
   hydrateMapChunks(changed);Object.assign(changed.towns.own,changed.shared_map);world=changed;draw();
-  assert.notStrictEqual(resourceCache,resources,'Changed resource chunks still update the forest and selection index');
-  assert.notStrictEqual(groundCache,ground,'Tree removal repaints the visible canopy');
-  assert.notStrictEqual(workers.get('own/0'),worker,'Changed local obstacles still update worker paths');
+  assert.strictEqual(resourceCache,resources,'Overview does not prepare individual resource artwork');
+  assert.strictEqual(groundCache,ground,'Tree removal preserves the simple biome blocks');
+  assert.deepEqual(counts(),before,'Tree removal needs no overview painting or worker planning');
+  camera.zoom=1;draw();
+  assert(resourceCache&&workers.get('own/0'),'Detailed zoom prepares current resources and worker paths');
+  assert(!resourceCache.objects.some(r=>r.x===960&&r.y===960),'Detailed zoom uses the latest removed-tree chunk');
 `)(documentMock,{devicePixelRatio:2,addEventListener(){}},{getItem:()=>null},()=>0,()=>{},WorkerAnimation,assert,()=>({plans,paints}));
 console.log('Zoomed-out chunk scrolling checks passed');

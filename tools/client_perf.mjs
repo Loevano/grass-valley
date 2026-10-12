@@ -48,7 +48,8 @@ const server=http.createServer((req,res)=>{
   try{
     let body=fs.readFileSync(file);
     if(name==='/app.js')body=Buffer.from(body.toString()+`\n
-      window.__perf={frames:[],draws:[],intervals:[],longTasks:[],requests:[],inputDelays:[],snapshotDelays:[],workerDelays:[]};
+      window.__perf={frames:[],draws:[],intervals:[],longTasks:[],requests:[],inputDelays:[],snapshotDelays:[],workerDelays:[],canvasRedraws:0};
+      const measuredClear=ctx.clearRect.bind(ctx);ctx.clearRect=function(...args){window.__perf.canvasRedraws++;return measuredClear(...args);};
       const measuredDraw=draw;draw=function(...args){if(typeof ClientScene!=='undefined'&&!animationFrameRunning)return measuredDraw(...args);const t=performance.now();try{return measuredDraw(...args);}finally{window.__perf.draws.push(performance.now()-t);
         const p=window.__perf;if(p.snapshotReady!==undefined&&world===p.snapshotWorld){p.snapshotDelays.push(performance.now()-p.snapshotReady);delete p.snapshotReady;}
       }};
@@ -107,11 +108,18 @@ try{
     await page.waitForFunction(()=>typeof ClientScene==='undefined'||ClientScene.queue.jobs.size===0);
     // Warm shaders, sprite artwork, and terrain separately from measured work.
     await page.waitForTimeout(500);
-    for(const scenario of ['idle','walk','pan','zoom','refresh','obstacle','eviction','panel']){
-      await page.evaluate(()=>{window.__perf.frames=[];window.__perf.draws=[];window.__perf.intervals=[];window.__perf.longTasks=[];window.__perf.requests=[];window.__perf.inputDelays=[];window.__perf.snapshotDelays=[];window.__perf.workerDelays=[];});
-      let timer;
+    for(const scenario of ['idle','walk','pan','zoom','refresh','obstacle','eviction','panel','overview_idle','overview_pan','overview_refresh']){
+      if(scenario.startsWith('overview_'))await page.evaluate(()=>{camera.zoom=.35;});
+      await page.evaluate(()=>{window.__perf.frames=[];window.__perf.draws=[];window.__perf.intervals=[];window.__perf.longTasks=[];window.__perf.requests=[];window.__perf.inputDelays=[];window.__perf.snapshotDelays=[];window.__perf.workerDelays=[];window.__perf.canvasRedraws=0;});
+      let timer,panStart;
       if(scenario==='walk'){await page.evaluate(()=>{window.__perf.inputStart=performance.now();window.__perf.inputX=playerView.x;window.__perf.inputY=playerView.y;});await page.keyboard.down('d');}
-      if(scenario==='pan')timer=setInterval(()=>page.mouse.wheel(45,20).catch(()=>{}),40);
+      if(scenario==='pan'||scenario==='overview_pan'){
+        const bounds=await page.locator('#world').boundingBox();
+        if(!bounds)throw new Error('Map canvas is unavailable for the pan scenario');
+        await page.mouse.move(bounds.x+bounds.width/2,bounds.y+bounds.height/2);
+        panStart=await page.evaluate(()=>({x:camera.x,y:camera.y}));
+        timer=setInterval(()=>page.mouse.wheel(45,20).catch(()=>{}),40);
+      }
       if(timer)timers.add(timer);
       if(scenario==='zoom')timer=setInterval(()=>page.evaluate(()=>{camera.zoom=camera.zoom===.7?.75:.7;}).catch(()=>{}),100);
       if(timer)timers.add(timer);
@@ -125,27 +133,29 @@ try{
         for(const key of ['0,11','1,11']){data.shared_map.terrain_chunks[key]=Array(40).fill('g'.repeat(40));data.shared_map.resource_chunks[key]={version:'new',map_resources:[],tree_stumps:[]};}
         data.shared_map.visible_chunks=['0,11','1,11'];
       }
-      if(scenario==='refresh'||scenario==='obstacle'||scenario==='eviction'){
+      if(['refresh','obstacle','eviction','overview_refresh'].includes(scenario)){
         const latency=await page.evaluate(async()=>{const t=performance.now();await refresh();return performance.now()-t;});
         metrics[`${label}.${scenario}.refresh_ms`]=latency;
       }
       await page.waitForTimeout(1200);
       if(timer){clearInterval(timer);timers.delete(timer);}
       if(scenario==='walk')await page.keyboard.up('d');
-      const result=await page.evaluate(()=>({frames:window.__perf.frames,draws:window.__perf.draws,intervals:window.__perf.intervals,longTasks:window.__perf.longTasks,requests:window.__perf.requests,inputDelays:window.__perf.inputDelays,snapshotDelays:window.__perf.snapshotDelays,workerDelays:window.__perf.workerDelays,
-        pending:typeof ClientScene==='undefined'?0:ClientScene.queue.jobs.size,terrain:chunkTerrainCache.size,resources:chunkResourceCache.size}));
+      const result=await page.evaluate(()=>({frames:window.__perf.frames,draws:window.__perf.draws,intervals:window.__perf.intervals,longTasks:window.__perf.longTasks,requests:window.__perf.requests,inputDelays:window.__perf.inputDelays,snapshotDelays:window.__perf.snapshotDelays,workerDelays:window.__perf.workerDelays,canvasRedraws:window.__perf.canvasRedraws,
+        pending:typeof ClientScene==='undefined'?0:ClientScene.queue.jobs.size,terrain:chunkTerrainCache.size,resources:chunkResourceCache.size,camera:{x:camera.x,y:camera.y}}));
       for(const [key,values] of Object.entries({frame_ms:result.frames,callback_interval_ms:result.intervals,long_task_ms:result.longTasks})){
         metrics[`${label}.${scenario}.${key}_p95`]=percentile(values,.95);
         metrics[`${label}.${scenario}.${key}_max`]=Math.max(0,...values);
       }
       if(scenario==='walk')metrics[`${label}.${scenario}.input_to_movement_ms`]=percentile(result.inputDelays,.95);
-      if(['refresh','obstacle','eviction'].includes(scenario)){metrics[`${label}.${scenario}.snapshot_to_draw_ms`]=percentile(result.snapshotDelays,.95);metrics[`${label}.${scenario}.workers_ready_ms`]=percentile(result.workerDelays,.95);}
+      if(['refresh','obstacle','eviction','overview_refresh'].includes(scenario)){metrics[`${label}.${scenario}.snapshot_to_draw_ms`]=percentile(result.snapshotDelays,.95);metrics[`${label}.${scenario}.workers_ready_ms`]=percentile(result.workerDelays,.95);}
       const acknowledgements=result.requests.filter(r=>r.path==='/api/command').map(r=>r.ms);
       if(scenario==='walk')metrics[`${label}.${scenario}.command_ack_ms`]=percentile(acknowledgements,.95);
       metrics[`${label}.${scenario}.draw_calls_per_frame`]=result.draws.length/Math.max(1,result.frames.length);
+      metrics[`${label}.${scenario}.canvas_draw_calls_per_frame`]=result.canvasRedraws/Math.max(1,result.frames.length);
       checks.push({scenario:`${label}.${scenario}`,ok:result.frames.length>=10&&result.pending===0&&result.terrain<=128&&result.resources<=128,frames:result.frames.length,pending:result.pending});
+      if(panStart)checks.push({scenario:`${label}.${scenario}.camera`,ok:Math.hypot(result.camera.x-panStart.x,result.camera.y-panStart.y)>1});
       if(scenario==='walk')checks.push({scenario:`${label}.input`,ok:result.inputDelays.length>0&&acknowledgements.length>0});
-      if(['refresh','obstacle','eviction'].includes(scenario))checks.push({scenario:`${label}.snapshot`,ok:result.snapshotDelays.length>0&&result.workerDelays.length>0});
+      if(['refresh','obstacle','eviction','overview_refresh'].includes(scenario))checks.push({scenario:`${label}.snapshot`,ok:result.snapshotDelays.length>0&&result.workerDelays.length>0});
       details[`${label}.${scenario}`]={samples:result.frames.length,requests:result.requests};
       if(timer)timers.add(timer);
       if(scenario==='panel')await page.evaluate(()=>{panel=null;render();});

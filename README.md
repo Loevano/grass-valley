@@ -188,6 +188,11 @@ the Python host, refresh both browsers, and create a new world to use the shared
   and Low uses reduced resolution to help slower devices. Changes apply immediately.
   Preferences are saved in this browser. Scroll to pan; pinch on the touchpad or
   Option/Alt-scroll to zoom.
+  Zooming out switches to a cached overview with simple terrain blocks, named
+  town-hall markers, and outlines of each town's buildings, acres, and construction
+  sites. Click a hall marker to inspect its town. Roads do not extend the outline.
+  The overview hides individual buildings and characters; zoom in to see them.
+  Build and move tools keep their detailed map interactions at any zoom level.
   Buildings, trees, water, and rocks block movement. Your position is saved per
   world. Movement pauses while typing, placing buildings, or using world menus.
 - Select **You** to inspect your equipment and equip or remove items. Swamp boots

@@ -24,8 +24,7 @@ const run=new Function('document','window','localStorage','setTimeout','clearTim
     camera={x:55,y:30,zoom:.35};draw();
     assert(hitTargets.some(h=>h.type==='building'&&h.townId==='own'),'Own buildings are visible');
     assert(hitTargets.some(h=>h.type==='building'&&h.townId==='friend'),'Friend buildings are on the same map');
-    assert(hitTargets.some(h=>h.type==='player'&&h.townId==='own'),'Own character is visible');
-    assert(hitTargets.some(h=>h.type==='player'&&h.townId==='friend'),'Other character is visible');
+    assert(!hitTargets.some(h=>h.type==='player'),'Overview hides characters while retaining both town markers');
     camera={x:30,y:30,zoom:1};draw();
     camera={x:90,y:30,zoom:1};draw();
     assert(drawnLabels.includes('Home')&&drawnLabels.includes('Friend'),'Town halls show town names at detailed zoom');
