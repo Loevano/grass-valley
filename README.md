@@ -483,6 +483,8 @@ the Python host, refresh both browsers, and create a new world to use the shared
   At a butcher shop, select an adult from a barn and choose **Use animal for meat**.
   This permanently consumes one animal; a qualified butcher needs one minute of
   work at the shop to produce 2/4/8/10 raw meat for a chicken/sheep/pig/cow.
+  Each completed animal grants 1 butchery practice, adjusted by talent, crediting
+  the full minute of manually assigned work.
   Extra workers cannot duplicate or accelerate the batch. Processing pauses
   without a worker, and completed meat waits for buffer space or a production cap
   to allow it. Existing meat recipes resume afterward; hauling works as usual.

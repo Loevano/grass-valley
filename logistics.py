@@ -262,7 +262,7 @@ def butcher_animal(town, building, villager, seconds):
     record_output(town, building, 'meat', amount)
     if hides:
         record_output(town, building, 'hides', hides)
-    economy.practice(villager, 'butchery')
+    economy.practice(villager, 'butchery', economy.BUTCHER_SECONDS)
     del building['butchering']
     return 'Working'
 

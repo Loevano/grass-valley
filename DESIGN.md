@@ -207,6 +207,8 @@ worker and persist in saves. Missing inputs, caps, and full buffers pause progre
 ingredients, outputs, and practice are committed together when a batch completes.
 Completed work grants 0.04 practice per three active seconds, adjusted by talent.
 Butchery grants 25% more practice from completed work with the same talent modifiers.
+Manually assigned animal butchery credits its full sixty seconds on completion:
+1 practice per animal before talent modifiers.
 Changing assignment or recipe resets unfinished work. Fruit pies, cakes, and meat
 pies provide 7, 9, and 8 pantry food per basic batch; advanced food market prices
 round up their per-unit food value. Basic bread and prepared meat remain one coin.
