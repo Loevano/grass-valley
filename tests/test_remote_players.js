@@ -16,7 +16,7 @@ const run=new Function('document','window','localStorage','setTimeout','clearTim
     await refreshPlayers();
     assert.equal(friend.player.x,10.3,'Remote position arrives without a full-world refresh');
     assert.equal(world.towns.own.player.x,5,'Position polling preserves own movement authority');
-    let sprite=remotePlayerSprite('friend',friend,.1);
+    let sprite=remotePlayerSprite('friend',friend,.2);
     assert.equal(sprite.x,10,'A short buffer absorbs uneven snapshot arrivals');
     sprite=remotePlayerSprite('friend',friend,.05);
     assert(Math.abs(playerMovementDistance(sprite.x-10,sprite.y-10)-.15)<1e-9,'Remote movement uses the normal walking speed');
@@ -32,7 +32,7 @@ const run=new Function('document','window','localStorage','setTimeout','clearTim
       snapshot.players.friend.x+=step*count;snapshot.players.friend.y-=step*count;
       snapshot.sampled_at+=.1*count;updateRemotePlayers(snapshot);
     };
-    sendStep(1);remotePlayerSprite('friend',friend,.1);
+    sendStep(1);remotePlayerSprite('friend',friend,sprite.state.lead);
     for(let frame=0;frame<60;frame++){
       // Alternate short and long polling intervals; some responses contain two steps.
       if([0,9,21,24,33,36,45,48,57].includes(frame))sendStep(frame===9?2:1);
@@ -51,11 +51,34 @@ const run=new Function('document','window','localStorage','setTimeout','clearTim
     snapshot.players.friend={...corner,facing:1};snapshot.sampled_at+=.1;updateRemotePlayers(snapshot);
     snapshot.players.friend={x:corner.x+step,y:corner.y+step,facing:-1};
     snapshot.sampled_at+=.1;updateRemotePlayers(snapshot);
-    sprite=remotePlayerSprite('friend',friend,.2);
+    sprite=remotePlayerSprite('friend',friend,sprite.state.lead+.1);
     assert(Math.abs(sprite.x-corner.x)<1e-9&&Math.abs(sprite.y-corner.y)<1e-9,'Queued turns pass through the sampled corner');
     sprite=remotePlayerSprite('friend',friend,.2);
     assert.equal(sprite.x,snapshot.players.friend.x);assert.equal(sprite.y,snapshot.players.friend.y);
     assert.equal(sprite.state.facing,-1,'Facing follows the played movement');
+    // A 250 ms response gap used to drain the 100 ms reserve and restart walking.
+    remotePlayerSprite('friend',friend,1);
+    sendStep(1);
+    const leadFrames=Math.ceil(sprite.state.lead*60-1e-9);
+    previous={x:sprite.x,y:sprite.y};
+    for(let frame=0;frame<72;frame++){
+      if(frame===15){
+        sendStep(3);
+        assert(sprite.state.lead>.2&&sprite.state.lead<=.35,'Uneven arrivals grow a bounded playback reserve');
+      }
+      if(frame>15&&frame%6===3)sendStep(1);
+      sprite=remotePlayerSprite('friend',friend,1/60);
+      const distance=playerMovementDistance(sprite.x-previous.x,sprite.y-previous.y);
+      if(frame>=leadFrames)assert(Math.abs(distance-.05)<1e-9,'Delayed responses keep remote walking continuous');
+      previous={x:sprite.x,y:sprite.y};
+    }
+    sprite=remotePlayerSprite('friend',friend,1);
+    assert.equal(sprite.x,snapshot.players.friend.x,'Playback never predicts past the last host position');
+    assert.equal(sprite.state.path.length,0,'Delayed playback still settles after stopping');
+    const lead=sprite.state.lead;
+    remotePlayerSprite('friend',friend,10);sendStep(1);
+    assert.equal(sprite.state.lead,lead,'Standing still does not increase the playback delay');
+    sprite=remotePlayerSprite('friend',friend,1);
     previous=sprite.x;
     const state=sprite.state;
     world=JSON.parse(JSON.stringify(world));world.towns.friend.player.x=1;

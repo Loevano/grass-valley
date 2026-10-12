@@ -355,7 +355,7 @@ function remotePlayerState(townId,player){
   if(remoteWorld!==world.world_id){remotePlayers.clear();remoteWorld=world.world_id;remoteSample=-Infinity;}
   let state=remotePlayers.get(townId);
   if(!state){
-    state={...player,target:{...player},waypoints:[],buffer:0,clock:0,path:[],phase:'idle'};
+    state={...player,target:{...player},waypoints:[],buffer:0,lead:.2,lastMovement:null,clock:0,path:[],phase:'idle'};
     remotePlayers.set(townId,state);
   }
   return state;
@@ -371,11 +371,15 @@ function updateRemotePlayers(snapshot){
     const state=remotePlayerState(id,town.player || player);
     if(player.x!==state.target.x || player.y!==state.target.y){
       // Queue positions so turns survive polling jitter, and play at walking speed.
-      // A short lead absorbs uneven arrivals without accelerating to catch up.
+      // Keep two walking steps in reserve, extending the next lead for uneven
+      // arrivals. Ignore idle gaps and cap the delay so stopping stays responsive.
+      const gap=state.lastMovement===null?0:state.clock-state.lastMovement;
+      if(gap>0&&gap<=.5)state.lead=Math.max(.2,Math.min(.35,gap+.05),state.lead*.95);
+      state.lastMovement=state.clock;
       if(playerMovementDistance(player.x-state.x,player.y-state.y)>3){
         state.x=player.x;state.y=player.y;state.waypoints.length=0;state.buffer=0;
       }else{
-        if(!state.waypoints.length)state.buffer=.1;
+        if(!state.waypoints.length)state.buffer=state.lead;
         state.waypoints.push({...player});
       }
       state.target={...player};
