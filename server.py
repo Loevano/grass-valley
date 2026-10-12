@@ -1255,6 +1255,13 @@ class Handler(SimpleHTTPRequestHandler):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, directory=str(ROOT / 'web'), **kwargs)
 
+    def handle(self):
+        try:
+            super().handle()
+        except (BrokenPipeError, ConnectionResetError):
+            # Browsers can disconnect while a request or response is in flight.
+            self.close_connection = True
+
     def log_request(self, code='-', size='-'):
         # Polling and movement generate frequent successful requests.
         if code != '-' and int(code) >= 400:
