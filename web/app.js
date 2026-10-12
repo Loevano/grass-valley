@@ -391,6 +391,7 @@ function updateRemotePlayers(snapshot){
 }
 async function refreshPlayers(){
   if(refreshingPlayers || !world.world_id || document.hidden)return;
+  if(!world.shared_map || !Object.entries(world.towns).some(([id,town])=>id!==identity?.town_id&&town.player))return;
   refreshingPlayers=true;
   const worldId=world.world_id,controller=new AbortController();
   const timeout=setTimeout(()=>controller.abort(),1000);
@@ -2153,8 +2154,9 @@ function animatedVillagers(town, seconds, townId=viewed, frameLayout=null){
     animatedVillagers.roadSets.set(roadKey,new Set((world.shared_map?Object.values(world.towns).flatMap(t=>t.roads || []):town.roads || []).filter(r=>!r.construction).map(r=>`${r.x},${r.y}`)));
   }
   const roads=animatedVillagers.roadSets.get(roadKey);
+  const region=typeof ClientScene!=='undefined'?ClientScene.region(town):null;
   const tiles=items=>items.map(({kind,x,y,farm_index,construction})=>[kind,x,y,farm_index,!!construction]);
-  const layout=frameLayout ?? JSON.stringify([tiles(world.shared_map?Object.values(world.towns).flatMap(t=>t.buildings):town.buildings),tiles(town.map_resources),[...roads].sort()]);
+  const layout=region?.layoutVersion ?? frameLayout ?? JSON.stringify([tiles(world.shared_map?Object.values(world.towns).flatMap(t=>t.buildings):town.buildings),tiles(town.map_resources),[...roads].sort()]);
   // Names are unique within a town and survive arrivals/departures. Remap the
   // index-based rendering slots without restarting surviving residents.
   if(animatedVillagers.rosterWorld!==townKey){animatedVillagers.rosterWorld=townKey;animatedVillagers.rosters=new Map();}
@@ -2187,7 +2189,6 @@ function animatedVillagers(town, seconds, townId=viewed, frameLayout=null){
     let state=workers.get(workerKey);
     const finishingDelivery=state?.transport&&state.path.length&&state.task===task&&state.layout===layout;
     if(!state || state.layout!==layout || (state.signature!==signature&&!finishingDelivery)){
-      const region=typeof ClientScene!=='undefined'?ClientScene.region(town):null;
       if(region){
         if(state?.pendingPlan?.signature!==signature||state?.pendingPlan?.layout!==layout){
           const version={signature,layout};
@@ -2241,7 +2242,7 @@ function animatedVillagers(town, seconds, townId=viewed, frameLayout=null){
     const active=!!villager.construction_target || Object.values(villager.pending_output || {}).some(n=>n>0) || (villager.production_status==='Working' || villager.production_status?.startsWith('Butchering ') || villager.production_status?.startsWith('No catch') || (!villager.production_status&&town[resource]<resourceStorage(town,resource)));
     if(confirmedPlayback){
       // Confirmed playback already advanced the sprite; never predict a work cycle.
-    }else if(typeof ClientScene!=='undefined'&&ClientScene.region(town)){
+    }else if(region){
       if(!state.pendingPlan&&!state.pendingAdvance){
         const steps=WorkerAnimation.advanceSteps(state,seconds,active),first=steps.next();
         if(!first.done){state.pendingAdvance=true;ClientScene.queue.schedule('advance/'+workerKey,state,steps,()=>{state.pendingAdvance=false;});}

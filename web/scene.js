@@ -103,7 +103,9 @@ const ClientScene = (() => {
         const trip=villager.logistics_trip;
         scene.tasks.set(villager,{task,signature:JSON.stringify([task,trip?[trip.id,trip.operation,trip.workplace,trip.storage,trip.path]:villager.logistics_target])});
       }
-      scene.regions.set(id,{layout,occupancy,blocked,routing,roster});
+      // Compare geometry once per snapshot, then use identity in worker frames.
+      const layoutVersion=old?.layout===layout?old.layoutVersion:{};
+      scene.regions.set(id,{layout,layoutVersion,occupancy,blocked,routing,roster});
       yield;
     }
     scene.geometry=world.world_id+'|'+scene.geometry+'|'+[...scene.regions].map(([id,r])=>id+':'+r.layout).join('|');

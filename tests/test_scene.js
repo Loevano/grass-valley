@@ -18,10 +18,18 @@ assert(region.blocked.has('82,82'));assert(!region.blocked.has('83,83'),'Worker 
 const updated=snapshot([{kind:'tree',x:82,y:82,supply:3},{kind:'rock',x:230,y:230}]);
 const second=finish(Scene.prepare(updated,first));
 assert.strictEqual(second.regions.get('own').blocked,region.blocked,'Supply and distant geometry preserve local navigation');
+assert.strictEqual(second.regions.get('own').layoutVersion,region.layoutVersion,'Unchanged geometry retains the worker layout identity across snapshots');
+assert.equal(typeof region.layoutVersion,'object','Worker frames compare identity instead of large geometry strings');
 updated.shared_map.npcs=[{kind:'npc',x:84,y:84}];
 const third=finish(Scene.prepare(updated,second));
 assert.notStrictEqual(third.regions.get('own').blocked,region.blocked,'Nearby NPC movement changes navigation');
 assert(third.regions.get('own').blocked.has('84,84'));
+assert.notStrictEqual(third.regions.get('own').layoutVersion,region.layoutVersion,'Nearby geometry invalidates the worker layout identity');
+const roadUpdate=snapshot([{kind:'tree',x:82,y:82}]);
+roadUpdate.towns.own.roads=[{x:81,y:81}];
+const roadScene=finish(Scene.prepare(roadUpdate,second));
+assert.strictEqual(roadScene.regions.get('own').blocked,region.blocked,'Road updates retain occupancy');
+assert.notStrictEqual(roadScene.regions.get('own').layoutVersion,region.layoutVersion,'Completed roads invalidate worker route costs');
 const removal=snapshot([]);const removed=finish(Scene.prepare(removal,third));
 assert(!removed.regions.get('own').blocked.has('82,82'),'Evicted resources leave navigation');
 assert.equal(removed.resources.length,0);assert.equal(removed.buckets.size,0);

@@ -15,8 +15,15 @@ assert.equal(client.paints,before,'UI callbacks never draw between animation fra
 client.frame(0);
 assert.equal(client.paints,before+1,'One browser frame draws once');
 assert.equal(client.run('updates'),1,'Actors advance once per browser frame');
+assert.equal(client.run('workers.get("own/0").layout===ClientScene.region(world.towns.own).layoutVersion'),true,'Worker planning uses the prepared layout identity');
+client.run(`
+  const originalWorker=workers.get('own/0'),originalLayout=originalWorker.layout;
+  world=JSON.parse(JSON.stringify(world));
+  const snapshot=ClientScene.prepare(world);let snapshotResult;do{snapshotResult=snapshot.next();}while(!snapshotResult.done);ClientScene.commit(snapshotResult.value);
+`);
 client.frame(16);
 assert.equal(client.paints,before+2);assert.equal(client.run('updates'),2);
+assert.equal(client.run('workers.get("own/0")===originalWorker&&originalWorker.layout===originalLayout'),true,'An unchanged snapshot preserves existing animation and its layout identity');
 client.run('addBuildingEffect({x:30,y:30},"build");');
 client.frame(116);
 assert.equal(client.run('buildingEffects[0].age'),.1,'Feedback effects advance in the update phase');
