@@ -17,6 +17,25 @@ independent town management, exploration, and cooperation between 2–4 friends.
 | Value the reward | Equipment perks, coins, keepsakes, and progression unlocks | Mix useful items with recognizable cosmetic rewards and story recognition. | Proposed |
 | Express identity | Separate towns, biome settings, and equipped character gear | Expand cosmetic character and town choices; choose the style and acquisition rules. | Open |
 
+## Terrain and water
+
+**Confirmed direction; planned, not implemented:** make the landscape less
+eclectic. Large, coherent regions should give places a recognizable identity,
+with natural transitions between them.
+
+| Feature | Design direction |
+| --- | --- |
+| Ice | Consider a distinct icy corner of the world; exact placement remains open. |
+| Swamp | A larger main swamp, with smaller swamp spots around its edges. |
+| Rivers | Large rivers that read as continuous landscape features. |
+| Lakes | A major lake, with smaller lakes near cities. |
+| Desert | A large, continuous desert region; scattered small sand patches are still allowed elsewhere. |
+
+Success means players can recognize the main regions and water features while
+exploring and on the world map. Exact sizes, river and lake layouts, and the ice
+corner remain open. Implementation is planned after the cached zoomed-out town
+overview; see the [roadmap](ROADMAP.md#coherent-terrain-regions-and-water).
+
 ## Proposed experience loop
 
 ```mermaid

@@ -48,6 +48,22 @@ backend structure and animation priorities, balancing, game design, and artwork.
 | Absent players' towns? | Continue production while the host is playing. |
 | First playable focus? | Village building first. |
 
+## Confirmed terrain direction
+
+**Planned; not implemented:** the landscape should feel less eclectic, with large,
+coherent terrain regions and natural transitions rather than a patchwork of small,
+unrelated biomes.
+
+- Consider an icy region in one corner of the world; its exact placement is open.
+- Create a larger main swamp with smaller swamp spots around its edges.
+- Include large rivers and a major lake, plus smaller lakes near cities.
+- Make deserts substantial, continuous regions. Small sand patches can still
+  exist elsewhere.
+
+Region sizes and water layouts remain open. See the
+[game design reference](GAME_DESIGN.md#terrain-and-water) and
+[roadmap](ROADMAP.md#coherent-terrain-regions-and-water) for planned work.
+
 ## Questions to answer later
 
 Fill in the **Answer** column when ready. These include unresolved questions from
