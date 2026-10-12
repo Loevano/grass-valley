@@ -1177,12 +1177,13 @@ function renderSettlers(town,item,buildingIndex,target=$('selection-details'),up
   const available=town.villagers.map((v,i)=>({v,i})).filter(({v,i})=>settlerBuilding(town,v,i)!==buildingIndex);
   const job={woodcutter:'woodcutting',farm:'farming',acre:'farming',fishing_hut:'fishing'}[item.kind] || world.progression?.buildings[item.kind]?.job;
   const talentRoot=world.progression?.talent_roots?.[job] || job;
-  available.sort((a,b)=>Number(settlerBuilding(town,a.v,a.i)!==null)-Number(settlerBuilding(town,b.v,b.i)!==null)
+  available.sort((a,b)=>Number(b.v.job==='idle')-Number(a.v.job==='idle')
+    || Number(settlerBuilding(town,a.v,a.i)!==null)-Number(settlerBuilding(town,b.v,b.i)!==null)
     || (job?(b.v.talents?.[talentRoot] || 0)-(a.v.talents?.[talentRoot] || 0):0));
   const requirements=world.progression?.job_requirements?.[job];
   if(requirements){const note=document.createElement('small');note.textContent='Each settler needs '+Object.entries(requirements).map(([skill,amount])=>`${amount} ${goodName(skill).toLowerCase()} practice`).join(', ');target.append(note);}
   const eligible=available.filter(({v})=>!jobRequirement(v,job));
-  for(const {v,i} of available){const option=document.createElement('option');option.value=i;const requirement=jobRequirement(v,job);option.textContent=v.name+(requirement?` · Requires ${requirement}`:job?` · ${workerEfficiency(v,job).toFixed(2)}× output`:'')+(settlerBuilding(town,v,i)!==null?' · reassign':'');option.disabled=Boolean(requirement);chooser.append(option);}
+  for(const {v,i} of available){const option=document.createElement('option');option.value=i;const requirement=jobRequirement(v,job);option.textContent=v.name+(v.job==='idle'?' · Resting':'')+(requirement?` · Requires ${requirement}`:job?` · ${workerEfficiency(v,job).toFixed(2)}× output`:'')+(settlerBuilding(town,v,i)!==null?' · reassign':'');option.disabled=Boolean(requirement);chooser.append(option);}
   chooser.value=eligible.length?String(eligible[0].i):'';
   const add=document.createElement('button');add.textContent=['hall','home'].includes(item.kind)?'Add settler':'Add worker';add.disabled=assigned.length>=capacity||!eligible.length;
   chooser.disabled=add.disabled;

@@ -289,6 +289,8 @@ the Python host, refresh both browsers, and create a new world to use the shared
   10 practice and 25 minutes for each output bonus. Travel and blocked work
   pause training. Their panel shows talents
   and current output; workplace selectors show qualifications and output too.
+  Resting settlers are labeled and listed first, including cottage residents
+  who can be reassigned directly to a workplace.
   Basic woodcutting, farming, fishing, and husbandry train anyone. Advanced roles
   require that settler's own practice: sawpit workers need 10 woodcutting,
   millers 10 farming, preservers 10 fishing, crafters 2 woodworking,
