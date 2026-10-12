@@ -20,6 +20,20 @@ the displayed motion.** A low-priority animation can still have smooth playback.
 
 ## Response priority levels
 
+**Confirmed priority order:**
+
+| Prio | Work |
+| --- | --- |
+| 1 | Your own main character: movement, actions, and immediate control feedback. |
+| 2 | Other main characters and elements you have to dodge or react to, including hazards and their cues. |
+| 3 | Villager pathing and animation. |
+| 4 | Terrain updates. |
+| 5 | Saving, logging in, and other background services. |
+
+These are response priorities, separate from development order and drawing depth.
+Saving and login remain required: lower urgency does not allow lost state,
+skipped authentication, or success feedback before the host confirms completion.
+
 The five levels below are the working classification requested for this reference.
 Assignments to individual animations are proposals; the engine does not yet
 implement these priority levels. Timing descriptions are intended behavior, not
@@ -31,7 +45,7 @@ measured latency or new simulation intervals.
 | 2 | High / almost realtime | Apply relevant updates promptly so interaction feels snappy. | Small scheduling delays; avoid a visible pause before responding. |
 | 3 | Medium / annoying if sluggish | Update soon enough that visible activity and feedback stay believable. | Brief deferral under load, but not persistent lag or a backlog. |
 | 4 | Low / can be in queue | Prepare the change when more urgent work has been served. | Queued preparation; retain a usable current visual while waiting. |
-| 5 | Very low / you don't notice if a second later | Defer changes whose arrival about a second later has no meaningful effect. | Optional detail or background preparation, provided the player does not need it now. |
+| 5 | Very low / background                         | Complete saving, login, and background work after more urgent gameplay responses. | Queued work; preserve required completion and truthful status feedback.              |
 
 ## Animation categories — proposed
 
@@ -44,20 +58,20 @@ appears in front of another.
 | --- | --- | --- | --- | --- |
 | Your founder walking, stopping, turning, riding, or sailing | 1 | React immediately to your movement input; reconcile accepted host positions promptly. | Update displayed motion each animation frame using prediction and reconciliation. | Always 1 while you control the character. |
 | Camera follow, panning, and zoom | 1 | React immediately to movement or camera input. | Apply the camera position each animation frame. | Always 1 during interaction. |
-| Hazard warnings, strikes, and hit/checkpoint feedback | 1 | Display the latest available state immediately; do not queue actionable danger cues. | Render on relevant state changes; any continuous motion must remain smooth. The courier prototype currently uses a polled DOM board. | Always 1 while the course is active and visible. |
+| Hazard warnings, strikes, and hit/checkpoint feedback | 2 | Display the latest available state immediately; do not queue actionable danger cues. | Render on relevant state changes; any continuous motion must remain smooth. The courier prototype currently uses a polled DOM board. | Always 2 while the course is active and visible. |
 | Hover, selection, and building placement preview | 1 | Follow the pointer, selected tile, or placement change immediately. | Reflect current input on the next map frame; reuse prepared artwork. | Expensive decorative preview detail can be 4; validity feedback stays 1. |
 | Other players walking, turning, riding, or sailing | 2 | Accept fresh movement samples promptly. | Interpolate displayed motion each animation frame between network samples. | Offscreen visual preparation can wait; re-entering view needs a current position. |
-| Your gathering action or a worker you just assigned/selected | 2 | Show input acknowledgement promptly; start or change work playback when host confirmation arrives. | Play walking and work motion each animation frame, following the confirmed work phase. | Keep input feedback at 1; the ordinary background worker animation is 3. |
-| Visible settlers walking, hauling cargo, building, or boating | 3 | Reflect route, cargo, and work-phase changes without annoying lag. | Advance visible movement each animation frame from prepared routes or host playback. | Promote to 2 when selected or directly affected by your command. |
-| Visible profession actions: chopping, fishing, farming, sawing, milling, baking, butchery, preserving, and tending | 3 | Start, stop, or switch the work action promptly enough to explain workplace activity. | Advance the action pose each animation frame; reuse the route and work state. | Promote to 2 when selected or manually initiated; completion still requires host confirmation. |
+| Your gathering action                                        | 1 | Show input acknowledgement promptly; start or change work playback when host confirmation arrives. | Play walking and work motion each animation frame, following the confirmed work phase. | Always 1 while you control the character; rewards require host confirmation. |
+| Visible settlers walking, hauling cargo, building, or boating | 3 | Reflect route, cargo, and work-phase changes without annoying lag. | Advance visible movement each animation frame from prepared routes or host playback. | Includes selected or newly assigned villagers; acknowledgement of input remains immediate. |
+| Visible profession actions: chopping, fishing, farming, sawing, milling, baking, butchery, preserving, and tending | 3 | Start, stop, or switch the work action promptly enough to explain workplace activity. | Advance the action pose each animation frame; reuse the route and work state. | Remains 3 when selected or manually initiated; completion requires host confirmation.          |
 | Construction/completion, sale, assignment, and resource feedback effects | 3 | Show the effect close to the event it describes; discard an effect that would arrive too late to explain it. | Play the short effect smoothly once started. | Promote to 2 for your command's result; button/selection acknowledgement remains 1. |
-| Ambient local residents and unselected barn animals roaming | 4 | New ambient routes or routine changes may enter a queue. | Continue smooth visible movement on an existing route while preparation waits. | Promote to 2 for interaction/selection; to 3 when their activity is the player's focus. |
+| Ambient local residents and unselected barn animals roaming | 3 | New ambient routes or routine changes may enter a queue. | Continue smooth visible movement on an existing route while preparation waits. | Resident pathing and animation remain 3; actionable danger cues use 2.                  |
 | Decorative workplace motion: mill blades, smoke, and pond ripples | 5 | An optional effect starting about a second later is acceptable. | Animate visible effects smoothly from a visual clock; reduce or omit detail under load. | A cue needed to understand work status becomes 3; keep essential status separate from decoration. |
 | Offscreen animation routes and optional distant detail | 5 | Prepare later, or skip visual work until it is needed. | No drawing outside the viewport; resume from current state/time when visible. | On entering view, use the visible category's priority and a usable fallback. |
 
 The default priority follows what the animation communicates, not just its
 object type. A butcher's background chopping pose is 3; acknowledging your
-manual animal selection is 1, and showing its confirmed work start is 2.
+manual animal selection is 1, and showing its confirmed work start is 3.
 Likewise, decorative ripples are 5 while your boat's movement is 1.
 
 ## How to use the categories
@@ -65,7 +79,7 @@ Likewise, decorative ripples are 5 while your boat's movement is 1.
 ```mermaid
 flowchart TD
     Event[Player input or relevant state change] --> Classify[Choose response priority 1 to 5]
-    Classify --> Context[Promote if controlled, selected, or gameplay-critical]
+    Classify --> Context[Use 1 for your character and 2 for actionable danger]
     Context --> Urgent{Response must be snappy?}
     Urgent -->|Yes| Response[Apply available state and input feedback promptly]
     Urgent -->|Can wait| Queue[Queue preparation and retain a usable visual]
@@ -131,11 +145,15 @@ prediction and host reconciliation; adventures have their own browser modules.
 | --- | --- | --- | --- |
 | Founder movement command | Pending steps are submitted from `playerSprite()`; at most one walking request in flight. | 1 | Local prediction gives immediate response; the host validates the movement. |
 | Ordinary command | Explicit player action | 2 for confirmed result; 1 for local input acknowledgement | Validate on the host; refresh after success or error. |
-| World snapshot | Startup, after commands, camera chunk changes, and a two-second interval | 2 for needed command results/visible terrain; 3 for routine updates | `refresh()` shares an in-flight refresh; interval refresh is skipped while a select control has focus. |
+| World snapshot | Startup, after commands, camera chunk changes, and a two-second interval | 1 for your character; 2 for other main characters/hazards; 3 for villagers; 4 for terrain | `refresh()` shares an in-flight refresh; interval refresh is skipped while a select control has focus. |
 | Remote player positions | A 50 ms timer calls `refreshPlayers()` | 2 | Skipped while hidden, without other shared-map players, or while its previous request is running. Timer cadence is not a guaranteed network rate. |
-| Courier hazard state | A 100 ms timer polls while the adventure board is open. | 1 for available danger and movement updates | The host owns hazards; the browser currently redraws the DOM board after a response. |
-| Scene preparation | After a snapshot arrives | Required visible geometry: 2; optional refinement: 4–5 | About 2 ms of generator work per slice, then yield; individual steps can exceed the slice budget. Current preparation commits the scene together. |
-| Host simulation and saving | Every three seconds while the host runs | Fixed host cadence; not an optional animation job | Simulation and command state changes share a lock. An overrun does not replay a backlog of ticks. |
+| Courier hazard state | A 100 ms timer polls while the adventure board is open. | 1 for your movement; 2 for danger updates   | The host owns hazards; the browser currently redraws the DOM board after a response. |
+| Scene preparation | After a snapshot arrives | Classify by purpose: 1 for your character, 2 for hazards, 3 for villagers, 4 for terrain; optional detail may wait | About 2 ms of generator work per slice, then yield; individual steps can exceed the slice budget. Current preparation commits the scene together. |
+| Host simulation and saving | Every three seconds while the host runs | Gameplay work follows its category; saving is 5. Current host cadence is unchanged. | Simulation and command state changes share a lock. An overrun does not replay a backlog of ticks. |
+
+Saving and login are priority 5 in the proposed classification; authentication
+must still finish before authorized commands can run. These priorities do not
+change the existing simulation, save, or login behavior.
 
 ## Frame flow and drawing order — current
 
@@ -180,7 +198,7 @@ detailed presentation work. The final overview zoom threshold is still open.
 
 | Layer/work | Show in the overview | Cache/reuse rule | Response prio |
 | --- | --- | --- | --- |
-| Terrain | Simple biome/ground blocks, including water | Load missing chunks and cache their overview artwork; reuse loaded unchanged terrain. | 2 for missing visible terrain; 5 for optional preparation beyond the view. |
+| Terrain | Simple biome/ground blocks, including water | Load missing chunks and cache their overview artwork; reuse loaded unchanged terrain. | 4 for terrain updates, including missing visible chunks; optional offscreen preparation can wait. |
 | Town halls | One static marker per town, with its name | Cache position, label, and marker artwork; update when those inputs change. | 3 for background town changes; 2 after your own relevant command. |
 | Town extent | A restrained outline showing the current building edge | Cache the outline geometry; rebuild only when relevant building positions or membership change. | 3 for background changes; 2 after your own build, move, or removal. |
 | Individual buildings, workers, animals, and player animations | Omit from overview drawing; the hall and outline summarize the city | No overview animation jobs or individual-object artwork preparation. | No visual work needed in this mode. |
