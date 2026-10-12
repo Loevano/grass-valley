@@ -286,7 +286,8 @@ the Python host, refresh both browsers, and create a new world to use the shared
   output and practice gained in one profession family. Every 20 practice in
   their current job adds another base output multiplier. Neutral settlers gain
   0.04 practice per active three-second work cycle: about 12½ minutes to reach
-  10 practice and 25 minutes for each output bonus. Travel and blocked work
+  10 practice and 25 minutes for each output bonus. Butchery gains 25% more
+  practice from completed work, with the same talent modifiers. Travel and blocked work
   pause training. Their panel shows talents
   and current output; workplace selectors show qualifications and output too.
   Resting settlers are labeled and listed first, including cottage residents

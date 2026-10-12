@@ -73,7 +73,7 @@ class SettlerProfessions(unittest.TestCase):
                 self.assertEqual(self.town['goods'][output], 4)
                 input_key = next(iter(inputs))
                 self.assertEqual(self.town['goods'][input_key], 6)
-                self.assertEqual(self.worker[job], 20.08)
+                self.assertEqual(self.worker[job], 20.1 if job == 'butchery' else 20.08)
                 self.town['goods'][output] = 100
                 before = copy.deepcopy(self.town)
                 self.assertEqual(economy.extra_worker(self.town, self.worker, building, 100), 'Storage full')
