@@ -21,13 +21,13 @@ class WildernessVillages(unittest.TestCase):
             for village in landscape['villages']:
                 x, y = village['x'], village['y']
                 residents = [n for n in landscape['npcs'] if n.get('village') == village['name']]
-                self.assertEqual(len(residents), 2)
+                self.assertEqual(len(residents), 8)
                 records = [manager.read(f'{cx},{cy}')
                            for cy in range((y-24)//CHUNK_SIZE, (y+24)//CHUNK_SIZE+1)
                            for cx in range((x-24)//CHUNK_SIZE, (x+24)//CHUNK_SIZE+1)]
                 resources = [r for record in records for r in record['map_resources']]
                 structures = [r for r in resources if r.get('village') == village['name']]
-                self.assertEqual(len(structures), 4)
+                self.assertEqual(len(structures), 10)
                 blocked = {(r['x'], r['y']) for r in resources}
                 for npc in residents:
                     self.assertNotIn((npc['x'], npc['y']), blocked)
@@ -96,15 +96,65 @@ class WildernessVillages(unittest.TestCase):
         residents = [npc for npc in world['shared_map']['npcs'] if npc.get('village')]
         positions = [(npc['x'], npc['y']) for npc in residents]
         for npc in residents:
-            npc['dialogue'] = 'Old travel supplies offer'
+            if 'village trader' in npc['role']:
+                npc['dialogue'] = 'Old travel supplies offer'
         ensure_villages(world)
         self.assertEqual(world['shared_map']['villages'], before)
         self.assertEqual([(npc['x'], npc['y']) for npc in residents], positions)
         for npc in residents:
+            if 'village trader' not in npc['role']:
+                continue
             if npc['village'] in {'Sunwell', 'Reedhaven'}:
                 self.assertIn('20% more', npc['dialogue'])
             else:
                 self.assertIn('rest', npc['dialogue'])
+
+    def test_expansion_preserves_traders_progress_and_changed_resources(self):
+        world = new_world(42, explorable=True)
+        village = world['shared_map']['villages'][0]
+        x, y = village['x'], village['y']
+        key = chunk_key(x, y)
+        record = copy.deepcopy(world['_chunks'].read(key))
+        record['village_version'] = 1
+        record['map_resources'] = [r for r in record['map_resources']
+                                   if not r.get('village') or (r['x']-x, r['y']-y) in
+                                   {(-3, -2), (3, -2), (-3, 3), (3, 3)}]
+        # A harvested wilderness resource outside the expansion must stay gone.
+        record['map_resources'] = [r for r in record['map_resources']
+                                   if (r['x'], r['y']) != (x+12, y+12)]
+        apply_villages(record, key, [village], CHUNK_SIZE)
+        self.assertFalse(any((r['x'], r['y']) == (x+12, y+12) for r in record['map_resources']))
+        self.assertEqual(len({(r['x'], r['y']) for r in record['map_resources']}),
+                         len(record['map_resources']))
+        before = copy.deepcopy(record)
+        apply_villages(record, key, [village], CHUNK_SIZE)
+        self.assertEqual(record, before)
+        landscape = world['shared_map']
+        landscape['npcs'] = [n for n in landscape['npcs'] if 'village trader' in n['role'] or not n.get('village')]
+        for v in landscape['villages']:
+            v.pop('layout_version')
+        traders = copy.deepcopy(landscape['npcs'])
+        world['towns']['own'] = {'buildings': [], 'roads': [], 'local_visits': {'Fen:old': {'met': True}}}
+        ensure_villages(world)
+        self.assertEqual(landscape['npcs'][:len(traders)], traders)
+        self.assertEqual(world['towns']['own']['local_visits'], {'Fen:old': {'met': True}})
+        residents = copy.deepcopy(landscape['npcs'])
+        ensure_villages(world)
+        self.assertEqual(landscape['npcs'], residents)
+
+    def test_expansion_preserves_villages_near_player_buildings_or_roads(self):
+        for field in ('buildings', 'roads'):
+            world = new_world(42, explorable=True)
+            landscape = world['shared_map']
+            village = landscape['villages'][0]
+            village.pop('layout_version')
+            landscape['npcs'] = [n for n in landscape['npcs'] if n.get('village') != village['name']
+                                 or 'village trader' in n['role']]
+            world['towns']['own'] = {'buildings': [], 'roads': []}
+            world['towns']['own'][field].append({'x': village['x']+7, 'y': village['y']+6})
+            ensure_villages(world)
+            self.assertEqual(village['layout_version'], 1)
+            self.assertEqual(sum(n.get('village') == village['name'] for n in landscape['npcs']), 2)
 
     def test_coordinate_noise_produces_desert_and_ice(self):
         biomes = set()

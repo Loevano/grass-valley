@@ -11,13 +11,74 @@ THEMES = (
 )
 
 
+# Shared story threads are introductions for future quests, not active objectives.
+RESIDENTS = {
+    'Reedhaven': (
+        ('Sedge', 'marsh herbalist', -6, -1, 'The remedies at Willow Still are running low. A herb shipment vanished along the lantern causeway; Fen last saw its boat.'),
+        ('Bracken', 'reed boatwright', 6, -1, 'I mend flat-bottomed boats at Reedworks. The missing herb boat had a split pole; someone may have taken shelter at the old sluice.'),
+        ('Nessa', 'lantern keeper', -6, 4, 'I keep the causeway lanterns lit. One went dark the night our herb shipment disappeared. Sedge worries about the travelers waiting for medicine.'),
+        ('Osier', 'marsh fisher', 6, 4, 'A loose reed basket drifted past the old sluice. Bracken recognized its weave from the missing shipment.'),
+        ('Tansy', 'remedy apprentice', -1, -6, 'Sedge taught me to dry willow leaves at Willow Still. I saved a little medicine for the boat crew, if they return.'),
+        ('Mirel', 'causeway innkeeper', 1, 7, 'The Lantern Rest keeps a warm bed for every lost traveler. Nessa and I are listening for word of the missing herb boat.'),
+    ),
+    'Sunwell': (
+        ('Safiya', 'caravan keeper', -6, -1, 'Our spice caravan is late. Its last message mentioned the buried mile markers beyond Sunwell. Amir knows the old route.'),
+        ('Idris', 'sandstone mason', 6, -1, 'I repair the well and caravan stones. A sandstorm covered the route markers; Safiya fears the caravan followed the wrong ridge.'),
+        ('Noor', 'well tender', -6, 4, 'I keep water ready at the Sunwell cistern. The overdue caravan carried spare well ropes; Zara is saving provisions for its return.'),
+        ('Rafi', 'dune scout', 6, 4, 'I found a strip of caravan cloth near a buried marker. Idris remembers where the older road crossed the dunes.'),
+        ('Samira', 'cloth dyer', -1, -6, 'At Dune Loom I dye cloth bright enough to see through blowing sand. Rafi brought back a torn strip in our caravan colors.'),
+        ('Farid', 'caravan innkeeper', 1, 7, 'The Amber Rest has empty beds waiting for Safiya’s caravan. Their last letter spoke of a sheltered ruin beside the old road.'),
+    ),
+    'Frostbrook': (
+        ('Siv', 'hearth keeper', -6, -1, 'The northern watchpost has stopped lighting its beacon. Eira is keeping our hearth warm for the wardens when they return.'),
+        ('Hakon', 'winter woodworker', 6, -1, 'I split timber at Pineworks. The watchpost asked for a new beacon frame before the blizzard; Boreal still has their message.'),
+        ('Yrsa', 'ice fisher', -6, 4, 'I saw tracks leading away from the silent watchpost toward the frozen brook. Siv hopes the wardens found shelter.'),
+        ('Leif', 'trail warden', 6, 4, 'The watchpost beacon guides travelers across the ice. Hakon and I are checking the old trail for fallen branches.'),
+        ('Astrid', 'wool weaver', -1, -6, 'I keep blankets ready at Snowthread. Yrsa found a warden’s scarf by the brook; its owner may be waiting out the storm.'),
+        ('Inga', 'winter innkeeper', 1, 7, 'The Hearth Rest has hot broth for anyone coming off the ice. Leif promised to bring news from the silent watchpost.'),
+    ),
+}
+BASE_BUILDINGS = (('village_hut', -3, -2), ('village_hut', 3, -2),
+                  ('village_hut', -3, 3), ('village_market', 3, 3))
+EXTRA_BUILDINGS = (('village_hut', -7, -4), ('village_hut', 7, -4),
+                   ('village_hut', -7, 6), ('village_hut', 7, 6),
+                   ('village_hut', -3, -7), ('village_hut', 3, 8))
+LANDMARKS = {
+    'Reedhaven': ('Willow Still', 'Reedworks', 'Lantern Rest'),
+    'Sunwell': ('Sunwell cistern', 'Dune Loom', 'Amber Rest'),
+    'Frostbrook': ('Pineworks', 'Snowthread', 'Hearth Rest'),
+}
+
+
+def expand_villages(world):
+    landscape = world['shared_map']
+    for village in landscape['villages']:
+        if village.get('layout_version') in (1, 2):
+            continue
+        vx, vy = village['x'], village['y']
+        obstacles = [item for town in world['towns'].values()
+                     for field in ('buildings', 'roads') for item in town.get(field, [])]
+        obstacles += [n for n in landscape.get('npcs', []) if n.get('village') != village['name']]
+        # Existing player work takes priority over expanding an old settlement.
+        if any(max(abs(o['x'] - vx), abs(o['y'] - vy)) <= 10 for o in obstacles):
+            village['layout_version'] = 1
+            continue
+        for name, role, dx, dy, dialogue in RESIDENTS[village['name']]:
+            landscape.setdefault('npcs', []).append(dict(
+                name=name, role=role, x=vx + dx, y=vy + dy, dialogue=dialogue,
+                biome=village['biome'], village=village['name']))
+        village['layout_version'] = 2
+
+
 def ensure_villages(world):
     landscape = world['shared_map']
     dialogue_by_village = {name: dialogue for name, _, _, _, _, dialogue in THEMES}
     for npc in landscape.get('npcs', []):
-        if npc.get('village') in dialogue_by_village:
+        if npc.get('village') in dialogue_by_village and npc['name'] in next(
+                theme[4] for theme in THEMES if theme[0] == npc['village']):
             npc['dialogue'] = dialogue_by_village[npc['village']]
     if 'villages' in landscape:
+        expand_villages(world)
         return
     offset = landscape.get('starter_offset', 880)
     size = landscape['map_size']
@@ -52,17 +113,22 @@ def ensure_villages(world):
                     'x': x + rx, 'y': y + 1})
             break
     landscape['villages'] = villages
+    expand_villages(world)
 
 
 def apply_villages(record, key, villages, chunk_size):
     """Overlay once per saved chunk, preserving subsequent resource changes."""
-    if record.get('village_version') == 1:
+    previous_version = record.get('village_version', 0)
+    if previous_version == 2:
         return record
     cx, cy = map(int, key.split(','))
     left, top = cx * chunk_size, cy * chunk_size
     rows = None
     for village in villages:
         vx, vy = village['x'], village['y']
+        expanded = village.get('layout_version') == 2
+        if previous_version == 1 and not expanded:
+            continue
         if (left > vx + VILLAGE_RADIUS or left + chunk_size <= vx - VILLAGE_RADIUS
                 or top > vy + VILLAGE_RADIUS or top + chunk_size <= vy - VILLAGE_RADIUS):
             continue
@@ -74,24 +140,29 @@ def apply_villages(record, key, villages, chunk_size):
                 dx, dy = x - vx, y - vy
                 if dx * dx + dy * dy > VILLAGE_RADIUS ** 2:
                     continue
-                rows[y - top][x - left] = village['biome']
+                if previous_version == 0:
+                    rows[y - top][x - left] = village['biome']
                 # Open village square and wide approaches through marsh water.
-                if max(abs(dx), abs(dy)) <= 5 or abs(dx) <= 1 or abs(dy) <= 1:
+                if (max(abs(dx), abs(dy)) <= (9 if expanded else 5)
+                        or (previous_version == 0 and (abs(dx) <= 1 or abs(dy) <= 1))):
                     cleared.add((x, y))
                     if village['biome'] == 'b':
                         rows[y - top][x - left] = 'g'
         for field in ('map_resources', 'tree_stumps'):
             record[field] = [r for r in record[field]
                              if (r['x'], r['y']) not in cleared
-                             and not (village['biome'] in ('d', 'i')
+                             and not (previous_version == 0 and village['biome'] in ('d', 'i')
                                       and (r['x'] - vx) ** 2 + (r['y'] - vy) ** 2 <= VILLAGE_RADIUS ** 2)]
-        for kind, dx, dy in [('village_hut', -3, -2), ('village_hut', 3, -2),
-                             ('village_hut', -3, 3), ('village_market', 3, 3)]:
+        buildings = BASE_BUILDINGS + (EXTRA_BUILDINGS if expanded else ())
+        for index, (kind, dx, dy) in enumerate(buildings):
             x, y = vx + dx, vy + dy
             if left <= x < left + chunk_size and top <= y < top + chunk_size:
-                record['map_resources'].append(dict(kind=kind, x=x, y=y,
-                                                    biome=village['biome'], village=village['name']))
+                structure = dict(kind=kind, x=x, y=y, biome=village['biome'], village=village['name'])
+                if index in (4, 8, 9):
+                    structure.update(variant={4: 'workshop', 8: 'workshop', 9: 'inn'}[index],
+                                     label=LANDMARKS[village['name']][{4: 0, 8: 1, 9: 2}[index]])
+                record['map_resources'].append(structure)
     if rows is not None:
         record['terrain'] = [''.join(row) for row in rows]
-    record['village_version'] = 1
+    record['village_version'] = 2
     return record

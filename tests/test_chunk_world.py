@@ -56,10 +56,19 @@ class ExplorableMap(unittest.TestCase):
         self.assertLessEqual(len(self.manager.records), 9)
         self.assertEqual(len(self.town['terrain']), WORLD_SIZE)
         self.assertEqual(self.town['terrain'][0][0], 'v')
-        self.assertLess(len(json.dumps(export_world(self.world))), 8000)
+        saved = export_world(self.world)
+        # Resident dialogue grows with the authored roster, not explored terrain.
+        # Keep the original bound for everything except the added village locals.
+        original_roster = dict(saved, shared_map=dict(saved['shared_map'], npcs=[
+            n for n in saved['shared_map']['npcs']
+            if not n.get('village') or 'village trader' in n['role']]))
+        self.assertLess(len(json.dumps(original_roster)), 8000)
+        saved_size = len(json.dumps(saved))
         for x in (40, 120, 280, 360, 440):
             self.visit(x, 200)
             self.assertLessEqual(len(self.manager.records), 18)
+            self.assertLessEqual(len(json.dumps(export_world(self.world))), saved_size,
+                             'Exploring terrain does not grow the world metadata save')
         self.assertEqual(generate_chunk(42, '3,4'), generate_chunk(42, '3,4'))
         self.assertNotEqual(generate_chunk(42, '3,4'), generate_chunk(43, '3,4'))
 

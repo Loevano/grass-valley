@@ -42,6 +42,16 @@ new Function('document','ctx','window','assert','surfaces','images',`
     drawResource({...tree,kind,supply:1});
     assert.equal(surface.paints,paints,'Supply changes reuse '+kind+' artwork');
   }
+  for(const biome of ['b','d','i']){
+    const cottage={kind:'village_hut',biome,x:10,y:10};drawResource(cottage);
+    const cottageSprite=images.at(-1)[0];
+    for(const variant of ['inn','workshop']){
+      drawResource({...cottage,variant});const landmark=images.at(-1)[0];
+      assert.notStrictEqual(landmark,cottageSprite,'Village landmarks retain their own cached artwork');
+      drawResource({...cottage,variant,x:20,label:'Another name'});
+      assert.strictEqual(images.at(-1)[0],landmark,'Landmark artwork is shared across names and positions');
+    }
+  }
   const formations=new Map();
   for(let x=0;x<500;x++){
     const rock={kind:'rock',x,y:20};drawResource(rock);

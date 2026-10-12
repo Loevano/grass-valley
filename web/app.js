@@ -1507,7 +1507,7 @@ function renderSelection(town){
   if(selection.type==='resource'){
     const swamp=town.terrain?.[item.y]?.[item.x]==='b';
     if(item.kind==='village_hut'||item.kind==='village_market'){
-      $('selection-title').textContent=`${item.village} · ${item.kind==='village_market'?'Market':'Cottage'}`;
+      $('selection-title').textContent=`${item.village} · ${item.label || (item.kind==='village_market'?'Market':'Cottage')}`;
       p.textContent=`A ${item.biome==='b'?'swamp':item.biome==='d'?'desert':'ice'} village. Walk beside a resident and click them or press ${keybindings.interact.toUpperCase()} to talk and trade travel equipment.`;
       $('selection-details').append(p);return;
     }
@@ -1993,7 +1993,7 @@ function drawResource(r,joined=null){
   const detailed=tileW>=32;
   const willow=r.kind==='tree'&&(world.shared_map || world.towns[viewed])?.terrain?.[r.y]?.[r.x]==='b';
   const resolution=2**Math.ceil(Math.log2(Math.max(.5,s*renderPixelRatio())));
-  const variant=r.kind==='tree'?`${r.species==='ancient'}/${willow}/${(r.x+r.y)%2}`:r.kind==='rock'?(joined?`joined/${JSON.stringify([joined.mask,joined.heights,joined.inset || null])}`:`single/${rockVariant(r)%48}`):`${r.kind}/${r.biome || ''}`;
+  const variant=r.kind==='tree'?`${r.species==='ancient'}/${willow}/${(r.x+r.y)%2}`:r.kind==='rock'?(joined?`joined/${JSON.stringify([joined.mask,joined.heights,joined.inset || null])}`:`single/${rockVariant(r)%48}`):`${r.kind}/${r.biome || ''}/${r.variant || ''}`;
   const key=`${r.kind}/${r.ore || ''}/${variant}/${resolution}/${detailed}`;
   let sprite=resourceSprites.get(key);
   if(!sprite){
@@ -2041,6 +2041,16 @@ function paintResource(ctx,r,willow,detailed=true,joined=null){
     polygon([[-22,-30],[0,-47],[22,-30],[0,-17]],roof,'#56625e');
     ctx.fillStyle='#4b514a';ctx.fillRect(-10,-16,6,18);
     ctx.fillStyle='#f4d58c';ctx.fillRect(5,-13,6,7);
+    if(r.variant==='inn'){
+      ctx.fillStyle=ice?'#7796a4':desert?'#a8784e':'#746044';ctx.fillRect(8,-48,5,15);
+      ctx.fillStyle='#f4d58c';ctx.fillRect(-16,-25,5,5);
+      ctx.fillStyle='#806240';ctx.fillRect(18,-12,2,19);
+      ctx.fillStyle=ice?'#6595ac':desert?'#c47853':'#a4b572';ctx.fillRect(14,-12,10,7);
+    }else if(r.variant==='workshop'){
+      ctx.fillStyle='#76583d';ctx.fillRect(-23,7,12,4);
+      ctx.fillStyle=ice?'#b8d0d6':desert?'#e0bd80':'#7b985e';
+      ctx.fillRect(-21,2,4,5);ctx.fillRect(-16,3,4,4);
+    }
     if(market){
       polygon([[-23,-10],[0,-1],[23,-10],[0,-20]],desert?'#c47853':ice?'#6595ac':'#a4b572');
       ctx.fillStyle='#654e37';ctx.fillRect(-17,3,34,5);

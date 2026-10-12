@@ -69,12 +69,19 @@ saves with the regular three-second simulation update.
 
 Explorable worlds also have three small wilderness villages: Reedhaven in the
 swamp, Sunwell in the desert, and Frostbrook on the snowy ice fields. Each has
-three themed cottages, a market, and two residents. Open **Valley** and click a
+eight themed cottages and workshops, an inn, a market, and eight residents.
+Marsh herbalists and boatwrights, desert caravan folk, and winter craftspeople
+share connected rumors about a missing herb boat, an overdue caravan, and a silent
+watchpost. These are story hooks for future quests; they do not yet offer objectives
+or rewards. Open **Valley** and click a
 village to find it, then walk there; click a resident or press **I** nearby to
 talk and buy or sell travel equipment. The swamp village has safe clear paths;
 dark marsh ground outside them still requires swamp boots. Desert and ice ground
 are walkable without special gear. Existing explorable saves gain these villages
-away from player buildings and roads; older 120×120 maps keep their layout.
+away from player buildings and roads. Existing wilderness villages expand when
+their central square is free of player buildings, roads, and other locals; existing
+traders and their progress stay in place. Villages with player work in the square
+keep their smaller layout. Older 120×120 maps keep their layout.
 
 **Valley** centers the camera on a town without changing maps. Existing saved
 worlds keep their current maps and dimensions. Restart
