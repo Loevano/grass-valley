@@ -69,6 +69,17 @@ const run=new Function('document','window','localStorage','setTimeout','clearTim
   const secondSailor={...sailor,x:5,y:6},rodFisher={...sailor,state:{...sailor.state,boating:false}};
   const crewBoat=fishingBoatSprites([['own',town]],town.map_resources,[sailor,secondSailor,rodFisher])[0];
   assert.deepStrictEqual(crewBoat.crew,[sailor,secondSailor],'Every boat crew member rides aboard; rod fishers remain on the dock');
+  const berth={x:5,y:6};
+  const boarding={...sailor,x:5,y:5.75,state:{...sailor.state,sailing:{berth}}};
+  const boardingBoat=fishingBoatSprites([['own',town]],town.map_resources,[boarding,secondSailor])[0];
+  assert.deepStrictEqual([boardingBoat.x,boardingBoat.y],[5,6],'Boat waits at the actual route berth during boarding');
+  assert(!boardingBoat.passenger,'Boarding waits until the fisher reaches water instead of switching halfway ashore');
+  const boarded={...boarding,y:6};
+  const boardedBoat=fishingBoatSprites([['own',town]],town.map_resources,[boarded,secondSailor])[0];
+  assert.strictEqual(boardedBoat.passenger,boarded,'Fisher boards at the berth without relocating the boat');
+  const leavingBoat=fishingBoatSprites([['own',town]],town.map_resources,[{...boarding,y:5.99},sailor])[0];
+  assert.deepStrictEqual([leavingBoat.x,leavingBoat.y],[5,6],'Unloading leaves the boat at its berth rather than jumping to another crew member');
+  assert(!leavingBoat.passenger);
   town.buildings[0].profession_upgrades.pop();
 
   assert(!fishingBoatSprites([['own',town]],town.map_resources,[{...sailor,x:4,y:5}])[0].passenger,'Boat stays docked while its fisher walks on land');

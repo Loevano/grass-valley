@@ -20,6 +20,19 @@ function render(state,active=true,index=0){
 }
 const state={x:5,y:5,path:[],phase:'working',clock:0,elapsed:0,facing:1,source:{x:6,y:5}};
 const cast=render(state);
+const drawSmall=new Function('ctx','polygon','point','tileW','tileH','npcColors',
+  source.slice(source.indexOf('function villagerAccessories('),source.indexOf('function draw(seconds=0)'))+
+  '\nreturn drawVillager;'
+)(ctx,(points,color)=>marks.push({method:'polygon',points,color}),(x,y)=>[(x-y)*11.5,(x+y)*5.75],23,11.5,{});
+function renderSmall(elapsed){
+  marks.length=0;
+  drawSmall({kind:'villager',index:0,x:5,y:5,state:{...state,elapsed},active:true,villager:{job:'fishing'}});
+  return marks.slice();
+}
+const smallCast=renderSmall(0),smallWait=renderSmall(1);
+assert.notDeepStrictEqual(smallCast,smallWait,'Zoomed-out fishing still animates the cast');
+assert(smallWait.some(mark=>mark.color==='#c3e1dc'),'Zoomed-out fishing shows the float ripple');
+assert(renderSmall(2.7).some(mark=>mark.color==='#b8d8d5'),'Zoomed-out fishing reels in the catch');
 state.elapsed=1;
 const waiting=render(state);
 assert.notDeepStrictEqual(cast,waiting,'Casting moves the rod and float');

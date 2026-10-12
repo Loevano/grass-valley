@@ -2320,7 +2320,7 @@ function paintHorse(target,stride=0){
 }
 function drawVillager(b){
   const accessories=villagerAccessories(b),outfit=accessories.outfit;
-  if(tileW<32){
+  if(tileW<32&&!(b.villager.job==='fishing'&&b.state.phase==='working'&&!b.state.path.length)){
     const [x,y]=point(b.x,b.y),scale=tileW/46;
     ctx.save();ctx.translate(x+(b.index%3-1)*3,y+tileH*.65+Math.floor(b.index/3));ctx.scale(scale,scale);
     if(b.mounted){paintHorse(ctx);ctx.translate(0,-12);}
@@ -2982,10 +2982,18 @@ function fishingBoatSprites(entries,resources,villagers=[]){
   }
   return fishingBoatSprites.docked.map((boat,index)=>{
     const {hut}=huts[index];
-    const crew=villagers.filter(v=>v.townId===boat.townId&&v.state.boating&&v.state.home?.x===hut.x&&v.state.home?.y===hut.y
-      &&waterTiles.has(`${Math.floor(v.x+.5)},${Math.floor(v.y+.5)}`));
-    const passenger=crew[0];
-    return {...boat,passenger,crew,x:passenger?passenger.x:boat.x,y:passenger?passenger.y:boat.y};
+    const assigned=villagers.filter(v=>v.townId===boat.townId&&v.state.boating&&v.state.home?.x===hut.x&&v.state.home?.y===hut.y);
+    // Keep the same leader through boarding and unloading. Selecting only crew
+    // currently on water can jump the boat to another worker mid-voyage.
+    const captain=assigned[0];
+    const aboard=v=>waterTiles.has(`${Math.floor(v.x)},${Math.floor(v.y)}`)
+      &&waterTiles.has(`${Math.ceil(v.x)},${Math.ceil(v.y)}`);
+    const passenger=captain&&aboard(captain)?captain:null;
+    const crew=passenger?assigned.filter(aboard):[];
+    // The route's berth is authoritative for boarding; decorative parking may
+    // use a different nearby tile when several huts share a shore.
+    const berth=captain?.state.sailing?.berth || boat;
+    return {...boat,passenger,crew,x:passenger?passenger.x:berth.x,y:passenger?passenger.y:berth.y};
   });
 }
 function drawFishingBoat(boat){
