@@ -60,4 +60,41 @@ assert.equal(scans,0,'Warm animal frames never filter the global resource array'
 assert.equal(scene.regions.get('own').routing.map_resources.length,0,'Worker plans exclude distant resources');
 const worker=Animation.plan(scene.regions.get('own').routing,world.towns.own.villagers[0],0);
 assert.strictEqual(worker.blocked.base,scene.regions.get('own').blocked,'Worker planning shares terrain and obstacle indexes');
+
+const hut={kind:'fishing_hut',x:15,y:15};
+const pierWorld=snapshot([
+  {kind:'water',x:16,y:15},{kind:'water',x:17,y:15},
+  {kind:'rock',x:15,y:16},{kind:'tree',x:230,y:230}
+],[hut]);
+const pierScene=finish(Scene.prepare(pierWorld,null));
+const pierTown= pierScene.regions.get('own').routing;
+// This hut is outside the town's worker region; artwork still uses map buckets.
+const artworkTown={...pierWorld.towns.own,resourceBuckets:pierScene.buckets};
+const expectedPier=Animation.fishingPier({...artworkTown,resourceBuckets:null},hut);
+assert(expectedPier.length>1);
+artworkTown.map_resources.filter=()=>{throw Error('Pier scanned global resources');};
+assert.deepEqual(Animation.fishingPier(artworkTown,hut),expectedPier,'Indexed piers preserve routes across bucket boundaries');
+assert.strictEqual(pierTown.resourceBuckets,pierScene.buckets,'Worker piers share the resource index');
+artworkTown.terrain[15]='g'.repeat(16)+'v'+'g'.repeat(223);
+assert.deepEqual(Animation.fishingPier(artworkTown,hut),[],'Terrain changes still block indexed piers');
+
+const fs=require('node:fs');
+const app=fs.readFileSync('web/app.js','utf8');
+new Function('assert','ClientScene','WorkerAnimation',`
+  const world={world_id:'pending',towns:{}},viewed='own',workers=new Map();let workerTown=null;
+  const town={buildings:[{kind:'hall',x:5,y:5}],map_resources:[],villagers:[{name:'Ada',job:'idle',production_status:'Paused'}]};
+  const layout='large local map geometry'.repeat(10000);
+  const region={routing:town};ClientScene.region=()=>region;
+  ClientScene.current={tasks:new WeakMap([[town.villagers[0],{task:'idle',signature:'first'}]])};
+  ${app.slice(app.indexOf('function animatedVillagers('),app.indexOf('function townWorkerLayout('))}
+  animatedVillagers(town,0,'own',layout);
+  const pending=workers.get(0).pendingPlan,job=ClientScene.queue.jobs.get('plan/0');
+  assert.equal(pending.layout,layout);
+  assert.equal(pending.signature,'first');
+  animatedVillagers(town,0,'own',layout);
+  assert.strictEqual(ClientScene.queue.jobs.get('plan/0'),job,'Unchanged frames retain unfinished plans');
+  ClientScene.current.tasks.set(town.villagers[0],{task:'idle',signature:'second'});
+  animatedVillagers(town,0,'own',layout);
+  assert.notStrictEqual(ClientScene.queue.jobs.get('plan/0'),job,'Changed tasks replace obsolete plans');
+`)(assert,{queue:new Scene.Queue()},Animation);
 console.log('Scene invalidation, bounded scheduling, and navigation checks passed');

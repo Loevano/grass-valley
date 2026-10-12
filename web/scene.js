@@ -92,7 +92,7 @@ const ClientScene = (() => {
           if(y%8===0)yield;
         }
       }
-      const routing={...town,...source,buildings:town.buildings,obstacles,map_resources:localResources,npcs,
+      const routing={...town,...source,buildings:town.buildings,obstacles,map_resources:localResources,npcs,resourceBuckets:landscape?scene.buckets:null,
         home_hall:town.buildings.find(b=>b.kind==='hall'),navigation:{blocked,bounds,roads:new Set(localRoads),overlay:()=>new Overlay(blocked)}};
       const tiles=items=>items.map(({kind,x,y,farm_index,construction})=>[kind,x,y,farm_index,!!construction]);
       const crew=town.villagers.map(v=>[v.job,v.building_index]);

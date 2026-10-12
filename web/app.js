@@ -2185,8 +2185,8 @@ function animatedVillagers(town, seconds, townId=viewed, frameLayout=null){
     if(!state || state.layout!==layout || (state.signature!==signature&&!finishingDelivery)){
       const region=typeof ClientScene!=='undefined'?ClientScene.region(town):null;
       if(region){
-        const version=JSON.stringify([signature,layout]);
-        if(state?.pendingPlan!==version){
+        if(state?.pendingPlan?.signature!==signature||state?.pendingPlan?.layout!==layout){
+          const version={signature,layout};
           ClientScene.queue.cancel('advance/'+workerKey);
           const previous=state;
           const home=town.buildings.find(b=>b.kind==='hall') || {x:5,y:5};
@@ -3001,7 +3001,8 @@ function fishingBoatSprites(entries,resources,villagers=[]){
     fishingBoatSprites.docked=huts.map(({townId,index,hut,town})=>{
       const nearby=water.filter(r=>Math.abs(r.x-hut.x)+Math.abs(r.y-hut.y)<=resourceReach(hut))
         .sort((a,b)=>(Math.abs(a.x-hut.x)+Math.abs(a.y-hut.y))-(Math.abs(b.x-hut.x)+Math.abs(b.y-hut.y))||a.y-b.y||a.x-b.x);
-      const pier=WorkerAnimation.fishingPier({...town,map_resources:resources,obstacles},hut);
+      const resourceBuckets=typeof ClientScene!=='undefined'&&ClientScene.current?.resources===resources?ClientScene.current.buckets:null;
+      const pier=WorkerAnimation.fishingPier({...town,map_resources:resources,obstacles,resourceBuckets},hut);
       const dock=pier.at(-1) || hut,deck=new Set(pier.map(p=>`${p.x},${p.y}`));
       const adjacent=nearby.filter(r=>Math.abs(r.x-dock.x)+Math.abs(r.y-dock.y)===1&&!deck.has(`${r.x},${r.y}`));
       const berth=adjacent.find(r=>!berths.has(`${r.x},${r.y}`)) || adjacent[0] || nearby[0];
@@ -3216,7 +3217,8 @@ function draw(seconds=0){
   if(draw.pierLayout!==workerLayout){
     draw.pierLayout=workerLayout;
     draw.piers=entries.flatMap(([,t])=>t.buildings.filter(b=>b.kind==='fishing_hut'&&(!b.construction||b.construction.upgrade))
-      .map(hut=>WorkerAnimation.fishingPier({...t,obstacles:buildings},hut)));
+      .map(hut=>WorkerAnimation.fishingPier({...t,obstacles:buildings,
+        resourceBuckets:typeof ClientScene!=='undefined'&&ClientScene.current?.resources===resources?ClientScene.current.buckets:null},hut)));
   }
   for(const pier of [...draw.piers,...villagers.map(worker=>worker.state.pier)]){
     if(!pier?.length)continue;

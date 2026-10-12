@@ -21,14 +21,24 @@ const WorkerAnimation = (() => {
     return crew.length?crew.slice(0,boatLevel(home)).some(worker=>worker.i===index):index<boatLevel(home);
   }
   function* fishingPierSteps(town,home){
-    const occupied=new Set([...(town.obstacles || town.buildings),...(town.npcs || [])].map(key));
-    const waters=town.map_resources.filter(r=>r.kind==='water'&&distance(home,r)<=3&&!occupied.has(key(r)))
-      .sort((a,b)=>distance(home,a)-distance(home,b)||a.y-b.y||a.x-b.x);
-    const blocked=new Set([...occupied,...town.map_resources.map(key)]);
-    blocked.delete(key(home));
-    for(const water of waters)if(town.terrain?.[water.y]?.[water.x]!=='v')blocked.delete(key(water));
+    // Pier searches never leave this square. Avoid copying the entire map's
+    // resources into a blocking set on each snapshot or worker replan.
     const size=town.map_size || 120,bounds={minX:Math.max(0,home.x-3),maxX:Math.min(size-1,home.x+3),
       minY:Math.max(0,home.y-3),maxY:Math.min(size-1,home.y+3)};
+    let resources=town.map_resources;
+    if(town.resourceBuckets){
+      resources=[];
+      for(let x=Math.floor(bounds.minX/16);x<=Math.floor(bounds.maxX/16);x++)
+        for(let y=Math.floor(bounds.minY/16);y<=Math.floor(bounds.maxY/16);y++)
+          resources.push(...(town.resourceBuckets.get(`${x},${y}`) || []));
+    }
+    resources=resources.filter(r=>r.x>=bounds.minX&&r.x<=bounds.maxX&&r.y>=bounds.minY&&r.y<=bounds.maxY);
+    const occupied=new Set([...(town.obstacles || town.buildings),...(town.npcs || [])].map(key));
+    const waters=resources.filter(r=>r.kind==='water'&&distance(home,r)<=3&&!occupied.has(key(r)))
+      .sort((a,b)=>distance(home,a)-distance(home,b)||a.y-b.y||a.x-b.x);
+    const blocked=new Set([...occupied,...resources.map(key)]);
+    blocked.delete(key(home));
+    for(const water of waters)if(town.terrain?.[water.y]?.[water.x]!=='v')blocked.delete(key(water));
     for(let x=bounds.minX;x<=bounds.maxX;x++)for(let y=bounds.minY;y<=bounds.maxY;y++)
       if(town.terrain?.[y]?.[x]==='v'||(town.chunked&&!town.terrain?.[y]?.[x]))blocked.add(`${x},${y}`);
     for(const water of waters){
