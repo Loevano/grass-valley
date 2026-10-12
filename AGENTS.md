@@ -35,3 +35,11 @@ performance thresholds to produce a pass. Do not automatically update baselines.
 The host remains authoritative for gameplay and saved state. Client scene indexes,
 collision overlays, animation jobs, and drawing caches must not mutate authoritative
 snapshots. Follow existing Git commit instructions after the logical task is complete.
+
+# Roadmap maintenance
+
+After completing each task, review `docs/ROADMAP.md` and update any related entries
+to reflect the remaining work. Remove a task's entry and associated roadmap details
+when the task is completely finished. Keep partially completed tasks in the roadmap
+with an accurate status and the remaining work. Include any roadmap changes in the
+same commit as the completed task.
