@@ -476,7 +476,8 @@ the Python host, refresh both browsers, and create a new world to use the shared
   pecking, and grazing animations. They roam up to two open tiles from their barn
   and return, avoiding buildings, resources, and impassable ground.
 - Bought and bred animals start young and grow visibly over five minutes of full
-  feeding by barn workers. Growth pauses without a full ration of fodder or
+  feeding by barn workers, with smooth size changes between growth updates.
+  Growth pauses without a full ration of fodder or
   vegetables. Only adults produce eggs, wool, or milk and can breed. Existing
   animals from older saves remain adults. Pigs no longer produce recurring meat.
   At a butcher shop, select an adult from a barn and choose **Use animal for meat**.

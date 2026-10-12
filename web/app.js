@@ -3119,6 +3119,9 @@ function villageAnimalBuildings(buildings,data){
 // Animals roam nearby open tiles; their motion is purely visual.
 function barnAnimalSprites(buildings,time,landscape={}){
   const sprites=[],size=landscape.map_size || 120;
+  const duration=typeof world==='undefined'?300:world.progression?.animal_growth_seconds || 300;
+  const scope=typeof world==='undefined'?'':`${world.world_id}/${world.shared_map?'shared':viewed}`;
+  const growthStates=barnAnimalSprites.growthStates || new Map(),nextGrowthStates=new Map();
   const key=p=>`${p.x},${p.y}`;
   const prepared=typeof ClientScene!=='undefined';
   const blocked=prepared?null:new Set([...buildings,...(landscape.map_resources || []),...(landscape.npcs || [])].map(key));
@@ -3140,7 +3143,20 @@ function barnAnimalSprites(buildings,time,landscape={}){
     routes.sort((a,b)=>b.length-a.length);
     const stock=[];
     for(const species of (barn.village?['chicken','sheep','pig','cow','horse']:barn.kind==='stable'?['horse']:['chicken','sheep','pig','cow']))
-      for(let i=0;i<(barn.animals?.[species] || 0);i++)stock.push({species,growth:Math.min(1,(barn.animal_growth?.[species]?.[i] ?? 300)/300)});
+      for(let i=0;i<(barn.animals?.[species] || 0);i++){
+        const target=Math.max(0,Math.min(1,(barn.animal_growth?.[species]?.[i] ?? duration)/duration));
+        const id=`${scope}/${barn.townId || ''}/${barn.kind}/${barn.x},${barn.y}/${species}/${i}`;
+        let state=growthStates.get(id);
+        // Blend only confirmed growth; a replacement young animal starts at its own size.
+        if(!state||target<state.target||time<state.time)state={from:target,target,started:time,seconds:0};
+        const growth=state.seconds?state.from+(state.target-state.from)*Math.min(1,(time-state.started)/state.seconds):state.target;
+        if(target!==state.target){
+          state.from=growth;state.seconds=Math.min(3,(target-state.target)*duration);
+          state.target=target;state.started=time;
+        }
+        state.time=time;nextGrowthStates.set(id,state);
+        stock.push({species,growth});
+      }
     for(const [index,{species,growth}] of stock.entries()){
       const phase=time+(barn.x*7+barn.y*11+index*3.17)%13,cycle=phase%16;
       const path=[barn,...routes[index%routes.length]];
@@ -3157,6 +3173,7 @@ function barnAnimalSprites(buildings,time,landscape={}){
         size:(stock.length>4?.62:.8)*(.5+.5*growth)});
     }
   }
+  barnAnimalSprites.growthStates=nextGrowthStates;
   return sprites;
 }
 function drawBarnAnimal(animal){
