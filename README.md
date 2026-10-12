@@ -498,7 +498,9 @@ you can answer later.
 
 ## Check the simulation
 
-Run every Python and JavaScript correctness test with:
+During development, run the tests relevant to the change (individual commands are
+listed below). Once the task is complete, run every Python and JavaScript
+correctness test once before committing:
 
 ```sh
 python3 tools/check.py
@@ -511,11 +513,18 @@ npm ci
 npx playwright install chromium
 ```
 
-Before developing, record the current commit with `git rev-parse HEAD`. After the
-change, compare against that commit on the same machine:
+Run performance comparisons for changes that could affect runtime costs, such as
+simulation work, request frequency or payload size, scene preparation, routing,
+animation scheduling, rendering, or caches. Documentation, tests, copy, styling,
+and UI wiring changes need no performance comparison unless they affect those
+costs. Repeat validation only when subsequent edits or unresolved failures warrant it.
+
+Before a performance-sensitive change, record the current commit with
+`git rev-parse HEAD`. After correctness checks pass for the final code, compare
+against that commit on the same machine without repeating correctness checks:
 
 ```sh
-python3 tools/check.py --performance --baseline <commit>
+python3 tools/check.py --performance-only --baseline <commit>
 ```
 
 The runner uses five alternating baseline/candidate repetitions, fixed browser
