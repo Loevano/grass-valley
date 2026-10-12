@@ -156,6 +156,72 @@ The queue rotates unfinished jobs; it does **not** currently assign priority lev
 Depth order determines what appears in front of what, independently of scheduling.
 DOM panels sit over the canvas through the layout in [web/style.css](../web/style.css).
 
+## Cached zoomed-out map
+
+**Confirmed direction:** when zoomed out, show terrain as simple blocks, town
+halls as town markers, and an outline of each town's current building extent.
+Cache that overview so it does not need animation-driven refreshes. Track the
+implementation in [ROADMAP.md](ROADMAP.md); this section records the proposal.
+
+The town edge follows the outermost placed buildings, showing how far the city
+actually spreads. A hall marker alone cannot communicate that size. The outline
+is derived from host-owned building positions and cached with the town summary.
+The exact outline shape and treatment of acres, roads, and construction sites
+remain open choices for implementation.
+
+### Current foundation
+
+The browser already caches terrain chunks and ground artwork. Below `tileW < 32`,
+it reduces detail, but the map still processes buildings and visible actors and
+runs the animation-frame pipeline. A dedicated static overview would avoid that
+detailed presentation work. The final overview zoom threshold is still open.
+
+### Proposed overview layers and response priorities
+
+| Layer/work | Show in the overview | Cache/reuse rule | Response prio |
+| --- | --- | --- | --- |
+| Terrain | Simple biome/ground blocks, including water | Load missing chunks and cache their overview artwork; reuse loaded unchanged terrain. | 2 for missing visible terrain; 5 for optional preparation beyond the view. |
+| Town halls | One static marker per town, with its name | Cache position, label, and marker artwork; update when those inputs change. | 3 for background town changes; 2 after your own relevant command. |
+| Town extent | A restrained outline showing the current building edge | Cache the outline geometry; rebuild only when relevant building positions or membership change. | 3 for background changes; 2 after your own build, move, or removal. |
+| Individual buildings, workers, animals, and player animations | Omit from overview drawing; the hall and outline summarize the city | No overview animation jobs or individual-object artwork preparation. | No visual work needed in this mode. |
+| Camera, zoom, hover, and town selection | Immediate view transforms and lightweight interaction feedback | Transform/composite cached layers; reuse geometry and artwork. | 1 for input response. |
+
+### What causes a refresh?
+
+“Cached” means reuse unchanged data and artwork. The overview does not need
+periodic animation refreshes, but new terrain and changed towns still need to
+reach the browser. A redraw reuses cached layers; a cache rebuild recalculates
+only a changed layer.
+
+| Trigger | Expected overview behavior |
+| --- | --- |
+| Nothing changes | Keep the cached overview; no repeated preparation or animation redraws. |
+| Pan, zoom, resize, or select a town | Redraw/transform cached layers promptly; adapt coverage or resolution only when needed. |
+| Camera reaches unloaded terrain | Request missing chunks and prepare their block artwork; retain reusable loaded chunks. |
+| Building added, moved, or removed | Refresh the affected town's summary and outline; reuse terrain and other towns. |
+| Hall moved, town renamed, or marker appearance changed | Update that town's marker; update its outline if the hall contributes to the extent. |
+| Switch worlds | Use that world's terrain and town summaries; never reuse another world's town geometry. |
+| Return to detailed zoom | Resume the detailed scene from current host state. |
+
+```mermaid
+flowchart LR
+    Host[Host terrain and town summaries] --> Terrain[Cached terrain blocks]
+    Host --> Towns[Cached hall markers and town outlines]
+    Terrain --> Overview[Static zoomed-out overview]
+    Towns --> Overview
+    Camera[Pan, zoom, or selection] --> Reuse[Transform and redraw cached layers]
+    Overview --> Reuse
+    Change[Changed town or missing terrain] --> Update[Refresh only affected overview data]
+    Update --> Host
+```
+
+The host keeps simulating and saving towns while the overview is open. Overview
+refresh policy is separate from authoritative simulation and other interface
+data. A future lightweight summary/change mechanism should keep remote towns
+current without requiring full animated-scene snapshots for this view. Its
+request contract, change detection, cache memory limit, and outline algorithm
+remain implementation decisions; no such mechanism is implemented by this doc.
+
 ## Improvement table
 
 | Proposed order | Improvement | Status | Reference or evidence to add |

@@ -62,7 +62,7 @@ the conversation and practical details needed for later development.
 | What should moving a building cost? You wanted a small loss; a coin fee was suggested but not confirmed. | |
 | Should roads be freely placed and movable? Do buildings need road access? | Dirt roads are free, take 10 seconds of builder work per tile, are removable by their owner, and give players and settlers +50% walking speed when complete. Buildings do not require roads. |
 | Which services matter first: market, tavern, well, healer, or something else? | |
-| Which town upgrades can players choose between? | Hall levels 1–10 unlock profession branches; individual profession improvements require practice and materials. See ROADMAP.md. |
+| Which town upgrades can players choose between? | Hall levels 1–10 unlock profession branches; individual profession improvements require practice and materials. See the [progression catalog](../server/progression.py). |
 | How do individual villager skills contribute to town achievements? | |
 | How should better resource types and recipes unlock? | Hall-gated crops, animals, and workplaces, with profession practice gates for tools. Earlier resources remain useful. |
 | Are skills tied to a job, or also to tools and buildings? | |
@@ -110,7 +110,7 @@ These are starting values to make the prototype playable, **not final design dec
   A minute of insufficient housing puts settlers at risk of leaving; restoring
   housing resets that timer. Settler assignment capacity is separate from housing.
 - New villagers arrive when housing and sufficient food are available.
-- Harvesting 30 wood still records “Timber roots”; hall upgrades now use housing, food, profession, and processing milestones. See ROADMAP.md.
+- Harvesting 30 wood still records “Timber roots”; hall upgrades now use housing, food, profession, and processing milestones. See the [progression catalog](../server/progression.py).
 - Hall levels 2–10 provide coins and unlock profession branches, including leather, ore, iron, stables, saddles, steel, and trade crates. Market owners can exchange goods through saved town trade offers.
 - Simulation runs only while the host is running; no catch-up production while it is closed.
 - Each browser keeps a private ownership token. Other players can view, but cannot edit, its town through the supported interface.
@@ -161,12 +161,15 @@ Flint’s survey for playtesting. Combat and a valley entrance remain future wor
 
 ## Confirmed progression and founder gathering
 
-Hall levels 1–10 are implemented; see ROADMAP.md for milestones and industrial branches.
+Hall levels 1–10 are implemented; see the [progression catalog](../server/progression.py)
+for milestones and industrial branches.
 Prevent production spam through shared renewable forest/fishing supplies, worker
 slots, field output, and animal capacity rather than arbitrary building counts.
 The founder fishes with F, chops with C, and gathers berries/herbs with G,
 learning separate saved skills. Current materials, milestones, and production
-rules are documented in ROADMAP.md; balance values remain adjustable.
+rules are defined in the [progression catalog](../server/progression.py);
+current rate examples and proposed targets are in [BALANCING.md](BALANCING.md).
+Balance values remain adjustable.
 
 ## Confirmed settler talents and professional training
 

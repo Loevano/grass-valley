@@ -526,7 +526,7 @@ resources gain resource spots on unoccupied tiles when the host restarts;
 existing buildings stay in place. Move older workplaces near trees or water as needed.
 
 Combat, magic, trading, and cooperative quests are not implemented yet.
-See [ROADMAP.md](docs/ROADMAP.md) for town hall rewards and proposed future unlocks.
+See [ROADMAP.md](docs/ROADMAP.md) for planned improvements.
 See [DESIGN.md](docs/DESIGN.md) for agreed decisions, provisional values, and questions
 you can answer later.
 See the [improvement references](docs/README.md) for backend structure and animation

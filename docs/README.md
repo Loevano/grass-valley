@@ -29,7 +29,8 @@ show that it worked. Replace proposals with decisions when agreed, and update
 current values alongside their implementation.
 
 [DESIGN.md](DESIGN.md) retains the agreed design and unresolved questions.
-[ROADMAP.md](ROADMAP.md) covers town and profession progression.
+[ROADMAP.md](ROADMAP.md) lists planned implementation work, starting with the
+cached zoomed-out map.
 [IDEAS.md](IDEAS.md) collects brainstorms. These references organize improvement
 work without replacing those documents. Code remains the source of truth for
 implemented behavior; older prose may lag behind it.
