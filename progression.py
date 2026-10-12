@@ -494,7 +494,8 @@ def eat(town, amount):
         if take:
             withdraw(town, key, take)
             town['goods'][key] -= take
-            remaining -= take * value
+            # Fractional servings can round slightly above the food still needed.
+            remaining = max(0, remaining - take * value)
     town['food'] = max(0, town['food'] - amount)
 
 

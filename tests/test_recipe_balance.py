@@ -108,6 +108,24 @@ class RecipeBalance(unittest.TestCase):
         economy.ensure_inventory(self.town)
         self.assertEqual(self.town['food'], 34.5)
 
+    def test_fractional_meal_does_not_withdraw_negative_food(self):
+        hall = self.town['buildings'][0]
+        hall['stored_goods'] = {'bread': 1, 'bread_rolls': 1}
+        self.town['goods'] = dict(hall['stored_goods'])
+        self.town['food'] = sum(amount * economy.EDIBLE[key]
+                                for key, amount in self.town['goods'].items())
+        food = self.town['food']
+
+        # Converting this serving back from bread overshoots by floating-point rounding.
+        economy.eat(self.town, .23)
+
+        self.assertAlmostEqual(self.town['food'], food - .23)
+        self.assertAlmostEqual(self.town['goods']['bread'], 1 - .23 / 1.5)
+        self.assertAlmostEqual(hall['stored_goods']['bread'], self.town['goods']['bread'])
+        self.assertEqual(self.town['goods']['bread_rolls'], 1)
+        self.assertEqual(hall['stored_goods']['bread_rolls'], 1)
+        self.assertEqual(set(hall['stored_goods']), {'bread', 'bread_rolls'})
+
 
 if __name__ == '__main__':
     unittest.main()
