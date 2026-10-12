@@ -21,7 +21,7 @@ BUILDINGS = {
     'saddler': {'label': 'Saddler', 'level': 8, 'wood': 30, 'planks': 15, 'job': 'saddlery', 'slots': 2},
     'steelworks': {'label': 'Steelworks', 'level': 9, 'wood': 40, 'planks': 20, 'iron': 10, 'job': 'steelmaking', 'slots': 2},
     'tradehouse': {'label': 'Trade house', 'level': 10, 'wood': 50, 'planks': 25, 'steel': 10, 'job': 'packing', 'slots': 2},
-    'market': {'label': 'Market stall', 'level': 5, 'wood': 20, 'planks': 5, 'slots': 1},
+    'market': {'label': 'Market stall', 'level': 5, 'wood': 20, 'planks': 5, 'job': 'trading', 'slots': 1},
 }
 CROPS = {'vegetables': 1, 'wheat': 2, 'carrots': 3, 'fodder': 3}
 ANIMALS = {
@@ -173,6 +173,10 @@ SALE_PRICES = {r['output']: ceil(EDIBLE.get(r['output'], 1)) if r['level'] > 1 e
 SALE_PRICES['tools'] = 3
 SALE_PRICES.update(hides=2, leather=4, iron_ore=2, iron=6, saddles=25, steel=12, trade_crates=40)
 LATE_GOODS = ('hides', 'leather', 'iron_ore', 'iron', 'saddles', 'steel', 'trade_crates')
+SELLABLE_GOODS = tuple(dict.fromkeys((*LATE_GOODS, *FISH, 'planks', 'wool', 'flour',
+                                    'smoked_fish', 'tools', 'herbs', 'fruit', 'milk',
+                                    'eggs', 'meat', 'bread', 'prepared_meat',
+                                    *(r['output'] for recipes in PROFESSION_RECIPES.values() for r in recipes))))
 TRADABLE_GOODS = tuple(dict.fromkeys(('coins', 'wood', 'planks', 'wool', 'flour', 'tools',
                                      'wheat', 'fodder', 'manure', 'herbs', *EDIBLE,
                                      *CRAFTED_GOODS, *LATE_GOODS)))
@@ -271,6 +275,15 @@ def goods(town):
 
 def quantity(town, key):
     return town.get(key, 0) if key in {'wood', 'food', 'coins'} else goods(town).get(key, 0)
+
+
+def sale_price(key):
+    return FISH.get(key, {}).get('coins', SALE_PRICES.get(key, 1))
+
+
+def record_sale(town, key, amount):
+    town['coins'] += amount * sale_price(key)
+    town['market_sales'] = town.get('market_sales', 0) + amount
 
 
 def production_room(town, key):
@@ -784,6 +797,6 @@ def public_catalog():
             'animal_meat': ANIMAL_MEAT, 'tradable_goods': TRADABLE_GOODS,
             'job_requirements': JOB_REQUIREMENTS, 'talent_roots': TALENT_ROOTS,
             'profession_recipes': PROFESSION_RECIPES, 'storage_keys': STORAGE_KEYS,
-            'production_seconds': PRODUCTION_SECONDS, 'sale_prices': SALE_PRICES,
+            'production_seconds': PRODUCTION_SECONDS, 'sale_prices': SALE_PRICES, 'sellable_goods': SELLABLE_GOODS,
             'boats': PLAYER_BOATS, 'fish': FISH, 'upgrades': PROFESSION_UPGRADES, 'recipes': RECIPES, 'edible': EDIBLE,
             'storage_goods': STORAGE_GOODS, 'fixed_storage': FIXED_STORAGE}

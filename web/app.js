@@ -667,7 +667,7 @@ Object.assign(colors,{barn:'#b9866b',sawpit:'#aa8b60',mill:'#c1b080',smokehouse:
 Object.assign(labels,{tannery:'Tannery',mine:'Mine',smelter:'Iron smelter',stable:'Stable',saddler:'Saddler',steelworks:'Steelworks',tradehouse:'Trade house'});
 Object.assign(costs,{tannery:30,mine:40,smelter:40,stable:40,saddler:30,steelworks:40,tradehouse:50});
 Object.assign(colors,{tannery:'#ad8a67',mine:'#7f8c8c',smelter:'#a08875',stable:'#bda077',saddler:'#b89268',steelworks:'#758792',tradehouse:'#a1ab7e'});
-const professionJobs={mining:'Mining',smelting:'Smelting',tanning:'Leatherworking',horsekeeping:'Horsekeeping',saddlery:'Saddlery',steelmaking:'Steelmaking',packing:'Trade packing',husbandry:'Husbandry',woodworking:'Woodworking',milling:'Milling',preserving:'Preserving',crafting:'Crafting',breeding:'Fish breeding',orcharding:'Orcharding',baking:'Baking',butchery:'Butchery'};
+const professionJobs={trading:'Merchant',mining:'Mining',smelting:'Smelting',tanning:'Leatherworking',horsekeeping:'Horsekeeping',saddlery:'Saddlery',steelmaking:'Steelmaking',packing:'Trade packing',husbandry:'Husbandry',woodworking:'Woodworking',milling:'Milling',preserving:'Preserving',crafting:'Crafting',breeding:'Fish breeding',orcharding:'Orcharding',baking:'Baking',butchery:'Butchery'};
 const goodName=key=>key.replaceAll('_',' ').replace(/^./,c=>c.toUpperCase());
 function amountOf(town,key){return ['wood','food','coins'].includes(key)?town[key] || 0:town.goods?.[key] || 0;}
 function renderResourceList(town){
@@ -1037,7 +1037,11 @@ function inspect(type,index,townId=viewed){
 }
 function villagerActivity(town,v,index){
   if(v.construction_target)return v.construction_arrived?'Building':'Walking to construction';
-  if(v.logistics_trip)return v.logistics_trip.operation==='collect'?'Gathering goods':'Delivering supplies';
+  if(v.logistics_trip){
+    const trip=v.logistics_trip;
+    if(trip.operation==='sell')return (trip.step || 0)<trip.pickup_step?'Collecting goods for sale':'Returning to market to sell';
+    return trip.operation==='collect'?'Gathering goods':'Delivering supplies';
+  }
   if(v.job==='idle')return 'Resting';
   if(v.job==='building')return 'Waiting for construction';
   const status=v.production_status || '';
@@ -1079,7 +1083,7 @@ function villagerCard(town,v,index,withLink=false){
   div.append(skillBar('Hauling',v.hauling || 0));
   const hauling=document.createElement('small');hauling.className='villager-hauling';
   hauling.textContent=`Hauling: ${(50*workerEfficiency(v,'hauling')).toFixed(0)} goods per trip · ${(1.8*(1+.25*Math.floor((v.hauling || 0)/20))).toFixed(2)} tiles/s before road bonuses. Successful deliveries earn practice; every 20 practice adds 50 carrying capacity and 25% base travel speed.`;div.append(hauling);
-  if(v.job==='hauling'){
+  if(['hauling','trading'].includes(v.job)){
     const trip=v.logistics_trip,load=document.createElement('small');load.className='villager-cargo';
     const carrying=trip&&!trip.delivered&&(trip.step || 0)>=(trip.pickup_step ?? 0);
     const goods=Object.entries(trip?.cargo || {}).filter(([,amount])=>amount>0).map(([key,amount])=>`${Number(amount.toFixed(2))} ${goodName(key)}`).join(' · ');
@@ -1088,7 +1092,7 @@ function villagerCard(town,v,index,withLink=false){
   for(const [job,label] of Object.entries(professionJobs))if(v[job] || v.job===job)div.append(skillBar(label,v[job] || 0));
   const traits=document.createElement('small');traits.className='villager-talents';
   traits.textContent=Object.entries(v.talents || {}).map(([job,value])=>`${value>0?'Strength':'Weakness'}: ${goodName(job)} (${value>0?'+':'−'}25%)`).join(' · ');div.append(traits);
-  if(!['idle','building','hauling'].includes(v.job)){const output=document.createElement('small');output.className='villager-output';output.textContent=`Work output: ${workerEfficiency(v,v.job).toFixed(2)}× base before workplace bonuses`;div.append(output);}
+  if(!['idle','building','hauling','trading'].includes(v.job)){const output=document.createElement('small');output.className='villager-output';output.textContent=`Work output: ${workerEfficiency(v,v.job).toFixed(2)}× base before workplace bonuses`;div.append(output);}
   const activity=document.createElement('small');activity.className='villager-activity';activity.textContent=villagerActivity(town,v,index);div.append(activity);
   const select=document.createElement('select');select.setAttribute('aria-label',`Job for ${v.name}`);
   const unlockedJobs=Object.entries(professionJobs).filter(([job])=>Object.values(world.progression?.buildings || {}).some(spec=>spec.job===job&&town.level>=spec.level));
@@ -1159,7 +1163,7 @@ function renderSettlers(town,item,buildingIndex,target=$('selection-details'),up
   target.append(fact(`${assigned.length} / ${capacity}`,['hall','home'].includes(item.kind)?'Settlers':'Workers'));
   const note=document.createElement('p');
   note.textContent=item.kind==='acre'?'Assigned settlers tend this acre and fetch water when watering.':
-    item.kind==='storehouse'?'Assigned haulers collect workplace outputs and deliver processor inputs.':['hall','home'].includes(item.kind)?'Assigned settlers rest here and can still help with construction. Housing and storage benefits are automatic.':
+    item.kind==='storehouse'?'Assigned haulers collect workplace outputs and deliver processor inputs.':item.kind==='market'?'Assigned merchants collect goods and return here to sell automatic batches when stock reaches your trigger.':['hall','home'].includes(item.kind)?'Assigned settlers rest here and can still help with construction. Housing and storage benefits are automatic.':
     'Assign settlers here to work at this building.';
   details.append(note);
   const roster=document.createElement('div');roster.className='building-workers';
@@ -1247,6 +1251,41 @@ function renderTownTrades(town,target){
     const row=document.createElement('p');row.textContent=`${source.name} offers ${offer.give_amount} ${goodName(offer.give_resource).toLowerCase()} for ${offer.want_amount} ${goodName(offer.want_resource).toLowerCase()} to ${world.towns[offer.target_town]?.name || 'another town'}`;
     const button=document.createElement('button');button.textContent=outgoing?'Cancel offer':'Accept trade';button.disabled=!outgoing&&(!canAfford(town,{[offer.want_resource]:offer.want_amount})||!canAfford(source,{[offer.give_resource]:offer.give_amount}));button.onclick=()=>act({action:outgoing?'cancel_trade':'accept_trade',source_town:sourceId,offer_id:offer.id});row.append(button);target.append(row);
   }
+}
+function marketSaleGoods(catalog){
+  return catalog.sellable_goods || [...new Set(['hides','leather','iron_ore','iron','saddles','steel','trade_crates','fish','trout','salmon','sturgeon','planks','wool','flour','smoked_fish','tools','herbs','fruit','milk','eggs','meat','bread','prepared_meat',...Object.values(catalog.profession_recipes || {}).flat().map(recipe=>recipe.output)])];
+}
+function renderMarketSales(town,target){
+  const keys=marketSaleGoods(world.progression);
+  const signature=JSON.stringify([world.world_id,identity?.town_id,town.rules?.market_sales,keys]);
+  // Reattach the same editor during snapshot refreshes to preserve drafts.
+  if(renderMarketSales.signature!==signature){
+    const editor=document.createElement('details');
+    const title=document.createElement('summary');title.textContent='Automatic sales';editor.append(title);
+    const note=document.createElement('p');note.textContent='Assign a merchant to this market. When town stock reaches the trigger, they collect up to the batch size from one building and sell it on returning. Sales repeat while stock reaches the trigger. Leave the trigger blank to disable a product.';editor.append(note);
+    for(const key of keys){
+      const rule=town.rules?.market_sales?.[key];
+      const row=document.createElement('form');row.className='production-rule market-sale-rule';
+      const name=document.createElement('strong');name.className='market-sale-name';name.textContent=goodName(key);row.append(name);
+      const field=(labelText,id,value,max,step)=>{
+        const label=document.createElement('label');label.textContent=labelText;
+        const input=document.createElement('input');input.id=id;input.type='number';input.min='1';input.step=step;
+        if(max)input.max=String(max);input.value=value;
+        input.setAttribute('aria-label',`${goodName(key)} ${labelText.toLowerCase()}`);
+        label.append(input);row.append(label);return input;
+      };
+      const cap=field('Trigger stock','sale-cap-'+key,rule?.cap ?? '',null,'any');cap.placeholder='Disabled';
+      const amount=field('Batch size','sale-amount-'+key,rule?.amount ?? 10,10,'1');amount.required=true;
+      const save=document.createElement('button');save.textContent='Save';row.append(save);
+      row.onsubmit=event=>{event.preventDefault();if(!row.reportValidity())return;
+        act({action:'configure_market_sale',resource:key,cap:cap.value.trim()===''?null:Number(cap.value),amount:Number(amount.value)});
+      };
+      editor.append(row);
+    }
+    editor.open=renderMarketSales.editor?.open || false;
+    renderMarketSales.signature=signature;renderMarketSales.editor=editor;
+  }
+  target.append(renderMarketSales.editor);
 }
 function renderRecipes(town,item,index,target){
   const recipes=world.progression?.profession_recipes?.[item.kind];
@@ -1350,7 +1389,7 @@ function renderProfession(town,item,index,target,upgrades,details,boats,unlocked
     }
   }
   if(item.kind==='stable'&&owner)renderStable(town,item,index,target);
-  if(item.kind==='market'&&owner)renderTownTrades(town,target);
+  if(item.kind==='market'&&owner){renderMarketSales(town,target);renderTownTrades(town,target);}
   for(const [key,spec] of Object.entries(catalog.upgrades))if(spec.building===item.kind){
     const unlocked=item.profession_upgrades?.includes(key);
     const fishingBoat=item.kind==='fishing_hut'&&['boat','improved_boat','master_boat'].includes(key);
@@ -1360,7 +1399,7 @@ function renderProfession(town,item,index,target,upgrades,details,boats,unlocked
     button.disabled=!owner || unlocked;button.onclick=()=>{if(!button.disabled)showUpgrade({action:'profession_upgrade',index,upgrade:key});};
     (unlocked?unlockedUpgrades:fishingBoat?boats:upgrades).append(upgradeCard(button,upgradePreview({action:'profession_upgrade',index,upgrade:key},town,item),{status:unlocked?'Unlocked':''}));
   }
-  if(item.kind==='market'&&owner)for(const key of ['hides','leather','iron_ore','iron','saddles','steel','trade_crates','fish','trout','salmon','sturgeon','planks','wool','flour','smoked_fish','tools','herbs','fruit','milk','eggs','meat','bread','prepared_meat',...Object.values(catalog.profession_recipes || {}).flat().map(recipe=>recipe.output).filter(key=>!['tools','bread','prepared_meat'].includes(key))]){
+  if(item.kind==='market'&&owner)for(const key of marketSaleGoods(catalog)){
     const price=catalog.fish?.[key]?.coins ?? catalog.sale_prices?.[key] ?? ({trout:2,salmon:3,sturgeon:5}[key] || (key==='tools'?3:1));
     const button=document.createElement('button');button.textContent=`Sell 1 ${goodName(key).toLowerCase()} · ${price} coin${price===1?'':'s'}`;button.disabled=amountOf(town,key)<1;button.onclick=()=>act({action:'sell_goods',resource:key,amount:1});target.append(button);
   }
@@ -1382,6 +1421,7 @@ function buildingSection(label,folded=false){
   return section;
 }
 function renderSelection(town){
+  const marketFocus=document.activeElement?.id?.startsWith('sale-')?document.activeElement:null;
   $('selection-panel').classList.toggle('building-info',selection?.type==='building');
   $('selection-art').replaceChildren();$('selection-level').hidden=true;
   // Park hall controls in the hidden attached container before rebuilding cards.
@@ -1646,6 +1686,7 @@ function renderSelection(town){
     if(unlockedUpgrades.children.length>1)$('selection-details').append(unlockedUpgrades);
   }
   if(selection.type==='resource')$('selection-details').append(p);
+  if(marketFocus&&$('selection-details').contains?.(marketFocus))marketFocus.focus();
 }
 const buildingCategories=[
   ['Housing & storage',['home','storehouse']],
@@ -2311,6 +2352,7 @@ function villagerAccessories(b){
     woodcutting:{color:'#78966b'},farming:{color:'#a0a16b'},fishing:{color:'#709ba8'},
     building:{color:'#bc9564',cap:'#bca477',tool:'hammer'},
     hauling:{color:'#94735b',cap:'#806448',tool:'pack'},
+    trading:{color:'#bd8b59',cap:'#806448',tool:'pack'},
     husbandry:{color:'#998261',apron:'#c8b993',cap:'#a68e64',tool:'bucket'},
     woodworking:{color:'#8c785e',apron:'#b99b72',cap:'#876c4d',tool:'saw'},
     milling:{color:'#a19a80',apron:'#e2d7b7',cap:'#d8c9a4',tool:'sack'},
@@ -2551,7 +2593,7 @@ function drawVillager(b){
     ctx.strokeStyle='#b7d1d5';ctx.lineWidth=1.5;ctx.beginPath();ctx.arc(10,-10,4,Math.PI,Math.PI*2);ctx.stroke();
     if(s.phase!=='fetching_water'){ctx.fillStyle='#9fd8e5';ctx.fillRect(7,-9,6,2);}
   }
-  if(b.villager.job==='hauling'&&s.transport){
+  if(['hauling','trading'].includes(b.villager.job)&&s.transport){
     if(Object.values(s.cargo || {}).some(amount=>amount>0))drawHaulerCargo(s.cargo);
   }else if(s.transport||s.phase==='returning'||s.phase==='depositing'){
     ctx.save();

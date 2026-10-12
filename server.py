@@ -249,6 +249,10 @@ def ensure_resources(town):
             villager.pop('work_target', None)
             villager.pop('logistics_trip', None)
             villager.pop('logistics_target', None)
+        elif (type(index) is int and 0 <= index < len(town['buildings'])
+              and town['buildings'][index]['kind'] == 'market' and villager['job'] == 'idle'):
+            # Residents assigned to markets before merchants existed start trading.
+            villager['job'] = 'trading'
     if 'town_origin' in town:
         return
     if 'map_resources' not in town:
@@ -701,6 +705,9 @@ def tick(world):
             if job == 'hauling':
                 logistics.haul(town, walking, villager, building, logistics_route, TICK_SECONDS)
                 continue
+            if job == 'trading':
+                logistics.merchant(town, walking, villager, building, logistics_route, TICK_SECONDS)
+                continue
             boating = job == 'fishing' and work_cycles.fishing_boating(town, building, index)
             if boating:
                 crew = work_cycles.fishing_crew(town, building)
@@ -876,6 +883,8 @@ def command(town, data, world=None):
         return horses.change(town, data)
     if action == 'configure_rule':
         return logistics.configure_rules(town, data)
+    if action == 'configure_market_sale':
+        return logistics.configure_market_sale(town, data)
     if action in {'claim_local_gift', 'buy_worker_tool', 'trade_local', 'give_worker_tool', 'take_worker_tool', 'transfer_worker_tool',
                   'advance_local_story', 'inspect_story_rock', 'interact_local'}:
         return npcs.change(town, data)
@@ -1218,13 +1227,12 @@ def command(town, data, world=None):
         key, amount = data.get('resource'), data.get('amount')
         if not any(b['kind'] == 'market' and completed(b) for b in town['buildings']):
             raise ValueError('Build a market stall first.')
-        if key not in {*economy.LATE_GOODS, *economy.FISH, 'planks', 'wool', 'flour', 'smoked_fish', 'tools', 'herbs', 'fruit', 'milk', 'eggs', 'meat', 'bread', 'prepared_meat', *(r['output'] for recipes in economy.PROFESSION_RECIPES.values() for r in recipes)} or type(amount) is not int or not 1 <= amount <= 10:
+        if key not in economy.SELLABLE_GOODS or type(amount) is not int or not 1 <= amount <= 10:
             raise ValueError('Choose goods and a quantity from 1 to 10.')
         if not economy.afford(town, {key: amount}):
             raise ValueError('Not enough goods to sell.')
         economy.spend(town, {key: amount})
-        town['coins'] += amount * economy.FISH.get(key, {}).get('coins', economy.SALE_PRICES.get(key, 1))
-        town['market_sales'] = town.get('market_sales', 0) + amount
+        economy.record_sale(town, key, amount)
     elif action == 'upgrade':
         hall = next(b for b in town['buildings'] if b['kind'] == 'hall')
         if town.get('upgrade_remaining') or not completed(hall):
