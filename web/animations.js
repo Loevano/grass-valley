@@ -192,7 +192,7 @@ const WorkerAnimation = (() => {
       const remaining=trip?.path.slice(state?0:(trip.step || 0)).map(([x,y])=>({x,y}));
       const path=(yield* routeSteps(start,remaining?.[0] || target,blocked,size,false,bounds,roads,'arrival'));
       const deliveryPath=path===null?[]:[...approach,...path,...(remaining?.slice(1) || [])];
-      return {...position,path:deliveryPath,phase:path===null?'waiting':'walking',source:target,home:null,blocked,size,bounds,roads,roadMode:'arrival',transport:true,
+      return {...position,path:deliveryPath,phase:path===null?'waiting':'walking',source:target,home:null,blocked,size,bounds,roads,roadMode:'arrival',transport:true,boating:false,sailing:null,
         transportCargo:trip?.cargo || {},pickupRemaining:(trip?.path.length || 1)-1-(trip?.pickup_step ?? 0),
         deliveryRemaining:(trip?.path.length || 1)-1-(trip?.delivery_step ?? 0),
         transportSpeed:1+.25*Math.floor((villager.hauling || 0)/20),elapsed:0,clock:state?.clock || index*.37,facing:state?.facing || 1};

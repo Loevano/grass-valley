@@ -2231,7 +2231,7 @@ function animatedVillagers(town, seconds, townId=viewed, frameLayout=null){
       }
     }
     const resource=villager.job==='woodcutting'?'wood':'food';
-    if(state.boating&&!hostWork){
+    if(state.boating&&!state.transport&&state.home?.kind==='fishing_hut'&&!hostWork){
       state.boatLoad=fishingBoatLoad(town,state.home);
       state.boatCapacity=fishingBoatCapacity(state.home);
       state.boatReturnRequested=!!villager.boat_return_requested;
