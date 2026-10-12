@@ -1,16 +1,19 @@
 # Project checks
 
-During development, run the targeted tests relevant to the change. After the
-logical task is complete, run `python3 tools/check.py` once before committing.
-Repeat checks only when subsequent edits or unresolved failures warrant it.
+Do not run tests or performance comparisons by default during development or
+before committing. Run them only when investigating or fixing a performance-related
+problem, or when the user explicitly requests them. For a performance-related
+problem, run targeted tests during development and `python3 tools/check.py` once
+after the logical task is complete, before committing. Repeat checks only when
+subsequent edits or unresolved failures warrant it.
 
-Run a performance comparison when the change could plausibly affect runtime
-performance, such as changing simulation work, request frequency or payload size,
+Run a performance comparison when investigating or fixing a performance-related
+problem, such as slow simulation work, excessive request frequency or payload size,
 scene preparation, routing algorithms, animation scheduling, rendering work, or
-cache behavior. Documentation, tests, copy, styling, and UI wiring changes do not
-require a performance comparison unless they affect those costs.
+cache behavior. A change that could affect runtime performance does not by itself
+require tests or a performance comparison.
 
-For a performance-sensitive change, record the starting commit with
+For a performance-related problem, record the starting commit with
 `git rev-parse HEAD` before editing. Preserve unrelated user changes and do not
 include them in the comparison as though they were task changes. Once correctness
 checks have passed for the final code, run
