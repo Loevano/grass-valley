@@ -188,6 +188,47 @@ class ResourceLogistics(unittest.TestCase):
         self.assertEqual(self.town['wood'], 15)
         self.assertEqual(self.town['buildings'][0]['stored_goods']['wood'], 15)
 
+    def test_smokehouse_delivers_and_consumes_each_raw_fish_type(self):
+        for key in economy.FISH:
+            with self.subTest(fish=key):
+                self.setUp()
+                smoke = self.add('smokehouse', input_buffer={'wood': 10})
+                source = self.add('fishing_hut', x=8, output_buffer={key: 50})
+                worker = self.assign(0, smoke)
+                economy.ensure_inventory(self.town)
+                before = economy.quantity(self.town, key)
+                self.assertEqual(logistics.planned_cargo(self.town, smoke, source, 'supply', worker), {key: 40})
+                self.assertEqual(logistics.transfer(self.town, smoke, source, 'supply', worker), {key: 40})
+                self.assertEqual(source['output_buffer'][key], 10)
+                self.assertEqual(economy.quantity(self.town, key), before - 40)
+                self.assertEqual(logistics.produce(self.town, smoke, worker, 6), 'Working')
+                self.assertEqual(smoke['input_buffer'], {'wood': 9.5, key: 38})
+                self.assertEqual(worker['pending_output'], {'smoked_fish': 2})
+                self.assertEqual(economy.quantity(self.town, 'smoked_fish'), 0)
+                logistics.drop_off(self.town, smoke, worker)
+                self.assertEqual(economy.quantity(self.town, 'smoked_fish'), 2)
+                self.assertGreater(economy.local_room({'kind': 'smokehouse'}, key), 0)
+
+    def test_smokehouse_mixed_fish_reserve_wood_space_and_scale_with_talent(self):
+        smoke = self.add('smokehouse', input_buffer={'fish': 1})
+        source = self.add('storehouse', x=8, stored_goods={'trout': 1, 'salmon': 1, 'sturgeon': 50, 'wood': 20})
+        worker = self.assign(0, smoke)
+        worker['talents'] = {'fishing': 1}
+        economy.ensure_inventory(self.town)
+        self.assertEqual(logistics.transfer(self.town, smoke, source, 'supply', worker),
+                         {'trout': 1, 'salmon': 1, 'sturgeon': 37, 'wood': 10})
+        before = copy.deepcopy(smoke['input_buffer'])
+        self.assertIn('3s remaining', logistics.produce(self.town, smoke, worker, 3))
+        self.assertEqual(smoke['input_buffer'], before)
+        self.assertEqual(logistics.produce(self.town, smoke, worker, 3), 'Working')
+        self.assertEqual(smoke['input_buffer'], {'fish': 0, 'trout': 0, 'salmon': .5, 'sturgeon': 37, 'wood': 9.375})
+        self.assertEqual(worker['pending_output'], {'smoked_fish': 2.5})
+        # A full output buffer must preserve the next batch's raw ingredients.
+        smoke['output_buffer'] = {'smoked_fish': 50}
+        before = copy.deepcopy(smoke['input_buffer'])
+        self.assertEqual(logistics.produce(self.town, smoke, worker, 6), 'Workplace buffer full')
+        self.assertEqual(smoke['input_buffer'], before)
+
     def test_disabling_keeps_stock_available_for_processors_and_building(self):
         economy.ensure_inventory(self.town)
         self.town['buildings'][0]['stored_goods']['wood'] = 0

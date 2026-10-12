@@ -196,6 +196,20 @@ def production_recipe(building):
     return (spec['inputs'], spec['output'], spec['amount']) if spec else RECIPES[building['kind']]
 
 
+def production_costs(building, speed, stock):
+    costs = {key: amount * speed for key, amount in production_recipe(building)[0].items()}
+    if building['kind'] == 'smokehouse':
+        remaining = costs.pop('fish')
+        for key in FISH:
+            take = min(remaining, max(0, stock.get(key, 0)))
+            if take > 0:
+                costs[key] = take
+                remaining -= take
+        if remaining > 0:
+            costs['fish'] = costs.get('fish', 0) + remaining
+    return costs
+
+
 def production_seconds(building):
     return PRODUCTION_SECONDS[production_recipe(building)[1]] if building['kind'] in RECIPES else 3
 
@@ -310,6 +324,7 @@ for kind, recipes in PROFESSION_RECIPES.items():
     STORAGE_GOODS[kind] = tuple(dict.fromkeys(k for r in recipes for k in (*r['inputs'], r['output'])))
 
 STORAGE_GOODS['butcher'] = (*STORAGE_GOODS['butcher'], 'hides')
+STORAGE_GOODS['smokehouse'] = (*FISH, 'wood', 'smoked_fish')
 FIXED_STORAGE = {
     'hall': {'wood': 100, 'food': 100},
     'stable': {'fodder': 30, 'food': 15, 'manure': 5},
@@ -724,7 +739,7 @@ def extra_worker(town, villager, building, capacity):
             return reason
         inputs, output, amount = production_recipe(building)
         amount *= speed
-        costs = {k: v * speed for k, v in inputs.items()}
+        costs = production_costs(building, speed, {key: quantity(town, key) for key in FISH})
         if not afford(town, costs):
             return 'Waiting for ' + ', '.join(inputs)
         if quantity(town, output) + amount > capacity or (output in EDIBLE and town['food'] - sum(v*EDIBLE.get(k,0) for k,v in costs.items()) + amount*EDIBLE[output] > capacity):

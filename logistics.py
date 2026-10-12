@@ -105,7 +105,7 @@ def requirements(building, villager):
             return {}
         speed = economy.efficiency(villager, villager['job'])
         speed *= 1.25 if any(k in building.get('profession_upgrades', []) for k in ('saw', 'steel_pickaxe')) else 1
-        return {key: amount * speed for key, amount in economy.production_recipe(building)[0].items()}
+        return economy.production_costs(building, speed, building.get('input_buffer', {}))
     if kind in {'barn', 'stable'}:
         feed = sum(economy.ANIMALS[a]['feed'] * n for a, n in building.get('animals', {}).items())
         if not feed:
@@ -123,17 +123,25 @@ def supply_request(town, building, villager):
     if building['kind'] in {'barn', 'stable'}:
         feed = next(iter(needs.values()), 0)
         needs = {'fodder' if economy.quantity(town, 'fodder') >= feed else 'vegetables': feed}
+    elif building['kind'] == 'smokehouse':
+        # All raw fish share the recipe's ingredient space, including mixed batches.
+        fish = sum(needs.pop(key, 0) for key in economy.FISH)
+        needs = {'fish': fish, **needs}
     # Reserve each ingredient's share so separate storage workers can supply a recipe.
     batches = BUFFER_SIZE / sum(needs.values()) if needs else 0
     room = max(0, BUFFER_SIZE - sum(inputs.values()))
     request = {}
     for key, amount in needs.items():
-        available = sum(production_stock(b, key) for b in town['buildings']
-                        if b is not building and 'construction' not in b)
-        take = min(room, max(0, amount * batches - inputs.get(key, 0)), available)
-        if take > 1e-9:
-            request[key] = take
-            room -= take
+        keys = economy.FISH if building['kind'] == 'smokehouse' and key == 'fish' else (key,)
+        wanted = max(0, amount * batches - sum(inputs.get(k, 0) for k in keys))
+        for ingredient in keys:
+            available = sum(production_stock(b, ingredient) for b in town['buildings']
+                            if b is not building and 'construction' not in b)
+            take = min(room, wanted, available)
+            if take > 1e-9:
+                request[ingredient] = take
+                room -= take
+                wanted -= take
     return request
 
 
@@ -160,7 +168,9 @@ def produce(town, building, villager, elapsed=3):
              'goods': {k: n for k, n in inputs.items() if k != 'wood'}, 'harvested': 0,
              '_local_production': True}
     worker = dict(villager)
-    status = economy.extra_worker(local, worker, building, BUFFER_SIZE)
+    # Raw fish can exceed 50 food value; output space is checked separately below.
+    capacity = BUFFER_SIZE + local['food'] if building['kind'] == 'smokehouse' else BUFFER_SIZE
+    status = economy.extra_worker(local, worker, building, capacity)
     produced = local.get('produced', {})
     if buffered(building) + sum(produced.values()) > BUFFER_SIZE + 1e-9:
         building['buffer_full'] = True

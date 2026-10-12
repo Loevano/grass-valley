@@ -484,7 +484,8 @@ the Python host, refresh both browsers, and create a new world to use the shared
   to allow it. Existing meat recipes resume afterward; hauling works as usual.
 - Select an acre to choose its crop, a barn to buy/breed animals, or a workplace
   to unlock profession improvements. Assign settlers to new production buildings.
-  Sawpits use wood; mills use wheat; smokehouses use fish and wood; workshops use
+  Sawpits use wood; mills use wheat; smokehouses use any mix of fish, trout, salmon,
+  or sturgeon plus wood (2 raw fish and 0.5 wood per base batch); workshops use
   planks and wood; breeding ponds use fodder. The Build panel shows stored goods.
 - Forest trees and connected fishing waters have limited supplies
   shared by workers and players. Additional huts cannot duplicate a pond's supply.
