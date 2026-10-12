@@ -26,25 +26,33 @@ def configure_rules(town, data):
 def configure_market_sale(town, data):
     if not any(b['kind'] == 'market' and 'construction' not in b for b in town['buildings']):
         raise ValueError('Finish a market stall first.')
-    key, cap, amount = data.get('resource'), data.get('cap'), data.get('amount', 10)
+    key, cap = data.get('resource'), data.get('cap')
     if key not in economy.SELLABLE_GOODS:
         raise ValueError('Choose goods that can be sold at the market.')
+    enabled = data.get('enabled', cap is not None)
+    if type(enabled) is not bool:
+        raise ValueError('Enable or disable automatic sales for this product.')
+    rules = town.get('rules', {}).get('market_sales', {})
+    previous = rules.get(key, {})
+    if cap is None and not enabled:
+        cap = previous.get('cap', 10)
     if cap is not None and (type(cap) not in (int, float) or not math.isfinite(cap) or cap < 1):
-        raise ValueError('Use a stock trigger of at least 1, or leave it blank to disable sales.')
+        raise ValueError('Use a sale cap of at least 1.')
+    if cap is None:
+        raise ValueError('Set a sale cap before enabling this product.')
+    amount = data.get('amount', previous.get('amount', 10))
     if type(amount) is not int or not 1 <= amount <= 10:
         raise ValueError('Choose a sale batch from 1 to 10 goods.')
     rules = town.setdefault('rules', {}).setdefault('market_sales', {})
-    if cap is None:
-        rules.pop(key, None)
-    else:
-        rules[key] = {'cap': cap, 'amount': amount}
+    rules[key] = {'enabled': enabled, 'cap': cap, 'amount': amount}
     return {}
 
 
 def sale_cargo(town, building, villager):
     """Plan one product's sale against available stock, never reserved inputs."""
     for key, rule in town.get('rules', {}).get('market_sales', {}).items():
-        if key not in economy.SELLABLE_GOODS or economy.quantity(town, key) + 1e-9 < rule['cap']:
+        if (key not in economy.SELLABLE_GOODS or not rule.get('enabled', True)
+                or economy.quantity(town, key) + 1e-9 < rule['cap']):
             continue
         amount = math.floor(min(rule['amount'], production_stock(building, key), carry_capacity(villager)) + 1e-9)
         if amount > 0:
@@ -391,7 +399,7 @@ def transfer(town, building, storage, operation, villager, planned=None):
         cargo = {}
         for key, wanted in (planned or {}).items():
             rule = town.get('rules', {}).get('market_sales', {}).get(key)
-            if rule is None or economy.quantity(town, key) + 1e-9 < rule['cap']:
+            if rule is None or not rule.get('enabled', True) or economy.quantity(town, key) + 1e-9 < rule['cap']:
                 continue
             amount = math.floor(min(wanted, rule['amount'], production_stock(building, key),
                                     economy.quantity(town, key), carry_capacity(villager)) + 1e-9)
@@ -502,7 +510,8 @@ def merchant(town, landscape, villager, market, route, elapsed):
     villager.pop('work_animation', None)
     if advance_trip(town, landscape, villager, elapsed):
         return
-    sources = [b for b in town['buildings'] if 'construction' not in b and sale_cargo(town, b, villager)]
+    sources = [b for b in town['buildings'] if b['kind'] != 'market'
+               and 'construction' not in b and sale_cargo(town, b, villager)]
     sources.sort(key=lambda b: abs(market['x'] - b['x']) + abs(market['y'] - b['y']))
     for source in sources:
         if start_trip(town, landscape, villager, source, market, 'sell', route, hauler=True):

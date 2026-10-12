@@ -322,7 +322,8 @@ def costs_of(spec):
 
 STORAGE_KEYS = ('wood', 'food', 'planks', 'wheat', 'fodder', 'flour', 'wool', 'tools', 'manure', 'herbs', *CRAFTED_GOODS, *LATE_GOODS)
 STORAGE_GOODS = {
-    **{kind: (*STORAGE_KEYS, *EDIBLE) for kind in ('hall', 'storehouse', 'market')},
+    **{kind: (*STORAGE_KEYS, *EDIBLE) for kind in ('hall', 'storehouse')},
+    'market': (),
     'stable': ('fodder', 'vegetables', 'manure'),
     'home': (),
     'woodcutter': ('wood',),
@@ -357,7 +358,7 @@ FIXED_STORAGE = {
     'smokehouse': {'food': 45, 'wood': 5},
     'workshop': {'planks': 15, 'wood': 5, 'tools': 5, 'wool': 5, **{key: 5 for key in CRAFTED_GOODS}},
     'fish_pond': {'fodder': 15, 'food': 35},
-    'market': {key: 3 if index < 8 else 2 for index, key in enumerate(STORAGE_KEYS)},
+    'market': {},
 }
 
 
@@ -371,7 +372,7 @@ def building_storage_keys(building):
 
 
 def storage_size(building):
-    return 0 if building['kind'] == 'home' else 200 if building['kind'] == 'hall' else (50, 75, 100, 150, 200)[building.get('level', 1) - 1] if building['kind'] == 'storehouse' else 50
+    return 0 if building['kind'] in {'home', 'market'} else 200 if building['kind'] == 'hall' else (50, 75, 100, 150, 200)[building.get('level', 1) - 1] if building['kind'] == 'storehouse' else 50
 
 
 def inventory(building):
@@ -389,6 +390,23 @@ def add_stock(town, key, amount):
         town['food'] += amount * EDIBLE.get(key, 0)
 
 
+def relocate_market_stock(town):
+    """Preserve old market goods at the hall without changing town totals."""
+    if town.get('market_storage_version') == 1:
+        return
+    hall = next((b for b in town.get('buildings', []) if b['kind'] == 'hall'), None)
+    if hall is None:
+        return
+    for building in town['buildings']:
+        if building['kind'] != 'market':
+            continue
+        for field in ('stored_goods', 'output_buffer'):
+            for key, amount in building.pop(field, {}).items():
+                stock = hall.setdefault('stored_goods', {})
+                stock[key] = stock.get(key, 0) + amount
+    town['market_storage_version'] = 1
+
+
 def ensure_inventory(town):
     """Locate old shared stock at the hall and count old workplace outputs once."""
     if town.get('food_balance_version') != 1:
@@ -397,7 +415,10 @@ def ensure_inventory(town):
             quantity(town, key) * (EDIBLE[key] - old)
             for key, old in {'fruit_pies': 2.25, 'cakes': 2.5, 'meat_pies': 2.5}.items())
         town['food_balance_version'] = 1
-    if town.get('inventory_version') == 1 or 'buildings' not in town:
+    if town.get('inventory_version') == 1:
+        relocate_market_stock(town)
+        return
+    if 'buildings' not in town:
         return
     hall = next((b for b in town['buildings'] if b['kind'] == 'hall'), None)
     if hall is None:
@@ -410,6 +431,7 @@ def ensure_inventory(town):
         for key, amount in building.get('output_buffer', {}).items():
             add_stock(town, key, amount)
     town['inventory_version'] = 1
+    relocate_market_stock(town)
 
 
 def withdraw(town, key, amount, source=None):

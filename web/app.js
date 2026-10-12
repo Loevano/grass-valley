@@ -447,7 +447,7 @@ function buildingVisualLevel(building,town){
 function buildingHeight(building,town){
   return ({hall:42,woodcutter:23,mine:27,smelter:36,steelworks:38,stable:32,tannery:28,saddler:27,tradehouse:35,barn:34,mill:40,smokehouse:32,workshop:25,sawpit:16,market:17,fish_pond:18,orchard:20,bakery:30,butcher:25}[building.kind] || 27)+4*(buildingVisualLevel(building,town)-1);
 }
-function buildingStorageSize(building){return building.kind==='home'?0:building.kind==='hall'?200:building.kind==='storehouse'?[50,75,100,150,200][buildingLevel(building)-1]:50;}
+function buildingStorageSize(building){return ['home','market'].includes(building.kind)?0:building.kind==='hall'?200:building.kind==='storehouse'?[50,75,100,150,200][buildingLevel(building)-1]:50;}
 function storageCapacity(town){return town.buildings.filter(b=>!b.construction).reduce((sum,b)=>sum+buildingStorageSize(b),0);}
 
 const storageKeys=['wood','food','planks','wheat','fodder','flour','wool','tools','manure','herbs'];
@@ -455,7 +455,7 @@ function buildingName(building){return building.kind==='storehouse'&&buildingLev
 const storageGoods={
   hall:[...storageKeys,'vegetables','carrots','fish','trout','salmon','sturgeon','berries','eggs','meat','milk','fruit','smoked_fish','bread','prepared_meat'],
   storehouse:[...storageKeys,'vegetables','carrots','fish','trout','salmon','sturgeon','berries','eggs','meat','milk','fruit','smoked_fish','bread','prepared_meat'],
-  market:[...storageKeys,'vegetables','carrots','fish','trout','salmon','sturgeon','berries','eggs','meat','milk','fruit','smoked_fish','bread','prepared_meat'],
+  market:[],
   home:[],woodcutter:['wood'],fishing_hut:['fish','trout','salmon','sturgeon'],farm:['vegetables','wheat','carrots','fodder','manure'],acre:['vegetables','wheat','carrots','fodder','manure'],
   barn:['fodder','vegetables','manure','eggs','wool','meat','milk'],orchard:['fruit'],
   bakery:['flour','wood','bread'],butcher:['meat','prepared_meat'],sawpit:['wood','planks'],mill:['wheat','flour'],
@@ -478,7 +478,7 @@ function roomAllocations(building){
     barn:{food:20,fodder:15,wool:10,manure:5},orchard:{food:50},
     bakery:{flour:20,wood:5,food:25},butcher:{food:50},sawpit:{wood:30,planks:20},mill:{wheat:30,flour:20},
     smokehouse:{food:45,wood:5},workshop:{planks:25,wood:15,tools:10},fish_pond:{fodder:15,food:35},
-    market:Object.fromEntries(storageKeys.map(key=>[key,5]))
+    market:{}
   };
   const allocations=fixed[building.kind] || {};
   return Object.fromEntries(Object.entries(allocations).filter(([key])=>buildingStorageKeys(building).includes(key)));
@@ -1260,29 +1260,31 @@ function renderMarketSales(town,target){
   const signature=JSON.stringify([world.world_id,identity?.town_id,town.rules?.market_sales,keys]);
   // Reattach the same editor during snapshot refreshes to preserve drafts.
   if(renderMarketSales.signature!==signature){
-    const editor=document.createElement('details');
-    const title=document.createElement('summary');title.textContent='Automatic sales';editor.append(title);
-    const note=document.createElement('p');note.textContent='Assign a merchant to this market. When town stock reaches the trigger, they collect up to the batch size from one building and sell it on returning. Sales repeat while stock reaches the trigger. Leave the trigger blank to disable a product.';editor.append(note);
+    const editor=document.createElement('div');
+    const title=document.createElement('h3');title.textContent='Automatic sales';editor.append(title);
+    const note=document.createElement('p');note.className='storage-note';note.textContent='Enable a product and set its sale cap. When town stock reaches the cap, the merchant collects goods from other buildings and returns to sell them. Changes save automatically.';editor.append(note);
     for(const key of keys){
       const rule=town.rules?.market_sales?.[key];
-      const row=document.createElement('form');row.className='production-rule market-sale-rule';
-      const name=document.createElement('strong');name.className='market-sale-name';name.textContent=goodName(key);row.append(name);
-      const field=(labelText,id,value,max,step)=>{
-        const label=document.createElement('label');label.textContent=labelText;
-        const input=document.createElement('input');input.id=id;input.type='number';input.min='1';input.step=step;
-        if(max)input.max=String(max);input.value=value;
-        input.setAttribute('aria-label',`${goodName(key)} ${labelText.toLowerCase()}`);
-        label.append(input);row.append(label);return input;
+      const row=document.createElement('form');row.className='storage-row market-sale-rule';
+      const caption=document.createElement('label');caption.className='storage-caption';
+      const name=document.createElement('span');name.textContent=goodName(key);caption.append(name);
+      const toggle=document.createElement('input');toggle.id='sale-enabled-'+key;toggle.type='checkbox';toggle.checked=!!rule&&(rule.enabled ?? true);
+      toggle.setAttribute('aria-label',`Sell ${goodName(key)} automatically`);caption.append(toggle);
+      const status=document.createElement('span');status.className='storage-count';status.textContent=toggle.checked?'Enabled':'Disabled';caption.append(status);row.append(caption);
+      const label=document.createElement('label');label.className='market-sale-cap';label.textContent='Sale cap';
+      const cap=document.createElement('input');cap.id='sale-cap-'+key;cap.type='number';cap.min='1';cap.step='any';cap.required=true;
+      cap.value=rule?.cap ?? 10;cap.disabled=!toggle.checked;
+      cap.setAttribute('aria-label',`${goodName(key)} sale cap`);label.append(cap);row.append(label);
+      const save=()=>{
+        if(viewed!==identity?.town_id||!row.reportValidity())return;
+        const value=Number(cap.value),savedCap=Number.isFinite(value)&&value>=1?value:(rule?.cap ?? 10);
+        act({action:'configure_market_sale',resource:key,enabled:toggle.checked,cap:savedCap});
       };
-      const cap=field('Trigger stock','sale-cap-'+key,rule?.cap ?? '',null,'any');cap.placeholder='Disabled';
-      const amount=field('Batch size','sale-amount-'+key,rule?.amount ?? 10,10,'1');amount.required=true;
-      const save=document.createElement('button');save.textContent='Save';row.append(save);
-      row.onsubmit=event=>{event.preventDefault();if(!row.reportValidity())return;
-        act({action:'configure_market_sale',resource:key,cap:cap.value.trim()===''?null:Number(cap.value),amount:Number(amount.value)});
-      };
+      toggle.onchange=()=>{cap.disabled=!toggle.checked;status.textContent=toggle.checked?'Enabled':'Disabled';save();};
+      cap.onchange=save;
+      row.onsubmit=event=>{event.preventDefault();save();};
       editor.append(row);
     }
-    editor.open=renderMarketSales.editor?.open || false;
     renderMarketSales.signature=signature;renderMarketSales.editor=editor;
   }
   target.append(renderMarketSales.editor);
@@ -1601,7 +1603,7 @@ function renderSelection(town){
     $('selection-art').append(illustration(item.kind));
     $('selection-level').hidden=false;$('selection-level').textContent=`Lv ${item.kind==='hall'?town.level:buildingLevel(item)}`;
     const workers=buildingSection(['hall','home'].includes(item.kind)?'Settlers':'Workers');
-    const production=buildingSection(['hall','home','storehouse'].includes(item.kind)?'Benefits':'Production');
+    const production=buildingSection(item.kind==='market'?'Trade':['hall','home','storehouse'].includes(item.kind)?'Benefits':'Production');
     const upgrades=buildingSection('Upgrades'),details=buildingSection('Building details',true),storageOverview=buildingSection('Storage');
     const boats=item.kind==='fishing_hut'?buildingSection('Fishing boats'):null;
     const unlockedUpgrades=buildingSection('Unlocked upgrades',true);
@@ -1646,7 +1648,7 @@ function renderSelection(town){
     if(!item.construction&&world.progression?.buildings[item.kind])p.textContent=productionDescription(item);
     details.append(p);
     renderProfession(town,item,selection.index,production,upgrades,details,boats,unlockedUpgrades);
-    if(!item.construction&&item.kind!=='home'){
+    if(!item.construction&&!['home','market'].includes(item.kind)){
       renderStorage(town,item,selection.index,storageOverview);
     }
     if(costs[item.kind]){
@@ -1673,7 +1675,7 @@ function renderSelection(town){
       button.onclick=()=>{acreFarmIndex=selection.index;openPanel('build');tool='acre';moveIndex=null;buildTile=null;hoverTile=null;render();};
       production.append(button);
     }
-    if(!item.construction&&item.kind!=='home')$('selection-details').append(storageOverview);
+    if(!item.construction&&!['home','market'].includes(item.kind))$('selection-details').append(storageOverview);
     $('selection-details').append(workers);
     if(production.children.length>1)$('selection-details').append(production);
     if(boats?.children.length>1)$('selection-details').append(boats);

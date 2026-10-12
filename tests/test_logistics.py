@@ -170,10 +170,53 @@ class ResourceLogistics(unittest.TestCase):
             building = {'kind': kind, 'storage_allocations': {'food': 10, 'wheat': 10, 'fodder': 10, 'manure': 10}}
             for key in (*economy.CROPS, 'manure'):
                 self.assertGreater(economy.local_room(building, key), 0)
-        for kind in ('storehouse', 'market'):
-            building = {'kind': kind, 'storage_allocations': {'herbs': 10, 'food': 10}}
-            self.assertGreater(economy.local_room(building, 'herbs'), 0)
-            self.assertGreater(economy.local_room(building, 'bread'), 0)
+        building = {'kind': 'storehouse', 'storage_allocations': {'herbs': 10, 'food': 10}}
+        self.assertGreater(economy.local_room(building, 'herbs'), 0)
+        self.assertGreater(economy.local_room(building, 'bread'), 0)
+        market = {'kind': 'market', 'storage_allocations': {'herbs': 10, 'food': 10}}
+        self.assertEqual(economy.storage_size(market), 0)
+        self.assertEqual(economy.storage_allocations(market), {})
+        self.assertEqual(economy.local_room(market, 'herbs'), 0)
+        self.assertEqual(economy.local_room(market, 'bread'), 0)
+
+    def test_old_market_stock_moves_to_hall_once_without_changing_totals(self):
+        economy.ensure_inventory(self.town)
+        market = self.add('market', stored_goods={'planks': 4, 'fish': 3}, output_buffer={'planks': 2})
+        economy.add_stock(self.town, 'planks', 6)
+        economy.add_stock(self.town, 'fish', 3)
+        self.town.pop('market_storage_version', None)
+        totals = {key: economy.quantity(self.town, key) for key in ('planks', 'fish', 'food')}
+        economy.ensure_inventory(self.town)
+        self.assertNotIn('stored_goods', market)
+        self.assertNotIn('output_buffer', market)
+        hall = self.town['buildings'][0]
+        self.assertEqual(hall['stored_goods']['planks'], 6)
+        self.assertEqual(hall['stored_goods']['fish'], 3)
+        restored = json.loads(json.dumps(self.town))
+        economy.ensure_inventory(restored)
+        self.assertEqual(restored['buildings'][0]['stored_goods'], hall['stored_goods'])
+        self.assertEqual({key: economy.quantity(restored, key) for key in totals}, totals)
+
+    def test_disabling_market_product_preserves_cap_and_cancels_planned_sale(self):
+        market = self.add('market')
+        worker = self.assign(0, market)
+        economy.ensure_inventory(self.town)
+        hall = self.town['buildings'][0]
+        hall['stored_goods']['planks'] = 20
+        economy.add_stock(self.town, 'planks', 20)
+        server.command(self.town, {'action': 'configure_market_sale', 'resource': 'planks',
+                                  'enabled': True, 'cap': 20})
+        cargo = logistics.sale_cargo(self.town, hall, worker)
+        self.assertEqual(cargo, {'planks': 10})
+        server.command(self.town, {'action': 'configure_market_sale', 'resource': 'planks',
+                                  'enabled': False, 'cap': 20})
+        restored = json.loads(json.dumps(self.town))
+        self.assertEqual(restored['rules']['market_sales']['planks']['cap'], 20)
+        self.assertEqual(logistics.sale_cargo(restored, restored['buildings'][0], restored['villagers'][0]), {})
+        coins = self.town['coins']
+        self.assertEqual(logistics.transfer(self.town, hall, market, 'sell', worker, cargo), {})
+        self.assertEqual(self.town['coins'], coins)
+        self.assertEqual(economy.quantity(self.town, 'planks'), 20)
 
     def test_supply_comes_from_the_building_visited(self):
         store = self.add('storehouse', storage_allocations={'wood': 100})

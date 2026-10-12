@@ -608,13 +608,14 @@ Check upgraded building artwork and selection with `node tests/test_building_vis
   offers. Both towns need completed markets and enabled storage for incoming goods.
   Offers use available stock when accepted, so spending it can make an offer unavailable.
   Assign a settler to the market to make them a merchant, then open **Automatic
-  sales** to set each product's **Trigger stock** and **Batch size** (1–10 goods).
-  At or above the trigger, the merchant walks to a building holding that product,
-  collects up to the batch size, and returns to the stall to sell it at the usual
-  price. For example, a trigger of 20 and a batch of 10 sells stock down to 10.
-  Sales repeat while stock reaches the trigger. Leave the trigger blank to disable
-  that product. Rules are saved for the town and shared by its markets. Goods stay
-  available during travel; stock and rules are checked again before each sale.
+  sales**. Enable a product with its checkbox, then set its **Sale cap**. Both
+  changes save automatically. At or above the cap, the merchant walks to another
+  building holding that product, collects a batch of up to 10 goods, and returns
+  to sell it at the usual price. Existing configured batch sizes are preserved.
+  Sales repeat while stock reaches the cap. Disabling a product keeps its cap for
+  later. Rules are saved for the town and shared by its markets. Markets have no
+  storage; any goods saved there move to the town hall without changing town totals.
+  Goods stay available during travel; stock and rules are checked before each sale.
 - **6 — Mining:** produce 5 leather to upgrade. Mines extract iron ore from a vein
   within 10 tile steps. Only some rock outcrops contain iron, marked by a few small mineral dots;
   their terrain and positions stay intact. Ore slowly regenerates.
