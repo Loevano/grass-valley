@@ -2,6 +2,17 @@
 <html lang="en">
 <head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Lantern Vale</title><link rel="stylesheet" href="style.css"></head>
 <body>
+<dialog id="login-dialog" aria-labelledby="login-title">
+<h2 id="login-title">Welcome to the valley</h2>
+<p>Enter your player name and four-digit PIN to return to your village. New players choose a name and PIN, then name their village.</p>
+<form id="join-form">
+<label for="player-name">Player name</label><input id="player-name" maxlength="24" autocomplete="username" required>
+<label for="player-pin">PIN</label><input id="player-pin" type="password" inputmode="numeric" pattern="[0-9]{4}" minlength="4" maxlength="4" autocomplete="current-password" required>
+<div id="town-name-field" hidden><label for="name">New village name</label><input id="name" maxlength="24" placeholder="Willowbrook"></div>
+<button id="login-submit">Connect</button></form>
+<p id="login-error" role="alert"></p>
+<button id="login-worlds" class="quiet">Choose world</button>
+</dialog>
 <dialog id="world-menu" aria-labelledby="world-menu-title">
 <span class="eyebrow">A NEW CHAPTER</span><h2 id="world-menu-title">Your worlds</h2>
 <p id="world-menu-description">Choose a saved world or start a new one.</p>
@@ -54,7 +65,7 @@
 <main id="game">
 <div class="scene"><div class="scene-label"><span class="eyebrow">THE GREEN VALLEY</span><h2 id="view-title">A place to call home</h2></div><canvas id="world" tabindex="0" aria-label="Town grid. Use WASD to walk your villager. Click an object to inspect it. Use arrow keys to choose a tile and Enter to select it."></canvas><div id="movement-hint" class="scene-footer">Click map · W/A/S/D to walk · Y camera lock · F fish · C chop · G gather · B building mode · I interact · Space town hall</div></div>
 <aside id="side-panel" hidden aria-label="Village information">
-<section id="join" hidden><h2>Put down roots</h2><p>A quiet medieval valley. A town of your own. Room for friends.</p><form id="join-form"><label for="name">Town name</label><input id="name" maxlength="24" placeholder="Willowbrook" required><button>Found your town</button></form></section>
+<section id="join" hidden></section>
 <section id="controls" hidden><span class="eyebrow">YOUR SETTLEMENT</span><h2 id="town-name"></h2><p id="hint">Choose a building, then hover over an open tile.</p><details><summary>Stored goods</summary><p>Edible goods are included in Food and consumed by residents. Each resource has its own storage cap.</p><div id="goods-list"></div></details><div id="buildings"></div><button id="move">Move a building · 1 coin</button><button id="cancel" class="quiet">Cancel selection</button></section>
 <section id="selection-panel" hidden aria-labelledby="selection-title"><span class="eyebrow">A CLOSER LOOK</span><div class="selection-heading"><div id="selection-art"></div><h2 id="selection-title"></h2><span id="selection-level" hidden></span></div><div id="selection-details"></div><div id="hall-details" hidden><p id="progress"></p><progress id="hall-progress" max="30" value="0" aria-label="Timber roots: wood harvested out of 30"></progress><button id="upgrade">Choose hall upgrade · 40 wood</button></div><div class="building-management"><button id="selection-move" hidden>Move building · 1 coin</button><button id="selection-destroy" class="danger" hidden>Destroy building · No refund</button></div></section>
 <section id="villagers-panel" hidden><span class="eyebrow">THE HEART OF YOUR TOWN</span><h2>Villagers</h2><p class="muted">Compare every villager’s skills, talents, housing, and work status. Assign jobs directly below.</p><div id="villagers"></div></section>

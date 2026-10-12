@@ -12,7 +12,9 @@ python3 server.py
 ```
 
 Open **http://localhost:8000** in a browser. Use the Worlds menu to start a named
-world or open a saved one, then name your town.
+world or open a saved one, then enter your player name and four-digit PIN.
+New players also choose a village name. Returning players recover their village
+in that world using the same name and PIN from any browser.
 Keep the server running while playing; stop it with Control-C.
 Choose another port with `python3 server.py --port 8080` if needed.
 Successful requests stay quiet in the terminal; failed requests are still logged.
@@ -475,9 +477,13 @@ the Python host, refresh both browsers, and create a new world to use the shared
 
 The host saves all worlds automatically in `savegame.json`; new worlds also save
 changed map chunks in `savegame_chunks/`. Both are excluded from Git.
-Your browser stores your town's ownership token. Use the same browser and
-host address to return to your town; clearing site storage loses that association.
-There is no recovery screen yet. Back up both the save file and chunk directory
+Player names and salted PIN hashes are saved privately per world. Enter your name
+and PIN whenever you connect. Your browser retains an ownership token so an older
+village can be linked to a player name on its first login; use its original browser
+for that first login. PINs are never stored in browser storage or public snapshots.
+The host can provision older villages with salted credentials in the ignored
+`savegame.players.json`; these are imported on startup without replacing existing
+accounts. Back up the save file, chunk directory, and this private provisioning file
 while the server is stopped.
 Towns in the open world keep producing while owners are away if the host is running.
 No production occurs while the host is stopped or for worlds that are not open.

@@ -179,7 +179,7 @@ const run=new Function('document','window','localStorage','setTimeout','clearTim
     check(keyboardTile.x===4&&keyboardTile.y===5,'Keyboard arrows navigate tile selection');
     town.villagers=[];inspect('villager',0);
     check(panel===null&&$('side-panel').hidden,'Missing selected object closes inspector safely');
-    identity=null;panel=null;render();check(!$('join').hidden,'New settlers see the join form');
+    identity=null;panel=null;render();check($('login-dialog').open,'New settlers see the player login dialog');
     $('help-button').onclick();check($('join').hidden&&!$('help-panel').hidden,'Join form gives way to requested panel');
     identity={town_id:'own'};town.player={x:9,y:9,facing:1};viewed='own';render();
     const [playerX,playerY]=point(playerView.x,playerView.y);

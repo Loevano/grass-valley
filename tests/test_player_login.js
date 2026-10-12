@@ -1,0 +1,23 @@
+const assert=require('node:assert/strict');
+const client=require('./client_harness')();
+(async()=>{
+  client.run(`world={world_id:'saved',towns:{town:{name:'Old village'}}}; identities.saved={token:'old',town_id:'town'}; render();`);
+  assert.equal(client.elements.get('login-dialog').open,true);
+  client.run(`$('player-name').value='Rowan';$('player-pin').value='4826';$('town-name-field').hidden=true;
+    let sent;
+    request=async(path,data,options)=>{sent={path,data,options};return {token:'old',town_id:'town'};};
+    refresh=async()=>{};`);
+  await client.run(`$('join-form').onsubmit({preventDefault(){}})`);
+  assert.equal(client.run('identity.town_id'),'town');
+  assert.equal(client.run('sent.path'),'/api/login');
+  assert.equal(client.run('sent.options.headers.Authorization'),'old');
+  assert.equal(client.run("$('player-pin').value"),'');
+  assert.equal(client.elements.get('login-dialog').open,false);
+  client.run(`request=async()=>({needs_town:true});$('town-name-field').hidden=true;`);
+  await client.run(`$('join-form').onsubmit({preventDefault(){}})`);
+  assert.equal(client.elements.get('town-name-field').hidden,false);
+  client.run(`request=async()=>{throw Error('Incorrect player name or PIN.');};`);
+  await client.run(`$('join-form').onsubmit({preventDefault(){}})`);
+  assert.equal(client.elements.get('login-error').textContent,'Incorrect player name or PIN.');
+  console.log('Player login controls passed.');
+})().catch(error=>{console.error(error);process.exitCode=1;});

@@ -1,6 +1,7 @@
 const $ = id => document.getElementById(id);
 const canvas = $('world'), ctx = canvas.getContext('2d');
 let identities = {}, identity = null;
+const connectedWorlds = new Set();
 try {
   identities = JSON.parse(localStorage.getItem('lantern-identities') || '{}') || {};
   const legacy = JSON.parse(localStorage.getItem('lantern-identity') || 'null');
@@ -860,11 +861,29 @@ function villagerSkillIcon(job,label,value){
 }
 function notice(message) { $('notice').textContent=message; $('notice').style.display='block'; clearTimeout(notice.timer); notice.timer=setTimeout(()=>$('notice').style.display='none',4500); }
 async function request(path, data, options={}) {
-  const response = await fetch(path,{...options,method:data?'POST':'GET',headers:{'Content-Type':'application/json','Authorization':identity?.token || ''},body:data?JSON.stringify(data):undefined});
+  const response = await fetch(path,{...options,method:data?'POST':'GET',headers:{'Content-Type':'application/json','Authorization':identity?.token || '',...options.headers},body:data?JSON.stringify(data):undefined});
   const result = await response.json(); if(!response.ok) throw Error(result.error || 'Connection failed'); return result;
 }
 async function act(data) { try { await request('/api/command',{...data,world_id:world.world_id}); commandEffect(data); await refresh(); } catch(e) {notice(e.message);await refresh();} }
-$('join-form').onsubmit=async event=>{event.preventDefault();const worldId=world.world_id;try{identity=await request('/api/join',{name:$('name').value,world_id:worldId});identities[worldId]=identity;localStorage.setItem('lantern-identities',JSON.stringify(identities));viewed=identity.town_id;await refresh();}catch(e){notice(e.message);}};
+$('join-form').onsubmit=async event=>{
+  event.preventDefault();
+  const worldId=world.world_id,button=$('login-submit');
+  if(button.disabled)return;
+  button.disabled=true;$('login-error').textContent='';
+  try{
+    const data={player_name:$('player-name').value,pin:$('player-pin').value,world_id:worldId};
+    if(!$('town-name-field').hidden)data.town_name=$('name').value;
+    const response=await request('/api/login',data,{headers:{'Content-Type':'application/json','Authorization':identities[worldId]?.token || ''}});
+    if(world.world_id!==worldId)throw Error('The host changed worlds. Connect again.');
+    if(response.needs_town){$('town-name-field').hidden=false;$('name').required=true;$('name').focus();return;}
+    identity=response;identities[worldId]=identity;connectedWorlds.add(worldId);
+    try{localStorage.setItem('lantern-identities',JSON.stringify(identities));}catch{}
+    viewed=identity.town_id;panel=null;$('player-pin').value='';$('login-dialog').close();$('world-menu').close();await refresh();
+  }catch(e){$('login-error').textContent=e.message;}finally{button.disabled=false;}
+};
+for(const id of ['player-name','player-pin'])$(id).addEventListener('input',()=>{$('town-name-field').hidden=true;$('name').required=false;});
+$('login-dialog').addEventListener('cancel',event=>event.preventDefault());
+$('login-worlds').onclick=()=>{$('world-menu').showModal();};
 $('world-menu-button').onclick=()=>{$('world-menu-error').textContent='';$('world-menu').showModal();};
 $('close-world-menu').onclick=()=>{if(world.world_id)$('world-menu').close();};
 $('world-menu').addEventListener('cancel',event=>{if(!world.world_id)event.preventDefault();});
@@ -1768,14 +1787,14 @@ async function refresh(){
       }
       ClientScene.commit(result.value);resourceCache=result.value.resourceData;
     }
-    world=next;frameActors=null;identity=identities[world.world_id] || null;
+    world=next;frameActors=null;identity=connectedWorlds.has(world.world_id)?identities[world.world_id] || null:null;
     // Keep characters moving even if the lightweight endpoint is unavailable.
     updateRemotePlayers({world_id:world.world_id,sampled_at:world.players_sampled_at,
       players:Object.fromEntries(Object.entries(world.towns).filter(([,town])=>town.player).map(([id,town])=>[id,town.player]))});
     catalog=await request('/api/worlds');
     if(!world.towns[viewed]){viewed=identity?.town_id || Object.keys(world.towns)[0];selection=null;panel=null;tool=null;moveIndex=null;buildTile=null;hoverTile=null;keyboardTile=null;}
     render();renderWorldMenu();
-    if(!menuStarted || !world.world_id){if(!$('world-menu').open)$('world-menu').showModal();menuStarted=true;}
+    if(!world.world_id){if(!$('world-menu').open)$('world-menu').showModal();menuStarted=true;}
   })();
   try{await refreshing;}finally{refreshing=null;}
 }
@@ -1785,7 +1804,9 @@ function render(){
   const own=world.towns[identity?.town_id], town=world.towns[viewed];
   draw();
   renderSelection(town);
-  $('join').hidden=!!own || !world.world_id || !!panel;
+  $('join').hidden=true;
+  if(world.world_id&&!own){if(!$('login-dialog').open)$('login-dialog').showModal();}
+  else if($('login-dialog').open)$('login-dialog').close();
   $('controls').hidden=panel!=='build' || !own || viewed!==identity?.town_id;
   for(const name of ['selection','villagers','valley','help','resources','items','rules'])$(name+'-panel').hidden=panel!==name;
   $('side-panel').hidden=!panel && $('join').hidden;

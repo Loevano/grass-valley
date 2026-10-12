@@ -19,6 +19,7 @@ import npcs
 import trading
 import horses
 import quests
+import player_login
 from navigation import routes
 import lanterns
 from spatial import SpatialIndex
@@ -1346,9 +1347,18 @@ class Handler(SimpleHTTPRequestHandler):
                     if deleted_chunks and deleted_chunks.exists():
                         shutil.rmtree(deleted_chunks)
                     self.reply(200, {'ok': True})
-                elif self.path in {'/api/join', '/api/command'}:
+                elif self.path in {'/api/login', '/api/join', '/api/command'}:
                     if not ACTIVE_WORLD or data.get('world_id') != ACTIVE_WORLD:
                         self.reply(409, {'error': 'The host changed worlds. Refresh and try again.'})
+                        return
+                    if self.path == '/api/login':
+                        result = player_login.login(WORLDS[ACTIVE_WORLD], data,
+                                                    self.headers.get('Authorization', ''),
+                                                    lambda name: new_town(name, WORLD))
+                        if not result.get('needs_town'):
+                            prepare_landscapes(WORLD)
+                            save()
+                        self.reply(200, result)
                         return
                     if self.path == '/api/command':
                         town_id = TOKENS.get(self.headers.get('Authorization', ''))
@@ -1407,6 +1417,15 @@ def load():
         WORLDS = {'legacy': {'name': 'My first world', 'world': stored['world'],
                              'tokens': stored['tokens']}}
         activate('legacy')
+    # Optional private host provisioning for villages from older saves.
+    provision = SAVE.with_suffix('.players.json')
+    if provision.exists():
+        for world_id, players in json.loads(provision.read_text()).items():
+            if world_id in WORLDS:
+                entry = WORLDS[world_id]
+                for key, account in players.items():
+                    if account['town_id'] in entry['world']['towns']:
+                        entry.setdefault('players', {}).setdefault(key, account)
     for entry in WORLDS.values():
         bind_map(entry['world'])
         for town in entry['world']['towns'].values():

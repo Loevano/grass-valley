@@ -161,6 +161,67 @@ class LanHost(unittest.TestCase):
         connection.close()
         return status, body
 
+    def login(self, name='Rowan', pin='4826', **extra):
+        return self.call('/api/login', dict(player_name=name, pin=pin,
+                                          world_id=server.ACTIVE_WORLD, **extra))
+
+    def test_player_login_recovers_progress_from_another_browser_after_reload(self):
+        self.assertTrue(json.loads(self.login()[1])['needs_town'])
+        status, body = self.login(town_name='Rowan Village')
+        self.assertEqual(status, 200)
+        identity = json.loads(body)
+        server.WORLD['towns'][identity['town_id']]['coins'] = 73
+        server.save()
+        server.load()
+        recovered = json.loads(self.login(' rowan ')[1])
+        self.assertEqual(recovered, identity)
+        self.assertEqual(server.WORLD['towns'][identity['town_id']]['coins'], 73)
+        self.assertEqual(len(server.WORLD['towns']), 1)
+        self.assertEqual(self.login(pin='9999')[0], 400)
+        saved = server.SAVE.read_text()
+        account = json.loads(saved)['worlds']['legacy']['players']['rowan']
+        self.assertNotIn('pin', account)
+        self.assertNotEqual(account['pin_hash'], '4826')
+        public = self.call('/api/world')[1]
+        self.assertNotIn(b'pin_hash', public)
+        self.assertNotIn(b'pin_hash', self.call('/api/worlds')[1])
+
+    def test_player_login_validates_credentials_and_full_world_reconnects(self):
+        for name, pin in [('', '4826'), ([], '4826'), ('Rowan', 4826),
+                          ('Rowan', '123'), ('Rowan', 'abcd'), ('Rowan', '１２３４')]:
+            self.assertEqual(self.login(name, pin, town_name='No')[0], 400)
+        identity = json.loads(self.login(town_name='One')[1])
+        for name in ['Two', 'Three', 'Four']:
+            self.call('/api/join', {'name': name})
+        self.assertEqual(json.loads(self.login()[1]), identity)
+        self.assertEqual(self.login('New', town_name='Fifth')[0], 400)
+        self.assertEqual(self.call('/api/login', {'world_id': 'missing'})[0], 409)
+
+    def test_old_town_claim_requires_its_token_and_private_provision_survives_load(self):
+        import player_login
+        identity = json.loads(self.call('/api/join', {'name': 'Existing Village'})[1])
+        data = {'world_id': server.ACTIVE_WORLD, 'player_name': 'Founder', 'pin': '4826'}
+        self.assertTrue(json.loads(self.call('/api/login', data)[1])['needs_town'])
+        self.assertEqual(json.loads(self.call('/api/login', data, identity['token'])[1]), identity)
+        self.assertEqual(self.call('/api/login', dict(data, player_name='Other'), identity['token'])[0], 400)
+        server.SAVE.with_suffix('.players.json').write_text(json.dumps({
+            'legacy': {'founder': player_login.account('Founder', '9999', identity['town_id'])}}))
+        server.load()
+        self.assertEqual(json.loads(self.login('Founder')[1]), identity)
+        self.assertEqual(self.login('Founder', '9999')[0], 400)
+
+    def test_host_provision_links_an_existing_village_without_changing_progress(self):
+        import player_login
+        identity = json.loads(self.call('/api/join', {'name': 'Existing Village'})[1])
+        before = json.loads(json.dumps(server.WORLD['towns'][identity['town_id']]))
+        server.SAVE.with_suffix('.players.json').write_text(json.dumps({
+            'legacy': {'founder': player_login.account('Founder', '4826', identity['town_id'])}}))
+        server.load()
+        self.assertEqual(json.loads(self.login('Founder')[1]), identity)
+        self.assertEqual(server.WORLD['towns'][identity['town_id']], before)
+        server.load()
+        self.assertEqual(json.loads(self.login('Founder')[1]), identity)
+
     def test_clients_own_separate_towns_and_save_tokens_privately(self):
         identities = []
         for name in ['Willowbrook', 'Oakvale', 'Birchwood', 'Meadow']:

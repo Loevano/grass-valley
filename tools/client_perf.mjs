@@ -78,6 +78,7 @@ try{
         for(const [key,value] of Object.entries(body.shared_map.resource_chunks))if(versions.get(key)===value.version)delete body.shared_map.resource_chunks[key];
         body.players_sampled_at=performance.now();
       }else if(url.pathname==='/api/worlds')body={active_world:'performance',worlds:[{id:'performance',name:'Fixture',town_count:Object.keys(data.towns).length}],can_manage:true};
+      else if(url.pathname==='/api/login')body={town_id:'0',token:'fixture'};
       else if(url.pathname==='/api/players')body={world_id:'performance',sampled_at:performance.now(),players:Object.fromEntries(Object.entries(data.towns).map(([id,t])=>[id,t.player]))};
       else if(url.pathname==='/api/command'){
         const command=route.request().postDataJSON();
@@ -88,7 +89,13 @@ try{
     });
     await page.goto(`http://127.0.0.1:${server.address().port}/`);
     await page.waitForFunction(()=>world.world_id==='performance'&&world.towns[viewed]&&window.__perf.frames.length>15);
-    await page.evaluate(()=>{if($('world-menu').open)$('world-menu').close();});
+    await page.evaluate(async()=>{
+      if($('world-menu').open)$('world-menu').close();
+      if(document.getElementById('login-dialog')?.open){
+        $('player-name').value='Fixture';$('player-pin').value='4826';
+        await $('join-form').onsubmit({preventDefault(){}});
+      }
+    });
     await page.waitForFunction(()=>typeof ClientScene==='undefined'||ClientScene.queue.jobs.size===0);
     // Warm shaders, sprite artwork, and terrain separately from measured work.
     await page.waitForTimeout(500);
