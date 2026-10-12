@@ -6,7 +6,7 @@ const quarryObjects=[['inscription','Read inscription',7,4],['sun','Touch ☀ su
 
 function openQuarry(){
   clearWalk();quarryWorld=world.world_id;
-  $('quarry-error').textContent='';renderQuarry();$('quarry-dialog').showModal();
+  $('quarry-error').textContent='';$('quarry-dialog').showModal();renderQuarry();
 }
 async function quarryCommand(data){
   if(quarryBusy)return;
@@ -20,6 +20,7 @@ async function quarryCommand(data){
 function renderQuarry(){
   const dialog=$('quarry-dialog');
   if(quarryWorld!==null&&quarryWorld!==world.world_id){dialog.close();quarryWorld=null;return;}
+  if(!dialog.open)return;
   const spec=world.quarry_catalog;
   if(!spec)return;
   const quest=world.quarry,member=quest?.members?.[identity?.town_id];

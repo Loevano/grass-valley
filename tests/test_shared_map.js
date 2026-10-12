@@ -26,7 +26,10 @@ const run=new Function('document','window','localStorage','setTimeout','clearTim
     assert(hitTargets.some(h=>h.type==='building'&&h.townId==='friend'),'Friend buildings are on the same map');
     assert(hitTargets.some(h=>h.type==='player'&&h.townId==='own'),'Own character is visible');
     assert(hitTargets.some(h=>h.type==='player'&&h.townId==='friend'),'Other character is visible');
-    assert(drawnLabels.includes('Home')&&drawnLabels.includes('Friend'),'Town halls show town names');
+    camera={x:30,y:30,zoom:1};draw();
+    camera={x:90,y:30,zoom:1};draw();
+    assert(drawnLabels.includes('Home')&&drawnLabels.includes('Friend'),'Town halls show town names at detailed zoom');
+    camera={x:55,y:30,zoom:.35};draw();
     inspect('building',0,'friend');
     assert.equal(viewed,'friend');assert($('selection-move').hidden,'Cannot move a friend building');
     assert.equal(camera.x,55,'Inspecting a friend does not switch maps or reset camera');
@@ -53,7 +56,7 @@ const run=new Function('document','window','localStorage','setTimeout','clearTim
       assert(!insideBuildingRange(own,{x:30+reach,y:31}),'Diagonals count both axes at every level');
     }
     inspect('building',0,'own');
-    assert(panelNodes().some(child=>child.textContent?.includes('Hall upgrade: +5 range')),'Hall explains range growth');
+    assert(panelNodes().some(child=>child.textContent==='Building range')&&panelNodes().some(child=>child.textContent==='50 tile steps'),'Hall shows its current upgraded building range');
     draw();const friendWorker=workers.get('friend/0');
     draw();draw();assert.equal(workers.get('friend/0'),friendWorker,'Friend animation state survives rendering');
     const wire={world_id:'wire',name:'Wire world',shared_map:landscape,town_sites:[{x:30,y:30}],towns:{own:{...world.towns.own}}};

@@ -76,6 +76,7 @@ function hydrateMapChunks(next){
   delete landscape.terrain_chunks;
   delete landscape.resource_chunks;
 }
+let frameActors=null,animationFrameRunning=false;
 const workers = new Map();
 let workerTown = null, lastFrame = null, animalClock = 0;
 const walkKeys = new Set();
@@ -239,16 +240,25 @@ function mapRoads(town){return world.shared_map?Object.values(world.towns).flatM
 function playerBoatLevel(player){return player?.boat?player.boat_level || 1:0;}
 function playerTravelSpeed(town,position){
   const level=playerBoatLevel(town.player);
-  if(level&&(town.map_resources || []).some(r=>r.kind==='water'&&r.x===Math.floor(position.x+.5)&&r.y===Math.floor(position.y+.5)))return 1+.25*(level-1);
+  const prepared=typeof ClientScene!=='undefined'&&ClientScene.current?.world===world&&world.shared_map;
+  if(prepared&&level&&ClientScene.current.water.has(`${Math.floor(position.x+.5)},${Math.floor(position.y+.5)}`))return 1+.25*(level-1);
+  if(!prepared&&level&&(town.map_resources || []).some(r=>r.kind==='water'&&r.x===Math.floor(position.x+.5)&&r.y===Math.floor(position.y+.5)))return 1+.25*(level-1);
   return roadSpeed(town,position)*(town.player?.mounted?1.75:1);
 }
-function roadSpeed(town,position){return mapRoads(town).some(r=>!r.construction&&r.x===Math.floor(position.x+.5)&&r.y===Math.floor(position.y+.5))?1.5:1;}
+function roadSpeed(town,position){
+  if(typeof ClientScene!=='undefined'&&ClientScene.current?.world===world&&world.shared_map)return ClientScene.current.roads.has(`${Math.floor(position.x+.5)},${Math.floor(position.y+.5)}`)?1.5:1;
+  return mapRoads(town).some(r=>!r.construction&&r.x===Math.floor(position.x+.5)&&r.y===Math.floor(position.y+.5))?1.5:1;}
 // Measure screen distance for the 2:1 isometric projection, preserving sideways speed.
 function playerMovementDistance(dx,dy){return Math.hypot(dx-dy,(dx+dy)*.5)/Math.SQRT2;}
 function predictPlayerStep(town,player,dx,dy){
   if(movementMap?.world!==world || movementMap.town!==town || movementMap.boat!==!!town.player?.boat){
     const buildings=world.shared_map?Object.values(world.towns).flatMap(t=>t.buildings || []):town.buildings || [];
-    movementMap={world,town,boat:!!town.player?.boat,water:new Set((town.map_resources || []).filter(r=>r.kind==='water').map(r=>`${r.x},${r.y}`)),blocked:new Set([...buildings,...(town.map_resources || [])]
+    const scene=typeof ClientScene!=='undefined'&&ClientScene.current?.world===world&&world.shared_map?ClientScene.current:null;
+    movementMap=scene?{world,town,boat:!!town.player?.boat,water:scene.water,blocked:{has(key){
+      if(scene.playerBuildings.has(key))return true;
+      const [x,y]=key.split(',').map(Number),resource=ClientScene.resourceAt(x,y);
+      return !!resource&&resource.kind!=='tree'&&!(resource.kind==='water'&&town.player?.boat);
+    }}}:{world,town,boat:!!town.player?.boat,water:new Set((town.map_resources || []).filter(r=>r.kind==='water').map(r=>`${r.x},${r.y}`)),blocked:new Set([...buildings,...(town.map_resources || [])]
       .filter(b=>b.kind!=='tree'&&!(b.kind==='water'&&town.player?.boat)).map(b=>`${b.x},${b.y}`))};
   }
   const size=town.map_size || 12,terrain=town.terrain;
@@ -457,8 +467,13 @@ function roomAllocations(building){
   return Object.fromEntries(Object.entries(allocations).filter(([key])=>buildingStorageKeys(building).includes(key)));
 }
 function resourceStorage(town,key){
+  const scene=typeof ClientScene!=='undefined'&&ClientScene.current?.world===world?ClientScene.current:null;
+  let cached=scene?.capacities.get(town);
+  if(scene&&!cached){cached=new Map();scene.capacities.set(town,cached);}
+  if(cached?.has(key))return cached.get(key);
   const group=key in foodGoods()?'food':key;
-  return town.buildings.filter(b=>!b.construction&&(key==='food'?buildingStorageKeys(b).includes('food'):buildingStorageGoods(b).includes(key))).reduce((sum,b)=>sum+(roomAllocations(b)[group] || 0),0);
+  const capacity=town.buildings.filter(b=>!b.construction&&(key==='food'?buildingStorageKeys(b).includes('food'):buildingStorageGoods(b).includes(key))).reduce((sum,b)=>sum+(roomAllocations(b)[group] || 0),0);
+  cached?.set(key,capacity);return capacity;
 }
 function localTradeFoodRoom(town,key='vegetables'){
   const value=foodGoods()[key] || 1;
@@ -814,8 +829,10 @@ Object.assign(iconPaths,{
   tradehouse:'<path fill="#a1ab7e" d="M4 9h24v7H4z"/><path d="M6 16v13m20-13v13"/><path fill="#c9ac75" d="M8 19h16v10H8z"/><path d="m8 19 16 10m0-10L8 29"/>',
 });
 function illustration(kind){
+  const cached=illustration.templates?.get(kind);if(cached)return cached.cloneNode(true);
   const span=document.createElement('span');span.className='illustration';span.setAttribute('aria-hidden','true');
   span.innerHTML=`<svg viewBox="0 0 32 32" fill="none" stroke="#594e39" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round">${iconPaths[kind] || iconPaths.villagers}</svg>`;
+  if(span.cloneNode){illustration.templates ||= new Map();illustration.templates.set(kind,span);return span.cloneNode(true);}
   return span;
 }
 function fact(value,label){
@@ -1664,7 +1681,7 @@ function updateBuildingEffects(next){
 }
 function drawBuildingEffects(seconds){
   for(let i=buildingEffects.length-1;i>=0;i--){
-    const effect=buildingEffects[i];effect.age+=seconds;
+    const effect=buildingEffects[i];if(typeof ClientScene==='undefined')effect.age+=seconds;
     if(effect.age>=1.2){buildingEffects.splice(i,1);continue;}
     if(!world.shared_map&&effect.townId!==viewed)continue;
     const [x,y]=point(effect.x,effect.y),scale=tileW/46,t=effect.age/1.2;
@@ -1700,6 +1717,7 @@ function updateDepartures(next){
     const previous=world.towns[id];
     if(!previous || (town.departure_count || 0)<=(previous.departure_count || 0))continue;
     workers.clear();
+    if(typeof ClientScene!=='undefined')ClientScene.queue.clear();
     if(viewed===id&&selection?.type==='villager')selection=null;
     if(id===identity?.town_id)notice(departureMessage(town));
   }
@@ -1724,7 +1742,30 @@ async function refresh(){
     if(next.shared_map)for(const town of Object.values(next.towns))Object.assign(town,next.shared_map);
     updateBuildingEffects(next);
     updateDepartures(next);
-    world=next;identity=identities[world.world_id] || null;
+    if(typeof ClientScene!=='undefined'){
+      const playerRefs=new Map(Object.entries(world.towns).map(([id,t])=>[id,t.player]));
+      const preparation=(function*(){
+        const scene=yield* ClientScene.prepare(next);
+        scene.resourceData=yield* prepareResourceData(next.shared_map?.map_resources || next.towns[viewed || identities[next.world_id]?.town_id || Object.keys(next.towns)[0]]?.map_resources || [],tileW>=32);
+        return scene;
+      })();let result;
+      do{
+        const started=performance.now();
+        do{result=preparation.next();}while(!result.done&&performance.now()-started<2);
+        if(!result.done)await new Promise(resolve=>setTimeout(resolve,0));
+      }while(!result.done);
+      // Remote samples arriving while preparation yields belong to the current world.
+      if(next.world_id===world.world_id)for(const [id,t] of Object.entries(next.towns)){
+        const live=world.towns[id]?.player;
+        if(live&&live!==playerRefs.get(id))t.player={...t.player,x:live.x,y:live.y,facing:live.facing};
+      }
+      for(const id of result.value.resetTowns){
+        if(!next.shared_map&&id===viewed){workers.clear();ClientScene.queue.clear();}
+        else for(const key of workers.keys())if(String(key).startsWith(id+'/')){workers.delete(key);ClientScene.queue.cancel('plan/'+key);ClientScene.queue.cancel('advance/'+key);}
+      }
+      ClientScene.commit(result.value);resourceCache=result.value.resourceData;
+    }
+    world=next;frameActors=null;identity=identities[world.world_id] || null;
     // Keep characters moving even if the lightweight endpoint is unavailable.
     updateRemotePlayers({world_id:world.world_id,sampled_at:world.players_sampled_at,
       players:Object.fromEntries(Object.entries(world.towns).filter(([,town])=>town.player).map(([id,town])=>[id,town.player]))});
@@ -1775,7 +1816,7 @@ function render(){
     for(const [key,value] of Object.entries(own.goods || {}))if(value>0)$('goods-list').append(fact(`${Math.floor(value)} / ${resourceStorage(own,key)}`,goodName(key)));
   }
   if(buildTile && (!town || !insideBuildingRange(town,buildTile) || town.buildings.some(b=>b.x===buildTile.x&&b.y===buildTile.y) || town.map_resources.some(r=>r.x===buildTile.x&&r.y===buildTile.y)))buildTile=null;
-  for(const group of $('buildings').children){
+  if(typeof ClientScene==='undefined'||panel==='build')for(const group of $('buildings').children){
     for(const button of group.children){
       if(!button.buildingKind)continue;
       const kind=button.buildingKind,spec=world.progression?.buildings[kind] || {wood:costs[kind],level:1};
@@ -1786,6 +1827,7 @@ function render(){
     group.hidden=![...group.children].some(button=>button.buildingKind&&!button.hidden);
   }
   if(own){$('town-name').textContent=own.name;$('hint').textContent=tool==='move'?(moveIndex===null?'Click a building to move it.':'Click open grass.'):tool?(building?'Building…':own.wood<costs[tool]?'Not enough wood.':`Hover over open grass, then left-click to build a ${labels[tool].toLowerCase()}.`):'Choose a building, then hover over an open tile.';}
+  if(typeof ClientScene==='undefined'||panel==='valley'){
   $('towns').replaceChildren();
   for(const village of world.shared_map?.villages || []){
     const button=document.createElement('button');
@@ -1794,6 +1836,8 @@ function render(){
     $('towns').append(button);
   }
   for(const [id,t] of Object.entries(world.towns)){const b=document.createElement('button');b.textContent=t.name+(id===identity?.town_id?' · Yours':'');b.classList.toggle('selected',id===viewed);b.onclick=()=>{viewed=id;if(world.shared_map){const hall=t.buildings.find(b=>b.kind==='hall');camera.x=hall.x;camera.y=hall.y;}tool=null;moveIndex=null;buildTile=null;hoverTile=null;selection=null;panel=null;keyboardTile=null;render();};$('towns').append(b);}
+  }
+  if(typeof ClientScene==='undefined'||panel==='villagers'){
   $('villagers').replaceChildren();
   if(town&&!town.villagers.length){const empty=document.createElement('p');empty.textContent='No villagers yet. Build housing and keep food available to welcome new residents.';$('villagers').append(empty);}
   if(town?.villagers.length)$('villagers').append(villagersTable(town));
@@ -1808,6 +1852,7 @@ function render(){
     const warning=document.createElement('p');warning.textContent=`Housing shortage · ${town.housing_shortage_seconds}s without enough housing. After 60 seconds, settlers may leave with all their skills. Build or upgrade cottages.`;$('villagers').append(warning);
   }
   if(town?.last_departure){const loss=document.createElement('p');loss.textContent=departureMessage(town);$('villagers').append(loss);}
+  }
   draw();
 }
 function point(x,y){return [originX+(x-y)*tileW/2,originY+(x+y)*tileH/2];}
@@ -2051,23 +2096,41 @@ function animatedVillagers(town, seconds, townId=viewed, frameLayout=null){
   const tiles=items=>items.map(({kind,x,y,farm_index,construction})=>[kind,x,y,farm_index,!!construction]);
   const layout=frameLayout ?? JSON.stringify([tiles(world.shared_map?Object.values(world.towns).flatMap(t=>t.buildings):town.buildings),tiles(town.map_resources)]);
   return town.villagers.map((villager,index)=>{
-    const task=JSON.stringify([villager.job,villager.building_index,villager.work_target?tiles([villager.work_target]):null,
+    const prepared=typeof ClientScene!=='undefined'?ClientScene.current?.tasks.get(villager):null;
+    const task=prepared?.task ?? JSON.stringify([villager.job,villager.building_index,villager.work_target?tiles([villager.work_target]):null,
       villager.construction_target?tiles([villager.construction_target]):null,
       villager.job==='fishing'?[town.villagers.map(v=>[v.job,v.building_index]),town.buildings.filter(b=>b.kind==='fishing_hut').map(b=>[b.level,b.profession_upgrades])]:null]);
     const trip=villager.logistics_trip;
     // Polling advances the host's step; keep the visible trip running continuously.
-    const signature=JSON.stringify([task,trip?[trip.id,trip.operation,trip.workplace,trip.storage,trip.path]:villager.logistics_target]);
+    const signature=prepared?.signature ?? JSON.stringify([task,trip?[trip.id,trip.operation,trip.workplace,trip.storage,trip.path]:villager.logistics_target]);
     const workerKey=world.shared_map?`${townId}/${index}`:index;
     let state=workers.get(workerKey);
     const finishingDelivery=state?.transport&&state.path.length&&state.task===task&&state.layout===layout;
     if(!state || state.layout!==layout || (state.signature!==signature&&!finishingDelivery)){
-      state=Object.assign(WorkerAnimation.plan(world.shared_map?{...town,obstacles:Object.values(world.towns).flatMap(t=>t.buildings),home_hall:town.buildings.find(b=>b.kind==='hall')}:town,villager,index,state),{signature,layout,task});workers.set(workerKey,state);
+      const region=typeof ClientScene!=='undefined'?ClientScene.region(town):null;
+      if(region){
+        const version=JSON.stringify([signature,layout]);
+        if(state?.pendingPlan!==version){
+          ClientScene.queue.cancel('advance/'+workerKey);
+          const previous=state;
+          const home=town.buildings.find(b=>b.kind==='hall') || {x:5,y:5};
+          const position=villager.work_animation || villager.logistics_position || villager.construction_position || {x:home.x-2+index%5,y:home.y+3+Math.floor(index/5)};
+          state={...(state || {x:position.x,y:position.y,path:[],clock:0,phase:'waiting',facing:1}),path:[],pendingPlan:version,pendingAdvance:false};
+          workers.set(workerKey,state);
+          ClientScene.queue.schedule('plan/'+workerKey,version,WorkerAnimation.planSteps(region.routing,villager,index,previous),planned=>{
+            if(workers.get(workerKey)!==state)return;
+            Object.assign(state,planned,{signature,layout,task,pendingPlan:null});
+          });
+        }
+      }else{
+        state=Object.assign(WorkerAnimation.plan(world.shared_map?{...town,obstacles:Object.values(world.towns).flatMap(t=>t.buildings),home_hall:town.buildings.find(b=>b.kind==='hall')}:town,villager,index,state),{signature,layout,task});workers.set(workerKey,state);
+      }
     }
     state.roads=roads;
     if(state.transport&&trip?.cargo&&state.signature===signature)state.transportCargo=trip.cargo;
     state.storagePaused=!!villager.production_status?.startsWith('Waiting for storage space');
     const hostWork=villager.work_animation;
-    if(hostWork&&!state.transport&&!villager.logistics_target&&!villager.construction_target){
+    if(hostWork&&!state.pendingPlan&&!state.pendingAdvance&&!state.transport&&!villager.logistics_target&&!villager.construction_target){
       if(state.hostVersion!==hostWork.version || state.hostTask!==JSON.stringify(hostWork.task)){
         Object.assign(state,{x:hostWork.x,y:hostWork.y,phase:hostWork.phase,
           elapsed:hostWork.phase==='collecting_water'?0:hostWork.elapsed,waterElapsed:hostWork.elapsed,
@@ -2082,11 +2145,18 @@ function animatedVillagers(town, seconds, townId=viewed, frameLayout=null){
     const butchering=villager.job==='butchery'&&town.buildings[villager.building_index]?.butchering;
     state.workDuration=butchering?(world.progression?.butcher_seconds || 60):villager.job==='farming'?8:3.2;
     const active=!!villager.construction_target || Object.values(villager.pending_output || {}).some(n=>n>0) || (villager.production_status==='Working' || villager.production_status?.startsWith('Butchering ') || villager.production_status?.startsWith('No catch') || (!villager.production_status&&town[resource]<resourceStorage(town,resource)));
-    WorkerAnimation.advance(state,seconds,active);
+    if(typeof ClientScene!=='undefined'&&ClientScene.region(town)){
+      if(!state.pendingPlan&&!state.pendingAdvance){
+        const steps=WorkerAnimation.advanceSteps(state,seconds,active),first=steps.next();
+        if(!first.done){state.pendingAdvance=true;ClientScene.queue.schedule('advance/'+workerKey,state,steps,()=>{state.pendingAdvance=false;});}
+      }
+    }else WorkerAnimation.advance(state,seconds,active);
     return {kind:'villager',townId,villager,index,x:state.x,y:state.y,state,active};
   });
 }
 function townWorkerLayout(town,buildings,resources){
+  const prepared=typeof ClientScene!=='undefined'?ClientScene.region(town):null;
+  if(prepared)return prepared.layout;
   // Camera exploration outside a town's routing area cannot change its paths.
   if(townWorkerLayout.world!==world){townWorkerLayout.world=world;townWorkerLayout.layouts=new Map();}
   if(townWorkerLayout.layouts.has(town))return townWorkerLayout.layouts.get(town);
@@ -2419,11 +2489,25 @@ function drawProfessionAction(job,time){
 // One canvas bounds memory usage even on Retina displays.
 let groundCache=null,resourceCache=null;
 function renderResources(resources,detailed=true){
-  if(resourceCache?.resources!==resources || resourceCache.count!==resources.length || resourceCache.detailed!==detailed){
+  if(typeof ClientScene!=='undefined'&&resourceCache?.resources===resources&&resourceCache.count===resources.length){
+    if(resourceCache.detailed!==detailed){
+      ClientScene.queue.schedule('resource-art',detailed,prepareResourceData(resources,detailed),data=>{
+        if(resourceCache?.resources===resources)resourceCache=data;
+      });
+    }else ClientScene.queue.cancel('resource-art');
+    return resourceCache;
+  }
+  const steps=prepareResourceData(resources,detailed);let result;
+  do{result=steps.next();}while(!result.done);
+  return resourceCache=result.value;
+}
+function* prepareResourceData(resources,detailed=true,previous=resourceCache){
+  if(previous?.resources!==resources || previous.count!==resources.length || previous.detailed!==detailed){
     const layout=JSON.stringify(resources.map(({kind,x,y,farm_index,construction})=>[kind,x,y,farm_index,!!construction]));
-    const sameLayout=resourceCache?.layout===layout&&resourceCache.detailed===detailed;
+    const sameLayout=previous?.layout===layout&&previous.detailed===detailed;
     const water=new Set(),objects=[],indexes=new Map(),buckets=new Map();
-    resources.forEach((r,index)=>{
+    for(const [index,r] of resources.entries()){
+      if(index%256===255)yield;
       indexes.set(r,index);
       if(r.kind==='water')water.add(`${r.x},${r.y}`);else{
         objects.push(r);
@@ -2431,12 +2515,14 @@ function renderResources(resources,detailed=true){
         if(!buckets.has(key))buckets.set(key,[]);
         buckets.get(key).push(r);
       }
-    });
-    const forest=sameLayout?resourceCache.forest:detailed?null:new Set(objects.filter(r=>r.kind==='tree').map(r=>`${r.x},${r.y}`));
+    }
+    const forest=sameLayout?previous.forest:detailed?null:new Set(objects.filter(r=>r.kind==='tree').map(r=>`${r.x},${r.y}`));
     if(forest&&!sameLayout){
       // Join small gaps between nearby trees into one ground-level canopy.
       const neighbors=new Map();
+      let visited=0;
       for(const key of forest){
+        if(++visited%256===0)yield;
         const [x,y]=key.split(',').map(Number);
         for(const [dx,dy] of [[-1,0],[1,0],[0,-1],[0,1]]){
           const adjacent=`${x+dx},${y+dy}`;
@@ -2446,8 +2532,10 @@ function renderResources(resources,detailed=true){
       for(const [key,count] of neighbors)if(count>=2)forest.add(key);
     }
     const rocks=new Map((detailed&&!sameLayout?objects.filter(r=>r.kind==='rock'):[]).map(r=>[`${r.x},${r.y}`,r]));
-    const rockJoins=sameLayout?new Map([...resourceCache.rockJoins].map(([rock,join])=>[resources[resourceCache.indexes.get(rock)],join])):new Map();
+    const rockJoins=sameLayout?new Map([...previous.rockJoins].map(([rock,join])=>[resources[previous.indexes.get(rock)],join])):new Map();
+    let visited=0;
     for(const r of rocks.values()){
+      if(++visited%64===0)yield;
       const mask=[[0,-1],[1,0],[0,1],[-1,0]].reduce((mask,[dx,dy],i)=>
         mask|(rocks.has(`${r.x+dx},${r.y+dy}`)?1<<i:0),0);
       if(!mask)continue;
@@ -2470,9 +2558,9 @@ function renderResources(resources,detailed=true){
       });
       rockJoins.set(r,{mask,heights,inset});
     }
-    resourceCache={resources,count:resources.length,detailed,forest,water:sameLayout?resourceCache.water:water,objects,indexes,buckets,rockJoins,layout};
+    previous={resources,count:resources.length,detailed,forest,water:sameLayout?previous.water:water,objects,indexes,buckets,rockJoins,layout};
   }
-  return resourceCache;
+  return previous;
 }
 function visibleResourceObjects(data,rect){
   const previous=data.visible;
@@ -2817,12 +2905,14 @@ function drawFishingBoat(boat){
 function barnAnimalSprites(buildings,time,landscape={}){
   const sprites=[],size=landscape.map_size || 120;
   const key=p=>`${p.x},${p.y}`;
-  const blocked=new Set([...buildings,...(landscape.map_resources || []),...(landscape.npcs || [])].map(key));
+  const prepared=typeof ClientScene!=='undefined';
+  const blocked=prepared?null:new Set([...buildings,...(landscape.map_resources || []),...(landscape.npcs || [])].map(key));
   for(const barn of buildings){
     if(!['barn','stable'].includes(barn.kind)||(barn.construction&&!barn.construction.upgrade))continue;
+    if(!Object.values(barn.animals || {}).some(n=>n>0))continue;
     // A small breadth-first search keeps every trip connected to the barn.
-    const routes=[[]],queue=[{x:barn.x,y:barn.y,path:[]}],seen=new Set([key(barn)]);
-    for(const tile of queue){
+    const routes=prepared?ClientScene.animalRoutes(buildings,landscape,barn):[[]],queue=[{x:barn.x,y:barn.y,path:[]}],seen=new Set([key(barn)]);
+    if(!prepared)for(const tile of queue){
       if(tile.path.length>=2)continue;
       for(const [dx,dy] of [[1,0],[0,1],[-1,0],[0,-1]]){
         const next={x:tile.x+dx,y:tile.y+dy},biome=landscape.terrain?.[next.y]?.[next.x];
@@ -2892,14 +2982,15 @@ function drawBarnAnimal(animal){
   ctx.restore();
 }
 function draw(seconds=0){
-  animalClock+=seconds;
+  if(typeof ClientScene!=='undefined'&&!animationFrameRunning)return;
+  if(typeof ClientScene==='undefined')animalClock+=seconds;
   const rect=canvas.getBoundingClientRect(),dpr=renderPixelRatio();
   const width=Math.round(rect.width*dpr),height=Math.round(rect.height*dpr);
   if(canvas.width!==width||canvas.height!==height){canvas.width=width;canvas.height=height;}
   ctx.setTransform(dpr,0,0,dpr,0,0);ctx.clearRect(0,0,rect.width,rect.height);
   const townKey=`${world.world_id}/${world.shared_map?'shared':viewed}`;
   const town=world.towns[viewed], own=world.towns[identity?.town_id];
-  const hero=playerSprite(world.shared_map?(own || town):town,seconds);
+  const hero=frameActors?.world===world?frameActors.hero:playerSprite(world.shared_map?(own || town):town,seconds);
   if(cameraTown!==townKey){
     const home=world.shared_map?(own || town):town;
     const center=home?.buildings?.find(b=>b.kind==='hall')
@@ -2909,9 +3000,6 @@ function draw(seconds=0){
   tileW=Math.min(54,(rect.width-30)/12)*camera.zoom;tileH=tileW/2;
   originX=rect.width/2-(camera.x-camera.y)*tileW/2;
   originY=rect.height/2-(camera.x+camera.y)*tileH/2-tileH/2;
-  if(world.shared_map?.chunked&&!refreshing&&requestedMapView!==mapChunkKeys().join(';')){
-    refresh().catch(()=>notice('Cannot load this part of the map. Waiting for the host…'));
-  }
   if(typeof camera==='undefined'&&hero&&playerView.following){
     originX=rect.width/2-(hero.x-hero.y)*tileW/2;
     originY=rect.height/2-(hero.x+hero.y)*tileH/2-tileH/2;
@@ -2965,9 +3053,9 @@ function draw(seconds=0){
     polygon([[px,py],[px+tileW/2,py+tileH/2],[px,py+tileH],[px-tileW/2,py+tileH/2]],'#fff0b133','#fff0b1');ctx.restore();
   }
   const entries=world.shared_map?Object.entries(world.towns):town?[[viewed,town]]:[];
-  const buildings=world.shared_map?entries.flatMap(([id,t])=>t.buildings.map((b,index)=>({...b,townId:id,objectIndex:index}))):town?.buildings || [{kind:'hall',x:5,y:5}];
-  const workerLayout='['+JSON.stringify(buildings.map(({kind,x,y,farm_index,construction})=>[kind,x,y,farm_index,!!construction]))+','+resourceData.layout+']';
-  const villagers=entries.flatMap(([id,t])=>animatedVillagers(t,seconds,id,
+  const buildings=(typeof ClientScene!=='undefined'&&ClientScene.current?.world===world?(world.shared_map?ClientScene.current.buildings:town?.buildings):null) ?? (world.shared_map?entries.flatMap(([id,t])=>t.buildings.map((b,index)=>({...b,townId:id,objectIndex:index}))):town?.buildings || [{kind:'hall',x:5,y:5}]);
+  const workerLayout=(typeof ClientScene!=='undefined'&&ClientScene.current?.world===world?ClientScene.current.geometry:null) ?? ('['+JSON.stringify(buildings.map(({kind,x,y,farm_index,construction})=>[kind,x,y,farm_index,!!construction]))+','+resourceData.layout+']');
+  const villagers=frameActors?.world===world?frameActors.villagers:entries.flatMap(([id,t])=>animatedVillagers(t,seconds,id,
     t?.chunked?townWorkerLayout(t,buildings,resources):workerLayout));
   const drawnPiers=new Set();
   if(draw.pierLayout!==workerLayout){
@@ -3004,7 +3092,7 @@ function draw(seconds=0){
     // Soil and furrows stay below every character; stalks use their own depth.
     drawFarmCrops(field,farmer?.state,crop=>cropObjects.push(crop));
   }
-  const otherPlayers=world.shared_map?entries.filter(([id,t])=>t.player&&id!==hero?.townId).map(([id,t])=>remotePlayerSprite(id,t,seconds)):[];
+  const otherPlayers=frameActors?.world===world?frameActors.otherPlayers:world.shared_map?entries.filter(([id,t])=>t.player&&id!==hero?.townId).map(([id,t])=>remotePlayerSprite(id,t,seconds)):[];
   const visible=b=>{
     const [px,py]=point(b.x,b.y);
     return px>=-tileW&&px<=rect.width+tileW&&py>=-tileH&&py<=rect.height+80*tileW/46;
@@ -3012,7 +3100,7 @@ function draw(seconds=0){
   const boats=fishingBoatSprites(entries,resources,villagers);
   const passengers=new Set(boats.flatMap(b=>b.crew));
   const objects=mergeDepthObjects([...buildings,...cropObjects,...boats].filter(visible),visibleResourceObjects(resourceData,rect),
-    [...villagers.filter(v=>!passengers.has(v)),...npcSprites(world.shared_map || town,seconds),...barnAnimalSprites(buildings,animalClock,world.shared_map || town),...otherPlayers,...(hero?[hero]:[])].filter(visible));
+    [...villagers.filter(v=>!passengers.has(v)),...npcSprites(world.shared_map || town,typeof ClientScene==='undefined'?seconds:0),...barnAnimalSprites(buildings,animalClock,world.shared_map || town),...otherPlayers,...(hero?[hero]:[])].filter(visible));
   for(const b of objects){
     const position=b.kind==='wild_horse'?wildHorsePosition(b):[b.x,b.y];
     const [px,py]=point(position[0],position[1]),scale=tileW/46;
@@ -3568,10 +3656,32 @@ if(window.ResizeObserver){
   toolbarObserver.observe($('toolbar'));
 }
 window.addEventListener('resize',()=>draw());
+function updateActors(seconds){
+  const town=world.towns[viewed],own=world.towns[identity?.town_id];
+  const hero=playerSprite(world.shared_map?(own || town):town,seconds);
+  const entries=world.shared_map?Object.entries(world.towns):town?[[viewed,town]]:[];
+  const buildings=ClientScene.current?.buildings || [];
+  const villagers=entries.flatMap(([id,t])=>animatedVillagers(t,seconds,id,
+    ClientScene.region(t)?.layout ?? townWorkerLayout(t,buildings,t.map_resources || [])));
+  animalClock+=seconds;npcClock+=seconds;
+  for(let i=buildingEffects.length-1;i>=0;i--){buildingEffects[i].age+=seconds;if(buildingEffects[i].age>=1.2)buildingEffects.splice(i,1);}
+  const otherPlayers=world.shared_map?entries.filter(([id,t])=>t.player&&id!==hero?.townId).map(([id,t])=>remotePlayerSprite(id,t,seconds)):[];
+  frameActors={world,hero,villagers,otherPlayers};
+}
 function animate(now){
-  draw(lastFrame===null?0:Math.min((now-lastFrame)/1000,.1));lastFrame=now;
+  const seconds=lastFrame===null?0:Math.min((now-lastFrame)/1000,.1);lastFrame=now;
+  if(typeof ClientScene!=='undefined'){
+    updateActors(seconds);ClientScene.queue.run(2);
+    for(const sprite of frameActors.villagers){sprite.x=sprite.state.x;sprite.y=sprite.state.y;}
+  }
+  animationFrameRunning=true;
+  try{draw(typeof ClientScene==='undefined'?seconds:0);}finally{animationFrameRunning=false;}
+  if(world.shared_map?.chunked&&!refreshing&&requestedMapView!==mapChunkKeys().join(';')){
+    refresh().catch(()=>notice('Cannot load this part of the map. Waiting for the host…'));
+  }
   requestAnimationFrame(animate);
 }
+document.addEventListener?.('visibilitychange',()=>{lastFrame=null;clearWalk();});
 requestAnimationFrame(animate);
 refresh().catch(()=>notice('Cannot reach the host. Check the connection.'));
 setInterval(()=>{if(document.activeElement?.tagName!=='SELECT')refresh().catch(()=>notice('Connection lost. Waiting for the host…'));},2000);

@@ -4,3 +4,5 @@ __pycache__/
 savegame.json
 savegame.json.tmp
 savegame_chunks/
+node_modules/
+performance-results/

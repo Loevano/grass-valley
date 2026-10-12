@@ -141,8 +141,9 @@ const run=new Function('document','window','localStorage','setTimeout','clearTim
     delete town.inventory_version;delete town.buildings[0].stored_goods;
     town.player.worker_tools={masterwork_sickle:1};selection={type:'player'};render();
     check($('selection-details').children.some(child=>child.textContent?.includes('Masterwork sickle')&&child.textContent.includes('+75% farming')),'Inventory displays actual tier bonus');
-    check(villagerAccessories({kind:'villager',villager:{worker_tool:'steel_axe'}}).axe,'Steel axe is visible on untrained workers');
-    check(villagerAccessories({kind:'villager',villager:{worker_tool:'masterwork_sickle'}}).sickle,'Masterwork sickle is visible on untrained workers');
+    check(villagerAccessories({kind:'villager',villager:{job:'woodcutting',woodcutting:0,worker_tool:'steel_axe'}}).axe,'Steel axe is visible on untrained woodcutters');
+    check(villagerAccessories({kind:'villager',villager:{job:'farming',farming:0,worker_tool:'masterwork_sickle'}}).sickle,'Masterwork sickle is visible on untrained farmers');
+    check(!villagerAccessories({kind:'villager',villager:{job:'farming',worker_tool:'steel_axe'}}).axe,'A mismatched tool does not change profession artwork');
     selection={type:'npc',index:0};
     delete town.npcs;render();check(selection===null,'Missing selected NPC closes inspector safely');
     viewed='own';key('o');check(selection===null,'Missing NPC list is safe to interact with');

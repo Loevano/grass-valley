@@ -1,12 +1,15 @@
 import copy
 import unittest
+from unittest.mock import patch
 
 from server import construct, capacity, command, ensure_resources, new_town, tick, settler_building, work_assignment
 
 
 class VillageRules(unittest.TestCase):
     def setUp(self):
-        self.town = new_town('Willowbrook')
+        # Keep path and production assertions independent of random terrain/NPC placement.
+        with patch('terrain.secrets.randbits', return_value=42):
+            self.town = new_town('Willowbrook')
         # These tests isolate base rates; talent effects have dedicated coverage.
         for villager in self.town['villagers']:
             villager['talents'] = {}

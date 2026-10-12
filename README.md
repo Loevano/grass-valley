@@ -481,11 +481,57 @@ you can answer later.
 
 ## Check the simulation
 
+Run every Python and JavaScript correctness test with:
+
+```sh
+python3 tools/check.py
+```
+
+For browser performance comparisons, install the development-only browser harness once:
+
+```sh
+npm ci
+npx playwright install chromium
+```
+
+Before developing, record the current commit with `git rev-parse HEAD`. After the
+change, compare against that commit on the same machine:
+
+```sh
+python3 tools/check.py --performance --baseline <commit>
+```
+
+The runner uses five alternating baseline/candidate repetitions, fixed browser
+fixtures, temporary baseline source, and disposable server saves. It measures real
+Canvas rendering in Chromium, movement response, command acknowledgements,
+snapshot-to-draw latency, worker readiness, and concurrent HTTP requests during
+ticks and saves. The large client fixture has four towns, 200 idle workers,
+50,000 resources, animals, and 128 cached chunks; it exercises a mass replan but
+does not represent every possible late-game profession mix.
+
+Results go into ignored `performance-results/` directories as Markdown, JSON, and
+individual logs. A repeatable slowdown must exceed both 20% and its absolute
+allowance: 2 ms for frame work, 5 ms for server work, or 20 ms for interaction and
+snapshot latency. At least 80% of paired runs must agree. Candidate frame-work p95
+also has an 8 ms absolute budget. Disagreeing/noisy samples or unavailable browser
+support produce **inconclusive**, never a pass. Exit codes are 0 for pass, 1 for
+test failures/regressions, and 2 for inconclusive measurements.
+
+Use `--headed` for a visible browser, `--trace` to retain separate Chrome diagnostic
+traces, `--cycles 30` for more server samples, or `--performance-only` when correctness
+was already checked. Performance scenarios run sequentially. Callback intervals
+are diagnostic scheduling measurements; headless results are not presented-frame
+or dropped-frame measurements. For actual display smoothness, inspect the frame
+events in a headed Chrome trace. Screenshots/profiling are excluded from scored
+timings. The runner never overwrites or automatically promotes a baseline.
+
 Profile a synthetic four-player starting world with ticks, saves, cached map
 polls, and movement using `python3 profile_server.py`. Add `--profile` to show
 the most expensive functions or `--ticks 50` for a longer run. It uses temporary
 saves and reports median/p95 timings; it does not load or modify your game.
 This measures server work, excluding network latency and browser rendering.
+Use `--developed` for four towns with 50 workers each, or `--json` for structured
+timings. This standalone profiler also uses temporary saves.
 
 ```sh
 python3 -m unittest discover -s tests -v

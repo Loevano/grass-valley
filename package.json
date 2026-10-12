@@ -1,0 +1,11 @@
+{
+  "name": "lantern-vale-checks",
+  "private": true,
+  "scripts": {
+    "test": "python3 tools/check.py",
+    "test:performance": "python3 tools/check.py --performance"
+  },
+  "devDependencies": {
+    "playwright": "1.61.1"
+  }
+}

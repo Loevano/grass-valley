@@ -11,7 +11,9 @@ from server import command, new_town, tick
 
 class MoreLocals(unittest.TestCase):
     def setUp(self):
-        self.town = new_town('More locals')
+        # This roster fixture requires all biome offers, independent of random terrain.
+        with patch('terrain.secrets.randbits', return_value=42):
+            self.town = new_town('More locals')
 
     def visit(self, name):
         index = next(i for i, npc in enumerate(self.town['npcs']) if npc['name'] == name)

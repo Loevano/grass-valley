@@ -25,7 +25,8 @@ const run=new Function('document','window','localStorage','setTimeout','clearTim
     world={world_id:'test',towns:{own:town},...(shared?{shared_map:town}:{})};
     for(let step=-8;step<=8;step++){
       hero={...hero,x:5+step/10};marks.length=0;draw();
-      const heroIndex=marks.indexOf(hero);
+      const heroIndex=marks.findIndex(mark=>mark.kind==='player'&&mark.townId==='own');
+      check(heroIndex>=0,'The player is drawn even when rendering creates a display copy');
       check(marks[0]?.kind==='soil','Acre soil is always below the player');
       const crops=marks.filter(mark=>mark.kind==='crop');
       check(crops.length===16,'All mature stalks are rendered');

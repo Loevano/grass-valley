@@ -12,7 +12,7 @@ const WorkerAnimation = (() => {
       &&(Number.isInteger(v.building_index)?town.buildings[v.building_index]:huts[i%huts.length])===home);
     return crew.length?crew.slice(0,boatLevel(home)).some(worker=>worker.i===index):index<boatLevel(home);
   }
-  function fishingPier(town,home){
+  function* fishingPierSteps(town,home){
     const occupied=new Set([...(town.obstacles || town.buildings),...(town.npcs || [])].map(key));
     const waters=town.map_resources.filter(r=>r.kind==='water'&&distance(home,r)<=3&&!occupied.has(key(r)))
       .sort((a,b)=>distance(home,a)-distance(home,b)||a.y-b.y||a.x-b.x);
@@ -24,25 +24,31 @@ const WorkerAnimation = (() => {
     for(let x=bounds.minX;x<=bounds.maxX;x++)for(let y=bounds.minY;y<=bounds.maxY;y++)
       if(town.terrain?.[y]?.[x]==='v'||(town.chunked&&!town.terrain?.[y]?.[x]))blocked.add(`${x},${y}`);
     for(const water of waters){
-      const deck=route(home,water,blocked,size,false,bounds);
+      const deck=(yield* routeSteps(home,water,blocked,size,false,bounds));
       if(deck&&deck.length<=3)return [home,...deck];
     }
     return [];
   }
-  function waterDepths(resources){
+  function* waterDepthsSteps(resources){
     const water=new Set(resources.filter(r=>r.kind==='water').map(key)),depths=new Map(),queue=[];
+    let visited=0;
     for(const tile of water){
+      if(++visited%128===0)yield;
       const [x,y]=tile.split(',').map(Number),p={x,y};
       if(neighbors(p).some(next=>!water.has(key(next)))){depths.set(tile,1);queue.push(p);}
     }
-    for(const tile of queue)for(const next of neighbors(tile)){
-      if(water.has(key(next))&&!depths.has(key(next))){depths.set(key(next),depths.get(key(tile))+1);queue.push(next);}
+    for(const tile of queue){
+      if(++visited%128===0)yield;
+      for(const next of neighbors(tile)){
+        if(water.has(key(next))&&!depths.has(key(next))){depths.set(key(next),depths.get(key(tile))+1);queue.push(next);}
+      }
     }
     return depths;
   }
-  function route(start, target, blocked, size=120, adjacent=true, bounds=null) {
+  function* routeSteps(start, target, blocked, size=120, adjacent=true, bounds=null) {
     const queue = [start], previous = new Map([[key(start),null]]);
     for(let i=0;i<queue.length;i++){
+      if(i%128===127)yield;
       const p=queue[i];
       if(target instanceof Set?target.has(key(p)):distance(p,target)===(adjacent?1:0)){
         const path=[];
@@ -57,20 +63,20 @@ const WorkerAnimation = (() => {
     }
     return null;
   }
-  function travel(start,target,state,adjacent=true){
-    if(!state.sailing)return route(start,target,state.blocked,state.size,adjacent,state.bounds);
+  function* travelSteps(start,target,state,adjacent=true){
+    if(!state.sailing)return (yield* routeSteps(start,target,state.blocked,state.size,adjacent,state.bounds));
     const {water,berth,landBlocked,seaBlocked,seaBounds}=state.sailing;
     const afloat=water.has(key({x:Math.round(start.x),y:Math.round(start.y)}));
-    if(target===state.source&&afloat)return route(start,target,seaBlocked,state.size,false,seaBounds);
+    if(target===state.source&&afloat)return (yield* routeSteps(start,target,seaBlocked,state.size,false,seaBounds));
     const outbound=target===state.source;
-    const approach=outbound?route(start,berth,landBlocked,state.size,false,state.bounds):
-      afloat?route(start,berth,seaBlocked,state.size,false,seaBounds):[];
-    const sailing=outbound?route(berth,target,seaBlocked,state.size,false,seaBounds):
-      route(afloat?berth:start,target,landBlocked,state.size,true,state.bounds);
+    const approach=outbound?(yield* routeSteps(start,berth,landBlocked,state.size,false,state.bounds)):
+      afloat?(yield* routeSteps(start,berth,seaBlocked,state.size,false,seaBounds)):[];
+    const sailing=outbound?(yield* routeSteps(berth,target,seaBlocked,state.size,false,seaBounds)):
+      (yield* routeSteps(afloat?berth:start,target,landBlocked,state.size,true,state.bounds));
     return approach===null||sailing===null?null:[...approach,...sailing];
   }
-  function plan(town, villager, index, state) {
-    const blocked=new Set([...(town.obstacles || town.buildings),...town.map_resources,...(town.npcs || [])].map(key));
+  function* planSteps(town, villager, index, state) {
+    const blocked=town.navigation?town.navigation.overlay():new Set([...(town.obstacles || town.buildings),...town.map_resources,...(town.npcs || [])].map(key));
     if(villager.construction_target || villager.logistics_target || villager.job==='farming'){
       for(const acre of (town.obstacles || town.buildings).filter(b=>b.kind==='acre'&&!b.construction))blocked.delete(key(acre));
     }
@@ -78,8 +84,8 @@ const WorkerAnimation = (() => {
     const preferred=hall?{x:hall.x-2+index%5,y:hall.y+3+Math.floor(index/5)}:{x:3+index%5,y:8+Math.floor(index/5)};
     const size=town.map_size || 120;
     const center=town.town_origin || hall || preferred;
-    const bounds=town.chunked?{minX:Math.max(0,center.x-60),maxX:Math.min(size-1,center.x+60),
-      minY:Math.max(0,center.y-60),maxY:Math.min(size-1,center.y+60)}:null;
+    const bounds=town.navigation?.bounds || (town.chunked?{minX:Math.max(0,center.x-60),maxX:Math.min(size-1,center.x+60),
+      minY:Math.max(0,center.y-60),maxY:Math.min(size-1,center.y+60)}:null);
     const current=state?(state.path[0] || {x:Math.round(state.x),y:Math.round(state.y)}):villager.logistics_position || villager.construction_position || preferred;
     const minX=bounds?.minX || 0,maxX=bounds?.maxX ?? size-1,minY=bounds?.minY || 0,maxY=bounds?.maxY ?? size-1;
     const currentBiome=town.terrain?.[current.y]?.[current.x];
@@ -89,9 +95,11 @@ const WorkerAnimation = (() => {
     // Most replans already stand on an open tile. Otherwise retain the first
     // closest tile in column order without allocating every open map tile.
     let start=currentOpen?current:preferred,best=currentOpen?0:Infinity;
-    for(let x=minX;x<=maxX;x++)for(let y=minY;y<=maxY;y++){
+    let inspected=0;
+    if(!town.navigation||best>0)for(let x=minX;x<=maxX;x++)for(let y=minY;y<=maxY;y++){
+      if(++inspected%128===0)yield;
       const biome=town.terrain?.[y]?.[x];
-      if(biome==='v'||(town.chunked&&!biome))blocked.add(`${x},${y}`);
+      if(biome==='v'||(town.chunked&&!biome)){if(!town.navigation)blocked.add(`${x},${y}`);}
       else if(best>0&&!blocked.has(`${x},${y}`)){
         const delta=Math.abs(x-current.x)+Math.abs(y-current.y);
         if(delta<best){start={x,y};best=delta;}
@@ -102,7 +110,7 @@ const WorkerAnimation = (() => {
     if(villager.logistics_target&&!villager.construction_target){
       const target=villager.logistics_target,trip=villager.logistics_trip;
       const remaining=trip?.path.slice(state?0:(trip.step || 0)).map(([x,y])=>({x,y}));
-      const path=route(start,remaining?.[0] || target,blocked,size,false,bounds);
+      const path=(yield* routeSteps(start,remaining?.[0] || target,blocked,size,false,bounds));
       const deliveryPath=path===null?[]:[...approach,...path,...(remaining?.slice(1) || [])];
       return {...position,path:deliveryPath,phase:path===null?'waiting':'walking',source:target,home:null,blocked,size,bounds,transport:true,
         transportCargo:trip?.cargo || {},pickupRemaining:(trip?.path.length || 1)-1-(trip?.pickup_step ?? 0),
@@ -124,9 +132,9 @@ const WorkerAnimation = (() => {
       workSpot=source;
     }
     const boating=!villager.construction_target&&villager.job==='fishing'&&source&&home?.kind==='fishing_hut'&&fishingBoating(town,home,index);
-    if(!villager.construction_target&&villager.job==='fishing'&&home?.kind==='fishing_hut')pier=fishingPier(town,home);
+    if(!villager.construction_target&&villager.job==='fishing'&&home?.kind==='fishing_hut')pier=(yield* fishingPierSteps(town,home));
     if(boating){
-      const depths=waterDepths(town.map_resources);
+      const depths=(yield* waterDepthsSteps(town.map_resources));
       const water=new Set(town.map_resources.filter(r=>r.kind==='water'&&distance(home,r)<=fishingReach(home)
         &&depths.get(key(r))<=boatLevel(home)+1&&town.terrain?.[r.y]?.[r.x]!=='v').map(key));
       const occupied=new Set([...(town.obstacles || town.buildings),...(town.npcs || [])].map(key));
@@ -160,7 +168,7 @@ const WorkerAnimation = (() => {
       for(const water of town.map_resources.filter(r=>r.kind==='water'&&distance(home,r)<=3)){
         if(town.terrain?.[water.y]?.[water.x]!=='v')pierBlocked.delete(key(water));
       }
-      const deck=route(home,source,pierBlocked,size,false,bounds);
+      const deck=(yield* routeSteps(home,source,pierBlocked,size,false,bounds));
       if(deck&&deck.length<=3){
         pier=[home,...deck];workSpot=source;
         for(const tile of pier)blocked.delete(key(tile));
@@ -175,7 +183,7 @@ const WorkerAnimation = (() => {
       approach=distance(position,start)>1e-9?[start]:[];
     }
     const routing={blocked,size,bounds,sailing,source};
-    let path=source?travel(start,workSpot || source,routing,!workSpot):home?route(start,home,blocked,size,true,bounds):[];
+    let path=source?(yield* travelSteps(start,workSpot || source,routing,!workSpot)):home?(yield* routeSteps(start,home,blocked,size,true,bounds)):[];
     if(path!==null)path=[...approach,...path];
     let castTarget=villager.job==='fishing'?source:null;
     if(villager.job==='fishing'&&source){
@@ -197,19 +205,19 @@ const WorkerAnimation = (() => {
       stationary:!!source&&source.kind===workplace?.kind&&distance(source,workplace)===0&&!villager.construction_target,
       construction:!!villager.construction_target,elapsed:0,clock:state?.clock || index*.37,facing:state?.facing || 1};
   }
-  function fetchWater(state) {
+  function* fetchWaterSteps(state) {
     // Search all reachable banks in one pass; water need not be near the farm.
     const banks=new Map();
     for(const water of state.water)for(const bank of neighbors(water)){
       if(bank.x>=0&&bank.y>=0&&bank.x<state.size&&bank.y<state.size&&!state.blocked.has(key(bank)))banks.set(key(bank),water);
     }
-    const path=route(state,new Set(banks.keys()),state.blocked,state.size,false,state.bounds);
+    const path=(yield* routeSteps(state,new Set(banks.keys()),state.blocked,state.size,false,state.bounds));
     if(path===null){state.phase='waiting_water';return;}
     const bank=path.at(-1) || state;
     state.waterSource=banks.get(key(bank));state.path=path;state.waterElapsed=0;
     state.phase=path.length?'fetching_water':'collecting_water';
   }
-  function advance(state, seconds, active) {
+  function* advanceSteps(state, seconds, active) {
     if(state.storagePaused&&!state.transport&&!state.construction)return;
     const cargo=()=>state.transport&&state.path.length<=state.pickupRemaining&&state.path.length>state.deliveryRemaining?state.transportCargo:{};
     state.cargo=cargo();
@@ -242,7 +250,7 @@ const WorkerAnimation = (() => {
     if(state.phase==='collecting_water'){
       state.waterElapsed+=seconds;
       if(state.waterElapsed>=.65){
-        const path=route(state,state.workSpot || state.source,state.blocked,state.size,!state.workSpot,state.bounds);
+        const path=(yield* routeSteps(state,state.workSpot || state.source,state.blocked,state.size,!state.workSpot,state.bounds));
         state.path=path || [];state.phase=path===null?'waiting_water':path.length?'returning_water':'working';
         state.waterReady=path!==null&&!path.length;
       }
@@ -250,22 +258,28 @@ const WorkerAnimation = (() => {
     }
     state.elapsed+=seconds;
     if(state.farming&&state.phase==='working'&&state.elapsed>=4&&!state.waterReady){
-      state.elapsed=4;fetchWater(state);return;
+      state.elapsed=4;(yield* fetchWaterSteps(state));return;
     }
     if(state.phase==='working'&&state.castTarget&&state.elapsed>=2.35&&state.fishingCaught===null){
       state.fishingCaught=state.latestFishingCatch?.caught ?? true;
     }
     if(state.phase==='working'&&state.elapsed>=(state.workDuration || 3.2)){
       if(state.fishingCaught===false){state.elapsed=0;state.fishingCaught=null;return;}
-      const path=state.stationary?[]:state.home?travel(state,state.home,state):null;
+      const path=state.stationary?[]:state.home?(yield* travelSteps(state,state.home,state)):null;
       if(path===null)return;
       state.path=path;state.phase=path.length?'returning':'depositing';state.elapsed=0;
     }else if(state.phase==='depositing'&&state.elapsed>=.65){
       if(state.hostWork){state.elapsed=.65;return;}
-      const path=travel(state,state.workSpot || state.source,state,!state.workSpot);
+      const path=(yield* travelSteps(state,state.workSpot || state.source,state,!state.workSpot));
       state.path=path || [];state.phase=path===null?'waiting':path.length?'walking':'working';state.elapsed=0;state.fishingCaught=null;state.waterReady=false;
     }
   }
-  return {route,plan,advance,waterDepths,fishingPier};
+  function finish(steps){let result;do{result=steps.next();}while(!result.done);return result.value;}
+  const route=(...args)=>finish(routeSteps(...args));
+  const plan=(...args)=>finish(planSteps(...args));
+  const advance=(...args)=>finish(advanceSteps(...args));
+  const waterDepths=(...args)=>finish(waterDepthsSteps(...args));
+  const fishingPier=(...args)=>finish(fishingPierSteps(...args));
+  return {route,plan,advance,waterDepths,fishingPier,routeSteps,planSteps,advanceSteps};
 })();
 if(typeof module!=='undefined')module.exports=WorkerAnimation;
