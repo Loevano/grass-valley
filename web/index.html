@@ -112,5 +112,15 @@
 <div class="quarry-actions"><button id="quarry-enter">Enter quarry</button><button id="quarry-leave" class="quiet">Leave expedition</button><button id="quarry-close" class="quiet">Close map</button></div>
 <p class="muted">Closing this map keeps you in the expedition; reopen it from You. Leave expedition to return to the valley. Progress survives reloads. If a companion leaves, a safety counterweight lets the remaining player finish.</p>
 </dialog>
-<script src="scene.js"></script><script src="animations.js"></script><script src="app.js"></script><script src="quarry.js"></script>
+<dialog id="lanterns-dialog" aria-labelledby="lanterns-title">
+<span class="eyebrow">COOPERATIVE COURIER PATH</span><h2 id="lanterns-title">The Falling Lanterns</h2>
+<p>A courier lost a satchel beneath the ruined lantern arches. Two founders must enter and reach the far end together. Dodge falling debris in real time using your movement keys or the buttons.</p>
+<p id="lanterns-status" role="status" aria-live="polite"></p><p id="lanterns-party"></p>
+<div id="lanterns-board" aria-label="Courier path"></div>
+<p class="muted">!: warning · ×: falling debris · C: safe checkpoint · T: satchel. Gold marks you. Hits return you to your checkpoint without losing resources. Hazards pause when fewer than two founders are inside.</p>
+<div id="lanterns-directions" class="quarry-actions"></div><p id="lanterns-reward"></p><p id="lanterns-error" role="alert"></p>
+<div class="quarry-actions"><button id="lanterns-enter">Enter courier path</button><button id="lanterns-collect">Recover satchel</button><button id="lanterns-leave" class="quiet">Leave expedition</button><button id="lanterns-close" class="quiet">Close map</button></div>
+<p class="muted">Closing the map leaves the expedition. Positions and checkpoints survive rejoining and reloads. Both founders must stay inside to move. One expedition per world; each member earns 25 coins and a courier lantern badge once.</p>
+</dialog>
+<script src="scene.js"></script><script src="animations.js"></script><script src="app.js"></script><script src="quarry.js"></script><script src="lanterns.js"></script>
 </body></html>

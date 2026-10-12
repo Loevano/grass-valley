@@ -20,6 +20,7 @@ import npcs
 import trading
 import horses
 import quests
+import lanterns
 from spatial import SpatialIndex
 
 from terrain import ensure_terrain, remove_invalid_trees, ensure_industry
@@ -821,6 +822,10 @@ def command(town, data, world=None):
         bind_map(world)
     ensure_resources(town)
     action = data.get('action')
+    if action in {'join_lanterns', 'leave_lanterns', 'lanterns_walk', 'lanterns_collect'}:
+        return lanterns.change(town, data, world)
+    if world and lanterns.inside(world, town) and action in {'walk', 'fish', 'chop', 'gather', 'join_quarry'}:
+        raise ValueError('Leave the courier path before exploring the valley or quarry.')
     if action in {'join_quarry', 'leave_quarry', 'quarry_walk', 'quarry_interact'}:
         return quests.change(town, data, world)
     if world and quests.inside(world, town) and action in {'walk', 'fish', 'chop', 'gather'}:
@@ -1281,6 +1286,11 @@ class Handler(SimpleHTTPRequestHandler):
                 # a slow LAN transfer can block movement or simulation ticks.
                 body = json.dumps(snapshot, separators=(',', ':')).encode()
             self.reply_body(200, body)
+        elif route.path == '/api/lanterns':
+            with LOCK:
+                body = json.dumps({'world_id': ACTIVE_WORLD, 'quest': lanterns.snapshot(WORLD)},
+                                  separators=(',', ':')).encode()
+            self.reply_body(200, body)
         elif self.path == '/api/players':
             with LOCK:
                 snapshot = {'world_id': ACTIVE_WORLD, 'sampled_at': time.monotonic(),
@@ -1428,6 +1438,16 @@ def save():
     temporary.replace(SAVE)
 
 
+def lantern_simulation():
+    previous = time.monotonic()
+    while True:
+        time.sleep(.05)
+        with LOCK:
+            now = time.monotonic()
+            lanterns.advance(WORLD, now - previous)
+            previous = now
+
+
 def simulation():
     while True:
         time.sleep(TICK_SECONDS)
@@ -1445,6 +1465,7 @@ if __name__ == '__main__':
     load()
     server = ThreadingHTTPServer(('0.0.0.0', args.port), Handler)
     threading.Thread(target=simulation, daemon=True).start()
+    threading.Thread(target=lantern_simulation, daemon=True).start()
     print('Lantern Vale running at http://localhost:' + str(args.port), flush=True)
     print('Friends can join using http://YOUR-LAN-IP:' + str(args.port), flush=True)
     try:

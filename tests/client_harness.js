@@ -15,7 +15,7 @@ module.exports=function client(){
     fetch:()=>new Promise(()=>{})};
   sandbox.window={devicePixelRatio:1,addEventListener(name,callback){listeners.set(name,callback);}};
   const context=vm.createContext(sandbox);
-  for(const file of ['scene.js','animations.js','app.js','quarry.js']){
+  for(const file of ['scene.js','animations.js','app.js','quarry.js','lanterns.js']){
     vm.runInContext(fs.readFileSync(path.join(__dirname,'../web',file),'utf8'),context,{filename:file});
   }
   return {run:code=>vm.runInContext(code,context),frame(time){frames.shift()(time);},listeners,elements,get paints(){return paints;}};

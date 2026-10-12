@@ -160,6 +160,7 @@ function clearWalk(){walkKeys.clear();walkCooldown=0;}
 function canControlPlayer(allowBuilding=false){
   return (world.shared_map || viewed===identity?.town_id) && !!world.towns[identity?.town_id]?.player && (allowBuilding || !tool)
     && !world.quarry?.members?.[identity?.town_id]?.inside && !$('quarry-dialog')?.open
+    && !world.lanterns?.members?.[identity?.town_id]?.inside && !$('lanterns-dialog')?.open
     && !$('world-menu').open && !$('delete-world-dialog').open && !$('upgrade-dialog').open
     && !$('settings-panel').open && !document.activeElement?.isContentEditable
     && !['INPUT','TEXTAREA','SELECT'].includes(document.activeElement?.tagName)
@@ -930,7 +931,7 @@ $('settings-button').onclick=()=>{
 $('close-settings').onclick=()=>{ $('settings-panel').close();updateSettingsButton(); };
 $('settings-panel').addEventListener('close',updateSettingsButton);
 window.addEventListener('keydown',event=>{
-  if($('quarry-dialog')?.open)return;
+  if($('quarry-dialog')?.open||$('lanterns-dialog')?.open)return;
   const key=event.key.toLowerCase();
   if(key===','&&event.metaKey&&!event.ctrlKey&&!event.altKey&&!event.shiftKey){
     event.preventDefault();
@@ -1400,6 +1401,8 @@ function renderSelection(town){
     if(viewed===identity?.town_id){
       const quarry=document.createElement('button');quarry.textContent='The Sealed Quarry · Puzzle prototype';
       quarry.onclick=()=>openQuarry();$('selection-details').append(quarry);
+      const courier=document.createElement('button');courier.textContent='The Falling Lanterns · Movement quest';
+      courier.onclick=()=>openLanterns();$('selection-details').append(courier);
       if(town.player?.leading_horse){const note=document.createElement('p');note.textContent='Leading a wild horse. Walk beside your stable and select it to settle the horse.';$('selection-details').append(note);}
       if(town.player?.horse){const button=document.createElement('button');button.textContent=town.player.mounted?'Dismount horse':'Mount horse · +75% land speed';button.onclick=()=>act({action:'toggle_mount'});$('selection-details').append(button);}
       if(town.player?.boat){

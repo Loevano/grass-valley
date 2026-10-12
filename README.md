@@ -147,6 +147,17 @@ the Python host, refresh both browsers, and create a new world to use the shared
   production continues during the adventure. There is one expedition per world;
   replay it in a new world. Browser disconnection keeps your place in the expedition;
   use **Leave expedition** before disconnecting if your companion still needs the gate.
+- Select **You**, then **The Falling Lanterns · Movement quest** for a real-time
+  cooperative courier course. At least two founders must enter and stay inside;
+  movement and hazards pause whenever fewer than two remain. Watch amber **!**
+  warning tiles and dodge red **×** debris with your movement keys or direction
+  buttons. Column **C** is a safe checkpoint; hits return you there (or to the
+  entrance before reaching it) without consuming resources. Two founders must
+  reach **T** together before either can recover the lost satchel. Every expedition
+  member earns 25 coins and a courier lantern badge once per world. Closing the
+  map leaves the expedition; rejoining preserves your position and checkpoint.
+  Progress saves with the world, and hazards do not run while the host is stopped.
+  A disconnected browser remains inside until its founder rejoins and leaves.
 - Your gold-clad villager is marked **You**. Click the map and hold **WASD** to
   walk in screen directions. Press **Y** to toggle camera lock: when locked, the
   camera follows your movement; when unlocked, walking leaves the camera in place.
