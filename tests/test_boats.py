@@ -47,6 +47,9 @@ class Boats(unittest.TestCase):
                       logistics_position={'x': 6, 'y': 3})
         for spatial in (None, SpatialIndex(self.town['map_resources'])):
             self.assertEqual(work_assignment(self.town, 'fishing', 0, spatial), (hut, water[-1]))
+        work_cycles.advance(self.town, self.town, fisher, hut, water[-1], 0, 0)
+        path = fisher['work_animation']['path']
+        self.assertEqual([(p['x'], p['y']) for p in path if p['y'] == 2][:2], [(7, 2), (8, 2)])
         phases, positions = set(), set()
         for _ in range(500):
             unloaded = work_cycles.advance(self.town, self.town, fisher, hut, water[-1], 0, .1)

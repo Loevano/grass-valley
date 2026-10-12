@@ -37,6 +37,11 @@ const WorkerAnimation = (() => {
     }
     return [];
   }
+  function fishingBerth(home,pier,water){
+    const dock=pier.at(-1) || home,deck=new Set(pier.map(key));
+    return water.filter(tile=>distance(tile,dock)===1&&!deck.has(key(tile)))
+      .sort((a,b)=>distance(home,a)-distance(home,b)||a.y-b.y||a.x-b.x)[0] || dock;
+  }
   function* waterDepthsSteps(resources){
     const water=new Set(resources.filter(r=>r.kind==='water').map(key)),depths=new Map(),queue=[];
     let visited=0;
@@ -127,15 +132,16 @@ const WorkerAnimation = (() => {
   }
   function* travelSteps(start,target,state,adjacent=true){
     if(!state.sailing)return (yield* routeSteps(start,target,state.blocked,state.size,adjacent,state.bounds,state.roads,state.roadMode));
-    const {water,berth,landBlocked,seaBlocked,seaBounds}=state.sailing;
-    const afloat=water.has(key({x:Math.round(start.x),y:Math.round(start.y)}));
+    const {water,berth,dock,landBlocked,boardingBlocked,seaBlocked,seaBounds}=state.sailing;
+    const tile={x:Math.round(start.x),y:Math.round(start.y)};
+    const afloat=water.has(key(tile))&&(key(tile)!==key(dock)||key(dock)===key(berth));
     if(target===state.source&&afloat)return (yield* routeSteps(start,target,seaBlocked,state.size,false,seaBounds));
     const outbound=target===state.source;
-    const approach=outbound?(yield* routeSteps(start,berth,landBlocked,state.size,false,state.bounds,state.roads)):
+    const approach=outbound?(yield* routeSteps(start,dock,boardingBlocked,state.size,false,state.bounds,state.roads)):
       afloat?(yield* routeSteps(start,berth,seaBlocked,state.size,false,seaBounds)):[];
     const sailing=outbound?(yield* routeSteps(berth,target,seaBlocked,state.size,false,seaBounds)):
-      (yield* routeSteps(afloat?berth:start,target,landBlocked,state.size,true,state.bounds,state.roads));
-    return approach===null||sailing===null?null:[...approach,...sailing];
+      (yield* routeSteps(afloat?berth:start,dock,landBlocked,state.size,false,state.bounds,state.roads));
+    return approach===null||sailing===null?null:[...approach,...(outbound&&key(dock)!==key(berth)?[berth]:[]),...sailing];
   }
   function* planSteps(town, villager, index, state) {
     const roads=town.navigation?.roads || new Set((town.roads || []).filter(r=>!r.construction).map(key));
@@ -211,10 +217,11 @@ const WorkerAnimation = (() => {
         }
       }
       const connected=queue.filter(tile=>water.has(key(tile))&&!occupied.has(key(tile)));
-      const berth=connected.sort((a,b)=>distance(home,a)-distance(home,b)||a.y-b.y||a.x-b.x)[0] || source;
+      const dock=pier.at(-1) || home,berth=fishingBerth(home,pier,connected);
       const seaBounds={minX:Math.max(0,home.x-fishingReach(home)),maxX:Math.min(size-1,home.x+fishingReach(home)),
         minY:Math.max(0,home.y-fishingReach(home)),maxY:Math.min(size-1,home.y+fishingReach(home))};
       const seaBlocked=new Set(),landBlocked=new Set([...(town.obstacles || town.buildings),...town.map_resources,...(town.npcs || [])].map(key));
+      for(const tile of pier)landBlocked.delete(key(tile));
       landBlocked.delete(key(home));landBlocked.delete(key(berth));
       const connectedWater=new Set(connected.map(key));
       for(let x=seaBounds.minX;x<=seaBounds.maxX;x++)for(let y=seaBounds.minY;y<=seaBounds.maxY;y++){
@@ -223,7 +230,9 @@ const WorkerAnimation = (() => {
       // Preserve terrain blockers for the land approach to the berth.
       for(const tile of blocked)if(!water.has(tile))landBlocked.add(tile);
       landBlocked.delete(key(home));
-      sailing={water:connectedWater,berth,landBlocked,seaBlocked,seaBounds};
+      const boardingBlocked=new Set(landBlocked);
+      if(key(dock)!==key(berth))boardingBlocked.add(key(berth));
+      sailing={water:connectedWater,berth,dock,landBlocked,boardingBlocked,seaBlocked,seaBounds};
       blocked.delete(key(home));workSpot=source;
     }else if(!villager.construction_target&&villager.job==='fishing'&&source&&home?.kind==='fishing_hut'){
       // A hut can occupy the only bank tile; its pier provides access over water.
@@ -255,7 +264,7 @@ const WorkerAnimation = (() => {
       const occupied=new Set([...(town.obstacles || town.buildings),...(town.npcs || [])].map(key));
       // Keep the entire cast over connected water, preferring farther water away from the hut.
       for(const direction of neighbors({x:0,y:0})){
-        for(let reach=1;reach<=3;reach++){
+        for(let reach=1;reach<=(boating?1:3);reach++){
           const tile={x:source.x+direction.x*reach,y:source.y+direction.y*reach};
           if(!water.has(key(tile))||occupied.has(key(tile))||town.terrain?.[tile.y]?.[tile.x]==='v')break;
           if(distance(tile,source)>distance(castTarget,source)||

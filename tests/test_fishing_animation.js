@@ -12,10 +12,10 @@ const draw=new Function('ctx','polygon','point','tileW','tileH','npcColors',
   source.slice(source.indexOf('function villagerAccessories('),source.indexOf('function draw(seconds=0)'))+
   '\nreturn drawVillager;'
 )(ctx,(points,color)=>marks.push({method:'polygon',points,color}),point,46,23,{});
-function render(state,active=true,index=0){
+function render(state,active=true,index=0,gear={}){
   marks.length=0;
   ctx.strokeStyle=undefined;ctx.fillStyle=undefined;
-  draw({kind:'villager',index,x:state.x,y:state.y,state,active,villager:{job:'fishing'}});
+  draw({kind:'villager',index,x:state.x,y:state.y,state,active,villager:{job:'fishing',...gear}});
   return marks.slice();
 }
 const state={x:5,y:5,path:[],phase:'working',clock:0,elapsed:0,facing:1,source:{x:6,y:5}};
@@ -106,9 +106,16 @@ assert.deepStrictEqual(sailor.pier,[sailingTown.buildings[0],{x:3,y:2}],'Boat pu
 const sea=new Set(sailingTown.map_resources.map(r=>r.x+','+r.y));
 const boarding=sailor.path.findIndex(p=>sea.has(p.x+','+p.y));
 assert(boarding>=0);
+assert.deepStrictEqual(sailor.sailing.dock,{x:3,y:2});
+assert.deepStrictEqual(sailor.sailing.berth,{x:3,y:3},'Boat waits one tile beyond the wooden dock');
+assert.deepStrictEqual(sailor.path.slice(boarding,boarding+2).map(({x,y})=>({x,y})),[{x:3,y:2},{x:3,y:3}],'Fisher reaches the dock before boarding');
 assert(sailor.path.slice(boarding).every(p=>sea.has(p.x+','+p.y)),'Sailing follows the curved water rather than crossing land');
 for(let i=0;i<300&&sailor.path.length;i++)animation.advance(sailor,.1,true);
 assert.deepStrictEqual([sailor.x,sailor.y],[5,2],'Boat arrives at the offshore fishing spot');
+sailor.latestFishingCatch={caught:false};
+animation.advance(sailor,3.3,true);
+assert.strictEqual(sailor.phase,'working','An empty cast keeps the boat offshore');
+sailor.latestFishingCatch={caught:true};
 const pausedElapsed=sailor.elapsed;
 animation.advance(sailor,1,false);
 assert.strictEqual(sailor.elapsed,pausedElapsed,'Full storage pauses fishing offshore');
@@ -161,5 +168,15 @@ for(let tier=1;tier<=3;tier++){
       assert(fisher.pier.some(p=>p.x===fisher.x&&p.y===fisher.y),'Rod fishers stand on the dock');
     }
   }
+}
+const netState={...state,path:[],phase:'working',elapsed:1,home:{profession_upgrades:['nets']}};
+const basicNet=render(netState);
+assert(basicNet.some(mark=>mark.color==='#a6bbb1'),'Nets cast visible mesh instead of a float');
+assert(!basicNet.some(mark=>mark.color==='#df785e'),'Net fishing does not draw a rod float');
+assert(render({...netState,home:{profession_upgrades:['wool_nets']}}).some(mark=>mark.color==='#eee0bd'),'Wool nets have distinct mesh');
+assert(render({...netState,elapsed:2.7}).some(mark=>mark.color==='#b8d8d5'),'A net lifts the caught fish');
+assert(!render({...netState,elapsed:2.7,latestFishingCatch:{caught:false}}).some(mark=>mark.color==='#b8d8d5'),'Confirmed empty nets contain no fish');
+for(const [worker_tool,color] of [['fine_fishing_rod','#a78454'],['steel_fishing_rod','#bacac5'],['masterwork_fishing_rod','#d9bd70']]){
+  assert(render({...netState,home:null},true,0,{worker_tool}).some(mark=>mark.color===color),'Equipped rods show their material');
 }
 console.log('Fishing animation checks passed');

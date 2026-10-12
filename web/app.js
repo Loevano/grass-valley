@@ -2340,6 +2340,10 @@ function drawVillager(b){
   const farmStage=Math.min(3,Math.floor((s.elapsed || 0)/2));
   const farmSwing=(Math.sin((s.elapsed || 0)*Math.PI*3)+1)/2;
   const fishingTime=s.activityElapsed ?? s.elapsed ?? 0;
+  const fishingUpgrades=s.home?.profession_upgrades || [];
+  const fishingNet=fishing&&(fishingUpgrades.includes('nets')||fishingUpgrades.includes('wool_nets'));
+  const fishingCaught=s.fishingCaught ?? s.latestFishingCatch?.caught ?? true;
+  const fishingMetal=b.villager.worker_tool==='masterwork_fishing_rod'?'#d9bd70':b.villager.worker_tool==='steel_fishing_rod'?'#bacac5':'#a78454';
   const cast=Math.min(fishingTime/.55,1),reel=Math.max(0,Math.min((fishingTime-2.35)/.85,1));
   const swing=working?(Math.sin((s.elapsed || 0)*(chopping?5:7))+1)/2:0;
   ctx.save();ctx.translate(px+(b.index%3-1)*3,py+tileH*.65+Math.floor(b.index/3));ctx.scale(tileW/46,tileW/46);
@@ -2446,16 +2450,28 @@ function drawVillager(b){
     const tipX=7+cast*13-reel*8,tipY=-34+cast*9-reel*9;
     const floatX=tipX+(surfaceX-tipX)*cast*(1-reel);
     const floatY=tipY+(surfaceY-tipY)*cast*(1-reel)+Math.sin(fishingTime*9)*cast*(1-reel);
-    ctx.strokeStyle='#a78454';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(7,-10-reel*3);ctx.lineTo(tipX,tipY);ctx.stroke();
-    ctx.strokeStyle='#d5dfd8';ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(tipX,tipY);ctx.lineTo(floatX,floatY);ctx.stroke();
-    if(cast===1&&reel===0){
-      ctx.strokeStyle='#c3e1dc';ctx.beginPath();ctx.ellipse(surfaceX,surfaceY,4+Math.sin(fishingTime*6)*1.5,2,0,0,Math.PI*2);ctx.stroke();
-    }
-    ctx.fillStyle='#df785e';ctx.fillRect(floatX-2,floatY-2,4,3);
-    ctx.fillStyle='#f3e5bc';ctx.fillRect(floatX-2,floatY+1,4,2);
-    if(reel>0&&s.fishingCaught!==false){
-      polygon([[floatX,floatY+3],[floatX+5,floatY+6],[floatX,floatY+9],[floatX-4,floatY+6]],'#b8d8d5','#527f86');
-      polygon([[floatX,floatY+9],[floatX-3,floatY+12],[floatX+3,floatY+12]],'#7899a2');
+    if(fishingNet){
+      const netX=7+(surfaceX-7)*cast*(1-reel),netY=-10+(surfaceY+10)*cast*(1-reel)-reel*14;
+      ctx.strokeStyle=fishingUpgrades.includes('wool_nets')?'#eee0bd':'#a6bbb1';ctx.lineWidth=1.2;
+      ctx.beginPath();ctx.ellipse(netX,netY,10,5,0,0,Math.PI*2);ctx.stroke();
+      for(let i=-1;i<=1;i++){
+        ctx.beginPath();ctx.moveTo(netX+i*4,netY-4);ctx.lineTo(netX+i*4,netY+4);
+        ctx.moveTo(netX-8,netY+i*2);ctx.lineTo(netX+8,netY+i*2);ctx.stroke();
+      }
+      ctx.beginPath();ctx.moveTo(7,-10-reel*3);ctx.lineTo(netX,netY);ctx.stroke();
+      if(reel>0&&fishingCaught)polygon([[netX-4,netY],[netX,netY-3],[netX+5,netY],[netX,netY+3]],'#b8d8d5','#527f86');
+    }else{
+      ctx.strokeStyle=fishingMetal;ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(7,-10-reel*3);ctx.lineTo(tipX,tipY);ctx.stroke();
+      ctx.strokeStyle='#d5dfd8';ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(tipX,tipY);ctx.lineTo(floatX,floatY);ctx.stroke();
+      if(cast===1&&reel===0){
+        ctx.strokeStyle='#c3e1dc';ctx.beginPath();ctx.ellipse(surfaceX,surfaceY,4+Math.sin(fishingTime*6)*1.5,2,0,0,Math.PI*2);ctx.stroke();
+      }
+      ctx.fillStyle='#df785e';ctx.fillRect(floatX-2,floatY-2,4,3);
+      ctx.fillStyle='#f3e5bc';ctx.fillRect(floatX-2,floatY+1,4,2);
+      if(reel>0&&fishingCaught){
+        polygon([[floatX,floatY+3],[floatX+5,floatY+6],[floatX,floatY+9],[floatX-4,floatY+6]],'#b8d8d5','#527f86');
+        polygon([[floatX,floatY+9],[floatX-3,floatY+12],[floatX+3,floatY+12]],'#7899a2');
+      }
     }
   }else if(working&&b.villager.job==='gathering'){
     ctx.translate(swing*4,swing*3);
@@ -2956,7 +2972,7 @@ function drawGround(rect,dpr,landscape,water,bounds,forest=null){
 function fishingBoatSprites(entries,resources,villagers=[]){
   const huts=[];
   for(const [townId,town] of entries)for(const [index,hut] of (town?.buildings || []).entries())
-    if(hut.kind==='fishing_hut'&&fishingBoatLevel(hut))huts.push({townId,index,hut});
+    if(hut.kind==='fishing_hut'&&fishingBoatLevel(hut))huts.push({townId,index,hut,town});
   const layout=JSON.stringify(huts.map(({townId,index,hut})=>[townId,index,hut.x,hut.y,resourceReach(hut),fishingBoatLevel(hut)]));
   let changed=fishingBoatSprites.layout!==layout;
   if(fishingBoatSprites.resources!==resources || fishingBoatSprites.count!==resources.length){
@@ -2967,12 +2983,15 @@ function fishingBoatSprites(entries,resources,villagers=[]){
   }
   const {water,waterTiles}=fishingBoatSprites;
   if(changed){
-    const berths=new Map();
+    const berths=new Map(),obstacles=entries.flatMap(([,town])=>town?.buildings || []);
     fishingBoatSprites.layout=layout;
-    fishingBoatSprites.docked=huts.map(({townId,index,hut})=>{
+    fishingBoatSprites.docked=huts.map(({townId,index,hut,town})=>{
       const nearby=water.filter(r=>Math.abs(r.x-hut.x)+Math.abs(r.y-hut.y)<=resourceReach(hut))
         .sort((a,b)=>(Math.abs(a.x-hut.x)+Math.abs(a.y-hut.y))-(Math.abs(b.x-hut.x)+Math.abs(b.y-hut.y))||a.y-b.y||a.x-b.x);
-      const berth=nearby.find(r=>!berths.has(`${r.x},${r.y}`)) || nearby[0];
+      const pier=WorkerAnimation.fishingPier({...town,map_resources:resources,obstacles},hut);
+      const dock=pier.at(-1) || hut,deck=new Set(pier.map(p=>`${p.x},${p.y}`));
+      const adjacent=nearby.filter(r=>Math.abs(r.x-dock.x)+Math.abs(r.y-dock.y)===1&&!deck.has(`${r.x},${r.y}`));
+      const berth=adjacent.find(r=>!berths.has(`${r.x},${r.y}`)) || adjacent[0] || nearby[0];
       const key=berth?`${berth.x},${berth.y}`:`shore:${townId}/${index}`,count=berths.get(key) || 0;
       berths.set(key,count+1);
       return {kind:'fishing_boat',townId,objectIndex:index,level:fishingBoatLevel(hut),
@@ -2986,8 +3005,12 @@ function fishingBoatSprites(entries,resources,villagers=[]){
     // Keep the same leader through boarding and unloading. Selecting only crew
     // currently on water can jump the boat to another worker mid-voyage.
     const captain=assigned[0];
-    const aboard=v=>waterTiles.has(`${Math.floor(v.x)},${Math.floor(v.y)}`)
-      &&waterTiles.has(`${Math.ceil(v.x)},${Math.ceil(v.y)}`);
+    const aboard=v=>{
+      const dock=v.state.sailing?.dock,berth=v.state.sailing?.berth;
+      const onDeck=(x,y)=>dock&&berth&&(dock.x!==berth.x||dock.y!==berth.y)&&dock.x===x&&dock.y===y;
+      return waterTiles.has(`${Math.floor(v.x)},${Math.floor(v.y)}`)&&waterTiles.has(`${Math.ceil(v.x)},${Math.ceil(v.y)}`)
+        &&!onDeck(Math.floor(v.x),Math.floor(v.y))&&!onDeck(Math.ceil(v.x),Math.ceil(v.y));
+    };
     const passenger=captain&&aboard(captain)?captain:null;
     const crew=passenger?assigned.filter(aboard):[];
     // The route's berth is authoritative for boarding; decorative parking may

@@ -42,6 +42,20 @@ def fishing_water(building, water, occupied, reach, terrain=None, depths=None):
     return [tiles[tile] for tile in queue]
 
 
+def fishing_pier(building, landscape, blocked, size, terrain, bounds):
+    occupied = {(b['x'], b['y']) for b in landscape['buildings'] + landscape.get('npcs', [])}
+    water = sorted((r for r in landscape['map_resources'] if r['kind'] == 'water'
+                    and (r['x'], r['y']) not in occupied
+                    and abs(r['x'] - building['x']) + abs(r['y'] - building['y']) <= 3),
+                   key=lambda r: (abs(r['x'] - building['x']) + abs(r['y'] - building['y']), r['y'], r['x']))
+    pier_blocked = blocked - {(building['x'], building['y'])} - {(r['x'], r['y']) for r in water}
+    for tile in water:
+        deck = route(building, tile, pier_blocked, size, terrain, False, bounds)
+        if deck is not None and len(deck) <= 3:
+            return [building, *deck]
+    return []
+
+
 def route(start, target, blocked, size, terrain, adjacent=True, bounds=None, roads=()):
     start = (round(start['x']), round(start['y']))
     return routes.route(start, target, blocked, size, terrain, adjacent, bounds, roads)
@@ -69,7 +83,7 @@ def _advance(town, landscape, villager, building, source, index, seconds):
     boating = villager['job'] == 'fishing' and fishing_boating(town, building, index)
     spec = [villager['job'], building['kind'], building['x'], building['y'], source['kind'], source['x'], source['y']]
     if villager['job'] == 'fishing':
-        spec.extend([building.get('level', 1), economy.fishing_boat_level(building), boating])
+        spec.extend([building.get('level', 1), economy.fishing_boat_level(building), boating, 'dock_cycle'])
     state = villager.get('work_animation')
     size, terrain = landscape.get('map_size', 120), landscape.get('terrain', [])
     roads = {(r['x'], r['y']) for r in landscape.get('roads', []) if 'construction' not in r}
@@ -88,8 +102,14 @@ def _advance(town, landscape, villager, building, source, index, seconds):
         depths = landscape.get('_spatial_index', SpatialIndex(landscape['map_resources'])).water_depths()
         water = fishing_water(building, [r for r in landscape['map_resources'] if r['kind'] == 'water'], occupied, reach, terrain, depths)
         water_tiles = {(r['x'], r['y']) for r in water}
-        berth = water[0] if water else source
-        land_blocked = blocked - {(building['x'], building['y']), (berth['x'], berth['y'])}
+        pier = fishing_pier(building, landscape, blocked, size, terrain, bounds)
+        dock = pier[-1] if pier else building
+        deck = {(p['x'], p['y']) for p in pier}
+        berths = [r for r in water if abs(r['x'] - dock['x']) + abs(r['y'] - dock['y']) == 1
+                  and (r['x'], r['y']) not in deck]
+        berth = min(berths, key=lambda r: (abs(r['x'] - building['x']) + abs(r['y'] - building['y']), r['y'], r['x'])) if berths else dock
+        land_blocked = blocked - deck - {(building['x'], building['y']), (berth['x'], berth['y'])}
+        boarding_blocked = land_blocked | ({(berth['x'], berth['y'])} if (dock['x'], dock['y']) != (berth['x'], berth['y']) else set())
         sea_bounds = (max(0, building['x'] - reach), min(size - 1, building['x'] + reach),
                       max(0, building['y'] - reach), min(size - 1, building['y'] + reach))
         sea_blocked = {(x, y) for x in range(sea_bounds[0], sea_bounds[1] + 1)
@@ -109,16 +129,19 @@ def _advance(town, landscape, villager, building, source, index, seconds):
             work_spot = source
     def travel(start, target, adjacent=True):
         if boating:
-            afloat = (round(start['x']), round(start['y'])) in water_tiles
+            tile = (round(start['x']), round(start['y']))
+            afloat = tile in water_tiles and (tile != (dock['x'], dock['y']) or tile == (berth['x'], berth['y']))
             outbound = target is source
             if outbound and afloat:
                 return route(start, source, sea_blocked, size, terrain, False, sea_bounds)
             if outbound:
-                approach = route(start, berth, land_blocked, size, terrain, False, bounds, roads)
+                approach = route(start, dock, boarding_blocked, size, terrain, False, bounds, roads)
+                if approach is not None and (dock['x'], dock['y']) != (berth['x'], berth['y']):
+                    approach.append({'x': berth['x'], 'y': berth['y']})
                 sailing = route(berth, source, sea_blocked, size, terrain, False, sea_bounds)
             else:
                 approach = route(start, berth, sea_blocked, size, terrain, False, sea_bounds) if afloat else []
-                sailing = route(berth if afloat else start, building, land_blocked, size, terrain, True, bounds, roads)
+                sailing = route(berth if afloat else start, dock, land_blocked, size, terrain, False, bounds, roads)
             return None if approach is None or sailing is None else approach + sailing
         return route(start, target, blocked, size, terrain, adjacent, bounds, roads)
     if not state or state['task'] != spec or state['phase'] in ('waiting', 'waiting_water'):

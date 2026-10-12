@@ -1,7 +1,7 @@
 // Run with: node tests/test_render_scans.js
 const fs=require('fs'),assert=require('assert');
 const source=fs.readFileSync('web/app.js','utf8');
-new Function('assert',`
+new Function('assert','WorkerAnimation',`
   const resourceReach=b=>b.kind==='fishing_hut'?3+(b.level || 1)-1:10;
   const fishingBoatLevel=b=>(b.profession_upgrades || []).includes('boat')?1:0;
   ${source.slice(source.indexOf('function buildingUsable('),source.indexOf('function drawFarmCrops('))}
@@ -33,5 +33,5 @@ new Function('assert',`
   assert.equal(fishingBoatSprites([['own',town]],town.map_resources)[0].x,5.7,'Out-of-range water does not provide a berth');
   town.map_resources=[{kind:'water',x:5,y:6}];
   assert.equal(fishingBoatSprites([['own',town]],town.map_resources)[0].y,6,'World updates replace the water index');
-`)(assert);
+`)(assert,require('../web/animations.js'));
 console.log('Render resource scan checks passed');

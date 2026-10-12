@@ -69,6 +69,15 @@ const run=new Function('document','window','localStorage','setTimeout','clearTim
   const secondSailor={...sailor,x:5,y:6},rodFisher={...sailor,state:{...sailor.state,boating:false}};
   const crewBoat=fishingBoatSprites([['own',town]],town.map_resources,[sailor,secondSailor,rodFisher])[0];
   assert.deepStrictEqual(crewBoat.crew,[sailor,secondSailor],'Every boat crew member rides aboard; rod fishers remain on the dock');
+  const dock={x:4,y:6},routeBerth={x:5,y:6};
+  const dockFisher={...sailor,x:4,y:6,state:{...sailor.state,sailing:{dock,berth:routeBerth}}};
+  const waitingBoat=fishingBoatSprites([['own',town]],town.map_resources,[dockFisher])[0];
+  assert.deepStrictEqual([waitingBoat.x,waitingBoat.y],[5,6],'Boat waits one water tile away from the dock');
+  assert(!waitingBoat.passenger,'A fisher on the wooden dock has not boarded');
+  const stepping={...dockFisher,x:4.5};
+  assert(!fishingBoatSprites([['own',town]],town.map_resources,[stepping])[0].passenger,'Boat waits while the fisher steps aboard');
+  const riding={...dockFisher,x:5};
+  assert.strictEqual(fishingBoatSprites([['own',town]],town.map_resources,[riding])[0].passenger,riding,'Fisher boards at the adjacent berth');
   const berth={x:5,y:6};
   const boarding={...sailor,x:5,y:5.75,state:{...sailor.state,sailing:{berth}}};
   const boardingBoat=fishingBoatSprites([['own',town]],town.map_resources,[boarding,secondSailor])[0];
