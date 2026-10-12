@@ -1272,15 +1272,20 @@ function renderMarketSales(town,target){
       toggle.setAttribute('aria-label',`Sell ${goodName(key)} automatically`);caption.append(toggle);
       const status=document.createElement('span');status.className='storage-count';status.textContent=toggle.checked?'Enabled':'Disabled';caption.append(status);row.append(caption);
       const label=document.createElement('label');label.className='market-sale-cap';label.textContent='Sale cap';
-      const cap=document.createElement('input');cap.id='sale-cap-'+key;cap.type='number';cap.min='1';cap.step='any';cap.required=true;
+      const cap=document.createElement('input');cap.id='sale-cap-'+key;cap.type='range';cap.min='1';cap.step='any';
+      cap.max=String(Math.max(200,Math.ceil(resourceStorage(town,key)),Math.ceil(rule?.cap ?? 10)));
       cap.value=rule?.cap ?? 10;cap.disabled=!toggle.checked;
-      cap.setAttribute('aria-label',`${goodName(key)} sale cap`);label.append(cap);row.append(label);
+      cap.setAttribute('aria-label',`${goodName(key)} sale cap`);
+      const capValue=document.createElement('output');capValue.setAttribute('for',cap.id);
+      const showCap=()=>{capValue.textContent=String(cap.value);cap.setAttribute('aria-valuetext',`${cap.value} goods`);};
+      showCap();label.append(capValue,cap);row.append(label);
       const save=()=>{
         if(viewed!==identity?.town_id||!row.reportValidity())return;
         const value=Number(cap.value),savedCap=Number.isFinite(value)&&value>=1?value:(rule?.cap ?? 10);
         act({action:'configure_market_sale',resource:key,enabled:toggle.checked,cap:savedCap});
       };
       toggle.onchange=()=>{cap.disabled=!toggle.checked;status.textContent=toggle.checked?'Enabled':'Disabled';save();};
+      cap.oninput=()=>{cap.value=Math.round(Number(cap.value));showCap();};
       cap.onchange=save;
       row.onsubmit=event=>{event.preventDefault();save();};
       editor.append(row);
