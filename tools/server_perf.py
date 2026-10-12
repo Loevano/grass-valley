@@ -21,10 +21,13 @@ def percentile(values, fraction):
 
 def run(source, cycles):
     sys.path.insert(0, str(source))
+    # Support both the current layout and revisions before the server move.
+    if (source / 'server' / 'server.py').exists():
+        sys.path.insert(0, str(source / 'server'))
     import server
     from shared_world import new_world
     # The current harness benchmarks baseline application code too.
-    spec = importlib.util.spec_from_file_location('benchmark_harness', Path(__file__).parents[1] / 'profile_server.py')
+    spec = importlib.util.spec_from_file_location('benchmark_harness', Path(__file__).parents[1] / 'server' / 'profile_server.py')
     harness = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(harness)
     metrics, checks = {}, []

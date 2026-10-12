@@ -30,7 +30,7 @@ from npcs import ensure_npcs
 from shared_world import bind_map, building_range, export_world, new_world, validate_placement, walking_map
 from chunk_world import CHUNK_SIZE, ChunkTerrain, attach as attach_chunks, chunk_key, parse_keys, parse_versions
 
-ROOT = Path(__file__).resolve().parent
+ROOT = Path(__file__).resolve().parents[1]
 SAVE = ROOT / 'savegame.json'
 LOCK = threading.RLock()
 COSTS = {'home': 20, 'woodcutter': 15, 'farm': 15, 'storehouse': 25, 'fishing_hut': 15, 'acre': 5}

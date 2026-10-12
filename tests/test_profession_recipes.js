@@ -2,7 +2,7 @@ const assert=require('assert');
 const fs=require('fs');
 const {execFileSync}=require('child_process');
 const source=fs.readFileSync('web/app.js','utf8');
-const progression=JSON.parse(execFileSync('python3',['-c','import json, progression; print(json.dumps(progression.public_catalog()))'],{encoding:'utf8'}));
+const progression=JSON.parse(execFileSync('python3',['-c','import json, progression; print(json.dumps(progression.public_catalog()))'],{cwd:require('path').join(__dirname,'../server'),encoding:'utf8'}));
 const world={progression};
 const document={createElement(tag){return {tag,children:[],attributes:{},append(...items){this.children.push(...items);},setAttribute(key,value){this.attributes[key]=value;}};}};
 const commands=[];

@@ -8,7 +8,7 @@ One Mac hosts; up to four players can build separate towns in the same saved wor
 Requires Python 3.9 or newer. From this folder:
 
 ```sh
-python3 server.py
+python3 server/server.py
 ```
 
 Open **http://localhost:8000** in a browser. Use the Worlds menu to start a named
@@ -19,7 +19,7 @@ This browser remembers your login for each world and reconnects after a refresh
 or reopening the browser. It stores your player token, never your PIN. Use a
 separate browser profile or private window to play as someone else.
 Keep the server running while playing; stop it with Control-C.
-Choose another port with `python3 server.py --port 8080` if needed.
+Choose another port with `python3 server/server.py --port 8080` if needed.
 Successful requests stay quiet in the terminal; failed requests are still logged.
 
 ## Manage worlds
@@ -526,8 +526,8 @@ resources gain resource spots on unoccupied tiles when the host restarts;
 existing buildings stay in place. Move older workplaces near trees or water as needed.
 
 Combat, magic, trading, and cooperative quests are not implemented yet.
-See [ROADMAP.md](ROADMAP.md) for town hall rewards and proposed future unlocks.
-See [DESIGN.md](DESIGN.md) for agreed decisions, provisional values, and questions
+See [ROADMAP.md](docs/ROADMAP.md) for town hall rewards and proposed future unlocks.
+See [DESIGN.md](docs/DESIGN.md) for agreed decisions, provisional values, and questions
 you can answer later.
 
 ## Check the simulation
@@ -589,7 +589,7 @@ events in a headed Chrome trace. Screenshots/profiling are excluded from scored
 timings. The runner never overwrites or automatically promotes a baseline.
 
 Profile a synthetic four-player starting world with ticks, saves, cached map
-polls, and movement using `python3 profile_server.py`. Add `--profile` to show
+polls, and movement using `python3 server/profile_server.py`. Add `--profile` to show
 the most expensive functions or `--ticks 50` for a longer run. It uses temporary
 saves and reports median/p95 timings; it does not load or modify your game.
 This measures server work, excluding network latency and browser rendering.
@@ -597,7 +597,7 @@ Use `--developed` for four towns with 50 workers each, or `--json` for structure
 timings. This standalone profiler also uses temporary saves.
 
 ```sh
-python3 -m unittest discover -s tests -v
+PYTHONPATH=server python3 -m unittest discover -s tests -v
 ```
 
 With Node.js available, check worker movement and animation transitions with
@@ -647,3 +647,15 @@ New professions use the existing delivery, production cap, worker practice, and
 storehouse systems. Enable hides, leather, ore, iron, saddles, steel, and trade crates
 inside your storehouses as needed. Restart the host and refresh the browser to use
 these additions in existing worlds.
+
+## Repository layout
+
+- `server/`: Python host, simulation modules, and standalone server profiler.
+- `web/`: browser client, styles, and artwork.
+- `tests/`: Python and JavaScript checks.
+- `tools/`: correctness and performance runners.
+- `docs/`: [design decisions](docs/DESIGN.md), [roadmap](docs/ROADMAP.md),
+  and [ideas](docs/IDEAS.md).
+
+`AGENTS.md` stays at the root to provide repository-wide contributor instructions.
+Save files and terrain chunks stay at the root, outside version control.

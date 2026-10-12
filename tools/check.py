@@ -43,9 +43,13 @@ def compare(baseline, candidate, absolute=2, relative=.20):
 
 
 def run(command, log, cwd=ROOT):
+    environment = os.environ.copy()
+    environment['PYTHONPATH'] = os.pathsep.join(filter(None, (
+        str(ROOT / 'server'), environment.get('PYTHONPATH'))))
     with log.open('w') as output:
         try:
-            completed = subprocess.run(command, cwd=cwd, stdout=output, stderr=subprocess.STDOUT, timeout=300)
+            completed = subprocess.run(command, cwd=cwd, env=environment,
+                                       stdout=output, stderr=subprocess.STDOUT, timeout=300)
         except (OSError, subprocess.TimeoutExpired) as error:
             output.write(str(error) + '\n')
             return 124 if isinstance(error, subprocess.TimeoutExpired) else 127
