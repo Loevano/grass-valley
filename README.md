@@ -529,6 +529,8 @@ Combat, magic, trading, and cooperative quests are not implemented yet.
 See [ROADMAP.md](docs/ROADMAP.md) for town hall rewards and proposed future unlocks.
 See [DESIGN.md](docs/DESIGN.md) for agreed decisions, provisional values, and questions
 you can answer later.
+See the [improvement references](docs/README.md) for development structure and
+priorities, balancing theory, game design, and artwork, with tables and diagrams.
 
 ## Check the simulation
 
@@ -655,7 +657,7 @@ these additions in existing worlds.
 - `tests/`: Python and JavaScript checks.
 - `tools/`: correctness and performance runners.
 - `docs/`: [design decisions](docs/DESIGN.md), [roadmap](docs/ROADMAP.md),
-  and [ideas](docs/IDEAS.md).
+  [ideas](docs/IDEAS.md), and [improvement references](docs/README.md).
 
 `AGENTS.md` stays at the root to provide repository-wide contributor instructions.
 Save files and terrain chunks stay at the root, outside version control.

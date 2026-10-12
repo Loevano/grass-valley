@@ -1,0 +1,72 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1080" height="640" viewBox="0 0 1080 640" role="img" aria-labelledby="title description">
+  <title id="title">Lantern Vale — proposed artwork reference</title>
+  <desc id="description">A schematic angled cottage, tree, road, and gold-marked founder beside a diagram of drawing layers. A sample palette shows forest green, meadow, timber, parchment, and lantern gold. This is a working composition sketch, not final game artwork.</desc>
+  <rect width="1080" height="640" rx="18" fill="#172b27"/>
+  <g font-family="system-ui, sans-serif" fill="#e8eadb">
+    <text x="34" y="43" font-size="24" font-weight="600">Lantern Vale · artwork reference</text>
+    <text x="34" y="72" font-size="14" fill="#bdcdb5">PROPOSED COMPOSITION · final art style remains open</text>
+    <rect x="26" y="96" width="624" height="386" rx="12" fill="#243f33" stroke="#51683e"/>
+    <rect x="670" y="96" width="384" height="386" rx="12" fill="#1c302a" stroke="#51683e"/>
+    <text x="48" y="129" font-size="17" font-weight="600">Town scale and silhouettes</text>
+    <text x="692" y="129" font-size="17" font-weight="600">Drawing layers · schematic</text>
+    <!-- Ground footprint and a road that retains a clear route past the cottage. -->
+    <path d="M 82,319 330,189 598,319 350,449 Z" fill="#6b8650" stroke="#98afa2" stroke-width="2"/>
+    <path d="M 169,365 223,393 495,263 441,237 Z" fill="#b79b71"/>
+    <path d="M 231,271 494,401 M 152,310 414,442 M 176,368 425,239 M 255,410 507,280" fill="none" stroke="#506b45" stroke-width="1" opacity=".4"/>
+    <!-- Cottage: a shared door/character scale, two wall faces, and one light direction. -->
+    <path d="M 302,283 380,321 380,224 302,186 Z" fill="#cbb78f" stroke="#594e39" stroke-width="2"/>
+    <path d="M 380,321 460,280 460,183 380,224 Z" fill="#a68b65" stroke="#594e39" stroke-width="2"/>
+    <path d="M 290,187 372,140 473,183 390,237 Z" fill="#986b47" stroke="#594e39" stroke-width="2"/>
+    <path d="M 290,187 311,141 372,140 Z" fill="#c39969" stroke="#594e39" stroke-width="2"/>
+    <path d="M 311,141 393,99 473,183 372,140 Z" fill="#b98559" stroke="#594e39" stroke-width="2"/>
+    <path d="M 336,299 358,310 358,271 336,260 Z" fill="#594e39"/>
+    <path d="M 409,248 429,238 429,214 409,224 Z" fill="#e3d19b" stroke="#594e39" stroke-width="3"/>
+    <path d="M 419,219 419,243 M 409,236 429,226" stroke="#594e39" stroke-width="2"/>
+    <path d="M 302,248 380,286 460,245" fill="none" stroke="#805838" stroke-width="5"/>
+    <!-- Restrained tree mass and founder marker. -->
+    <ellipse cx="167" cy="303" rx="33" ry="14" fill="#172b27" opacity=".2"/>
+    <path d="M 158,300 158,251 174,251 174,304 Z" fill="#805838"/>
+    <path d="M 112,256 136,210 144,180 168,156 194,192 221,234 199,272 148,283 Z" fill="#41634a" stroke="#243f33" stroke-width="3"/>
+    <path d="M 112,256 136,210 144,180 168,156 161,222 148,283 Z" fill="#6b8650"/>
+    <ellipse cx="308" cy="384" rx="20" ry="10" fill="none" stroke="#e3d19b" stroke-width="3"/>
+    <path d="M 302,379 300,360 M 314,379 315,360" stroke="#594e39" stroke-width="6" stroke-linecap="round"/>
+    <path d="M 294,360 299,337 316,337 322,360 Z" fill="#d5b36d" stroke="#594e39" stroke-width="2"/>
+    <circle cx="308" cy="328" r="10" fill="#cbb78f" stroke="#594e39" stroke-width="2"/>
+    <path d="M 298,326 Q 300,314 311,317 L 319,325" fill="#594e39"/>
+    <text x="284" y="409" font-size="13" fill="#fff0b1">Founder</text>
+    <path d="M 472,232 573,194" fill="none" stroke="#bdcdb5"/>
+    <text x="506" y="177" font-size="12">Roof and</text>
+    <text x="506" y="194" font-size="12">workplace identity</text>
+    <path d="M 218,377 104,416" fill="none" stroke="#bdcdb5"/>
+    <text x="48" y="440" font-size="12">Clear walking route</text>
+    <text x="48" y="463" font-size="12" fill="#bdcdb5">Schematic proportions; compare at normal game zoom.</text>
+    <!-- Drawing order is distinct from job scheduling priority. -->
+    <g font-size="14">
+      <rect x="698" y="153" width="328" height="45" rx="6" fill="#59492d" stroke="#e3d19b"/>
+      <text x="713" y="180">DOM interface above the canvas</text>
+      <path d="M 862,207 862,226 M 857,220 862,226 867,220" fill="none" stroke="#bdcdb5" stroke-width="2"/>
+      <rect x="698" y="234" width="328" height="45" rx="6" fill="#2b4538" stroke="#98afa2"/>
+      <text x="713" y="261">Effects, labels, and placement preview</text>
+      <path d="M 862,288 862,307 M 857,301 862,307 867,301" fill="none" stroke="#bdcdb5" stroke-width="2"/>
+      <rect x="698" y="315" width="328" height="45" rx="6" fill="#2b4538" stroke="#98afa2"/>
+      <text x="713" y="342">Depth-ordered buildings and actors</text>
+      <path d="M 862,369 862,388 M 857,382 862,388 867,382" fill="none" stroke="#bdcdb5" stroke-width="2"/>
+      <rect x="698" y="396" width="328" height="45" rx="6" fill="#41634a" stroke="#98afa2"/>
+      <text x="713" y="423">Ground, roads, and ground overlays</text>
+      <text x="698" y="463" font-size="12" fill="#bdcdb5">Top is visually in front; this is not scheduling order.</text>
+    </g>
+    <text x="34" y="520" font-size="17" font-weight="600">Starting palette · inspired by the current presentation</text>
+    <g font-size="13">
+      <rect x="34" y="539" width="185" height="45" rx="6" fill="#41634a" stroke="#98afa2"/>
+      <text x="34" y="609">Forest · #41634a</text>
+      <rect x="240" y="539" width="185" height="45" rx="6" fill="#6b8650"/>
+      <text x="240" y="609">Meadow · #6b8650</text>
+      <rect x="446" y="539" width="185" height="45" rx="6" fill="#805838"/>
+      <text x="446" y="609">Timber · #805838</text>
+      <rect x="652" y="539" width="185" height="45" rx="6" fill="#cbb78f"/>
+      <text x="652" y="609">Parchment · #cbb78f</text>
+      <rect x="858" y="539" width="185" height="45" rx="6" fill="#e3d19b"/>
+      <text x="858" y="609">Lantern gold · #e3d19b</text>
+    </g>
+  </g>
+</svg>
