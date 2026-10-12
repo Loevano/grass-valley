@@ -6,7 +6,7 @@ Tables and drawings are working references that we can expand as decisions are m
 
 | Area | Goal | Reference |
 | --- | --- | --- |
-| Development structure and prioritization | Understand the request flow, where calculations and rendering happen, and which work takes priority. | [Development](DEVELOPMENT.md) |
+| Backend | Understand request flow, calculation ownership, and animation response priorities separately from smooth playback. | [Backend](BACKEND.md) |
 | Balancing | Set satisfying progression times, production ratios, and rewards for manual work. | [Balancing](BALANCING.md) |
 | Game design | Make town building and exploration fun, with connected stories, rewarding items, and cosmetics. | [Game design](GAME_DESIGN.md) |
 | Artwork | Give the game a cohesive, attractive appearance with readable characters, buildings, and landscapes. | [Artwork](ARTWORK.md) |
@@ -20,8 +20,10 @@ Tables and drawings are working references that we can expand as decisions are m
 | Proposed | A starting idea or target to discuss and try; it is not an implemented feature or final decision. |
 | Open | A decision or measurement still needed. |
 
-The priority tables suggest development order. They do not change runtime
-scheduling. Keep runtime order, visual layering, and development priorities distinct.
+The Backend priority levels classify response urgency; its animation table also
+describes smooth playback. Improvement-order tables suggest development order.
+These documents do not change runtime scheduling. Keep response urgency,
+playback cadence, visual layering, and development order distinct.
 When adding an improvement, record its purpose, status, priority, and what would
 show that it worked. Replace proposals with decisions when agreed, and update
 current values alongside their implementation.

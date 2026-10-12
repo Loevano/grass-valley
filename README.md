@@ -529,7 +529,7 @@ Combat, magic, trading, and cooperative quests are not implemented yet.
 See [ROADMAP.md](docs/ROADMAP.md) for town hall rewards and proposed future unlocks.
 See [DESIGN.md](docs/DESIGN.md) for agreed decisions, provisional values, and questions
 you can answer later.
-See the [improvement references](docs/README.md) for development structure and
+See the [improvement references](docs/README.md) for backend structure and animation
 priorities, balancing theory, game design, and artwork, with tables and diagrams.
 
 ## Check the simulation

@@ -5,7 +5,7 @@ temporary prototype choices, and questions to answer later. Edit the answers her
 continue the conversation. An unanswered question is not an agreed requirement.
 
 For improvement tables and drawings, see the [four area references](README.md):
-development structure and prioritization, balancing, game design, and artwork.
+backend structure and animation priorities, balancing, game design, and artwork.
 
 ## Confirmed design
 
