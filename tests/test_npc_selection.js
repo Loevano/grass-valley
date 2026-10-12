@@ -47,7 +47,7 @@ const run=new Function('document','window','localStorage','setTimeout','clearTim
     viewed='own';town.player={x:6,y:7};openPanel(null);
     const key=(key,extra={})=>listeners.keydown({key,preventDefault(){},...extra});
     walkKeys.add('w');key('I');
-    check(selection?.type==='npc'&&selection.index===0&&walkKeys.size===0,'I opens nearby NPC and releases walking keys');
+    check(selection?.type==='npc'&&selection.index===0&&walkKeys.has('w'),'I opens nearby NPC and preserves walking keys');
     town.npcs.push({...town.npcs[1],name:'Closer local',x:6,y:7.5});key('i');
     check(selection.index===2,'Interaction selects the nearest NPC');
     openPanel(null);town.player.x=11;key('i');

@@ -929,7 +929,6 @@ function renderWorldMenu(){
 }
 function openPanel(next){
   if(world.shared_map && next==='build' && world.towns[identity?.town_id])viewed=identity.town_id;
-  clearWalk();
   panel=next;selection=null;tool=null;moveIndex=null;buildTile=null;hoverTile=null;
   render();
 }
@@ -962,7 +961,9 @@ window.addEventListener('keydown',event=>{
       &&!document.activeElement?.isContentEditable&&!['INPUT','TEXTAREA','SELECT'].includes(document.activeElement?.tagName)){
       const name=['world-menu','build','villagers','resources','items','valley','help','rules'][Number(key)-1];
       if(name&&!$(name+'-button').disabled){
-        event.preventDefault();clearWalk();$(name+'-button').onclick();
+        event.preventDefault();
+        if(name==='world-menu')clearWalk();
+        $(name+'-button').onclick();
         if(name!=='world-menu')canvas.focus();
       }
     }
@@ -979,7 +980,7 @@ window.addEventListener('keydown',event=>{
     event.preventDefault();openPanel(panel==='build'?null:'build');canvas.focus();return;
   }
   if(key===keybindings.interact&&!event.repeat&&!event.ctrlKey&&!event.metaKey&&!event.altKey&&canControlPlayer()){
-    event.preventDefault();clearWalk();
+    event.preventDefault();
     const town=world.towns[identity.town_id],landscape=world.shared_map || town;
     let nearest=-1,distance=Infinity;
     (landscape.npcs || []).forEach((npc,index)=>{
@@ -997,7 +998,7 @@ window.addEventListener('keydown',event=>{
       const town=world.towns[identity.town_id],landscape=world.shared_map || town;
       const nearby=(landscape.map_resources || []).some(r=>action[2].includes(r.kind)&&Math.abs(r.x-town.player.x)+Math.abs(r.y-town.player.y)<=1.8);
       if(!nearby || action[0]==='mine'){
-        event.preventDefault();clearWalk();notice(nearby?'Mining is not available yet.':action[3]);return;
+        event.preventDefault();notice(nearby?'Mining is not available yet.':action[3]);return;
       }
     }
   }
@@ -1008,7 +1009,7 @@ window.addEventListener('keydown',event=>{
     event.preventDefault();walkKeys.add(key);
   }
   for(const action of ['fish','chop','gather'])if(key===keybindings[action]&&!event.repeat&&!event.ctrlKey&&!event.metaKey&&!event.altKey&&canControlPlayer()){
-    event.preventDefault();clearWalk();playerAction(action);
+    event.preventDefault();playerAction(action);
   }
   if(event.key==='Escape' && !$('settings-panel').open && !$('world-menu').open && !$('delete-world-dialog').open && !$('upgrade-dialog').open){
     if(world.towns[identity?.town_id]?.player?.activity)playerAction('stop_activity');

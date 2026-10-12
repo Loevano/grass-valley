@@ -16,9 +16,9 @@ function session(saved=null){
     draw=()=>{};
     const town={name:'Home',wood:50,food:30,coins:5,villagers:[],buildings:[],map_resources:[{kind:'water',x:5,y:6},{kind:'tree',x:6,y:7},{kind:'berry_bush',x:4,y:7}],player:{x:5,y:7,facing:1}};
     world={world_id:'test',towns:{own:town}};identity={town_id:'own'};viewed='own';playerSprite(town,0);
-    request=async()=>({player:{x:5.2,y:6.8,facing:1}});
+    const commands=[];request=async(path,data)=>{commands.push(data);return {player:{x:5.2,y:6.8,facing:1}};};
     const actions=[];playerAction=action=>actions.push(action);
-    return {get quality(){return graphicsQuality;},get actions(){return actions;},get bindings(){return keybindings;},get locked(){return cameraLocked;},get following(){return playerView.following;},
+    return {get commands(){return commands;},get quality(){return graphicsQuality;},get actions(){return actions;},get bindings(){return keybindings;},get locked(){return cameraLocked;},get following(){return playerView.following;},
       get camera(){return typeof camera==='undefined'?null:{...camera};},get held(){return [...walkKeys];},step:seconds=>playerSprite(town,seconds),
       addHall(){town.buildings.push({kind:'hall',x:12,y:14});},pan(){if(typeof camera!=='undefined'){camera.x=30;camera.y=30;}},get panel(){return panel;},get tool(){return tool;},
       place(){panel='build';tool='home';buildTile={x:1,y:1};hoverTile={x:1,y:1};},get placement(){return buildTile || hoverTile;}};
@@ -30,6 +30,16 @@ function session(saved=null){
   return {state,document,storage,key,rebind,listeners};
 }
 (async()=>{
+  for(const shortcut of ['2','3','4','5','6','7','8','b','f','c','g','m','i','y',' ','Escape','z']){
+    const walking=session();
+    walking.key('d');walking.state.step(.1);for(let i=0;i<4;i++)await Promise.resolve();
+    walking.key(shortcut);
+    check(walking.state.held.includes('d'),shortcut+' preserves the held movement key');
+    walking.state.step(.1);for(let i=0;i<4;i++)await Promise.resolve();
+    check(walking.state.commands.filter(command=>command.action==='walk').length===2,shortcut+' allows walking commands to continue');
+    walking.listeners.keyup({key:'d'});walking.state.step(.1);
+    check(walking.state.held.length===0&&walking.state.commands.length===2,'Releasing movement stops walking after '+shortcut);
+  }
   const qualitySession=session();
   check(qualitySession.state.quality==='high','Existing browsers default to High');
   const qualitySelect=qualitySession.document.getElementById('graphics-quality');
@@ -60,7 +70,8 @@ function session(saved=null){
   }
   check(home.document.getElementById('movement-hint').textContent.includes('Space town hall'),'Movement hint includes town hall shortcut');
   const {state,document,storage,key,rebind,listeners}=session();
-  key('w');key('B');check(state.panel==='build'&&state.held.length===0,'B opens building mode and releases movement');
+  key('w');key('B');check(state.panel==='build'&&state.held.includes('w'),'B opens building mode and preserves movement');
+  listeners.keyup({key:'w'});
   key('b',{repeat:true});key('b',{ctrlKey:true});check(state.panel==='build','Held and modified B do not toggle building mode');
   state.place();document.activeElement={tagName:'BUTTON'};key('b');
   check(state.panel===null&&state.tool===null&&!state.placement,'B closes building mode and cancels placement even with a focused build button');
@@ -140,7 +151,8 @@ function session(saved=null){
   toolbar.forEach((button,index)=>check(button.includes(`aria-keyshortcuts="${index+1}"`)&&button.includes(`(${index+1})`),'Menu tooltip and accessible shortcut follow toolbar order'));
   const windows=session();
   windows.key('w');windows.key('2');
-  check(windows.state.panel==='build'&&windows.state.held.length===0,'2 opens Build and releases movement');
+  check(windows.state.panel==='build'&&windows.state.held.includes('w'),'2 opens Build and preserves movement');
+  windows.listeners.keyup({key:'w'});
   windows.state.place();windows.key('2');
   check(windows.state.panel===null&&windows.state.tool===null&&!windows.state.placement,'2 closes Build and cancels placement');
   for(const [number,name] of [['3','villagers'],['5','items'],['6','valley'],['7','help']]){
