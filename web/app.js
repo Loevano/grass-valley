@@ -683,7 +683,7 @@ function renderResourceList(town){
     for(const key of remaining){
       keys.delete(key);
       const amount=String(Math.floor(amountOf(town,key)));
-      group.append(fact(key==='coins'?amount:`${amount} / ${resourceStorage(town,key)}`,goodName(key)));
+      group.append(fact(key==='coins'?amount:`${amount} / ${Math.floor(resourceStorage(town,key))}`,goodName(key)));
     }
     $('resources-list').append(group);
   }
@@ -1847,7 +1847,7 @@ function render(){
     $('resource-coins').textContent=Math.floor(own.coins);
     $('resource-villagers').textContent=own.villagers.length;
     $('goods-list').replaceChildren();
-    for(const [key,value] of Object.entries(own.goods || {}))if(value>0)$('goods-list').append(fact(`${Math.floor(value)} / ${resourceStorage(own,key)}`,goodName(key)));
+    for(const [key,value] of Object.entries(own.goods || {}))if(value>0)$('goods-list').append(fact(`${Math.floor(value)} / ${Math.floor(resourceStorage(own,key))}`,goodName(key)));
   }
   if(buildTile && (!town || !insideBuildingRange(town,buildTile) || town.buildings.some(b=>b.x===buildTile.x&&b.y===buildTile.y) || town.map_resources.some(r=>r.x===buildTile.x&&r.y===buildTile.y)))buildTile=null;
   if(typeof ClientScene==='undefined'||panel==='build')for(const group of $('buildings').children){
