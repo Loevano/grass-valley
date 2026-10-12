@@ -461,23 +461,27 @@ class ResourceLogistics(unittest.TestCase):
         self.assertEqual(economy.local_room(store, 'wool'), 75)
         self.assertEqual(economy.local_room(store, 'planks'), 0)
 
-    def test_upgrade_reaches_warehouse_level_five_and_expands_enabled_resources(self):
+    def test_upgrade_reaches_warehouse_level_eight_and_expands_enabled_resources(self):
         store = self.add('storehouse', storage_allocations={'wood': 50, 'planks': 50})
-        self.town['wood'] = 500
+        self.town['wood'] = 1000
         index = self.town['buildings'].index(store)
-        for level in range(2, 6):
+        capacities = (50, 75, 100, 150, 200, 250, 300, 350)
+        for level in range(2, 9):
+            wood = self.town['wood']
             server.command(self.town, {'action': 'upgrade_building', 'index': index})
+            self.assertEqual(self.town['wood'], wood - 25 * (level - 1))
+            self.assertEqual(store['construction']['total'], server.BUILD_SECONDS * (level - 1))
             for _ in range(100):
                 if 'construction' not in store:
                     break
                 server.construct(self.town, self.town)
             self.assertEqual(store['level'], level)
-            self.assertEqual(economy.storage_allocations(store)['wood'], (50, 75, 100, 150, 200)[level - 1])
-            self.assertEqual(economy.storage_allocations(store)['planks'], (50, 75, 100, 150, 200)[level - 1])
+            self.assertEqual(economy.storage_allocations(store)['wood'], capacities[level - 1])
+            self.assertEqual(economy.storage_allocations(store)['planks'], capacities[level - 1])
             self.assertEqual(economy.storage_allocations(store)['wheat'], 0)
-        self.assertEqual(economy.storage_size(store), 200)
-        self.assertEqual(economy.storage_allocations(store)['wood'], 200)
-        self.assertEqual(economy.storage_allocations(store)['planks'], 200)
+        self.assertEqual(economy.storage_size(store), 350)
+        self.assertEqual(economy.storage_allocations(store)['wood'], 350)
+        self.assertEqual(economy.storage_allocations(store)['planks'], 350)
         with self.assertRaises(ValueError):
             server.command(self.town, {'action': 'upgrade_building', 'index': index})
 

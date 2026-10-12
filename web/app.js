@@ -447,7 +447,8 @@ function buildingVisualLevel(building,town){
 function buildingHeight(building,town){
   return ({hall:42,woodcutter:23,mine:27,smelter:36,steelworks:38,stable:32,tannery:28,saddler:27,tradehouse:35,barn:34,mill:40,smokehouse:32,workshop:25,sawpit:16,market:17,fish_pond:18,orchard:20,bakery:30,butcher:25}[building.kind] || 27)+4*(buildingVisualLevel(building,town)-1);
 }
-function buildingStorageSize(building){return ['home','market'].includes(building.kind)?0:building.kind==='hall'?200:building.kind==='storehouse'?[50,75,100,150,200][buildingLevel(building)-1]:50;}
+const storehouseCapacities=[50,75,100,150,200,250,300,350];
+function buildingStorageSize(building){return ['home','market'].includes(building.kind)?0:building.kind==='hall'?200:building.kind==='storehouse'?storehouseCapacities[buildingLevel(building)-1]:50;}
 function storageCapacity(town){return town.buildings.filter(b=>!b.construction).reduce((sum,b)=>sum+buildingStorageSize(b),0);}
 
 const storageKeys=['wood','food','planks','wheat','fodder','flour','wool','tools','manure','herbs'];
@@ -584,7 +585,7 @@ function upgradePreview(command,town,item){
   }
   const capacity=command.action==='upgrade_capacity',level=capacity?item.settler_level || 1:buildingLevel(item);
   const currentBenefits=upgradeBenefit(item.kind,level,item).split('\n'),nextBenefits=upgradeBenefit(item.kind,level+1,item).split('\n');
-  return {title:`${buildingName(item)} · ${capacity?'Capacity tier':'Level'} ${level+1}`,benefits:capacity?[`${settlerSpaces[item.kind]*level} → ${settlerSpaces[item.kind]*(level+1)} spaces`]:nextBenefits.map((benefit,i)=>currentBenefits[i]&&currentBenefits[i]!==benefit?`${currentBenefits[i]} → ${benefit}`:benefit),cost:{wood:capacity?20*level:costs[item.kind]*level},seconds:30*level,requirements:'',ready:level<(capacity?3:item.kind==='storehouse'?5:3)};
+  return {title:`${buildingName(item)} · ${capacity?'Capacity tier':'Level'} ${level+1}`,benefits:capacity?[`${settlerSpaces[item.kind]*level} → ${settlerSpaces[item.kind]*(level+1)} spaces`]:nextBenefits.map((benefit,i)=>currentBenefits[i]&&currentBenefits[i]!==benefit?`${currentBenefits[i]} → ${benefit}`:benefit),cost:{wood:capacity?20*level:costs[item.kind]*level},seconds:30*level,requirements:'',ready:level<(capacity?3:item.kind==='storehouse'?storehouseCapacities.length:3)};
 }
 function upgradeCard(button,preview,{title=preview?.title,status='',benefits=preview?.benefits || []}={}){
   const card=document.createElement('div');card.className='upgrade-card';
@@ -1657,7 +1658,7 @@ function renderSelection(town){
       renderStorage(town,item,selection.index,storageOverview);
     }
     if(costs[item.kind]){
-      const level=buildingLevel(item),cost=costs[item.kind]*level,maxLevel=item.kind==='storehouse'?5:3;
+      const level=buildingLevel(item),cost=costs[item.kind]*level,maxLevel=item.kind==='storehouse'?storehouseCapacities.length:3;
       if(!item.construction)production.append(fact(upgradeBenefit(item.kind,level,item),'Current benefit'));
       if(item.kind==='farm'||item.kind==='acre'){
         const note=document.createElement('p');note.textContent='Field bonus = farm + acre';details.append(note);

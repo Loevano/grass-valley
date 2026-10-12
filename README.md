@@ -383,7 +383,7 @@ the Python host, refresh both browsers, and create a new world to use the shared
   takes 30 seconds of construction after arrival; the hall
   panel shows remaining time. Closing the host pauses the upgrade.
 - Completed workplaces hold storage: **50 units** in ordinary workplaces,
-  200 in the hall, and 50–200 per enabled resource across five storehouse levels.
+  200 in the hall, and 50–350 per enabled resource across eight storehouse levels.
   Its **Storage** section shows goods held there. Wood and other products become available for construction,
   meals, and sales when a villager finishes returning and unloading at their workplace.
   Goods still being gathered or carried are not available to spend. The host tracks
@@ -394,7 +394,7 @@ the Python host, refresh both browsers, and create a new world to use the shared
   old workplace outputs become available once. Demolition preserves available
   goods at the hall.
 - Each storehouse has an **enable/disable switch for each resource** in its
-  Storage section. Capacity per resource at levels 1–5 is **50/75/100/150/200**.
+  Storage section. Capacity per resource at levels 1–8 is **50/75/100/150/200/250/300/350**.
   Level 5 becomes a Warehouse. Upgrades increase every resource's capacity
   automatically; resources do not compete for shared space. Food groups edible
   goods in one capacity, weighted by pantry value. New storehouses start with all
@@ -421,14 +421,16 @@ the Python host, refresh both browsers, and create a new world to use the shared
   roads speed it up. Full, disabled, or unreachable storage leaves outputs at
   their workplace and pauses production when the buffer fills. Moving, upgrading,
   or reassigning during transport preserves goods and cancels affected deliveries.
-- Storehouses upgrade through level 5, becoming a **Warehouse** with 200 capacity per resource.
+- Storehouses become a **Warehouse** at level 5 and upgrade through level 8,
+  reaching 350 capacity per resource. Levels 6/7/8 cost 125/150/175 wood and
+  require 150/180/210 seconds of builder work respectively.
   Building upgrades increase storage; settler-capacity upgrades add hauler slots.
 - New landscapes contain denser forests, including timber patches beside towns.
   At distant zoom, trees merge into a forest canopy and rock artwork is hidden.
   Zoom in to see individual trees and rocks; their tiles remain selectable at any zoom.
 - Build cottages to attract residents; maintain food and add storage as needed.
 - Select any completed cottage, storehouse, woodcutter, farm, fishing hut, or acre
-  to upgrade it through level 3 (storehouses through level 5). Builders work for 30 seconds to reach level 2
+  to upgrade it through level 3 (storehouses through level 8). Builders work for 30 seconds to reach level 2
   and 60 seconds to reach level 3 after arriving. Each upgrade costs its original
   building price multiplied by its current level; the panel previews the benefit.
   Profession upgrades take 30 seconds of builder work. Materials are paid when
@@ -441,7 +443,7 @@ the Python host, refresh both browsers, and create a new world to use the shared
   Builders can cross completed acres to reach farms surrounded by fields.
   Upgrade progress survives saving, moving, and restarting the host.
   Cottages provide 2/4/6 housing spaces (the town limit stays 16), and storehouses
-  hold 50/75/100/150/200 of each enabled resource. Level 5 becomes a Warehouse. Woodcutters, farms, fishing huts,
+  hold 50/75/100/150/200/250/300/350 of each enabled resource. Level 5 becomes a Warehouse. Woodcutters, farms, fishing huts,
   and acres gain 25% production per worker at level 2 and 50% at level 3.
   Farm and acre bonuses add together on that field. Fishing bonuses increase food
   from successful catches; the 90% catch chance stays the same. Workers still need

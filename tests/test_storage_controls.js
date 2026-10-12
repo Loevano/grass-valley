@@ -40,7 +40,10 @@ const run=new Function('document','window','localStorage','setTimeout','clearTim
  check(panelNodes().find(c=>c.tag==='button'&&c.textContent==='Lvl'&&c.title?.startsWith('Upgrade to level 5')),'Storage can upgrade beyond level 3');
  town.buildings[1].level=5;render();
  check($('selection-title').textContent==='Warehouse','Level 5 storage is named Warehouse');
- check(panelNodes().find(c=>c.tag==='button'&&c.textContent==='Lvl'&&c.title?.startsWith('Fully upgraded')).disabled,'Warehouse is the final storage upgrade');
+ check(!panelNodes().find(c=>c.tag==='button'&&c.textContent==='Lvl'&&c.title?.startsWith('Upgrade to level 6')).disabled,'Warehouses can upgrade beyond level 5');
+ town.buildings[1].level=8;render();
+ check(panelNodes().find(c=>c.className==='storage-summary').textContent==='350 capacity per enabled resource','Level 8 warehouses show the expanded capacity');
+ check(panelNodes().find(c=>c.tag==='button'&&c.textContent==='Lvl'&&c.title?.startsWith('Fully upgraded')).disabled,'Level 8 is the final storage upgrade');
  viewed='friend';inspect('building',1);
  check(meters().length===10&&!fields().length,'Visitors see storage meters without switches');
  check(!button('Allocate')&&!button('Save allocations'),'Visitors cannot change allocations');

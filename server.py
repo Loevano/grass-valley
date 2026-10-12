@@ -1116,7 +1116,7 @@ def command(town, data, world=None):
         if not completed(building):
             raise ValueError('Finish construction before upgrading.')
         level = building_level(building)
-        if level >= (5 if building['kind'] == 'storehouse' else 3):
+        if level >= (len(economy.STOREHOUSE_CAPACITIES) if building['kind'] == 'storehouse' else 3):
             raise ValueError('This building is fully upgraded.')
         cost = COSTS[building['kind']] * level
         if town['wood'] < cost:

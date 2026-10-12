@@ -98,7 +98,7 @@ These are starting values to make the prototype playable, **not final design dec
   when crossing shores. Each shared island chest awards 25 coins once.
   Rock mining is not implemented. Existing saves gain
   resources only on unoccupied tiles, preserving their buildings.
-- The hall starts with 100 wood and 100 food spaces. Storehouses hold 50/75/100/150/200 of each enabled resource across five levels; level 5 becomes a Warehouse. Each resource has independent capacity, with edible goods grouped as food. Disabled resources keep existing stock available to use. Storage workers collect outputs and distribute inputs along walkable routes. Producers deliver full buffers and fetch inputs themselves when needed. Full storage preserves buffered goods and eventually pauses work.
+- The hall starts with 100 wood and 100 food spaces. Storehouses hold 50/75/100/150/200/250/300/350 of each enabled resource across eight levels; level 5 becomes a Warehouse. Each resource has independent capacity, with edible goods grouped as food. Disabled resources keep existing stock available to use. Storage workers collect outputs and distribute inputs along walkable routes. Producers deliver full buffers and fetch inputs themselves when needed. Full storage preserves buffered goods and eventually pauses work.
 - Food is consumed over time. A full minute of missed meals puts settlers at risk
   of leaving with all their skills. Cottage upgrades reduce that risk; the last
   settler stays so the town can recover.

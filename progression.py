@@ -321,6 +321,7 @@ def costs_of(spec):
     return {k: v for k, v in spec.items() if k in {'wood', 'coins', 'planks', 'wool', 'tools', *LATE_GOODS}}
 
 
+STOREHOUSE_CAPACITIES = (50, 75, 100, 150, 200, 250, 300, 350)
 STORAGE_KEYS = ('wood', 'food', 'planks', 'wheat', 'fodder', 'flour', 'wool', 'tools', 'manure', 'herbs', *CRAFTED_GOODS, *LATE_GOODS)
 STORAGE_GOODS = {
     **{kind: (*STORAGE_KEYS, *EDIBLE) for kind in ('hall', 'storehouse')},
@@ -373,7 +374,7 @@ def building_storage_keys(building):
 
 
 def storage_size(building):
-    return 0 if building['kind'] in {'home', 'market'} else 200 if building['kind'] == 'hall' else (50, 75, 100, 150, 200)[building.get('level', 1) - 1] if building['kind'] == 'storehouse' else 50
+    return 0 if building['kind'] in {'home', 'market'} else 200 if building['kind'] == 'hall' else STOREHOUSE_CAPACITIES[building.get('level', 1) - 1] if building['kind'] == 'storehouse' else 50
 
 
 def inventory(building):
