@@ -15,6 +15,9 @@ Open **http://localhost:8000** in a browser. Use the Worlds menu to start a name
 world or open a saved one, then enter your player name and four-digit PIN.
 New players also choose a village name. Returning players recover their village
 in that world using the same name and PIN from any browser.
+This browser remembers your login for each world and reconnects after a refresh
+or reopening the browser. It stores your player token, never your PIN. Use a
+separate browser profile or private window to play as someone else.
 Keep the server running while playing; stop it with Control-C.
 Choose another port with `python3 server.py --port 8080` if needed.
 Successful requests stay quiet in the terminal; failed requests are still logged.

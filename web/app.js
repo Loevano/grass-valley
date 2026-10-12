@@ -1,7 +1,6 @@
 const $ = id => document.getElementById(id);
 const canvas = $('world'), ctx = canvas.getContext('2d');
 let identities = {}, identity = null;
-const connectedWorlds = new Set();
 try {
   identities = JSON.parse(localStorage.getItem('lantern-identities') || '{}') || {};
   const legacy = JSON.parse(localStorage.getItem('lantern-identity') || 'null');
@@ -876,7 +875,7 @@ $('join-form').onsubmit=async event=>{
     const response=await request('/api/login',data,{headers:{'Content-Type':'application/json','Authorization':identities[worldId]?.token || ''}});
     if(world.world_id!==worldId)throw Error('The host changed worlds. Connect again.');
     if(response.needs_town){$('town-name-field').hidden=false;$('name').required=true;$('name').focus();return;}
-    identity=response;identities[worldId]=identity;connectedWorlds.add(worldId);
+    identity=response;identities[worldId]=identity;
     try{localStorage.setItem('lantern-identities',JSON.stringify(identities));}catch{}
     viewed=identity.town_id;panel=null;$('player-pin').value='';$('login-dialog').close();$('world-menu').close();await refresh();
   }catch(e){$('login-error').textContent=e.message;}finally{button.disabled=false;}
@@ -1782,7 +1781,9 @@ async function refresh(){
       }
       ClientScene.commit(result.value);resourceCache=result.value.resourceData;
     }
-    world=next;frameActors=null;identity=connectedWorlds.has(world.world_id)?identities[world.world_id] || null:null;
+    world=next;frameActors=null;
+    const savedIdentity=identities[world.world_id];
+    identity=savedIdentity?.token && world.towns[savedIdentity.town_id]?savedIdentity:null;
     // Keep characters moving even if the lightweight endpoint is unavailable.
     updateRemotePlayers({world_id:world.world_id,sampled_at:world.players_sampled_at,
       players:Object.fromEntries(Object.entries(world.towns).filter(([,town])=>town.player).map(([id,town])=>[id,town.player]))});

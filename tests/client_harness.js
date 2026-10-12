@@ -1,6 +1,6 @@
 // Execute the actual browser scripts; tests never cut functions out of source text.
 const fs=require('node:fs'),path=require('node:path'),vm=require('node:vm');
-module.exports=function client(){
+module.exports=function client(options={}){
   const elements=new Map(),frames=[],listeners=new Map();let paints=0;
   const context2d=new Proxy({clearRect(){paints++;}}, {get:(target,key)=>key in target?target[key]:()=>{}});
   function element(){return {open:false,children:[],style:{setProperty(){}},classList:{toggle(){},add(){},remove(){}},
@@ -11,7 +11,7 @@ module.exports=function client(){
     createElement:element,querySelectorAll:()=>[],addEventListener(name,callback){listeners.set(name,callback);}};
   document.getElementById('world').getContext=()=>context2d;
   const sandbox={document,console,performance:{now:()=>0},AbortController,setTimeout,clearTimeout,setInterval:()=>0,
-    localStorage:{getItem:()=>null,setItem(){}},requestAnimationFrame:callback=>frames.push(callback),
+    localStorage:options.localStorage || {getItem:()=>null,setItem(){}},requestAnimationFrame:callback=>frames.push(callback),
     fetch:()=>new Promise(()=>{})};
   sandbox.window={devicePixelRatio:1,addEventListener(name,callback){listeners.set(name,callback);}};
   const context=vm.createContext(sandbox);
