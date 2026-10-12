@@ -168,7 +168,7 @@ class ChunkMap:
         return record
 
     def catch_up(self, key, record):
-        from progression import SUPPLIES, source_limits
+        from progression import SUPPLIES, TREE_REGROWTH_RATE, source_limits
         clock = self.landscape.get('chunk_clock', 0)
         elapsed = max(0, clock - record.get('clock', 0))
         cx, cy = map(int, key.split(','))
@@ -186,7 +186,8 @@ class ChunkMap:
             resource.update(supply=min(maximum, resource.get('supply', maximum) + elapsed / 3 * regeneration),
                             supply_max=maximum, regeneration=regeneration)
         for stump in record['tree_stumps']:
-            stump['remaining'] = max(3, stump['remaining'] - elapsed)
+            stump['remaining'] = max(3 * TREE_REGROWTH_RATE,
+                                     round(stump['remaining'] - elapsed * TREE_REGROWTH_RATE, 9))
         record['clock'] = clock
 
     def _read(self, key):

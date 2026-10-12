@@ -1,6 +1,7 @@
 import copy
 import json
 import unittest
+from math import ceil
 from collections import deque
 
 import progression as economy
@@ -25,7 +26,7 @@ class Wilderness(unittest.TestCase):
             saved = json.loads(json.dumps(landscape))
             self.assertEqual(len(saved['tree_stumps']), 1)
             seconds = saved['tree_stumps'][0]['remaining']
-            for _ in range(seconds // 3 - 1):
+            for _ in range(ceil(seconds / 2.7) - 1):
                 economy.renew(saved)
             self.assertEqual(saved['map_resources'], [])
             economy.renew(saved)
@@ -39,8 +40,18 @@ class Wilderness(unittest.TestCase):
             for _ in range(101):
                 economy.renew(landscape, [{'kind': kind, 'x': 2, 'y': 2}])
             self.assertEqual(landscape['tree_stumps'][0]['remaining'], 300)
-        for _ in range(100):
+        for _ in range(112):
             economy.renew(landscape)
+        self.assertEqual(len(landscape['map_resources']), 1)
+
+    def test_existing_stumps_regrow_ten_percent_slower(self):
+        landscape = {'map_resources': [], 'tree_stumps': [
+            {'kind': 'tree', 'x': 2, 'y': 2, 'remaining': 27}]}
+        for _ in range(9):
+            economy.renew(landscape)
+        self.assertEqual(landscape['map_resources'], [])
+        self.assertAlmostEqual(landscape['tree_stumps'][0]['remaining'], 2.7)
+        economy.renew(landscape)
         self.assertEqual(len(landscape['map_resources']), 1)
 
     def test_special_trees_take_five_times_the_work_and_never_refill_while_cutting(self):

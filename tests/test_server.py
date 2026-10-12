@@ -210,6 +210,8 @@ class VillageRules(unittest.TestCase):
         self.assertIsNone(worker['work_target'])
         self.assertEqual(worker['production_status'], 'Waiting for trees to regrow')
         tick(world)
+        self.assertIsNone(worker['work_target'])
+        tick(world)
         self.assertEqual(worker['work_target']['kind'], 'tree')
         self.assertEqual(worker['production_status'], 'Working')
 

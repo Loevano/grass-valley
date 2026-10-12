@@ -32,6 +32,7 @@ ANIMALS = {
 }
 ANIMALS['horse'] = {'level': 8, 'coins': 0, 'output': 'horse', 'feed': .5}
 ANIMAL_GROWTH_SECONDS = 300
+TREE_REGROWTH_RATE = .9
 BUTCHER_SECONDS = 60
 ANIMAL_MEAT = {'chicken': 2, 'sheep': 4, 'pig': 8, 'cow': 10}
 
@@ -598,7 +599,7 @@ def renew(landscape, obstacles=()):
         if (x, y) in occupied:
             remaining.append(stump)
             continue
-        stump['remaining'] -= 3
+        stump['remaining'] = round(stump['remaining'] - 3 * TREE_REGROWTH_RATE, 9)
         if stump['remaining'] <= 0:
             landscape['map_resources'].append({k: v for k, v in stump.items() if k != 'remaining'})
             occupied.add((x, y))

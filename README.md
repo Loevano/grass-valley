@@ -226,10 +226,10 @@ the Python host, refresh both browsers, and create a new world to use the shared
   finishing over 30 seconds. Housing, storage, and workplaces activate only on
   completion. Progress survives saving, moving a site, and restarting the host.
 - Trees are felled when their remaining wood reaches zero, freeing their tile for
-  building and leaving a visible stump. They regrow after five minutes on all ground while
+  building and leaving a visible stump. They regrow after about five minutes 34 seconds on all ground while
   the tile is unoccupied. Buildings and roads pause regrowth until removed.
   Swamp willows and rare ancient trees take five times as much chopping and
-  fifteen minutes to regrow.
+  about sixteen minutes 40 seconds to regrow.
   Water regenerates its shared supply. Rock outcrops cannot be mined yet.
 - New shared worlds have a large lake with three treasure islands. At hall level 3,
   select **You** and build an **Exploration boat** for 20 wood and 10 planks.

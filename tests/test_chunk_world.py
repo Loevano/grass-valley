@@ -156,6 +156,16 @@ class ExplorableMap(unittest.TestCase):
         self.assertFalse(any(r['kind'] == 'chest' and r['x'] == 80 and r['y'] == 80
                              for r in stored['shared_map']['map_resources']))
 
+    def test_sleeping_stumps_use_reduced_regrowth_rate(self):
+        record = self.manager.read('2,2')
+        record['tree_stumps'] = [{'kind': 'tree', 'x': 80, 'y': 80, 'remaining': 300}]
+        self.world['shared_map']['chunk_clock'] += 30
+        self.manager.catch_up('2,2', record)
+        self.assertEqual(record['tree_stumps'][0]['remaining'], 273)
+        self.world['shared_map']['chunk_clock'] += 600
+        self.manager.catch_up('2,2', record)
+        self.assertAlmostEqual(record['tree_stumps'][0]['remaining'], 2.7)
+
     def test_sleeping_supplies_catch_up_and_unchanged_chunks_are_not_rewritten(self):
         self.visit(80, 80)
         server.prepare_landscapes(self.world)

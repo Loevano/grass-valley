@@ -91,7 +91,7 @@ These are starting values to make the prototype playable, **not final design dec
   walking around obstacles, gathering beside the source, and delivering supplies. Animation is cosmetic; the host still controls
   production every three seconds. Buildings use open grass tiles.
   Trees leave visible stumps when felled and regrow on any unoccupied ground
-  tile after five minutes (fifteen for willows and ancient trees, which hold
+  tile after about five minutes 34 seconds (sixteen minutes 40 seconds for willows and ancient trees, which hold
   five times the wood). Buildings and roads pause regrowth. New shared worlds
   contain a large lake with three loot islands. Exploration boats unlock at
   hall level 3, cost 20 wood and 10 planks, and automatically embark/disembark
