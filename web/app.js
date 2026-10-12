@@ -538,11 +538,11 @@ function renderStorage(town,item,index,target=$('selection-details')){
       };
       caption.append(toggle);
     }
-    const amount=stock[key] || 0,limit=allocations[key] || 0;
+    const amount=stock[key] || 0,limit=allocations[key] || 0,displayLimit=Number(limit.toFixed(2));
     const count=document.createElement('span');count.className='storage-count';
-    count.textContent=item.kind==='storehouse'&&!enabled[key]?`${Math.floor(amount)} · Disabled`:`${Math.floor(amount)} / ${limit}`;caption.append(count);row.append(caption);
+    count.textContent=item.kind==='storehouse'&&!enabled[key]?`${Math.floor(amount)} · Disabled`:`${Math.floor(amount)} / ${displayLimit}`;caption.append(count);row.append(caption);
     const meter=document.createElement('meter');meter.min=0;meter.max=Math.max(1,limit,amount);meter.value=amount;
-    meter.setAttribute('aria-label',`${goodName(key)} stored`);meter.setAttribute('aria-valuetext',`${Math.floor(amount)} stored, ${limit} capacity`);row.append(meter);target.append(row);
+    meter.setAttribute('aria-label',`${goodName(key)} stored`);meter.setAttribute('aria-valuetext',`${Math.floor(amount)} stored, ${displayLimit} capacity`);row.append(meter);target.append(row);
   }
   for(const [key,n] of Object.entries(stored))if(n>0&&!buildingStorageGoods(item).includes(key))target.append(fact(String(Math.floor(n)),`${goodName(key)} from previous storage · available to use or haul away`));
   for(const [key,n] of Object.entries(item.input_buffer || {}))if(n>0)target.append(fact(String(Math.floor(n)),`${goodName(key)} reserved for production`));
