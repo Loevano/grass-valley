@@ -69,6 +69,8 @@ const run=new Function('document','window','localStorage','setTimeout','clearTim
   const secondSailor={...sailor,x:5,y:6},rodFisher={...sailor,state:{...sailor.state,boating:false}};
   const crewBoat=fishingBoatSprites([['own',town]],town.map_resources,[sailor,secondSailor,rodFisher])[0];
   assert.deepStrictEqual(crewBoat.crew,[sailor,secondSailor],'Every boat crew member rides aboard; rod fishers remain on the dock');
+  const almostInteger={...sailor,x:4.999999999,y:6.000000001};
+  assert.strictEqual(fishingBoatSprites([['own',town]],town.map_resources,[almostInteger])[0].passenger,almostInteger,'Playback roundoff does not detach a fisherman from the boat');
   const dock={x:4,y:6},routeBerth={x:5,y:6};
   const dockFisher={...sailor,x:4,y:6,state:{...sailor.state,sailing:{dock,berth:routeBerth}}};
   const waitingBoat=fishingBoatSprites([['own',town]],town.map_resources,[dockFisher])[0];
@@ -89,6 +91,7 @@ const run=new Function('document','window','localStorage','setTimeout','clearTim
   const leavingBoat=fishingBoatSprites([['own',town]],town.map_resources,[{...boarding,y:5.99},sailor])[0];
   assert.deepStrictEqual([leavingBoat.x,leavingBoat.y],[5,6],'Unloading leaves the boat at its berth rather than jumping to another crew member');
   assert(!leavingBoat.passenger);
+  assert.deepStrictEqual(leavingBoat.crew,[sailor],'A crew member awaiting the captain remains inside the docked boat');
   town.buildings[0].profession_upgrades.pop();
 
   assert(!fishingBoatSprites([['own',town]],town.map_resources,[{...sailor,x:4,y:5}])[0].passenger,'Boat stays docked while its fisher walks on land');

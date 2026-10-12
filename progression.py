@@ -57,9 +57,9 @@ def grow_animals(building, seconds):
 PROFESSION_UPGRADES = {
     'axe': {'label': 'Improved axe', 'building': 'woodcutter', 'level': 2, 'skill': 'woodcutting', 'xp': 10, 'wood': 10, 'coins': 5},
     'nets': {'label': 'Fishing nets', 'building': 'fishing_hut', 'level': 2, 'skill': 'fishing', 'xp': 10, 'wood': 10, 'coins': 5},
-    'boat': {'label': 'Fishing boat', 'building': 'fishing_hut', 'level': 3, 'skill': 'fishing', 'xp': 20, 'planks': 10},
-    'improved_boat': {'label': 'Improved fishing boat', 'building': 'fishing_hut', 'level': 4, 'skill': 'fishing', 'xp': 30, 'requires': 'boat', 'planks': 15, 'coins': 20},
-    'master_boat': {'label': 'Masterwork fishing boat', 'building': 'fishing_hut', 'level': 5, 'skill': 'fishing', 'xp': 40, 'requires': 'improved_boat', 'planks': 20, 'coins': 40},
+    'boat': {'label': 'Fishing boat', 'building': 'fishing_hut', 'level': 3, 'skill': 'fishing', 'xp': 20, 'planks': 10, 'capacity': 5},
+    'improved_boat': {'label': 'Improved fishing boat', 'building': 'fishing_hut', 'level': 4, 'skill': 'fishing', 'xp': 30, 'requires': 'boat', 'planks': 15, 'coins': 20, 'capacity': 10},
+    'master_boat': {'label': 'Masterwork fishing boat', 'building': 'fishing_hut', 'level': 5, 'skill': 'fishing', 'xp': 40, 'requires': 'improved_boat', 'planks': 20, 'coins': 40, 'capacity': 20},
     'wool_nets': {'label': 'Durable wool nets', 'building': 'fishing_hut', 'level': 3, 'skill': 'fishing', 'xp': 20, 'wool': 5},
     'tools': {'label': 'Crafted axe', 'building': 'woodcutter', 'level': 4, 'skill': 'woodcutting', 'xp': 30, 'tools': 3},
     'saw': {'label': 'Improved saw', 'building': 'sawpit', 'level': 5, 'skill': 'woodworking', 'xp': 20, 'tools': 3},
@@ -76,6 +76,11 @@ PLAYER_BOATS = {
 def fishing_boat_level(building):
     upgrades = building.get('profession_upgrades', [])
     return 3 if 'master_boat' in upgrades else 2 if 'improved_boat' in upgrades else 1 if 'boat' in upgrades else 0
+
+
+def fishing_boat_capacity(building):
+    level = fishing_boat_level(building)
+    return PROFESSION_UPGRADES[('boat', 'improved_boat', 'master_boat')[level - 1]]['capacity'] if level else 0
 
 
 def player_boat_level(player):

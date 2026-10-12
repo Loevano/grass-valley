@@ -3,6 +3,7 @@ import json
 import unittest
 from unittest.mock import patch
 
+import logistics
 import work_cycles
 import progression as economy
 from server import (command, construct, move_player, new_town, resource_reach,
@@ -43,7 +44,7 @@ class Boats(unittest.TestCase):
         water = [{'kind': 'water', 'x': x, 'y': 2} for x in range(7, 13)]
         self.town['map_resources'] = water + [{'kind': 'water', 'x': 6, 'y': 6}]
         fisher = self.town['villagers'][0]
-        fisher.update(job='fishing', building_index=1, pending_output={'fish': 1},
+        fisher.update(job='fishing', building_index=1, pending_output={'fish': 5},
                       logistics_position={'x': 6, 'y': 3})
         for spatial in (None, SpatialIndex(self.town['map_resources'])):
             self.assertEqual(work_assignment(self.town, 'fishing', 0, spatial), (hut, water[-1]))
@@ -61,8 +62,55 @@ class Boats(unittest.TestCase):
         self.assertTrue(unloaded)
         self.assertTrue({'working', 'returning', 'depositing'} <= phases)
         self.assertIn((12, 2), positions)
-        self.assertLessEqual(abs(state['x'] - hut['x']) + abs(state['y'] - hut['y']), 1)
+        self.assertEqual((state['x'], state['y']), (8, 2), 'Unloading keeps the fisher aboard one tile beyond the dock')
         self.assertEqual(state['phase'], 'walking')
+
+    def test_partial_cargo_waits_for_full_load_or_empty_source_and_survives_save(self):
+        hut = {'kind': 'fishing_hut', 'x': 6, 'y': 2, 'profession_upgrades': ['boat']}
+        self.town['buildings'].append(hut)
+        self.town['map_resources'] = [{'kind': 'water', 'x': x, 'y': 2, 'supply': 10} for x in range(7, 13)]
+        source = self.town['map_resources'][-1]
+        worker = self.town['villagers'][0]
+        worker.update(job='fishing', building_index=1, logistics_position={'x': 12, 'y': 2})
+        logistics.record_output(self.town, hut, 'fish', 2, worker)
+        work_cycles.advance(self.town, self.town, worker, hut, source, 0, 7)
+        self.assertEqual(worker['work_animation']['phase'], 'working')
+        self.town = json.loads(json.dumps(self.town))
+        worker, hut = self.town['villagers'][0], self.town['buildings'][1]
+        source = self.town['map_resources'][-1]
+        source['supply'] = 0
+        for _ in range(100):
+            if work_cycles.advance(self.town, self.town, worker, hut, source, 0, .1):
+                break
+        self.assertEqual((worker['work_animation']['x'], worker['work_animation']['y']), (8, 2))
+        logistics.drop_off(self.town, hut, worker)
+        self.assertEqual(hut['output_buffer']['fish'], 2)
+        self.assertEqual(work_cycles.boat_load(self.town, hut), 0)
+
+    def test_boat_capacity_is_shared_by_crew_and_survives_unloading(self):
+        for tier, capacity in enumerate((5, 10, 20), 1):
+            with self.subTest(tier=tier):
+                self.setUp()
+                hut = {'kind': 'fishing_hut', 'x': 6, 'y': 2, 'settler_level': 3,
+                       'profession_upgrades': ['boat', 'improved_boat', 'master_boat'][:tier]}
+                self.town['buildings'].append(hut)
+                self.town['map_resources'] = [{'kind': 'water', 'x': x, 'y': 2} for x in range(7, 13)]
+                self.town['villagers'] = [{'job': 'fishing', 'building_index': 1, 'talents': {},
+                                           'logistics_position': {'x': 12, 'y': 2}} for _ in range(tier)]
+                for worker in self.town['villagers']:
+                    logistics.record_output(self.town, hut, 'fish', (capacity - .25) / tier, worker)
+                self.assertEqual(economy.fishing_boat_capacity(hut), capacity)
+                with patch('server.secrets.randbelow', return_value=1):
+                    tick({'towns': {'a': self.town}})
+                self.assertAlmostEqual(work_cycles.boat_load(self.town, hut), capacity)
+                leader = self.town['villagers'][0]['work_animation']
+                for worker in self.town['villagers'][1:]:
+                    self.assertEqual(worker['work_animation'], leader, 'Crew shares one confirmed voyage')
+                for _ in range(20):
+                    tick({'towns': {'a': self.town}})
+                    if hut.get('output_buffer', {}).get('fish', 0) >= capacity:
+                        break
+                self.assertEqual(hut['output_buffer']['fish'], capacity)
 
     def test_boat_tiers_reach_farther_and_prefer_available_fish(self):
         hut = {'kind': 'fishing_hut', 'x': 6, 'y': 2}
@@ -84,7 +132,7 @@ class Boats(unittest.TestCase):
         self.town['map_resources'] = [{'kind': 'water', 'x': x, 'y': y} for x, y in tiles]
         source = self.town['map_resources'][-1]
         fisher = self.town['villagers'][0]
-        fisher.update(job='fishing', pending_output={'fish': 1}, logistics_position={'x': 2, 'y': 3})
+        fisher.update(job='fishing', pending_output={'fish': 5}, logistics_position={'x': 2, 'y': 3})
         work_cycles.advance(self.town, self.town, fisher, hut, source, 0, .1)
         path = [(p['x'], p['y']) for p in fisher['work_animation']['path']]
         self.assertEqual(path[path.index(tiles[0]):], tiles)
@@ -100,7 +148,7 @@ class Boats(unittest.TestCase):
             if unloaded:
                 break
         self.assertTrue(unloaded)
-        self.assertEqual((fisher['work_animation']['x'], fisher['work_animation']['y']), tiles[0])
+        self.assertEqual((fisher['work_animation']['x'], fisher['work_animation']['y']), tiles[1])
 
     def test_upgrades_choose_deeper_water_and_catch_better_species(self):
         upgrades = []
@@ -119,6 +167,7 @@ class Boats(unittest.TestCase):
                     depth = SpatialIndex(town['map_resources']).water_depths()[(source['x'], source['y'])]
                     self.assertEqual(depth, tier + 1)
                     self.assertEqual(abs(source['x'] - hut['x']) + abs(source['y'] - hut['y']), resource_reach(hut))
+                worker['logistics_position'] = {'x': source['x'], 'y': source['y']}
                 with patch('server.secrets.randbelow', return_value=1):
                     tick({'towns': {'a': town}})
                 self.assertEqual(hut['pending_output'], {species: 1 + .25 * (tier - 1)})
@@ -283,7 +332,7 @@ class Boats(unittest.TestCase):
         self.town['map_resources'] = [{'kind': 'water', 'x': 7, 'y': 2}]
         self.town['buildings'].append({'kind': 'fishing_hut', 'x': 6, 'y': 2,
                                       'profession_upgrades': ['boat', 'improved_boat', 'master_boat', 'nets']})
-        self.town['villagers'][0].update(job='fishing', talents={})
+        self.town['villagers'][0].update(job='fishing', talents={}, logistics_position={'x': 7, 'y': 2})
         with patch('server.secrets.randbelow', return_value=1):
             tick({'towns': {'a': self.town}})
         self.assertEqual(self.town['buildings'][1]['pending_output']['fish'], 1.75)

@@ -701,14 +701,41 @@ def tick(world):
             if job == 'hauling':
                 logistics.haul(town, walking, villager, building, logistics_route, TICK_SECONDS)
                 continue
+            boating = job == 'fishing' and work_cycles.fishing_boating(town, building, index)
+            if boating:
+                crew = work_cycles.fishing_crew(town, building)
+                captain = town['villagers'][crew[0]]
+                voyage = captain.get('work_animation', {})
+                task = voyage.get('task', [])
+                if len(task) >= 7 and task[:4] == ['fishing', building['kind'], building['x'], building['y']] and (
+                        work_cycles.boat_load(town, building) or voyage.get('phase') in ('returning', 'depositing')):
+                    previous_source = town_spatial.nearby('water', task[5], task[6], 0)
+                    source = previous_source[0] if previous_source else {'kind': 'water', 'x': task[5], 'y': task[6], 'supply': 0}
+                    villager['work_target'] = source
+                depth = town_spatial.water_depths().get((source['x'], source['y']), 1)
+                boat_output = economy.fishing_catch(building, depth)
+                villager['boat_return_requested'] = bool(work_cycles.boat_load(town, building) and (
+                    villager.get('boat_return_requested') or finishing_output or source.get('supply', 1) <= 0
+                    or logistics.buffered(building) >= logistics.BUFFER_SIZE - 1e-9
+                    or economy.production_room(town, boat_output) <= 0))
+            else:
+                villager.pop('boat_return_requested', None)
             if villager.get('logistics_trip'):
                 villager.pop('work_animation', None)
             elif work_cycles.advance(town, walking, villager, building, source, index, TICK_SECONDS):
-                logistics.drop_off(town, building, villager)
+                if boating:
+                    for crew_index in work_cycles.fishing_crew(town, building):
+                        logistics.drop_off(town, building, town['villagers'][crew_index])
+                else:
+                    logistics.drop_off(town, building, villager)
             if finishing_output:
                 villager['production_status'] = 'Returning gathered goods'
                 continue
-            if logistics.worker(town, walking, villager, building, logistics_route, TICK_SECONDS):
+            if not boating or villager.get('logistics_trip') or not work_cycles.boat_load(town, building):
+                if logistics.worker(town, walking, villager, building, logistics_route, TICK_SECONDS):
+                    continue
+            if boating and villager.get('work_animation', {}).get('phase') != 'working':
+                villager['production_status'] = 'Unloading boat' if villager.get('work_animation', {}).get('phase') == 'depositing' else 'Sailing'
                 continue
             if job in economy.JOB_BUILDINGS:
                 if building['kind'] == 'butcher' and building.get('butchering'):
@@ -743,7 +770,9 @@ def tick(world):
                 villager['production_status'] = 'Production cap reached'
                 continue
             room = min(logistics.BUFFER_SIZE - logistics.buffered(building), cap_room)
-            if room <= 0:
+            if boating:
+                room = min(room, economy.fishing_boat_capacity(building) - work_cycles.boat_load(town, building))
+            if room <= 1e-9:
                 villager['production_status'] = 'Workplace buffer full'
                 continue
             if job == 'farming':
@@ -778,7 +807,11 @@ def tick(world):
                 villager['production_status'] = 'Waiting for supply to regenerate'
                 continue
             if caught:
-                logistics.record_output(town, building, output, amount, villager)
+                orphan_room = max(0, economy.fishing_boat_capacity(building) - work_cycles.boat_load(town, building) - amount) if boating else None
+                logistics.record_output(town, building, output, amount, villager, orphan_room=orphan_room)
+            if boating and source.get('supply', 1) <= 1e-9:
+                for crew_index in work_cycles.fishing_crew(town, building):
+                    town['villagers'][crew_index]['boat_return_requested'] = True
             economy.practice(villager, job)
             villager['production_status'] = 'Working' if caught else 'No catch — trying again'
         feed_settlers(town)

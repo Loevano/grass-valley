@@ -116,6 +116,10 @@ sailor.latestFishingCatch={caught:false};
 animation.advance(sailor,3.3,true);
 assert.strictEqual(sailor.phase,'working','An empty cast keeps the boat offshore');
 sailor.latestFishingCatch={caught:true};
+sailor.boatLoad=1;
+animation.advance(sailor,3.3,true);
+assert.strictEqual(sailor.phase,'working','A partial load keeps fishing offshore');
+sailor.boatLoad=5;
 const pausedElapsed=sailor.elapsed;
 animation.advance(sailor,1,false);
 assert.strictEqual(sailor.elapsed,pausedElapsed,'Full storage pauses fishing offshore');
@@ -124,9 +128,15 @@ assert.strictEqual(sailor.phase,'returning');
 assert(sailor.path.every(p=>sea.has(p.x+','+p.y)),'Catch returns through connected water to the berth');
 for(let i=0;i<300&&sailor.path.length;i++)animation.advance(sailor,.1,true);
 assert.strictEqual(sailor.phase,'depositing');
-assert.deepStrictEqual([sailor.x,sailor.y],[3,2],'Catch unloads beside the hut');
+assert.deepStrictEqual([sailor.x,sailor.y],[3,3],'Catch unloads at the berth while the fisherman stays aboard');
 animation.advance(sailor,.7,true);
 assert.strictEqual(sailor.phase,'walking','Boat departs again after unloading');
+
+const partial=animation.plan(sailingTown,{job:'fishing',building_index:0,work_target:sailingTown.map_resources.at(-1),
+  logistics_position:{x:5,y:2}},0);
+partial.boatLoad=2;partial.boatReturnRequested=true;
+animation.advance(partial,3.3,true);
+assert.strictEqual(partial.phase,'returning','An exhausted spot returns a partial cargo');
 
 const offshore=animation.plan(sailingTown,{job:'fishing',building_index:0,work_target:sailingTown.map_resources.at(-1),
   logistics_position:{x:2,y:3}},0,{...sailor,x:4.4,y:4,path:[{x:5,y:4}]});

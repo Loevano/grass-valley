@@ -422,6 +422,13 @@ function fishingBoatLevel(building){
   const upgrades=building.profession_upgrades || [];
   return upgrades.includes('master_boat')?3:upgrades.includes('improved_boat')?2:upgrades.includes('boat')?1:0;
 }
+function fishingBoatCapacity(building){return [0,5,10,20][fishingBoatLevel(building)];}
+function fishingBoatLoad(town,building){
+  building=town.buildings.find(b=>b.kind==='fishing_hut'&&b.x===building.x&&b.y===building.y) || building;
+  return (town.villagers || []).reduce((load,worker,index)=>load+(worker.job==='fishing'&&WorkerAnimation.fishingBoating(town,building,index)
+    ?Object.entries(worker.pending_output || {}).reduce((sum,[key,amount])=>sum+(['fish','trout','salmon','sturgeon'].includes(key)?amount:0),0):0),0);
+}
+
 function resourceReach(building){
   if(building.kind==='mine')return 10;
   return building.kind==='woodcutter'?10:building.kind==='fishing_hut'?3+buildingLevel(building)-1+(fishingBoatLevel(building)?3+2*(fishingBoatLevel(building)-1):0):3;
@@ -543,9 +550,9 @@ const professionBenefits={
   nets:'+25% food / catch',
   wool_nets:'+25% food / catch\nStacks with nets',
   tools:'+25% wood / worker\nStacks with axe',
-  boat:'1 fisherman aboard · Other fishers use the dock\n+3 tile reach\nDepth 2 water · Trout (1.5 food / 2 coins)',
-  improved_boat:'2 fishermen aboard\n+2 additional tile reach\nDepth 3 water · Salmon (2 food / 3 coins)\n+25% fish / catch',
-  master_boat:'3 fishermen aboard\n+2 additional tile reach\nDepth 4 water · Sturgeon (3 food / 5 coins)\n+25% fish / catch (total boat bonus: +50%)',
+  boat:'1 fisherman aboard · Other fishers use the dock\nHolds 5 fish\n+3 tile reach\nDepth 2 water · Trout (1.5 food / 2 coins)',
+  improved_boat:'2 fishermen aboard\nHolds 10 fish\n+2 additional tile reach\nDepth 3 water · Salmon (2 food / 3 coins)\n+25% fish / catch',
+  master_boat:'3 fishermen aboard\nHolds 20 fish\n+2 additional tile reach\nDepth 4 water · Sturgeon (3 food / 5 coins)\n+25% fish / catch (total boat bonus: +50%)',
   saw:'+25% plank processing speed',
   steel_pickaxe:'+25% iron ore per mining batch',
   timber_frame:'+2 spaces'
@@ -1305,7 +1312,7 @@ function renderProfession(town,item,index,target,upgrades,details,boats,unlocked
   if(!catalog)return;
   if(boats){
     const note=document.createElement('p');
-    note.textContent=fishingBoatLevel(item)?`Boat owned by this hut · Tier ${fishingBoatLevel(item)}/3 · Crew ${fishingBoatLevel(item)} · Other fishers use the dock · Reach ${resourceReach(item)} tiles · Maximum depth ${fishingBoatLevel(item)+1}. Prefers deeper water; ${['','trout','salmon','sturgeon'][fishingBoatLevel(item)]} require this depth. Click its boat on the map to manage it.`:'No boat owned · Buy one boat for this fishing hut. It appears beside nearby water immediately.';
+    note.textContent=fishingBoatLevel(item)?`Boat owned by this hut · Tier ${fishingBoatLevel(item)}/3 · Crew ${fishingBoatLevel(item)} · Cargo ${Number(fishingBoatLoad(town,item).toFixed(2))}/${fishingBoatCapacity(item)} fish · Other fishers use the dock · Reach ${resourceReach(item)} tiles · Maximum depth ${fishingBoatLevel(item)+1}. Prefers deeper water; ${['','trout','salmon','sturgeon'][fishingBoatLevel(item)]} require this depth. Returns when full or the fishing spot runs out; unloads without leaving the boat. Click its boat on the map to manage it.`:'No boat owned · Buy one boat for this fishing hut. It appears beside nearby water immediately.';
     boats.append(note);
   }
   renderRecipes(town,item,index,target);
@@ -2218,7 +2225,12 @@ function animatedVillagers(town, seconds, townId=viewed, frameLayout=null){
       }
     }
     const resource=villager.job==='woodcutting'?'wood':'food';
-    state.latestFishingCatch=hostWork?{caught:Object.values(villager.pending_output || {}).some(n=>n>0)}:villager.fishing_catch;
+    if(state.boating&&!hostWork){
+      state.boatLoad=fishingBoatLoad(town,state.home);
+      state.boatCapacity=fishingBoatCapacity(state.home);
+      state.boatReturnRequested=!!villager.boat_return_requested;
+    }
+    state.latestFishingCatch=villager.fishing_catch || (hostWork?{caught:Object.values(villager.pending_output || {}).some(n=>n>0)}:null);
     const butchering=villager.job==='butchery'&&town.buildings[villager.building_index]?.butchering;
     state.workDuration=butchering?(world.progression?.butcher_seconds || 60):villager.job==='farming'?8:3.2;
     const active=!!villager.construction_target || Object.values(villager.pending_output || {}).some(n=>n>0) || (villager.production_status==='Working' || villager.production_status?.startsWith('Butchering ') || villager.production_status?.startsWith('No catch') || (!villager.production_status&&town[resource]<resourceStorage(town,resource)));
@@ -2347,7 +2359,7 @@ function drawVillager(b){
   const cast=Math.min(fishingTime/.55,1),reel=Math.max(0,Math.min((fishingTime-2.35)/.85,1));
   const swing=working?(Math.sin((s.elapsed || 0)*(chopping?5:7))+1)/2:0;
   ctx.save();ctx.translate(px+(b.index%3-1)*3,py+tileH*.65+Math.floor(b.index/3));ctx.scale(tileW/46,tileW/46);
-  ctx.fillStyle='#223b2966';ctx.beginPath();ctx.ellipse(0,2,7,3,0,0,Math.PI*2);ctx.fill();
+  if(!b.aboard){ctx.fillStyle='#223b2966';ctx.beginPath();ctx.ellipse(0,2,7,3,0,0,Math.PI*2);ctx.fill();}
   const facingTarget=s.phase==='collecting_water'?s.waterSource:fishing?(s.castTarget || s.source):s.source;
   const towardSource=facingTarget?(facingTarget.x-s.x)-(facingTarget.y-s.y):0;
   const facing=(working||fishing||farming)&&towardSource!==0?Math.sign(towardSource):s.facing;
@@ -2355,7 +2367,7 @@ function drawVillager(b){
   if(b.leadingHorse){ctx.save();ctx.translate(-28,5);ctx.scale(.75,.75);paintHorse(ctx,stride);ctx.restore();ctx.strokeStyle='#cbb78a';ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(-12,-8);ctx.lineTo(-3,-8);ctx.stroke();}
   if(b.mounted){paintHorse(ctx,stride);ctx.translate(0,-12);}
   ctx.strokeStyle='#283c38';ctx.lineWidth=2.5;ctx.lineCap='round';
-  ctx.beginPath();ctx.moveTo(-2,-4);ctx.lineTo(-2-stride*3,1);ctx.moveTo(2,-4);ctx.lineTo(2+stride*3,1);ctx.stroke();
+  if(!b.aboard){ctx.beginPath();ctx.moveTo(-2,-4);ctx.lineTo(-2-stride*3,1);ctx.moveTo(2,-4);ctx.lineTo(2+stride*3,1);ctx.stroke();}
   const bob=walking?Math.abs(stride)*1.2:fishing?reel*1.5:farming?farmSwing*(farmStage===0?2:1):chopping?swing*2.5:working?swing:Math.sin(s.clock*2)*.3;
   ctx.translate(0,-bob);
   ctx.fillStyle=b.kind==='npc'?npcColors[b.biome][0]:b.kind==='player'?'#d6b85d':outfit?.color || ['#7899a2','#b9866b','#a0a16b','#947ca0','#c6aa62'][b.index%5];ctx.fillRect(-4,-13,8,10);
@@ -3007,12 +3019,13 @@ function fishingBoatSprites(entries,resources,villagers=[]){
     const captain=assigned[0];
     const aboard=v=>{
       const dock=v.state.sailing?.dock,berth=v.state.sailing?.berth;
+      const snap=n=>Math.abs(n-Math.round(n))<1e-6?Math.round(n):n,x=snap(v.x),y=snap(v.y);
       const onDeck=(x,y)=>dock&&berth&&(dock.x!==berth.x||dock.y!==berth.y)&&dock.x===x&&dock.y===y;
-      return waterTiles.has(`${Math.floor(v.x)},${Math.floor(v.y)}`)&&waterTiles.has(`${Math.ceil(v.x)},${Math.ceil(v.y)}`)
-        &&!onDeck(Math.floor(v.x),Math.floor(v.y))&&!onDeck(Math.ceil(v.x),Math.ceil(v.y));
+      return waterTiles.has(`${Math.floor(x)},${Math.floor(y)}`)&&waterTiles.has(`${Math.ceil(x)},${Math.ceil(y)}`)
+        &&!onDeck(Math.floor(x),Math.floor(y))&&!onDeck(Math.ceil(x),Math.ceil(y));
     };
     const passenger=captain&&aboard(captain)?captain:null;
-    const crew=passenger?assigned.filter(aboard):[];
+    const crew=assigned.filter(aboard);
     // The route's berth is authoritative for boarding; decorative parking may
     // use a different nearby tile when several huts share a shore.
     const berth=captain?.state.sailing?.berth || boat;
@@ -3252,8 +3265,12 @@ function draw(seconds=0){
       drawFishingBoat(b);
       for(const [seat,passenger] of b.crew.entries()){
         const offset=(seat-(b.crew.length-1)/2)*.28;
-        drawVillager({...passenger,x:b.x+offset,y:b.y-offset,state:{...passenger.state,path:[]}});
+        drawVillager({...passenger,aboard:true,x:b.x+offset,y:b.y-offset,state:{...passenger.state,path:[]}});
       }
+      // The near hull covers seated passengers' feet inside the boat.
+      const boatY=py+tileH/2;
+      polygon([[px-23*scale,boatY-3*scale],[px-12*scale,boatY+5*scale],[px+10*scale,boatY+5*scale],
+        [px+25*scale,boatY-4*scale],[px+12*scale,boatY+12*scale],[px-13*scale,boatY+12*scale]],b.level===3?'#a27640':'#805738','#493627');
       hitTargets.push({type:'building',index:b.objectIndex,townId:b.townId,left:px-25*scale,right:px+25*scale,top:py+(tileH/2)-(b.level>=2?32:10)*scale,bottom:py+tileH/2+13*scale});
       continue;
     }

@@ -140,7 +140,7 @@ const WorkerAnimation = (() => {
     const approach=outbound?(yield* routeSteps(start,dock,boardingBlocked,state.size,false,state.bounds,state.roads)):
       afloat?(yield* routeSteps(start,berth,seaBlocked,state.size,false,seaBounds)):[];
     const sailing=outbound?(yield* routeSteps(berth,target,seaBlocked,state.size,false,seaBounds)):
-      (yield* routeSteps(afloat?berth:start,dock,landBlocked,state.size,false,state.bounds,state.roads));
+      afloat?[]:(yield* routeSteps(start,berth,landBlocked,state.size,false,state.bounds,state.roads));
     return approach===null||sailing===null?null:[...approach,...(outbound&&key(dock)!==key(berth)?[berth]:[]),...sailing];
   }
   function* planSteps(town, villager, index, state) {
@@ -273,7 +273,7 @@ const WorkerAnimation = (() => {
       }
     }
     return {...position,phase:path===null?'waiting':path.length?'walking':source?'working':'idle',
-      path:path || [],source,home,pier,workSpot,castTarget,fishingCaught:null,blocked,size,bounds,roads,roadMode,boating,sailing,workDuration:villager.job==='farming'?8:3.2,
+      path:path || [],source,home,pier,workSpot,castTarget,fishingCaught:null,blocked,size,bounds,roads,roadMode,boating,sailing,boatCapacity:[0,5,10,20][boatLevel(home)],boatLoad:0,workDuration:villager.job==='farming'?8:3.2,
       farming:villager.job==='farming'&&!villager.construction_target,water:town.map_resources.filter(r=>r.kind==='water'),waterReady:false,
       stationary:!!source&&source.kind===workplace?.kind&&distance(source,workplace)===0&&!villager.construction_target,
       construction:!!villager.construction_target,elapsed:0,clock:state?.clock || index*.37,facing:state?.facing || 1};
@@ -337,7 +337,8 @@ const WorkerAnimation = (() => {
       state.fishingCaught=state.latestFishingCatch?.caught ?? true;
     }
     if(state.phase==='working'&&state.elapsed>=(state.workDuration || 3.2)){
-      if(state.fishingCaught===false){state.elapsed=0;state.fishingCaught=null;return;}
+      if(state.boating&&state.boatLoad<(state.boatCapacity || 5)&&!state.boatReturnRequested){state.elapsed=0;state.fishingCaught=null;return;}
+      if(!state.boating&&state.fishingCaught===false){state.elapsed=0;state.fishingCaught=null;return;}
       const path=state.stationary?[]:state.home?(yield* travelSteps(state,state.home,state)):null;
       if(path===null)return;
       state.path=path;state.phase=path.length?'returning':'depositing';state.elapsed=0;
@@ -396,6 +397,6 @@ const WorkerAnimation = (() => {
   const advance=(...args)=>finish(advanceSteps(...args));
   const waterDepths=(...args)=>finish(waterDepthsSteps(...args));
   const fishingPier=(...args)=>finish(fishingPierSteps(...args));
-  return {playback,route,plan,advance,waterDepths,fishingPier,routeSteps,planSteps,advanceSteps};
+  return {playback,route,plan,advance,waterDepths,fishingPier,fishingBoating,routeSteps,planSteps,advanceSteps};
 })();
 if(typeof module!=='undefined')module.exports=WorkerAnimation;

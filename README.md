@@ -248,7 +248,10 @@ the Python host, refresh both browsers, and create a new world to use the shared
   Each fishing hut buys and owns its own boat. The initial purchase applies
   immediately and shows a full-size boat on nearby water; click it to manage its
   hut. Assigned fishers prefer deeper connected water within the hut's reach,
-  fish offshore, and return to unload their catch. Idle boats stay by the bank.
+  share one voyage and carry 5, 10, or 20 fish across the three boat tiers. They
+  fish offshore until the boat is full or the spot runs out, then return to unload
+  at the dock while staying aboard. Cargo is shared by all crew and survives saving.
+  Idle boats stay by the bank.
   Depth counts tile steps from the nearest bank, including island shores.
   Boat tiers can sail in depth 2, 3, and 4 water, respectively, unlocking trout
   (1.5 food / 2 coins), salmon (2 food / 3 coins), and sturgeon (3 food / 5 coins).

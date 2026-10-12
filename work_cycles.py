@@ -1,4 +1,5 @@
 """Host-owned workplace animation and drop-off timing."""
+import copy
 import math
 
 import progression as economy
@@ -6,11 +7,11 @@ from navigation import routes
 from spatial import SpatialIndex
 
 
-def fishing_boating(town, building, worker_index):
+def fishing_crew(town, building):
     """One boat crew space per boat tier; other hut workers use the dock."""
     tier = economy.fishing_boat_level(building)
     if not tier:
-        return False
+        return []
     owner = next((i for i, b in enumerate(town['buildings']) if b is building), None)
     huts = [i for i, b in enumerate(town['buildings']) if b['kind'] == 'fishing_hut'
             and ('construction' not in b or 'upgrade' in b['construction'])
@@ -20,7 +21,16 @@ def fishing_boating(town, building, worker_index):
                     for r in town['map_resources'])]
     crew = [i for i, v in enumerate(town['villagers']) if v['job'] == 'fishing'
             and v.get('building_index', huts[i % len(huts)] if huts else None) == owner]
-    return worker_index in crew[:tier]
+    return crew[:tier]
+
+
+def fishing_boating(town, building, worker_index):
+    return worker_index in fishing_crew(town, building)
+
+
+def boat_load(town, building):
+    return sum(amount for index in fishing_crew(town, building)
+               for key, amount in town['villagers'][index].get('pending_output', {}).items() if key in economy.FISH)
 
 
 def fishing_water(building, water, occupied, reach, terrain=None, depths=None):
@@ -63,6 +73,14 @@ def route(start, target, blocked, size, terrain, adjacent=True, bounds=None, roa
 
 def advance(town, landscape, villager, building, source, index, seconds):
     """Record a compact, confirmed movement timeline for delayed browser playback."""
+    if villager['job'] == 'fishing':
+        crew = fishing_crew(town, building)
+        if index in crew and index != crew[0]:
+            captain = town['villagers'][crew[0]].get('work_animation')
+            if captain:
+                # One hut owns one voyage; extra crew never sail independently.
+                villager['work_animation'] = copy.deepcopy(captain)
+                return False
     previous = villager.get('work_animation', {}).get('playback')
     finished = _advance(town, landscape, villager, building, source, index, seconds)
     state = villager.get('work_animation')
@@ -83,7 +101,7 @@ def _advance(town, landscape, villager, building, source, index, seconds):
     boating = villager['job'] == 'fishing' and fishing_boating(town, building, index)
     spec = [villager['job'], building['kind'], building['x'], building['y'], source['kind'], source['x'], source['y']]
     if villager['job'] == 'fishing':
-        spec.extend([building.get('level', 1), economy.fishing_boat_level(building), boating, 'dock_cycle'])
+        spec.extend([building.get('level', 1), economy.fishing_boat_level(building), boating, 'boat_cargo_cycle'])
     state = villager.get('work_animation')
     size, terrain = landscape.get('map_size', 120), landscape.get('terrain', [])
     roads = {(r['x'], r['y']) for r in landscape.get('roads', []) if 'construction' not in r}
@@ -141,7 +159,7 @@ def _advance(town, landscape, villager, building, source, index, seconds):
                 sailing = route(berth, source, sea_blocked, size, terrain, False, sea_bounds)
             else:
                 approach = route(start, berth, sea_blocked, size, terrain, False, sea_bounds) if afloat else []
-                sailing = route(berth if afloat else start, dock, land_blocked, size, terrain, False, bounds, roads)
+                sailing = [] if afloat else route(start, berth, land_blocked, size, terrain, False, bounds, roads)
             return None if approach is None or sailing is None else approach + sailing
         return route(start, target, blocked, size, terrain, adjacent, bounds, roads)
     if not state or state['task'] != spec or state['phase'] in ('waiting', 'waiting_water'):
@@ -237,7 +255,13 @@ def _advance(town, landscape, villager, building, source, index, seconds):
             water = banks[(round(bank['x']), round(bank['y']))]
             state.update(path=path, waterSource=water, phase='fetching_water' if path else 'collecting_water', elapsed=0)
         else:
-            if villager['job'] == 'fishing' and not any(villager.get('pending_output', {}).values()):
+            if boating:
+                load = boat_load(town, building)
+                full = load >= economy.fishing_boat_capacity(building) - 1e-9
+                if not load or (not full and not villager.get('boat_return_requested') and source.get('supply', 1) > 0):
+                    state['elapsed'] = 0
+                    continue
+            elif villager['job'] == 'fishing' and not any(villager.get('pending_output', {}).values()):
                 state['elapsed'] = 0
                 continue
             path = [] if source is building else travel(state, building)

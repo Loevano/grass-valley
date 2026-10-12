@@ -39,7 +39,7 @@ def production_stock(building, key):
     return max(0, economy.inventory(building).get(key, 0))
 
 
-def record_output(town, building, key, amount, villager=None):
+def record_output(town, building, key, amount, villager=None, orphan_room=None):
     economy.ensure_inventory(town)
     buffer = building.setdefault('pending_output' if villager is not None else 'output_buffer', {})
     buffer[key] = buffer.get(key, 0) + amount
@@ -47,8 +47,16 @@ def record_output(town, building, key, amount, villager=None):
         economy.add_stock(town, key, amount)
     else:
         pending = villager.setdefault('pending_output', {})
-        for orphan_key, orphan_amount in building.pop('orphaned_output', {}).items():
-            pending[orphan_key] = pending.get(orphan_key, 0) + orphan_amount
+        orphaned = building.get('orphaned_output', {})
+        for orphan_key, orphan_amount in list(orphaned.items()):
+            take = orphan_amount if orphan_room is None else min(orphan_amount, max(0, orphan_room))
+            pending[orphan_key] = pending.get(orphan_key, 0) + take
+            if orphan_room is not None:
+                orphan_room -= take
+            if take >= orphan_amount:
+                del orphaned[orphan_key]
+            else:
+                orphaned[orphan_key] -= take
         pending[key] = pending.get(key, 0) + amount
         villager['pending_workplace'] = {k: building[k] for k in ('kind', 'x', 'y')}
     totals = town.setdefault('produced', {})
