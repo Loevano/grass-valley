@@ -7,6 +7,7 @@ and cache rules are in [Backend](BACKEND.md#cached-zoomed-out-map).
 | --- | --- | --- | --- |
 | 1 | Cached zoomed-out town overview | Planned; not implemented | Show the landscape and city sizes without refreshing animated scene detail. |
 | 2 | Coherent terrain regions and water | Planned; not implemented | Create recognizable large regions, rivers, and lakes while retaining smaller local patches. |
+| 3 | Production line balancing | Planned; not implemented | Develop clear wood, farming, and fishing chains with capped staffing, useful crafted items, and simple upgrades. |
 
 ## Cached zoomed-out town overview
 
@@ -60,3 +61,64 @@ Completion criteria:
 
 Exact region sizes, water layouts, and whether and where to place an icy corner
 remain open design decisions before implementation.
+
+## Production line balancing
+
+**Status:** planned; not implemented. Start with the wood chain, then develop
+farming and fishing. This records the agreed direction; implementation is deferred.
+
+### Worker capacity
+
+These are maximum workers per building after worker-capacity upgrades, not
+starting capacities. Upgrades unlock additional slots up to each limit.
+
+| Production chain | Building | Maximum workers |
+| --- | --- | --- |
+| Wood | Woodcutter | 4 |
+| Wood | Sawpit | 2 |
+| Wood | Woodworker's workshop | 1 |
+| Farming | Farm | 8 |
+| Farming | Mill | 3 |
+| Farming | Bakery | 2 |
+
+### Wood and farming
+
+- Woodcutters supply wood, sawpit workers make planks, and the woodworker crafts
+  items that help workers work better or decorate the village.
+- Higher woodworker skill levels unlock more craftable items.
+- Farmers supply crops to the mill, which supplies ingredients to the bakery.
+- Balance the chains around their worker limits, ingredient demand, and delivered
+  supply, including materials needed elsewhere in the village.
+
+### Fishing and smoking
+
+- Fishermen remain fishermen as they develop; progression should not require
+  changing them into a different profession.
+- More experienced fishermen have a higher chance of catching fish.
+- Higher fishing levels unlock additional, more valuable fish species.
+- A separate smoke station processes and stores smoked fish. Its panel shows all
+  the fish species held there, retaining species identity through smoking.
+
+### Simple production upgrades
+
+- Production building upgrades increase internal storage or worker capacity.
+- Items and worker skill levels improve conversion rates and unlock available
+  options, rather than production building levels providing output bonuses.
+- Keep worker capacity and internal storage independently upgradeable and show
+  their effects before purchase.
+
+Completion criteria:
+
+- Worker upgrades respect the per-building limits above.
+- Woodworker progression unlocks usable worker improvements and placeable village
+  decorations.
+- Fishing experience improves catch chance and access to valuable species.
+- The smoke station displays stored fish by species, including smoked varieties.
+- Storage and worker upgrades have clear effects; items and skills govern
+  production improvements and options.
+
+Starting worker counts, upgrade steps and costs, storage sizes, item recipes and
+effects, skill thresholds, catch probabilities, fish values, smoke-station
+staffing, and handling existing saves above the new worker limits remain open
+before implementation. Existing production rates also need review against these
+limits; this plan does not yet choose replacement rates.
