@@ -147,7 +147,8 @@ class AllWorkplaceStorage(unittest.TestCase):
     def test_every_workplace_produces_with_central_storage_full(self, _random):
         for kind, output in self.cases:
             with self.subTest(kind=kind, output=output):
-                world, town, building, worker = self.workplace(kind, output, 30)
+                limit = economy.local_room({'kind': 'farm' if kind == 'acre' else kind}, output)
+                world, town, building, worker = self.workplace(kind, output, limit / 2)
                 for storage in town['buildings'][:2]:
                     self.assertEqual(economy.local_room(storage, output), 0)
                 for _ in range(economy.production_seconds(building) // 3):
@@ -156,12 +157,15 @@ class AllWorkplaceStorage(unittest.TestCase):
                 self.assertGreater(worker.get('pending_output', {}).get(output, 0), 0)
                 self.assertGreater(worker.get(worker['job'], 0), 0)
                 self.assertLessEqual(logistics.buffered(building), 50)
+                self.assertLessEqual(logistics.production_stock(building, output)
+                                     + building.get('pending_output', {}).get(output, 0), limit + 1e-9)
 
     @patch('server.secrets.randbelow', return_value=1)
     def test_every_workplace_stops_at_full_buffer_and_resumes_after_spending(self, _random):
         for kind, output in self.cases:
             with self.subTest(kind=kind, output=output):
-                world, town, building, worker = self.workplace(kind, output, 50)
+                limit = economy.local_room({'kind': 'farm' if kind == 'acre' else kind}, output)
+                world, town, building, worker = self.workplace(kind, output, limit)
                 practice = worker.get(worker['job'], 0)
                 inputs = dict(building.get('input_buffer', {}))
                 server.tick(world)
@@ -170,13 +174,24 @@ class AllWorkplaceStorage(unittest.TestCase):
                 self.assertEqual(worker.get(worker['job'], 0), practice)
                 self.assertEqual(building.get('input_buffer', {}), inputs)
                 self.assertLessEqual(logistics.buffered(building), 50)
-                economy.withdraw(town, output, 10, source=building)
-                economy.add_stock(town, output, -10)
+                economy.withdraw(town, output, limit / 2, source=building)
+                economy.add_stock(town, output, -limit / 2)
                 for _ in range(economy.production_seconds(building) // 3):
                     server.tick(world)
                 self.assertEqual(worker['production_status'], 'Working')
                 self.assertGreater(worker.get('pending_output', {}).get(output, 0), 0)
                 self.assertGreater(worker.get(worker['job'], 0), practice)
+
+    def test_gathering_uses_only_remaining_resource_allowance(self):
+        world, town, building, worker = self.workplace('farm', 'wheat', 9.75)
+        server.tick(world)
+        self.assertEqual(worker['pending_output'], {'wheat': .25})
+        practice = worker['farming']
+        server.tick(world)
+        self.assertIn('Workplace buffer full', worker['production_status'])
+        self.assertEqual(worker['farming'], practice)
+        self.assertEqual(logistics.production_stock(building, 'wheat')
+                         + building.get('pending_output', {}).get('wheat', 0), 10)
 
 
 if __name__ == '__main__':

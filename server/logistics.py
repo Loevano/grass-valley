@@ -76,6 +76,16 @@ def production_stock(building, key):
     return max(0, economy.inventory(building).get(key, 0))
 
 
+def output_fits(building, outputs):
+    """Check a whole batch, including shared food space and returning output."""
+    target = {**building, 'pending_output': dict(building.get('pending_output', {}))}
+    for key, amount in outputs.items():
+        if amount > economy.local_room(target, key) + 1e-9:
+            return False
+        target['pending_output'][key] = target['pending_output'].get(key, 0) + amount
+    return True
+
+
 def record_output(town, building, key, amount, villager=None, orphan_room=None):
     economy.ensure_inventory(town)
     buffer = building.setdefault('pending_output' if villager is not None else 'output_buffer', {})
@@ -209,7 +219,7 @@ def produce(town, building, villager, elapsed=3):
     capacity = BUFFER_SIZE + local['food'] if building['kind'] == 'smokehouse' else BUFFER_SIZE
     status = economy.extra_worker(local, worker, building, capacity)
     produced = local.get('produced', {})
-    if buffered(building) + sum(produced.values()) > BUFFER_SIZE + 1e-9:
+    if not output_fits(building, produced):
         building['buffer_full'] = True
         return 'Workplace buffer full'
     if deposit and deposit.get('supply', 60) + 1e-9 < produced.get('iron_ore', 0):
@@ -252,12 +262,12 @@ def butcher_animal(town, building, villager, seconds):
     amount = task['amount']
     if amount > economy.production_room(town, 'meat') + 1e-9:
         return 'Production cap reached'
-    if buffered(building) + amount > BUFFER_SIZE + 1e-9:
+    hides = {'sheep': 1, 'pig': 2, 'cow': 3}.get(task['animal'], 0)
+    outputs = {'meat': amount, **({'hides': hides} if hides else {})}
+    if not output_fits(building, outputs):
         building['buffer_full'] = True
         return 'Workplace buffer full'
-    hides = {'sheep': 1, 'pig': 2, 'cow': 3}.get(task['animal'], 0)
-    if hides and (buffered(building) + amount + hides > BUFFER_SIZE + 1e-9
-                  or hides > economy.production_room(town, 'hides') + 1e-9):
+    if hides > economy.production_room(town, 'hides') + 1e-9:
         return 'Waiting for hide buffer space or production cap'
     record_output(town, building, 'meat', amount)
     if hides:
@@ -461,7 +471,9 @@ def worker(town, landscape, villager, building, route, elapsed):
     if villager.get('logistics_trip'):
         # Use room freed by delivery before another producer refills the buffer.
         return advance_trip(town, landscape, villager, elapsed, resume_work=True)
-    collect = buffered(building) >= BUFFER_SIZE - 1e-9 or building.get('buffer_full', False)
+    collect = building.get('buffer_full', False) or any(
+        amount > 0 and economy.local_room(building, key) <= 1e-9
+        for key, amount in collection_inventory(building).items())
     request = supply_request(town, building, villager) if not collect else {}
     if not collect and not request:
         return False

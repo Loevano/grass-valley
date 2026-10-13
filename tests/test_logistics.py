@@ -310,12 +310,69 @@ class ResourceLogistics(unittest.TestCase):
     def test_spending_output_releases_a_full_processor(self):
         saw = self.add('sawpit', input_buffer={'wood': 10})
         worker = self.assign(0, saw)
-        logistics.record_output(self.town, saw, 'planks', 49.5)
+        logistics.record_output(self.town, saw, 'planks', 19.5)
         self.assertEqual(logistics.produce(self.town, saw, worker, elapsed=economy.production_seconds(saw)), 'Workplace buffer full')
         economy.spend(self.town, {'planks': 5})
         self.assertNotIn('buffer_full', saw)
         self.assertEqual(logistics.produce(self.town, saw, worker, elapsed=economy.production_seconds(saw)), 'Working')
         self.assertEqual(saw['input_buffer']['wood'], 8)
+
+    def test_sawpit_reserves_returning_planks_against_its_output_limit(self):
+        saw = self.add('sawpit', stored_goods={'planks': 18}, input_buffer={'wood': 10})
+        worker = self.assign(0, saw)
+        economy.ensure_inventory(self.town)
+        economy.add_stock(self.town, 'planks', 18)
+        duration = economy.production_seconds(saw)
+        self.assertEqual(logistics.produce(self.town, saw, worker, duration), 'Working')
+        self.assertEqual(logistics.produce(self.town, saw, worker, duration), 'Working')
+        inputs, practice = dict(saw['input_buffer']), worker['woodworking']
+        self.assertEqual(logistics.produce(self.town, saw, worker, duration), 'Workplace buffer full')
+        self.assertEqual(saw['input_buffer'], inputs)
+        self.assertEqual(worker['woodworking'], practice)
+        self.assertEqual(worker['pending_output'], {'planks': 2})
+        logistics.drop_off(self.town, saw, worker)
+        self.assertEqual(economy.inventory(saw)['planks'], 20)
+        self.assertEqual(economy.quantity(self.town, 'planks'), 20)
+        self.assertEqual(economy.local_room(saw, 'wood'), 30)
+
+    def test_legacy_excess_planks_are_preserved_until_used(self):
+        saw = self.add('sawpit', output_buffer={'planks': 49}, input_buffer={'wood': 17})
+        worker = self.assign(0, saw)
+        economy.ensure_inventory(self.town)
+        duration = economy.production_seconds(saw)
+        self.assertEqual(logistics.produce(self.town, saw, worker, duration), 'Workplace buffer full')
+        self.assertEqual(saw['output_buffer'], {'planks': 49})
+        self.assertEqual(saw['input_buffer'], {'wood': 17})
+        economy.spend(self.town, {'planks': 30})
+        self.assertEqual(logistics.produce(self.town, saw, worker, duration), 'Working')
+        self.assertEqual(saw['pending_output'], {'planks': 1})
+
+    def test_producer_hauls_at_resource_limit_before_total_buffer_is_full(self):
+        saw = self.add('sawpit', output_buffer={'planks': 20})
+        store = self.add('storehouse', x=8, storage_enabled={'planks': True})
+        worker = self.assign(0, saw)
+        economy.ensure_inventory(self.town)
+        self.assertTrue(logistics.worker(self.town, self.town, worker, saw,
+                                         server.construction_route, 0))
+        trip = worker['logistics_trip']
+        self.assertEqual(trip['operation'], 'collect')
+        self.assertEqual(trip['storage'], {k: store[k] for k in ('kind', 'x', 'y')})
+        self.assertEqual(trip['cargo'], {'planks': 20})
+
+    def test_output_batches_share_food_and_total_space_without_mutating_stock(self):
+        cases = [
+            ({'kind': 'barn', 'output_buffer': {'milk': 19}}, {'milk': .75, 'eggs': .75}),
+            ({'kind': 'smokehouse', 'stored_goods': {'sturgeon': 14}}, {'smoked_fish': 3}),
+            ({'kind': 'sawpit', 'stored_goods': {'wood': 30, 'planks': 19},
+              'pending_output': {'planks': .5}}, {'planks': 1}),
+        ]
+        for building, outputs in cases:
+            with self.subTest(kind=building['kind']):
+                before = copy.deepcopy(building)
+                self.assertFalse(logistics.output_fits(building, outputs))
+                self.assertEqual(building, before)
+        self.assertTrue(logistics.output_fits({'kind': 'sawpit', 'stored_goods': {'planks': 19}},
+                                             {'planks': 1}))
 
     def test_producer_delivers_and_returns_without_counting_output_twice(self):
         b = self.add('woodcutter', output_buffer={'wood': 50})

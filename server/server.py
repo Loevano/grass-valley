@@ -758,7 +758,7 @@ def tick(world):
                 boat_output = economy.fishing_catch(building, depth)
                 villager['boat_return_requested'] = bool(work_cycles.boat_load(town, building) and (
                     villager.get('boat_return_requested') or finishing_output or source.get('supply', 1) <= 0
-                    or logistics.buffered(building) >= logistics.BUFFER_SIZE - 1e-9
+                    or economy.local_room(building, boat_output) <= 1e-9
                     or economy.production_room(town, boat_output) <= 0))
             else:
                 villager.pop('boat_return_requested', None)
@@ -811,10 +811,13 @@ def tick(world):
             if cap_room <= 0:
                 villager['production_status'] = 'Production cap reached'
                 continue
-            room = min(logistics.BUFFER_SIZE - logistics.buffered(building), cap_room)
+            storage_room = economy.local_room(building, output)
+            room = min(storage_room, cap_room)
             if boating:
                 room = min(room, economy.fishing_boat_capacity(building) - work_cycles.boat_load(town, building))
             if room <= 1e-9:
+                if storage_room <= 1e-9:
+                    building['buffer_full'] = True
                 villager['production_status'] = 'Workplace buffer full'
                 continue
             if job == 'farming':

@@ -123,6 +123,11 @@ and an Upgrade action. Completed upgrades show a status without a disabled butto
 the purchase popup retains full benefits and requirements. Production balancing,
 storage scaling, and worker limits below remain planned.
 
+Production now respects each resource's existing storage allowance, including
+pending deliveries and shared food space. Producers haul when an allowance fills;
+existing excess stock is preserved. Increasing those allowances through building
+upgrades remains planned.
+
 - Production building upgrades increase internal storage or worker capacity.
 - Items and worker skill levels improve conversion rates and unlock available
   options, rather than production building levels providing output bonuses.

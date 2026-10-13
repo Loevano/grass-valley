@@ -426,6 +426,10 @@ the Python host, refresh both browsers, and create a new world to use the shared
   with the town and do not affect other towns.
 - Workplaces keep fixed storage for their relevant inputs and outputs within a
   50-space budget. The hall has 100 wood and 100 food spaces; homes have none.
+  Production respects each resource's displayed limit, including goods still
+  returning to the workplace and the shared food allowance. A sawpit holds at
+  most 20 planks; its 30 wood spaces cannot be used for extra planks. Existing
+  excess stock stays available to spend or haul, and production waits for room.
   Processors fetch ingredients from buildings that actually hold them.
 - Enable only wood in a storehouse near the woods, and only planks in another
   near the city. The first hauler collects wood from the woodcutter and supplies
@@ -434,8 +438,8 @@ the Python host, refresh both browsers, and create a new world to use the shared
 - Assign settlers to a **Storehouse** as haulers. They collect small batches and
   distribute recipe ingredients and animal feed so producers can keep working.
   Without hauling support, producers fetch their own inputs and deliver outputs
-  once their 50-unit buffer fills. Transport takes time and follows open paths;
-  roads speed it up. Full, disabled, or unreachable storage leaves outputs at
+  once their output's storage allowance fills. Transport takes time and follows
+  open paths; roads speed it up. Full, disabled, or unreachable storage leaves outputs at
   their workplace and pauses production when the buffer fills. Moving, upgrading,
   or reassigning during transport preserves goods and cancels affected deliveries.
 - Storehouses become a **Warehouse** at level 5 and upgrade through level 8,
