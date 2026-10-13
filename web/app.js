@@ -594,18 +594,18 @@ function buildingUpgradePreview(command,town,item){
 function upgradeCard(button,preview,{title=preview?.title,status='',benefits=preview?.benefits || []}={}){
   const card=document.createElement('div');card.className='upgrade-card';
   const heading=document.createElement('strong');heading.className='upgrade-card-title';heading.textContent=title;card.append(heading);
-  for(const benefit of benefits){const row=document.createElement('p');row.className='upgrade-card-benefit';row.textContent=benefit;card.append(row);}
-  if(status){const row=document.createElement('p');row.className='upgrade-card-status';row.textContent=status;card.append(row);}
-  else if(preview){
-    const facts=document.createElement('dl');facts.className='upgrade-card-facts';
-    for(const [label,value] of [['Cost',costText(preview.cost) || 'Free'],['Build time',`${preview.seconds} seconds`],['Requires',preview.requirements]]){
-      if(!value)continue;
-      const term=document.createElement('dt');term.textContent=label;
-      const detail=document.createElement('dd');detail.textContent=value;facts.append(term);facts.append(detail);
-    }
-    card.append(facts);
+  if(benefits.length){
+    const benefit=status==='Unlocked'?benefits.join('\n'):benefits[0].split('\n')[0];
+    const metric=benefit.match(/^([+-]?\d+%?) (.+) → ([+-]?\d+%?) \2$/);
+    const row=document.createElement('p');row.className='upgrade-card-benefit';
+    row.textContent=metric?`${metric[1]} → ${metric[3]} ${metric[2]}`:benefit;card.append(row);
   }
-  card.append(button);return card;
+  if(status){const row=document.createElement('span');row.className='upgrade-card-status';row.textContent=status;card.append(row);}
+  else if(preview){
+    const meta=document.createElement('small');meta.className='upgrade-card-meta';
+    meta.textContent=`${costText(preview.cost) || 'Free'} · ${preview.seconds?`${preview.seconds}s`:'Instant'}`;card.append(meta);
+  }
+  if(!status)card.append(button);return card;
 }
 function renderUpgradeDialog(){
   if(!pendingUpgrade)return;
@@ -1209,12 +1209,12 @@ function renderSettlers(town,item,buildingIndex,target=$('selection-details'),up
   add.onclick=()=>{if(!add.disabled)act({action:'assign_settler',index:Number(chooser.value),building_index:buildingIndex});};
   const assignment=document.createElement('div');assignment.className='worker-assignment';
   assignment.append(chooser);assignment.append(add);target.append(assignment);
-  const upgrade=document.createElement('button');upgrade.className='upgrade-button';upgrade.textContent='Capacity';
+  const upgrade=document.createElement('button');upgrade.className='upgrade-button';upgrade.textContent='Upgrade';
   upgrade.title=level>=3?'Settler capacity fully upgraded':`Upgrade to ${settlerSpaces[item.kind]*(level+1)} spaces · ${town.sandbox?'Free · Instant':`${20*level} wood · ${30*level} seconds`}`;
-  upgrade.setAttribute('aria-label',`Capacity: ${upgrade.title}`);
+  upgrade.setAttribute('aria-label',`Upgrade ${item.kind==='home'?'settler':'worker'} capacity: ${upgrade.title}`);
   upgrade.disabled=level>=3;
   upgrade.onclick=()=>{if(!upgrade.disabled)showUpgrade({action:'upgrade_capacity',index:buildingIndex});};
-  upgrades.append(upgradeCard(upgrade,upgradePreview({action:'upgrade_capacity',index:buildingIndex},town,item),{title:level>=3?'Capacity · Tier 3':`Capacity · Tier ${level+1}`,status:level>=3?'Fully upgraded':'',benefits:[`Settler spaces: ${capacity}${level<3?` → ${settlerSpaces[item.kind]*(level+1)}`:''}.`]}));
+  upgrades.append(upgradeCard(upgrade,upgradePreview({action:'upgrade_capacity',index:buildingIndex},town,item),{title:item.kind==='home'?'Settler capacity':'Worker capacity',status:level>=3?'Maxed':'',benefits:[`${capacity}${level<3?` → ${settlerSpaces[item.kind]*(level+1)}`:''} space${capacity===1&&level>=3?'':'s'}`]}));
 }
 function selectedProfessionRecipe(item){
   const recipes=world.progression?.profession_recipes?.[item.kind];
@@ -1408,7 +1408,8 @@ function renderProfession(town,item,index,target,upgrades,details,boats,unlocked
     const unlocked=item.profession_upgrades?.includes(key);
     const fishingBoat=item.kind==='fishing_hut'&&['boat','improved_boat','master_boat'].includes(key);
     if(!fishingBoat&&!unlocked&&(town.level<spec.level || !town.sandbox&&professionSkill(town,spec.skill)<(spec.xp || 0) || spec.requires&&!item.profession_upgrades?.includes(spec.requires)))continue;
-    const button=document.createElement('button');button.textContent=unlocked?`${spec.label} · Unlocked`:fishingBoat?`${key==='boat'?'Buy':'Upgrade to'} ${spec.label.toLowerCase()}`:spec.label;
+    const button=document.createElement('button');button.textContent=fishingBoat&&key==='boat'?'Buy':'Upgrade';
+    button.setAttribute('aria-label',fishingBoat?`${key==='boat'?'Buy':'Upgrade to'} ${spec.label.toLowerCase()}`:`Upgrade ${spec.label}`);
     button.className='upgrade-button';
     button.disabled=!owner || unlocked;button.onclick=()=>{if(!button.disabled)showUpgrade({action:'profession_upgrade',index,upgrade:key});};
     (unlocked?unlockedUpgrades:fishingBoat?boats:upgrades).append(upgradeCard(button,upgradePreview({action:'profession_upgrade',index,upgrade:key},town,item),{status:unlocked?'Unlocked':''}));
@@ -1640,10 +1641,10 @@ function renderSelection(town){
       const hallCosts=upgrade?Object.fromEntries(['wood','planks','leather','iron_ore','iron','steel'].filter(k=>k in upgrade).map(k=>[k,upgrade[k]])):{};
       const ready=world.hall_ready?.[viewed] || false;
       $('progress').textContent=upgrade?`Level ${town.level} · ${upgrade.milestone} · ${ready?'Complete':'Still needed'} · Reward: ${upgrade.coins} coins`:`Level ${town.level} · Town hall fully upgraded.`;
-      $('upgrade').textContent='Lvl';
+      $('upgrade').textContent='Upgrade';
       $('upgrade').className='upgrade-button';
       $('upgrade').title=town.upgrade_remaining?`Upgrading to level ${town.level+1} · ${town.upgrade_remaining}s remaining`:upgrade?`Upgrade to level ${upgrade.level} · ${costText(hallCosts)} · ${upgrade.seconds} seconds`:'Maximum hall level reached';
-      $('upgrade').setAttribute('aria-label',`Lvl: ${$('upgrade').title}`);
+      $('upgrade').setAttribute('aria-label',$('upgrade').title);
       $('upgrade').disabled=!!town.upgrade_remaining || !!item.construction || viewed!==identity?.town_id || !upgrade;
     }
     $('selection-move').hidden=viewed!==identity?.town_id;
@@ -1667,15 +1668,15 @@ function renderSelection(town){
       }
       const button=document.createElement('button');
       button.className='upgrade-button';
-      button.textContent='Lvl';
+      button.textContent='Upgrade';
       button.title=level>=maxLevel?`Fully upgraded · Level ${maxLevel}${item.kind==='storehouse'?' · Warehouse':''}`:`Upgrade to level ${level+1} · ${town.sandbox?'Free · Instant':`${cost} wood · ${30*level} seconds`} · ${upgradeBenefit(item.kind,level+1,item)}`;
-      button.setAttribute('aria-label',`Lvl: ${button.title}`);
+      button.setAttribute('aria-label',button.title);
       button.disabled=!!item.construction||level>=maxLevel||viewed!==identity?.town_id;
       const index=selection.index;
       button.onclick=()=>{if(!button.disabled&&viewed===identity?.town_id)showUpgrade({action:'upgrade_building',index});};
       // Keep the level action before the capacity action.
       const capacityUpgrade=upgradeActions.children[0];
-      upgradeActions.replaceChildren();upgradeActions.append(upgradeCard(button,upgradePreview({action:'upgrade_building',index},town,item),{title:level>=maxLevel?`Level ${level}`:`Upgrade to level ${level+1}`,status:level>=maxLevel?'Fully upgraded':'',benefits:level>=maxLevel?[upgradeBenefit(item.kind,level,item)]:undefined}));
+      upgradeActions.replaceChildren();upgradeActions.append(upgradeCard(button,upgradePreview({action:'upgrade_building',index},town,item),{title:level>=maxLevel?`Level ${level}`:`Level ${level} → ${level+1}`,status:level>=maxLevel?'Maxed':'',benefits:level>=maxLevel?[]:undefined}));
       if(capacityUpgrade)upgradeActions.append(capacityUpgrade);
     }
     if(item.kind==='farm'&&!item.construction&&viewed===identity?.town_id){
@@ -1689,7 +1690,7 @@ function renderSelection(town){
     if(boats?.children.length>1)$('selection-details').append(boats);
     if(item.kind==='hall'){
       const preview=upgradePreview({action:'upgrade'},town,item);
-      upgradeActions.append(upgradeCard($('upgrade'),preview,{title:preview?`Upgrade to level ${town.level+1}`:`Town hall · Level ${town.level}`,status:town.upgrade_remaining?`Upgrading · ${town.upgrade_remaining}s remaining`:preview?'':'Town hall fully upgraded.'}));
+      upgradeActions.append(upgradeCard($('upgrade'),preview,{title:preview?`Level ${town.level} → ${town.level+1}`:`Level ${town.level}`,status:town.upgrade_remaining?`Upgrading · ${town.upgrade_remaining}s`:preview?'':'Maxed',benefits:preview?undefined:[]}));
     }
     if(upgradeActions.children.length)upgrades.append(upgradeActions);
     if(upgrades.children.length>1)$('selection-details').append(upgrades);

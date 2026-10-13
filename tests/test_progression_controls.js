@@ -35,7 +35,7 @@ const run=new Function('document','window','localStorage','setTimeout','clearTim
  check(jobs().includes('husbandry')&&!jobs().includes('woodworking'),'Jobs appear at their required hall level');
  town.wood=0;render();check(!barnButton.hidden&&barnButton.disabled,'Unlocked buildings remain visible when unaffordable');town.wood=100;
  inspect('building',1);
- const buy=label=>panelNodes().find(b=>b.tag==='button'&&b.textContent.startsWith(label));
+ const buy=label=>panelNodes().find(b=>b.tag==='button'&&(b.attributes['aria-label'] || b.textContent).startsWith(label));
  check(!buy('Buy chicken').disabled&&!buy('Buy sheep'),'Locked animals are omitted');
  buy('Buy chicken').onclick();check(commands.at(-1).action==='buy_animal'&&commands.at(-1).index===1,'Animal purchase targets the selected barn');
  inspect('building',3);
@@ -46,7 +46,7 @@ const run=new Function('document','window','localStorage','setTimeout','clearTim
  inspect('building',3);check(panelNodes().find(b=>b.attributes['aria-label']==='Crop').children.some(b=>b.value==='fodder'),'Crops appear when unlocked');
  check(jobs().includes('woodworking'),'Later professions appear when unlocked');
  town.buildings.push({kind:'woodcutter',x:6,y:6});
- const axe=()=>buy('Improved axe');
+ const axe=()=>buy('Upgrade Improved axe');
  town.level=1;inspect('building',4);check(!axe(),'Upgrades are hidden before their hall unlock');
  town.level=2;town.villagers[0].woodcutting=9;render();check(!axe(),'Upgrades are hidden before their skill unlock');
  town.villagers[0].woodcutting=10;render();check(axe()&&!axe().disabled,'Upgrades appear when hall and skill requirements are met');
@@ -57,8 +57,8 @@ const run=new Function('document','window','localStorage','setTimeout','clearTim
  const unlockedSection=()=>$('selection-details').children.find(c=>c.tag==='details'&&c.children[0].textContent==='Unlocked upgrades');
  check(!unlockedSection(),'No completed-upgrade dropdown appears before a purchase');
  town.buildings[4].profession_upgrades=['axe'];render();
- check(axe().textContent.includes('Unlocked')&&axe().disabled,'Purchased upgrades remain available for reference');
- check(unlockedSection()&&!unlockedSection().open&&panelNodes(unlockedSection()).includes(axe()),'Purchased equipment moves into a collapsed dropdown');
+ check(!axe()&&panelNodes().some(c=>c.className==='upgrade-card-status'&&c.textContent==='Unlocked'),'Purchased upgrades show status without a disabled button');
+ check(unlockedSection()&&!unlockedSection().open&&panelNodes(unlockedSection()).some(c=>c.className==='upgrade-card-title'&&c.textContent==='Improved axe'),'Purchased equipment moves into a collapsed dropdown');
  check($('selection-details').children.at(-1)===unlockedSection(),'Completed upgrades appear at the bottom of the panel');
  unlockedSection().open=true;unlockedSection().listeners.toggle();render();
  check(unlockedSection().open,'Completed-upgrade dropdown stays open across refreshes');
@@ -85,7 +85,7 @@ const run=new Function('document','window','localStorage','setTimeout','clearTim
  town.buildings[4].profession_upgrades=['boat'];render();
  const boatSection=()=>$('selection-details').children.find(c=>c.children[0]?.textContent==='Fishing boats');
  check(!unlockedSection().open,'Selecting another building resets the completed-upgrade dropdown');
- check(panelNodes(unlockedSection()).some(c=>c.textContent==='Fishing boat · Unlocked')&&!panelNodes(boatSection()).some(c=>c.textContent==='Fishing boat · Unlocked'),'Owned boats move out of the boat shop into completed upgrades');
+ check(panelNodes(unlockedSection()).some(c=>c.className==='upgrade-card-title'&&c.textContent==='Fishing boat')&&!panelNodes(boatSection()).some(c=>c.className==='upgrade-card-title'&&c.textContent==='Fishing boat'),'Owned boats move out of the boat shop into completed upgrades');
  check(!!buy('Upgrade to improved fishing boat'),'Owned boat unlocks the next tier');
  buy('Upgrade to improved fishing boat').onclick();check($('upgrade-requirements').textContent.includes('Fishing boat'),'Boat preview explains the previous-tier requirement');
  $('confirm-upgrade').onclick();check(commands.at(-1).upgrade==='improved_boat','Boat upgrade targets the fishing hut');
