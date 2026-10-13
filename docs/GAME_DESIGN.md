@@ -9,13 +9,13 @@ independent town management, exploration, and cooperation between 2–4 friends.
 
 ## Player experience
 
-| Pillar | Existing foundation | Improvement direction | Status |
-| --- | --- | --- | --- |
-| Build a town worth caring about | Movable buildings, workers, skills, upgrades, and food/housing needs | Make the next useful improvement readable and show how it changes village life. | Proposed |
-| Discover people and places | Biomes, wilderness villages, local dialogue, and three playable NPC stories | Connect requests to characters and places players remember. | Proposed |
-| Do something together | Town trade offers, The Sealed Quarry, and The Falling Lanterns | Give friends complementary actions and shared moments, with personal rewards. | Current foundation; proposed expansion |
-| Value the reward | Equipment perks, coins, keepsakes, and progression unlocks | Mix useful items with recognizable cosmetic rewards and story recognition. | Proposed |
-| Express identity | Separate towns, biome settings, and equipped character gear | Expand cosmetic character and town choices; choose the style and acquisition rules. | Open |
+| Pillar                          | Existing foundation                                                         | Improvement direction                                                               | Status                                 |
+| ------------------------------- | --------------------------------------------------------------------------- | ----------------------------------------------------------------------------------- | -------------------------------------- |
+| Build a town worth caring about | Movable buildings, workers, skills, upgrades, and food/housing needs        | Make the next useful improvement readable and show how it changes village life.     | Proposed                               |
+| Discover people and places      | Biomes, wilderness villages, local dialogue, and three playable NPC stories | Connect requests to characters and places players remember.                         | Proposed                               |
+| Do something together           | Town trade offers, The Sealed Quarry, and The Falling Lanterns              | Give friends complementary actions and shared moments, with personal rewards.       | Current foundation; proposed expansion |
+| Value the reward                | Equipment perks, coins, keepsakes, and progression unlocks                  | Mix useful items with recognizable cosmetic rewards and story recognition.          | Proposed                               |
+| Express identity                | Separate towns, biome settings, and equipped character gear                 | Expand cosmetic character and town choices; choose the style and acquisition rules. | Open                                   |
 
 ## Terrain and water
 

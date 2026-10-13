@@ -53,10 +53,10 @@ practice, shared barn work, or different recipes.
 
 ### Current base rates
 
-| Activity | Base work | Output or practice | Ideal rate |
-| --- | --- | --- | --- |
-| Settler woodcutting | Three-second productive cycle | 0.5 wood; 0.04 practice | 10 wood/minute; 0.8 practice/minute |
-| One sawpit worker | Six-second completed batch | 2 wood → 1 plank; 0.08 practice | Uses 20 wood/minute; makes 10 planks/minute |
+| Activity                         | Base work                                             | Output or practice                          | Ideal rate                                              |
+| -------------------------------- | ----------------------------------------------------- | ------------------------------------------- | ------------------------------------------------------- |
+| Settler woodcutting              | Three-second productive cycle                         | 0.5 wood; 0.04 practice                     | 10 wood/minute; 0.8 practice/minute                     |
+| One sawpit worker                | Six-second completed batch                            | 2 wood → 1 plank; 0.08 practice             | Uses 20 wood/minute; makes 10 planks/minute             |
 
 ### Total production time cost vs total reward
 
@@ -80,11 +80,11 @@ output collection still limit the running town.
 
 `required upstream workers = ceil(downstream workers × input/minute ÷ upstream output/minute)`
 
-| Configuration | Ideal wood demand | Ideal supporting woodcutters | Practical implication |
-| --- | --- | --- | --- |
-| One base sawpit worker | 20/minute | 2 | Exactly matches demand; leaves no wood for other uses or downtime. |
-| Both initial sawpit slots filled | 40/minute | 4 | Worker count matters more than the number of sawpit buildings. |
-| One neutral, low-practice worker with improved saw (+25%) | 25/minute | 3 base woodcutters | Recalculate when woodcutters also have tools, talents, or practice. |
+| Configuration                                             | Ideal wood demand | Ideal supporting woodcutters | Practical implication                                               |
+| --------------------------------------------------------- | ----------------- | ---------------------------- | ------------------------------------------------------------------- |
+| One base sawpit worker                                    | 20/minute         | 2                            | Exactly matches demand; leaves no wood for other uses or downtime.  |
+| Both initial sawpit slots filled                          | 40/minute         | 4                            | Worker count matters more than the number of sawpit buildings.      |
+| One neutral, low-practice worker with improved saw (+25%) | 25/minute         | 3 base woodcutters           | Recalculate when woodcutters also have tools, talents, or practice. |
 
 For a real town use observed delivered supply: `effective rate = ideal rate ×
 productive fraction`. Add construction and other consumers to demand. A surplus
@@ -101,10 +101,10 @@ solve an exhausted forest or blocked storage.
 
 ### Current base rates
 
-| Activity | Base work | Output or practice | Ideal rate |
-| --- | --- | --- | --- |
-| One mill worker | Three-second completed batch | 2 wheat → 2 flour; 0.04 practice | Uses 40 wheat/minute; makes 40 flour/minute |
-| One baker, basic bread | Six-second completed batch | 2 flour + 0.5 wood → 2 bread; 0.08 practice | Uses 20 flour + 5 wood/minute; makes 20 bread/minute |
+| Activity                         | Base work                                             | Output or practice                          | Ideal rate                                              |
+| -------------------------------- | ----------------------------------------------------- | ------------------------------------------- | ------------------------------------------------------- |
+| One mill worker                  | Three-second completed batch                          | 2 wheat → 2 flour; 0.04 practice            | Uses 40 wheat/minute; makes 40 flour/minute             |
+| One baker, basic bread           | Six-second completed batch                            | 2 flour + 0.5 wood → 2 bread; 0.08 practice | Uses 20 flour + 5 wood/minute; makes 20 bread/minute    |
 
 ### Total production time cost vs total reward
 
@@ -127,11 +127,11 @@ minutes of flour production, with wheat already supplied.
 
 ### Current base rates
 
-| Activity | Base work | Output or practice | Ideal rate |
-| --- | --- | --- | --- |
-| One butcher, prepared meat | Six-second completed batch | 2 meat → 2 prepared meat; 0.1 practice | Uses 20 meat/minute; makes 20 prepared meat/minute |
-| Manually ordered animal butchery | 60 seconds at the shop, one animal per shop at a time | 1 butchery practice; meat varies by animal | One completed animal/minute while continuously supplied |
-| Animal maturity | 300 fully fed seconds | Young animal becomes eligible for butchery | Five fed minutes; growth pauses without feed |
+| Activity                         | Base work                                             | Output or practice                          | Ideal rate                                              |
+| -------------------------------- | ----------------------------------------------------- | ------------------------------------------- | ------------------------------------------------------- |
+| One butcher, prepared meat       | Six-second completed batch                            | 2 meat → 2 prepared meat; 0.1 practice      | Uses 20 meat/minute; makes 20 prepared meat/minute      |
+| Manually ordered animal butchery | 60 seconds at the shop, one animal per shop at a time | 1 butchery practice; meat varies by animal  | One completed animal/minute while continuously supplied |
+| Animal maturity                  | 300 fully fed seconds                                 | Young animal becomes eligible for butchery  | Five fed minutes; growth pauses without feed            |
 
 ### Total production time cost vs total reward
 
@@ -219,9 +219,9 @@ are discussion targets, not measured results or implementation requirements.
 | Two trained basic professions and access to a sawpit | 15–25 minutes | Specialization and a new production chain | Current 10-practice gates need 12.5 active minutes per neutral worker; workers can train in parallel. |
 | First meaningful manual butcher recipe progression | 2–5 completed animals after qualification | Effort turns into a useful new option | Selections, waiting, available animals, and player reaction. |
 
-| Proposed order | Improvement | Decision/evidence still needed |
-| --- | --- | --- |
-| 1 | Record a fresh-town progression timeline. | Actual milestone times and reasons for waiting. |
-| 2 | Expand production ratios to food, livestock, leather, and iron. | Delivered rates, staffing, shared supplies, and competing consumers. |
-| 3 | Review manual butcher XP and feedback. | Which milestones feel worth the attention and animal investment. |
-| 4 | Tune long-term specialization and replacement training. | Trade value and whether losing a specialist feels recoverable. |
+| Proposed order | Improvement                                                     | Decision/evidence still needed                                       |
+| -------------- | --------------------------------------------------------------- | -------------------------------------------------------------------- |
+| 1              | Record a fresh-town progression timeline.                       | Actual milestone times and reasons for waiting.                      |
+| 2              | Expand production ratios to food, livestock, leather, and iron. | Delivered rates, staffing, shared supplies, and competing consumers. |
+| 3              | Review manual butcher XP and feedback.                          | Which milestones feel worth the attention and animal investment.     |
+| 4              | Tune long-term specialization and replacement training.         | Trade value and whether losing a specialist feels recoverable.       |

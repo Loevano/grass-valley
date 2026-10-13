@@ -3,11 +3,11 @@
 The roadmap starts with the cached zoomed-out map improvement. Design details
 and cache rules are in [Backend](BACKEND.md#cached-zoomed-out-map).
 
-| Order | Improvement | Status | Goal |
-| --- | --- | --- | --- |
-| 1 | Cached zoomed-out town overview | Implemented | Show the landscape and city sizes without refreshing animated scene detail. |
-| 2 | Coherent terrain regions and water | Planned; not implemented | Create recognizable large regions, rivers, and lakes while retaining smaller local patches. |
-| 3 | Production line balancing | Planned; not implemented | Develop clear wood, farming, and fishing chains with capped staffing, useful crafted items, and simple upgrades. |
+| Order | Improvement                        | Status                   | Goal                                                                                                             |
+| ----- | ---------------------------------- | ------------------------ | ---------------------------------------------------------------------------------------------------------------- |
+| 1     | Cached zoomed-out town overview    | Implemented | Show the landscape and city sizes without refreshing animated scene detail.                                      |
+| 2     | Coherent terrain regions and water | Planned; not implemented | Create recognizable large regions, rivers, and lakes while retaining smaller local patches.                      |
+| 3     | Production line balancing          | Planned; not implemented | Develop clear wood, farming, and fishing chains with capped staffing, useful crafted items, and simple upgrades. |
 
 ## Cached zoomed-out town overview
 
