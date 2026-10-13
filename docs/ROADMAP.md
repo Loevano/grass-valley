@@ -5,7 +5,7 @@ and cache rules are in [Backend](BACKEND.md#cached-zoomed-out-map).
 
 | Order | Improvement                        | Status                   | Goal                                                                                                             |
 | ----- | ---------------------------------- | ------------------------ | ---------------------------------------------------------------------------------------------------------------- |
-| 1     | Cached zoomed-out town overview    | Implemented | Show the landscape and city sizes without refreshing animated scene detail.                                      |
+| 1     | Cached zoomed-out town overview    | Implemented              | Show the landscape and city sizes without refreshing animated scene detail.                                      |
 | 2     | Coherent terrain regions and water | Planned; not implemented | Create recognizable large regions, rivers, and lakes while retaining smaller local patches.                      |
 | 3     | Production line balancing          | Wood implemented; farming and fishing remain | Develop clear farming and fishing chains with capped staffing and simple upgrades. |
 
