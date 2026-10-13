@@ -78,6 +78,12 @@ remain open design decisions before implementation.
 **Status:** planned; not implemented. Start with the wood chain, then develop
 farming and fishing. This records the agreed direction; implementation is deferred.
 
+Sandbox worlds are available for supply chain experiments: all buildings are
+unlocked, construction and upgrades are free and instant, cottages add residents
+automatically, and villagers need no training and never depart. Production inputs,
+hauling, storage, food consumption, and normal output rates still apply. The chain
+balancing and capacity changes below remain planned.
+
 ### Worker capacity
 
 These are maximum workers per building after worker-capacity upgrades, not

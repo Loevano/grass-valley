@@ -81,8 +81,9 @@ def ensure_villager_names(town):
 
 
 def housing_capacity(town):
-    return 5 + 2 * sum(building_level(b) + ('timber_frame' in b.get('profession_upgrades', []))
-                       for b in town['buildings'] if b['kind'] == 'home' and completed(b))
+    return 5 + sum(max(2 * (building_level(b) + ('timber_frame' in b.get('profession_upgrades', []))),
+                      settler_capacity(b) if town.get('sandbox') else 0)
+                   for b in town['buildings'] if b['kind'] == 'home' and completed(b))
 
 
 def housing_loyalty(town):
@@ -107,6 +108,8 @@ def feed_settlers(town):
     town['housing_shortage_seconds'] = (town.get('housing_shortage_seconds', 0) + TICK_SECONDS
                                        if len(town['villagers']) > housing_capacity(town) else 0)
     town['arrival_delay_seconds'] = max(0, town.get('arrival_delay_seconds', 0) - TICK_SECONDS)
+    if town.get('sandbox'):
+        return
     reasons = [kind for kind in ('food', 'housing')
                if town[f'{kind}_shortage_seconds'] >= SHORTAGE_GRACE_SECONDS]
     if not reasons or len(town['villagers']) <= 1:
@@ -321,6 +324,12 @@ def assign_settler(town, worker_index, building_index):
 
 
 def fill_cottages(town):
+    if town.get('sandbox'):
+        while len(town['villagers']) < housing_capacity(town):
+            villager = {'name': next_villager_name(town), 'job': 'idle',
+                        'woodcutting': 0, 'farming': 0, 'fishing': 0, 'sandbox': True}
+            economy.ensure_talents(villager, len(town['villagers']))
+            town['villagers'].append(villager)
     waiting = iter(i for i, villager in enumerate(town['villagers'])
                    if villager['job'] == 'idle' and 'building_index' not in villager)
     for building_index, building in enumerate(town['buildings']):
@@ -451,6 +460,11 @@ def new_town(name, world=None):
         ensure_npcs(town)
     for index, villager in enumerate(town['villagers']):
         economy.ensure_talents(villager, index)
+    if world and world.get('sandbox'):
+        town['sandbox'] = True
+        town['level'] = HALL_UPGRADES[-1]['level']
+        for villager in town['villagers']:
+            villager['sandbox'] = True
     return town
 
 
@@ -461,6 +475,10 @@ def capacity(town):
 def completed(building):
     # Buildings from older saves are already finished.
     return 'construction' not in building
+
+
+def building_costs(town, spec):
+    return {} if town.get('sandbox') else economy.costs_of(spec)
 
 
 def construction_route(town, start, target, road_mode='departure'):
@@ -498,6 +516,23 @@ def logistics_route(town, start, target):
 
 
 def construct(town, landscape, workers=None, elapsed=TICK_SECONDS):
+    if town.get('sandbox'):
+        for site in town['buildings'] + town.get('roads', []):
+            construction = site.pop('construction', None)
+            if construction is None:
+                continue
+            if 'upgrade' in construction:
+                site.update(construction['upgrade'])
+            elif site.get('kind') == 'hall':
+                upgrade = hall_upgrade(town)
+                if upgrade:
+                    town['level'] = upgrade['level']
+                    town['coins'] += upgrade['coins']
+                town['upgrade_remaining'] = 0
+        for villager in town['villagers']:
+            villager.pop('construction_target', None)
+            villager.pop('construction_arrived', None)
+        return
     helpers = {}
     if workers is None:
         workers = {i for i, v in enumerate(town['villagers'])
@@ -822,7 +857,7 @@ def tick(world):
             economy.practice(villager, job)
             villager['production_status'] = 'Working' if caught else 'No catch — trying again'
         feed_settlers(town)
-        if (len(town['villagers']) < housing_capacity(town) and town['food'] >= 20
+        if (not town.get('sandbox') and len(town['villagers']) < housing_capacity(town) and town['food'] >= 20
                 and not town.get('arrival_delay_seconds')):
             economy.eat(town, 10)
             town['villagers'].append({'name': next_villager_name(town),
@@ -912,9 +947,10 @@ def command(town, data, world=None):
             raise ValueError('Exploration boats require town hall level 3.')
         if town['player'].get('boat'):
             raise ValueError('You already have an exploration boat.')
-        if not economy.afford(town, {'wood': 20, 'planks': 10}):
+        costs = building_costs(town, {'wood': 20, 'planks': 10})
+        if not economy.afford(town, costs):
             raise ValueError('An exploration boat costs 20 wood and 10 planks.')
-        economy.spend(town, {'wood': 20, 'planks': 10})
+        economy.spend(town, costs)
         town['player']['boat'] = True
         return {'player': dict(town['player'])}
     if action in {'build_road', 'remove_road'}:
@@ -933,9 +969,10 @@ def command(town, data, world=None):
         if (terrain and terrain[y][x] == 'v') or any(r['x'] == x and r['y'] == y for r in obstacles):
             raise ValueError('Place roads on open ground.')
         if not any(r['x'] == x and r['y'] == y for r in town.get('roads', [])):
-            town.setdefault('roads', []).append({
-                'x': x, 'y': y,
-                'construction': {'progress': 0, 'total': ROAD_BUILD_SECONDS}})
+            road = {'x': x, 'y': y}
+            if not town.get('sandbox'):
+                road['construction'] = {'progress': 0, 'total': ROAD_BUILD_SECONDS}
+            town.setdefault('roads', []).append(road)
         return {}
     if world and 'shared_map' in world:
         if action == 'walk':
@@ -973,7 +1010,7 @@ def command(town, data, world=None):
         spec = economy.BUILDINGS.get(kind, {'wood': COSTS[kind]})
         if town['level'] < spec.get('level', 1):
             raise ValueError(f"Requires town hall level {spec['level']}.")
-        costs = economy.costs_of(spec)
+        costs = building_costs(town, spec)
         if not economy.afford(town, costs):
             raise ValueError('Missing building materials: ' + ', '.join(costs))
         if kind == 'acre':
@@ -1002,7 +1039,8 @@ def command(town, data, world=None):
         if town['buildings'][index]['kind'] == 'acre':
             validate_acre(town, town['buildings'][index].get('farm_index'), x, y)
         # Rearranging must remain possible even after spending the starting coins.
-        town['coins'] = max(0, town['coins'] - 1)
+        if not town.get('sandbox'):
+            town['coins'] = max(0, town['coins'] - 1)
         moved = town['buildings'][index]
         for villager in town['villagers']:
             if villager.get('pending_workplace') == {k: moved[k] for k in ('kind', 'x', 'y')}:
@@ -1079,7 +1117,7 @@ def command(town, data, world=None):
         level = building.get('settler_level', 1)
         if not completed(building) or level >= 3:
             raise ValueError('Capacity cannot be upgraded at this time.')
-        cost = 20 * level
+        cost = 0 if town.get('sandbox') else 20 * level
         if town['wood'] < cost:
             raise ValueError('Gather more wood first.')
         economy.spend(town, {'wood': cost})
@@ -1118,7 +1156,7 @@ def command(town, data, world=None):
         level = building_level(building)
         if level >= (len(economy.STOREHOUSE_CAPACITIES) if building['kind'] == 'storehouse' else 3):
             raise ValueError('This building is fully upgraded.')
-        cost = COSTS[building['kind']] * level
+        cost = 0 if town.get('sandbox') else COSTS[building['kind']] * level
         if town['wood'] < cost:
             raise ValueError(f'Gather {cost} wood to upgrade this building.')
         economy.spend(town, {'wood': cost})
@@ -1162,7 +1200,7 @@ def command(town, data, world=None):
             job = economy.BUILDINGS[building['kind']]['job']
             workers = [v for v in town['villagers'] if v.get('building_index') == index
                        and v['job'] == job and not economy.qualification(v, job)]
-            if spec['level'] > 1 and not any(v.get(job, 0) >= spec['level'] for v in workers):
+            if not town.get('sandbox') and spec['level'] > 1 and not any(v.get(job, 0) >= spec['level'] for v in workers):
                 raise ValueError(f"Requires an assigned worker with level {spec['level']} {job}.")
             economy.ensure_inventory(town)
             # Release obsolete reserved ingredients for collection by workers/haulers.
@@ -1208,15 +1246,15 @@ def command(town, data, world=None):
             spec = economy.PROFESSION_UPGRADES.get(key)
             if spec is None or spec['building'] != building['kind']:
                 raise ValueError('Choose a matching profession upgrade.')
-            if town['level'] < spec['level'] or economy.skill(town, spec.get('skill', '')) < spec.get('xp', 0):
+            if town['level'] < spec['level'] or (not town.get('sandbox') and economy.skill(town, spec.get('skill', '')) < spec.get('xp', 0)):
                 raise ValueError('Develop the profession and upgrade the town hall first.')
             if spec.get('requires') and spec['requires'] not in building.get('profession_upgrades', []):
                 raise ValueError('Purchase the previous boat tier first.')
             if key in building.get('profession_upgrades', []):
                 raise ValueError('Already unlocked.')
-            if not economy.afford(town, economy.costs_of(spec)):
+            if not economy.afford(town, building_costs(town, spec)):
                 raise ValueError('Missing profession upgrade materials.')
-            economy.spend(town, economy.costs_of(spec))
+            economy.spend(town, building_costs(town, spec))
             if key == 'boat':
                 building.setdefault('profession_upgrades', []).append(key)
             else:
@@ -1240,9 +1278,9 @@ def command(town, data, world=None):
         upgrade = hall_upgrade(town)
         if not upgrade:
             raise ValueError('Your town hall is fully upgraded (level 10).')
-        if not economy.milestone(town, upgrade['level']):
+        if not town.get('sandbox') and not economy.milestone(town, upgrade['level']):
             raise ValueError(upgrade['milestone'] + ' required to upgrade.')
-        costs = economy.costs_of(upgrade)
+        costs = building_costs(town, upgrade)
         costs.pop('coins', None)  # Hall coins are rewards, not a material cost.
         if not economy.afford(town, costs):
             raise ValueError('Save the hall upgrade materials: ' + ', '.join(costs))
@@ -1257,6 +1295,8 @@ def command(town, data, world=None):
                                    if villager['job'] != 'idle' else None)
     construct(town, walking_map(world, town) if world and 'shared_map' in world else town,
               elapsed=0)
+    if town.get('sandbox'):
+        fill_cottages(town)
 
 
 class Handler(SimpleHTTPRequestHandler):
@@ -1344,6 +1384,7 @@ class Handler(SimpleHTTPRequestHandler):
             with LOCK:
                 snapshot = {'active_world': ACTIVE_WORLD, 'can_manage': self.is_host(),
                             'worlds': [{'id': key, 'name': value['name'],
+                                        'sandbox': value['world'].get('sandbox', False),
                                         'town_count': len(value['world']['towns'])}
                                        for key, value in WORLDS.items()]}
             self.reply(200, snapshot)
@@ -1378,9 +1419,13 @@ class Handler(SimpleHTTPRequestHandler):
                         name = data.get('name')
                         if not isinstance(name, str) or not name.strip() or len(name.strip()) > 24:
                             raise ValueError('Enter a world name of 1–24 characters.')
+                        sandbox = data.get('sandbox', False)
+                        if type(sandbox) is not bool:
+                            raise ValueError('Choose a valid world mode.')
                         world_id = secrets.token_hex(8)
                         WORLDS[world_id] = {'name': name.strip(), 'world': new_world(
-                            explorable=True, chunk_directory=SAVE.with_name(SAVE.stem + '_chunks')), 'tokens': {}}
+                            explorable=True, chunk_directory=SAVE.with_name(SAVE.stem + '_chunks'),
+                            sandbox=sandbox), 'tokens': {}}
                         activate(world_id)
                     else:
                         world_id = data.get('world_id')
