@@ -34,6 +34,18 @@ This permanently removes all its towns and progress. Deleting the current world
 returns everyone to the menu until the host opens or creates another world.
 Your existing save appears as **My first world**, keeping its towns and ownership.
 
+To experiment with supply chains, select **Sandbox** under **World mode** when
+creating a world. Sandbox towns start with a level-10 hall, unlocking all buildings
+and crops. Buildings, acres, roads, and building upgrades are free and finish
+instantly; moving buildings is free too. Building or upgrading cottages immediately
+adds villagers to fill the new housing capacity and settles available idle villagers
+in them. Cottage capacity upgrades also provide enough housing for their residents.
+Villagers can take any profession and use every recipe without training, and never
+leave because of food or housing shortages. Their normal talents, practice, and
+production rates still apply. Production ingredients, hauling, storage, animal
+care, and food consumption run normally, so you can observe the chain's bottlenecks.
+Sandbox worlds save and reopen with these rules and are labeled in the Worlds menu.
+
 ## Join from another Mac
 
 Connect both Macs to the same local network. On the host, find its local IP address

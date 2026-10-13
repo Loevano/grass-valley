@@ -17,7 +17,7 @@
 <span class="eyebrow">A NEW CHAPTER</span><h2 id="world-menu-title">Your worlds</h2>
 <p id="world-menu-description">Choose a saved world or start a new one.</p>
 <div id="world-list"></div>
-<form id="new-world-form" hidden><label for="world-name">New world name</label><input id="world-name" maxlength="24" placeholder="Lantern Vale" required><button>Start a new world</button></form>
+<form id="new-world-form" hidden><label for="world-name">New world name</label><input id="world-name" maxlength="24" placeholder="Lantern Vale" required><label for="world-mode">World mode</label><select id="world-mode" aria-describedby="world-mode-help"><option value="normal">Normal</option><option value="sandbox">Sandbox</option></select><p id="world-mode-help" class="muted">Sandbox: all buildings unlocked, free instant construction and upgrades, and automatically populated cottages. Villagers can work any job and never leave. Production and food consumption run normally.</p><button>Start a new world</button></form>
 <button id="close-world-menu" class="quiet">Return to game</button>
 <p id="world-menu-error" role="alert"></p>
 </dialog>

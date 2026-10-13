@@ -188,6 +188,8 @@ def selected_recipe(building):
 
 
 def recipe_requirement(villager, building):
+    if villager.get('sandbox'):
+        return None
     spec = selected_recipe(building)
     job = BUILDINGS[building['kind']]['job']
     if spec and spec['level'] > 1 and villager.get(job, 0) < spec['level']:
@@ -264,6 +266,8 @@ def practice(villager, job, seconds=3):
 
 
 def qualification(villager, job):
+    if villager.get('sandbox'):
+        return None
     missing = [f"{amount} {skill} practice (has {villager.get(skill, 0):g})"
                for skill, amount in JOB_REQUIREMENTS.get(job, {}).items()
                if villager.get(skill, 0) < amount]

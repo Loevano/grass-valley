@@ -101,17 +101,17 @@ effect or awarded resource must wait for host confirmation.
 
 ## Where work happens today
 
-| Responsibility | Location | What it owns or calculates |
-| --- | --- | --- |
-| HTTP requests and commands | [server/server.py](../server/server.py), `Handler`, `command()` | Authentication, town ownership, validation, authoritative changes, and exported snapshots. |
-| Simulation and saving | [server/server.py](../server/server.py), `tick()`, `simulation()`, `save()` | Three-second simulation cycles and persistent world state. Construction is processed before worker production; haulers are visited before other workers. |
-| Progression and balance | [server/progression.py](../server/progression.py) | Recipes, practice, qualifications, efficiency, materials, and unlocks. Imported as `economy` by the host. |
-| Production and transport | [server/logistics.py](../server/logistics.py), [server/work_cycles.py](../server/work_cycles.py) | Input delivery, output buffers, hauling, batch completion, animal butchery, and host work phases. |
-| Terrain and routes | [server/chunk_world.py](../server/chunk_world.py), [server/navigation.py](../server/navigation.py) | Terrain chunks and host routes around obstacles and across roads. |
-| Browser requests and interface | [web/app.js](../web/app.js), `request()`, `act()`, `refresh()`, `render()` | Commands, snapshot refreshes, controls, and DOM panels. `render()` updates the interface; `draw()` paints the map. |
-| Derived scene data | [web/scene.js](../web/scene.js), `ClientScene` | Local indexes, collision overlays, reusable geometry, and resumable jobs. |
-| Visual worker playback | [web/animations.js](../web/animations.js), worker functions in `app.js` | Browser animation routes and displayed worker phases. These do not award goods or practice. |
-| Canvas presentation | [web/app.js](../web/app.js), `updateActors()`, `animate()`, `draw()` | Character prediction/interpolation, camera, visual effects, depth ordering, and map drawing. |
+| Responsibility                 | Location                                                                                           | What it owns or calculates                                                                                                                               |
+| ------------------------------ | -------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| HTTP requests and commands     | [server/server.py](../server/server.py), `Handler`, `command()`                                    | Authentication, town ownership, validation, authoritative changes, and exported snapshots.                                                               |
+| Simulation and saving          | [server/server.py](../server/server.py), `tick()`, `simulation()`, `save()`                        | Three-second simulation cycles and persistent world state. Construction is processed before worker production; haulers are visited before other workers. |
+| Progression and balance        | [server/progression.py](../server/progression.py)                                                  | Recipes, practice, qualifications, efficiency, materials, and unlocks. Imported as `economy` by the host.                                                |
+| Production and transport       | [server/logistics.py](../server/logistics.py), [server/work_cycles.py](../server/work_cycles.py)   | Input delivery, output buffers, hauling, batch completion, animal butchery, and host work phases.                                                        |
+| Terrain and routes             | [server/chunk_world.py](../server/chunk_world.py), [server/navigation.py](../server/navigation.py) | Terrain chunks and host routes around obstacles and across roads.                                                                                        |
+| Browser requests and interface | [web/app.js](../web/app.js), `request()`, `act()`, `refresh()`, `render()`                         | Commands, snapshot refreshes, controls, and DOM panels. `render()` updates the interface; `draw()` paints the map.                                       |
+| Derived scene data             | [web/scene.js](../web/scene.js), `ClientScene`                                                     | Local indexes, collision overlays, reusable geometry, and resumable jobs.                                                                                |
+| Visual worker playback         | [web/animations.js](../web/animations.js), worker functions in `app.js`                            | Browser animation routes and displayed worker phases. These do not award goods or practice.                                                              |
+| Canvas presentation            | [web/app.js](../web/app.js), `updateActors()`, `animate()`, `draw()`                               | Character prediction/interpolation, camera, visual effects, depth ordering, and map drawing.                                                             |
 
 The host owns gameplay and saved state. Browser predictions, indexes, overlays,
 animation jobs, and drawing caches must not mutate authoritative snapshots.

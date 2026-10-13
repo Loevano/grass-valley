@@ -15,7 +15,7 @@ def building_range(town):
     return 30 + 5 * (town['level'] - 1)
 
 
-def new_world(seed=None, explorable=False, chunk_directory=None, terrain_version=None):
+def new_world(seed=None, explorable=False, chunk_directory=None, terrain_version=None, sandbox=False):
     seed = secrets.randbits(64) if seed is None else seed
     rng = random.Random(seed)
     sites = [{'x': rng.randint(lo_x, lo_x + 16), 'y': rng.randint(lo_y, lo_y + 16)}
@@ -99,6 +99,8 @@ def new_world(seed=None, explorable=False, chunk_directory=None, terrain_version
     landscape['npcs'] = [n for n in npc_map['npcs']
                          if all(abs(n['x'] - s['x']) + abs(n['y'] - s['y']) > 6 for s in sites)]
     world = {'towns': {}, 'shared_map': landscape, 'town_sites': sites}
+    if sandbox:
+        world['sandbox'] = True
     if explorable:
         from chunk_world import expand_new_world
         return expand_new_world(world, chunk_directory)
