@@ -1573,9 +1573,9 @@ function renderSelection(town){
   if(selection.type==='villager'){
     $('selection-title').textContent=item.name;$('selection-details').append(villagerCard(town,item,selection.index));return;
   }
-  if(selection.type==='resource')$('selection-details').append(illustration(item.kind));
-  const p=document.createElement('p');p.className='info-copy';
   if(selection.type==='resource'){
+    $('selection-details').append(illustration(item.kind));
+    const p=document.createElement('p');p.className='info-copy';
     const swamp=town.terrain?.[item.y]?.[item.x]==='b';
     if(item.kind==='village_hut'||item.kind==='village_market'){
       $('selection-title').textContent=`${item.village} · ${item.label || (item.kind==='village_market'?'Market':'Cottage')}`;
@@ -1608,6 +1608,7 @@ function renderSelection(town){
     }
     if(item.kind==='rock'&&item.ore){$('selection-title').textContent='Iron vein';p.textContent='A mine within 10 tile steps extracts iron ore. Smelt ore with wood into iron, then make steel, saddles, and trade crates.';}
     if(item.supply_max){$('selection-details').append(fact(`${Math.floor(item.supply || 0)} / ${item.supply_max}`,item.kind==='tree'?'Wood remaining before felling':'Shared supply'));if(item.kind!=='tree')$('selection-details').append(fact(`${item.regeneration} per 3 seconds`,'Regeneration'));}
+    $('selection-details').append(p);
   }else{
     $('selection-title').textContent=buildingName(item);
     const foldKey=`${world.world_id}/${viewed}/${selection.index}/${item.kind}/${item.x},${item.y}`;
@@ -1633,10 +1634,7 @@ function renderSelection(town){
     if(item.kind==='hall'){
       production.append(fact(`${buildingRange(town)} tile steps`,'Building range'));
     }
-    p.textContent={hall:'Progression: housing / food / professions\nLevels: 1–10\nUpgrade reward: coins',home:'No fixed population limit\nArrivals require free housing + food',storehouse:'Storage: enable resources\nHaulers: collect outputs + supply workplaces',woodcutter:'Output: wood\nRequires nearby trees',farm:'Output: crops\nAcres: within 3 tile steps\nWater: fetched by farmers',fishing_hut:'Output: fish\nRequires nearby water',acre:'Workers: farmers\nRequires farm within 3 tile steps\nWater: fetched by farmers'}[item.kind];
-    if(town.sandbox&&item.kind==='home')p.textContent='Sandbox housing\nNew housing spaces populate automatically without food\nVillagers are ready for every job and never leave';
     if(item.kind==='hall'){
-      p.textContent+=`\nBuild range: ${buildingRange(town)} tile steps\nDiagonal: 2 steps\nHall upgrade: +5 range`;
       const upgrade=world.hall_upgrades?.find(next=>next.level===town.level+1);
       $('hall-progress').hidden=true;
       const hallCosts=upgrade?Object.fromEntries(['wood','planks','leather','iron_ore','iron','steel'].filter(k=>k in upgrade).map(k=>[k,upgrade[k]])):{};
@@ -1655,11 +1653,8 @@ function renderSelection(town){
     if(item.construction){
       const c=item.construction,stage=c.progress===0?'Waiting for a builder':c.upgrade?'Upgrading':c.progress<c.total/3?'Foundations':c.progress<c.total*2/3?'Framing':'Finishing';
       status.textContent=`${stage} · ${Math.floor(c.progress/c.total*100)}% complete · ${Math.ceil(c.total-c.progress)}s remaining of work`;
-      p.textContent='Builders: priority\nIdle villagers: automatic help\nAssigned workers: help upgrade their workplace, then resume their jobs\nTime: excludes travel and waiting\nBenefits: on completion';
       const progress=document.createElement('progress');progress.max=c.total;progress.value=c.progress;progress.setAttribute('aria-label',`${labels[item.kind]} construction`);workers.append(progress);
     }
-    if(!item.construction&&world.progression?.buildings[item.kind])p.textContent=productionDescription(item);
-    details.append(p);
     renderProfession(town,item,selection.index,production,upgrades,details,boats,unlockedUpgrades);
     if(!item.construction&&!['home','market'].includes(item.kind)){
       renderStorage(town,item,selection.index,storageOverview);
@@ -1700,7 +1695,6 @@ function renderSelection(town){
     if(upgrades.children.length>1)$('selection-details').append(upgrades);
     if(unlockedUpgrades.children.length>1)$('selection-details').append(unlockedUpgrades);
   }
-  if(selection.type==='resource')$('selection-details').append(p);
   if(marketFocus&&$('selection-details').contains?.(marketFocus))marketFocus.focus();
 }
 const buildingCategories=[
