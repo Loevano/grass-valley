@@ -15,7 +15,7 @@ def building_range(town):
     return 30 + 5 * (town['level'] - 1)
 
 
-def new_world(seed=None, explorable=False, chunk_directory=None, sandbox=False, terrain_version=None):
+def new_world(seed=None, explorable=False, chunk_directory=None, terrain_version=None, sandbox=False):
     seed = secrets.randbits(64) if seed is None else seed
     rng = random.Random(seed)
     sites = [{'x': rng.randint(lo_x, lo_x + 16), 'y': rng.randint(lo_y, lo_y + 16)}
