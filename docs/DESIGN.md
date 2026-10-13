@@ -67,6 +67,8 @@ seeded world coordinates, with irregular edges and smaller surrounding patches.
   more trees, forming forest strips. Swamp willows keep their regrowth behavior.
 - Broad light-green grassland leaves open space for larger farming areas;
   rock outcrops and scattered rocks are less frequent across the landscape.
+- Isolated water bodies of one or two tiles are removed, including tiny starter
+  pools. Water connected across chunk boundaries still counts as one body.
 - Each starting town has a smaller fishing lake nearby. The central treasure
   lake, its islands, starter clearings, and paths between towns remain available.
 

@@ -192,7 +192,7 @@ def generate_chunk(seed, key, version=1, size=WORLD_SIZE):
     """Version saved worlds so untouched legacy chunks never change generator."""
     if version == 1:
         return _legacy_chunk(seed, key)
-    if version not in (2, 3, 4, 5, 6):
+    if version not in (2, 3, 4, 5, 6, 7):
         raise ValueError(f'Unsupported terrain generator version: {version}')
     if version >= 3:
         from terrain_regions import sample_tile
@@ -235,6 +235,41 @@ def regional_starter(seed, version=2):
     return rows, resources
 
 
+def remove_tiny_water(record, water_at):
+    """Keep connected water bodies of at least three tiles, including seams."""
+    water = {(r['x'], r['y']) for r in record['map_resources'] if r['kind'] == 'water'}
+    remove = set()
+    for start in water:
+        if start in remove:
+            continue
+        seen, pending = {start}, [start]
+        # Most rivers and ponds already have three local tiles. Establish
+        # that before requesting any neighboring chunk at a seam.
+        while pending and len(seen) < 3:
+            x, y = pending.pop()
+            for point in ((x-1, y), (x+1, y), (x, y-1), (x, y+1)):
+                if point not in seen and point in water:
+                    seen.add(point)
+                    pending.append(point)
+                    if len(seen) >= 3:
+                        break
+        if len(seen) >= 3:
+            continue
+        pending = list(seen)
+        while pending and len(seen) < 3:
+            x, y = pending.pop()
+            for point in ((x-1, y), (x+1, y), (x, y-1), (x, y+1)):
+                if point not in seen and water_at(*point):
+                    seen.add(point)
+                    pending.append(point)
+                    if len(seen) >= 3:
+                        break
+        if len(seen) < 3:
+            remove.update(seen)
+    record['map_resources'][:] = [r for r in record['map_resources']
+        if r['kind'] != 'water' or (r['x'], r['y']) not in remove]
+
+
 class ChunkMap:
     def __init__(self, world, directory=None, base=None):
         self.world = world
@@ -266,11 +301,32 @@ class ChunkMap:
                 self.catch_up(key, self.views[key])
             return self.views[key]
         record = apply_villages(self._read(key), key, self.landscape.get('villages', []), CHUNK_SIZE)
+        if self.landscape.get('terrain_version', 1) >= 7:
+            self._remove_tiny_water(key, record)
         self.catch_up(key, record)
         self.views[key] = record
         while len(self.views) > MAX_VIEW_CHUNKS:
             self.views.popitem(last=False)
         return record
+
+    def _remove_tiny_water(self, key, record):
+        # Neighbor samples include starter and village edits. Inspect raw
+        # neighboring records without recursively loading/pruning their views.
+        waters = {key: {(r['x'], r['y']) for r in record['map_resources'] if r['kind'] == 'water'}}
+
+        def water_at(x, y):
+            if not (0 <= x < self.size and 0 <= y < self.size):
+                return False
+            other = chunk_key(x, y)
+            if other not in waters:
+                adjacent = self.records.get(other) or self.views.get(other)
+                if adjacent is None:
+                    adjacent = apply_villages(self._read(other), other,
+                                              self.landscape.get('villages', []), CHUNK_SIZE)
+                waters[other] = {(r['x'], r['y']) for r in adjacent['map_resources'] if r['kind'] == 'water'}
+            return (x, y) in waters[other]
+
+        remove_tiny_water(record, water_at)
 
     def catch_up(self, key, record):
         from progression import SUPPLIES, TREE_REGROWTH_RATE, source_limits

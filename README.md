@@ -92,6 +92,7 @@ chopping; forest grows in patches and large woods, with trees that regrow.
 Trees are more common along rivers and lake shores, forming wooded banks.
 Broad light-green grassland provides larger farming areas, with fewer rock
 outcrops and scattered rocks across the landscape.
+Isolated one- and two-tile water patches are removed; rivers and larger ponds remain.
 Reedhaven's western swamp mixes dense willow groves, pools, and narrow channels.
 The smaller desert around Sunwell has rocky areas and palm-lined oases, while the
 northern ice region around Frostbrook has groves, pools, and rock outcrops.

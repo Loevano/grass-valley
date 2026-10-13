@@ -5,9 +5,20 @@ import unittest
 from unittest.mock import patch
 
 import server
-from chunk_world import CHUNK_SIZE, WORLD_SIZE, LEGACY_WORLD_SIZE, LEGACY_START_OFFSET, attach, chunk_key, generate_chunk
+from chunk_world import CHUNK_SIZE, WORLD_SIZE, LEGACY_WORLD_SIZE, LEGACY_START_OFFSET, attach, chunk_key, generate_chunk, remove_tiny_water
 from shared_world import bind_map, export_world, new_world, walking_map
 import test_http
+
+
+class SmallWaterBodies(unittest.TestCase):
+    def test_tiny_patches_are_removed_but_connected_water_across_seams_stays(self):
+        water = {(1, 1), (1, 2), (39, 5), (40, 5), (41, 5), (39, 10), (40, 10)}
+        record = {'map_resources': [{'kind': 'water', 'x': x, 'y': y}
+                                    for x, y in sorted(water) if x < CHUNK_SIZE]}
+        rock = {'kind': 'rock', 'x': 2, 'y': 2}
+        record['map_resources'].append(rock)
+        remove_tiny_water(record, lambda x, y: (x, y) in water)
+        self.assertEqual(record['map_resources'], [{'kind': 'water', 'x': 39, 'y': 5}, rock])
 
 
 class ExplorableMap(unittest.TestCase):
