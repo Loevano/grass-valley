@@ -538,8 +538,7 @@ def building_costs(town, spec):
     return {} if town.get('sandbox') else economy.costs_of(spec)
 
 
-def construction_route(town, start, target, road_mode='departure'):
-    size = town.get('map_size', MAP_SIZE)
+def construction_blocked(town):
     spatial = town.get('_spatial_index')
     if spatial is not None:
         blocked = spatial.blocked(town)
@@ -548,8 +547,13 @@ def construction_route(town, start, target, road_mode='departure'):
         blocked.update((n['x'], n['y']) for n in town.get('npcs', []))
     # Completed fields are walkable, including around farms awaiting upgrades.
     # Subtraction leaves the spatial index's cached obstacles unchanged.
-    blocked = blocked.difference((b['x'], b['y']) for b in town['buildings']
-                                 if b['kind'] == 'acre' and completed(b))
+    return blocked.difference((b['x'], b['y']) for b in town['buildings']
+                              if b['kind'] == 'acre' and completed(b))
+
+
+def construction_route(town, start, target, road_mode='departure'):
+    size = town.get('map_size', MAP_SIZE)
+    blocked = construction_blocked(town)
     terrain = town.get('terrain', [])
 
     def open_tile(p):
@@ -589,6 +593,7 @@ def construct(town, landscape, workers=None, elapsed=TICK_SECONDS):
         for villager in town['villagers']:
             villager.pop('construction_target', None)
             villager.pop('construction_arrived', None)
+            villager.pop('construction_walk', None)
         return
     helpers = {}
     if workers is None:
@@ -611,9 +616,24 @@ def construct(town, landscape, workers=None, elapsed=TICK_SECONDS):
                 workers.add(index)
     claimed = set()
     hall = next(b for b in town['buildings'] if b['kind'] == 'hall')
+    sites = town['buildings'] + town.get('roads', [])
+    if not workers or not any(not completed(site) for site in sites):
+        for villager in town['villagers']:
+            for key in ('construction_target', 'construction_arrived', 'construction_walk'):
+                villager.pop(key, None)
+        return
+    blocked = construction_blocked(landscape)
+    size, terrain = landscape.get('map_size', MAP_SIZE), landscape.get('terrain', [])
+    roads = {(r['x'], r['y']) for r in landscape.get('roads', []) if completed(r)}
+    def open_step(tile):
+        x, y = tile
+        return (0 <= x < size and 0 <= y < size and (x, y) not in blocked
+                and (not terrain or (terrain[y][x] and terrain[y][x] != 'v')))
     for index, villager in enumerate(town['villagers']):
-        villager.pop('construction_target', None)
         villager.pop('construction_arrived', None)
+        if index not in workers:
+            villager.pop('construction_target', None)
+            villager.pop('construction_walk', None)
     # Dedicated builders claim sites before residents who are helping while idle.
     for index in sorted(workers, key=lambda i: town['villagers'][i]['job'] != 'building'):
         villager = town['villagers'][index]
@@ -621,29 +641,55 @@ def construct(town, landscape, workers=None, elapsed=TICK_SECONDS):
                                 {'x': hall['x'] - 2 + index % 5,
                                  'y': hall['y'] + 3 + index // 5})
         start = (position['x'], position['y'])
-        for site_index, site in enumerate(town['buildings'] + town.get('roads', [])):
+        previous = villager.pop('construction_target', None)
+        walk = villager.get('construction_walk')
+        # Keep the claimed task even when another site is inserted before it.
+        ordered = sorted(enumerate(sites), key=lambda entry:
+                         not (previous and all(entry[1].get(k, 'road') == v for k, v in previous.items())))
+        for site_index, site in ordered:
             if completed(site) or site_index in claimed:
                 continue
             if index in helpers and site_index != helpers[index]:
                 continue
-            path = construction_route(landscape, start, site)
+            target = {'kind': site.get('kind', 'road'), 'x': site['x'], 'y': site['y']}
+            retained = (walk and walk['target'] == target and walk.get('job') == villager['job']
+                        and tuple(walk['path'][walk['step']]) == start)
+            path = walk['path'] if retained else construction_route(landscape, start, site)
             if path is None:
                 continue
+            if not retained:
+                walk = {'target': target, 'job': villager['job'],
+                        'path': [list(p) for p in path], 'step': 0}
+            # Replan only when a step actually becomes impassable. Road edits
+            # change walking time immediately but do not discard a valid route.
+            if walk['step'] + 1 < len(path) and not open_step(path[walk['step'] + 1]):
+                path = construction_route(landscape, start, site)
+                if path is None:
+                    continue
+                walk = {'target': target, 'job': villager['job'],
+                        'path': [list(p) for p in path], 'step': 0}
+            villager['construction_walk'] = walk
             claimed.add(site_index)
             # A stable coordinate target avoids stale indices after destruction.
-            villager['construction_target'] = {'kind': site.get('kind', 'road'),
-                                               'x': site['x'], 'y': site['y']}
-            roads = {(r['x'], r['y']) for r in landscape.get('roads', []) if completed(r)}
-            remaining, reached = elapsed, 0
-            for tile in path[:-1]:
+            villager['construction_target'] = target
+            path = walk['path']
+            remaining, reached = elapsed, walk['step']
+            travelling = reached + 1 < len(path)
+            while reached + 1 < len(path):
+                if not open_step(path[reached + 1]):
+                    # Leave the worker at the last reachable waypoint; the next
+                    # update will find a detour from there.
+                    break
+                tile = tuple(path[reached])
                 duration = 1 / (1.8 * (1.5 if tile in roads else 1))
                 if remaining < duration:
                     break
                 remaining -= duration
                 reached += 1
+            walk['step'] = reached
             step = path[reached]
             villager['construction_position'] = {'x': step[0], 'y': step[1]}
-            if len(path) > 1:
+            if travelling:
                 break
             villager['construction_arrived'] = True
             construction = site['construction']
@@ -662,7 +708,10 @@ def construct(town, landscape, workers=None, elapsed=TICK_SECONDS):
                         town['coins'] += upgrade['coins']
                 villager.pop('construction_target', None)
                 villager.pop('construction_arrived', None)
+                villager.pop('construction_walk', None)
             break
+        if 'construction_target' not in villager:
+            villager.pop('construction_walk', None)
 
 
 def prepare_landscapes(world, regenerate=False):

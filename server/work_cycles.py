@@ -67,6 +67,23 @@ def fishing_pier(building, landscape, blocked, size, terrain, bounds):
     return []
 
 
+def retained_pier(state, building, landscape, blocked, terrain, source=None):
+    """Keep an existing deck while its hut, endpoint, and steps remain usable."""
+    if not state or state['task'][:4] != ['fishing', building['kind'], building['x'], building['y']]:
+        return None
+    pier = state.get('pier')
+    if not pier or (source and (pier[-1]['x'], pier[-1]['y']) != (source['x'], source['y'])):
+        return None
+    occupied = {(b['x'], b['y']) for b in landscape['buildings'] + landscape.get('npcs', [])}
+    water = {(r['x'], r['y']) for r in landscape['map_resources'] if r['kind'] == 'water'}
+    for tile in pier[1:]:
+        p = tile['x'], tile['y']
+        if (p in occupied or (p in blocked and p not in water)
+                or (terrain and (not terrain[p[1]][p[0]] or terrain[p[1]][p[0]] == 'v'))):
+            return None
+    return pier
+
+
 def route(start, target, blocked, size, terrain, adjacent=True, bounds=None, roads=()):
     start = (round(start['x']), round(start['y']))
     return routes.route(start, target, blocked, size, terrain, adjacent, bounds, roads)
@@ -149,13 +166,16 @@ def _advance(town, landscape, villager, building, source, index, seconds):
     if farming_job:
         blocked.difference_update((b['x'], b['y']) for b in landscape['buildings'] if b['kind'] == 'acre' and 'construction' not in b)
     work_spot = source if farming_job and source['kind'] == 'acre' else None
+    pier = []
     if boating:
         reach = 2 + building.get('level', 1) + 3 + 2 * (economy.fishing_boat_level(building) - 1)
         occupied = {(b['x'], b['y']) for b in landscape['buildings'] + landscape.get('npcs', [])}
         depths = landscape.get('_spatial_index', SpatialIndex(landscape['map_resources'])).water_depths()
         water = fishing_water(building, [r for r in landscape['map_resources'] if r['kind'] == 'water'], occupied, reach, terrain, depths)
         water_tiles = {(r['x'], r['y']) for r in water}
-        pier = fishing_pier(building, landscape, blocked, size, terrain, bounds)
+        pier = retained_pier(state, building, landscape, blocked, terrain)
+        if pier is None:
+            pier = fishing_pier(building, landscape, blocked, size, terrain, bounds)
         dock = pier[-1] if pier else building
         deck = {(p['x'], p['y']) for p in pier}
         berths = [r for r in water if abs(r['x'] - dock['x']) + abs(r['y'] - dock['y']) == 1
@@ -175,8 +195,11 @@ def _advance(town, landscape, villager, building, source, index, seconds):
         pier_blocked = blocked - {(building['x'], building['y'])}
         pier_blocked.difference_update((r['x'], r['y']) for r in landscape['map_resources']
                                       if r['kind'] == 'water' and abs(r['x'] - building['x']) + abs(r['y'] - building['y']) <= 3)
-        pier = route(building, source, pier_blocked, size, terrain, False, bounds)
-        if pier is not None and len(pier) <= 3:
+        pier = retained_pier(state, building, landscape, blocked, terrain, source)
+        if pier is None and abs(source['x'] - building['x']) + abs(source['y'] - building['y']) <= 3:
+            deck = route(building, source, pier_blocked, size, terrain, False, bounds)
+            pier = [building, *deck] if deck is not None and len(deck) <= 3 else []
+        if pier:
             blocked.discard((building['x'], building['y']))
             blocked.difference_update((p['x'], p['y']) for p in pier)
             work_spot = source
@@ -199,6 +222,7 @@ def _advance(town, landscape, villager, building, source, index, seconds):
         return route(start, target, blocked, size, terrain, adjacent, bounds, roads)
     if (not state or state['task'] != spec or state['phase'] == 'waiting'
             or (farming_job and state['phase'] == 'waiting_field' and not farming.claimed(town, source, index))):
+        resume_phase = state.get('resume_phase') if state and state['task'] == spec else None
         position = (state or villager.get('logistics_position') or villager.get('construction_position')
                     or {'x': hall['x'] - 2 + index % 5, 'y': hall['y'] + 3 + index // 5})
         x, y = round(position['x']), round(position['y'])
@@ -219,7 +243,15 @@ def _advance(town, landscape, villager, building, source, index, seconds):
         state = {'task': spec, 'x': position['x'] if preserved else x,
                  'y': position['y'] if preserved else y, 'elapsed': 0, 'waterReady': water_ready,
                  'version': (state or {}).get('version', 0), 'facing': 1}
-        if farming_job and villager.get('pending_output'):
+        if resume_phase:
+            target = building if resume_phase == 'returning' else work_spot or source
+            path = [] if resume_phase == 'fetching_water' else travel(state, target, not work_spot if target is source else True)
+            state.update(path=path or [], phase='waiting' if path is None else resume_phase if path else
+                         {'returning': 'depositing'}.get(resume_phase, 'working'))
+            if path is None:
+                state['resume_phase'] = resume_phase
+            villager['work_animation'] = state
+        elif farming_job and villager.get('pending_output'):
             # Finish pre-existing harvest cargo, including saves from the old cycle.
             state['phase'] = 'harvest_ready'
             state['path'] = []
@@ -233,6 +265,8 @@ def _advance(town, landscape, villager, building, source, index, seconds):
                 path.insert(0, {'x': x, 'y': y})
             state.update(path=path or [], phase='waiting' if path is None else 'walking' if path else 'working')
             villager['work_animation'] = state
+    if villager['job'] == 'fishing':
+        state['pier'] = [{'x': p['x'], 'y': p['y']} for p in pier or []]
     state['version'] += 1
     remaining = seconds
     state['playback'] = [_sample(state, 0, source)]
@@ -243,8 +277,11 @@ def _advance(town, landscape, villager, building, source, index, seconds):
             last_phase, last_length, last_action = state['phase'], len(state['path']), state.get('farmAction')
         if state['path']:
             target = state['path'][0]
-            if (target['x'], target['y']) in blocked or (terrain and terrain[target['y']][target['x']] == 'v'):
-                state.update(path=[], phase='waiting', elapsed=0)
+            if ((target['x'], target['y']) in blocked
+                    or not (0 <= target['x'] < size and 0 <= target['y'] < size)
+                    or (terrain and (terrain[target['y']][target['x']] == 'v'
+                                     or (bounds and not terrain[target['y']][target['x']])))):
+                state.update(path=[], resume_phase=state['phase'], phase='waiting', elapsed=0)
                 return False
             dx, dy = target['x'] - state['x'], target['y'] - state['y']
             distance = math.hypot(dx, dy)

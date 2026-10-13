@@ -1,5 +1,8 @@
 import json
 import unittest
+from unittest.mock import patch
+
+import server
 
 from server import (BUILD_SECONDS, COSTS, capacity, command, construct,
                     construction_route, new_town, tick, work_source)
@@ -15,6 +18,51 @@ class Construction(unittest.TestCase):
     def build(self, kind='home', x=6, y=6, **extra):
         command(self.town, dict(action='build', kind=kind, x=x, y=y, **extra))
         return self.town['buildings'][-1]
+
+    def test_route_survives_ticks_save_and_unrelated_geometry(self):
+        site = {'kind': 'home', 'x': 30, 'y': 30,
+                'construction': {'progress': 0, 'total': BUILD_SECONDS}}
+        self.town['buildings'].append(site)
+        with patch.object(server, 'construction_route', wraps=construction_route) as route:
+            construct(self.town, self.town, {0}, elapsed=1)
+            path = self.town['villagers'][0]['construction_walk']['path']
+            self.town['map_resources'].append({'kind': 'rock', 'x': 100, 'y': 100})
+            self.town['roads'] = [{'x': 3, 'y': 8}]
+            construct(self.town, self.town, {0}, elapsed=1)
+            self.assertIs(self.town['villagers'][0]['construction_walk']['path'], path)
+            self.town = json.loads(json.dumps(self.town))
+            construct(self.town, self.town, {0}, elapsed=1)
+            self.assertEqual(route.call_count, 1)
+            self.assertEqual(self.town['villagers'][0]['construction_walk']['path'], path)
+
+    def test_blocked_step_replans_and_moved_target_changes_route(self):
+        site = {'kind': 'home', 'x': 20, 'y': 20,
+                'construction': {'progress': 0, 'total': BUILD_SECONDS}}
+        self.town['buildings'].append(site)
+        with patch.object(server, 'construction_route', wraps=construction_route) as route:
+            construct(self.town, self.town, {0}, elapsed=1)
+            worker = self.town['villagers'][0]
+            walk = worker['construction_walk']
+            x, y = walk['path'][walk['step'] + 1]
+            self.town['map_resources'].append({'kind': 'rock', 'x': x, 'y': y})
+            construct(self.town, self.town, {0}, elapsed=1)
+            self.assertEqual(route.call_count, 2)
+            self.assertNotIn([x, y], worker['construction_walk']['path'])
+            site['x'] = 21
+            construct(self.town, self.town, {0}, elapsed=1)
+            self.assertEqual(route.call_count, 3)
+            self.assertEqual(worker['construction_target']['x'], 21)
+
+    def test_new_site_does_not_replace_an_active_task(self):
+        site = {'kind': 'home', 'x': 20, 'y': 20,
+                'construction': {'progress': 0, 'total': BUILD_SECONDS}}
+        self.town['buildings'].append(site)
+        construct(self.town, self.town, {0}, elapsed=1)
+        self.town['buildings'].insert(1, {'kind': 'home', 'x': 10, 'y': 10,
+                                       'construction': {'progress': 0, 'total': BUILD_SECONDS}})
+        construct(self.town, self.town, {0}, elapsed=1)
+        self.assertEqual(self.town['villagers'][0]['construction_target'],
+                         {'kind': 'home', 'x': 20, 'y': 20})
 
     def finish(self, building):
         for _ in range(100):

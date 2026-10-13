@@ -410,7 +410,8 @@ the Python host, refresh both browsers, and create a new world to use the shared
   timers and delays arrivals for a minute. The last settler stays.
 - Use arrow keys and Enter on the focused map to inspect tiles or choose build locations.
 - Workers walk around obstacles to their resource spots, chop wood or tend crops,
-  and carry supplies back to their workplace. These animations illustrate work;
+  and carry supplies back to their workplace. They retain valid paths until their
+  task changes or their next step is blocked. These animations illustrate work;
   production still follows the host's three-second rhythm. If a workplace is out
   of reach of its wood or fishing source, production and skill growth pause;
   move it closer to the source to resume.

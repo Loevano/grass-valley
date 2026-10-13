@@ -176,8 +176,12 @@ adding shared destination routing or navigation between regions.
 
 ### Existing foundations
 
-- Workers retain work and delivery paths, follow their waypoints, and check for
-  blocked steps. Some systems still request cached routes repeatedly.
+- Workers retain valid work, delivery, and construction paths until their task
+  changes or a next step becomes blocked. Builders keep their claimed site and
+  saved route across ticks and reloads; fishers reuse valid pier paths.
+- Browser geometry updates refresh collision data without discarding valid paths.
+  Roads change walking speed immediately and influence the next planned leg.
+  Confirmed host playback does not perform a duplicate browser work-route search.
 - Host and browser each maintain bounded route caches that workers reuse.
   Terrain, obstacles, roads, and search bounds affect validity; crop growth does not.
   Search uses BFS on uniform ground and travel-time A* when roads are present.
@@ -194,7 +198,7 @@ adding shared destination routing or navigation between regions.
 | Order | Improvement | Planned behavior |
 | --- | --- | --- |
 | 1 | Host pathfinding queue | Spread resumable searches across simulation updates under a bounded work budget. Prioritize blocked workers and urgent deliveries, keep ordinary requests from starving, and cancel obsolete requests when tasks or navigation change. |
-| 2 | Stable paths and cache refinement | Retain valid paths across unchanged updates, reduce repeated route requests, and limit invalidation to affected navigation where practical. Bound cached paths and pending requests. |
+| 2 | Cache refinement | Limit shared-cache invalidation to affected navigation where practical. Existing route caches are bounded; bound pending requests when host scheduling is added. |
 | 3 | Flow fields for shared destinations | Reuse a map of travel directions toward common wells, warehouses, and workplaces across many villagers. Account for road speeds and access rules, and retain individual searches for specific acres and other unique destinations. |
 | 4 | Local crowd avoidance | Add local spacing, short waits, or avoidance adjustments where villagers crowd together. Keep moving villagers out of the static obstacle map so crowds do not trigger constant global replanning. |
 | 5 | Hierarchical routing | Route between connected regions first, then calculate detailed paths within those regions. Define connections across chunk boundaries and handle navigation changes or unavailable terrain. |

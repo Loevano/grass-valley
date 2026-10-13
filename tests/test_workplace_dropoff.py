@@ -47,6 +47,24 @@ class WorkplaceDropoff(unittest.TestCase):
         work_cycles.advance(self.town, self.town, self.worker, self.building, self.source, 0, 3)
         self.assertEqual(json.dumps(samples), first, 'Later cycles cannot mutate earlier playback')
 
+    def test_blocked_return_replans_to_workplace_instead_of_resource(self):
+        self.worker['work_animation'] = {
+            'task': ['woodcutting', 'woodcutter', 3, 3, 'tree', 3, 1],
+            'x': 2, 'y': 1, 'phase': 'returning', 'elapsed': 0, 'version': 1,
+            'waterReady': False, 'facing': 1, 'path': [{'x': 2, 'y': 2}, {'x': 3, 'y': 2}]}
+        logistics.record_output(self.town, self.building, 'wood', 5, self.worker)
+        obstacle = {'kind': 'rock', 'x': 2, 'y': 2}
+        self.town['map_resources'].append(obstacle)
+        work_cycles.advance(self.town, self.town, self.worker, self.building, self.source, 0, .1)
+        self.assertEqual(self.worker['work_animation']['phase'], 'waiting')
+        self.town['map_resources'].remove(obstacle)
+        work_cycles.advance(self.town, self.town, self.worker, self.building, self.source, 0, 0)
+        animation = self.worker['work_animation']
+        self.assertEqual(animation['phase'], 'returning')
+        end = animation['path'][-1]
+        self.assertEqual(abs(end['x'] - 3) + abs(end['y'] - 3), 1)
+        self.assertEqual(self.worker['pending_output'], {'wood': 5})
+
     def test_stock_changes_after_return_and_unloading_only(self):
         before = self.town['wood']
         logistics.record_output(self.town, self.building, 'wood', 5, self.worker)

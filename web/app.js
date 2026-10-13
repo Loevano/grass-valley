@@ -2315,8 +2315,16 @@ function animatedVillagers(town, seconds, townId=viewed, frameLayout=null){
     const signature=prepared?.signature ?? JSON.stringify([task,trip?[trip.id,trip.operation,trip.workplace,trip.storage,trip.path]:villager.logistics_target]);
     const workerKey=world.shared_map?`${townId}/${index}`:index;
     let state=workers.get(workerKey);
-    const finishingDelivery=state?.transport&&state.path.length&&state.task===task&&state.layout===layout;
-    if(!state || state.layout!==layout || (state.signature!==signature&&!finishingDelivery)){
+    let finishingDelivery=state?.transport&&state.path.length&&state.task===task;
+    if(state&&!state.pendingPlan&&!state.pendingAdvance&&state.layout!==layout
+      &&(state.signature===signature||finishingDelivery)){
+      const routing=region?.routing || (world.shared_map?{...town,roads:mapRoads(town),
+        obstacles:Object.values(world.towns).flatMap(t=>t.buildings)}:town);
+      if(WorkerAnimation.refreshNavigation(state,routing,villager))state.layout=layout;
+      else state.needsPlan=true;
+    }
+    finishingDelivery=finishingDelivery&&!state?.needsPlan;
+    if(!state || state.layout!==layout || state.needsPlan || (state.signature!==signature&&!finishingDelivery)){
       if(region){
         if(state?.pendingPlan?.signature!==signature||state?.pendingPlan?.layout!==layout){
           const version={signature,layout};
@@ -2329,14 +2337,14 @@ function animatedVillagers(town, seconds, townId=viewed, frameLayout=null){
           ClientScene.queue.schedule('plan/'+workerKey,version,WorkerAnimation.planSteps(region.routing,villager,index,previous),planned=>{
             if(workers.get(workerKey)!==state)return;
             const visible=state.playbackQueue?{x:state.x,y:state.y,path:state.path,phase:state.phase,elapsed:state.elapsed,clock:state.clock}:{};
-            Object.assign(state,planned,visible,{signature,layout,task,pendingPlan:null,transport:!!planned.transport});
+            Object.assign(state,planned,visible,{signature,layout,task,pendingPlan:null,needsPlan:false,transport:!!planned.transport});
           });
         }
       }else{
         const visible=state?.playbackQueue?{x:state.x,y:state.y,path:state.path,phase:state.phase,elapsed:state.elapsed,clock:state.clock,
           playbackQueue:state.playbackQueue,hostVersion:state.hostVersion,hostTask:state.hostTask,
           farmAction:state.farmAction,farmField:state.farmField}:{};
-        state=Object.assign(WorkerAnimation.plan(world.shared_map?{...town,roads:mapRoads(town),obstacles:Object.values(world.towns).flatMap(t=>t.buildings),home_hall:town.buildings.find(b=>b.kind==='hall')}:town,villager,index,state),visible,{signature,layout,task});workers.set(workerKey,state);
+        state=Object.assign(WorkerAnimation.plan(world.shared_map?{...town,roads:mapRoads(town),obstacles:Object.values(world.towns).flatMap(t=>t.buildings),home_hall:town.buildings.find(b=>b.kind==='hall')}:town,villager,index,state),visible,{signature,layout,task,needsPlan:false});workers.set(workerKey,state);
       }
     }
     state.roads=roads;

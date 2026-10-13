@@ -18,6 +18,22 @@ class Boats(unittest.TestCase):
                          npcs=[], terrain=['g' * 120] * 120)
         self.town['player']['fishing'] = 40
 
+    def test_pier_and_route_are_retained_during_unchanged_work(self):
+        hut = {'kind': 'fishing_hut', 'x': 2, 'y': 2, 'profession_upgrades': ['boat']}
+        self.town['buildings'].append(hut)
+        self.town['map_resources'] = [{'kind': 'water', 'x': x, 'y': 2} for x in range(3, 9)]
+        fisher = self.town['villagers'][0]
+        fisher.update(job='fishing', logistics_position={'x': 2, 'y': 3})
+        source = self.town['map_resources'][-1]
+        with patch.object(work_cycles, 'route', wraps=work_cycles.route) as route:
+            work_cycles.advance(self.town, self.town, fisher, hut, source, 0, .1)
+            queries = route.call_count
+            path = fisher['work_animation']['path']
+            self.town['buildings'].append({'kind': 'home', 'x': 50, 'y': 50})
+            work_cycles.advance(self.town, self.town, fisher, hut, source, 0, .1)
+            self.assertEqual(route.call_count, queries)
+            self.assertIs(fisher['work_animation']['path'], path)
+
     def test_boat_crew_capacity_leaves_other_fishers_on_the_dock(self):
         hut = {'kind': 'fishing_hut', 'x': 6, 'y': 2, 'settler_level': 4}
         self.town['buildings'].append(hut)
