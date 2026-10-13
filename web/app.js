@@ -1648,7 +1648,7 @@ function renderSelection(town){
       $('upgrade').disabled=!!town.upgrade_remaining || !!item.construction || viewed!==identity?.town_id || !upgrade;
     }
     $('selection-move').hidden=viewed!==identity?.town_id;
-    $('selection-move').textContent=!town.sandbox&&town.coins?'Move building · 1 coin':'Move building · Free';
+    $('selection-move').textContent=!town.sandbox&&town.coins?'Move · 1 coin':'Move · Free';
     $('selection-move').onclick=()=>{const index=selection.index;openPanel('build');tool='move';moveIndex=index;render();};
     $('selection-destroy').hidden=viewed!==identity?.town_id || item.kind==='hall';
     if(item.construction){
