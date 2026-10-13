@@ -75,7 +75,7 @@ const run=new Function('document','window','localStorage','setTimeout','clearTim
     const picker=controls().find(c=>c.attributes?.['aria-label']==='Settler to add');
     check(picker.children[0].disabled&&picker.children[0].textContent.includes('Requires 10 milling'),'Unqualified settler shows required personal practice');
     check(picker.children[0].textContent.includes('Resting'),'Resting cottage residents appear first and are labeled in the worker picker');
-    check(!picker.children[1].disabled&&picker.children[1].textContent.includes('1.25× output'),'Qualified settler shows natural output bonus');
+    check(!picker.children[1].disabled&&picker.children[1].textContent.includes('1.25×')&&!picker.children[1].textContent.includes('output'),'Qualified settler shows natural output bonus without the output suffix');
     check(picker.value==='1','Picker defaults to an eligible settler');
     button('Add worker').onclick();check(commands.at(-1).index===1&&commands.at(-1).building_index===3,'Bakery assignment targets qualified settler');
     town.villagers.push(
