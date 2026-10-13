@@ -1223,11 +1223,15 @@ def command(town, data, world=None):
                     villager.pop('production_work', None)
         elif action == 'set_crop':
             crop = data.get('crop')
-            if building['kind'] != 'acre' or crop not in economy.CROPS:
-                raise ValueError('Choose an acre and a crop.')
+            if building['kind'] not in {'acre', 'farm'} or crop not in economy.CROPS:
+                raise ValueError('Choose an acre or farm and a crop.')
             if town['level'] < economy.CROPS[crop]:
                 raise ValueError('Upgrade the hall to unlock this crop.')
-            building['crop'] = crop
+            acres = ([building] if building['kind'] == 'acre' else
+                     [a for a in town['buildings'] if a['kind'] == 'acre'
+                      and a.get('farm_index') == index])
+            for acre in acres:
+                acre['crop'] = crop
         elif action in {'buy_animal', 'breed_animal'}:
             animal = data.get('animal')
             spec = economy.ANIMALS.get(animal)

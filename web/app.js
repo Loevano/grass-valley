@@ -1389,13 +1389,22 @@ function renderProfession(town,item,index,target,upgrades,details,boats,unlocked
   }
   renderRecipes(town,item,index,target);
   if(item.kind==='butcher')renderAnimalButchery(town,item,index,target);
-  if(item.kind==='acre'){
-    const chooser=document.createElement('select');chooser.setAttribute('aria-label','Crop');
+  if(item.kind==='acre'||item.kind==='farm'){
+    const acres=item.kind==='acre'?[item]:town.buildings.filter(a=>a.kind==='acre'&&a.farm_index===index);
+    const crops=new Set(acres.map(a=>a.crop || 'vegetables'));
+    const chooser=document.createElement('select');chooser.setAttribute('aria-label',item.kind==='farm'?'Crop for all acres':'Crop');
+    if(crops.size!==1){
+      const option=document.createElement('option');option.value='';option.textContent=acres.length?'Mixed crops':'No acres yet';option.disabled=true;chooser.append(option);
+    }
     for(const [key,level] of Object.entries(catalog.crops)){
       if(town.level<level)continue;
       const option=document.createElement('option');option.value=key;option.textContent=goodName(key);chooser.append(option);
     }
-    chooser.value=item.crop || 'vegetables';chooser.disabled=!owner;chooser.onchange=()=>act({action:'set_crop',index,crop:chooser.value});target.append(chooser);
+    chooser.value=crops.size===1?[...crops][0]:'';chooser.disabled=!owner||!acres.length;
+    chooser.onchange=()=>{if(!chooser.disabled&&chooser.value)act({action:'set_crop',index,crop:chooser.value});};
+    if(item.kind==='farm'){
+      const label=document.createElement('label');label.textContent='Crop for all acres';label.append(chooser);target.append(label);
+    }else target.append(chooser);
   }
   if(['barn','stable'].includes(item.kind)){
     target.append(fact(`${Object.values(item.animals || {}).reduce((a,n)=>a+n,0)} / ${4*buildingLevel(item)}`,'Animal capacity'));

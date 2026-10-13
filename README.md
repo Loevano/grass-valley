@@ -284,6 +284,10 @@ the Python host, refresh both browsers, and create a new world to use the shared
   than three steps from water. Farms without
   nearby acres continue their existing production. Acres are saved with their farm
   association; moving the farm out of reach pauses work on those fields.
+  In the farm's **Production** section, use **Crop for all acres** to change every
+  linked acre to one unlocked crop, including acres still under construction.
+  The selector shows **Mixed crops** when the acres grow different types.
+  Individual acres can still have their crop changed separately.
 - Click a building, moving villager, or resource to open its information panel.
   Click the town hall for milestone progress and its upgrade. Close panels with
   Escape. On small screens, panels appear as a bottom drawer.
