@@ -431,6 +431,8 @@ the Python host, refresh both browsers, and create a new world to use the shared
   saving and moving. Changing the crop selection applies at the next seeding.
   Field visuals follow the farmer's confirmed animation: furrows, seedlings,
   watering changes, and cleared crops appear when the corresponding action finishes.
+  Missed updates and resumed work reconnect at walking speed rather than making
+  the farmer rush to catch up.
 - Build a fishing hut within three tile steps of water and assign Fishing to
   produce food and learn fishing skill. Fishers cast into the water, wait by a
   rippling float, reel in a fish, and carry their catch back to the hut.

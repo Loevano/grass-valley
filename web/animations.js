@@ -362,6 +362,15 @@ const WorkerAnimation = (() => {
       state.path=path || [];state.phase=path===null?'waiting':path.length?'walking':'working';state.elapsed=0;state.fishingCaught=null;state.waterReady=false;
     }
   }
+  function joinPlayback(samples, position) {
+    const start=samples[0],duration=Math.hypot(start.x-position.x,start.y-position.y)/1.8;
+    if(duration<1e-9)return samples;
+    // Missed updates and job changes can leave a gap before the first confirmed
+    // waypoint. Walk that gap separately; changing just its starting position
+    // compresses the distance into the next waypoint's short (or zero) time.
+    return [{...start,x:position.x,y:position.y,time:0,phase:'walking',elapsed:0,farmAction:null},
+      ...samples.map(sample=>({...sample,time:sample.time+duration}))];
+  }
   // Play confirmed host waypoints one simulation cycle behind. No route searches.
   function playback(state, host, seconds) {
     const task=JSON.stringify(host.task);
@@ -374,17 +383,14 @@ const WorkerAnimation = (() => {
           farmAction:host.farmAction,farmField:host.playback.at(-1)?.farmField,
           waterReady:host.waterReady,waterSource:host.waterSource,path:[]});
       }else if(host.playback?.length){
-        const samples=host.playback.map(p=>({...p}));
-        // Task changes and recovery can relocate the host. Blend from the visible
-        // endpoint rather than applying that relocation in a single frame.
+        const hostSamples=host.playback.map(p=>({...p}));
         const tail=state.playbackQueue.at(-1)?.samples.at(-1) || state;
-        samples[0]={...samples[0],x:tail.x,y:tail.y};
-        state.playbackQueue.push({samples,time:0,index:0});
+        state.playbackQueue.push({samples:joinPlayback(hostSamples,tail),hostSamples,time:0,index:0});
         // A background tab may miss updates. Bound retained presentation history.
         if(state.playbackQueue.length>3){
           state.playbackQueue.splice(0,state.playbackQueue.length-3);
-          Object.assign(state.playbackQueue[0],{time:0,index:0});
-          Object.assign(state.playbackQueue[0].samples[0],{x:state.x,y:state.y});
+          const next=state.playbackQueue[0];
+          Object.assign(next,{samples:joinPlayback(next.hostSamples,state),time:0,index:0});
         }
       }
       state.hostVersion=host.version;state.hostTask=task;state.hostWork=true;

@@ -79,7 +79,7 @@ assert.equal(Animation.fieldPresentation(farmerState,acre).stage,'plowed','Seedi
 assert.equal(Animation.fieldPresentation(farmerState,secondAcre).stage,'plowed','A queued acre waits for arrival');
 Animation.playback(farmerState,secondSowing,1);
 assert.equal(Animation.fieldPresentation(farmerState,acre).stage,'sprouting','Seedlings appear at action completion');
-Animation.playback(farmerState,secondSowing,4);
+Animation.playback(farmerState,secondSowing,5);
 assert.equal(Animation.fieldPresentation(farmerState,acre),undefined,'Finished fields resume independent growth');
 assert.equal(JSON.stringify([firstSowing,secondSowing]),snapshots,'Crop presentation preserves authoritative snapshots');
 
@@ -87,7 +87,38 @@ const harvest={...host(4,[fieldSample(0,acre,'ripe','working','harvesting'),
   fieldSample(2,acre,'unplowed','harvest_ready','harvesting'),
   fieldSample(3,acre,'unplowed','harvest_ready','harvesting')]),task:firstSowing.task};
 acre.field={stage:'unplowed',cycle:1,elapsed:0,progress:0};
-Animation.playback(farmerState,harvest,1.9);
+Animation.playback(farmerState,harvest,1.9+1/1.8);
 assert.equal(Animation.fieldPresentation(farmerState,acre).stage,'ripe','Ripe crops remain until the sickle animation finishes');
 Animation.playback(farmerState,harvest,.2);
 assert.equal(Animation.fieldPresentation(farmerState,acre).stage,'unplowed','Harvest completion clears the crop');
+
+// A missing update must not compress several tiles into the next short step.
+const delayed={x:0,y:0,clock:0};
+Animation.playback(delayed,host(1,[sample(0,0,0),sample(3,0,0)]),0);
+const missing=host(3,[sample(0,4,0),sample(.2,4.36,0),sample(3,4.36,0,'working')]);
+const missingSnapshot=JSON.stringify(missing);
+Animation.playback(delayed,missing,.1);
+assert(Math.abs(delayed.x-.18)<1e-9,'A missed update reconnects at normal walking speed');
+assert.equal(JSON.stringify(missing),missingSnapshot,'Reconnecting does not retime the authoritative snapshot');
+
+// Hosts can emit multiple action changes at time zero when resuming a job.
+const resumed={x:0,y:0,clock:0,playbackQueue:[],hostVersion:undefined};
+const resuming={...host(1,[sample(0,5,0,'idle'),sample(0,5,0,'working'),sample(2,5,0,'working')]),task:['farming']};
+Animation.playback(resumed,resuming,0);
+assert.equal(resumed.x,0,'Duplicate time-zero samples cannot teleport a resumed farmer');
+Animation.playback(resumed,resuming,.1);
+assert(Math.abs(resumed.x-.18)<1e-9,'Resumed workers walk before starting their action');
+assert.equal(resumed.phase,'walking');
+
+// Trimming a backed-up tab must reconnect from its visible position, with time
+// for the gap, without retaining the connector for the discarded animations.
+const backlog={x:0,y:0,clock:0};
+Animation.playback(backlog,host(1,[sample(0,0,0),sample(3,0,0)]),0);
+for(let version=2;version<=7;version++){
+  const x=version*3;
+  Animation.playback(backlog,host(version,[sample(0,x,0),sample(0,x,0,'working'),sample(3,x,0,'working')]),0);
+  assert.equal(backlog.x,0,'Queue trimming preserves the visible position');
+  assert(backlog.playbackQueue.length<=3,'Playback history stays bounded');
+}
+Animation.playback(backlog,host(7,[sample(0,21,0),sample(0,21,0,'working'),sample(3,21,0,'working')]),.1);
+assert(Math.abs(backlog.x-.18)<1e-9,'Trimmed playback reconnects at walking speed');
