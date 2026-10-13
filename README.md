@@ -67,6 +67,14 @@ up when a sleeping area becomes active again. Changed chunks save separately.
 Map refreshes send only terrain and resource chunks the browser needs, and walking
 saves with the regular three-second simulation update.
 
+New worlds have a broad western swamp around Reedhaven, an eastern desert around
+Sunwell, and a northwestern ice region around Frostbrook. A northern river and
+western tributary feed a large southern lake. Smaller fishing lakes sit near each
+starting town, alongside the existing central lake and its treasure islands.
+Region edges and river bends vary with the world's seed and continue across
+terrain chunks. Existing worlds retain their original terrain generator, including
+unexplored areas; create a new world to see this layout.
+
 Explorable worlds also have three small wilderness villages: Reedhaven in the
 swamp, Sunwell in the desert, and Frostbrook on the snowy ice fields. Each has
 eight themed cottages and workshops, an inn, a village hall, an animal shelter,

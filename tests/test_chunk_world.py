@@ -131,29 +131,30 @@ class ExplorableMap(unittest.TestCase):
         self.assertLessEqual(len(self.manager.snapshots), len(self.manager.records) + 1)
 
     def test_removals_and_regrowth_survive_eviction_and_reload(self):
-        self.visit(80, 80)
+        # The northwestern corner is now ice; use the southeastern forest.
+        self.visit(440, 440)
         landscape = self.world['shared_map']
-        tree = next(r for r in landscape['map_resources'] if r['kind'] == 'tree' and r['x'] < 120
+        tree = next(r for r in landscape['map_resources'] if r['kind'] == 'tree' and r['x'] > 360
                     and landscape['terrain'][r['y']][r['x']] == 'f')
         position = tree['x'], tree['y']
         server.economy.take_supply(landscape, tree, 100)
         self.assertTrue(any((r['x'], r['y']) == position for r in landscape['tree_stumps']))
-        self.visit(440, 440)
-        self.world['shared_map']['chunk_clock'] += 600
         self.visit(80, 80)
+        self.world['shared_map']['chunk_clock'] += 600
+        self.visit(440, 440)
         server.prepare_landscapes(self.world, regenerate=True)
         self.assertTrue(any((r['x'], r['y']) == position for r in landscape['map_resources']))
         # A chest removal must remain permanent even outside the working set.
-        chest = {'kind': 'chest', 'x': 80, 'y': 80}
+        chest = {'kind': 'chest', 'x': 440, 'y': 440}
         landscape['map_resources'].append(chest)
         self.manager.flush()
         landscape['map_resources'].remove(chest)
-        self.visit(440, 440)
+        self.visit(80, 80)
         stored = json.loads(json.dumps(export_world(self.world)))
         restored = attach(stored, self.root / 'save_chunks')
-        stored['towns']['own']['player'].update(x=80, y=80)
+        stored['towns']['own']['player'].update(x=440, y=440)
         restored.activate()
-        self.assertFalse(any(r['kind'] == 'chest' and r['x'] == 80 and r['y'] == 80
+        self.assertFalse(any(r['kind'] == 'chest' and r['x'] == 440 and r['y'] == 440
                              for r in stored['shared_map']['map_resources']))
 
     def test_sleeping_stumps_use_reduced_regrowth_rate(self):

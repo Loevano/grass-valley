@@ -50,19 +50,21 @@ backend structure and animation priorities, balancing, game design, and artwork.
 
 ## Confirmed terrain direction
 
-**Planned; not implemented:** the landscape should feel less eclectic, with large,
-coherent terrain regions and natural transitions rather than a patchwork of small,
-unrelated biomes.
+**Implemented for new explorable worlds:** large, coherent terrain regions use
+seeded world coordinates, with irregular edges and smaller surrounding patches.
 
-- Consider an icy region in one corner of the world; its exact placement is open.
-- Create a larger main swamp with smaller swamp spots around its edges.
-- Include large rivers and a major lake, plus smaller lakes near cities.
-- Make deserts substantial, continuous regions. Small sand patches can still
-  exist elsewhere.
+- Ice occupies the northwestern corner around Frostbrook.
+- A western swamp surrounds Reedhaven, with smaller marsh pockets and pools.
+- An eastern desert surrounds Sunwell; small sand patches remain elsewhere.
+- A northern river and western tributary feed a major southern lake.
+- Each starting town has a smaller fishing lake nearby. The central treasure
+  lake, its islands, starter clearings, and paths between towns remain available.
 
-Region sizes and water layouts remain open. See the
-[game design reference](GAME_DESIGN.md#terrain-and-water) and
-[roadmap](ROADMAP.md#coherent-terrain-regions-and-water) for planned work.
+The main swamp and desert span roughly 200–240 tiles across a 480-tile world;
+the southern lake spans roughly 150 by 125 tiles. Seeds vary region centers,
+edges, and river bends. Existing saves retain their original generator, including
+unexplored chunks; this layout requires creating a new world. See the
+[game design reference](GAME_DESIGN.md#terrain-and-water).
 
 ## Questions to answer later
 
