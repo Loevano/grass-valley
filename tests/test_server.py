@@ -100,7 +100,7 @@ class VillageRules(unittest.TestCase):
         command(self.town, {'action': 'destroy', 'index': 1})
         self.assertEqual(self.town['buildings'][2]['farm_index'], 1)
         command(self.town, {'action': 'destroy', 'index': 1})
-        self.assertIsNone(self.town['buildings'][1]['farm_index'])
+        self.assertEqual([b['kind'] for b in self.town['buildings']], ['hall'])
 
     def test_destroy_workplace_clears_targets_and_pauses_production(self):
         command(self.town, {'action': 'build', 'kind': 'woodcutter', 'x': 2, 'y': 2})

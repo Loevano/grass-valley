@@ -46,15 +46,20 @@ class WoodChain(unittest.TestCase):
                     server.command(self.town, {'action': 'upgrade_capacity', 'index': index})
                 self.assertEqual(self.town, before)
 
-    def test_storage_upgrade_allows_processing_past_old_buffer_limit(self):
+    def test_storage_upgrade_allows_processing_past_base_output_limit(self):
         building, _ = self.add('sawpit', level=2, input_buffer={'wood': 20},
-                               output_buffer={'planks': 50})
+                               output_buffer={'planks': 20})
         worker = dict(job='woodworking', woodcutting=10, talents={})
         self.assertEqual(economy.storage_allocations(building), {'wood': 37.5, 'planks': 25})
         self.assertEqual(logistics.produce(self.town, building, worker, elapsed=6), 'Working')
         self.assertEqual(worker['pending_output'], {'planks': 1})
         self.assertEqual(building['input_buffer'], {'wood': 18})
         self.assertEqual(server.production_bonus(building), 0)
+        for _ in range(4):
+            self.assertEqual(logistics.produce(self.town, building, worker, elapsed=6), 'Working')
+        self.assertEqual(worker['pending_output'], {'planks': 5})
+        self.assertEqual(logistics.produce(self.town, building, worker, elapsed=6), 'Workplace buffer full')
+        self.assertEqual(building['input_buffer'], {'wood': 10})
 
     def test_crafted_saw_scales_real_inputs_without_accelerating_training(self):
         building, _ = self.add('sawpit', input_buffer={'wood': 5})

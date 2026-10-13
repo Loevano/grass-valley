@@ -218,6 +218,141 @@ class ResourceLogistics(unittest.TestCase):
         self.assertEqual(self.town['coins'], coins)
         self.assertEqual(economy.quantity(self.town, 'planks'), 20)
 
+    def start_plank_sale(self, adjacent=False):
+        economy.ensure_inventory(self.town)
+        source = self.add('storehouse', x=3, y=2, stored_goods={'planks': 20},
+                          storage_enabled={'planks': True})
+        market = self.add('market', x=7, y=2)
+        worker = self.assign(0, market)
+        economy.add_stock(self.town, 'planks', 20)
+        server.command(self.town, {'action': 'configure_market_sale', 'resource': 'planks',
+                                  'enabled': True, 'cap': 20})
+        outward = [(3, 1)] if adjacent else [(x, 1) for x in range(7, 2, -1)]
+        paths = iter([outward, [(x, 1) for x in range(3, 8)]])
+        landscape = {'buildings': [], 'map_resources': []}
+        logistics.start_trip(self.town, landscape, worker, source, market, 'sell',
+                             lambda *_: next(paths), hauler=True)
+        return source, market, worker, landscape
+
+    def test_merchant_removes_planks_at_pickup_and_sells_only_at_market(self):
+        source, _, worker, landscape = self.start_plank_sale()
+        coins = self.town['coins']
+        logistics.advance_trip(self.town, landscape, worker, .6)
+        self.assertEqual(source['stored_goods']['planks'], 20)
+        self.assertEqual(economy.quantity(self.town, 'planks'), 20)
+        logistics.advance_trip(self.town, landscape, worker, 1.7)
+        self.assertTrue(worker['logistics_trip']['picked_up'])
+        self.assertEqual(worker['logistics_trip']['cargo'], {'planks': 10})
+        self.assertEqual(source['stored_goods']['planks'], 10)
+        self.assertEqual(economy.quantity(self.town, 'planks'), 10)
+        self.assertEqual(self.town['coins'], coins)
+        economy.spend(self.town, {'planks': 10})
+        logistics.advance_trip(self.town, landscape, worker, 3)
+        self.assertEqual(source['stored_goods']['planks'], 0)
+        self.assertEqual(economy.quantity(self.town, 'planks'), 0)
+        self.assertEqual(self.town['coins'], coins + 10 * economy.sale_price('planks'))
+        self.assertEqual(self.town['market_sales'], 10)
+        self.assertNotIn('logistics_trip', worker)
+
+    def test_collected_sale_cargo_survives_reload_without_another_withdrawal(self):
+        _, _, worker, landscape = self.start_plank_sale()
+        logistics.advance_trip(self.town, landscape, worker, 2.3)
+        restored = json.loads(json.dumps(self.town))
+        economy.ensure_inventory(restored)
+        worker = restored['villagers'][0]
+        coins = restored['coins']
+        logistics.advance_trip(restored, landscape, worker, 3)
+        self.assertEqual(economy.quantity(restored, 'planks'), 10)
+        self.assertEqual(restored['buildings'][1]['stored_goods']['planks'], 10)
+        self.assertEqual(restored['coins'], coins + 10 * economy.sale_price('planks'))
+
+    def test_adjacent_merchant_collects_once_before_walking(self):
+        source, _, worker, landscape = self.start_plank_sale(adjacent=True)
+        logistics.advance_trip(self.town, landscape, worker, 0)
+        self.assertEqual(source['stored_goods']['planks'], 10)
+        logistics.advance_trip(self.town, landscape, worker, 0)
+        self.assertEqual(source['stored_goods']['planks'], 10)
+        self.assertEqual(worker['logistics_trip']['cargo'], {'planks': 10})
+
+    def test_old_returning_sale_trip_collects_stock_once_when_resumed(self):
+        source, _, worker, landscape = self.start_plank_sale()
+        worker['logistics_trip']['step'] = worker['logistics_trip']['pickup_step']
+        logistics.advance_trip(self.town, landscape, worker, 0)
+        self.assertEqual(source['stored_goods']['planks'], 10)
+        logistics.advance_trip(self.town, landscape, worker, 3)
+        self.assertEqual(source['stored_goods']['planks'], 10)
+        self.assertEqual(economy.quantity(self.town, 'planks'), 10)
+        self.assertEqual(self.town['market_sales'], 10)
+
+    def test_unavailable_sale_source_salvages_carried_goods_at_hall(self):
+        source, _, worker, landscape = self.start_plank_sale()
+        logistics.advance_trip(self.town, landscape, worker, 2.3)
+        source['x'] = 8
+        logistics.advance_trip(self.town, landscape, worker, 3)
+        self.assertEqual(source['stored_goods']['planks'], 10)
+        self.assertEqual(self.town['buildings'][0]['stored_goods']['planks'], 10)
+        self.assertEqual(economy.quantity(self.town, 'planks'), 20)
+        self.assertNotIn('logistics_trip', worker)
+
+    def test_second_merchant_cannot_collect_stock_below_trigger(self):
+        source, _, worker, landscape = self.start_plank_sale()
+        logistics.advance_trip(self.town, landscape, worker, 2.3)
+        other = self.town['villagers'][1]
+        self.assertEqual(logistics.pickup_sale(self.town, source, other), {})
+        self.assertEqual(source['stored_goods']['planks'], 10)
+        self.assertEqual(economy.quantity(self.town, 'planks'), 10)
+
+    def test_disabling_collected_sale_restores_goods_without_payment(self):
+        source, _, worker, landscape = self.start_plank_sale()
+        coins = self.town['coins']
+        logistics.advance_trip(self.town, landscape, worker, 2.3)
+        server.command(self.town, {'action': 'configure_market_sale', 'resource': 'planks',
+                                  'enabled': False, 'cap': 20})
+        logistics.advance_trip(self.town, landscape, worker, 3)
+        self.assertEqual(source['stored_goods']['planks'], 20)
+        self.assertEqual(economy.quantity(self.town, 'planks'), 20)
+        self.assertEqual(self.town['coins'], coins)
+        self.assertEqual(self.town.get('market_sales', 0), 0)
+
+    def test_smaller_sale_batch_returns_excess_collected_goods(self):
+        source, _, worker, landscape = self.start_plank_sale()
+        logistics.advance_trip(self.town, landscape, worker, 2.3)
+        server.command(self.town, {'action': 'configure_market_sale', 'resource': 'planks',
+                                  'enabled': True, 'cap': 20, 'amount': 4})
+        logistics.advance_trip(self.town, landscape, worker, 3)
+        self.assertEqual(source['stored_goods']['planks'], 16)
+        self.assertEqual(economy.quantity(self.town, 'planks'), 16)
+        self.assertEqual(self.town['market_sales'], 4)
+
+    def test_cancelled_merchant_trip_restores_cargo_once(self):
+        for cancellation in ('blocked', 'remove_settler', 'destroy_source', 'destroy_market'):
+            with self.subTest(cancellation=cancellation):
+                self.setUp()
+                source, market, worker, landscape = self.start_plank_sale()
+                coins = self.town['coins']
+                logistics.advance_trip(self.town, landscape, worker, 2.3)
+                if cancellation == 'blocked':
+                    landscape['map_resources'] = [{'kind': 'rock', 'x': 4, 'y': 1}]
+                    logistics.advance_trip(self.town, landscape, worker, 3)
+                elif cancellation == 'remove_settler':
+                    server.command(self.town, {'action': 'remove_settler', 'index': 0})
+                else:
+                    target = source if cancellation == 'destroy_source' else market
+                    server.command(self.town, {'action': 'destroy', 'index': self.town['buildings'].index(target)})
+                logistics.cancel_trip(self.town, worker)
+                self.assertEqual(economy.quantity(self.town, 'planks'), 20)
+                self.assertEqual(sum(economy.inventory(b).get('planks', 0) for b in self.town['buildings']), 20)
+                self.assertEqual(self.town['coins'], coins)
+                self.assertNotIn('logistics_trip', worker)
+
+    def test_collected_sale_goods_count_toward_production_cap_until_sold(self):
+        _, _, worker, landscape = self.start_plank_sale()
+        self.town['rules']['production_caps'] = {'planks': 20}
+        logistics.advance_trip(self.town, landscape, worker, 2.3)
+        self.assertEqual(economy.production_room(self.town, 'planks'), 0)
+        logistics.advance_trip(self.town, landscape, worker, 3)
+        self.assertEqual(economy.production_room(self.town, 'planks'), 10)
+
     def test_supply_comes_from_the_building_visited(self):
         store = self.add('storehouse', storage_allocations={'wood': 100})
         saw = self.add('sawpit')
@@ -310,12 +445,69 @@ class ResourceLogistics(unittest.TestCase):
     def test_spending_output_releases_a_full_processor(self):
         saw = self.add('sawpit', input_buffer={'wood': 10})
         worker = self.assign(0, saw)
-        logistics.record_output(self.town, saw, 'planks', 49.5)
+        logistics.record_output(self.town, saw, 'planks', 19.5)
         self.assertEqual(logistics.produce(self.town, saw, worker, elapsed=economy.production_seconds(saw)), 'Workplace buffer full')
         economy.spend(self.town, {'planks': 5})
         self.assertNotIn('buffer_full', saw)
         self.assertEqual(logistics.produce(self.town, saw, worker, elapsed=economy.production_seconds(saw)), 'Working')
         self.assertEqual(saw['input_buffer']['wood'], 8)
+
+    def test_sawpit_reserves_returning_planks_against_its_output_limit(self):
+        saw = self.add('sawpit', stored_goods={'planks': 18}, input_buffer={'wood': 10})
+        worker = self.assign(0, saw)
+        economy.ensure_inventory(self.town)
+        economy.add_stock(self.town, 'planks', 18)
+        duration = economy.production_seconds(saw)
+        self.assertEqual(logistics.produce(self.town, saw, worker, duration), 'Working')
+        self.assertEqual(logistics.produce(self.town, saw, worker, duration), 'Working')
+        inputs, practice = dict(saw['input_buffer']), worker['woodworking']
+        self.assertEqual(logistics.produce(self.town, saw, worker, duration), 'Workplace buffer full')
+        self.assertEqual(saw['input_buffer'], inputs)
+        self.assertEqual(worker['woodworking'], practice)
+        self.assertEqual(worker['pending_output'], {'planks': 2})
+        logistics.drop_off(self.town, saw, worker)
+        self.assertEqual(economy.inventory(saw)['planks'], 20)
+        self.assertEqual(economy.quantity(self.town, 'planks'), 20)
+        self.assertEqual(economy.local_room(saw, 'wood'), 30)
+
+    def test_legacy_excess_planks_are_preserved_until_used(self):
+        saw = self.add('sawpit', output_buffer={'planks': 49}, input_buffer={'wood': 17})
+        worker = self.assign(0, saw)
+        economy.ensure_inventory(self.town)
+        duration = economy.production_seconds(saw)
+        self.assertEqual(logistics.produce(self.town, saw, worker, duration), 'Workplace buffer full')
+        self.assertEqual(saw['output_buffer'], {'planks': 49})
+        self.assertEqual(saw['input_buffer'], {'wood': 17})
+        economy.spend(self.town, {'planks': 30})
+        self.assertEqual(logistics.produce(self.town, saw, worker, duration), 'Working')
+        self.assertEqual(saw['pending_output'], {'planks': 1})
+
+    def test_producer_hauls_at_resource_limit_before_total_buffer_is_full(self):
+        saw = self.add('sawpit', output_buffer={'planks': 20})
+        store = self.add('storehouse', x=8, storage_enabled={'planks': True})
+        worker = self.assign(0, saw)
+        economy.ensure_inventory(self.town)
+        self.assertTrue(logistics.worker(self.town, self.town, worker, saw,
+                                         server.construction_route, 0))
+        trip = worker['logistics_trip']
+        self.assertEqual(trip['operation'], 'collect')
+        self.assertEqual(trip['storage'], {k: store[k] for k in ('kind', 'x', 'y')})
+        self.assertEqual(trip['cargo'], {'planks': 20})
+
+    def test_output_batches_share_food_and_total_space_without_mutating_stock(self):
+        cases = [
+            ({'kind': 'barn', 'output_buffer': {'milk': 19}}, {'milk': .75, 'eggs': .75}),
+            ({'kind': 'smokehouse', 'stored_goods': {'sturgeon': 14}}, {'smoked_fish': 3}),
+            ({'kind': 'sawpit', 'stored_goods': {'wood': 30, 'planks': 19},
+              'pending_output': {'planks': .5}}, {'planks': 1}),
+        ]
+        for building, outputs in cases:
+            with self.subTest(kind=building['kind']):
+                before = copy.deepcopy(building)
+                self.assertFalse(logistics.output_fits(building, outputs))
+                self.assertEqual(building, before)
+        self.assertTrue(logistics.output_fits({'kind': 'sawpit', 'stored_goods': {'planks': 19}},
+                                             {'planks': 1}))
 
     def test_producer_delivers_and_returns_without_counting_output_twice(self):
         b = self.add('woodcutter', output_buffer={'wood': 50})

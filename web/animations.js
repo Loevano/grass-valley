@@ -284,7 +284,8 @@ const WorkerAnimation = (() => {
     }
     return {...position,phase:path===null?'waiting':path.length?'walking':source?'working':'idle',
       path:path || [],source,home,pier,workSpot,castTarget,fishingCaught:null,blocked,size,bounds,roads,roadMode,boating,sailing,boatCapacity:[0,5,10,20][boatLevel(home)],boatLoad:0,workDuration:villager.job==='farming'?8:3.2,
-      farming:villager.job==='farming'&&!villager.construction_target,water:town.map_resources.filter(r=>r.kind==='water'),waterReady:false,
+      farming:villager.job==='farming'&&!villager.construction_target,
+      water:[...town.map_resources.filter(r=>r.kind==='water'),...(town.obstacles || town.buildings).filter(b=>b.kind==='well'&&!b.construction).map(b=>({kind:'well',x:b.x,y:b.y}))],waterReady:false,
       stationary:!!source&&source.kind===workplace?.kind&&distance(source,workplace)===0&&!villager.construction_target,
       construction:!!villager.construction_target,elapsed:0,clock:state?.clock || index*.37,facing:state?.facing || 1};
   }

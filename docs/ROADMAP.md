@@ -98,6 +98,16 @@ starting capacities. Upgrades unlock additional slots up to each limit.
 
 ### Farming
 
+Farm acre placement and work reach now cover a 7×7 square aligned with map tiles,
+including its corners. Farms can change the crop of all their linked acres in one
+action; individual acre crop selection remains available. Moving or destroying a
+farm now includes its linked acres; moves preserve their layout and require all
+destination tiles to be valid. Farming chain balancing below remains planned.
+
+Completed wells now provide water for crop watering alongside natural water
+sources. Farmers fetch from the nearest reachable source; wells need no staff.
+Farming chain balancing remains planned.
+
 - Farmers supply crops to the mill, which supplies ingredients to the bakery.
 - Balance the chains around their worker limits, ingredient demand, and delivered
   supply, including materials needed elsewhere in the village.
@@ -118,6 +128,12 @@ and an Upgrade action. Completed upgrades show a status without a disabled butto
 the purchase popup retains full benefits and requirements. The compact rows retain
 the implemented wood worker limits and storage upgrades. Farming and fishing
 balancing, storage scaling, and worker limits below remain planned.
+
+Production now respects each resource's existing storage allowance, including
+pending deliveries and shared food space. Producers haul when an allowance fills;
+existing excess stock is preserved. Workplace storage totals appear beside the
+Storage heading. Wood-building upgrades increase these allowances by 25% per
+level; storage scaling for farming and fishing remains planned.
 
 - Production building upgrades increase internal storage or worker capacity.
 - Items and worker skill levels improve conversion rates and unlock available

@@ -5,6 +5,7 @@ import secrets
 from equipment import find_item, gathering_bonus
 
 BUILDINGS = {
+    'well': {'label': 'Well', 'level': 1, 'wood': 15, 'slots': 0},
     'barn': {'label': 'Barn', 'level': 2, 'wood': 25, 'job': 'husbandry', 'slots': 2},
     'sawpit': {'label': 'Sawpit', 'level': 3, 'wood': 25, 'job': 'woodworking', 'slots': 1},
     'mill': {'label': 'Mill', 'level': 4, 'wood': 30, 'planks': 5, 'job': 'milling', 'slots': 2},
@@ -44,6 +45,13 @@ CRAFTED_WORKER_TOOLS = {
 }
 BUTCHER_SECONDS = 60
 ANIMAL_MEAT = {'chicken': 2, 'sheep': 4, 'pig': 8, 'cow': 10}
+
+
+def water_sources(landscape):
+    """Water for fetching; wells remain buildings and never become fishing tiles."""
+    yield from (r for r in landscape['map_resources'] if r['kind'] == 'water')
+    yield from ({'kind': 'well', 'x': b['x'], 'y': b['y']}
+                for b in landscape['buildings'] if b['kind'] == 'well' and 'construction' not in b)
 
 
 def animal_growth(building, animal):
@@ -321,6 +329,10 @@ def production_room(town, key):
     for building in town.get('buildings', []):
         total += building.get('pending_output', {}).get(key, 0)
         total += building.get('input_buffer', {}).get(key, 0)
+    for villager in town.get('villagers', []):
+        trip = villager.get('logistics_trip', {})
+        if trip.get('operation') == 'sell' and trip.get('picked_up') and not trip['delivered']:
+            total += trip['cargo'].get(key, 0)
     return max(0, cap - total)
 
 
@@ -399,7 +411,7 @@ def building_storage_keys(building):
 
 
 def storage_size(building):
-    return 0 if building['kind'] in {'home', 'market', *DECORATIONS} else 200 if building['kind'] == 'hall' else STOREHOUSE_CAPACITIES[building.get('level', 1) - 1] if building['kind'] == 'storehouse' else 50 * storage_multiplier(building)
+    return 0 if building['kind'] in {'home', 'market', 'well', *DECORATIONS} else 200 if building['kind'] == 'hall' else STOREHOUSE_CAPACITIES[building.get('level', 1) - 1] if building['kind'] == 'storehouse' else 50 * storage_multiplier(building)
 
 
 def inventory(building):

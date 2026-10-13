@@ -276,12 +276,27 @@ the Python host, refresh both browsers, and create a new world to use the shared
   food storage, can be hauled and eaten, and can be sold at a market stall.
   Boat upgrades use builders; exploration purchases and upgrades apply
   immediately. Existing boats keep their ownership and start at tier 1.
+- Build a **Well · 15 wood** from **Food & farming** at any hall level. Once
+  construction finishes, workers can fetch its water when watering crops, using
+  the nearest reachable water source. Leave at least one adjacent tile accessible.
+  Wells supply water automatically without assigned workers or upgrades.
 - Select a farm and choose **Build acre · 5 wood**, then click open ground within
-  three tile steps of that farm. Farmers tend its acres and deliver food back to
+  three tiles of that farm in each direction, including diagonals. This creates a
+  7×7 square aligned with the map tiles, with the farm at its center (up to 48 acres).
+  Farmers tend its acres and deliver food back to
   the farm. Farmers fetch reachable water when watering; the farm can be farther
   than three steps from water. Farms without
   nearby acres continue their existing production. Acres are saved with their farm
-  association; moving the farm out of reach pauses work on those fields.
+  association. Moving a farm moves all its linked acres by the same offset,
+  preserving crops, upgrades, stored goods, and assignments. The whole move costs
+  one coin (free in sandbox or with no coins) and requires every destination tile
+  to be clear and inside the building area. The move preview includes the acres.
+  Destroying a farm also destroys its linked acres, including construction sites,
+  releases their assigned workers, and salvages their stored goods at the hall.
+  In the farm's **Production** section, use **Crop for all acres** to change every
+  linked acre to one unlocked crop, including acres still under construction.
+  The selector shows **Mixed crops** when the acres grow different types.
+  Individual acres can still have their crop changed separately.
 - Click a building, moving villager, or resource to open its information panel.
   Click the town hall for milestone progress and its upgrade. Close panels with
   Escape. On small screens, panels appear as a bottom drawer.
@@ -447,6 +462,11 @@ the Python host, refresh both browsers, and create a new world to use the shared
   with the town and do not affect other towns.
 - Workplaces keep fixed storage for their relevant inputs and outputs within a
   50-space budget. The hall has 100 wood and 100 food spaces; homes have none.
+  Production respects each resource's displayed limit, including goods still
+  returning to the workplace and the shared food allowance. A sawpit holds at
+  most 20 planks at level 1 (25 at level 2, 30 at level 3); its wood spaces cannot
+  be used for extra planks. Existing excess stock stays available to spend or haul,
+  and production waits for room.
   Processors fetch ingredients from buildings that actually hold them.
 - Enable only wood in a storehouse near the woods, and only planks in another
   near the city. The first hauler collects wood from the woodcutter and supplies
@@ -455,8 +475,8 @@ the Python host, refresh both browsers, and create a new world to use the shared
 - Assign settlers to a **Storehouse** as haulers. They collect small batches and
   distribute recipe ingredients and animal feed so producers can keep working.
   Without hauling support, producers fetch their own inputs and deliver outputs
-  once their 50-unit buffer fills. Transport takes time and follows open paths;
-  roads speed it up. Full, disabled, or unreachable storage leaves outputs at
+  once their output's storage allowance fills. Transport takes time and follows
+  open paths; roads speed it up. Full, disabled, or unreachable storage leaves outputs at
   their workplace and pauses production when the buffer fills. Moving, upgrading,
   or reassigning during transport preserves goods and cancels affected deliveries.
 - Storehouses become a **Warehouse** at level 5 and upgrade through level 8,
@@ -664,7 +684,11 @@ Check upgraded building artwork and selection with `node tests/test_building_vis
   Sales repeat while stock reaches the cap. Disabling a product keeps its cap for
   later. Rules are saved for the town and shared by its markets. Markets have no
   storage; any goods saved there move to the town hall without changing town totals.
-  Goods stay available during travel; stock and rules are checked before each sale.
+  Stock and the sale trigger are checked at pickup. Collected goods leave storage
+  and available town stock immediately, and the merchant carries them until the
+  sale finishes at the market. Cargo survives saving and loading. Disabling the
+  product before sale or cancelling the trip returns unsold goods to their source
+  (or the town hall if the source is unavailable).
 - **6 — Mining:** produce 5 leather to upgrade. Mines extract iron ore from a vein
   within 10 tile steps. Only some rock outcrops contain iron, marked by a few small mineral dots;
   their terrain and positions stay intact. Ore slowly regenerates.

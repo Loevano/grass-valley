@@ -50,6 +50,20 @@ const run=new Function('document','window','localStorage','setTimeout','clearTim
     check(state.home===farmTown.buildings[1]&&state.source===field,'Farmers deliver crops to the associated farm');
     for(let i=0;i<300&&state.path.length;i++)animation.advance(state,.1,true);
     check(state.phase==='working','Farmer reaches the crop field');
+    viewed='own';tool='move';moveIndex=1;
+    check(placementValid(town,{x:6,y:3},'farm'),'Farm moves can overlap the old linked acre footprint');
+    const before=JSON.stringify(town.buildings);
+    town.map_resources.push({kind:'rock',x:7,y:4});
+    check(!placementValid(town,{x:7,y:3},'farm'),'A blocked acre destination invalidates the farm preview');
+    town.map_resources.pop();
+    check(JSON.stringify(town.buildings)===before,'Farm placement previews preserve authoritative building positions');
+    town.buildings.push({kind:'home',x:7,y:4});
+    check(!placementValid(town,{x:7,y:3},'farm'),'Unrelated buildings block the acre destinations');
+    town.buildings.pop();
+    world.shared_map={};
+    world.towns.friend.buildings=[];
+    world.towns.friend.player={x:7,y:4};
+    check(!placementValid(town,{x:7,y:3},'farm'),'A visiting player on an acre destination blocks the farm preview');
   })();`);
 const animation=require('../web/animations.js');
 run(documentMock,{devicePixelRatio:1,addEventListener(){}},{getItem:()=>null},()=>0,()=>{},animation)
