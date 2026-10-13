@@ -121,6 +121,7 @@ def feed_settlers(town):
     # Any resident can leave, including an experienced specialist.
     villager = town['villagers'].pop(secrets.randbelow(len(town['villagers'])))
     logistics.cancel_output(town, villager)
+    logistics.cancel_trip(town, villager)
     if villager.get('worker_tool') in npcs.WORKER_TOOLS:
         tools = town['player'].setdefault('worker_tools', {})
         key = villager['worker_tool']
@@ -250,8 +251,7 @@ def ensure_resources(town):
             villager.pop('building_index')
             villager['job'] = 'idle'
             villager.pop('work_target', None)
-            villager.pop('logistics_trip', None)
-            villager.pop('logistics_target', None)
+            logistics.cancel_trip(town, villager)
         elif (type(index) is int and 0 <= index < len(town['buildings'])
               and town['buildings'][index]['kind'] == 'market' and villager['job'] == 'idle'):
             # Residents assigned to markets before merchants existed start trading.
@@ -317,10 +317,9 @@ def assign_settler(town, worker_index, building_index):
     if reason:
         raise ValueError(reason)
     logistics.cancel_output(town, villager)
+    logistics.cancel_trip(town, villager)
     villager['building_index'] = building_index
     villager['job'] = BUILDING_JOBS.get(building['kind'], 'idle')
-    villager.pop('logistics_trip', None)
-    villager.pop('logistics_target', None)
 
 
 def fill_cottages(town):
@@ -720,8 +719,7 @@ def tick(world):
             villager.pop('production_status', None)
             if not source:
                 villager.pop('work_animation', None)
-                villager.pop('logistics_trip', None)
-                villager.pop('logistics_target', None)
+                logistics.cancel_trip(town, villager)
                 reason = economy.qualification(villager, job)
                 if reason:
                     villager['production_status'] = reason
@@ -1046,6 +1044,10 @@ def command(town, data, world=None):
             town['coins'] = max(0, town['coins'] - 1)
         moved = town['buildings'][index]
         for villager in town['villagers']:
+            trip = villager.get('logistics_trip', {})
+            if (trip.get('operation') == 'sell'
+                    and {k: moved[k] for k in ('kind', 'x', 'y')} in (trip.get('workplace'), trip.get('storage'))):
+                logistics.cancel_trip(town, villager)
             if villager.get('pending_workplace') == {k: moved[k] for k in ('kind', 'x', 'y')}:
                 logistics.cancel_output(town, villager)
         town['buildings'][index].update(x=x, y=y)
@@ -1058,6 +1060,10 @@ def command(town, data, world=None):
         economy.ensure_inventory(town)
         removed = town['buildings'][index]
         for villager in town['villagers']:
+            trip = villager.get('logistics_trip', {})
+            if (trip.get('operation') == 'sell'
+                    and {k: removed[k] for k in ('kind', 'x', 'y')} in (trip.get('workplace'), trip.get('storage'))):
+                logistics.cancel_trip(town, villager)
             if villager.get('pending_workplace') == {k: removed[k] for k in ('kind', 'x', 'y')}:
                 logistics.cancel_output(town, villager)
         removed = town['buildings'].pop(index)
@@ -1089,10 +1095,9 @@ def command(town, data, world=None):
         if type(index) is not int or not 0 <= index < len(town['villagers']):
             raise ValueError('Choose a settler first.')
         logistics.cancel_output(town, town['villagers'][index])
+        logistics.cancel_trip(town, town['villagers'][index])
         town['villagers'][index].pop('building_index', None)
         town['villagers'][index]['job'] = 'idle'
-        town['villagers'][index].pop('logistics_trip', None)
-        town['villagers'][index].pop('logistics_target', None)
     elif action == 'configure_storage':
         index, enabled = data.get('index'), data.get('enabled')
         if type(index) is not int or not 0 <= index < len(town['buildings']):
@@ -1143,9 +1148,8 @@ def command(town, data, world=None):
             assign_settler(town, index, current if current in choices else choices[0])
         else:
             logistics.cancel_output(town, town['villagers'][index])
+            logistics.cancel_trip(town, town['villagers'][index])
             town['villagers'][index].pop('building_index', None)
-            town['villagers'][index].pop('logistics_trip', None)
-            town['villagers'][index].pop('logistics_target', None)
         town['villagers'][index]['job'] = job
     elif action == 'upgrade_building':
         index = data.get('index')

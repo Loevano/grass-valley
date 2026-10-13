@@ -644,7 +644,11 @@ Check upgraded building artwork and selection with `node tests/test_building_vis
   Sales repeat while stock reaches the cap. Disabling a product keeps its cap for
   later. Rules are saved for the town and shared by its markets. Markets have no
   storage; any goods saved there move to the town hall without changing town totals.
-  Goods stay available during travel; stock and rules are checked before each sale.
+  Stock and the sale trigger are checked at pickup. Collected goods leave storage
+  and available town stock immediately, and the merchant carries them until the
+  sale finishes at the market. Cargo survives saving and loading. Disabling the
+  product before sale or cancelling the trip returns unsold goods to their source
+  (or the town hall if the source is unavailable).
 - **6 — Mining:** produce 5 leather to upgrade. Mines extract iron ore from a vein
   within 10 tile steps. Only some rock outcrops contain iron, marked by a few small mineral dots;
   their terrain and positions stay intact. Ore slowly regenerates.

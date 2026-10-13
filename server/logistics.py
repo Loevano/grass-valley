@@ -136,6 +136,27 @@ def cancel_output(town, villager):
     villager.pop('work_animation', None)
 
 
+def return_sale_cargo(town, trip, cargo):
+    """Restore unsold cargo to its source, or salvage it at the hall."""
+    source = next((b for b in town['buildings'] if all(b.get(k) == v for k, v in trip['workplace'].items())
+                   and 'construction' not in b), None)
+    if source is None:
+        source = next(b for b in town['buildings'] if b['kind'] == 'hall')
+    for key, amount in cargo.items():
+        if amount > 0:
+            stock = source.setdefault('stored_goods', {})
+            stock[key] = stock.get(key, 0) + amount
+            economy.add_stock(town, key, amount)
+
+
+def cancel_trip(town, villager):
+    trip = villager.get('logistics_trip')
+    if trip and trip['operation'] == 'sell' and trip.get('picked_up') and not trip['delivered']:
+        return_sale_cargo(town, trip, trip['cargo'])
+    villager.pop('logistics_trip', None)
+    villager.pop('logistics_target', None)
+
+
 def collection_inventory(building):
     result = economy.inventory(building)
     for key, amount in building.get('orphaned_output', {}).items():
@@ -344,13 +365,13 @@ def advance_trip(town, landscape, villager, elapsed, resume_work=False):
                              and 'construction' not in b), None)
     building, storage = find(trip['workplace']), find(trip['storage'])
     if not building or not storage:
-        villager.pop('logistics_trip', None)
-        villager.pop('logistics_target', None)
+        cancel_trip(town, villager)
         villager['production_status'] = 'Delivery cancelled: building moved or unavailable'
         return True
     if 'pickup_step' not in trip:
-        pickup = building if trip['operation'] == 'collect' and villager.get('job') == 'hauling' else storage
-        fetching = (trip['operation'] == 'collect') == (villager.get('job') == 'hauling')
+        selling = trip['operation'] == 'sell'
+        pickup = building if selling or (trip['operation'] == 'collect' and villager.get('job') == 'hauling') else storage
+        fetching = selling or (trip['operation'] == 'collect') == (villager.get('job') == 'hauling')
         trip['pickup_step'] = next((i for i, (x, y) in enumerate(trip['path'])
                                    if abs(x - pickup['x']) + abs(y - pickup['y']) == 1), 0) if fetching else 0
     if 'cargo' not in trip:
@@ -363,12 +384,15 @@ def advance_trip(town, landscape, villager, elapsed, resume_work=False):
     roads = {(r['x'], r['y']) for r in landscape.get('roads', []) if 'construction' not in r}
     path = trip['path']
     step = trip.get('step', 0)
+    if (trip['operation'] == 'sell' and step >= trip['pickup_step']
+            and not trip.get('picked_up') and not trip['delivered']):
+        trip['cargo'] = pickup_sale(town, building, villager)
+        trip['picked_up'] = True
     remaining = elapsed + trip.get('travel_seconds', 0)
     while step < len(path) - 1:
         tile = tuple(path[step + 1])
         if tile in blocked or (terrain and terrain[tile[1]][tile[0]] == 'v'):
-            villager.pop('logistics_trip', None)
-            villager.pop('logistics_target', None)
+            cancel_trip(town, villager)
             villager['production_status'] = 'Delivery blocked; finding another route'
             return True
         duration = 1 / (travel_speed(villager) * (1.5 if tile in roads else 1))
@@ -377,7 +401,11 @@ def advance_trip(town, landscape, villager, elapsed, resume_work=False):
         remaining -= duration
         step += 1
         if step == trip.get('pickup_step') and not trip['delivered']:
-            trip['cargo'] = planned_cargo(town, building, storage, trip['operation'], villager)
+            if trip['operation'] == 'sell':
+                trip['cargo'] = pickup_sale(town, building, villager)
+                trip['picked_up'] = True
+            else:
+                trip['cargo'] = planned_cargo(town, building, storage, trip['operation'], villager)
         if step >= trip['delivery_step'] and not trip['delivered']:
             trip['cargo'] = transfer(town, building, storage, trip['operation'], villager, trip['cargo'])
             trip['delivered'] = True
@@ -400,27 +428,40 @@ def advance_trip(town, landscape, villager, elapsed, resume_work=False):
     return True
 
 
+def pickup_sale(town, building, villager, planned=None):
+    """Remove the actual sale batch from available stock when it is collected."""
+    economy.ensure_inventory(town)
+    cargo = sale_cargo(town, building, villager)
+    if planned is not None:
+        cargo = {key: min(amount, planned.get(key, 0)) for key, amount in cargo.items()
+                 if planned.get(key, 0) > 0}
+    for key, amount in cargo.items():
+        economy.withdraw(town, key, amount, source=building)
+        economy.add_stock(town, key, -amount)
+    return cargo
+
+
 def transfer(town, building, storage, operation, villager, planned=None):
     economy.ensure_inventory(town)
     if operation == 'sell':
-        # Goods stay usable during travel, as with other delivery trips. Recheck
-        # the rule and source on arrival so spending or another merchant cannot
-        # duplicate a sale. Changing/disabling a rule also applies to active trips.
+        trip = villager.get('logistics_trip', {})
+        held = (planned or {}) if trip.get('picked_up') else pickup_sale(town, building, villager, planned or {})
         cargo = {}
-        for key, wanted in (planned or {}).items():
+        unsold = {}
+        for key, wanted in held.items():
             rule = town.get('rules', {}).get('market_sales', {}).get(key)
-            if rule is None or not rule.get('enabled', True) or economy.quantity(town, key) + 1e-9 < rule['cap']:
+            if rule is None or not rule.get('enabled', True):
+                unsold[key] = wanted
                 continue
-            amount = math.floor(min(wanted, rule['amount'], production_stock(building, key),
-                                    economy.quantity(town, key), carry_capacity(villager)) + 1e-9)
+            amount = math.floor(min(wanted, rule['amount']) + 1e-9)
+            unsold[key] = wanted - amount
             if amount <= 0:
                 continue
-            economy.withdraw(town, key, amount, source=building)
-            economy.add_stock(town, key, -amount)
             economy.record_sale(town, key, amount)
             economy.practice(villager, 'trading')
             economy.practice(villager, 'hauling')
             cargo[key] = amount
+        return_sale_cargo(town, {'workplace': {k: building[k] for k in ('kind', 'x', 'y')}}, unsold)
         return cargo
     remaining = carry_capacity(villager)
     total_moved = 0
