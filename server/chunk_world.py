@@ -192,7 +192,7 @@ def generate_chunk(seed, key, version=1, size=WORLD_SIZE):
     """Version saved worlds so untouched legacy chunks never change generator."""
     if version == 1:
         return _legacy_chunk(seed, key)
-    if version not in (2, 3, 4, 5):
+    if version not in (2, 3, 4, 5, 6):
         raise ValueError(f'Unsupported terrain generator version: {version}')
     if version >= 3:
         from terrain_regions import sample_tile
@@ -205,7 +205,7 @@ def generate_chunk(seed, key, version=1, size=WORLD_SIZE):
             if version >= 3:
                 biome, water, trees, rocks, species = sample_tile(
                     seed, x, y, size, _field, sparse_grass=version >= 4,
-                    open_farmland=version >= 5)
+                    open_farmland=version >= 5, green_habitats=version >= 6)
             else:
                 biome, water = regional_tile(seed, x, y, size)
                 trees, rocks, species = (.45 if biome in ('f', 'b') else 0), (.15 if biome == 'r' else 0), None
@@ -282,7 +282,8 @@ class ChunkMap:
         obstacles += [dict(x=round(t['player']['x']), y=round(t['player']['y']))
                       for t in self.world['towns'].values() if 'player' in t]
         ensure_industry(record, obstacles, (cx * CHUNK_SIZE, cy * CHUNK_SIZE))
-        landscape = dict(record, terrain=ChunkTerrain({key: record}, self.size))
+        landscape = dict(record, terrain=ChunkTerrain({key: record}, self.size),
+                         terrain_version=self.landscape.get('terrain_version', 1))
         remove_invalid_trees(landscape)
         for resource in record['map_resources']:
             if resource['kind'] not in SUPPLIES:

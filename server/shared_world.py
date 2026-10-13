@@ -21,8 +21,8 @@ def new_world(seed=None, explorable=False, chunk_directory=None, terrain_version
     sites = [{'x': rng.randint(lo_x, lo_x + 16), 'y': rng.randint(lo_y, lo_y + 16)}
              for lo_x, lo_y in [(22, 22), (82, 22), (22, 82), (82, 82)]]
     rng.shuffle(sites)
-    terrain_version = (5 if explorable else 1) if terrain_version is None else terrain_version
-    if terrain_version in (2, 3, 4, 5):
+    terrain_version = (6 if explorable else 1) if terrain_version is None else terrain_version
+    if terrain_version in (2, 3, 4, 5, 6):
         from chunk_world import regional_starter
         terrain, resources = regional_starter(seed, version=terrain_version)
     elif terrain_version == 1:
@@ -48,7 +48,7 @@ def new_world(seed=None, explorable=False, chunk_directory=None, terrain_version
             else:
                 y += 1 if y < target['y'] else -1
     for x, y in cleared:
-        rows[y][x] = 'g'
+        rows[y][x] = 'm' if terrain_version >= 6 else 'g'
     resources = [r for r in resources if (r['x'], r['y']) not in cleared]
     # Each clearing has wood and water within its construction area.
     starters = [{'kind': kind, 'x': site['x'] + dx, 'y': site['y'] + dy}
@@ -64,6 +64,10 @@ def new_world(seed=None, explorable=False, chunk_directory=None, terrain_version
                     resources.append({'kind': 'tree', 'x': x, 'y': y})
                     rows[y][x] = 'f'
     resources.extend(starters)
+    if terrain_version >= 6:
+        for resource in starters:
+            if resource['kind'] == 'tree':
+                rows[resource['y']][resource['x']] = 'f'
     if terrain_version >= 2:
         # Small fishing lakes sit outside the hall clearings and connecting
         # paths, within each town's initial construction range.

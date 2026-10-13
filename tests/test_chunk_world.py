@@ -159,6 +159,7 @@ class ExplorableMap(unittest.TestCase):
 
     def test_sleeping_stumps_use_reduced_regrowth_rate(self):
         record = self.manager.read('2,2')
+        record['terrain'][0] = 'f' + record['terrain'][0][1:]
         record['tree_stumps'] = [{'kind': 'tree', 'x': 80, 'y': 80, 'remaining': 300}]
         self.world['shared_map']['chunk_clock'] += 30
         self.manager.catch_up('2,2', record)

@@ -86,10 +86,12 @@ Map refreshes send only terrain and resource chunks the browser needs, and walki
 saves with the regular three-second simulation update.
 
 New worlds have winding, branching rivers feeding a southern lake with wooded
-islands. Woodland grows in patches across the meadows and along riverbanks. Open
-grassland has fewer trees between those patches, leaving more space to farm.
-Broad light-green meadows provide larger farming areas, with fewer rock outcrops
-and scattered rocks across the landscape.
+islands. Green terrain has three types: light-green grassland has no trees and
+occasional bushes; darker grassland has sparse trees that stay cleared after
+chopping; forest grows in patches and large woods, with trees that regrow.
+Trees are more common along rivers and lake shores, forming wooded banks.
+Broad light-green grassland provides larger farming areas, with fewer rock
+outcrops and scattered rocks across the landscape.
 Reedhaven's western swamp mixes dense willow groves, pools, and narrow channels.
 The smaller desert around Sunwell has rocky areas and palm-lined oases, while the
 northern ice region around Frostbrook has groves, pools, and rock outcrops.
@@ -263,8 +265,10 @@ the Python host, refresh both browsers, and create a new world to use the shared
   finishing over 30 seconds. Housing, storage, and workplaces activate only on
   completion. Progress survives saving, moving a site, and restarting the host.
 - Trees are felled when their remaining wood reaches zero, freeing their tile for
-  building and leaving a visible stump. They regrow after about five minutes 34 seconds on all ground while
-  the tile is unoccupied. Buildings and roads pause regrowth until removed.
+  building. In new worlds, forest trees leave a stump and regrow after about five
+  minutes 34 seconds while the tile is unoccupied. Darker grassland trees stay
+  cleared permanently; light-green grassland has no trees. Buildings and roads
+  pause regrowth until removed. Older worlds retain their original regrowth rules.
   Swamp willows and rare ancient trees take five times as much chopping and
   about sixteen minutes 40 seconds to regrow.
   Water regenerates its shared supply. Rock outcrops cannot be mined yet.

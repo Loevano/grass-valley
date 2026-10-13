@@ -1604,8 +1604,10 @@ function renderSelection(town){
       }
     }
     if(item.kind==='tree'){
-      $('selection-title').textContent=swamp?'Swamp willow':item.species==='ancient'?'Ancient tree':'Forest';
-      p.textContent=`Chop: ${keybindings.chop.toUpperCase()} / nearby woodcutter\nWoodcutter reach: 10 tile steps\nFelling: leaves a stump, clears tile\nRegrowth: ${swamp||item.species==='ancient'?15:5} min · all ground\nRegrowth requires an empty tile`;
+      const landscape=world.shared_map || town,biome=landscape.terrain?.[item.y]?.[item.x];
+      const regrows=(landscape.terrain_version || 1)<6 || biome==='f' || biome==='b';
+      $('selection-title').textContent=swamp?'Swamp willow':item.species==='ancient'?'Ancient tree':regrows?'Forest':'Grassland tree';
+      p.textContent=`Chop: ${keybindings.chop.toUpperCase()} / nearby woodcutter\nWoodcutter reach: 10 tile steps\nFelling: ${regrows?'leaves a stump, clears tile':'permanently clears this tree'}\nRegrowth: ${regrows?`${swamp||item.species==='ancient'?15:5} min · requires an empty tile`:'None on grassland'}`;
       if(swamp||item.species==='ancient')p.textContent+='\nChopping time: 5×';
     }
     if(item.kind==='wild_horse'){

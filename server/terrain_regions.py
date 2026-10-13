@@ -80,7 +80,7 @@ def local_rivers(seed, size, cx, cy):
     return tuple(result)
 
 
-def sample_tile(seed, x, y, size, field, sparse_grass=False, open_farmland=False):
+def sample_tile(seed, x, y, size, field, sparse_grass=False, open_farmland=False, green_habitats=False):
     u, v = x/size, y/size
     plan = layout(seed)
     detail = field(seed, 'v3-edge', x, y, size/24)
@@ -109,6 +109,11 @@ def sample_tile(seed, x, y, size, field, sparse_grass=False, open_farmland=False
             # Broad light-green meadows with only occasional trees. Habitat
             # overrides still keep the swamp, desert, ice, and islands distinct.
             biome, trees, rock = 'm', .006+canopy*.012, .001
+    if green_habitats and biome in 'gf':
+        large_woods = field(seed, 'v6-large-woods', x, y, size/5)
+        if large_woods > .67:
+            biome = 'f'
+        trees = .40+canopy*.22 if biome == 'f' else .025+canopy*.05
     species = None
     marsh = distance(plan['swamp'])
     if inside('ice'):
@@ -137,11 +142,15 @@ def sample_tile(seed, x, y, size, field, sparse_grass=False, open_farmland=False
             bank = True
 
     # Irregular shorelines and distinct wooded islands break up the big lake.
-    lake = distance(plan['lake']) < .78 + detail*.44
+    lake_distance = distance(plan['lake'])
+    shoreline = .78+detail*.44
+    lake = lake_distance < shoreline
+    if green_habitats and not lake and lake_distance < shoreline+.14:
+        bank = True
     island = lake and any(distance(ellipse) < .76+detail*.38 for ellipse in plan['islands'])
     water = channel or (lake and not island)
     if island and not channel:
-        biome, trees, rock = ('f' if woods > .48 else 'g'), .25+canopy*.25, .015
+        biome, trees, rock = ('f' if green_habitats or woods > .48 else 'g'), .25+canopy*.25, .015
     if biome == 'b':
         pools = field(seed, 'v3-marsh-pools', x, y, size/40)
         ribbons = field(seed, 'v3-marsh-ribbons', x, y, size/14)
@@ -151,11 +160,16 @@ def sample_tile(seed, x, y, size, field, sparse_grass=False, open_farmland=False
         if oasis < 1:
             water = True
         elif oasis < 4:
-            biome, trees, species, rock = 'g', .22+canopy*.30, 'palm', 0
+            biome, trees, species, rock = ('f' if green_habitats else 'g'), .22+canopy*.30, 'palm', 0
     if biome in 'ir' and any(distance(ellipse) < 1 for ellipse in plan['ice_pools']):
         water = True
     if bank and not water and biome in 'gmf':
-        biome, trees = 'm', max(trees, .12+canopy*.22)
+        biome, trees = ('f', .35+canopy*.22) if green_habitats else ('m', max(trees, .12+canopy*.22))
+    if green_habitats:
+        if biome == 'm':
+            trees = 0
+        elif biome == 'g':
+            trees = min(trees, .075)
     if water:
         trees, rock = 0, 0
         if biome not in 'bdi':

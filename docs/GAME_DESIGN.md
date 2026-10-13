@@ -30,7 +30,8 @@ and continue across chunk boundaries.
 | Rivers | Winding northern and western rivers with connected tributaries through the surrounding regions. |
 | Lakes | A southern lake with wooded islands, smaller fishing lakes near starting towns, and the existing central treasure lake. |
 | Desert | A smaller eastern desert around Sunwell, with rocky areas and palm-lined oases. |
-| Woodland | Patchy forests across green terrain and along riverbanks, with open space between tree clusters. |
+| Green terrain | Light grassland has no trees and occasional bushes; darker grassland has sparse trees that do not regrow; forests grow in patches and large woods with regenerating trees. |
+| Waterside trees | More trees on riverbanks and lake shores, forming forest strips. |
 
 The regions and water features appear while exploring and on the world map.
 Worlds save their terrain generator version; existing saves keep their original

@@ -61,10 +61,11 @@ seeded world coordinates, with irregular edges and smaller surrounding patches.
   oases; small sand patches remain elsewhere.
 - Winding northern and western rivers feed a southern lake with three wooded
   islands. Smaller tributaries branch through the ice, swamp, and eastern land.
-- Woodland grows in patches across green terrain, with riparian groves and
-  open gaps between clusters. Trees are sparser on open grass and meadows to
-  leave more room for farming.
-- Broad light-green meadows have very sparse trees for larger farming areas;
+- Green terrain has three types: light-green grassland with no trees and occasional
+  bushes; darker grassland with sparse trees that do not regrow; and forest with
+  regenerating trees, in patches and large woods. Riverbanks and lake shores have
+  more trees, forming forest strips. Swamp willows keep their regrowth behavior.
+- Broad light-green grassland leaves open space for larger farming areas;
   rock outcrops and scattered rocks are less frequent across the landscape.
 - Each starting town has a smaller fishing lake nearby. The central treasure
   lake, its islands, starter clearings, and paths between towns remain available.
