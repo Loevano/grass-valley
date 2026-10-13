@@ -108,7 +108,8 @@ Completed wells now provide water for crop watering alongside natural water
 sources. Farmers fetch from the nearest reachable source; wells need no staff.
 The field cycle is implemented: acres start unplowed, seeding waits until every
 linked acre is plowed, and each seeded acre sprouts for 15 seconds. One tender
-fetches water once for that acre, waters it once, and it grows for another 15
+fetches water once per farm watering round, uses that fill for all acres it tends
+in the round, waters each acre once, and it grows for another 15
 seconds before harvest and delivery. Field progress is saved, growth needs no
 worker, and farmers finish plowing, seeding, watering, and harvesting in rows.
 Oldest cycles finish before any acre repeats, preventing untouched tiles from

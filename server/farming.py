@@ -12,6 +12,11 @@ def field_state(field):
     return field.setdefault('field', {'stage': 'unplowed', 'elapsed': 0, 'progress': 0, 'cycle': 0})
 
 
+def watering_round(farm, field):
+    """One filled can per farmer, farm, and crop pass; serializable in saves."""
+    return [farm['kind'], farm['x'], farm['y'], field_state(field)['cycle']]
+
+
 def acres(town, farm):
     owner = next(i for i, b in enumerate(town['buildings']) if b is farm)
     return [b for b in town['buildings'] if b['kind'] == 'acre' and b.get('farm_index') == owner]

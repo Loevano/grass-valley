@@ -372,6 +372,7 @@ def assign_settler(town, worker_index, building_index):
         raise ValueError(reason)
     logistics.cancel_output(town, villager)
     logistics.cancel_trip(town, villager)
+    villager.pop('watering_round', None)
     villager['building_index'] = building_index
     villager['job'] = BUILDING_JOBS.get(building['kind'], 'idle')
 
@@ -776,6 +777,7 @@ def tick(world):
             villager.pop('production_status', None)
             if not source:
                 villager.pop('work_animation', None)
+                villager.pop('watering_round', None)
                 logistics.cancel_trip(town, villager)
                 reason = economy.qualification(villager, job)
                 if reason:
@@ -819,7 +821,8 @@ def tick(world):
                 villager.pop('boat_return_requested', None)
             animation = villager.get('work_animation', {})
             watering = job == 'farming' and farming.field_state(source)['stage'] == 'thirsty' and (
-                animation.get('waterReady') or animation.get('phase') in
+                villager.get('watering_round') == farming.watering_round(building, source)
+                or animation.get('waterReady') or animation.get('phase') in
                 ('fetching_water', 'collecting_water', 'returning_water'))
             if job == 'farming' and not villager.get('pending_output') and not watering:
                 if logistics.worker(town, walking, villager, building, logistics_route, TICK_SECONDS):
@@ -1192,6 +1195,7 @@ def command(town, data, world=None):
             if type(assigned) is int:
                 if assigned in removed_indices:
                     villager.pop('building_index')
+                    villager.pop('watering_round', None)
                     villager['job'] = 'idle'
                 elif assigned in new_indices:
                     villager['building_index'] = new_indices[assigned]
@@ -1267,6 +1271,7 @@ def command(town, data, world=None):
             logistics.cancel_output(town, town['villagers'][index])
             logistics.cancel_trip(town, town['villagers'][index])
             town['villagers'][index].pop('building_index', None)
+            town['villagers'][index].pop('watering_round', None)
         town['villagers'][index]['job'] = job
     elif action == 'upgrade_building':
         index = data.get('index')

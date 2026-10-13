@@ -105,9 +105,16 @@ def _advance(town, landscape, villager, building, source, index, seconds):
         spec.extend([building.get('level', 1), economy.fishing_boat_level(building), boating, 'boat_cargo_cycle'])
     state = villager.get('work_animation')
     farming_job = villager['job'] == 'farming'
+    water_round = None
     if farming_job:
         field = farming.field_state(source)
+        water_round = farming.watering_round(building, source)
         spec.extend(['field_cycle', field['cycle']])
+        # Upgrade a saved filled can without sending its owner back to water.
+        if (state and state.get('waterReady') and state['task'][:4] == spec[:4]
+                and state['task'][-2:] == ['field_cycle', field['cycle']]
+                and 'watering_round' not in villager):
+            villager['watering_round'] = water_round
         if villager.get('pending_output') and state and state['task'][:7] == spec[:7]:
             spec = state['task']
     if (state and state['phase'] in ('fetching_water', 'collecting_water')
@@ -189,6 +196,10 @@ def _advance(town, landscape, villager, building, source, index, seconds):
             x, y = spot
         preserved = (x, y) == (round(position['x']), round(position['y']))
         water_ready = bool(state and state['task'] == spec and state.get('waterReady'))
+        if farming_job:
+            # A filled can covers this farmer's entire farm pass, including
+            # field changes and intervening logistics trips.
+            water_ready = villager.get('watering_round') == water_round
         state = {'task': spec, 'x': position['x'] if preserved else x,
                  'y': position['y'] if preserved else y, 'elapsed': 0, 'waterReady': water_ready,
                  'version': (state or {}).get('version', 0), 'facing': 1}
@@ -309,6 +320,8 @@ def _advance(town, landscape, villager, building, source, index, seconds):
             path = travel(state, work_spot or source, not work_spot)
             state.update(path=path or [], phase='waiting' if path is None else 'returning_water' if path else 'working', elapsed=0)
             state['waterReady'] = True
+            if farming_job:
+                villager['watering_round'] = water_round
         elif farming_job:
             if field['stage'] == 'ripe':
                 state['phase'] = 'harvest_ready'

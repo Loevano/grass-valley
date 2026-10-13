@@ -106,7 +106,9 @@ These are starting values to make the prototype playable, **not final design dec
 - Every three seconds, assigned workers produce into 50-unit workplace buffers and gain skill if the buffer has room. Local outputs are immediately included in usable town stock; hauling relocates them without adding them twice. Each completed building shows its own inventory. Only storehouses and warehouses can enable or disable incoming resources; other buildings have fixed capacities for relevant inputs and outputs. Ordinary buildings hold 50 units; processor inputs remain separately reserved.
 - Town maps contain renewable forests and water, plus rock outcrops. Woodcutters
   need a tree within ten horizontal/vertical tile steps; farmers fetch water during
-  the watering stage without a farm-to-water distance limit. Workers animate
+  the watering stage without a farm-to-water distance limit. Each farmer fills
+  the can once per farm watering round and reuses that water across its acres.
+  The next crop round needs another fill. Workers animate
   walking around obstacles, gathering beside the source, and delivering supplies. Animation is cosmetic; the host still controls
   production every three seconds. Buildings use open grass tiles.
   Trees leave visible stumps when felled and regrow on any unoccupied ground

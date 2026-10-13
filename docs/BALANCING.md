@@ -160,9 +160,11 @@ seeding, watering, and harvesting each take two worker-seconds. Seeding waits fo
 all acres of that farm in the current cycle to be plowed. Workers follow rows
 through each pass and finish the oldest cycle before repeating harvested acres.
 Each seeded acre sprouts for 15 seconds,
-waits for one worker's water trip and watering action, then grows for 15 more
+waits for a watering action, then grows for 15 more
 seconds. Growth is passive and overlaps work on other acres; it is excluded from
-worker-second totals. Filling the can takes 0.65 seconds. Field/water travel and
+worker-second totals. Each farmer fills the can once per farm watering round
+(0.65 seconds), then waters every acre it tends in that round without refilling.
+Field/water travel and
 delivery add time, and the host confirms progress on its three-second rhythm.
 Existing skill, tool, building, and manure yield bonuses still apply, with manure
 consumed once per harvest. Crop changes take effect at the next seeding. Bread's

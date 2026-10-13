@@ -418,8 +418,9 @@ the Python host, refresh both browsers, and create a new world to use the shared
   then carry crops back to the farm. New acres start as unplowed soil. Every acre
   linked to a farm must be plowed before its workers can start seeding. Each seeded
   acre sprouts independently for **15 seconds**, then waits for water. Its tender
-  makes **one water trip per acre per crop cycle**, fills the can at a reachable
-  well or natural water source, and returns to water that acre once. The crop then
+  fills the can **once per farm watering round** at a reachable well or natural
+  water source, then uses that fill on every acre it tends in that round. Each
+  farmer collects their own water; the next crop round needs a fresh fill. The crop then
   grows for another **15 seconds** before harvest. Each field action takes two
   seconds; travel adds time. Farmers finish each pass in rows, turning at the end
   of a row and choosing separate rows when possible. All acres finish their oldest

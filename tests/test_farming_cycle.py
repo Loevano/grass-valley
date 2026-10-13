@@ -86,7 +86,7 @@ class FarmingCycle(unittest.TestCase):
         farming.grow(restored, 1)
         self.assertEqual(acre['field']['stage'], 'ripe')
 
-    def test_one_water_collection_per_acre_then_harvest_and_delivery(self):
+    def test_one_water_collection_per_round_then_harvest_and_delivery(self):
         collections = 0
         previous_phase = None
         saw_harvest = False
@@ -110,6 +110,44 @@ class FarmingCycle(unittest.TestCase):
         self.assertTrue(saw_harvest)
         self.assertEqual(collections, 1)
         self.assertEqual(self.town['goods']['wheat'], farming.HARVEST_YIELD)
+
+    def test_filled_can_covers_remaining_acres_after_save_and_state_reset(self):
+        second = {'kind': 'acre', 'x': 4, 'y': 4, 'farm_index': 1, 'crop': 'wheat'}
+        self.town['buildings'].append(second)
+        for acre in (self.acre, second):
+            farming.field_state(acre).update(stage='thirsty')
+        self.advance(30)
+        self.assertEqual(self.acre['field']['stage'], 'growing')
+        restored = json.loads(json.dumps(self.town))
+        farm, second = restored['buildings'][1], restored['buildings'][-1]
+        worker = restored['villagers'][0]
+        worker.pop('work_animation')  # A logistics trip can replace the animation state.
+        restored['buildings'] = [b for b in restored['buildings'] if b['kind'] != 'well']
+        work_cycles.advance(restored, restored, worker, farm, second, 0, 30)
+        self.assertEqual(second['field']['stage'], 'growing')
+        self.assertTrue(worker['work_animation']['waterReady'])
+        self.assertFalse(any(s['phase'] in ('fetching_water', 'collecting_water', 'returning_water')
+                             for s in worker['work_animation']['playback']))
+
+    def test_next_crop_round_requires_a_new_water_fill(self):
+        farming.field_state(self.acre).update(stage='thirsty')
+        self.advance(30)
+        self.assertEqual(self.worker['watering_round'], ['farm', 3, 3, 0])
+        self.acre['field'].update(stage='thirsty', cycle=1, elapsed=0, progress=0)
+        self.advance(30)
+        self.assertEqual(self.worker['watering_round'], ['farm', 3, 3, 1])
+        self.assertTrue(any(s['phase'] == 'collecting_water' for s in self.worker['work_animation']['playback']))
+
+    def test_another_farmer_still_collects_their_own_water(self):
+        second = {'kind': 'acre', 'x': 4, 'y': 4, 'farm_index': 1, 'crop': 'wheat'}
+        self.town['buildings'].append(second)
+        for acre in (self.acre, second):
+            farming.field_state(acre).update(stage='thirsty')
+        self.advance(30)
+        other = self.town['villagers'][1]
+        other.update(job='farming', building_index=1, construction_position={'x': 4, 'y': 4})
+        work_cycles.advance(self.town, self.town, other, self.farm, second, 1, 30)
+        self.assertTrue(any(s['phase'] == 'collecting_water' for s in other['work_animation']['playback']))
         self.assertEqual(self.acre['field']['cycle'], 1)
 
     def test_missing_water_waits_and_new_well_resumes_same_crop(self):
