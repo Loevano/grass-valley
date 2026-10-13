@@ -277,7 +277,9 @@ the Python host, refresh both browsers, and create a new world to use the shared
   Boat upgrades use builders; exploration purchases and upgrades apply
   immediately. Existing boats keep their ownership and start at tier 1.
 - Select a farm and choose **Build acre · 5 wood**, then click open ground within
-  three tile steps of that farm. Farmers tend its acres and deliver food back to
+  three tiles of that farm in each direction, including diagonals. This creates a
+  7×7 square aligned with the map tiles, with the farm at its center (up to 48 acres).
+  Farmers tend its acres and deliver food back to
   the farm. Farmers fetch reachable water when watering; the farm can be farther
   than three steps from water. Farms without
   nearby acres continue their existing production. Acres are saved with their farm

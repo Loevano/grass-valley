@@ -394,7 +394,7 @@ def work_assignment(town, job, worker_index, spatial=None):
             if job == 'farming':
                 acres = [a for a in town['buildings'] if a['kind'] == 'acre' and completed(a)
                          and a.get('farm_index') == farm_index
-                         and abs(a['x'] - b['x']) + abs(a['y'] - b['y']) <= RESOURCE_REACH]
+                         and max(abs(a['x'] - b['x']), abs(a['y'] - b['y'])) <= RESOURCE_REACH]
                 if assigned_acre is not None:
                     if assigned_acre not in acres:
                         return None
@@ -875,8 +875,8 @@ def validate_acre(town, farm_index, x, y):
             or not completed(town['buildings'][farm_index])):
         raise ValueError('Select a farm before building an acre.')
     farm = town['buildings'][farm_index]
-    if abs(x - farm['x']) + abs(y - farm['y']) > RESOURCE_REACH:
-        raise ValueError('Place acres within 3 tile steps of their farm.')
+    if max(abs(x - farm['x']), abs(y - farm['y'])) > RESOURCE_REACH:
+        raise ValueError('Place acres within 3 tiles of their farm in each direction.')
 
 
 def validate_building_range(town, x, y):

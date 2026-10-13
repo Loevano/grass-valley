@@ -100,6 +100,9 @@ starting capacities. Upgrades unlock additional slots up to each limit.
 
 ### Wood and farming
 
+Farm acre placement and work reach now cover a 7×7 square aligned with map tiles,
+including its corners. Farming chain balancing below remains planned.
+
 - Woodcutters supply wood, sawpit workers make planks, and the woodworker crafts
   items that help workers work better or decorate the village.
 - Higher woodworker skill levels unlock more craftable items.

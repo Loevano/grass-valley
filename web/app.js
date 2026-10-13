@@ -1733,7 +1733,7 @@ async function buildAt(x,y){
   if(building || !(tool in costs) || viewed!==identity?.town_id || !town || !town.sandbox&&town.wood<costs[tool])return;
   const selected={x,y},kind=tool;
   if(!insideBuildingRange(town,selected)){notice(`Build within ${buildingRange(town)} tile steps of your town hall.`);return;}
-  if(kind==='acre'&&!acrePlacementValid(town,selected,acreFarmIndex)){notice('Place acres within 3 tile steps of their farm.');return;}
+  if(kind==='acre'&&!acrePlacementValid(town,selected,acreFarmIndex)){notice('Place acres within 3 tiles of their farm in each direction.');return;}
   building=true;render();
   try{
     await request('/api/command',{action:kind==='road'?'build_road':'build',kind,...selected,...(kind==='acre'?{farm_index:acreFarmIndex}:{}),world_id:world.world_id});
@@ -3508,7 +3508,7 @@ function draw(seconds=0){
 }
 function acrePlacementValid(town,tile,index){
   const farm=town.buildings[index];
-  return farm?.kind==='farm'&&!farm.construction&&Math.abs(tile.x-farm.x)+Math.abs(tile.y-farm.y)<=3;
+  return farm?.kind==='farm'&&!farm.construction&&Math.max(Math.abs(tile.x-farm.x),Math.abs(tile.y-farm.y))<=3;
 }
 function buildingRange(town){return 30+5*(town.level-1);}
 function insideBuildingRange(town,tile){
