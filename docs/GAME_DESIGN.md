@@ -25,15 +25,17 @@ and continue across chunk boundaries.
 
 | Feature | Design direction |
 | --- | --- |
-| Ice | A northwestern ice region around Frostbrook. |
-| Swamp | A broad western swamp around Reedhaven, with smaller marsh pockets and pools at its edges. |
-| Rivers | A north-to-south river and western tributary connect to the southern lake. |
-| Lakes | A major southern lake, smaller fishing lakes near starting towns, and the existing central treasure lake. |
-| Desert | A broad eastern desert around Sunwell, with scattered small sand patches elsewhere. |
+| Ice | A smaller northern region around Frostbrook, with groves, pools, and rock outcrops. |
+| Swamp | A broad western swamp around Reedhaven, mixing dense willow groves, pools, and narrow channels. |
+| Rivers | Winding northern and western rivers with connected tributaries through the surrounding regions. |
+| Lakes | A southern lake with wooded islands, smaller fishing lakes near starting towns, and the existing central treasure lake. |
+| Desert | A smaller eastern desert around Sunwell, with rocky areas and palm-lined oases. |
+| Woodland | Patchy forests across green terrain and along riverbanks, with open space between tree clusters. |
 
 The regions and water features appear while exploring and on the world map.
 Worlds save their terrain generator version; existing saves keep their original
-landscape and unexplored terrain. See the
+landscape and unexplored terrain. Hosts can regenerate sandbox worlds to try
+the latest generator, resetting their towns and progress after confirmation. See the
 [working design](DESIGN.md#confirmed-terrain-direction) for sizes and placement.
 
 ## Proposed experience loop

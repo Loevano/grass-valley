@@ -45,6 +45,11 @@ leave because of food or housing shortages. Their normal talents, practice, and
 production rates still apply. Production ingredients, hauling, storage, animal
 care, and food consumption run normally, so you can observe the chain's bottlenecks.
 Sandbox worlds save and reopen with these rules and are labeled in the Worlds menu.
+The host can choose **Regenerate world** on a sandbox world's row in **Worlds**
+to try the latest terrain generator with a new seed. Type its name to confirm:
+this resets that sandbox world's towns, player logins, and all progress. Other
+worlds stay saved. Restart the Python host after changing generator code, then
+regenerate; creating a new world also uses the latest generator.
 
 ## Join from another Mac
 
@@ -79,13 +84,16 @@ up when a sleeping area becomes active again. Changed chunks save separately.
 Map refreshes send only terrain and resource chunks the browser needs, and walking
 saves with the regular three-second simulation update.
 
-New worlds have a broad western swamp around Reedhaven, an eastern desert around
-Sunwell, and a northwestern ice region around Frostbrook. A northern river and
-western tributary feed a large southern lake. Smaller fishing lakes sit near each
-starting town, alongside the existing central lake and its treasure islands.
-Region edges and river bends vary with the world's seed and continue across
-terrain chunks. Existing worlds retain their original terrain generator, including
-unexplored areas; create a new world to see this layout.
+New worlds have winding, branching rivers feeding a southern lake with wooded
+islands. Woodland grows in patches across the meadows and along riverbanks.
+Reedhaven's western swamp mixes dense willow groves, pools, and narrow channels.
+The smaller desert around Sunwell has rocky areas and palm-lined oases, while the
+northern ice region around Frostbrook has groves, pools, and rock outcrops.
+Smaller fishing lakes sit near each starting town, alongside the existing central
+lake and its treasure islands. Region edges and river bends vary with the world's
+seed and continue across terrain chunks. Existing worlds retain their original
+generator, including unexplored areas; create a new world or regenerate a sandbox
+world to see the latest layout.
 
 Explorable worlds also have three small wilderness villages: Reedhaven in the
 swamp, Sunwell in the desert, and Frostbrook on the snowy ice fields. Each has

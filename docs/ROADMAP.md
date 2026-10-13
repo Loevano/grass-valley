@@ -55,6 +55,8 @@ unlocked, construction and upgrades are free and instant, cottages add residents
 automatically, and villagers need no training and never depart. Production inputs,
 hauling, storage, food consumption, and normal output rates still apply. The chain
 balancing and capacity changes below remain planned.
+Hosts can also regenerate sandbox worlds from the Worlds menu to try the latest
+terrain layout; confirmation resets only the selected sandbox's towns and progress.
 
 ### Worker capacity
 

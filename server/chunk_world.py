@@ -192,30 +192,39 @@ def generate_chunk(seed, key, version=1, size=WORLD_SIZE):
     """Version saved worlds so untouched legacy chunks never change generator."""
     if version == 1:
         return _legacy_chunk(seed, key)
-    if version != 2:
+    if version not in (2, 3):
         raise ValueError(f'Unsupported terrain generator version: {version}')
+    if version == 3:
+        from terrain_regions import sample_tile
     cx, cy = map(int, key.split(','))
-    rng = random.Random(f'{seed}:chunk-v2:{key}')
+    rng = random.Random(f'{seed}:chunk-v{version}:{key}')
     rows, resources = [], []
     for y in range(cy * CHUNK_SIZE, (cy + 1) * CHUNK_SIZE):
         row = []
         for x in range(cx * CHUNK_SIZE, (cx + 1) * CHUNK_SIZE):
-            biome, water = regional_tile(seed, x, y, size)
+            if version == 3:
+                biome, water, trees, rocks, species = sample_tile(seed, x, y, size, _field)
+            else:
+                biome, water = regional_tile(seed, x, y, size)
+                trees, rocks, species = (.45 if biome in ('f', 'b') else 0), (.15 if biome == 'r' else 0), None
             kind = ('water' if water else
-                    'tree' if biome in ('f', 'b') and rng.random() < .45 else
-                    'rock' if biome == 'r' and rng.random() < .15 else None)
+                    'tree' if biome in 'gfmb' and trees and rng.random() < trees else
+                    'rock' if rocks and rng.random() < rocks else None)
             row.append(biome)
             if kind:
-                resources.append({'kind': kind, 'x': x, 'y': y})
+                resource = {'kind': kind, 'x': x, 'y': y}
+                if kind == 'tree' and species:
+                    resource['species'] = species
+                resources.append(resource)
             elif biome in ('g', 'f', 'm', 'b') and rng.random() < .012:
                 resources.append({'kind': rng.choice(['berry_bush', 'herb_patch']), 'x': x, 'y': y})
         rows.append(''.join(row))
     return {'terrain': rows, 'map_resources': resources, 'tree_stumps': [], 'clock': 0}
 
 
-def regional_starter(seed):
+def regional_starter(seed, version=2):
     """The inhabited valley uses the same underlying terrain as its neighbors."""
-    chunks = {(cx, cy): generate_chunk(seed, f'{cx},{cy}', version=2)
+    chunks = {(cx, cy): generate_chunk(seed, f'{cx},{cy}', version=version)
               for cy in range(4, 7) for cx in range(4, 7)}
     rows = [''.join(chunks[cx, y // CHUNK_SIZE]['terrain'][y % CHUNK_SIZE]
                     for cx in range(4, 7)) for y in range(START_OFFSET, START_OFFSET + 120)]
