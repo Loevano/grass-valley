@@ -1,6 +1,7 @@
 """Bounded, derived travel-time route caches; never stored in world snapshots."""
 from collections import OrderedDict, deque
 import heapq
+from math import sqrt
 
 
 class RouteCache:
@@ -9,7 +10,7 @@ class RouteCache:
         self.graphs = OrderedDict()
 
     def route(self, start, target, blocked, size, terrain, adjacent=True, bounds=None,
-              roads=(), road_mode='smooth'):
+              roads=(), road_mode='smooth', diagonal=False):
         # Chunk records are sparse. Include loaded chunk keys as well as terrain
         # rows so loading/evicting terrain cannot reuse an obsolete route.
         if hasattr(terrain, 'records'):
@@ -26,12 +27,12 @@ class RouteCache:
         self.graphs.move_to_end(graph)
         paths = self.graphs[graph]
         goals = frozenset(target) if isinstance(target, set) else (target['x'], target['y'])
-        key = start, goals, adjacent, road_mode if roads else None
+        key = start, goals, adjacent, road_mode if roads else None, diagonal
         if key in paths[0]:
             paths[0].move_to_end(key)
             path = paths[0][key]
         else:
-            path = self.search(start, target, blocked, size, terrain, adjacent, bounds, roads, road_mode)
+            path = self.search(start, target, blocked, size, terrain, adjacent, bounds, roads, road_mode, diagonal)
             cost = len(path) if path is not None else 1
             if cost <= self.step_limit:
                 paths[0][key] = path
@@ -43,18 +44,30 @@ class RouteCache:
         return None if path is None else [{'x': x, 'y': y} for x, y in path]
 
     @staticmethod
-    def search(start, target, blocked, size, terrain, adjacent, bounds, roads=(), road_mode='smooth'):
+    def search(start, target, blocked, size, terrain, adjacent, bounds, roads=(), road_mode='smooth', diagonal=False):
         queue, previous = deque([start]), {start: None}
         costs, order = {start: 0}, 0
+        weighted = bool(roads) or diagonal
         # A road step costs 4 units versus 6 on open ground (50% faster).
         # Smooth walkers spend half an edge on each tile. Builders time the
         # departure tile; haulers time the arrival tile. Keep those host rules.
         def heuristic(tile):
-            return 0 if isinstance(target, set) else 4 * max(0, abs(tile[0] - target['x']) + abs(tile[1] - target['y']) - int(adjacent))
+            if isinstance(target, set):
+                return 0
+            dx, dy = abs(tile[0]-target['x']), abs(tile[1]-target['y'])
+            distance = max(dx, dy)+(sqrt(2)-1)*min(dx, dy) if diagonal else dx+dy
+            return (4 if roads else 6)*max(0, distance-int(adjacent))
 
-        heap = [(heuristic(start), 0, 0, start)] if roads else []
-        while (heap if roads else queue):
-            if roads:
+        def open_tile(tile):
+            x, y = tile
+            return (0 <= x < size and 0 <= y < size and tile not in blocked
+                    and (not bounds or bounds[0] <= x <= bounds[1] and bounds[2] <= y <= bounds[3])
+                    and (not terrain or terrain[y][x] != 'v')
+                    and (not bounds or not terrain or terrain[y][x]))
+
+        heap = [(heuristic(start), 0, 0, start)] if weighted else []
+        while (heap if weighted else queue):
+            if weighted:
                 _, _, cost, tile = heapq.heappop(heap)
                 if costs[tile] != cost:
                     continue
@@ -68,19 +81,23 @@ class RouteCache:
                     tile = previous[tile]
                 return tuple(reversed(path))
             x, y = tile
-            for next_tile in ((x + 1, y), (x, y + 1), (x - 1, y), (x, y - 1)):
+            neighbors = ((x+1, y), (x, y+1), (x-1, y), (x, y-1))
+            if diagonal:
+                neighbors += ((x+1, y+1), (x-1, y+1), (x-1, y-1), (x+1, y-1))
+            for next_tile in neighbors:
                 nx, ny = next_tile
-                if bounds and not (bounds[0] <= nx <= bounds[1] and bounds[2] <= ny <= bounds[3]):
+                slant = nx != x and ny != y
+                if slant and (not open_tile((nx, y)) or not open_tile((x, ny))):
                     continue
-                if (0 <= nx < size and 0 <= ny < size and next_tile not in blocked
-                        and (roads or next_tile not in previous) and (not terrain or terrain[ny][nx] != 'v')
-                        and (not bounds or not terrain or terrain[ny][nx])):
-                    if not roads:
+                if open_tile(next_tile) and (weighted or next_tile not in previous):
+                    if not weighted:
                         previous[next_tile] = tile
                         queue.append(next_tile)
                         continue
                     departure, arrival = (2 if tile in roads else 3), (2 if next_tile in roads else 3)
                     weight = 2 * departure if road_mode == 'departure' else 2 * arrival if road_mode == 'arrival' else departure + arrival
+                    if slant:
+                        weight *= sqrt(2)
                     next_cost = cost + weight
                     if next_cost >= costs.get(next_tile, float('inf')):
                         continue

@@ -18,6 +18,29 @@ class HaulingSkill(unittest.TestCase):
                       'storage_allocations': {'wood': 200, 'planks': 100}}
         self.town['buildings'].extend([self.source, self.store])
 
+    def test_diagonal_delivery_steps_take_longer_than_cardinal_steps(self):
+        self.worker['logistics_trip'] = {
+            'workplace': {k: self.source[k] for k in ('kind', 'x', 'y')},
+            'storage': {k: self.store[k] for k in ('kind', 'x', 'y')},
+            'operation': 'collect', 'path': [[0, 0], [1, 1], [2, 2]],
+            'pickup_step': 2, 'delivery_step': 2, 'cargo': {}, 'delivered': False}
+        landscape = {'buildings': [], 'map_resources': []}
+        logistics.advance_trip(self.town, landscape, self.worker, .6)
+        self.assertEqual(self.worker['logistics_trip']['step'], 0)
+        logistics.advance_trip(self.town, landscape, self.worker, .2)
+        self.assertEqual(self.worker['logistics_trip']['step'], 1)
+
+    def test_diagonal_delivery_is_cancelled_when_a_corner_becomes_blocked(self):
+        self.worker['logistics_trip'] = {
+            'workplace': {k: self.source[k] for k in ('kind', 'x', 'y')},
+            'storage': {k: self.store[k] for k in ('kind', 'x', 'y')},
+            'operation': 'collect', 'path': [[0, 0], [1, 1]],
+            'pickup_step': 1, 'delivery_step': 1, 'cargo': {}, 'delivered': False}
+        landscape = {'buildings': [], 'map_resources': [{'kind': 'rock', 'x': 1, 'y': 0}]}
+        logistics.advance_trip(self.town, landscape, self.worker, .8)
+        self.assertNotIn('logistics_trip', self.worker)
+        self.assertEqual(self.worker['production_status'], 'Delivery blocked; finding another route')
+
     def test_capacity_is_shared_across_buffers_and_improves_with_practice(self):
         for practice, moved in [(0, 50), (19.99, 50), (20, 80)]:
             with self.subTest(practice=practice):

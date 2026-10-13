@@ -391,11 +391,14 @@ def advance_trip(town, landscape, villager, elapsed, resume_work=False):
     remaining = elapsed + trip.get('travel_seconds', 0)
     while step < len(path) - 1:
         tile = tuple(path[step + 1])
-        if tile in blocked or (terrain and terrain[tile[1]][tile[0]] == 'v'):
+        before = path[step]
+        corners = ((tile[0], before[1]), (before[0], tile[1])) if tile[0] != before[0] and tile[1] != before[1] else ()
+        if (tile in blocked or (terrain and terrain[tile[1]][tile[0]] == 'v')
+                or any(p in blocked or (terrain and terrain[p[1]][p[0]] == 'v') for p in corners)):
             cancel_trip(town, villager)
             villager['production_status'] = 'Delivery blocked; finding another route'
             return True
-        duration = 1 / (travel_speed(villager) * (1.5 if tile in roads else 1))
+        duration = math.hypot(tile[0]-before[0], tile[1]-before[1]) / (travel_speed(villager) * (1.5 if tile in roads else 1))
         if remaining < duration:
             break
         remaining -= duration

@@ -89,6 +89,16 @@ class Roads(unittest.TestCase):
         self.assertEqual(normal['villagers'][0]['construction_position']['x'], 8)
         self.assertEqual(self.town['villagers'][0]['construction_position']['x'], 11)
 
+    def test_diagonal_builder_steps_take_their_actual_travel_time(self):
+        self.town['buildings'].append({'kind': 'home', 'x': 2, 'y': 1,
+                                      'construction': {'progress': 0, 'total': 30}})
+        self.town['villagers'][0]['construction_position'] = {'x': 0, 'y': 0}
+        early = copy.deepcopy(self.town)
+        construct(early, early, workers={0}, elapsed=.6)
+        self.assertEqual(early['villagers'][0]['construction_position'], {'x': 0, 'y': 0})
+        construct(self.town, self.town, workers={0}, elapsed=.8)
+        self.assertEqual(self.town['villagers'][0]['construction_position'], {'x': 1, 'y': 1})
+
     def test_speed_boost_preserves_collision(self):
         self.town['roads'] = [{'x': 5, 'y': 7}]
         self.town['buildings'].append({'kind': 'home', 'x': 6, 'y': 7})

@@ -235,6 +235,9 @@ the Python host, refresh both browsers, and create a new world to use the shared
   Settlers choose routes by travel time, taking a longer road path when it gets
   them there sooner. Unfinished roads provide no routing bonus; cached routes
   account for changes to completed roads.
+  Villagers, builders, and haulers can walk diagonally through open ground.
+  They cannot squeeze diagonally between blocked corners, and diagonal steps
+  take longer than straight steps because they cover more distance.
   Everyone can use roads in the shared valley. Click a road to inspect it; its
   owner can remove it for free. Roads are saved with the town.
 - New buildings and acres start as construction sites. Idle villagers automatically

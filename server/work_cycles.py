@@ -60,15 +60,15 @@ def fishing_pier(building, landscape, blocked, size, terrain, bounds):
                    key=lambda r: (abs(r['x'] - building['x']) + abs(r['y'] - building['y']), r['y'], r['x']))
     pier_blocked = blocked - {(building['x'], building['y'])} - {(r['x'], r['y']) for r in water}
     for tile in water:
-        deck = route(building, tile, pier_blocked, size, terrain, False, bounds)
+        deck = route(building, tile, pier_blocked, size, terrain, False, bounds, diagonal=False)
         if deck is not None and len(deck) <= 3:
             return [building, *deck]
     return []
 
 
-def route(start, target, blocked, size, terrain, adjacent=True, bounds=None, roads=()):
+def route(start, target, blocked, size, terrain, adjacent=True, bounds=None, roads=(), diagonal=True):
     start = (round(start['x']), round(start['y']))
-    return routes.route(start, target, blocked, size, terrain, adjacent, bounds, roads)
+    return routes.route(start, target, blocked, size, terrain, adjacent, bounds, roads, diagonal=diagonal)
 
 
 def advance(town, landscape, villager, building, source, index, seconds):
@@ -146,7 +146,7 @@ def _advance(town, landscape, villager, building, source, index, seconds):
         pier_blocked = blocked - {(building['x'], building['y'])}
         pier_blocked.difference_update((r['x'], r['y']) for r in landscape['map_resources']
                                       if r['kind'] == 'water' and abs(r['x'] - building['x']) + abs(r['y'] - building['y']) <= 3)
-        pier = route(building, source, pier_blocked, size, terrain, False, bounds)
+        pier = route(building, source, pier_blocked, size, terrain, False, bounds, diagonal=False)
         if pier is not None and len(pier) <= 3:
             blocked.discard((building['x'], building['y']))
             blocked.difference_update((p['x'], p['y']) for p in pier)
@@ -157,14 +157,14 @@ def _advance(town, landscape, villager, building, source, index, seconds):
             afloat = tile in water_tiles and (tile != (dock['x'], dock['y']) or tile == (berth['x'], berth['y']))
             outbound = target is source
             if outbound and afloat:
-                return route(start, source, sea_blocked, size, terrain, False, sea_bounds)
+                return route(start, source, sea_blocked, size, terrain, False, sea_bounds, diagonal=False)
             if outbound:
                 approach = route(start, dock, boarding_blocked, size, terrain, False, bounds, roads)
                 if approach is not None and (dock['x'], dock['y']) != (berth['x'], berth['y']):
                     approach.append({'x': berth['x'], 'y': berth['y']})
-                sailing = route(berth, source, sea_blocked, size, terrain, False, sea_bounds)
+                sailing = route(berth, source, sea_blocked, size, terrain, False, sea_bounds, diagonal=False)
             else:
-                approach = route(start, berth, sea_blocked, size, terrain, False, sea_bounds) if afloat else []
+                approach = route(start, berth, sea_blocked, size, terrain, False, sea_bounds, diagonal=False) if afloat else []
                 sailing = [] if afloat else route(start, berth, land_blocked, size, terrain, False, bounds, roads)
             return None if approach is None or sailing is None else approach + sailing
         return route(start, target, blocked, size, terrain, adjacent, bounds, roads)

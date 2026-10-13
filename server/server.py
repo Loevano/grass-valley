@@ -506,7 +506,7 @@ def construction_route(town, start, target, road_mode='departure'):
     if start is None:
         return None
     roads = {(r['x'], r['y']) for r in town.get('roads', []) if completed(r)}
-    path = routes.route(start, target, blocked, size, terrain, roads=roads, road_mode=road_mode)
+    path = routes.route(start, target, blocked, size, terrain, roads=roads, road_mode=road_mode, diagonal=True)
     return None if path is None else [start] + [(p['x'], p['y']) for p in path]
 
 
@@ -577,8 +577,8 @@ def construct(town, landscape, workers=None, elapsed=TICK_SECONDS):
                                                'x': site['x'], 'y': site['y']}
             roads = {(r['x'], r['y']) for r in landscape.get('roads', []) if completed(r)}
             remaining, reached = elapsed, 0
-            for tile in path[:-1]:
-                duration = 1 / (1.8 * (1.5 if tile in roads else 1))
+            for tile, destination in zip(path, path[1:]):
+                duration = math.hypot(destination[0]-tile[0], destination[1]-tile[1]) / (1.8 * (1.5 if tile in roads else 1))
                 if remaining < duration:
                     break
                 remaining -= duration

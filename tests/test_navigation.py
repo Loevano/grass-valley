@@ -61,9 +61,9 @@ class ShortestRouteCache(unittest.TestCase):
         target = {'x': 2, 'y': 1}
         # Builders do not gain speed from a road they stop on; haulers and
         # smooth walkers do. These queries must not share a cached result.
-        self.assertEqual(server.construction_route(town, (0, 2), target)[-1], (2, 2))
-        self.assertEqual(server.logistics_route(town, (0, 2), target)[-1], (1, 1))
-        self.assertEqual(work_cycles.route({'x': 0, 'y': 2}, target, set(), 12,
+        self.assertEqual(server.construction_route(town, (0, 3), target)[-1], (2, 2))
+        self.assertEqual(server.logistics_route(town, (0, 3), target)[-1], (1, 1))
+        self.assertEqual(work_cycles.route({'x': 0, 'y': 3}, target, set(), 12,
                                            self.terrain, roads={(1, 1)})[-1], {'x': 1, 'y': 1})
 
     def test_weighted_search_matches_exhaustive_costs_on_small_maps(self):
@@ -105,8 +105,8 @@ class ShortestRouteCache(unittest.TestCase):
         for routing in (server.construction_route, server.logistics_route):
             before = json.dumps(town)
             path = routing(town, (0, 0), target)
-            self.assertGreater(len(path), 8)
-            self.assertIn((0, 1), path)
+            self.assertTrue(any(y == 1 for x, y in path))
+            self.assertTrue(any(a[0] != b[0] and a[1] != b[1] for a, b in zip(path, path[1:])))
             self.assertEqual(json.dumps(town), before)
         from shared_world import walking_map
         friend = dict(town)
@@ -123,8 +123,25 @@ class ShortestRouteCache(unittest.TestCase):
         own.update(buildings=[hall, camp], roads=friend['roads'], map_resources=[source])
         before = json.dumps(own)
         work_cycles.advance(own, own, worker, camp, source, 0, 0)
-        self.assertEqual(worker['work_animation']['path'][0], {'x': 0, 'y': 1})
+        self.assertEqual(worker['work_animation']['path'][0], {'x': 1, 'y': 1})
         self.assertEqual(json.dumps(own), before)
+
+    def test_diagonal_routes_are_separate_from_cardinal_cached_routes(self):
+        target = {'x': 3, 'y': 3}
+        cardinal = self.cache.route((0, 0), target, set(), 12, self.terrain, False)
+        diagonal = self.cache.route((0, 0), target, set(), 12, self.terrain, False, diagonal=True)
+        self.assertEqual(len(cardinal), 6)
+        self.assertEqual(diagonal, [{'x': i, 'y': i} for i in range(1, 4)])
+        diagonal[0]['x'] = 99
+        self.assertEqual(self.cache.route((0, 0), target, set(), 12, self.terrain, False, diagonal=True)[0], {'x': 1, 'y': 1})
+
+    def test_diagonal_routes_cannot_cross_blocked_or_void_corners(self):
+        target = {'x': 3, 'y': 3}
+        path = self.cache.route((0, 0), target, {(1, 0)}, 12, self.terrain, False, diagonal=True)
+        self.assertEqual(path[0], {'x': 0, 'y': 1})
+        self.assertIsNone(self.cache.route((0, 0), target, {(1, 0), (0, 1)}, 12, self.terrain, False, diagonal=True))
+        terrain = ['gv'+'g'*10]+self.terrain[1:]
+        self.assertEqual(self.cache.route((0, 0), target, set(), 12, terrain, False, diagonal=True)[0], {'x': 0, 'y': 1})
 
     def test_shortest_detour_is_reused_without_sharing_mutable_paths(self):
         with patch.object(self.cache, 'search', wraps=self.cache.search) as search:
