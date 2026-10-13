@@ -149,6 +149,10 @@ existing excess stock is preserved. Workplace storage totals appear beside the
 Storage heading. Wood-building upgrades increase these allowances by 25% per
 level; storage scaling for farming and fishing remains planned.
 
+Worker drop-offs now preserve the rest of the simulation tick for the next trip,
+removing the extra pause after unloading. Delivery accounting remains on the host;
+production balancing and storage upgrades below remain planned.
+
 - Production building upgrades increase internal storage or worker capacity.
 - Items and worker skill levels improve conversion rates and unlock available
   options, rather than production building levels providing output bonuses.

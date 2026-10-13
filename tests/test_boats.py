@@ -62,7 +62,9 @@ class Boats(unittest.TestCase):
         self.assertTrue(unloaded)
         self.assertTrue({'working', 'returning', 'depositing'} <= phases)
         self.assertIn((12, 2), positions)
-        self.assertEqual((state['x'], state['y']), (8, 2), 'Unloading keeps the fisher aboard one tile beyond the dock')
+        departure = next(p for p in state['playback'] if p['phase'] == 'walking')
+        self.assertEqual((departure['x'], departure['y']), (8, 2), 'Unloading finishes aboard one tile beyond the dock')
+        self.assertGreater(state['x'], departure['x'], 'Remaining tick time starts the next voyage')
         self.assertEqual(state['phase'], 'walking')
 
     def test_partial_cargo_waits_for_full_load_or_empty_source_and_survives_save(self):
@@ -82,7 +84,8 @@ class Boats(unittest.TestCase):
         for _ in range(100):
             if work_cycles.advance(self.town, self.town, worker, hut, source, 0, .1):
                 break
-        self.assertEqual((worker['work_animation']['x'], worker['work_animation']['y']), (8, 2))
+        departure = next(p for p in worker['work_animation']['playback'] if p['phase'] == 'walking')
+        self.assertEqual((departure['x'], departure['y']), (8, 2))
         logistics.drop_off(self.town, hut, worker)
         self.assertEqual(hut['output_buffer']['fish'], 2)
         self.assertEqual(work_cycles.boat_load(self.town, hut), 0)
@@ -148,7 +151,8 @@ class Boats(unittest.TestCase):
             if unloaded:
                 break
         self.assertTrue(unloaded)
-        self.assertEqual((fisher['work_animation']['x'], fisher['work_animation']['y']), tiles[1])
+        departure = next(p for p in fisher['work_animation']['playback'] if p['phase'] == 'walking')
+        self.assertEqual((departure['x'], departure['y']), tiles[1])
 
     def test_upgrades_choose_deeper_water_and_catch_better_species(self):
         upgrades = []
