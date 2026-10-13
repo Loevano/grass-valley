@@ -100,7 +100,7 @@ const run=new Function('document','window','localStorage','setTimeout','clearTim
     check(!panelNodes().some(child=>child.textContent?.includes('Food space is shared')),'Storage omits the long explanatory text');
     const upgradeActions=panelNodes().find(child=>child.className==='building-upgrade-actions');
     check(upgradeActions.children.every(child=>child.className==='upgrade-card'),'Level and capacity use consistent upgrade cards');
-    check(upgradeActions.children.map(child=>child.children.at(-1).textContent).join(',')==='Lvl,Capacity','Level card stays before capacity card');
+    check(upgradeActions.children.map(child=>child.children[0].textContent).join(',')==='Level 1 → 2,Worker capacity','Level row stays before worker capacity');
     check($('selection-level').textContent==='Lv 1','Building level is a compact header badge');
     check(!panelNodes().some(child=>child.textContent==='Building details'),'Building details section is omitted');
     render();
@@ -214,7 +214,7 @@ const run=new Function('document','window','localStorage','setTimeout','clearTim
     act=async data=>{commands.push(data);};
     town.buildings.push({kind:'home',x:6,y:3});town.wood=65;
     inspect('building',1);
-    function buildingUpgrade(){return panelNodes().find(child=>child.tag==='button'&&child.textContent==='Lvl');}
+    function buildingUpgrade(){return panelNodes().find(child=>child.tag==='button'&&child.title?.startsWith('Upgrade to level'));}
     check(buildingUpgrade().title.includes('20 wood')&&buildingUpgrade().title.includes('4 spaces'),'Cottage upgrade previews cost and housing');
     buildingUpgrade().onclick();$('confirm-upgrade').onclick();check(commands.at(-1).action==='upgrade_building'&&commands.at(-1).index===1,'Upgrade targets the selected building');
     town.wood=19;render();check(!buildingUpgrade().disabled,'Building preview remains available without wood');
@@ -222,7 +222,7 @@ const run=new Function('document','window','localStorage','setTimeout','clearTim
     check($('upgrade-dialog').open&&$('confirm-upgrade').disabled,'Unaffordable building opens popup with confirmation disabled');
     $('confirm-upgrade').onclick();check(commands.length===beforeUpgrade,'Unaffordable building sends no command');$('cancel-upgrade').onclick();
     town.wood=65;town.buildings[1].construction={progress:0,total:30};render();check(buildingUpgrade().disabled,'Unfinished buildings cannot upgrade');
-    delete town.buildings[1].construction;town.buildings[1].level=3;render();check(buildingUpgrade().disabled&&buildingUpgrade().title.includes('Fully upgraded'),'Level 3 is the building limit');
+    delete town.buildings[1].construction;town.buildings[1].level=3;render();check(!buildingUpgrade()&&panelNodes().some(child=>child.className==='upgrade-card-status'&&child.textContent==='Maxed'),'Level 3 shows maxed status without an action');
     friend.buildings[1].level=1;viewed='friend';inspect('building',1);check(buildingUpgrade().disabled,'Visitor cannot upgrade buildings');
     town.buildings.push({kind:'storehouse',level:3,x:7,y:3});check(storageCapacity(town)===300+50*town.buildings.filter(b=>!['hall','storehouse','home'].includes(b.kind)&&!b.construction).length,'Client storage reflects upgraded storehouses');
     identity=null;render();

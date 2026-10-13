@@ -113,6 +113,12 @@ starting capacities. Upgrades unlock additional slots up to each limit.
 
 ### Simple production upgrades
 
+The upgrade panel now uses compact rows with a short benefit, cost and work time,
+and an Upgrade action. Completed upgrades show a status without a disabled button;
+the purchase popup retains full benefits and requirements. The compact rows retain
+the implemented wood worker limits and storage upgrades. Farming and fishing
+balancing, storage scaling, and worker limits below remain planned.
+
 - Production building upgrades increase internal storage or worker capacity.
 - Items and worker skill levels improve conversion rates and unlock available
   options, rather than production building levels providing output bonuses.
