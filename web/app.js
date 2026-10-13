@@ -1627,10 +1627,10 @@ function renderSelection(town){
     const sourceWork=['woodcutter','farm','fishing_hut'].includes(item.kind);
     status.textContent=item.construction?'Under construction':town.upgrade_remaining&&item.kind==='hall'?`Upgrading · ${town.upgrade_remaining}s remaining`:
       sourceWork&&!buildingUsable(town,item)?'Needs a source in reach':
-      ['hall','home'].includes(item.kind)?'Housing available':item.kind==='acre'?'Field ready':
+      ['hall','home'].includes(item.kind)?'':item.kind==='acre'?'Field ready':
       !assigned.length?'Needs workers':[...new Set(assigned.map(v=>v.production_status).filter(Boolean))].join(' · ') || `${assigned.length} assigned worker${assigned.length===1?'':'s'}.`;
     if(!item.construction)renderSettlers(town,item,selection.index,workers,upgradeActions,details);
-    workers.append(status);
+    if(status.textContent)workers.append(status);
 
     if(item.kind==='hall'){
       production.append(fact(`${buildingRange(town)} tile steps`,'Building range'));
