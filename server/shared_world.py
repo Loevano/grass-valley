@@ -21,10 +21,10 @@ def new_world(seed=None, explorable=False, chunk_directory=None, sandbox=False, 
     sites = [{'x': rng.randint(lo_x, lo_x + 16), 'y': rng.randint(lo_y, lo_y + 16)}
              for lo_x, lo_y in [(22, 22), (82, 22), (22, 82), (82, 82)]]
     rng.shuffle(sites)
-    terrain_version = (2 if explorable else 1) if terrain_version is None else terrain_version
-    if terrain_version == 2:
+    terrain_version = (3 if explorable else 1) if terrain_version is None else terrain_version
+    if terrain_version in (2, 3):
         from chunk_world import regional_starter
-        terrain, resources = regional_starter(seed)
+        terrain, resources = regional_starter(seed, version=terrain_version)
     elif terrain_version == 1:
         terrain, resources = generate_map(120, seed)
     else:
@@ -64,7 +64,7 @@ def new_world(seed=None, explorable=False, chunk_directory=None, sandbox=False, 
                     resources.append({'kind': 'tree', 'x': x, 'y': y})
                     rows[y][x] = 'f'
     resources.extend(starters)
-    if terrain_version == 2:
+    if terrain_version >= 2:
         # Small fishing lakes sit outside the hall clearings and connecting
         # paths, within each town's initial construction range.
         ponds = {(site['x'] + 9 + dx, site['y'] - 8 + dy)
@@ -90,7 +90,7 @@ def new_world(seed=None, explorable=False, chunk_directory=None, sandbox=False, 
     resources.extend({'kind': 'chest', 'x': x, 'y': y} for x, y in islands)
     landscape = {'map_size': 120, 'terrain_seed': seed,
                  'terrain': [''.join(row) for row in rows], 'map_resources': resources, 'tree_stumps': []}
-    if terrain_version == 2:
+    if terrain_version >= 2:
         landscape['terrain_version'] = terrain_version
     npc_map = dict(landscape, buildings=[])
     ensure_npcs(npc_map)

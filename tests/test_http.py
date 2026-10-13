@@ -286,12 +286,44 @@ class LanHost(unittest.TestCase):
         self.assertEqual(server.WORLDS, {})
         self.assertEqual(self.call('/api/worlds/create', {'name': 'Fresh start'})[0], 200)
 
+    def test_sandbox_regeneration_resets_only_confirmed_sandbox_and_survives_reload(self):
+        self.assertEqual(self.call('/api/worlds/regenerate', {
+            'world_id': 'legacy', 'confirmation': 'My first world'})[0], 400)
+        self.assertEqual(self.call('/api/worlds/create', {'name': 'Terrain lab', 'sandbox': True})[0], 200)
+        old_id = server.ACTIVE_WORLD
+        owner = json.loads(self.call('/api/join', {'name': 'Disposable town'})[1])
+        old_seed = server.WORLD['shared_map']['terrain_seed']
+        chunk_folder = server.SAVE.with_name(server.SAVE.stem+'_chunks') / str(old_seed)
+        self.assertTrue(chunk_folder.exists())
+        self.assertEqual(self.call('/api/worlds/regenerate', {'world_id': old_id})[0], 400)
+        self.assertIn(owner['town_id'], server.WORLD['towns'])
+        self.assertEqual(self.call('/api/worlds/regenerate', {
+            'world_id': old_id, 'confirmation': 'Terrain lab'},
+            headers={'Host': '192.168.1.2:8000'})[0], 403)
+        self.assertEqual(self.call('/api/worlds/regenerate', {
+            'world_id': old_id, 'confirmation': 'Terrain lab'})[0], 200)
+        replacement_id = server.ACTIVE_WORLD
+        self.assertNotEqual(replacement_id, old_id)
+        self.assertNotIn(old_id, server.WORLDS)
+        self.assertIn('legacy', server.WORLDS)
+        self.assertEqual(server.WORLD['towns'], {})
+        self.assertEqual(server.TOKENS, {})
+        self.assertEqual(server.WORLD['shared_map']['terrain_version'], 3)
+        self.assertNotEqual(server.WORLD['shared_map']['terrain_seed'], old_seed)
+        self.assertFalse(chunk_folder.exists())
+        server.load()
+        self.assertEqual(server.ACTIVE_WORLD, replacement_id)
+        self.assertTrue(server.WORLDS[replacement_id]['world']['sandbox'])
+        catalog = json.loads(self.call('/api/worlds')[1])
+        self.assertTrue(next(w for w in catalog['worlds'] if w['id']==replacement_id)['sandbox'])
+
     def test_world_management_rejects_remote_addresses_and_origins(self):
         for headers in [{'Host': '192.168.1.2:8000'}, {'Origin': 'http://evil.example'}]:
             catalog = json.loads(self.call('/api/worlds', headers=headers)[1])
             self.assertFalse(catalog['can_manage'])
             for path, data in [('/api/worlds/create', {'name': 'No'}),
                                ('/api/worlds/open', {'world_id': 'legacy'}),
+                               ('/api/worlds/regenerate', {'world_id': 'legacy', 'confirmation': 'My first world'}),
                                ('/api/worlds/delete', {'world_id': 'legacy', 'confirmation': 'My first world'})]:
                 self.assertEqual(self.call(path, data, headers=headers)[0], 403)
         from unittest.mock import patch

@@ -53,17 +53,25 @@ backend structure and animation priorities, balancing, game design, and artwork.
 **Implemented for new explorable worlds:** large, coherent terrain regions use
 seeded world coordinates, with irregular edges and smaller surrounding patches.
 
-- Ice occupies the northwestern corner around Frostbrook.
-- A western swamp surrounds Reedhaven, with smaller marsh pockets and pools.
-- An eastern desert surrounds Sunwell; small sand patches remain elsewhere.
-- A northern river and western tributary feed a major southern lake.
+- A smaller northern ice region around Frostbrook mixes snow, groves, pools,
+  and rocky outcrops.
+- A western swamp surrounds Reedhaven, with dense willow groves interspersed
+  with pools and narrow water channels.
+- A smaller eastern desert surrounds Sunwell, with rocky areas and palm-lined
+  oases; small sand patches remain elsewhere.
+- Winding northern and western rivers feed a southern lake with three wooded
+  islands. Smaller tributaries branch through the ice, swamp, and eastern land.
+- Woodland grows in patches across green terrain, with riparian groves and
+  open gaps between clusters.
 - Each starting town has a smaller fishing lake nearby. The central treasure
   lake, its islands, starter clearings, and paths between towns remain available.
 
-The main swamp and desert span roughly 200–240 tiles across a 480-tile world;
-the southern lake spans roughly 150 by 125 tiles. Seeds vary region centers,
-edges, and river bends. Existing saves retain their original generator, including
-unexplored chunks; this layout requires creating a new world. See the
+The main swamp spans roughly 210 by 240 tiles across a 480-tile world; the desert
+spans roughly 160 by 200 tiles and the southern lake about 140 by 110 tiles.
+Seeds vary region centers, edges, and river bends. Existing saves retain their
+original generator, including unexplored chunks; create a new world or use
+**Regenerate world** on a sandbox world to get the latest layout. Regeneration
+resets that sandbox world's towns and progress after host confirmation. See the
 [game design reference](GAME_DESIGN.md#terrain-and-water).
 
 ## Questions to answer later
