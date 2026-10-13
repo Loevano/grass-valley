@@ -1202,7 +1202,7 @@ function renderSettlers(town,item,buildingIndex,target=$('selection-details'),up
   const requirements=world.progression?.job_requirements?.[job];
   if(requirements&&!town.sandbox){const note=document.createElement('small');note.textContent='Each settler needs '+Object.entries(requirements).map(([skill,amount])=>`${amount} ${goodName(skill).toLowerCase()} practice`).join(', ');target.append(note);}
   const eligible=available.filter(({v})=>!jobRequirement(v,job));
-  for(const {v,i} of available){const option=document.createElement('option');option.value=i;const requirement=jobRequirement(v,job);option.textContent=v.name+(v.job==='idle'?' · Resting':'')+(requirement?` · Requires ${requirement}`:job?` · ${workerEfficiency(v,job).toFixed(2)}× output`:'')+(settlerBuilding(town,v,i)!==null?' · reassign':'');option.disabled=Boolean(requirement);chooser.append(option);}
+  for(const {v,i} of available){const option=document.createElement('option');option.value=i;const requirement=jobRequirement(v,job);option.textContent=v.name+(v.job==='idle'?' · Resting':'')+(requirement?` · Requires ${requirement}`:job?` · ${workerEfficiency(v,job).toFixed(2)}× output`:'')+(v.job!=='idle'&&settlerBuilding(town,v,i)!==null?' · reassign':'');option.disabled=Boolean(requirement);chooser.append(option);}
   chooser.value=eligible.length?String(eligible[0].i):'';
   const add=document.createElement('button');add.textContent=['hall','home'].includes(item.kind)?'Add settler':'Add worker';add.disabled=assigned.length>=capacity||!eligible.length;
   chooser.disabled=add.disabled;
