@@ -7,7 +7,7 @@ and cache rules are in [Backend](BACKEND.md#cached-zoomed-out-map).
 | ----- | ---------------------------------- | ------------------------ | ---------------------------------------------------------------------------------------------------------------- |
 | 1     | Cached zoomed-out town overview    | Implemented | Show the landscape and city sizes without refreshing animated scene detail.                                      |
 | 2     | Coherent terrain regions and water | Planned; not implemented | Create recognizable large regions, rivers, and lakes while retaining smaller local patches.                      |
-| 3     | Production line balancing          | Planned; not implemented | Develop clear wood, farming, and fishing chains with capped staffing, useful crafted items, and simple upgrades. |
+| 3     | Production line balancing          | Wood implemented; farming and fishing remain | Develop clear farming and fishing chains with capped staffing and simple upgrades. |
 
 ## Cached zoomed-out town overview
 
@@ -75,14 +75,15 @@ remain open design decisions before implementation.
 
 ## Production line balancing
 
-**Status:** planned; not implemented. Start with the wood chain, then develop
-farming and fishing. This records the agreed direction; implementation is deferred.
+**Status:** wood chain implemented. Farming and fishing remain.
+Implemented wood capacities, storage upgrades, crafted worker tools, decorations,
+and base rates are documented in [Balancing](BALANCING.md#wood).
 
 Sandbox worlds are available for supply chain experiments: all buildings are
 unlocked, construction and upgrades are free and instant, cottages add residents
 automatically, and villagers need no training and never depart. Production inputs,
-hauling, storage, food consumption, and normal output rates still apply. The chain
-balancing and capacity changes below remain planned.
+hauling, storage, food consumption, and normal output rates still apply. The
+farming and fishing changes below remain planned.
 
 ### Worker capacity
 
@@ -91,18 +92,12 @@ starting capacities. Upgrades unlock additional slots up to each limit.
 
 | Production chain | Building | Maximum workers |
 | --- | --- | --- |
-| Wood | Woodcutter | 4 |
-| Wood | Sawpit | 2 |
-| Wood | Woodworker's workshop | 1 |
 | Farming | Farm | 8 |
 | Farming | Mill | 3 |
 | Farming | Bakery | 2 |
 
-### Wood and farming
+### Farming
 
-- Woodcutters supply wood, sawpit workers make planks, and the woodworker crafts
-  items that help workers work better or decorate the village.
-- Higher woodworker skill levels unlock more craftable items.
 - Farmers supply crops to the mill, which supplies ingredients to the bakery.
 - Balance the chains around their worker limits, ingredient demand, and delivered
   supply, including materials needed elsewhere in the village.
@@ -127,15 +122,13 @@ starting capacities. Upgrades unlock additional slots up to each limit.
 Completion criteria:
 
 - Worker upgrades respect the per-building limits above.
-- Woodworker progression unlocks usable worker improvements and placeable village
-  decorations.
 - Fishing experience improves catch chance and access to valuable species.
 - The smoke station displays stored fish by species, including smoked varieties.
 - Storage and worker upgrades have clear effects; items and skills govern
   production improvements and options.
 
-Starting worker counts, upgrade steps and costs, storage sizes, item recipes and
-effects, skill thresholds, catch probabilities, fish values, smoke-station
-staffing, and handling existing saves above the new worker limits remain open
-before implementation. Existing production rates also need review against these
-limits; this plan does not yet choose replacement rates.
+For farming and fishing, starting worker counts, upgrade steps and costs, storage
+sizes, skill thresholds, catch probabilities, fish values, smoke-station staffing,
+and handling existing saves above the new worker limits remain open before
+implementation. Their production rates also need review against these limits.
+The wood rates still need play experience to assess delivered supply and pacing.

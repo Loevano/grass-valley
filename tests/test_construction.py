@@ -26,7 +26,7 @@ class Construction(unittest.TestCase):
     def test_every_placeable_kind_starts_as_a_site_and_costs_wood(self):
         self.town['buildings'].append({'kind': 'farm', 'x': 7, 'y': 6})
         self.town.update(level=10, wood=1000, goods={'planks': 200, 'tools': 10, 'iron': 20, 'steel': 20})
-        for index, kind in enumerate(COSTS):
+        for index, kind in enumerate(kind for kind, cost in COSTS.items() if cost):
             with self.subTest(kind=kind):
                 wood = self.town['wood']
                 site = self.build(kind, x=6, y=6, **({'farm_index': 1} if kind == 'acre' else {}))

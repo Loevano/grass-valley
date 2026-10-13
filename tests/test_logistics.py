@@ -36,7 +36,7 @@ class ResourceLogistics(unittest.TestCase):
         self.town['map_resources'] = [{'kind': 'tree', 'x': 3, 'y': 1}]
         v = self.assign(0, b)
         self.ticks()
-        self.assertEqual(b['pending_output']['wood'], .5)
+        self.assertEqual(b['pending_output']['wood'], .75)
         self.assertEqual(self.town['wood'], 65)
         b.setdefault('output_buffer', {})['wood'] = 50
         self.town['buildings'][0]['stored_goods']['wood'] = 100

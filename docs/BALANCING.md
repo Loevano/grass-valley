@@ -25,14 +25,14 @@ work are assumed. Travel, supply regeneration, hauling, food, and storage limits
 make actual elapsed time longer. Practice means the game's saved skill points (XP).
 
 Talents apply a 0.75× or 1.25× modifier to output and practice. Every 20 practice
-adds another base output multiplier. Processing expertise and the improved saw
+adds another base output multiplier. Processing expertise and the crafted saw
 increase batch output **and inputs**; they do not make materials free.
 
 `active minutes to target = remaining practice ÷ practice per active minute`
 
 **Total production time cost** adds the active work needed to produce every
 consumed input and complete the final recipe. Totals use **worker-seconds**:
-12 seconds of woodcutting plus six seconds of sawing costs 18 worker-seconds,
+Eight seconds of woodcutting plus six seconds of sawing costs 14 worker-seconds,
 even when several workers shorten the elapsed wait. These are ideal production
 budgets using the base rates below, not measured end-to-end completion times.
 
@@ -55,22 +55,23 @@ practice, shared barn work, or different recipes.
 
 | Activity                         | Base work                                             | Output or practice                          | Ideal rate                                              |
 | -------------------------------- | ----------------------------------------------------- | ------------------------------------------- | ------------------------------------------------------- |
-| Settler woodcutting              | Three-second productive cycle                         | 0.5 wood; 0.04 practice                     | 10 wood/minute; 0.8 practice/minute                     |
+| Settler woodcutting              | Three-second productive cycle                         | 0.75 wood; 0.04 practice                    | 15 wood/minute; 0.8 practice/minute                     |
 | One sawpit worker                | Six-second completed batch                            | 2 wood → 1 plank; 0.08 practice             | Uses 20 wood/minute; makes 10 planks/minute             |
 
 ### Total production time cost vs total reward
 
 | Full chain | Work breakdown | Total production time cost | Total reward |
 | --- | --- | --- | --- |
-| Tree → wood → 1 plank | Gather 2 wood: 12s; saw: 6s | 18 worker-seconds | 1 plank; 0.24 practice (0.16 woodcutting + 0.08 woodworking) |
+| Tree → wood → 1 plank | Gather 2 wood: 8s; saw: 6s | 14 worker-seconds | 1 plank; approximately 0.187 practice (0.107 woodcutting + 0.08 woodworking) |
 
 ### How many woodcutters for a sawpit?
 
 ```mermaid
 flowchart LR
-    A[Woodcutter 1: 10 wood/min] --> Wood[20 wood/min combined]
-    B[Woodcutter 2: 10 wood/min] --> Wood
+    A[Woodcutter 1: 15 wood/min] --> Wood[30 wood/min combined]
+    B[Woodcutter 2: 15 wood/min] --> Wood
     Wood --> Saw[One sawpit worker: 2 wood per 6 seconds]
+    Wood --> Spare[10 wood/min for other uses]
     Saw --> Planks[10 planks/min]
     Planks --> Uses[Construction, boats, and workshop inputs]
 ```
@@ -82,14 +83,54 @@ output collection still limit the running town.
 
 | Configuration                                             | Ideal wood demand | Ideal supporting woodcutters | Practical implication                                               |
 | --------------------------------------------------------- | ----------------- | ---------------------------- | ------------------------------------------------------------------- |
-| One base sawpit worker                                    | 20/minute         | 2                            | Exactly matches demand; leaves no wood for other uses or downtime.  |
-| Both initial sawpit slots filled                          | 40/minute         | 4                            | Worker count matters more than the number of sawpit buildings.      |
-| One neutral, low-practice worker with improved saw (+25%) | 25/minute         | 3 base woodcutters           | Recalculate when woodcutters also have tools, talents, or practice. |
+| One base sawpit worker                                    | 20/minute         | 2                            | Leaves 10 wood/minute before downtime and other demand. |
+| Both upgraded sawpit slots filled                         | 40/minute         | 3                            | Four woodcutters leave 20 wood/minute before downtime and other demand. |
+| One neutral, low-practice worker with crafted saw (+25%)  | 25/minute         | 2                            | Two equipped sawyers consume 50/minute; four base woodcutters leave 10/minute. |
 
 For a real town use observed delivered supply: `effective rate = ideal rate ×
 productive fraction`. Add construction and other consumers to demand. A surplus
-can cover interruptions, but its desired size remains open; more workers cannot
+can cover interruptions; the new base wood rate supplies a margin at the worker
+limits, but delivered rates and pacing still need play experience. More workers cannot
 solve an exhausted forest or blocked storage.
+
+### Staffing, storage, and crafted items
+
+Woodcutters start with one slot, upgrade to two for 20 wood/30 seconds, then four
+for 40 wood/60 seconds. Sawpits start with one slot and upgrade once to two for
+20 wood/30 seconds. Woodworker's workshops have one slot and no worker upgrade.
+These limits apply to each building, including sandbox buildings.
+
+Building levels increase wood-building storage, input buffers, and production
+buffers from 50 to 62.5 to 75 spaces. Resource allocations increase by 25%/50%
+too. Storage upgrades use the existing building wood cost times current level
+and 30/60 seconds of builder work. Worker capacity upgrades are independent.
+Wood-building levels provide no output bonus; skill and equipped tools improve
+production. The founder also chops 0.75 wood per base cycle.
+
+The original five workshop recipes and qualification gates remain. Two additional
+recipes make useful tools, each yielding one item at neutral talent/low practice:
+
+| Item | Crafting practice required | Inputs | Active work | Equipped effect |
+| --- | --- | --- | --- | --- |
+| Crafted axe | 2 | 2 planks + 1 tool | 9 seconds | +25% woodcutting output |
+| Crafted saw | 3 | 2 planks + 2 tools | 12 seconds | +25% woodworking batch output and ingredient use |
+
+Assign tools through Items or a villager's panel. Each villager carries one tool;
+returning or transferring it preserves the item. Produced tools use normal goods
+storage, hauling, production caps, and sales until equipped. Returned tools enter
+the Items inventory. Workplace axe/saw purchases are replaced by these recipes.
+
+One furniture places a wooden bench; one carved furniture places a carved wooden
+statue through Build → Decorations. Placement is immediate on an open tile within
+the town's build range. Decorations occupy one tile, provide no gameplay bonus,
+and can be moved or removed like buildings; removal gives no refund. Sandbox
+placement and upgrades follow the existing free/instant rules.
+
+Existing sawpits retain their two spaces and higher saved tiers are capped at two;
+workshops are capped at one. Excess assigned workers rest, retaining skills and
+tools. Residents and inventories are preserved. Existing workplace axe/saw bonuses
+(including queued upgrades) become crafted tools for retained workers or the Items
+inventory, without stacking duplicate bonuses. New sawpits start with one space.
 
 ### Training
 
@@ -111,7 +152,7 @@ solve an exhausted forest or blocked storage.
 | Full chain | Work breakdown | Total production time cost | Total reward |
 | --- | --- | --- | --- |
 | Wheat → 2 flour | Grow 2 wheat: 6s; mill: 3s | 9 worker-seconds | 2 flour; 0.12 practice (0.08 farming + 0.04 milling) |
-| Wheat + wood → flour → 2 bread | Grow 2 wheat: 6s; mill: 3s; gather 0.5 wood: 3s; bake: 6s | 18 worker-seconds | 2 bread (3 food value); 0.24 practice (0.08 farming + 0.04 milling + 0.04 woodcutting + 0.08 baking) |
+| Wheat + wood → flour → 2 bread | Grow 2 wheat: 6s; mill: 3s; gather 0.5 wood: 2s; bake: 6s | 17 worker-seconds | 2 bread (3 food value); approximately 0.227 practice (0.08 farming + 0.04 milling + 0.027 woodcutting + 0.08 baking) |
 
 The base farming reference is one wheat per three-second productive cycle;
 watering, field occupancy, and delivery add elapsed time. Bread's wood input is
@@ -192,7 +233,7 @@ in parallel, so do not add five growth minutes to every animal when estimating a
 
 | Full chain | Work breakdown | Total production time cost | Total reward |
 | --- | --- | --- | --- |
-| Ordinary fish + wood → 2 smoked fish | Catch 2 fish: expected 6.67s; gather 0.5 wood: 3s; smoke: 6s | Expected 15.67 worker-seconds | 2 smoked fish (3 food value); expected 0.209 practice (0.089 fishing + 0.04 woodcutting + 0.08 preserving) |
+| Ordinary fish + wood → 2 smoked fish | Catch 2 fish: expected 6.67s; gather 0.5 wood: 2s; smoke: 6s | Expected 14.67 worker-seconds | 2 smoked fish (3 food value); expected 0.196 practice (0.089 fishing + 0.027 woodcutting + 0.08 preserving) |
 
 Expected fishing work is `required fish ÷ (fish per successful attempt × catch
 probability) × seconds per attempt`. Misses use work time and still earn practice;

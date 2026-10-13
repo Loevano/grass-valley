@@ -118,6 +118,11 @@ These are starting values to make the prototype playable, **not final design dec
   Rock mining is not implemented. Existing saves gain
   resources only on unoccupied tiles, preserving their buildings.
 - The hall starts with 100 wood and 100 food spaces. Storehouses hold 50/75/100/150/200/250/300/350 of each enabled resource across eight levels; level 5 becomes a Warehouse. Each resource has independent capacity, with edible goods grouped as food. Disabled resources keep existing stock available to use. Storage workers collect outputs and distribute inputs along walkable routes. Producers deliver full buffers and fetch inputs themselves when needed. Full storage preserves buffered goods and eventually pauses work.
+- Woodcutters have 1/2/4 worker spaces, sawpits 1/2, and woodworker's workshops 1.
+  Their building levels upgrade storage and buffers to 50/62.5/75 spaces instead
+  of output. Base chopping yields 0.75 wood per productive cycle. Workshops craft
+  equipable axes and saws, while furniture places benches and carved furniture
+  places statues. See [wood-chain balance](BALANCING.md#wood).
 - Food is consumed over time. A full minute of missed meals puts settlers at risk
   of leaving with all their skills. Cottage upgrades reduce that risk; the last
   settler stays so the town can recover.
@@ -217,7 +222,8 @@ Hall level 4 adds bakeries and butcher shops with two initial worker spaces each
 Bakeries cost 30 wood and 5 planks, processing 2 flour and 0.5 wood into 2 bread.
 Butcher shops cost 25 wood and 5 planks, processing 2 barn-produced meat into
 2 prepared meat. Both goods contribute 1.5 pantry food per unit and can be sold.
-Workshops, bakeries, and butcher shops each have five selectable recipes. Beginners
+Workshops have seven selectable recipes, including crafted axes and saws;
+bakeries and butcher shops each have five. Beginners
 can produce the first recipe; recipes 2–5 require 2–5 personal practice in the
 current profession. Only qualified assigned workers unlock selection, and each
 worker must meet the chosen recipe level. Recipes use existing ingredients and

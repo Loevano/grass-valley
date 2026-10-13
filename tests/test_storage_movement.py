@@ -29,7 +29,7 @@ class StorageMovement(unittest.TestCase):
         server.tick(self.world)
         self.assertEqual(self.worker['production_status'], 'Working')
         self.assertIn('work_animation', self.worker)
-        self.assertEqual(self.worker['pending_output'], {'wood': .5})
+        self.assertEqual(self.worker['pending_output'], {'wood': .75})
         self.assertGreater(self.worker['woodcutting'], 0)
 
     def test_full_local_buffer_stops_production_until_space_is_freed(self):

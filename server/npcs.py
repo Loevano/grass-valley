@@ -115,6 +115,7 @@ def move_local_visits(town, moved):
 
 
 WORKER_TOOLS = {
+    **economy.CRAFTED_WORKER_TOOLS,
     'fine_axe': {'name': 'Fine axe', 'job': 'woodcutting', 'bonus': .25},
     'fine_fishing_rod': {'name': 'Fine fishing rod', 'job': 'fishing', 'bonus': .25},
     'fine_sickle': {'name': 'Fine sickle', 'job': 'farming', 'bonus': .25},
@@ -279,11 +280,14 @@ def change(town, data):
             key = data.get('item')
             if not isinstance(key, str) or key not in WORKER_TOOLS:
                 raise ValueError('Choose a known worker tool.')
-            if tools.get(key, 0) < 1:
-                raise ValueError('Collect this tool from a local first.')
             if worker.get('worker_tool'):
                 raise ValueError('Take back this worker’s tool first.')
-            tools[key] -= 1
+            if tools.get(key, 0) >= 1:
+                tools[key] -= 1
+            elif key in economy.CRAFTED_WORKER_TOOLS and economy.quantity(town, key) >= 1:
+                economy.spend(town, {key: 1})
+            else:
+                raise ValueError('Collect or craft this tool first.')
             worker['worker_tool'] = key
         else:
             key = worker.get('worker_tool')

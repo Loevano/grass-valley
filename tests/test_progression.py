@@ -171,7 +171,7 @@ class Progression(unittest.TestCase):
         self.town['wood']=0
         tick(self.world)
         self.assertEqual(self.town['wood'],0)
-        self.assertEqual(self.town['buildings'][1]['pending_output']['wood'],.5)
+        self.assertEqual(self.town['buildings'][1]['pending_output']['wood'],.75)
         self.assertEqual(sum(v['woodcutting'] for v in self.town['villagers']),.04)
 
     def test_processing_consumes_local_materials_and_pauses_when_buffer_full(self):
@@ -235,33 +235,34 @@ class Progression(unittest.TestCase):
         tick(self.world)
         self.assertEqual(barn.get('pending_output', {}).get('wool',0) + barn.get('output_buffer', {}).get('wool',0),.5)
 
-    def test_profession_upgrade_needs_skill_and_charges_once(self):
+    @patch('server.secrets.randbelow', return_value=1)
+    def test_profession_upgrade_needs_skill_and_charges_once(self, _roll):
         self.town.update(level=2,wood=30,coins=10)
-        b,index=self.workplace('woodcutter',x=7,y=7)
+        b,index=self.workplace('fishing_hut',x=7,y=7)
         with self.assertRaises(ValueError):
-            command(self.town, {'action':'profession_upgrade','index':index,'upgrade':'axe'})
-        self.town['player']['woodcutting']=10
-        command(self.town, {'action':'profession_upgrade','index':index,'upgrade':'axe'})
+            command(self.town, {'action':'profession_upgrade','index':index,'upgrade':'nets'})
+        self.town['player']['fishing']=10
+        command(self.town, {'action':'profession_upgrade','index':index,'upgrade':'nets'})
         self.assertEqual(self.town['wood'],20)
         self.assertEqual(self.town['coins'],5)
-        self.assertNotIn('axe', b.get('profession_upgrades', []))
+        self.assertNotIn('nets', b.get('profession_upgrades', []))
         with self.assertRaisesRegex(ValueError, 'Finish construction'):
-            command(self.town, {'action':'profession_upgrade','index':index,'upgrade':'axe'})
+            command(self.town, {'action':'profession_upgrade','index':index,'upgrade':'nets'})
         for _ in range(100):
             construct(self.town, self.town)
             if 'construction' not in b:
                 break
         self.assertNotIn('construction', b)
-        self.assertIn('axe', b['profession_upgrades'])
+        self.assertIn('nets', b['profession_upgrades'])
         if 'construction' in b:
             for _ in range(100):
                 construct(self.town, self.town)
                 if 'construction' not in b:break
         tick(self.world)
         self.assertEqual(self.town['wood'],20)
-        self.assertEqual(b['pending_output']['wood'],.625)
+        self.assertEqual(b['pending_output']['fish'],1.25)
         with self.assertRaisesRegex(ValueError,'Already unlocked'):
-            command(self.town, {'action':'profession_upgrade','index':index,'upgrade':'axe'})
+            command(self.town, {'action':'profession_upgrade','index':index,'upgrade':'nets'})
 
     def test_edible_goods_are_counted_once_when_processed_eaten_and_sold(self):
         self.town.update(level=5,goods={},food=0,wood=0)

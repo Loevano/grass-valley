@@ -287,10 +287,13 @@ the Python host, refresh both browsers, and create a new world to use the shared
   Escape. On small screens, panels appear as a bottom drawer.
 - Every finished building except the town hall has an **Add settler** control,
   an assigned roster, and removal controls. Woodcutters, fishing huts, storehouses,
-  and acres start with 1 space, cottages with 2, and farms with 4. Upgrade settler capacity twice
+  and acres start with 1 space, cottages with 2, and farms with 4. Most buildings upgrade settler capacity twice
   for 20 then 40 wood to reach twice then three times the initial spaces. Capacity
   upgrades take 30 then 60 seconds of builder work and do not increase housing
   or storage.
+  The wood chain has its own worker limits: woodcutters upgrade from 1 to 2 to 4
+  spaces, sawpits from 1 to 2, and woodworker's workshops stay at 1. The same
+  costs and builder times apply to their available capacity upgrades.
   Assignment transfers an existing resident; it does not create a new settler.
   Workplaces set the appropriate job; acres assign farmers to that specific field.
   The town hall is reserved for your controllable character and has no resident
@@ -323,7 +326,7 @@ the Python host, refresh both browsers, and create a new world to use the shared
   be sold at a market. Processing skill increases batch size and ingredient use
   together. Farmers' skill improves field yields; animals still limit barn output,
   and only one keeper tends a barn each cycle.
-- Workshops, bakeries, and butcher shops offer five recipes, selected in the
+- Workshops offer seven recipes; bakeries and butcher shops offer five, selected in the
   workplace panel. Level 1 is available to beginners; levels 2–5 require 2–5
   practice in crafting, baking, or butchery respectively. Unlocks use qualified
   workers assigned to that workplace. Each worker must meet the selected recipe's
@@ -336,6 +339,21 @@ the Python host, refresh both browsers, and create a new world to use the shared
   | 3 | Crates | Herb bread | Smoked meat |
   | 4 | Furniture | Fruit pies | Sausages |
   | 5 | Carved furniture | Cakes | Meat pies |
+
+  Workshops also make **Crafted axes** at 2 crafting practice
+  (2 planks + 1 tool, 9 seconds) and **Crafted saws** at 3 practice
+  (2 planks + 2 tools, 12 seconds). Use **Items** or the worker's panel to assign
+  one tool per villager. Axes add 25% woodcutting output; saws add 25% plank output
+  and wood input per batch. Tools can be returned or transferred. These replace
+  workplace axe and saw upgrades; existing saved upgrades become reusable items.
+  Existing sawpits keep two worker spaces, higher tiers are capped at two, and
+  workshops are capped at one. Excess workers rest, keeping skills and equipment.
+
+  **Build → Decorations** lets you place a wooden bench for 1 furniture or a
+  carved wooden statue for 1 carved furniture. Placement is immediate on an open
+  tile within the town's build range. Each occupies one tile and can be moved or
+  removed like a building; removal gives no refund. Decorations have no production,
+  worker, storage, or upgrade benefits.
 
   Recipes show ingredient costs in the selector and use existing town resources.
   New products can be stored, hauled, capped, and sold at the market. Prepared
@@ -394,7 +412,10 @@ the Python host, refresh both browsers, and create a new world to use the shared
   Casts reach up to three more tiles into connected water when space allows.
   Fishing attempts have a 90% chance of catching food; an unlucky attempt
   yields no food, but still builds skill. Empty casts reel in and try again.
-- Woodcutters produce half as much wood as before. Assigned workers consume
+- Woodcutters produce 0.75 wood per base three-second productive cycle:
+  15 wood per active minute. Four base woodcutters supply two sawpit workers
+  (40 wood/minute) with a 20 wood/minute margin before transport and other demand.
+  Two crafted saws raise demand to 50 wood/minute. Assigned workers consume
   0.30 food each tick, compared with 0.12 for resting villagers.
 - Hall upgrades also require a builder at the hall. The first requires housing and reliable food, costs 40 wood, and
   takes 30 seconds of construction after arrival; the hall
@@ -460,7 +481,10 @@ the Python host, refresh both browsers, and create a new world to use the shared
   Builders can cross completed acres to reach farms surrounded by fields.
   Upgrade progress survives saving, moving, and restarting the host.
   Cottages provide 2/4/6 housing spaces (the town limit stays 16), and storehouses
-  hold 50/75/100/150/200/250/300/350 of each enabled resource. Level 5 becomes a Warehouse. Woodcutters, farms, fishing huts,
+  hold 50/75/100/150/200/250/300/350 of each enabled resource. Level 5 becomes a Warehouse.
+  Woodcutters, sawpits, and woodworker's workshops increase storage and production
+  buffers from 50 to 62.5 to 75 spaces at levels 1/2/3; input buffers and resource
+  allocations scale too. These levels provide no output bonus. Farms, fishing huts,
   and acres gain 25% production per worker at level 2 and 50% at level 3.
   Farm and acre bonuses add together on that field. Fishing bonuses increase food
   from successful catches; the 90% catch chance stays the same. Workers still need
@@ -484,9 +508,9 @@ the Python host, refresh both browsers, and create a new world to use the shared
   You can also use **Move a building** in the Build panel. Moving costs one coin,
   or is free if you have none, so rearranging is always possible.
 - Town hall levels 1–5 now unlock profession branches. Level 2 brings nets, wheat,
-  barns/chickens, and improved axes; level 3 adds boats, sheep, carrots/fodder, and
+  and barns/chickens; level 3 adds boats, sheep, carrots/fodder, and
   sawpits/planks; level 4 adds mills, smokehouses, pigs, and workshops/tools;
-  level 5 adds fish breeding ponds, orchards, cows, improved saws, timber framing,
+  level 5 adds fish breeding ponds, orchards, cows, timber framing,
   and market stalls. Each upgrade has a development milestone and material cost
   shown in the hall panel. Levels 6–10 add mining, metalworking, horses, and advanced trade.
 - Barns show each purchased or bred chicken, sheep, pig, and cow with walking,

@@ -107,7 +107,7 @@ class WorkplaceDropoff(unittest.TestCase):
         world = {'towns': {'own': self.town}}
         server.tick(world)
         self.assertEqual(self.town['wood'], before)
-        self.assertEqual(self.building['pending_output']['wood'], .5)
+        self.assertEqual(self.building['pending_output']['wood'], .75)
         for _ in range(10):
             server.tick(world)
             if self.town['wood'] > before:
@@ -123,7 +123,7 @@ class WorkplaceDropoff(unittest.TestCase):
         self.town['map_resources'].remove(self.source)
         for _ in range(10):
             server.tick(world)
-        self.assertEqual(self.town['wood'], before + .5)
+        self.assertEqual(self.town['wood'], before + .75)
 
     def test_food_becomes_edible_at_dropoff(self):
         before = self.town['food']

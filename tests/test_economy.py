@@ -20,15 +20,15 @@ class EconomyRules(unittest.TestCase):
             construct(self.town, self.town)
         self.fail('Construction did not finish')
 
-    def test_woodcutting_produces_half_a_unit_per_tick(self):
+    def test_woodcutting_produces_three_quarters_per_tick(self):
         command(self.town, {'action': 'build', 'kind': 'woodcutter', 'x': 2, 'y': 2})
         self.finish_construction()
         command(self.town, {'action': 'job', 'index': 0, 'job': 'woodcutting'})
         wood = self.town['wood']
         tick(self.world)
         self.assertEqual(self.town['wood'], wood)
-        self.assertEqual(self.town['buildings'][1]['pending_output']['wood'], .5)
-        self.assertEqual(self.town['harvested'], .5)
+        self.assertEqual(self.town['buildings'][1]['pending_output']['wood'], .75)
+        self.assertEqual(self.town['harvested'], .75)
 
     def test_assigned_workers_consume_extra_food(self):
         idle = copy.deepcopy(self.town)

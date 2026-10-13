@@ -252,7 +252,7 @@ class LocalOffers(unittest.TestCase):
     def test_gift_tools_boost_matching_production_only(self):
         for job, kind, item, output, rate in (
                 ('fishing', 'fishing_hut', 'fine_fishing_rod', 'fish', 1),
-                ('woodcutting', 'woodcutter', 'fine_axe', 'wood', .5)):
+                ('woodcutting', 'woodcutter', 'fine_axe', 'wood', .75)):
             with self.subTest(job=job):
                 town = new_town('Tools')
                 for worker in town['villagers']:

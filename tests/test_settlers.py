@@ -24,7 +24,7 @@ class BuildingSettlers(unittest.TestCase):
 
     def test_every_building_supports_assignment_with_its_own_capacity(self):
         for kind, spaces in SETTLER_SPACES.items():
-            if kind == 'hall':
+            if kind == 'hall' or not spaces:
                 continue
             with self.subTest(kind=kind):
                 self.town['buildings'].append({'kind': kind, 'x': 4, 'y': 4})

@@ -257,6 +257,7 @@ def ensure_resources(town):
             # Residents assigned to markets before merchants existed start trading.
             villager['job'] = 'trading'
     if 'town_origin' in town:
+        migrate_wood_chain(town)
         return
     if 'map_resources' not in town:
         town['map_resources'] = map_resources(town['buildings'])
@@ -269,11 +270,63 @@ def ensure_resources(town):
         town['map_size'] = MAP_SIZE
     ensure_terrain(town)
     ensure_npcs(town)
+    migrate_wood_chain(town)
+
+
+def migrate_wood_chain(town):
+    """Apply wood staffing limits once, preserving residents, cargo and equipment."""
+    if town.get('wood_chain_version') == 1:
+        return
+    economy.ensure_inventory(town)
+    for worker_index, villager in enumerate(town['villagers']):
+        if 'building_index' not in villager:
+            kind = {'woodcutting': 'woodcutter', 'woodworking': 'sawpit', 'crafting': 'workshop'}.get(villager['job'])
+            places = [i for i, b in enumerate(town['buildings']) if b['kind'] == kind]
+            if places:
+                villager['building_index'] = places[worker_index % len(places)]
+    for index, building in enumerate(town['buildings']):
+        kind = building['kind']
+        if kind not in economy.WOOD_WORKER_CAPACITIES:
+            continue
+        tiers = economy.WOOD_WORKER_CAPACITIES[kind]
+        # An existing base sawpit already had two spaces.
+        building['settler_level'] = min(len(tiers), max(2 if kind == 'sawpit' else 1,
+                                                     building.get('settler_level', 1)))
+        pending = building.get('construction', {}).get('upgrade', {})
+        if 'settler_level' in pending:
+            pending['settler_level'] = min(len(tiers), pending['settler_level'])
+        assigned = [v for v in town['villagers'] if v.get('building_index') == index]
+        for villager in assigned[settler_capacity(building):]:
+            logistics.cancel_output(town, villager)
+            villager['job'] = 'idle'
+            for key in ('building_index', 'work_target', 'logistics_trip', 'logistics_target',
+                        'construction_target', 'construction_arrived', 'production_status'):
+                villager.pop(key, None)
+        # Replace old workplace bonuses with tools that can be assigned and recovered.
+        upgrade_lists = (building.get('profession_upgrades', []), pending.get('profession_upgrades', []))
+        converted = {key for upgrades in upgrade_lists for key in upgrades if key in {'axe', 'tools', 'saw'}}
+        for upgrades in upgrade_lists:
+            upgrades[:] = [key for key in upgrades if key not in converted]
+        for key in sorted(converted):
+            tool = 'crafted_saw' if key == 'saw' else 'crafted_axe'
+            tools = town.setdefault('player', {}).setdefault('worker_tools', {})
+            workers = assigned[:settler_capacity(building)]
+            for villager in workers:
+                if not villager.get('worker_tool'):
+                    villager['worker_tool'] = tool
+                else:
+                    tools[tool] = tools.get(tool, 0) + 1
+            if not workers:
+                tools[tool] = tools.get(tool, 0) + 1
+    town['wood_chain_version'] = 1
 
 
 def settler_capacity(building):
     if building['kind'] == 'hall':
         return 0
+    tiers = economy.WOOD_WORKER_CAPACITIES.get(building['kind'])
+    if tiers:
+        return tiers[min(len(tiers), building.get('settler_level', 1)) - 1]
     return SETTLER_SPACES[building['kind']] * building.get('settler_level', 1)
 
 
@@ -436,12 +489,15 @@ def resource_reach(building):
 
 
 def production_bonus(building):
+    if building['kind'] in economy.WOOD_WORKER_CAPACITIES:
+        return 0
     return .25 * (building_level(building) - 1)
 
 
 
 def new_town(name, world=None):
     town = {'map_size': MAP_SIZE, 'name': name, 'wood': 65, 'food': 40, 'coins': 20, 'level': 1,
+            'wood_chain_version': 1,
             'harvested': 0, 'achievements': [],
             'player': {'x': 5., 'y': 7., 'facing': 1},
             'map_resources': map_resources([{'x': 5, 'y': 5}]),
@@ -758,7 +814,7 @@ def tick(world):
                 boat_output = economy.fishing_catch(building, depth)
                 villager['boat_return_requested'] = bool(work_cycles.boat_load(town, building) and (
                     villager.get('boat_return_requested') or finishing_output or source.get('supply', 1) <= 0
-                    or logistics.buffered(building) >= logistics.BUFFER_SIZE - 1e-9
+                    or logistics.buffered(building) >= logistics.buffer_size(building) - 1e-9
                     or economy.production_room(town, boat_output) <= 0))
             else:
                 villager.pop('boat_return_requested', None)
@@ -811,7 +867,7 @@ def tick(world):
             if cap_room <= 0:
                 villager['production_status'] = 'Production cap reached'
                 continue
-            room = min(logistics.BUFFER_SIZE - logistics.buffered(building), cap_room)
+            room = min(logistics.buffer_size(building) - logistics.buffered(building), cap_room)
             if boating:
                 room = min(room, economy.fishing_boat_capacity(building) - work_cycles.boat_load(town, building))
             if room <= 1e-9:
@@ -827,12 +883,12 @@ def tick(world):
             if job == 'fishing':
                 caught = secrets.randbelow(10) != 0
                 villager['fishing_catch'] = {'attempt': villager.get('fishing_catch', {}).get('attempt', 0) + 1, 'caught': caught}
-            rate = .5 if job == 'woodcutting' else 1
+            rate = economy.WOOD_PER_CYCLE if job == 'woodcutting' else 1
             bonus = production_bonus(building) + npcs.tool_bonus(villager, job)
             if source['kind'] == 'acre':
                 bonus += production_bonus(source)
             upgrades = building.get('profession_upgrades', [])
-            bonus += .25 * sum(u in upgrades for u in ('axe', 'nets', 'wool_nets', 'tools'))
+            bonus += .25 * sum(u in upgrades for u in ('nets', 'wool_nets'))
             if job == 'fishing' and work_cycles.fishing_boating(town, building, index):
                 bonus += .25 * max(0, economy.fishing_boat_level(building) - 1)
             amount = min(room, rate * (1 + bonus) * economy.efficiency(villager, job))
@@ -1018,6 +1074,8 @@ def command(town, data, world=None):
         economy.spend(town, costs)
         building = {'kind': kind, 'x': x, 'y': y,
                     'construction': {'progress': 0, 'total': BUILD_SECONDS}}
+        if kind in economy.DECORATIONS:
+            building.pop('construction')
         if kind == 'acre':
             building['farm_index'] = data['farm_index']
         town['buildings'].append(building)
@@ -1115,7 +1173,8 @@ def command(town, data, world=None):
         if building['kind'] == 'hall':
             raise ValueError('The town hall is reserved for your controllable character.')
         level = building.get('settler_level', 1)
-        if not completed(building) or level >= 3:
+        max_level = len(economy.WOOD_WORKER_CAPACITIES.get(building['kind'], (1, 2, 3)))
+        if not completed(building) or level >= max_level or building['kind'] in economy.DECORATIONS:
             raise ValueError('Capacity cannot be upgraded at this time.')
         cost = 0 if town.get('sandbox') else 20 * level
         if town['wood'] < cost:
@@ -1151,6 +1210,8 @@ def command(town, data, world=None):
         building = town['buildings'][index]
         if building['kind'] not in COSTS:
             raise ValueError('Use the town hall upgrade instead.')
+        if building['kind'] in economy.DECORATIONS:
+            raise ValueError('Decorations have no upgrades.')
         if not completed(building):
             raise ValueError('Finish construction before upgrading.')
         level = building_level(building)
