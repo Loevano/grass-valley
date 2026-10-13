@@ -125,8 +125,9 @@ storage scaling, and worker limits below remain planned.
 
 Production now respects each resource's existing storage allowance, including
 pending deliveries and shared food space. Producers haul when an allowance fills;
-existing excess stock is preserved. Increasing those allowances through building
-upgrades remains planned.
+existing excess stock is preserved. Workplace storage totals appear beside the
+Storage heading. Increasing those allowances through building upgrades remains
+planned.
 
 - Production building upgrades increase internal storage or worker capacity.
 - Items and worker skill levels improve conversion rates and unlock available

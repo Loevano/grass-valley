@@ -517,9 +517,12 @@ function renderStorage(town,item,index,target=$('selection-details')){
     const category=key in edible?'food':key;
     stock[category]=(stock[category] || 0)+n*(edible[key] || 1);
   }
-  const summary=document.createElement('p');summary.className='storage-summary';
-  summary.textContent=item.kind==='storehouse'?`${capacity} capacity per enabled resource`:`${Math.floor(Object.values(stock).reduce((sum,n)=>sum+n,0))} / ${capacity} stored`;
-  target.append(summary);
+  const summary=document.createElement(item.kind==='storehouse'?'p':'span');summary.className='storage-summary';
+  summary.textContent=item.kind==='storehouse'?`${capacity} capacity per enabled resource`:`${Math.floor(Object.values(stock).reduce((sum,n)=>sum+n,0))} / ${capacity}`;
+  if(item.kind==='storehouse')target.append(summary);
+  else{
+    const heading=target.children[0];heading.className='storage-heading';heading.append(summary);
+  }
   if(item.kind==='storehouse'){
     const note=document.createElement('p');note.className='storage-note';
     note.textContent='Enable resources for incoming deliveries. Disabled goods remain available to use. Food shares one capacity for edible goods.';target.append(note);
