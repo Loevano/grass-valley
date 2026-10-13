@@ -5,6 +5,7 @@ import http.client
 from http.server import ThreadingHTTPServer
 import importlib.util
 import json
+import math
 from pathlib import Path
 import random
 import sys
@@ -25,12 +26,37 @@ def run(source, cycles):
     if (source / 'server' / 'server.py').exists():
         sys.path.insert(0, str(source / 'server'))
     import server
+    import work_cycles
     from shared_world import new_world
     # The current harness benchmarks baseline application code too.
     spec = importlib.util.spec_from_file_location('benchmark_harness', Path(__file__).parents[1] / 'server' / 'profile_server.py')
     harness = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(harness)
     metrics, checks = {}, []
+    # Exercise an active worker too: idle-town timings cannot detect discarded
+    # simulation time at a delivery handoff. Use the same fixture for both refs.
+    movement_samples, unused_tick = [], []
+    for _ in range(max(30, cycles)):
+        building = {'kind': 'woodcutter', 'x': 3, 'y': 3}
+        source_tile = {'kind': 'tree', 'x': 12, 'y': 1}
+        worker = {'job': 'woodcutting', 'work_animation': {
+            'task': ['woodcutting', 'woodcutter', 3, 3, 'tree', 12, 1],
+            'x': 3, 'y': 2, 'phase': 'depositing', 'elapsed': .6,
+            'path': [], 'version': 1, 'facing': 1, 'waterReady': False}}
+        town = {'map_size': 16, 'terrain': ['g' * 16] * 16,
+                'buildings': [{'kind': 'hall', 'x': 5, 'y': 5}, building],
+                'map_resources': [source_tile], 'villagers': [worker], 'npcs': []}
+        started = time.perf_counter()
+        delivered = work_cycles.advance(town, town, worker, building, source_tile, 0, 3)
+        movement_samples.append((time.perf_counter() - started) * 1000)
+        samples = worker['work_animation']['playback']
+        travelled = sum(math.hypot(b['x'] - a['x'], b['y'] - a['y'])
+                        for a, b in zip(samples, samples[1:]))
+        unused_tick.append(max(0, (2.95 - travelled / 1.8) * 1000))
+        checks.append({'scenario': 'worker_unloading', 'ok': delivered
+                       and samples[-1]['time'] == 3 and travelled <= 2.95 * 1.8 + 1e-9})
+    metrics['server.worker_unloading.p95_ms'] = percentile(movement_samples, .95)
+    metrics['server.worker_unloading.unused_tick_ms'] = percentile(unused_tick, .95)
     for developed in (False, True):
         random.seed(42)
         label = 'developed' if developed else 'starting'

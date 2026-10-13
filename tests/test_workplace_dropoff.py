@@ -1,4 +1,6 @@
+import copy
 import json
+import math
 import unittest
 
 import logistics
@@ -76,6 +78,77 @@ class WorkplaceDropoff(unittest.TestCase):
         self.assertEqual(self.building['output_buffer']['wood'], 5)
         logistics.drop_off(self.town, self.building, self.worker)
         self.assertEqual(self.town['wood'], before + 5)
+
+    def depositing_worker(self):
+        self.source.update(x=12, y=1)
+        work_cycles.advance(self.town, self.town, self.worker, self.building, self.source, 0, 0)
+        self.worker['work_animation'].update(x=3, y=2, path=[], phase='depositing', elapsed=.6)
+        logistics.record_output(self.town, self.building, 'wood', 5, self.worker)
+
+    def test_unloading_uses_the_rest_of_the_tick_for_the_next_trip(self):
+        self.depositing_worker()
+        before = self.town['wood']
+        self.assertTrue(work_cycles.advance(self.town, self.town, self.worker, self.building, self.source, 0, 3))
+        state = self.worker['work_animation']
+        self.assertGreater(state['x'], 7, 'Finishing unloading must not discard nearly three seconds of walking')
+        samples = state['playback']
+        self.assertAlmostEqual(samples[1]['time'], .05)
+        self.assertEqual(samples[1]['phase'], 'walking')
+        distance = sum(math.hypot(b['x'] - a['x'], b['y'] - a['y']) for a, b in zip(samples, samples[1:]))
+        self.assertAlmostEqual(distance, 2.95 * 1.8)
+        self.assertEqual(samples[-1]['time'], 3)
+        self.assertEqual(self.town['wood'], before, 'The caller still owns delivery accounting')
+        logistics.drop_off(self.town, self.building, self.worker)
+        self.assertEqual(self.town['wood'], before + 5)
+        logistics.drop_off(self.town, self.building, self.worker)
+        self.assertEqual(self.town['wood'], before + 5)
+
+    def test_unloading_tick_matches_small_movement_steps(self):
+        self.depositing_worker()
+        stepped = copy.deepcopy(self.town)
+        work_cycles.advance(self.town, self.town, self.worker, self.building, self.source, 0, 3)
+        worker, building, source = stepped['villagers'][0], stepped['buildings'][1], stepped['map_resources'][0]
+        deliveries = 0
+        for _ in range(60):
+            if work_cycles.advance(stepped, stepped, worker, building, source, 0, .05):
+                deliveries += 1
+                logistics.drop_off(stepped, building, worker)
+        self.assertEqual(deliveries, 1)
+        for key in ('x', 'y', 'elapsed'):
+            self.assertAlmostEqual(self.worker['work_animation'][key], worker['work_animation'][key])
+        self.assertEqual(self.worker['work_animation']['phase'], worker['work_animation']['phase'])
+
+    def test_unreachable_next_trip_does_not_lose_completed_delivery(self):
+        self.depositing_worker()
+        before = self.town['wood']
+        for x, y in [(2, 2), (4, 2), (3, 1)]:
+            self.town['map_resources'].append({'kind': 'rock', 'x': x, 'y': y})
+        self.assertTrue(work_cycles.advance(self.town, self.town, self.worker, self.building, self.source, 0, 3))
+        self.assertEqual(self.worker['work_animation']['phase'], 'waiting')
+        logistics.drop_off(self.town, self.building, self.worker)
+        self.assertEqual(self.town['wood'], before + 5)
+
+    def test_farmer_keeps_completed_delivery_when_resuming_field_work(self):
+        for stage, expected in [('growing', 'growing'), ('unplowed', 'plowed')]:
+            with self.subTest(stage=stage):
+                self.setUp()
+                self.worker['job'] = 'farming'
+                self.building['kind'] = 'farm'
+                self.source.update(kind='acre', farm_index=1,
+                                   field={'stage': stage, 'elapsed': 0, 'progress': 0, 'cycle': 0})
+                self.town['buildings'].append(self.source)
+                self.town['map_resources'] = []
+                logistics.record_output(self.town, self.building, 'vegetables', 5, self.worker)
+                work_cycles.advance(self.town, self.town, self.worker, self.building, self.source, 0, 0)
+                state = self.worker['work_animation']
+                state.update(x=3, y=2, path=[], phase='depositing', elapsed=.6)
+                before = self.town['food']
+                self.assertTrue(work_cycles.advance(self.town, self.town, self.worker, self.building, self.source, 0, 3))
+                self.assertEqual((state['x'], state['y']), (self.source['x'], self.source['y']))
+                self.assertEqual(self.source['field']['stage'], expected)
+                self.assertNotIn(state['phase'], ('returning', 'depositing'))
+                logistics.drop_off(self.town, self.building, self.worker)
+                self.assertEqual(self.town['food'], before + 5)
 
     def test_other_workers_goods_stay_pending(self):
         other = {'job': 'woodcutting'}

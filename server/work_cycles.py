@@ -269,6 +269,7 @@ def _advance(town, landscape, villager, building, source, index, seconds):
         state['pier'] = [{'x': p['x'], 'y': p['y']} for p in pier or []]
     state['version'] += 1
     remaining = seconds
+    finished = False
     state['playback'] = [_sample(state, 0, source)]
     last_phase, last_length, last_action = state['phase'], len(state['path']), state.get('farmAction')
     while remaining > 1e-9:
@@ -282,7 +283,7 @@ def _advance(town, landscape, villager, building, source, index, seconds):
                     or (terrain and (terrain[target['y']][target['x']] == 'v'
                                      or (bounds and not terrain[target['y']][target['x']])))):
                 state.update(path=[], resume_phase=state['phase'], phase='waiting', elapsed=0)
-                return False
+                return finished
             dx, dy = target['x'] - state['x'], target['y'] - state['y']
             distance = math.hypot(dx, dy)
             speed = 1.8 * (1.5 if (math.floor(state['x'] + .5), math.floor(state['y'] + .5)) in roads else 1)
@@ -307,25 +308,27 @@ def _advance(town, landscape, villager, building, source, index, seconds):
             continue
         phase = state['phase']
         if farming_job and phase not in ('depositing', 'returning', 'collecting_water'):
-            if villager.get('pending_output'):
+            # Completed cargo is credited by the caller after this tick. It
+            # must not send the farmer back to unload a second time meanwhile.
+            if villager.get('pending_output') and not finished:
                 path = [] if source is building else travel(state, building)
                 state.update(path=path or [], phase='waiting' if path is None else 'returning' if path else 'depositing',
                              elapsed=0, farmAction=None)
                 continue
             if farming.claimed(town, source, index):
                 state.update(phase='waiting_field', farmAction=None)
-                return False
+                return finished
             if field['stage'] in ('sprouting', 'growing'):
                 state.update(phase='growing', elapsed=0, farmAction=None)
-                return False
+                return finished
             if field['stage'] == 'plowed' and not farming.can_sow(town, building, field['cycle']):
                 state.update(phase='waiting_plowing', elapsed=0, farmAction=None)
-                return False
+                return finished
             cycle, stage = farming.work_pass(town, building)
             carrying_water = field['stage'] == 'thirsty' and state['waterReady']
             if not carrying_water and (field['cycle'] != cycle or field['stage'] != stage):
                 state.update(phase='waiting_pass', elapsed=0, farmAction=None)
-                return False
+                return finished
             if field['stage'] == 'thirsty' and not state['waterReady']:
                 banks = {}
                 for water in economy.water_sources(landscape):
@@ -336,7 +339,7 @@ def _advance(town, landscape, villager, building, source, index, seconds):
                 path = travel(state, set(banks), False) if banks else None
                 if path is None:
                     state.update(phase='waiting_water', farmAction=None)
-                    return False
+                    return finished
                 bank = path[-1] if path else state
                 water = banks[(round(bank['x']), round(bank['y']))]
                 state.update(path=path, waterSource=water, phase='fetching_water' if path else 'collecting_water',
@@ -349,13 +352,13 @@ def _advance(town, landscape, villager, building, source, index, seconds):
             if field['stage'] == 'ripe' and field['progress'] >= farming.WORK_SECONDS:
                 state['phase'] = 'harvest_ready'
                 state['playback'].append(_sample(state, seconds - remaining, source))
-                return False
+                return finished
             phase = state['phase']
         if phase in ('waiting', 'waiting_water'):
-            return False
+            return finished
         if phase == 'working' and building.get('butchering'):
             # The animal's shared processing timer keeps the butcher at the shop.
-            return False
+            return finished
         duration = .65 if phase in ('depositing', 'collecting_water') else farming.WORK_SECONDS if farming_job else 3.2
         take = min(remaining, max(0, duration - state['elapsed']))
         state['elapsed'] += take
@@ -368,7 +371,11 @@ def _advance(town, landscape, villager, building, source, index, seconds):
         if phase == 'depositing':
             path = travel(state, work_spot or source, not work_spot)
             state.update(path=path or [], phase='waiting' if path is None else 'walking' if path else 'working', elapsed=0, waterReady=False)
-            return True
+            # Report the delivery to the caller without discarding the rest of
+            # this tick. Otherwise playback inserts up to three seconds of
+            # standing still before the next trip starts.
+            finished = True
+            continue
         if phase == 'collecting_water':
             path = travel(state, work_spot or source, not work_spot)
             state.update(path=path or [], phase='waiting' if path is None else 'returning_water' if path else 'working', elapsed=0)
@@ -384,7 +391,7 @@ def _advance(town, landscape, villager, building, source, index, seconds):
                              phase='growing' if field['stage'] in ('sprouting', 'growing') else
                              'idle' if farming.can_sow(town, building, field['cycle']) else 'waiting_plowing')
             state['playback'].append(_sample(state, seconds - remaining, source))
-            return False
+            return finished
         else:
             if boating:
                 load = boat_load(town, building)
@@ -397,4 +404,4 @@ def _advance(town, landscape, villager, building, source, index, seconds):
                 continue
             path = [] if source is building else travel(state, building)
             state.update(path=path or [], phase='waiting' if path is None else 'returning' if path else 'depositing', elapsed=0)
-    return False
+    return finished
