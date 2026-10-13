@@ -283,7 +283,12 @@ the Python host, refresh both browsers, and create a new world to use the shared
   the farm. Farmers fetch reachable water when watering; the farm can be farther
   than three steps from water. Farms without
   nearby acres continue their existing production. Acres are saved with their farm
-  association; moving the farm out of reach pauses work on those fields.
+  association. Moving a farm moves all its linked acres by the same offset,
+  preserving crops, upgrades, stored goods, and assignments. The whole move costs
+  one coin (free in sandbox or with no coins) and requires every destination tile
+  to be clear and inside the building area. The move preview includes the acres.
+  Destroying a farm also destroys its linked acres, including construction sites,
+  releases their assigned workers, and salvages their stored goods at the hall.
   In the farm's **Production** section, use **Crop for all acres** to change every
   linked acre to one unlocked crop, including acres still under construction.
   The selector shows **Mixed crops** when the acres grow different types.

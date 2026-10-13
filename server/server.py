@@ -869,6 +869,13 @@ def tick(world):
             town['achievements'].append('Timber roots')
 
 
+def linked_buildings(town, index):
+    building = town['buildings'][index]
+    return [(i, b) for i, b in enumerate(town['buildings'])
+            if i == index or (building['kind'] == 'farm' and b['kind'] == 'acre'
+                              and b.get('farm_index') == index)]
+
+
 def validate_acre(town, farm_index, x, y):
     if (type(farm_index) is not int or not 0 <= farm_index < len(town['buildings'])
             or town['buildings'][farm_index]['kind'] != 'farm'
@@ -1029,28 +1036,50 @@ def command(town, data, world=None):
         size = town.get('map_size', MAP_SIZE)
         if type(x) is not int or type(y) is not int or not (0 <= x < size and 0 <= y < size):
             raise ValueError('Choose a tile inside your town.')
-        if any(b['x'] == x and b['y'] == y for b in town['buildings']):
+        moved = town['buildings'][index]
+        group = linked_buildings(town, index)
+        moving_indices = {i for i, _ in group}
+        dx, dy = x - moved['x'], y - moved['y']
+        if dx == 0 and dy == 0:
             raise ValueError('That tile is already occupied.')
-        if any(r['x'] == x and r['y'] == y for r in town['map_resources']):
-            raise ValueError('Choose open grass; trees, water, and rocks occupy this tile.')
         player = ensure_player(town)
-        if abs(player['x'] - x) < .68 and abs(player['y'] - y) < .68:
-            raise ValueError('Walk away from this tile before moving a building here.')
-        validate_building_range(town, x, y)
-        if town['buildings'][index]['kind'] == 'acre':
-            validate_acre(town, town['buildings'][index].get('farm_index'), x, y)
+        terrain = town.get('terrain', [])
+        # Validate every destination before charging or moving any part of the farm.
+        for i, building in group:
+            nx, ny = building['x'] + dx, building['y'] + dy
+            if not (0 <= nx < size and 0 <= ny < size):
+                raise ValueError('Choose a tile inside your town for every linked acre.')
+            if any(j not in moving_indices and b['x'] == nx and b['y'] == ny
+                   for j, b in enumerate(town['buildings'])):
+                raise ValueError('That tile is already occupied.')
+            if any(r['x'] == nx and r['y'] == ny for r in town['map_resources']):
+                raise ValueError('Choose open grass; trees, water, and rocks occupy this tile.')
+            if any(n['x'] == nx and n['y'] == ny for n in town['npcs']):
+                raise ValueError('A local is standing here. Choose another tile.')
+            if terrain and terrain[ny][nx] == 'v':
+                raise ValueError('Choose a tile inside the valley boundary.')
+            if abs(player['x'] - nx) < .68 and abs(player['y'] - ny) < .68:
+                raise ValueError('Walk away from this tile before moving a building here.')
+            validate_building_range(town, nx, ny)
+            if world and 'shared_map' in world:
+                validate_placement(world, town, {'action': 'move', 'index': i, 'x': nx, 'y': ny})
+        if moved['kind'] == 'acre':
+            validate_acre(town, moved.get('farm_index'), x, y)
         # Rearranging must remain possible even after spending the starting coins.
         if not town.get('sandbox'):
             town['coins'] = max(0, town['coins'] - 1)
-        moved = town['buildings'][index]
+        moved_specs = [{k: b[k] for k in ('kind', 'x', 'y')} for _, b in group]
         for villager in town['villagers']:
             trip = villager.get('logistics_trip', {})
             if (trip.get('operation') == 'sell'
-                    and {k: moved[k] for k in ('kind', 'x', 'y')} in (trip.get('workplace'), trip.get('storage'))):
+                    and any(spec in (trip.get('workplace'), trip.get('storage')) for spec in moved_specs)):
                 logistics.cancel_trip(town, villager)
-            if villager.get('pending_workplace') == {k: moved[k] for k in ('kind', 'x', 'y')}:
+            if villager.get('pending_workplace') in moved_specs:
                 logistics.cancel_output(town, villager)
-        town['buildings'][index].update(x=x, y=y)
+            if villager.get('building_index') in moving_indices:
+                villager.pop('work_animation', None)
+        for _, building in group:
+            building.update(x=building['x'] + dx, y=building['y'] + dy)
     elif action == 'destroy':
         index = data.get('index')
         if type(index) is not int or not 0 <= index < len(town['buildings']):
@@ -1058,36 +1087,47 @@ def command(town, data, world=None):
         if town['buildings'][index]['kind'] == 'hall':
             raise ValueError('The town hall cannot be destroyed.')
         economy.ensure_inventory(town)
-        removed = town['buildings'][index]
+        group = linked_buildings(town, index)
+        removed_indices = {i for i, _ in group}
+        removed_specs = [{k: b[k] for k in ('kind', 'x', 'y')} for _, b in group]
         for villager in town['villagers']:
             trip = villager.get('logistics_trip', {})
             if (trip.get('operation') == 'sell'
-                    and {k: removed[k] for k in ('kind', 'x', 'y')} in (trip.get('workplace'), trip.get('storage'))):
+                    and any(spec in (trip.get('workplace'), trip.get('storage')) for spec in removed_specs)):
                 logistics.cancel_trip(town, villager)
-            if villager.get('pending_workplace') == {k: removed[k] for k in ('kind', 'x', 'y')}:
+            if (villager.get('pending_workplace') in removed_specs
+                    or villager.get('building_index') in removed_indices):
                 logistics.cancel_output(town, villager)
-        removed = town['buildings'].pop(index)
+            if villager.get('building_index') in removed_indices:
+                logistics.cancel_trip(town, villager)
+        remaining = [(i, b) for i, b in enumerate(town['buildings']) if i not in removed_indices]
+        new_indices = {old: new for new, (old, _) in enumerate(remaining)}
+        town['buildings'][:] = [b for _, b in remaining]
         hall = next(b for b in town['buildings'] if b['kind'] == 'hall')
-        for key, amount in economy.inventory(removed).items():
-            stock = hall.setdefault('stored_goods', {})
-            stock[key] = stock.get(key, 0) + amount
-        # Demolition salvages unfinished goods at the hall as well.
-        for key, amount in removed.get('pending_output', {}).items():
-            stock = hall.setdefault('stored_goods', {})
-            stock[key] = stock.get(key, 0) + amount
-            economy.add_stock(town, key, amount)
+        for _, removed in group:
+            for key, amount in economy.inventory(removed).items():
+                stock = hall.setdefault('stored_goods', {})
+                stock[key] = stock.get(key, 0) + amount
+            # Demolition salvages unfinished goods at the hall as well.
+            for key, amount in removed.get('pending_output', {}).items():
+                stock = hall.setdefault('stored_goods', {})
+                stock[key] = stock.get(key, 0) + amount
+                economy.add_stock(town, key, amount)
         for villager in town['villagers']:
             assigned = villager.get('building_index')
-            if type(assigned) is int and assigned >= index:
-                if assigned == index:
+            if type(assigned) is int:
+                if assigned in removed_indices:
                     villager.pop('building_index')
                     villager['job'] = 'idle'
-                else:
-                    villager['building_index'] = assigned - 1
+                elif assigned in new_indices:
+                    villager['building_index'] = new_indices[assigned]
         for building in town['buildings']:
             farm_index = building.get('farm_index')
-            if type(farm_index) is int and farm_index >= index:
-                building['farm_index'] = None if farm_index == index else farm_index - 1
+            if type(farm_index) is int:
+                if farm_index in removed_indices:
+                    building['farm_index'] = None
+                elif farm_index in new_indices:
+                    building['farm_index'] = new_indices[farm_index]
     elif action == 'assign_settler':
         assign_settler(town, data.get('index'), data.get('building_index'))
     elif action == 'remove_settler':

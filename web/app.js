@@ -1667,9 +1667,13 @@ function renderSelection(town){
       $('upgrade').disabled=!!town.upgrade_remaining || !!item.construction || viewed!==identity?.town_id || !upgrade;
     }
     $('selection-move').hidden=viewed!==identity?.town_id;
-    $('selection-move').textContent=!town.sandbox&&town.coins?'Move · 1 coin':'Move · Free';
+    $('selection-move').textContent=`${item.kind==='farm'?'Move farm & acres':'Move'} · ${!town.sandbox&&town.coins?'1 coin':'Free'}`;
     $('selection-move').onclick=()=>{const index=selection.index;openPanel('build');tool='move';moveIndex=index;render();};
     $('selection-destroy').hidden=viewed!==identity?.town_id || item.kind==='hall';
+    $('selection-destroy').textContent=item.kind==='farm'?'Destroy farm & acres · No refund':'Destroy · No refund';
+    if(item.kind==='farm'){
+      const note=document.createElement('p');note.textContent='Moving this farm moves all linked acres with it. Destroying it also removes those acres.';details.append(note);
+    }
     if(item.construction){
       const c=item.construction,stage=c.progress===0?'Waiting for a builder':c.upgrade?'Upgrading':c.progress<c.total/3?'Foundations':c.progress<c.total*2/3?'Framing':'Finishing';
       status.textContent=`${stage} · ${Math.floor(c.progress/c.total*100)}% complete · ${Math.ceil(c.total-c.progress)}s remaining of work`;
@@ -3511,6 +3515,15 @@ function draw(seconds=0){
     const valid=placementValid(town,preview,previewKind);
     ctx.save();ctx.globalAlpha=valid ? .65 : .35;
     if(previewKind==='road')drawRoad(preview);
+    else if(tool==='move'&&previewKind==='farm'){
+      const farm=town.buildings[moveIndex];
+      const group=farmMoveGroup(town).map(b=>({...b,x:b.x+preview.x-farm.x,y:b.y+preview.y-farm.y}));
+      for(const b of group.sort((a,b)=>(a.x+a.y)-(b.x+b.y))){
+        const [px,py]=point(b.x,b.y);
+        polygon([[px,py],[px+tileW/2,py+tileH/2],[px,py+tileH],[px-tileW/2,py+tileH/2]],'#00000000',valid?'#eee5ab':'#f3a295');
+        drawBuilding(b,town);
+      }
+    }
     else drawBuilding({...preview,kind:previewKind},town);
     ctx.restore();
   }
@@ -3526,13 +3539,23 @@ function insideBuildingRange(town,tile){
   return !!hall && Math.abs(tile.x-hall.x)+Math.abs(tile.y-hall.y)<=buildingRange(town)
     && (!origin || Math.abs(tile.x-origin.x)+Math.abs(tile.y-origin.y)<=Math.max(15,buildingRange(town)));
 }
-function placementValid(town,tile,kind){
-  return insideBuildingRange(town,tile) && town.terrain?.[tile.y]?.[tile.x]!=='v'
-    && (kind!=='acre'||acrePlacementValid(town,tile,tool==='move'?town.buildings[moveIndex]?.farm_index:acreFarmIndex))
-    && !(world.shared_map?Object.values(world.towns).flatMap(t=>t.buildings):town.buildings).some(b=>b.x===tile.x&&b.y===tile.y)
+function farmMoveGroup(town){
+  return town.buildings.filter((b,i)=>i===moveIndex||b.kind==='acre'&&b.farm_index===moveIndex);
+}
+function placementValid(town,tile,kind,moving=null){
+  if(!moving&&tool==='move'&&kind==='farm'&&town.buildings[moveIndex]?.kind==='farm'){
+    const farm=town.buildings[moveIndex],group=farmMoveGroup(town);
+    return (tile.x!==farm.x||tile.y!==farm.y)
+      && group.every(b=>placementValid(town,{x:b.x+tile.x-farm.x,y:b.y+tile.y-farm.y},b.kind,group));
+  }
+  return tile.x>=0&&tile.y>=0&&tile.x<mapSize(town)&&tile.y<mapSize(town)
+    && insideBuildingRange(town,tile) && town.terrain?.[tile.y]?.[tile.x]!=='v'
+    && (moving||kind!=='acre'||acrePlacementValid(town,tile,tool==='move'?town.buildings[moveIndex]?.farm_index:acreFarmIndex))
+    && !(world.shared_map?Object.values(world.towns).flatMap(t=>t.buildings):town.buildings).some(b=>!moving?.includes(b)&&b.x===tile.x&&b.y===tile.y)
     && !(town.npcs || []).some(n=>n.x===tile.x&&n.y===tile.y)
     && !town.map_resources.some(r=>r.x===tile.x&&r.y===tile.y)
     && (!world.shared_map || !Object.values(world.towns).some(t=>t.player&&Math.abs(t.player.x-tile.x)<.68&&Math.abs(t.player.y-tile.y)<.68))
+    && (!moving || !town.player || Math.abs(town.player.x-tile.x)>=.68||Math.abs(town.player.y-tile.y)>=.68)
     && (!world.shared_map || kind!=='hall' || !Object.values(world.towns).some(t=>t!==town&&t.buildings.some(b=>b.kind==='hall'&&Math.hypot(b.x-tile.x,b.y-tile.y)<40)))
     && (tool==='move' || town.sandbox || town.wood>=costs[kind]);
 }
