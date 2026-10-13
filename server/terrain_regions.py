@@ -80,7 +80,7 @@ def local_rivers(seed, size, cx, cy):
     return tuple(result)
 
 
-def sample_tile(seed, x, y, size, field):
+def sample_tile(seed, x, y, size, field, sparse_grass=False):
     u, v = x/size, y/size
     plan = layout(seed)
     detail = field(seed, 'v3-edge', x, y, size/24)
@@ -98,6 +98,10 @@ def sample_tile(seed, x, y, size, field):
 
     biome = 'f' if woods > .62 else 'r' if soil > .80 else 'm' if wet > .48 else 'g'
     trees = max(0, woods-.36)*(.45+canopy)*.90
+    if sparse_grass and biome in 'gm':
+        # Open farmland between woodland patches; specialized groves below
+        # still set their own density, including riverbanks.
+        trees *= .5
     rock = .18 if biome == 'r' else .008
     species = None
     marsh = distance(plan['swamp'])

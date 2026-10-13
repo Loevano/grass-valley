@@ -62,7 +62,8 @@ seeded world coordinates, with irregular edges and smaller surrounding patches.
 - Winding northern and western rivers feed a southern lake with three wooded
   islands. Smaller tributaries branch through the ice, swamp, and eastern land.
 - Woodland grows in patches across green terrain, with riparian groves and
-  open gaps between clusters.
+  open gaps between clusters. Trees are sparser on open grass and meadows to
+  leave more room for farming.
 - Each starting town has a smaller fishing lake nearby. The central treasure
   lake, its islands, starter clearings, and paths between towns remain available.
 

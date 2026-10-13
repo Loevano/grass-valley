@@ -308,7 +308,7 @@ class LanHost(unittest.TestCase):
         self.assertIn('legacy', server.WORLDS)
         self.assertEqual(server.WORLD['towns'], {})
         self.assertEqual(server.TOKENS, {})
-        self.assertEqual(server.WORLD['shared_map']['terrain_version'], 3)
+        self.assertEqual(server.WORLD['shared_map']['terrain_version'], 4)
         self.assertNotEqual(server.WORLD['shared_map']['terrain_seed'], old_seed)
         self.assertFalse(chunk_folder.exists())
         server.load()

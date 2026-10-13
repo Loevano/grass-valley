@@ -85,7 +85,8 @@ Map refreshes send only terrain and resource chunks the browser needs, and walki
 saves with the regular three-second simulation update.
 
 New worlds have winding, branching rivers feeding a southern lake with wooded
-islands. Woodland grows in patches across the meadows and along riverbanks.
+islands. Woodland grows in patches across the meadows and along riverbanks. Open
+grassland has fewer trees between those patches, leaving more space to farm.
 Reedhaven's western swamp mixes dense willow groves, pools, and narrow channels.
 The smaller desert around Sunwell has rocky areas and palm-lined oases, while the
 northern ice region around Frostbrook has groves, pools, and rock outcrops.
