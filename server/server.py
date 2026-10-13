@@ -1160,6 +1160,8 @@ def command(town, data, world=None):
         if type(index) is not int or not 0 <= index < len(town['buildings']):
             raise ValueError('Choose a building first.')
         building = town['buildings'][index]
+        if building['kind'] == 'well':
+            raise ValueError('Wells supply water automatically and need no assigned workers.')
         if building['kind'] == 'hall':
             raise ValueError('The town hall is reserved for your controllable character.')
         level = building.get('settler_level', 1)
@@ -1196,6 +1198,8 @@ def command(town, data, world=None):
         if type(index) is not int or not 0 <= index < len(town['buildings']):
             raise ValueError('Choose a building first.')
         building = town['buildings'][index]
+        if building['kind'] == 'well':
+            raise ValueError('Wells already supply all the water workers need.')
         if building['kind'] not in COSTS:
             raise ValueError('Use the town hall upgrade instead.')
         if not completed(building):

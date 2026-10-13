@@ -421,7 +421,7 @@ function remotePlayerSprite(townId,town,seconds){
   state.phase=active&&!state.path.length?'working':'idle';
   return {kind:'player',townId,x:state.x,y:state.y,index:1,villager:{job:activity?.job || 'idle'},active,state,equipment:town.player.equipment,mounted:!!town.player.mounted,leadingHorse:!!town.player.leading_horse};
 }
-const labels = {road:'Dirt road',hall:'Town hall',home:'Cottage',woodcutter:'Woodcutter',farm:'Farm',storehouse:'Storehouse',fishing_hut:'Fishing hut',acre:'Acre'};
+const labels = {road:'Dirt road',hall:'Town hall',home:'Cottage',woodcutter:'Woodcutter',farm:'Farm',storehouse:'Storehouse',fishing_hut:'Fishing hut',acre:'Acre',well:'Well'};
 function buildingLevel(building){return building.level || 1;}
 function housingCapacity(town){
   return 5+town.buildings.filter(b=>b.kind==='home'&&!b.construction).reduce((sum,b)=>sum+Math.max(2*(buildingLevel(b)+(b.profession_upgrades?.includes('timber_frame')?1:0)),town.sandbox?settlerSpaces.home*(b.settler_level || 1):0),0);
@@ -448,7 +448,7 @@ function buildingHeight(building,town){
   return ({hall:42,woodcutter:23,mine:27,smelter:36,steelworks:38,stable:32,tannery:28,saddler:27,tradehouse:35,barn:34,mill:40,smokehouse:32,workshop:25,sawpit:16,market:17,fish_pond:18,orchard:20,bakery:30,butcher:25}[building.kind] || 27)+4*(buildingVisualLevel(building,town)-1);
 }
 const storehouseCapacities=[50,75,100,150,200,250,300,350];
-function buildingStorageSize(building){return ['home','market'].includes(building.kind)?0:building.kind==='hall'?200:building.kind==='storehouse'?storehouseCapacities[buildingLevel(building)-1]:50;}
+function buildingStorageSize(building){return ['home','market','well'].includes(building.kind)?0:building.kind==='hall'?200:building.kind==='storehouse'?storehouseCapacities[buildingLevel(building)-1]:50;}
 function storageCapacity(town){return town.buildings.filter(b=>!b.construction).reduce((sum,b)=>sum+buildingStorageSize(b),0);}
 
 const storageKeys=['wood','food','planks','wheat','fodder','flour','wool','tools','manure','herbs'];
@@ -666,7 +666,7 @@ $('confirm-upgrade').onclick=()=>{
   const {index,...hallCommand}=command;
   act(command.action==='upgrade'?hallCommand:command);
 };
-const costs = {road:0,home:20,woodcutter:15,farm:15,storehouse:25,fishing_hut:15,acre:5};
+const costs = {road:0,home:20,woodcutter:15,farm:15,storehouse:25,fishing_hut:15,acre:5,well:15};
 const colors = {hall:'#a88861',home:'#c5ad80',woodcutter:'#947b55',farm:'#bc9b5c',storehouse:'#8c9b8b',fishing_hut:'#7899a2'};
 // Small vector illustrations share the map's earth, sage, and amber palette.
 Object.assign(labels,{barn:'Barn',sawpit:'Sawpit',mill:'Mill',smokehouse:'Smokehouse',workshop:'Workshop',fish_pond:'Fish pond',orchard:'Orchard',market:'Market stall',bakery:'Bakery',butcher:'Butcher shop'});
@@ -843,6 +843,7 @@ const iconPaths = {
   storehouse:'<path fill="#8c9b8b" d="M4 13h24v16H4z"/><path fill="#647876" d="M2 14 16 4l14 10z"/><path fill="#ad895c" d="M8 18h8v11H8zm10 4h8v7h-8z"/><path d="m8 18 8 11m0-11L8 29m10-7 8 7"/>',
   tree:'<path fill="#775b3e" d="M14 16h4v14h-4z"/><path fill="#56814c" d="m16 2 13 22H3z"/><path fill="#719451" d="m16 2 9 15H7z"/>',
   water:'<path fill="#6ba2af" d="M16 2C12 10 5 15 5 21a11 11 0 0 0 22 0c0-6-7-11-11-19z"/><path d="M10 21q0 6 7 6"/>',
+  well:'<path fill="#a4aaa1" d="M5 19h22v8c0 5-22 5-22 0z"/><ellipse fill="#447d91" cx="16" cy="19" rx="11" ry="4"/><path d="M7 20V8m18 12V8M7 10h18m-9 0v10"/><path fill="#98634f" d="m3 8 13-6 13 6z"/><path fill="#b79865" d="M13 19h6v5h-6z"/>',
   acre:'<path fill="#80764a" d="m2 19 15-8 13 8-15 10z"/><path d="m8 20 12-6m-8 9 12-6m-8 9 12-6"/><path fill="#d9bd70" d="M8 12h4v8H8zm8-6h4v9h-4zm8 6h4v8h-4z"/>',
   rock:'<path fill="#89928a" d="m3 25 3-15 12-7 11 12-3 12-13 3z"/><path fill="#b1baa8" d="m6 10 12-7 11 12-14 3z"/>'
 };
@@ -1635,7 +1636,7 @@ function renderSelection(town){
     if(buildingFolds.key!==foldKey)buildingFolds={key:foldKey,open:{}};
     $('selection-art').append(illustration(item.kind));
     $('selection-level').hidden=false;$('selection-level').textContent=`Lv ${item.kind==='hall'?town.level:buildingLevel(item)}`;
-    const workers=buildingSection(['hall','home'].includes(item.kind)?'Settlers':'Workers');
+    const workers=buildingSection(item.kind==='well'?'Water':['hall','home'].includes(item.kind)?'Settlers':'Workers');
     const production=buildingSection(item.kind==='market'?'Trade':['hall','home','storehouse'].includes(item.kind)?'Benefits':'Production');
     const upgrades=buildingSection('Upgrades'),details=buildingSection('Building details',true),storageOverview=buildingSection('Storage');
     const boats=item.kind==='fishing_hut'?buildingSection('Fishing boats'):null;
@@ -1646,9 +1647,12 @@ function renderSelection(town){
     const sourceWork=['woodcutter','farm','fishing_hut'].includes(item.kind);
     status.textContent=item.construction?'Under construction':town.upgrade_remaining&&item.kind==='hall'?`Upgrading · ${town.upgrade_remaining}s remaining`:
       sourceWork&&!buildingUsable(town,item)?'Needs a source in reach':
-      ['hall','home'].includes(item.kind)?'':item.kind==='acre'?'Field ready':
+      ['hall','home'].includes(item.kind)?'':item.kind==='well'?'Water available':item.kind==='acre'?'Field ready':
       !assigned.length?'Needs workers':[...new Set(assigned.map(v=>productionStatus(v,item)).filter(Boolean))].join(' · ') || `${assigned.length} assigned worker${assigned.length===1?'':'s'}.`;
-    if(!item.construction)renderSettlers(town,item,selection.index,workers,upgradeActions,details);
+    if(!item.construction&&item.kind!=='well')renderSettlers(town,item,selection.index,workers,upgradeActions,details);
+    if(item.kind==='well'){
+      const note=document.createElement('p');note.textContent='Workers fetch water here for watering crops. Keep a path to an adjacent tile clear. Supplies water automatically once built; no assigned workers are needed.';details.append(note);
+    }
     if(status.textContent)workers.append(status);
 
     if(item.kind==='hall'){
@@ -1680,10 +1684,10 @@ function renderSelection(town){
       const progress=document.createElement('progress');progress.max=c.total;progress.value=c.progress;progress.setAttribute('aria-label',`${labels[item.kind]} construction`);workers.append(progress);
     }
     renderProfession(town,item,selection.index,production,upgrades,details,boats,unlockedUpgrades);
-    if(!item.construction&&!['home','market'].includes(item.kind)){
+    if(!item.construction&&!['home','market','well'].includes(item.kind)){
       renderStorage(town,item,selection.index,storageOverview);
     }
-    if(costs[item.kind]){
+    if(costs[item.kind]&&item.kind!=='well'){
       const level=buildingLevel(item),cost=costs[item.kind]*level,maxLevel=item.kind==='storehouse'?storehouseCapacities.length:3;
       if(!item.construction){
         const benefits=document.createElement('p');benefits.className='info-copy';
@@ -1710,7 +1714,7 @@ function renderSelection(town){
       button.onclick=()=>{acreFarmIndex=selection.index;openPanel('build');tool='acre';moveIndex=null;buildTile=null;hoverTile=null;render();};
       production.append(button);
     }
-    if(!item.construction&&!['home','market'].includes(item.kind))$('selection-details').append(storageOverview);
+    if(!item.construction&&!['home','market','well'].includes(item.kind))$('selection-details').append(storageOverview);
     $('selection-details').append(workers);
     if(production.children.length>1)$('selection-details').append(production);
     if(boats?.children.length>1)$('selection-details').append(boats);
@@ -1726,7 +1730,7 @@ function renderSelection(town){
 }
 const buildingCategories=[
   ['Housing & storage',['home','storehouse']],
-  ['Food & farming',['farm','fishing_hut','barn','fish_pond','orchard','mill','smokehouse','bakery','butcher']],
+  ['Food & farming',['farm','well','fishing_hut','barn','fish_pond','orchard','mill','smokehouse','bakery','butcher']],
   ['Crafting',['woodcutter','sawpit','workshop','tannery','saddler']],
   ['Mining & metal',['mine','smelter','steelworks']],
   ['Horses',['stable']],
@@ -3724,6 +3728,22 @@ function paintBuilding(b,town,farmState=null,target=ctx,usable=buildingUsable(to
     return;
   }
   const [x,top]=point(b.x,b.y),y=top+tileH/2,s=tileW/46;
+  if(b.kind==='well'){
+    ctx.fillStyle='#223b2944';ctx.beginPath();ctx.ellipse(x+4*s,y+5*s,20*s,9*s,0,0,Math.PI*2);ctx.fill();
+    // A stone ring, timber windlass, and bucket mark the water collection point.
+    ctx.fillStyle='#828c85';ctx.beginPath();ctx.ellipse(x,y,16*s,8*s,0,0,Math.PI*2);ctx.fill();
+    ctx.fillRect(x-16*s,y-9*s,32*s,9*s);
+    ctx.fillStyle='#b5b8a9';ctx.beginPath();ctx.ellipse(x,y-9*s,16*s,8*s,0,0,Math.PI*2);ctx.fill();
+    ctx.fillStyle='#356275';ctx.beginPath();ctx.ellipse(x,y-9*s,11*s,5*s,0,0,Math.PI*2);ctx.fill();
+    ctx.strokeStyle='#67756e';ctx.lineWidth=s;
+    for(const offset of [-8,0,8]){ctx.beginPath();ctx.moveTo(x+offset*s,y-5*s);ctx.lineTo(x+offset*s,y+3*s);ctx.stroke();}
+    ctx.fillStyle='#705337';ctx.fillRect(x-14*s,y-32*s,3*s,25*s);ctx.fillRect(x+11*s,y-32*s,3*s,25*s);
+    ctx.fillRect(x-14*s,y-25*s,28*s,3*s);
+    ctx.strokeStyle='#d1b37c';ctx.beginPath();ctx.moveTo(x,y-24*s);ctx.lineTo(x,y-10*s);ctx.stroke();
+    ctx.fillStyle='#b79865';ctx.fillRect(x-3*s,y-12*s,6*s,6*s);ctx.fillStyle='#83bac5';ctx.fillRect(x-2*s,y-12*s,4*s,2*s);
+    paintPolygon([[x-20*s,y-32*s],[x,y-42*s],[x+20*s,y-32*s],[x,y-22*s]],'#98634f','#705337');
+    return;
+  }
   const level=buildingVisualLevel(b,town),upgrades=b.profession_upgrades || [];
   const w=tileW*(b.kind==='storehouse' ? .43 : .38),depth=w*tileH/tileW,h=buildingHeight(b,town)*s;
   // Wall bases share the tile's ground plane and its isometric slope.

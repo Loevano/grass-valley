@@ -106,6 +106,10 @@ action; individual acre crop selection remains available. Moving or destroying a
 farm now includes its linked acres; moves preserve their layout and require all
 destination tiles to be valid. Farming chain balancing below remains planned.
 
+Completed wells now provide water for crop watering alongside natural water
+sources. Farmers fetch from the nearest reachable source; wells need no staff.
+Farming chain balancing remains planned.
+
 - Woodcutters supply wood, sawpit workers make planks, and the woodworker crafts
   items that help workers work better or decorate the village.
 - Higher woodworker skill levels unlock more craftable items.

@@ -276,6 +276,10 @@ the Python host, refresh both browsers, and create a new world to use the shared
   food storage, can be hauled and eaten, and can be sold at a market stall.
   Boat upgrades use builders; exploration purchases and upgrades apply
   immediately. Existing boats keep their ownership and start at tier 1.
+- Build a **Well · 15 wood** from **Food & farming** at any hall level. Once
+  construction finishes, workers can fetch its water when watering crops, using
+  the nearest reachable water source. Leave at least one adjacent tile accessible.
+  Wells supply water automatically without assigned workers or upgrades.
 - Select a farm and choose **Build acre · 5 wood**, then click open ground within
   three tiles of that farm in each direction, including diagonals. This creates a
   7×7 square aligned with the map tiles, with the farm at its center (up to 48 acres).

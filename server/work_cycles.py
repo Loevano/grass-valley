@@ -103,6 +103,12 @@ def _advance(town, landscape, villager, building, source, index, seconds):
     if villager['job'] == 'fishing':
         spec.extend([building.get('level', 1), economy.fishing_boat_level(building), boating, 'boat_cargo_cycle'])
     state = villager.get('work_animation')
+    if (state and state['phase'] in ('fetching_water', 'collecting_water')
+            and (state.get('waterSource') or {}).get('kind') == 'well'
+            and not any(b['kind'] == 'well' and 'construction' not in b
+                        and b['x'] == state['waterSource']['x'] and b['y'] == state['waterSource']['y']
+                        for b in landscape['buildings'])):
+        state.update(path=[], phase='waiting_water', elapsed=0)
     size, terrain = landscape.get('map_size', 120), landscape.get('terrain', [])
     roads = {(r['x'], r['y']) for r in landscape.get('roads', []) if 'construction' not in r}
     blocked = {(b['x'], b['y']) for b in landscape['buildings'] + landscape['map_resources'] + landscape.get('npcs', [])}
@@ -240,9 +246,7 @@ def _advance(town, landscape, villager, building, source, index, seconds):
             state['waterReady'] = path is not None and not path
         elif farming and not state['waterReady']:
             banks = {}
-            for water in landscape['map_resources']:
-                if water['kind'] != 'water':
-                    continue
+            for water in economy.water_sources(landscape):
                 for dx, dy in ((1, 0), (0, 1), (-1, 0), (0, -1)):
                     bank = {'x': water['x'] + dx, 'y': water['y'] + dy}
                     if (bank['x'], bank['y']) not in blocked:
