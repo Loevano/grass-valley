@@ -112,6 +112,8 @@ fetches water once per farm watering round, uses that fill for all acres it tend
 in the round, waters each acre once, and it grows for another 15
 seconds before harvest and delivery. Field progress is saved, growth needs no
 worker, and farmers finish plowing, seeding, watering, and harvesting in rows.
+Field visuals follow confirmed worker playback, changing after each action finishes
+even when the host has already assigned the farmer another acre.
 Oldest cycles finish before any acre repeats, preventing untouched tiles from
 being skipped. The base harvest is now 10 crops per acre for the two 15-second
 growth periods; existing bonuses apply. Remaining farming work is downstream

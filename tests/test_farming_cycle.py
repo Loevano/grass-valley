@@ -31,6 +31,27 @@ class FarmingCycle(unittest.TestCase):
         server.command(self.town, {'action': 'build', 'kind': 'acre', 'farm_index': 1, 'x': 4, 'y': 4})
         self.assertEqual(self.town['buildings'][-1]['field']['stage'], 'unplowed')
 
+    def test_field_playback_keeps_before_and_after_action_snapshots(self):
+        self.advance()
+        self.advance()
+        samples = self.worker['work_animation']['playback']
+        self.assertEqual(samples[0]['farmField']['stage'], 'plowed')
+        completed = next(s for s in samples if s['farmField']['stage'] == 'sprouting')
+        self.assertEqual(completed['time'], farming.WORK_SECONDS)
+        farming.grow(self.town, 5)
+        self.assertEqual(completed['farmField']['elapsed'], 0)
+        self.assertEqual(self.acre['field']['elapsed'], 5)
+
+    def test_harvest_playback_clears_at_action_completion(self):
+        farming.field_state(self.acre).update(stage='ripe', crop='wheat')
+        server.tick(self.world)
+        samples = self.worker['work_animation']['playback']
+        self.assertEqual(samples[0]['farmField']['stage'], 'ripe')
+        cleared = next(s for s in samples if s['farmField']['stage'] == 'unplowed')
+        self.assertEqual(cleared['time'], farming.WORK_SECONDS)
+        self.assertEqual(cleared['phase'], 'harvest_ready')
+        self.assertEqual(cleared['farmField']['cycle'], 1)
+
     def test_seeding_waits_for_own_farms_acres_only(self):
         second = {'kind': 'acre', 'x': 4, 'y': 4, 'farm_index': 1}
         other_farm = {'kind': 'farm', 'x': 12, 'y': 10}

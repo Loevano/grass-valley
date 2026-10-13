@@ -429,6 +429,8 @@ the Python host, refresh both browsers, and create a new world to use the shared
   bonuses. Only one worker tends an acre at a time. Growth continues without workers or storage room;
   crops become available after harvesting and delivery. Field progress survives
   saving and moving. Changing the crop selection applies at the next seeding.
+  Field visuals follow the farmer's confirmed animation: furrows, seedlings,
+  watering changes, and cleared crops appear when the corresponding action finishes.
 - Build a fishing hut within three tile steps of water and assign Fishing to
   produce food and learn fishing skill. Fishers cast into the water, wait by a
   rippling float, reel in a fish, and carry their catch back to the hut.

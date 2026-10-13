@@ -92,12 +92,12 @@ const unfinished=animation.plan({...clustered,buildings:[...clustered.buildings,
   {job:'farming',logistics_position:{x:6,y:4},logistics_target:{kind:'delivery',x:6,y:5}},0);
 assert(unfinished.blocked.has('6,5'),'Delivery animation avoids unfinished acres');
 
-const crops=new Function('ctx','polygon','point','tileW','tileH','world',
+const crops=new Function('ctx','polygon','point','tileW','tileH','world','WorkerAnimation',
   source.slice(source.indexOf('function buildingLevel('),source.indexOf('function storageCapacity('))+
   source.slice(source.indexOf('function drawFarmCrops('),source.indexOf('function drawBuilding('))+
   '\nreturn drawFarmCrops;'
 )(ctx,(points,color)=>marks.push({method:'polygon',points,color}),
-  (x,y)=>[(x-y)*23,(x+y)*11.5],46,23,{progression:{farming_growth_seconds:15}});
+  (x,y)=>[(x-y)*23,(x+y)*11.5],46,23,{progression:{farming_growth_seconds:15}},animation);
 function fieldAt(stage,elapsed=0,crop='wheat',progress=0){
   marks.length=0;crops({...fields[0],crop,field:{stage,elapsed,crop,progress}},null);return marks.slice();
 }
@@ -110,6 +110,15 @@ const grain=output=>output.filter(mark=>mark.method==='stroke'&&['#d9bd70','#b8b
 assert.strictEqual(grain(ripe).length,16,'Harvest starts with ripe grain');
 assert.strictEqual(grain(cut).length,8,'Harvest gradually cuts the grain');
 assert.strictEqual(grain(fieldAt('ripe')).length,16,'Unattended ripe fields keep their saved appearance');
+const visibleField={...fields[0],crop:'wheat',field:{stage:'sprouting',elapsed:0,progress:0,crop:'wheat'}};
+const waitingForSeeds={playbackQueue:[{index:0,samples:[{phase:'working',farmAction:'sowing',
+  farmField:{x:visibleField.x,y:visibleField.y,stage:'plowed',elapsed:0,progress:0,crop:'wheat'}}]}]};
+const delayedPlants=[];
+crops(visibleField,waitingForSeeds,plant=>delayedPlants.push(plant));
+assert.strictEqual(delayedPlants.length,0,'The renderer waits for sowing playback before showing seedlings');
+waitingForSeeds.playbackQueue=[];
+crops(visibleField,waitingForSeeds,plant=>delayedPlants.push(plant));
+assert.strictEqual(delayedPlants.length,16,'Completed playback restores the seeded field');
 const ripeCrops=['vegetables','wheat','carrots','fodder'].map(crop=>fieldAt('ripe',0,crop));
 for(let i=0;i<ripeCrops.length;i++)for(let j=i+1;j<ripeCrops.length;j++){
   assert.notDeepStrictEqual(ripeCrops[i],ripeCrops[j],'Each crop has distinct ripe artwork');

@@ -58,3 +58,36 @@ Animation.playback(state,restarting,0);
 assert.equal(state.x,previousX,'Restarting a paused job cannot snap to a new host position');
 Animation.playback(state,restarting,.1);
 assert(state.x>previousX,'A restarted host cycle can resume after its version resets');
+
+// The host can finish one acre and assign the next while the browser still sows.
+const farmerState={x:0,y:0,clock:0};
+const acre={x:3,y:4,field:{stage:'sprouting',elapsed:3,cycle:0}};
+const secondAcre={x:4,y:4,field:{stage:'sprouting',elapsed:0,cycle:0}};
+const fieldSample=(time,field,stage,phase='working',farmAction='sowing')=>({
+  ...sample(time,field.x,field.y,phase),farmAction,
+  farmField:{x:field.x,y:field.y,stage,elapsed:0,progress:0,cycle:0,crop:'wheat'}});
+const sowing=(version,field)=>({...host(version,[fieldSample(0,field,'plowed'),
+  fieldSample(2,field,'sprouting','growing',null),fieldSample(3,field,'sprouting','growing',null)]),
+  task:['farming','farm',3,3,'acre',field.x,field.y]});
+Animation.playback(farmerState,sowing(1,acre),0);
+assert.equal(Animation.fieldPresentation(farmerState,acre),undefined,'Initial loading uses the current field');
+const firstSowing=sowing(2,acre),secondSowing=sowing(3,secondAcre);
+const snapshots=JSON.stringify([firstSowing,secondSowing]);
+Animation.playback(farmerState,firstSowing,1);
+Animation.playback(farmerState,secondSowing,0);
+assert.equal(Animation.fieldPresentation(farmerState,acre).stage,'plowed','Seeding waits for the visible action');
+assert.equal(Animation.fieldPresentation(farmerState,secondAcre).stage,'plowed','A queued acre waits for arrival');
+Animation.playback(farmerState,secondSowing,1);
+assert.equal(Animation.fieldPresentation(farmerState,acre).stage,'sprouting','Seedlings appear at action completion');
+Animation.playback(farmerState,secondSowing,4);
+assert.equal(Animation.fieldPresentation(farmerState,acre),undefined,'Finished fields resume independent growth');
+assert.equal(JSON.stringify([firstSowing,secondSowing]),snapshots,'Crop presentation preserves authoritative snapshots');
+
+const harvest={...host(4,[fieldSample(0,acre,'ripe','working','harvesting'),
+  fieldSample(2,acre,'unplowed','harvest_ready','harvesting'),
+  fieldSample(3,acre,'unplowed','harvest_ready','harvesting')]),task:firstSowing.task};
+acre.field={stage:'unplowed',cycle:1,elapsed:0,progress:0};
+Animation.playback(farmerState,harvest,1.9);
+assert.equal(Animation.fieldPresentation(farmerState,acre).stage,'ripe','Ripe crops remain until the sickle animation finishes');
+Animation.playback(farmerState,harvest,.2);
+assert.equal(Animation.fieldPresentation(farmerState,acre).stage,'unplowed','Harvest completion clears the crop');

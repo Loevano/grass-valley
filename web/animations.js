@@ -371,7 +371,8 @@ const WorkerAnimation = (() => {
     if(state.hostVersion!==host.version || state.hostTask!==task){
       if(state.hostVersion===undefined&&first){
         Object.assign(state,{x:host.x,y:host.y,phase:host.phase,elapsed:host.elapsed,
-          farmAction:host.farmAction,waterReady:host.waterReady,waterSource:host.waterSource,path:[]});
+          farmAction:host.farmAction,farmField:host.playback.at(-1)?.farmField,
+          waterReady:host.waterReady,waterSource:host.waterSource,path:[]});
       }else if(host.playback?.length){
         const samples=host.playback.map(p=>({...p}));
         // Task changes and recovery can relocate the host. Blend from the visible
@@ -397,7 +398,7 @@ const WorkerAnimation = (() => {
       const fraction=b.time>a.time?(chunk.time-a.time)/(b.time-a.time):0;
       Object.assign(state,{x:a.x+(b.x-a.x)*fraction,y:a.y+(b.y-a.y)*fraction,
         phase:a.phase,elapsed:(a.elapsed || 0)+(a.x===b.x&&a.y===b.y?chunk.time-a.time:0),
-        waterElapsed:(a.elapsed || 0)+chunk.time-a.time,waterReady:a.waterReady,waterSource:a.waterSource,farmAction:a.farmAction,
+        waterElapsed:(a.elapsed || 0)+chunk.time-a.time,waterReady:a.waterReady,waterSource:a.waterSource,farmAction:a.farmAction,farmField:a.farmField,
         facing:b.x-b.y!==a.x-a.y?(b.x-b.y>a.x-a.y?1:-1):a.facing,
         path:a.x!==b.x||a.y!==b.y?[{x:b.x,y:b.y}]:[]});
       state.clock+=take;
@@ -406,12 +407,26 @@ const WorkerAnimation = (() => {
       if(remaining<=0)break;
     }
   }
+  function fieldPresentation(state, field) {
+    // Keep each acre at its earliest unplayed state, even after the host has
+    // assigned the farmer another acre. Finished playback uses live growth.
+    for(const chunk of state.playbackQueue || []){
+      const sample=chunk.samples[chunk.index],view=sample.farmField;
+      if(view?.x===field.x&&view?.y===field.y){
+        // The crop clears when the sickle action finishes, not before arrival.
+        return {...view,progress:sample.phase==='working'&&sample.farmAction==='harvesting'?0:view.progress};
+      }
+    }
+    const view=state.farmField;
+    if(state.phase==='working'&&state.farmAction==='harvesting'&&view?.stage==='ripe'
+      &&view.x===field.x&&view.y===field.y)return {...view,progress:0};
+  }
   function finish(steps){let result;do{result=steps.next();}while(!result.done);return result.value;}
   const route=(...args)=>finish(routeSteps(...args));
   const plan=(...args)=>finish(planSteps(...args));
   const advance=(...args)=>finish(advanceSteps(...args));
   const waterDepths=(...args)=>finish(waterDepthsSteps(...args));
   const fishingPier=(...args)=>finish(fishingPierSteps(...args));
-  return {playback,route,plan,advance,waterDepths,fishingPier,fishingBoating,routeSteps,planSteps,advanceSteps};
+  return {playback,fieldPresentation,route,plan,advance,waterDepths,fishingPier,fishingBoating,routeSteps,planSteps,advanceSteps};
 })();
 if(typeof module!=='undefined')module.exports=WorkerAnimation;

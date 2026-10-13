@@ -917,6 +917,7 @@ def tick(world):
                 if field['yield_remaining'] <= 1e-9:
                     source['field'] = {'stage': 'unplowed', 'elapsed': 0, 'progress': 0,
                                        'cycle': field['cycle'] + 1}
+                    work_cycles.finish_harvest(animation, source)
             else:
                 amount = economy.take_supply(landscape, source, amount)
             if amount <= 0:

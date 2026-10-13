@@ -86,15 +86,31 @@ def advance(town, landscape, villager, building, source, index, seconds):
     finished = _advance(town, landscape, villager, building, source, index, seconds)
     state = villager.get('work_animation')
     if state and state.get('playback') is not previous:
-        state['playback'].append(_sample(state, seconds))
+        state['playback'].append(_sample(state, seconds, source))
     return finished
 
 
-def _sample(state, time):
+def _sample(state, time, source):
     sample = {key: state.get(key) for key in ('x', 'y', 'phase', 'elapsed', 'facing',
               'waterReady', 'waterSource', 'farmAction')}
     sample['time'] = time
+    if state['task'][0] == 'farming' and source['kind'] == 'acre':
+        sample['farmField'] = _field_view(source)
     return sample
+
+
+def _field_view(source):
+    field = farming.field_state(source)
+    return {'x': source['x'], 'y': source['y'],
+            **{key: field[key] for key in ('stage', 'elapsed', 'progress', 'cycle', 'crop')
+               if key in field}}
+
+
+def finish_harvest(state, source):
+    """Place the emptied field at the confirmed end of the sickle animation."""
+    for sample in state.get('playback', []):
+        if sample['phase'] == 'harvest_ready':
+            sample['farmField'] = _field_view(source)
 
 
 def _advance(town, landscape, villager, building, source, index, seconds):
@@ -219,11 +235,11 @@ def _advance(town, landscape, villager, building, source, index, seconds):
             villager['work_animation'] = state
     state['version'] += 1
     remaining = seconds
-    state['playback'] = [_sample(state, 0)]
+    state['playback'] = [_sample(state, 0, source)]
     last_phase, last_length, last_action = state['phase'], len(state['path']), state.get('farmAction')
     while remaining > 1e-9:
         if state['phase'] != last_phase or len(state['path']) != last_length or state.get('farmAction') != last_action:
-            state['playback'].append(_sample(state, seconds - remaining))
+            state['playback'].append(_sample(state, seconds - remaining, source))
             last_phase, last_length, last_action = state['phase'], len(state['path']), state.get('farmAction')
         if state['path']:
             target = state['path'][0]
@@ -291,11 +307,11 @@ def _advance(town, landscape, villager, building, source, index, seconds):
                 continue
             state.update(phase='working', farmAction=farming.ACTIONS[field['stage']], elapsed=field['progress'])
             if state.get('farmAction') != last_action or state['phase'] != last_phase:
-                state['playback'].append(_sample(state, seconds - remaining))
+                state['playback'].append(_sample(state, seconds - remaining, source))
                 last_phase, last_action = state['phase'], state.get('farmAction')
             if field['stage'] == 'ripe' and field['progress'] >= farming.WORK_SECONDS:
                 state['phase'] = 'harvest_ready'
-                state['playback'].append(_sample(state, seconds - remaining))
+                state['playback'].append(_sample(state, seconds - remaining, source))
                 return False
             phase = state['phase']
         if phase in ('waiting', 'waiting_water'):
@@ -330,7 +346,7 @@ def _advance(town, landscape, villager, building, source, index, seconds):
                 state.update(elapsed=0, farmAction=None,
                              phase='growing' if field['stage'] in ('sprouting', 'growing') else
                              'idle' if farming.can_sow(town, building, field['cycle']) else 'waiting_plowing')
-            state['playback'].append(_sample(state, seconds - remaining))
+            state['playback'].append(_sample(state, seconds - remaining, source))
             return False
         else:
             if boating:

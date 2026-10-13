@@ -2334,7 +2334,8 @@ function animatedVillagers(town, seconds, townId=viewed, frameLayout=null){
         }
       }else{
         const visible=state?.playbackQueue?{x:state.x,y:state.y,path:state.path,phase:state.phase,elapsed:state.elapsed,clock:state.clock,
-          playbackQueue:state.playbackQueue,hostVersion:state.hostVersion,hostTask:state.hostTask}:{};
+          playbackQueue:state.playbackQueue,hostVersion:state.hostVersion,hostTask:state.hostTask,
+          farmAction:state.farmAction,farmField:state.farmField}:{};
         state=Object.assign(WorkerAnimation.plan(world.shared_map?{...town,roads:mapRoads(town),obstacles:Object.values(world.towns).flatMap(t=>t.buildings),home_hall:town.buildings.find(b=>b.kind==='hall')}:town,villager,index,state),visible,{signature,layout,task});workers.set(workerKey,state);
       }
     }
@@ -3474,8 +3475,10 @@ function draw(seconds=0){
     const [px,py]=point(field.x,field.y);
     if(px < -tileW || px > rect.width+tileW || py < -tileH || py > rect.height+80*tileW/46)continue;
     const farmer=villagers.find(worker=>worker.villager.job==='farming'&&!worker.state.construction
-      &&worker.state.phase==='working'&&worker.state.source?.kind==='acre'
-      &&worker.state.source.x===field.x&&worker.state.source.y===field.y);
+      &&(field.townId===undefined||field.townId===worker.townId)
+      &&(WorkerAnimation.fieldPresentation(worker.state,field)
+        ||(worker.state.phase==='working'&&worker.state.source?.kind==='acre'
+          &&worker.state.source.x===field.x&&worker.state.source.y===field.y)));
     // Soil and furrows stay below every character; stalks use their own depth.
     drawFarmCrops(field,farmer?.state,crop=>cropObjects.push(crop));
   }
@@ -3621,7 +3624,7 @@ function buildingUsable(town,b){
   return buildingUsable.results.get(key);
 }
 function drawFarmCrops(b,state,collectCrop=null){
-  const field=b.field || {stage:'unplowed',elapsed:0,progress:0};
+  const field=(state&&WorkerAnimation.fieldPresentation(state,b)) || b.field || {stage:'unplowed',elapsed:0,progress:0};
   const elapsed=field.elapsed || 0;
   const growthSeconds=world?.progression?.farming_growth_seconds || 15;
   const stage=['unplowed','plowed'].includes(field.stage)?0:field.stage==='ripe'?3:2;
