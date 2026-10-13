@@ -1444,9 +1444,22 @@ class Handler(SimpleHTTPRequestHandler):
                             replacement = {'name': entry['name'], 'tokens': {},
                                 'world': new_world(explorable=True,
                                     chunk_directory=SAVE.with_name(SAVE.stem + '_chunks'), sandbox=True)}
+                            # Keep salted credentials privately, but recreate each
+                            # registered player's village with fresh sandbox state.
+                            replacement['players'] = {}
+                            for key, account in entry.get('players', {}).items():
+                                town_id = account['town_id']
+                                old_town = entry['world']['towns'].get(town_id)
+                                if old_town is None:
+                                    raise ValueError('A registered player has no village. Restore it before regenerating.')
+                                if town_id not in replacement['world']['towns']:
+                                    replacement['world']['towns'][town_id] = new_town(
+                                        old_town['name'], replacement['world'])
+                                replacement['players'][key] = dict(account)
                             replacement_id = secrets.token_hex(8)
                             WORLDS[replacement_id] = replacement
                             activate(replacement_id)
+                            prepare_landscapes(WORLD)
                             landscape = entry['world'].get('shared_map', {})
                             if landscape.get('chunked'):
                                 deleted_chunks = SAVE.with_name(SAVE.stem + '_chunks') / str(landscape['terrain_seed'])

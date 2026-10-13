@@ -21,8 +21,8 @@ def new_world(seed=None, explorable=False, chunk_directory=None, terrain_version
     sites = [{'x': rng.randint(lo_x, lo_x + 16), 'y': rng.randint(lo_y, lo_y + 16)}
              for lo_x, lo_y in [(22, 22), (82, 22), (22, 82), (82, 82)]]
     rng.shuffle(sites)
-    terrain_version = (4 if explorable else 1) if terrain_version is None else terrain_version
-    if terrain_version in (2, 3, 4):
+    terrain_version = (5 if explorable else 1) if terrain_version is None else terrain_version
+    if terrain_version in (2, 3, 4, 5):
         from chunk_world import regional_starter
         terrain, resources = regional_starter(seed, version=terrain_version)
     elif terrain_version == 1:

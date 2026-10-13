@@ -80,7 +80,7 @@ def local_rivers(seed, size, cx, cy):
     return tuple(result)
 
 
-def sample_tile(seed, x, y, size, field, sparse_grass=False):
+def sample_tile(seed, x, y, size, field, sparse_grass=False, open_farmland=False):
     u, v = x/size, y/size
     plan = layout(seed)
     detail = field(seed, 'v3-edge', x, y, size/24)
@@ -96,23 +96,29 @@ def sample_tile(seed, x, y, size, field, sparse_grass=False):
     def inside(name):
         return distance(plan[name]) < .80 + detail*.40
 
-    biome = 'f' if woods > .62 else 'r' if soil > .80 else 'm' if wet > .48 else 'g'
+    biome = 'f' if woods > .62 else 'r' if soil > (.87 if open_farmland else .80) else 'm' if wet > .48 else 'g'
     trees = max(0, woods-.36)*(.45+canopy)*.90
     if sparse_grass and biome in 'gm':
         # Open farmland between woodland patches; specialized groves below
         # still set their own density, including riverbanks.
         trees *= .5
-    rock = .18 if biome == 'r' else .008
+    rock = (.10 if biome == 'r' else .003) if open_farmland else (.18 if biome == 'r' else .008)
+    if open_farmland:
+        pasture = field(seed, 'v5-pasture', x, y, size/6)
+        if pasture > .50:
+            # Broad light-green meadows with only occasional trees. Habitat
+            # overrides still keep the swamp, desert, ice, and islands distinct.
+            biome, trees, rock = 'm', .006+canopy*.012, .001
     species = None
     marsh = distance(plan['swamp'])
     if inside('ice'):
-        biome = 'f' if woods > .66 and canopy > .48 else 'r' if soil > .71 else 'i'
+        biome = 'f' if woods > .66 and canopy > .48 else 'r' if soil > (.81 if open_farmland else .71) else 'i'
         trees = .12 + max(0, canopy-.45)*.60 if biome == 'f' else 0
-        rock = .09 if biome in 'ir' else .015
+        rock = (.045 if biome in 'ir' else .008) if open_farmland else (.09 if biome in 'ir' else .015)
     elif inside('desert'):
-        biome = 'r' if soil > .69 and detail > .42 else 'd'
+        biome = 'r' if soil > (.80 if open_farmland else .69) and detail > .42 else 'd'
         trees = 0
-        rock = .15 if biome == 'r' else .018
+        rock = (.08 if biome == 'r' else .008) if open_farmland else (.15 if biome == 'r' else .018)
     elif marsh < .80+detail*.40 or (marsh < 1.55 and detail > .65):
         biome = 'b'
         trees = .30 + woods*.22 + canopy*.15

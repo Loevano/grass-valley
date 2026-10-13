@@ -64,6 +64,8 @@ seeded world coordinates, with irregular edges and smaller surrounding patches.
 - Woodland grows in patches across green terrain, with riparian groves and
   open gaps between clusters. Trees are sparser on open grass and meadows to
   leave more room for farming.
+- Broad light-green meadows have very sparse trees for larger farming areas;
+  rock outcrops and scattered rocks are less frequent across the landscape.
 - Each starting town has a smaller fishing lake nearby. The central treasure
   lake, its islands, starter clearings, and paths between towns remain available.
 
@@ -72,7 +74,8 @@ spans roughly 160 by 200 tiles and the southern lake about 140 by 110 tiles.
 Seeds vary region centers, edges, and river bends. Existing saves retain their
 original generator, including unexplored chunks; create a new world or use
 **Regenerate world** on a sandbox world to get the latest layout. Regeneration
-resets that sandbox world's towns and progress after host confirmation. See the
+resets that sandbox world's towns and progress after host confirmation. Registered
+players keep their names and PINs and receive fresh villages with the same names. See the
 [game design reference](GAME_DESIGN.md#terrain-and-water).
 
 ## Questions to answer later

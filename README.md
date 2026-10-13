@@ -47,8 +47,9 @@ care, and food consumption run normally, so you can observe the chain's bottlene
 Sandbox worlds save and reopen with these rules and are labeled in the Worlds menu.
 The host can choose **Regenerate world** on a sandbox world's row in **Worlds**
 to try the latest terrain generator with a new seed. Type its name to confirm:
-this resets that sandbox world's towns, player logins, and all progress. Other
-worlds stay saved. Restart the Python host after changing generator code, then
+this resets that sandbox world's towns and all progress. Registered players keep
+their names and PINs and reconnect to fresh villages with the same village names.
+Other worlds stay saved. Restart the Python host after changing generator code, then
 regenerate; creating a new world also uses the latest generator.
 
 ## Join from another Mac
@@ -87,6 +88,8 @@ saves with the regular three-second simulation update.
 New worlds have winding, branching rivers feeding a southern lake with wooded
 islands. Woodland grows in patches across the meadows and along riverbanks. Open
 grassland has fewer trees between those patches, leaving more space to farm.
+Broad light-green meadows provide larger farming areas, with fewer rock outcrops
+and scattered rocks across the landscape.
 Reedhaven's western swamp mixes dense willow groves, pools, and narrow channels.
 The smaller desert around Sunwell has rocky areas and palm-lined oases, while the
 northern ice region around Frostbrook has groves, pools, and rock outcrops.

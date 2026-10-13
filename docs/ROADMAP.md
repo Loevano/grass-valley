@@ -57,6 +57,7 @@ hauling, storage, food consumption, and normal output rates still apply. The cha
 balancing and capacity changes below remain planned.
 Hosts can also regenerate sandbox worlds from the Worlds menu to try the latest
 terrain layout; confirmation resets only the selected sandbox's towns and progress.
+Registered players retain their names and PINs and reconnect to fresh villages.
 
 ### Worker capacity
 

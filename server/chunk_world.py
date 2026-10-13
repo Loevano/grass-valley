@@ -192,7 +192,7 @@ def generate_chunk(seed, key, version=1, size=WORLD_SIZE):
     """Version saved worlds so untouched legacy chunks never change generator."""
     if version == 1:
         return _legacy_chunk(seed, key)
-    if version not in (2, 3, 4):
+    if version not in (2, 3, 4, 5):
         raise ValueError(f'Unsupported terrain generator version: {version}')
     if version >= 3:
         from terrain_regions import sample_tile
@@ -204,7 +204,8 @@ def generate_chunk(seed, key, version=1, size=WORLD_SIZE):
         for x in range(cx * CHUNK_SIZE, (cx + 1) * CHUNK_SIZE):
             if version >= 3:
                 biome, water, trees, rocks, species = sample_tile(
-                    seed, x, y, size, _field, sparse_grass=version >= 4)
+                    seed, x, y, size, _field, sparse_grass=version >= 4,
+                    open_farmland=version >= 5)
             else:
                 biome, water = regional_tile(seed, x, y, size)
                 trees, rocks, species = (.45 if biome in ('f', 'b') else 0), (.15 if biome == 'r' else 0), None

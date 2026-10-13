@@ -19,8 +19,8 @@ class RegionalTerrain(unittest.TestCase):
         self.assertEqual(ChunkMap(legacy)._read('3,4'), record)
 
     def test_new_world_version_and_starter_survive_reconstruction(self):
-        self.assertEqual(new_world(42, explorable=True)['shared_map']['terrain_version'], 4)
-        for version in (2, 3, 4):
+        self.assertEqual(new_world(42, explorable=True)['shared_map']['terrain_version'], 5)
+        for version in (2, 3, 4, 5):
             world = new_world(42, explorable=True, terrain_version=version)
             manager = world['_chunks']
             expected = {key: manager._read(key) for key in ('4,4', '5,5', '6,6', '8,9')}
