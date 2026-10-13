@@ -7,7 +7,7 @@ and cache rules are in [Backend](BACKEND.md#cached-zoomed-out-map).
 | ----- | ---------------------------------- | ------------------------ | ---------------------------------------------------------------------------------------------------------------- |
 | 1     | Cached zoomed-out town overview    | Implemented              | Show the landscape and city sizes without refreshing animated scene detail.                                      |
 | 2     | Coherent terrain regions and water | Planned; not implemented | Create recognizable large regions, rivers, and lakes while retaining smaller local patches.                      |
-| 3     | Production line balancing          | Wood implemented; farming and fishing remain | Develop clear farming and fishing chains with capped staffing and simple upgrades. |
+| 3     | Production line balancing          | Wood and field cycle implemented; farming and fishing chain balance remains | Develop clear farming and fishing chains with capped staffing and simple upgrades. |
 
 ## Cached zoomed-out town overview
 
@@ -106,7 +106,12 @@ destination tiles to be valid. Farming chain balancing below remains planned.
 
 Completed wells now provide water for crop watering alongside natural water
 sources. Farmers fetch from the nearest reachable source; wells need no staff.
-Farming chain balancing remains planned.
+The field cycle is implemented: acres start unplowed, seeding waits until every
+linked acre is plowed, and each seeded acre sprouts for 15 seconds. One tender
+fetches water once for that acre, waters it once, and it grows for another 15
+seconds before harvest and delivery. Field progress is saved, growth needs no
+worker, and farmers switch between acres needing work. Remaining farming work is
+chain yields, ingredient demand, worker limits, and storage balancing below.
 
 - Farmers supply crops to the mill, which supplies ingredients to the bakery.
 - Balance the chains around their worker limits, ingredient demand, and delivered

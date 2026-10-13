@@ -132,6 +132,11 @@ class AllWorkplaceStorage(unittest.TestCase):
                 for key, amount in town['buildings'][-1]['stored_goods'].items():
                     economy.add_stock(town, key, amount)
                 worker['building_index'] = 3
+            field = town['buildings'][-1] if kind == 'acre' else building
+            # Buffer checks start at a crop ready for harvest, after its growth/water stages.
+            field['field'] = {'stage': 'ripe', 'elapsed': 0, 'progress': 0, 'cycle': 0, 'crop': output}
+            worker['construction_position'] = ({'x': field['x'], 'y': field['y']} if kind == 'acre'
+                                               else {'x': building['x'], 'y': building['y'] + 1})
         elif kind in economy.RECIPES:
             if kind == 'mine':
                 town['mineral_version'] = 1
@@ -187,6 +192,11 @@ class AllWorkplaceStorage(unittest.TestCase):
         server.tick(world)
         self.assertEqual(worker['pending_output'], {'wheat': .25})
         practice = worker['farming']
+        # Harvest cargo is returned even when it fills the buffer; then hauling pauses work.
+        for _ in range(10):
+            if not worker.get('pending_output'):
+                break
+            server.tick(world)
         server.tick(world)
         self.assertIn('Workplace buffer full', worker['production_status'])
         self.assertEqual(worker['farming'], practice)

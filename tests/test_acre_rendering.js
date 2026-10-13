@@ -10,7 +10,7 @@ canvasMock.getBoundingClientRect=()=>({left:0,top:0,width:960,height:660});
 const run=new Function('document','window','localStorage','setTimeout','clearTimeout',
   source.slice(0,source.lastIndexOf('requestAnimationFrame(animate);'))+`
   function check(condition,message){if(!condition)throw Error(message);}
-  const field={kind:'acre',x:5,y:5};
+  const field={kind:'acre',x:5,y:5,field:{stage:'ripe',elapsed:0,progress:0}};
   const town={map_size:12,buildings:[field],map_resources:[],villagers:[],player:{x:5,y:5}};
   identity={town_id:'own'};viewed='own';
   const marks=[];
@@ -42,11 +42,14 @@ const run=new Function('document','window','localStorage','setTimeout','clearTim
       }
     }
   }
+  const unplowed=[];
+  drawFarmCrops({...field,field:{stage:'unplowed',elapsed:0,progress:0}},null,crop=>unplowed.push(crop));
+  check(unplowed.length===0,'New acres are bare unplowed soil');
   const planted=[];
-  drawFarmCrops(field,{elapsed:3},crop=>planted.push(crop));
-  check(planted.length===8&&planted.every(crop=>crop.stage===1),'Sowing retains its progress');
+  drawFarmCrops({...field,field:{stage:'sprouting',elapsed:7.5,progress:0}},null,crop=>planted.push(crop));
+  check(planted.length===16&&planted.every(crop=>crop.stage===2&&crop.height===2),'Seeded acres sprout without a farmer');
   const harvested=[];
-  drawFarmCrops(field,{elapsed:7},crop=>harvested.push(crop));
+  drawFarmCrops({...field,field:{stage:'ripe',elapsed:0,progress:1}},null,crop=>harvested.push(crop));
   check(harvested.length===8&&harvested.every(crop=>crop.stage===3),'Harvesting retains its progress');
 `);
 run(documentMock,{devicePixelRatio:1,addEventListener(){}},{getItem:()=>null},()=>0,()=>{});

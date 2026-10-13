@@ -202,6 +202,11 @@ class BuildingUpgrades(unittest.TestCase):
                 self.town['buildings'][second]['y'] = 3
                 for i, workplace in enumerate([first, second]):
                     self.town['villagers'][i].update(job=job, building_index=workplace)
+                    if job == 'farming':
+                        building = self.town['buildings'][workplace]
+                        building['field'] = {'stage': 'ripe', 'elapsed': 0, 'progress': 0, 'cycle': 0,
+                                             'crop': 'vegetables'}
+                        self.town['villagers'][i]['construction_position'] = {'x': building['x'] + 1, 'y': building['y']}
                 self.town['wood'] = self.town['food'] = 30
                 tick({'towns': {'a': self.town}})
                 upkeep = 5 * .12 + 2 * .18 if resource == 'food' else 0
@@ -220,7 +225,7 @@ class BuildingUpgrades(unittest.TestCase):
             tick({'towns': {'a': self.town}})
             self.assertAlmostEqual(self.town['food'], food - .78)
 
-    def test_farm_and_acre_bonuses_add_and_respect_storage(self):
+    def test_farm_and_acre_bonuses_add_at_harvest_only(self):
         farm = self.add('farm')
         self.upgrade(farm)
         acre = self.add('acre', farm_index=farm)
@@ -228,14 +233,18 @@ class BuildingUpgrades(unittest.TestCase):
         self.upgrade(acre)
         self.town['map_resources'] = [{'kind': 'water', 'x': 7, 'y': 2}]
         command(self.town, {'action': 'job', 'index': 0, 'job': 'farming'})
+        self.town['buildings'][acre]['field'] = {'stage': 'ripe', 'elapsed': 0, 'progress': 0,
+                                                'cycle': 0, 'crop': 'vegetables'}
+        self.town['villagers'][0]['construction_position'] = {'x': 6, 'y': 3}
         self.town['food'] = 30
         tick({'towns': {'a': self.town}})
         self.assertAlmostEqual(self.town['food'], 30 - .78)
         self.assertEqual(self.town['buildings'][farm]['pending_output']['vegetables'], 1.5)
         self.town['food'] = 99.9
         tick({'towns': {'a': self.town}})
-        self.assertAlmostEqual(self.town['food'], 99.9 - .78)
-        self.assertEqual(self.town['buildings'][farm]['pending_output']['vegetables'], 3)
+        self.assertAlmostEqual(self.town['food'], 99.9 + 1.5 - .78)
+        self.assertEqual(self.town['buildings'][farm]['pending_output']['vegetables'], 0)
+        self.assertEqual(self.town['produced']['vegetables'], 1.5)
         self.town['map_resources'] = []
         tick({'towns': {'a': self.town}})
         self.assertIs(self.town['villagers'][0]['work_target'], self.town['buildings'][acre])

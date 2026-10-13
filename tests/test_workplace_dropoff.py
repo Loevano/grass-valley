@@ -150,7 +150,7 @@ class WorkplaceDropoff(unittest.TestCase):
         self.finish_dropoff()
         self.assertEqual(self.town['wood'], before + 6)
 
-    def test_farming_dropoff_waits_for_water_and_the_return_to_workplace(self):
+    def test_harvested_farming_cargo_returns_without_another_water_trip(self):
         self.worker['job'] = 'farming'
         self.building['kind'] = 'farm'
         self.source.update(kind='acre', farm_index=1)
@@ -159,7 +159,8 @@ class WorkplaceDropoff(unittest.TestCase):
         before = self.town['food']
         logistics.record_output(self.town, self.building, 'vegetables', 5, self.worker)
         phases = self.finish_dropoff()
-        self.assertTrue({'fetching_water', 'collecting_water', 'returning_water', 'returning', 'depositing'} <= phases)
+        self.assertTrue({'returning', 'depositing'} <= phases)
+        self.assertFalse({'fetching_water', 'collecting_water', 'returning_water'} & phases)
         self.assertEqual(self.town['food'], before + 5)
 
     def test_blocked_return_does_not_release_goods_and_can_recover(self):

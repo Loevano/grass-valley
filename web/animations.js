@@ -285,6 +285,7 @@ const WorkerAnimation = (() => {
     return {...position,phase:path===null?'waiting':path.length?'walking':source?'working':'idle',
       path:path || [],source,home,pier,workSpot,castTarget,fishingCaught:null,blocked,size,bounds,roads,roadMode,boating,sailing,boatCapacity:[0,5,10,20][boatLevel(home)],boatLoad:0,workDuration:villager.job==='farming'?8:3.2,
       farming:villager.job==='farming'&&!villager.construction_target,
+      fieldCycle:villager.job==='farming'&&!!source?.field,
       water:[...town.map_resources.filter(r=>r.kind==='water'),...(town.obstacles || town.buildings).filter(b=>b.kind==='well'&&!b.construction).map(b=>({kind:'well',x:b.x,y:b.y}))],waterReady:false,
       stationary:!!source&&source.kind===workplace?.kind&&distance(source,workplace)===0&&!villager.construction_target,
       construction:!!villager.construction_target,elapsed:0,clock:state?.clock || index*.37,facing:state?.facing || 1};
@@ -329,6 +330,8 @@ const WorkerAnimation = (() => {
     }
     if(state.transport){state.phase='waiting';return;}
     if(state.construction){state.elapsed+=seconds;return;}
+    // Field actions and growth are confirmed by the host, never predicted here.
+    if(state.fieldCycle)return;
     if(!active || !state.source || state.phase==='waiting')return;
     if(state.phase==='waiting_water')return;
     if(state.phase==='collecting_water'){
@@ -367,7 +370,8 @@ const WorkerAnimation = (() => {
     if(!state.playbackQueue)state.playbackQueue=[];
     if(state.hostVersion!==host.version || state.hostTask!==task){
       if(state.hostVersion===undefined&&first){
-        Object.assign(state,{x:host.x,y:host.y,phase:host.phase,elapsed:host.elapsed,path:[]});
+        Object.assign(state,{x:host.x,y:host.y,phase:host.phase,elapsed:host.elapsed,
+          farmAction:host.farmAction,waterReady:host.waterReady,waterSource:host.waterSource,path:[]});
       }else if(host.playback?.length){
         const samples=host.playback.map(p=>({...p}));
         // Task changes and recovery can relocate the host. Blend from the visible
@@ -393,7 +397,7 @@ const WorkerAnimation = (() => {
       const fraction=b.time>a.time?(chunk.time-a.time)/(b.time-a.time):0;
       Object.assign(state,{x:a.x+(b.x-a.x)*fraction,y:a.y+(b.y-a.y)*fraction,
         phase:a.phase,elapsed:(a.elapsed || 0)+(a.x===b.x&&a.y===b.y?chunk.time-a.time:0),
-        waterElapsed:(a.elapsed || 0)+chunk.time-a.time,waterReady:a.waterReady,waterSource:a.waterSource,
+        waterElapsed:(a.elapsed || 0)+chunk.time-a.time,waterReady:a.waterReady,waterSource:a.waterSource,farmAction:a.farmAction,
         facing:b.x-b.y!==a.x-a.y?(b.x-b.y>a.x-a.y?1:-1):a.facing,
         path:a.x!==b.x||a.y!==b.y?[{x:b.x,y:b.y}]:[]});
       state.clock+=take;

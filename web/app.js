@@ -1438,6 +1438,14 @@ function renderProfession(town,item,index,target,upgrades,details,boats,unlocked
     if(item.kind==='farm'){
       const label=document.createElement('label');label.textContent='Crop for all acres';label.append(chooser);target.append(label);
     }else target.append(chooser);
+    if(item.kind==='acre'){
+      const field=item.field || {stage:'unplowed',elapsed:0};
+      const labels={unplowed:'Unplowed soil',plowed:'Plowed · Waiting for seeding',sprouting:'Sprouting',
+        thirsty:'Needs water',growing:'Growing',ripe:'Ready to harvest'};
+      const remaining=['sprouting','growing'].includes(field.stage)?` · ${Math.ceil((catalog.farming_growth_seconds || 15)-field.elapsed)}s remaining`:'';
+      target.append(fact((labels[field.stage] || field.stage)+remaining,'Field stage'));
+      if(field.crop&&field.crop!==(item.crop || 'vegetables'))target.append(fact(goodName(field.crop),'Current crop · Selection applies next seeding'));
+    }
   }
   if(['barn','stable'].includes(item.kind)){
     target.append(fact(`${Object.values(item.animals || {}).reduce((a,n)=>a+n,0)} / ${4*buildingLevel(item)}`,'Animal capacity'));
@@ -2343,7 +2351,7 @@ function animatedVillagers(town, seconds, townId=viewed, frameLayout=null){
       if(state.hostVersion!==hostWork.version || state.hostTask!==JSON.stringify(hostWork.task)){
         Object.assign(state,{x:hostWork.x,y:hostWork.y,phase:hostWork.phase,
           elapsed:hostWork.phase==='collecting_water'?0:hostWork.elapsed,waterElapsed:hostWork.elapsed,
-          waterReady:hostWork.waterReady,waterSource:hostWork.waterSource,facing:hostWork.facing,
+          waterReady:hostWork.waterReady,waterSource:hostWork.waterSource,farmAction:hostWork.farmAction,facing:hostWork.facing,
           fishingCaught:null,
           path:hostWork.path.map(p=>({...p})),hostWork:true,hostVersion:hostWork.version,
           hostTask:JSON.stringify(hostWork.task)});
@@ -2475,7 +2483,7 @@ function drawVillager(b){
   const fishing=s.phase==='working'&&!walking&&b.villager.job==='fishing';
   const farming=s.phase==='working'&&!walking&&b.villager.job==='farming';
   const constructing=working&&!!b.villager.construction_target;
-  const farmStage=Math.min(3,Math.floor((s.elapsed || 0)/2));
+  const farmStage=s.farmAction?['plowing','sowing','watering','harvesting'].indexOf(s.farmAction):Math.min(3,Math.floor((s.elapsed || 0)/2));
   const farmSwing=(Math.sin((s.elapsed || 0)*Math.PI*3)+1)/2;
   const fishingTime=s.activityElapsed ?? s.elapsed ?? 0;
   const fishingUpgrades=s.home?.profession_upgrades || [];
@@ -3612,9 +3620,13 @@ function buildingUsable(town,b){
   return buildingUsable.results.get(key);
 }
 function drawFarmCrops(b,state,collectCrop=null){
-  const elapsed=state?.elapsed ?? 6;
-  const stage=Math.min(3,Math.floor(elapsed/2)),progress=(elapsed%2)/2;
-  const cropType=['vegetables','wheat','carrots','fodder'].includes(b.crop)?b.crop:'vegetables';
+  const field=b.field || {stage:'unplowed',elapsed:0,progress:0};
+  const elapsed=field.elapsed || 0;
+  const growthSeconds=world?.progression?.farming_growth_seconds || 15;
+  const stage=['unplowed','plowed'].includes(field.stage)?0:field.stage==='ripe'?3:2;
+  const progress=['sprouting','growing'].includes(field.stage)?elapsed/growthSeconds:0;
+  const plantedCrop=field.crop || b.crop;
+  const cropType=['vegetables','wheat','carrots','fodder'].includes(plantedCrop)?plantedCrop:'vegetables';
   const colors={vegetables:['#68934e','#8eae60'],wheat:['#d9bd70','#b8b458'],
     carrots:['#dd9048','#efa754'],fodder:['#72a65c','#9bbf70']}[cropType];
   const [x,y]=point(b.x,b.y),scale=tileW/46;
@@ -3633,15 +3645,17 @@ function drawFarmCrops(b,state,collectCrop=null){
   }
   for(let row=0;row<4;row++){
     const [ax,ay]=point(b.x-.3+row*.2,b.y-.35),[bx,by]=point(b.x-.3+row*.2,b.y+.35);
-    ctx.strokeStyle='#655638';ctx.lineWidth=scale;
-    ctx.beginPath();ctx.moveTo(ax,ay+tileH/2);ctx.lineTo(bx,by+tileH/2);ctx.stroke();
+    if(field.stage!=='unplowed'){
+      ctx.strokeStyle='#655638';ctx.lineWidth=scale;
+      ctx.beginPath();ctx.moveTo(ax,ay+tileH/2);ctx.lineTo(bx,by+tileH/2);ctx.stroke();
+    }
     for(let crop=0;crop<4;crop++){
       const order=row*4+crop;
-      if(stage===0 || (stage===1&&order>=progress*16) || (state&&stage===3&&order<progress*16))continue;
+      if(stage===0 || (stage===3&&order<(field.progress || 0)/2*16))continue;
       const x=b.x-.3+row*.2,y=b.y-.3+crop*.2;
       // Characters' feet sit .15 tile heights ahead of a crop's ground anchor.
       const stalk={kind:'crop',cropType,x,y,depth:x+y-.3,stage,
-        height:stage===2?2+progress*4:6,
+        height:field.stage==='sprouting'?1+progress*2:stage===2?3+progress*3:6,
         sway:state?Math.sin(elapsed*4+order):0,
         color:stage===2?'#8db568':colors[(row+crop)%2]};
       if(collectCrop)collectCrop(stalk);else drawFarmCrop(stalk);

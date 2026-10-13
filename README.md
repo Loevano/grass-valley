@@ -286,8 +286,8 @@ the Python host, refresh both browsers, and create a new world to use the shared
   Farmers tend its acres and deliver food back to
   the farm. Farmers fetch reachable water when watering; the farm can be farther
   than three steps from water. Farms without
-  nearby acres continue their existing production. Acres are saved with their farm
-  association. Moving a farm moves all its linked acres by the same offset,
+  nearby acres use the same farming cycle on the farm's own patch. Acres are saved
+  with their farm association. Moving a farm moves all its linked acres by the same offset,
   preserving crops, upgrades, stored goods, and assignments. The whole move costs
   one coin (free in sandbox or with no coins) and requires every destination tile
   to be clear and inside the building area. The move preview includes the acres.
@@ -415,10 +415,16 @@ the Python host, refresh both browsers, and create a new world to use the shared
   of reach of its wood or fishing source, production and skill growth pause;
   move it closer to the source to resume.
 - Farmers plow with a hoe, sow seeds, water with a can, and harvest with a sickle,
-  then carry grain back to the farm. At the watering stage, they walk to a
-  reachable water source, fill their can, and return to the field. Travel pauses
-  the action timer. Each action lasts two seconds; full food
-  storage pauses the animation until there is room again.
+  then carry crops back to the farm. New acres start as unplowed soil. Every acre
+  linked to a farm must be plowed before its workers can start seeding. Each seeded
+  acre sprouts independently for **15 seconds**, then waits for water. Its tender
+  makes **one water trip per acre per crop cycle**, fills the can at a reachable
+  well or natural water source, and returns to water that acre once. The crop then
+  grows for another **15 seconds** before harvest. Each field action takes two
+  seconds; travel adds time. Farmers move between acres needing work, and only one
+  worker tends an acre at a time. Growth continues without workers or storage room;
+  crops become available after harvesting and delivery. Field progress survives
+  saving and moving. Changing the crop selection applies at the next seeding.
 - Build a fishing hut within three tile steps of water and assign Fishing to
   produce food and learn fishing skill. Fishers cast into the water, wait by a
   rippling float, reel in a fish, and carry their catch back to the hut.

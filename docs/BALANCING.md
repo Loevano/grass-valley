@@ -151,12 +151,19 @@ inventory, without stacking duplicate bonuses. New sawpits start with one space.
 
 | Full chain | Work breakdown | Total production time cost | Total reward |
 | --- | --- | --- | --- |
-| Wheat → 2 flour | Grow 2 wheat: 6s; mill: 3s | 9 worker-seconds | 2 flour; 0.12 practice (0.08 farming + 0.04 milling) |
-| Wheat + wood → flour → 2 bread | Grow 2 wheat: 6s; mill: 3s; gather 0.5 wood: 2s; bake: 6s | 17 worker-seconds | 2 bread (3 food value); approximately 0.227 practice (0.08 farming + 0.04 milling + 0.027 woodcutting + 0.08 baking) |
+| Wheat → 2 flour | Tend 2 wheat: 16s; mill: 3s | 19 worker-seconds + water collection/travel | 2 flour; approximately 0.253 practice (0.213 farming + 0.04 milling) |
+| Wheat + wood → flour → 2 bread | Tend 2 wheat: 16s; mill: 3s; gather 0.5 wood: 2s; bake: 6s | 27 worker-seconds + water collection/travel | 2 bread (3 food value); approximately 0.36 practice (0.213 farming + 0.04 milling + 0.027 woodcutting + 0.08 baking) |
 
-The base farming reference is one wheat per three-second productive cycle;
-watering, field occupancy, and delivery add elapsed time. Bread's wood input is
-included even though it comes from another sector.
+The base farming reference is one crop per acre per completed harvest. Plowing,
+seeding, watering, and harvesting each take two worker-seconds. Seeding waits for
+all acres of that farm to be plowed. Each seeded acre sprouts for 15 seconds,
+waits for one worker's water trip and watering action, then grows for 15 more
+seconds. Growth is passive and overlaps work on other acres; it is excluded from
+worker-second totals. Filling the can takes 0.65 seconds. Field/water travel and
+delivery add time, and the host confirms progress on its three-second rhythm.
+Existing skill, tool, building, and manure yield bonuses still apply, with manure
+consumed once per harvest. Crop changes take effect at the next seeding. Bread's
+wood input is included even though it comes from another sector.
 
 ### Training
 
@@ -180,16 +187,17 @@ These examples start with one newly acquired young animal, alone in a barn,
 and end after all its raw meat becomes basic prepared meat. Each animal needs
 100 successful three-second tending cycles to reach 300 fed seconds. Feed per
 cycle is 0.15 for chickens, 0.25 for sheep, 0.4 for pigs, and 0.5 for cows.
-Growing vegetables or fodder at one unit per three-second productive cycle costs
-three worker-seconds per feed unit. Feeding produces 0.1 manure per animal per
+Growing vegetables or fodder costs eight active field worker-seconds per feed
+unit, plus passive growth, water collection, travel, and delivery as described
+above. Feeding produces 0.1 manure per animal per
 cycle, so each example retains 10 manure. No extra adult tending is included.
 
 | Full chain | Work breakdown | Total production time cost | Total reward |
 | --- | --- | --- | --- |
-| Feed → young chicken → meat → prepared meat | Grow 15 feed: 45s; tend: 300s; butcher: 60s; prepare: 6s | 411 worker-seconds (6m 51s) | 2 prepared meat (3 food value) + 10 manure; 5.7 practice (0.6 farming + 4 husbandry + 1.1 butchery) |
-| Feed → young sheep → meat → prepared meat | Grow 25 feed: 75s; tend: 300s; butcher: 60s; prepare: 12s | 447 worker-seconds (7m 27s) | 4 prepared meat (6 food value) + 1 hide + 10 manure; 6.2 practice (1 farming + 4 husbandry + 1.2 butchery) |
-| Feed → young pig → meat → prepared meat | Grow 40 feed: 120s; tend: 300s; butcher: 60s; prepare: 24s | 504 worker-seconds (8m 24s) | 8 prepared meat (12 food value) + 2 hides + 10 manure; 7 practice (1.6 farming + 4 husbandry + 1.4 butchery) |
-| Feed → young cow → meat → prepared meat | Grow 50 feed: 150s; tend: 300s; butcher: 60s; prepare: 30s | 540 worker-seconds (9m) | 10 prepared meat (15 food value) + 3 hides + 10 manure; 7.5 practice (2 farming + 4 husbandry + 1.5 butchery) |
+| Feed → young chicken → meat → prepared meat | Tend 15 feed: 120s; tend animal: 300s; butcher: 60s; prepare: 6s | 486 worker-seconds + water collection/travel | 2 prepared meat (3 food value) + 10 manure; approximately 6.7 practice (1.6 farming + 4 husbandry + 1.1 butchery) |
+| Feed → young sheep → meat → prepared meat | Tend 25 feed: 200s; tend animal: 300s; butcher: 60s; prepare: 12s | 572 worker-seconds + water collection/travel | 4 prepared meat (6 food value) + 1 hide + 10 manure; approximately 7.867 practice (2.667 farming + 4 husbandry + 1.2 butchery) |
+| Feed → young pig → meat → prepared meat | Tend 40 feed: 320s; tend animal: 300s; butcher: 60s; prepare: 24s | 704 worker-seconds + water collection/travel | 8 prepared meat (12 food value) + 2 hides + 10 manure; approximately 9.667 practice (4.267 farming + 4 husbandry + 1.4 butchery) |
+| Feed → young cow → meat → prepared meat | Tend 50 feed: 400s; tend animal: 300s; butcher: 60s; prepare: 30s | 790 worker-seconds + water collection/travel | 10 prepared meat (15 food value) + 3 hides + 10 manure; approximately 10.833 practice (5.333 farming + 4 husbandry + 1.5 butchery) |
 
 A barn tends all its animals in one shared cycle. For a same-age herd tended by
 one worker, count the 300 seconds of tending and its 4 husbandry practice once

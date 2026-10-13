@@ -1,0 +1,173 @@
+import copy
+import json
+import unittest
+
+import farming
+import progression as economy
+import server
+import work_cycles
+
+
+class FarmingCycle(unittest.TestCase):
+    def setUp(self):
+        self.town = server.new_town('Fields')
+        self.town.update(terrain=['g' * 16] * 16, map_size=16, map_resources=[], npcs=[],
+                         forage_version=1, forage_halls=[[5, 5]], sandbox=True)
+        self.farm = {'kind': 'farm', 'x': 3, 'y': 3}
+        self.acre = {'kind': 'acre', 'x': 3, 'y': 4, 'farm_index': 1, 'crop': 'wheat'}
+        self.well = {'kind': 'well', 'x': 9, 'y': 4}
+        self.town['buildings'].extend([self.farm, self.acre, self.well])
+        self.worker = self.town['villagers'][0]
+        self.worker.update(job='farming', building_index=1, talents={},
+                           construction_position={'x': 3, 'y': 4})
+        self.world = {'towns': {'fields': self.town}}
+
+    def advance(self, seconds=2):
+        return work_cycles.advance(self.town, self.town, self.worker, self.farm, self.acre, 0, seconds)
+
+    def test_new_placement_and_old_fields_start_unplowed(self):
+        self.assertEqual(farming.field_state(self.acre)['stage'], 'unplowed')
+        server.command(self.town, {'action': 'build', 'kind': 'acre', 'farm_index': 1, 'x': 4, 'y': 4})
+        self.assertEqual(self.town['buildings'][-1]['field']['stage'], 'unplowed')
+
+    def test_seeding_waits_for_own_farms_acres_only(self):
+        second = {'kind': 'acre', 'x': 4, 'y': 4, 'farm_index': 1}
+        other_farm = {'kind': 'farm', 'x': 12, 'y': 10}
+        other_acre = {'kind': 'acre', 'x': 12, 'y': 11, 'farm_index': 5}
+        self.town['buildings'].extend([second, other_farm, other_acre])
+        self.advance()
+        self.assertEqual(self.acre['field']['stage'], 'plowed')
+        self.advance(20)
+        self.assertEqual(self.worker['work_animation']['phase'], 'waiting_plowing')
+        self.assertEqual(self.acre['field']['stage'], 'plowed')
+        farming.complete_action(second)
+        self.advance()
+        self.assertEqual(self.acre['field']['stage'], 'sprouting')
+        self.assertEqual(farming.field_state(other_acre)['stage'], 'unplowed')
+
+    def test_farmer_moves_to_remaining_unplowed_acres(self):
+        second = {'kind': 'acre', 'x': 4, 'y': 4, 'farm_index': 1}
+        self.town['buildings'].append(second)
+        server.tick(self.world)
+        self.assertEqual(self.acre['field']['stage'], 'plowed')
+        self.assertIs(server.work_source(self.town, 'farming', 0), second)
+        server.tick(self.world)
+        self.assertEqual(second['field']['stage'], 'plowed')
+
+    def test_growth_survives_reload_and_needs_no_farmer_or_storage_room(self):
+        self.advance()
+        self.advance()
+        self.worker['job'] = 'idle'
+        self.farm['output_buffer'] = {'wheat': 10}
+        farming.grow(self.town, 6)
+        restored = json.loads(json.dumps(self.town))
+        acre = restored['buildings'][2]
+        farming.grow(restored, 8)
+        self.assertEqual(acre['field']['stage'], 'sprouting')
+        self.assertEqual(acre['field']['elapsed'], 14)
+        farming.grow(restored, 1)
+        self.assertEqual(acre['field']['stage'], 'thirsty')
+        farming.grow(restored, 100)
+        self.assertEqual(acre['field']['stage'], 'thirsty')
+        farming.complete_action(acre)
+        farming.grow(restored, 14)
+        self.assertEqual(acre['field']['stage'], 'growing')
+        farming.grow(restored, 1)
+        self.assertEqual(acre['field']['stage'], 'ripe')
+
+    def test_one_water_collection_per_acre_then_harvest_and_delivery(self):
+        collections = 0
+        previous_phase = None
+        saw_harvest = False
+        for _ in range(45):
+            server.tick(self.world)
+            animation = self.worker.get('work_animation', {})
+            for sample in animation.get('playback', []):
+                phase = sample['phase']
+                if phase == 'collecting_water' and previous_phase != phase:
+                    collections += 1
+                previous_phase = phase
+            if self.worker.get('pending_output') and not saw_harvest:
+                saw_harvest = True
+                self.assertEqual(collections, 1)
+                self.assertEqual(self.town.get('goods', {}).get('wheat', 0), 0)
+                self.assertTrue(any(sample.get('farmAction') == 'harvesting'
+                                    for sample in animation['playback']))
+                self.assertEqual(self.acre['field']['stage'], 'unplowed')
+            if self.town.get('goods', {}).get('wheat', 0) > 0:
+                break
+        self.assertTrue(saw_harvest)
+        self.assertEqual(collections, 1)
+        self.assertEqual(self.town['goods']['wheat'], 1)
+        self.assertEqual(self.acre['field']['cycle'], 1)
+
+    def test_missing_water_waits_and_new_well_resumes_same_crop(self):
+        self.advance()
+        self.advance()
+        farming.grow(self.town, 15)
+        self.town['buildings'].remove(self.well)
+        self.advance(30)
+        self.assertEqual(self.worker['work_animation']['phase'], 'waiting_water')
+        self.assertEqual(self.acre['field']['stage'], 'thirsty')
+        self.town['buildings'].append(self.well)
+        for _ in range(20):
+            self.advance(1)
+            if self.acre['field']['stage'] == 'growing':
+                break
+        self.assertEqual(self.acre['field']['stage'], 'growing')
+        self.assertEqual(self.acre['field']['crop'], 'wheat')
+
+    def test_two_workers_do_not_collect_water_for_the_same_acre(self):
+        self.advance()
+        self.advance()
+        farming.grow(self.town, 15)
+        self.advance(1)
+        second = self.town['villagers'][1]
+        second.update(job='farming', building_index=1, construction_position={'x': 3, 'y': 4})
+        work_cycles.advance(self.town, self.town, second, self.farm, self.acre, 1, 5)
+        self.assertEqual(second['work_animation']['phase'], 'waiting_field')
+        self.assertNotIn('waterSource', second['work_animation'])
+
+    def test_blocked_water_return_keeps_the_filled_can(self):
+        self.advance()
+        self.advance()
+        farming.grow(self.town, 15)
+        for _ in range(15):
+            self.advance(1)
+            if self.worker['work_animation']['phase'] == 'returning_water':
+                break
+        animation = self.worker['work_animation']
+        self.assertEqual(animation['phase'], 'returning_water')
+        obstruction = {'kind': 'rock', **animation['path'][0]}
+        self.town['map_resources'].append(obstruction)
+        self.advance(.1)
+        self.assertEqual(animation['phase'], 'waiting')
+        self.assertTrue(animation['waterReady'])
+        self.town['map_resources'].remove(obstruction)
+        self.advance(20)
+        self.assertEqual(self.acre['field']['stage'], 'growing')
+        self.assertNotIn('collecting_water', {sample['phase'] for sample in self.worker['work_animation']['playback']})
+
+    def test_crop_changes_apply_to_next_seeding(self):
+        self.advance()
+        self.advance()
+        self.acre['crop'] = 'vegetables'
+        self.assertEqual(self.acre['field']['crop'], 'wheat')
+        snapshot = copy.deepcopy(self.acre['field'])
+        farming.grow(self.town, 3)
+        self.assertEqual(self.acre['field']['crop'], snapshot['crop'])
+
+    def test_partial_harvest_retains_uncollected_yield(self):
+        field = farming.field_state(self.acre)
+        field.update(stage='ripe', crop='wheat', progress=2)
+        self.farm['output_buffer'] = {'wheat': 9.75}
+        economy.ensure_inventory(self.town)
+        server.tick(self.world)
+        self.assertEqual(self.worker['pending_output'], {'wheat': .25})
+        self.assertEqual(field['yield_remaining'], .75)
+        self.assertEqual(field['stage'], 'ripe')
+        self.assertEqual(field['cycle'], 0)
+
+
+if __name__ == '__main__':
+    unittest.main()
