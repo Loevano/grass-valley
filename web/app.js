@@ -1662,7 +1662,10 @@ function renderSelection(town){
     }
     if(costs[item.kind]){
       const level=buildingLevel(item),cost=costs[item.kind]*level,maxLevel=item.kind==='storehouse'?storehouseCapacities.length:3;
-      if(!item.construction)production.append(fact(upgradeBenefit(item.kind,level,item),'Current benefit'));
+      if(!item.construction){
+        const benefits=document.createElement('p');benefits.className='info-copy';
+        benefits.textContent=upgradeBenefit(item.kind,level,item);production.append(benefits);
+      }
       if(item.kind==='farm'||item.kind==='acre'){
         const note=document.createElement('p');note.textContent='Field bonus = farm + acre';details.append(note);
       }
