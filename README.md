@@ -610,15 +610,27 @@ priorities, balancing theory, game design, and artwork, with tables and diagrams
 
 ## Check the simulation
 
-Tests and performance comparisons do not run by default during development or
-before committing. Run them only when investigating or fixing a performance-related
-problem, or when explicitly requested. For a performance-related problem, run
-targeted tests during development (individual commands are listed below), then
-run every Python and JavaScript correctness test once before committing:
+Run checks applicable to the files you changed. The default runner follows local
+imports and source/fixture references from staged, unstaged and untracked changes,
+and explains each selection with `--list`. A clean checkout or documentation-only
+change runs no tests. Unknown runtime files conservatively select the full suite
+and report why. Python tests run together in one process, with per-case timings;
+reports also show the slowest applicable checks.
 
 ```sh
 python3 tools/check.py
+python3 tools/check.py --list
+python3 tools/check.py --tests tests/test_logistics.py
+python3 tools/check.py --tests test_logistics.ResourceLogistics.test_storage_worker_collects_small_batches_while_producer_works
+python3 tools/check.py --since HEAD~1
 ```
+
+Use explicit files or cases while fixing a failure, then validate the affected set
+once. Do not run unrelated checks on every edit or before every commit. Use
+`python3 tools/check.py --all` (or `npm test -- --all`) only for an explicitly chosen
+full-suite check. For test-fixture or runner speed work, compare the same selected
+tests at the baseline and candidate; gameplay benchmarks are unnecessary when
+application code is unchanged.
 
 For browser performance comparisons, install the development-only browser harness once:
 

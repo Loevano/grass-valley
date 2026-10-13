@@ -59,7 +59,8 @@ class MoreLocals(unittest.TestCase):
     def test_varied_trades_deliver_real_food_and_keep_personal_cooldowns(self):
         for name in ('Pip', 'Hazel', 'Mabel', 'Orin', 'Willow'):
             with self.subTest(name=name):
-                self.town = new_town(name)
+                with patch('terrain.secrets.randbits', return_value=42):
+                    self.town = new_town(name)
                 index = self.visit(name)
                 other = copy.deepcopy(self.town)
                 wood, good, amount = BARTERERS[name]
@@ -88,7 +89,10 @@ class MoreLocals(unittest.TestCase):
     def test_fishing_rod_shop_charges_coins_and_tools_boost_real_catches(self):
         for key in TOOL_SHOPS['Nell']:
             with self.subTest(item=key):
-                self.town = new_town(key)
+                # These inner fixtures must use the same all-biome seed as
+                # setUp, otherwise the fishing-rod seller can be absent.
+                with patch('terrain.secrets.randbits', return_value=42):
+                    self.town = new_town(key)
                 index = self.visit('Nell')
                 self.town['coins'] = WORKER_TOOLS[key]['price']
                 command(self.town, {'action': 'buy_worker_tool', 'npc_index': index, 'item': key})

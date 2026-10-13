@@ -1,3 +1,4 @@
+from fixtures import flat_town
 import copy
 import json
 import unittest
@@ -10,7 +11,7 @@ from server import (SETTLER_SPACES, assigned_settlers, command, new_town,
 
 class BuildingSettlers(unittest.TestCase):
     def setUp(self):
-        self.town = new_town('Settlers')
+        self.town = flat_town('Settlers')
         self.town['buildings'].extend([
             {'kind': 'farm', 'x': 6, 'y': 2},
             {'kind': 'farm', 'x': 7, 'y': 3},
@@ -115,12 +116,14 @@ class BuildingSettlers(unittest.TestCase):
         self.assertIs(self.town['villagers'][0]['work_target'], self.town['buildings'][2])
         # Moving away from water keeps the explicit farm assignment.
 
-    def test_acre_assignments_use_that_specific_field_and_pause_without_their_farm(self):
+    def test_destroying_farm_removes_its_assigned_acre_and_releases_worker(self):
         self.assign(0, 3)
         self.assertEqual(self.town['villagers'][0]['work_target']['kind'], 'acre')
         self.assertEqual(self.town['villagers'][0]['work_target']['x'], 6)
         command(self.town, {'action': 'destroy', 'index': 1})
-        self.assertEqual(self.town['villagers'][0]['building_index'], 2)
+        self.assertNotIn('building_index', self.town['villagers'][0])
+        self.assertEqual(self.town['villagers'][0]['job'], 'idle')
+        self.assertFalse(any(b['kind'] == 'acre' for b in self.town['buildings']))
         self.assertIsNone(self.town['villagers'][0]['work_target'])
 
     def test_reassignment_removal_and_destroy_release_spaces(self):

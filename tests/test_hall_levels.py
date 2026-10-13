@@ -1,3 +1,4 @@
+from fixtures import flat_town
 import copy
 import json
 import unittest
@@ -7,7 +8,7 @@ from server import HALL_UPGRADES, building_range, command, new_town, tick
 
 class HallLevels(unittest.TestCase):
     def setUp(self):
-        self.town = new_town('Hall levels')
+        self.town = flat_town('Hall levels')
         self.town['villagers'][0]['construction_position'] = {'x': 5, 'y': 6}
         self.world = {'towns': {'a': self.town}}
 
@@ -15,6 +16,7 @@ class HallLevels(unittest.TestCase):
         self.town.update(food=100, wood=500, goods={'planks': 50, 'leather': 20, 'iron_ore': 20, 'iron': 30, 'steel': 20})
         if level == 2:
             self.town['buildings'].extend([{'kind': 'home', 'x': 3, 'y': 5}, {'kind': 'farm', 'x': 6, 'y': 2}])
+            self.town['map_resources'].append({'kind': 'water', 'x': 6, 'y': 3})
         elif level == 3:
             self.town['villagers'][0].update(woodcutting=10, farming=10)
         elif level == 4:

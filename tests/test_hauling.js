@@ -1,6 +1,7 @@
 const assert=require('assert'),fs=require('fs');
 const animation=require('../web/animations.js');
 const source=fs.readFileSync('web/app.js','utf8');
+const client=require('./client_harness');
 const town={map_size:16,buildings:[{kind:'hall',x:1,y:2},{kind:'storehouse',x:5,y:2}],map_resources:[]};
 const villager={name:'Ada',job:'hauling',hauling:20,building_index:1,
   logistics_position:{x:0,y:0},logistics_target:{kind:'delivery',x:1,y:0},
@@ -10,14 +11,10 @@ for(const [practice,speed] of [[undefined,1.8],[19.99,1.8],[20,2.25],[40,2.7]]){
   animation.advance(state,.2,true);
   assert(Math.abs(state.x-speed*.2)<1e-9,'Delivery animation reflects hauling speed');
 }
-const element=tag=>({tag,children:[],append(child){this.children.push(child);},setAttribute(){}});
-const world={progression:{buildings:{},talent_roots:{}}};
-const helpers=source.slice(source.indexOf('function workerEfficiency('),source.indexOf('async function playerAction('));
-const toolSource=source.slice(source.indexOf('const workerTools='),source.indexOf('const equipmentItems='));
-const cardSource=source.slice(source.indexOf('function villagerCard('),source.indexOf('function villagerRow('));
-const card=new Function('document','world','identity','viewed','buildingLevel','goodName','professionJobs','skillBar','villagerActivity','jobRequirement',helpers+toolSource+cardSource+'return villagerCard;')(
-  {createElement:element},world,{town_id:'own'},'own',()=>1,key=>key,{},
-  (label,value)=>({label,value}),()=> 'Hauling goods',()=> '');
+const cardClient=client();
+cardClient.run(`world={progression:{buildings:{},talent_roots:{}}};identity={town_id:'own'};viewed='own';
+  skillBar=(label,value)=>({label,value});villagerActivity=()=> 'Hauling goods';`);
+const card=(town,worker,index)=>cardClient.run(`villagerCard(${JSON.stringify(town)},${JSON.stringify(worker)},${index})`);
 const details=card(town,villager,0);
 assert(details.children.some(c=>c.label==='Hauling'&&c.value===20));
 assert(details.children.some(c=>c.className==='villager-hauling'&&c.textContent.includes('100 goods per trip · 2.25 tiles/s')));
@@ -36,8 +33,8 @@ animation.advance(cargoState,1,true);
 assert.deepStrictEqual(cargoState.cargo,{},'Hide the load after reaching the destination');
 assert(cargoState.path.length,'The empty return walk can continue');
 const cargoText=v=>card(town,v,0).children.find(c=>c.className==='villager-cargo').textContent;
-assert.strictEqual(cargoText(loaded),'Collecting: 12 wood · 3.5 planks');
-assert.strictEqual(cargoText({...loaded,logistics_trip:{...cargoTrip,step:2}}),'Carrying: 12 wood · 3.5 planks');
+assert.strictEqual(cargoText(loaded),'Collecting: 12 Wood · 3.5 Planks');
+assert.strictEqual(cargoText({...loaded,logistics_trip:{...cargoTrip,step:2}}),'Carrying: 12 Wood · 3.5 Planks');
 assert.strictEqual(cargoText({...loaded,logistics_trip:{...cargoTrip,step:3,delivered:true}}),'Carrying: nothing');
 const paints=[],labels=[];
 const ctx={fillRect(){paints.push(this.fillStyle);},strokeRect(){},strokeText(){},fillText(text){labels.push(text);}};

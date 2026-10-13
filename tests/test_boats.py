@@ -1,3 +1,4 @@
+from fixtures import flat_town
 import copy
 import json
 import unittest
@@ -13,7 +14,7 @@ from spatial import SpatialIndex
 
 class Boats(unittest.TestCase):
     def setUp(self):
-        self.town = new_town('Boats')
+        self.town = flat_town('Boats', size=120)
         self.town.update(level=5, coins=200, wood=200, goods={'planks': 100},
                          npcs=[], terrain=['g' * 120] * 120)
         self.town['player']['fishing'] = 40
@@ -123,7 +124,9 @@ class Boats(unittest.TestCase):
                     tick({'towns': {'a': self.town}})
                 self.assertAlmostEqual(work_cycles.boat_load(self.town, hut), capacity)
                 leader = self.town['villagers'][0]['work_animation']
-                for worker in self.town['villagers'][1:]:
+                # Tick may also add an idle resident; only the original crew
+                # shares this voyage.
+                for worker in self.town['villagers'][1:tier]:
                     self.assertEqual(worker['work_animation'], leader, 'Crew shares one confirmed voyage')
                 for _ in range(20):
                     tick({'towns': {'a': self.town}})

@@ -1,3 +1,4 @@
+from fixtures import flat_town
 import copy
 import json
 import unittest
@@ -9,7 +10,7 @@ import server
 
 class ProfessionRecipes(unittest.TestCase):
     def setUp(self):
-        self.town = server.new_town('Recipes')
+        self.town = flat_town('Recipes')
         self.town['level'] = 5
         self.worker = self.town['villagers'][0]
         self.worker['talents'] = {}

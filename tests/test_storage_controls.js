@@ -63,7 +63,7 @@ const run=new Function('document','window','localStorage','setTimeout','clearTim
  inspect('building',4);
  check(meters().length===1&&meters()[0].attributes['aria-label']==='Food stored','Fishing huts only offer food storage');
  check(roomAllocations(town.buildings[4]).tools===undefined,'Old unrelated allocations are ignored');
- check(resourceStorage(town,'fish')===350&&resourceStorage(town,'bread')===300,'Food capacity respects which edible goods each building accepts');
+ check(resourceStorage(town,'fish')===500&&resourceStorage(town,'bread')===450,'Level-8 warehouse and hall accept all food; the hut adds fish storage only');
  check(panelNodes().some(c=>c.textContent?.includes('Tools from previous storage')),'Legacy unrelated goods remain visible');
  check(!button('Allocate')&&roomAllocations(town.buildings[4]).food===50,'Fishing huts ignore old allocations and have fixed food capacity');
  town.buildings.push({kind:'mill',x:1,y:3});inspect('building',5);
