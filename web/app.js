@@ -1042,6 +1042,13 @@ function inspect(type,index,townId=viewed){
   if(world.shared_map && world.towns[townId])viewed=townId;
   panel=type==='villager'&&panel==='villagers'?'villagers':'selection';selection={type,index};tool=null;moveIndex=null;buildTile=null;hoverTile=null;render();
 }
+function productionStatus(v,building){
+  const status=v.production_status || '';
+  if(!status.startsWith('Workplace buffer full'))return status;
+  const resources=[...new Set([v.pending_output,building?.stored_goods,building?.output_buffer,building?.pending_output,building?.orphaned_output]
+    .flatMap(stock=>Object.entries(stock || {}).filter(([,amount])=>amount>0).map(([key])=>key)))];
+  return `${resources.length?resources.map(goodName).join(', '):'Resource'} storage full`;
+}
 function villagerActivity(town,v,index){
   if(v.construction_target)return v.construction_arrived?'Building':'Walking to construction';
   if(v.logistics_trip){
@@ -1051,9 +1058,9 @@ function villagerActivity(town,v,index){
   }
   if(v.job==='idle')return 'Resting';
   if(v.job==='building')return 'Waiting for construction';
-  const status=v.production_status || '';
+  const status=productionStatus(v,town.buildings[settlerBuilding(town,v,index)]);
   if(status.startsWith('Butchering '))return status;
-  if(status.startsWith('Workplace buffer full'))return 'Waiting for collection';
+  if(status.endsWith(' storage full'))return status;
   if(status.startsWith('Waiting for delivery') || status.startsWith('Waiting for reachable storage'))return 'Waiting for supplies';
   if(status.startsWith('Delivery'))return 'Waiting for a route';
   if(status.includes('already tended'))return 'Waiting for next cycle';
@@ -1628,7 +1635,7 @@ function renderSelection(town){
     status.textContent=item.construction?'Under construction':town.upgrade_remaining&&item.kind==='hall'?`Upgrading · ${town.upgrade_remaining}s remaining`:
       sourceWork&&!buildingUsable(town,item)?'Needs a source in reach':
       ['hall','home'].includes(item.kind)?'':item.kind==='acre'?'Field ready':
-      !assigned.length?'Needs workers':[...new Set(assigned.map(v=>v.production_status).filter(Boolean))].join(' · ') || `${assigned.length} assigned worker${assigned.length===1?'':'s'}.`;
+      !assigned.length?'Needs workers':[...new Set(assigned.map(v=>productionStatus(v,item)).filter(Boolean))].join(' · ') || `${assigned.length} assigned worker${assigned.length===1?'':'s'}.`;
     if(!item.construction)renderSettlers(town,item,selection.index,workers,upgradeActions,details);
     if(status.textContent)workers.append(status);
 
