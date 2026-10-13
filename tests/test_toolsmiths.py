@@ -70,8 +70,12 @@ class Toolsmiths(unittest.TestCase):
                     kind = 'farm' if job == 'farming' else 'woodcutter'
                     town['buildings'].append({'kind': kind, 'x': 6, 'y': 2})
                     town['villagers'][0].update(job=job, worker_tool=key)
+                    if job == 'farming':
+                        town['buildings'][1]['field'] = {'stage': 'ripe', 'crop': 'vegetables',
+                                                        'elapsed': 0, 'progress': 0, 'cycle': 0}
+                        town['villagers'][0]['construction_position'] = {'x': 6, 'y': 3}
                     tick({'towns': {'own': town}})
-                    output, rate = ('vegetables', 1) if job == 'farming' else ('wood', .75)
+                    output, rate = ('vegetables', 10) if job == 'farming' else ('wood', .75)
                     bonus = tool['bonus'] if tool['job'] == job else 0
                     self.assertAlmostEqual(town['buildings'][1]['pending_output'][output],
                                            rate * (1 + bonus))

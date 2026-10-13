@@ -2,6 +2,8 @@
 
 GROWTH_SECONDS = 15
 WORK_SECONDS = 2
+# Two growth periods replace ten of the old three-second production cycles.
+HARVEST_YIELD = 2 * GROWTH_SECONDS / 3
 ACTIONS = {'unplowed': 'plowing', 'plowed': 'sowing',
            'thirsty': 'watering', 'ripe': 'harvesting'}
 
@@ -15,8 +17,21 @@ def acres(town, farm):
     return [b for b in town['buildings'] if b['kind'] == 'acre' and b.get('farm_index') == owner]
 
 
-def can_sow(town, farm):
-    return all(field_state(a)['stage'] != 'unplowed' for a in acres(town, farm))
+def work_pass(town, farm):
+    fields = [a for a in acres(town, farm) if 'construction' not in a] or [farm]
+    cycle = min(field_state(a)['cycle'] for a in fields)
+    stages = {field_state(a)['stage'] for a in fields if field_state(a)['cycle'] == cycle}
+    stage = ('unplowed' if 'unplowed' in stages else 'plowed' if 'plowed' in stages else
+             'thirsty' if stages & {'sprouting', 'thirsty'} else 'ripe')
+    return cycle, stage
+
+
+def can_sow(town, farm, cycle=None):
+    if cycle is None:
+        cycle = work_pass(town, farm)[0]
+    # Already harvested acres belong to the next pass, and cannot block this one.
+    return all(field_state(a)['stage'] != 'unplowed' or field_state(a)['cycle'] > cycle
+               for a in acres(town, farm))
 
 
 def grow(town, seconds):
@@ -63,17 +78,33 @@ def choose_field(town, farm, fields, index):
     # Harvest cargo must return to its farm before this worker changes fields.
     if worker.get('pending_output') and previous is not None:
         return previous
-    ready = [a for a in fields if field_state(a)['stage'] in ACTIONS
-             and (field_state(a)['stage'] != 'plowed' or can_sow(town, farm))
+    if previous is not None and field_state(previous)['stage'] == 'thirsty' and (
+            animation.get('waterReady') or animation.get('phase') in
+            ('fetching_water', 'collecting_water', 'returning_water')):
+        return previous
+    cycle, stage = work_pass(town, farm)
+    ready = [a for a in fields if field_state(a)['cycle'] == cycle and field_state(a)['stage'] == stage
+             and (stage != 'plowed' or can_sow(town, farm, cycle))
              and not claimed(town, a, index)]
     if previous in ready and (animation.get('phase') in ('walking', 'working', 'fetching_water',
                                                         'collecting_water', 'returning_water', 'harvest_ready')
                               or (field_state(previous)['stage'] == 'thirsty' and animation.get('waterReady'))):
         return previous
     if ready:
-        priorities = {'unplowed': 0, 'thirsty': 1, 'ripe': 2, 'plowed': 3}
-        return min(ready, key=lambda a: (priorities[field_state(a)['stage']],
-                                        abs(a['x'] - farm['x']) + abs(a['y'] - farm['y'])))
+        position = animation or worker.get('logistics_position') or worker.get('construction_position') or farm
+        rows = {}
+        for field in ready:
+            rows.setdefault(field['y'], []).append(field)
+        # Keep workers on their row; other workers prefer separate rows when available.
+        occupied_rows = {v['work_animation']['task'][6] for i, v in enumerate(town['villagers'])
+                         if i != index and v['job'] == 'farming' and v.get('building_index') == worker.get('building_index')
+                         and len(v.get('work_animation', {}).get('task', [])) >= 7
+                         and v['work_animation']['task'][:4] == ['farming', farm['kind'], farm['x'], farm['y']]}
+        available_rows = [y for y in rows if y not in occupied_rows] or list(rows)
+        row = previous['y'] if previous is not None and previous['y'] in available_rows else min(
+            available_rows, key=lambda y: (abs(y - position['y']), y))
+        ends = [min(rows[row], key=lambda a: a['x']), max(rows[row], key=lambda a: a['x'])]
+        return min(ends, key=lambda a: (abs(a['x'] - position['x']), a['x']))
     return previous if previous is not None else fields[index % len(fields)]
 
 
@@ -99,6 +130,8 @@ def status(field, animation):
         return 'Waiting for all farm acres to be plowed'
     if phase == 'waiting_field':
         return 'Acre already being tended'
+    if phase == 'waiting_pass':
+        return 'Waiting for the current farm pass to finish'
     if phase in ('returning', 'depositing'):
         return 'Returning harvested crops'
     state = field_state(field)

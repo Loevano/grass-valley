@@ -856,6 +856,7 @@ def extra_worker(town, villager, building, capacity):
 def public_catalog():
     return {'buildings': BUILDINGS, 'crops': CROPS, 'animals': ANIMALS,
             'farming_growth_seconds': farming.GROWTH_SECONDS,
+            'farming_harvest_yield': farming.HARVEST_YIELD,
             'animal_growth_seconds': ANIMAL_GROWTH_SECONDS, 'butcher_seconds': BUTCHER_SECONDS,
             'animal_meat': ANIMAL_MEAT, 'tradable_goods': TRADABLE_GOODS,
             'job_requirements': JOB_REQUIREMENTS, 'talent_roots': TALENT_ROOTS,

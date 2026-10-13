@@ -191,7 +191,7 @@ class BuildingUpgrades(unittest.TestCase):
     @patch('server.secrets.randbelow', return_value=1)
     def test_each_workplace_boosts_only_its_workers(self, _roll):
         for kind, job, resource, base in [('woodcutter', 'woodcutting', 'wood', .75),
-                                          ('farm', 'farming', 'food', 1),
+                                          ('farm', 'farming', 'food', 10),
                                           ('fishing_hut', 'fishing', 'food', 1)]:
             with self.subTest(kind=kind):
                 self.setUp()
@@ -239,12 +239,12 @@ class BuildingUpgrades(unittest.TestCase):
         self.town['food'] = 30
         tick({'towns': {'a': self.town}})
         self.assertAlmostEqual(self.town['food'], 30 - .78)
-        self.assertEqual(self.town['buildings'][farm]['pending_output']['vegetables'], 1.5)
+        self.assertEqual(self.town['buildings'][farm]['pending_output']['vegetables'], 15)
         self.town['food'] = 99.9
         tick({'towns': {'a': self.town}})
-        self.assertAlmostEqual(self.town['food'], 99.9 + 1.5 - .78)
+        self.assertAlmostEqual(self.town['food'], 99.9 + 15 - .78)
         self.assertEqual(self.town['buildings'][farm]['pending_output']['vegetables'], 0)
-        self.assertEqual(self.town['produced']['vegetables'], 1.5)
+        self.assertEqual(self.town['produced']['vegetables'], 15)
         self.town['map_resources'] = []
         tick({'towns': {'a': self.town}})
         self.assertIs(self.town['villagers'][0]['work_target'], self.town['buildings'][acre])

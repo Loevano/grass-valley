@@ -222,7 +222,7 @@ class VillageRules(unittest.TestCase):
         food = self.town['food']
         tick({'towns': {'a': self.town}})
         self.assertAlmostEqual(self.town['food'], food - .78)
-        self.assertGreater(self.town['buildings'][1]['pending_output']['vegetables'], 0)
+        self.assertFalse(self.town['buildings'][1].get('pending_output'))
         self.assertEqual(self.town['villagers'][0]['work_target']['kind'], 'farm')
         command(self.town, {'action': 'move', 'index': 1, 'x': 5, 'y': 2})
         food, skill = self.town['food'], self.town['villagers'][0]['farming']

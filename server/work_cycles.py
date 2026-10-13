@@ -254,8 +254,13 @@ def _advance(town, landscape, villager, building, source, index, seconds):
             if field['stage'] in ('sprouting', 'growing'):
                 state.update(phase='growing', elapsed=0, farmAction=None)
                 return False
-            if field['stage'] == 'plowed' and not farming.can_sow(town, building):
+            if field['stage'] == 'plowed' and not farming.can_sow(town, building, field['cycle']):
                 state.update(phase='waiting_plowing', elapsed=0, farmAction=None)
+                return False
+            cycle, stage = farming.work_pass(town, building)
+            carrying_water = field['stage'] == 'thirsty' and state['waterReady']
+            if not carrying_water and (field['cycle'] != cycle or field['stage'] != stage):
+                state.update(phase='waiting_pass', elapsed=0, farmAction=None)
                 return False
             if field['stage'] == 'thirsty' and not state['waterReady']:
                 banks = {}
@@ -311,7 +316,7 @@ def _advance(town, landscape, villager, building, source, index, seconds):
                 farming.complete_action(source)
                 state.update(elapsed=0, farmAction=None,
                              phase='growing' if field['stage'] in ('sprouting', 'growing') else
-                             'idle' if farming.can_sow(town, building) else 'waiting_plowing')
+                             'idle' if farming.can_sow(town, building, field['cycle']) else 'waiting_plowing')
             state['playback'].append(_sample(state, seconds - remaining))
             return False
         else:

@@ -421,8 +421,11 @@ the Python host, refresh both browsers, and create a new world to use the shared
   makes **one water trip per acre per crop cycle**, fills the can at a reachable
   well or natural water source, and returns to water that acre once. The crop then
   grows for another **15 seconds** before harvest. Each field action takes two
-  seconds; travel adds time. Farmers move between acres needing work, and only one
-  worker tends an acre at a time. Growth continues without workers or storage room;
+  seconds; travel adds time. Farmers finish each pass in rows, turning at the end
+  of a row and choosing separate rows when possible. All acres finish their oldest
+  crop cycle before harvested acres start another, so distant tiles are not skipped.
+  Each harvest yields **10 crops per acre** before skill, tool, upgrade, and manure
+  bonuses. Only one worker tends an acre at a time. Growth continues without workers or storage room;
   crops become available after harvesting and delivery. Field progress survives
   saving and moving. Changing the crop selection applies at the next seeding.
 - Build a fishing hut within three tile steps of water and assign Fishing to

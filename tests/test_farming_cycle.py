@@ -6,6 +6,7 @@ import farming
 import progression as economy
 import server
 import work_cycles
+from navigation import routes
 
 
 class FarmingCycle(unittest.TestCase):
@@ -54,6 +55,16 @@ class FarmingCycle(unittest.TestCase):
         server.tick(self.world)
         self.assertEqual(second['field']['stage'], 'plowed')
 
+    def test_unfinished_first_cycle_takes_precedence_over_replowing(self):
+        farming.field_state(self.acre).update(stage='plowed', cycle=0)
+        replanted = {'kind': 'acre', 'x': 4, 'y': 3, 'farm_index': 1,
+                     'field': {'stage': 'unplowed', 'elapsed': 0, 'progress': 0, 'cycle': 2}}
+        self.town['buildings'].append(replanted)
+        self.assertIs(server.work_source(self.town, 'farming', 0), self.acre)
+        self.advance()
+        self.assertEqual(self.acre['field']['stage'], 'sprouting')
+        self.assertEqual(replanted['field']['stage'], 'unplowed')
+
     def test_growth_survives_reload_and_needs_no_farmer_or_storage_room(self):
         self.advance()
         self.advance()
@@ -98,7 +109,7 @@ class FarmingCycle(unittest.TestCase):
                 break
         self.assertTrue(saw_harvest)
         self.assertEqual(collections, 1)
-        self.assertEqual(self.town['goods']['wheat'], 1)
+        self.assertEqual(self.town['goods']['wheat'], farming.HARVEST_YIELD)
         self.assertEqual(self.acre['field']['cycle'], 1)
 
     def test_missing_water_waits_and_new_well_resumes_same_crop(self):
@@ -164,9 +175,89 @@ class FarmingCycle(unittest.TestCase):
         economy.ensure_inventory(self.town)
         server.tick(self.world)
         self.assertEqual(self.worker['pending_output'], {'wheat': .25})
-        self.assertEqual(field['yield_remaining'], .75)
+        self.assertEqual(field['yield_remaining'], farming.HARVEST_YIELD - .25)
         self.assertEqual(field['stage'], 'ripe')
         self.assertEqual(field['cycle'], 0)
+
+    def test_all_four_actions_follow_rows_with_shorter_actual_routes(self):
+        for stage in farming.ACTIONS:
+            with self.subTest(stage=stage):
+                farm = {'kind': 'farm', 'x': 8, 'y': 8}
+                fields = [{'kind': 'acre', 'x': x, 'y': y, 'farm_index': 1,
+                           'field': {'stage': stage, 'elapsed': 0, 'progress': 0, 'cycle': 0}}
+                          for y in range(5, 12) for x in range(5, 12) if (x, y) != (8, 8)]
+                worker = {'job': 'farming', 'building_index': 1, 'construction_position': {'x': 8, 'y': 9}}
+                town = {'buildings': [{'kind': 'hall', 'x': 2, 'y': 2}, farm, *fields], 'villagers': [worker]}
+                position, walking, rows, visited = (8, 9), 0, [], set()
+                for _ in fields:
+                    target = farming.choose_field(town, farm, fields, 0)
+                    tile = target['x'], target['y']
+                    self.assertNotIn(tile, visited)
+                    visited.add(tile)
+                    if not rows or rows[-1] != tile[1]:
+                        self.assertNotIn(tile[1], rows, 'Each row finishes before changing rows')
+                        rows.append(tile[1])
+                    walking += len(routes.route(position, target, {(2, 2), (8, 8)}, 16, ['g' * 16] * 16, False))
+                    if stage == 'ripe':
+                        target['field'].update(stage='unplowed', cycle=1)
+                    else:
+                        farming.complete_action(target)
+                    position = tile
+                    worker['work_animation'] = {'x': tile[0], 'y': tile[1], 'phase': 'idle',
+                        'task': ['farming', 'farm', 8, 8, 'acre', *tile, 'field_cycle', 0]}
+                self.assertEqual(len(visited), 48)
+                # The starting revision's farm-distance ordering needed 235 actual tile steps.
+                self.assertLess(walking, 80)
+
+    def test_workers_choose_separate_rows(self):
+        second_row = {'kind': 'acre', 'x': 3, 'y': 5, 'farm_index': 1}
+        same_row = {'kind': 'acre', 'x': 4, 'y': 4, 'farm_index': 1}
+        self.town['buildings'].extend([same_row, second_row])
+        self.advance(.5)
+        self.town['villagers'][1].update(job='farming', building_index=1)
+        self.assertIs(server.work_source(self.town, 'farming', 1), second_row)
+
+    def test_direct_acre_worker_waits_for_the_older_farm_cycle(self):
+        farming.field_state(self.acre).update(stage='plowed', cycle=0)
+        newer = {'kind': 'acre', 'x': 4, 'y': 4, 'farm_index': 1,
+                 'field': {'stage': 'unplowed', 'elapsed': 0, 'progress': 0, 'cycle': 1}}
+        self.town['buildings'].append(newer)
+        worker = self.town['villagers'][1]
+        worker.update(job='farming', building_index=4, construction_position={'x': 4, 'y': 4})
+        work_cycles.advance(self.town, self.town, worker, self.farm, newer, 1, 3)
+        self.assertEqual(worker['work_animation']['phase'], 'waiting_pass')
+        self.assertEqual(newer['field']['stage'], 'unplowed')
+
+    def test_full_farm_finishes_every_acre_before_repeating(self):
+        self.town['buildings'][0].update(x=2, y=2)
+        self.farm.update(x=8, y=8)
+        self.well.update(x=3, y=8)
+        self.town['buildings'].remove(self.acre)
+        fields = [{'kind': 'acre', 'x': x, 'y': y, 'farm_index': 1, 'crop': 'wheat'}
+                  for y in range(5, 12) for x in range(5, 12) if (x, y) != (8, 8)]
+        self.town['buildings'].extend(fields)
+        for index, worker in enumerate(self.town['villagers'][:4]):
+            worker.update(job='farming', building_index=1, talents={},
+                          construction_position={'x': 8, 'y': 9 + index // 3})
+        actions = { (a['x'], a['y']): set() for a in fields }
+        for _ in range(500):
+            server.tick(self.world)
+            for worker in self.town['villagers'][:4]:
+                animation = worker.get('work_animation', {})
+                task = animation.get('task', [])
+                if len(task) >= 7 and tuple(task[5:7]) in actions:
+                    actions[tuple(task[5:7])].update(sample['farmAction'] for sample in animation.get('playback', [])
+                                                   if sample.get('farmAction'))
+            cycles = [a['field']['cycle'] for a in fields]
+            self.assertLessEqual(max(cycles) - min(cycles), 1)
+            # Keep storage available; this check isolates scheduling rather than stock capacity.
+            stock = economy.quantity(self.town, 'wheat')
+            economy.withdraw(self.town, 'wheat', stock)
+            economy.add_stock(self.town, 'wheat', -stock)
+            if min(cycles) == 1:
+                break
+        self.assertEqual(min(a['field']['cycle'] for a in fields), 1)
+        self.assertTrue(all(seen == set(farming.ACTIONS.values()) for seen in actions.values()))
 
 
 if __name__ == '__main__':

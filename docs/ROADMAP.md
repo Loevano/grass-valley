@@ -110,8 +110,11 @@ The field cycle is implemented: acres start unplowed, seeding waits until every
 linked acre is plowed, and each seeded acre sprouts for 15 seconds. One tender
 fetches water once for that acre, waters it once, and it grows for another 15
 seconds before harvest and delivery. Field progress is saved, growth needs no
-worker, and farmers switch between acres needing work. Remaining farming work is
-chain yields, ingredient demand, worker limits, and storage balancing below.
+worker, and farmers finish plowing, seeding, watering, and harvesting in rows.
+Oldest cycles finish before any acre repeats, preventing untouched tiles from
+being skipped. The base harvest is now 10 crops per acre for the two 15-second
+growth periods; existing bonuses apply. Remaining farming work is downstream
+ingredient demand, worker limits, and storage balancing below.
 
 - Farmers supply crops to the mill, which supplies ingredients to the bakery.
 - Balance the chains around their worker limits, ingredient demand, and delivered

@@ -32,6 +32,7 @@ class FarmAcres(unittest.TestCase):
         self.assertEqual(acre, {'kind': 'acre', 'farm_index': 1, 'x': 6, 'y': 3,
                                 'field': {'stage': 'unplowed', 'elapsed': 0, 'progress': 0, 'cycle': 0}})
         self.town = json.loads(json.dumps(self.town))
+        acre = self.town['buildings'][-1]
         command(self.town, {'action': 'job', 'index': 0, 'job': 'farming'})
         food = self.town['food']
         tick({'towns': {'a': self.town}})

@@ -905,7 +905,7 @@ def tick(world):
             if job == 'farming':
                 field = farming.field_state(source)
                 if 'yield_remaining' not in field:
-                    field['yield_remaining'] = (1 + bonus) * economy.efficiency(villager, job)
+                    field['yield_remaining'] = farming.HARVEST_YIELD * (1 + bonus) * economy.efficiency(villager, job)
                     if economy.quantity(town, 'manure') >= .1:
                         economy.spend(town, {'manure': .1})
                         field['yield_remaining'] *= 1.25

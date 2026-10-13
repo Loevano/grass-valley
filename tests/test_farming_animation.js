@@ -92,25 +92,25 @@ const unfinished=animation.plan({...clustered,buildings:[...clustered.buildings,
   {job:'farming',logistics_position:{x:6,y:4},logistics_target:{kind:'delivery',x:6,y:5}},0);
 assert(unfinished.blocked.has('6,5'),'Delivery animation avoids unfinished acres');
 
-const crops=new Function('ctx','polygon','point','tileW','tileH',
+const crops=new Function('ctx','polygon','point','tileW','tileH','world',
   source.slice(source.indexOf('function buildingLevel('),source.indexOf('function storageCapacity('))+
   source.slice(source.indexOf('function drawFarmCrops('),source.indexOf('function drawBuilding('))+
   '\nreturn drawFarmCrops;'
 )(ctx,(points,color)=>marks.push({method:'polygon',points,color}),
-  (x,y)=>[(x-y)*23,(x+y)*11.5],46,23);
-function fieldAt(elapsed,crop='wheat'){
-  marks.length=0;crops({...fields[0],crop},elapsed===null?null:{elapsed});return marks.slice();
+  (x,y)=>[(x-y)*23,(x+y)*11.5],46,23,{progression:{farming_growth_seconds:15}});
+function fieldAt(stage,elapsed=0,crop='wheat',progress=0){
+  marks.length=0;crops({...fields[0],crop,field:{stage,elapsed,crop,progress}},null);return marks.slice();
 }
-const soil=fieldAt(0),sown=fieldAt(3),growing=fieldAt(5),ripe=fieldAt(6),cut=fieldAt(7);
+const soil=fieldAt('unplowed'),sown=fieldAt('sprouting'),growing=fieldAt('growing',7.5),ripe=fieldAt('ripe'),cut=fieldAt('ripe',0,'wheat',1);
 assert(!soil.some(mark=>mark.color==='#efd59a'||mark.color==='#8db568'),'Plowing leaves bare furrows');
-assert.strictEqual(sown.filter(mark=>mark.color==='#efd59a').length,8,'Sowing gradually fills the field');
-assert(growing.some(mark=>mark.color==='#8db568'),'Watering grows green shoots');
-assert.notDeepStrictEqual(growing,fieldAt(5.25),'Growing crops move with the work cycle');
+assert.strictEqual(sown.filter(mark=>mark.method==='stroke'&&mark.color==='#8db568').length,16,'Seeded fields start sprouting');
+assert(growing.some(mark=>mark.color==='#8db568'),'Watered crops continue growing green shoots');
+assert.notDeepStrictEqual(growing,fieldAt('growing',7.75),'Crop size follows saved growth progress');
 const grain=output=>output.filter(mark=>mark.method==='stroke'&&['#d9bd70','#b8b458'].includes(mark.color));
 assert.strictEqual(grain(ripe).length,16,'Harvest starts with ripe grain');
 assert.strictEqual(grain(cut).length,8,'Harvest gradually cuts the grain');
-assert.strictEqual(grain(fieldAt(null)).length,16,'Unattended fields keep their normal ripe appearance');
-const ripeCrops=['vegetables','wheat','carrots','fodder'].map(crop=>fieldAt(null,crop));
+assert.strictEqual(grain(fieldAt('ripe')).length,16,'Unattended ripe fields keep their saved appearance');
+const ripeCrops=['vegetables','wheat','carrots','fodder'].map(crop=>fieldAt('ripe',0,crop));
 for(let i=0;i<ripeCrops.length;i++)for(let j=i+1;j<ripeCrops.length;j++){
   assert.notDeepStrictEqual(ripeCrops[i],ripeCrops[j],'Each crop has distinct ripe artwork');
 }
@@ -118,14 +118,14 @@ assert(ripeCrops[0].some(mark=>mark.method==='polygon'&&mark.color==='#68934e'),
 assert(ripeCrops[1].some(mark=>mark.method==='polygon'&&mark.color==='#efd59a'),'Wheat has golden ears');
 assert(ripeCrops[2].some(mark=>mark.method==='polygon'&&mark.color==='#dd9048'),'Carrots show orange roots');
 assert(ripeCrops[3].some(mark=>mark.method==='stroke'&&mark.color==='#72a65c'),'Fodder has green grass tufts');
-assert.deepStrictEqual(fieldAt(null,null),ripeCrops[0],'Fields without a crop use vegetables');
-assert.deepStrictEqual(fieldAt(null,'unknown'),ripeCrops[0],'Unknown crop types fall back to vegetables');
+assert.deepStrictEqual(fieldAt('ripe',0,null),ripeCrops[0],'Fields without a crop use vegetables');
+assert.deepStrictEqual(fieldAt('ripe',0,'unknown'),ripeCrops[0],'Unknown crop types fall back to vegetables');
 for(const crop of ['vegetables','carrots','fodder']){
-  assert.deepStrictEqual(fieldAt(0,crop),soil,'Plowing preserves bare soil for every crop');
-  assert.deepStrictEqual(fieldAt(3,crop),sown,'Every crop is planted progressively');
-  assert.notDeepStrictEqual(fieldAt(5,crop),fieldAt(5.25,crop),'Each growing crop moves during tending');
+  assert.deepStrictEqual(fieldAt('unplowed',0,crop),soil,'Plowing preserves bare soil for every crop');
+  assert(fieldAt('sprouting',0,crop).some(mark=>mark.color==='#8db568'),'Every seeded crop starts sprouting');
+  assert.notDeepStrictEqual(fieldAt('growing',7.5,crop),fieldAt('growing',7.75,crop),'Each crop grows without a tender');
   const collected=[];
-  crops({...fields[0],crop},{elapsed:7},plant=>collected.push(plant));
+  crops({...fields[0],crop,field:{stage:'ripe',elapsed:0,progress:1,crop}},null,plant=>collected.push(plant));
   assert.strictEqual(collected.length,8,'Harvest removes half of each crop at mid-cycle');
   assert(collected.every(plant=>plant.cropType===crop),'Depth-sorted plants retain their crop identity');
 }

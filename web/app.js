@@ -1438,6 +1438,7 @@ function renderProfession(town,item,index,target,upgrades,details,boats,unlocked
     if(item.kind==='farm'){
       const label=document.createElement('label');label.textContent='Crop for all acres';label.append(chooser);target.append(label);
     }else target.append(chooser);
+    target.append(fact(`${catalog.farming_harvest_yield ?? 10} crops`,'Base harvest per acre · Skills, tools and upgrades apply'));
     if(item.kind==='acre'){
       const field=item.field || {stage:'unplowed',elapsed:0};
       const labels={unplowed:'Unplowed soil',plowed:'Plowed · Waiting for seeding',sprouting:'Sprouting',

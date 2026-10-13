@@ -39,7 +39,9 @@ class ProducerDeliveryResume(unittest.TestCase):
         self.assertNotIn('logistics_trip', bram)
         self.assertNotEqual(bram['production_status'], 'Working')
         self.assertGreaterEqual(bram['farming'], 15)
-        self.assertAlmostEqual(sum(self.town['buildings'][1].get(field, {}).get('vegetables', 0) for field in ('output_buffer', 'pending_output')), 46.88)
+        self.assertFalse(self.town.get('produced'))
+        self.assertAlmostEqual(sum(b.get(field, {}).get('vegetables', 0) for b in self.town['buildings']
+                                   for field in ('output_buffer', 'pending_output', 'stored_goods')), 46.88 + 98 - .96)
         server.tick(self.world)
         self.assertIn('work_animation', bram)
 
