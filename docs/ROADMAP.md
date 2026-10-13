@@ -113,6 +113,9 @@ fetches water once per farm watering round, uses that fill for all acres it tend
 in the round, waters each acre once, and it grows for another 15
 seconds before harvest and delivery. Field progress is saved, growth needs no
 worker, and farmers finish plowing, seeding, watering, and harvesting in rows.
+Farmers pause to haul when their current crop's storage allowance fills; full
+stock of an unrelated crop does not stop other farmers or field passes. Crops
+that share food storage still respect that shared allowance.
 Field visuals follow confirmed worker playback, changing after each action finishes
 even when the host has already assigned the farmer another acre.
 Missed updates and resumed tasks reconnect playback at walking speed; trimming

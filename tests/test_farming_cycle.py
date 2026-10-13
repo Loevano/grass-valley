@@ -276,6 +276,72 @@ class FarmingCycle(unittest.TestCase):
         self.town['villagers'][1].update(job='farming', building_index=1)
         self.assertIs(server.work_source(self.town, 'farming', 1), second_row)
 
+    def test_full_unrelated_crop_does_not_stop_multiple_farmers(self):
+        second = {'kind': 'acre', 'x': 4, 'y': 5, 'farm_index': 1, 'crop': 'wheat',
+                  'stored_goods': {'fodder': 10}}
+        self.town['buildings'].append(second)
+        self.acre['stored_goods'] = {'fodder': 10}
+        self.farm.update(stored_goods={'fodder': 10}, buffer_full=True)
+        economy.ensure_inventory(self.town)
+        self.town['buildings'][0]['stored_goods']['fodder'] = 100
+        self.town['villagers'][1].update(job='farming', building_index=1, talents={},
+                                       construction_position={'x': 4, 'y': 5})
+        for _ in range(3):
+            server.tick(self.world)
+        for field in (self.acre, second):
+            self.assertEqual(field['field']['stage'], 'sprouting')
+        for worker in self.town['villagers'][:2]:
+            self.assertGreater(worker['farming'], 0)
+            self.assertNotIn('logistics_trip', worker)
+        self.assertEqual(self.farm['stored_goods']['fodder'], 10)
+
+    def test_full_unrelated_crop_allows_harvest_and_delivery_after_reload(self):
+        self.farm.update(stored_goods={'fodder': 10}, buffer_full=True)
+        self.acre['stored_goods'] = {'fodder': 10}
+        economy.ensure_inventory(self.town)
+        self.town['buildings'][0]['stored_goods']['fodder'] = 100
+        farming.field_state(self.acre).update(stage='ripe', crop='wheat')
+        restored = json.loads(json.dumps(self.world))
+        town = restored['towns']['fields']
+        worker = town['villagers'][0]
+        server.tick(restored)
+        self.assertEqual(worker['pending_output'], {'wheat': farming.HARVEST_YIELD})
+        for _ in range(5):
+            server.tick(restored)
+            if not worker.get('pending_output'):
+                break
+        self.assertNotIn('pending_output', worker)
+        self.assertEqual(town['goods']['wheat'], farming.HARVEST_YIELD)
+
+    def test_current_crop_uses_shared_food_space_and_waits_when_full(self):
+        self.acre['crop'] = 'carrots'
+        farming.field_state(self.acre).update(stage='ripe', crop='carrots')
+        self.farm['stored_goods'] = {'vegetables': 20}
+        self.acre['stored_goods'] = {'vegetables': 20}
+        economy.ensure_inventory(self.town)
+        self.town['buildings'][0]['stored_goods']['food'] = 100
+        server.tick(self.world)
+        self.assertIn('Workplace buffer full', self.worker['production_status'])
+        self.assertNotIn('pending_output', self.worker)
+        self.assertEqual(self.acre['field']['progress'], 0)
+
+    def test_full_current_crop_still_hauls_before_resuming(self):
+        self.farm['output_buffer'] = {'wheat': 10}
+        self.acre['stored_goods'] = {'wheat': 10}
+        farming.field_state(self.acre).update(stage='ripe', crop='wheat')
+        store = {'kind': 'storehouse', 'x': 12, 'y': 12,
+                 'storage_enabled': {'wheat': True}}
+        self.town['buildings'].append(store)
+        server.tick(self.world)
+        self.assertEqual(self.worker['logistics_trip']['operation'], 'collect')
+        self.assertNotIn('pending_output', self.worker)
+        for _ in range(20):
+            server.tick(self.world)
+            if self.worker.get('pending_output'):
+                break
+        self.assertEqual(store['stored_goods']['wheat'], 10)
+        self.assertEqual(self.worker['pending_output'], {'wheat': farming.HARVEST_YIELD})
+
     def test_direct_acre_worker_waits_for_the_older_farm_cycle(self):
         farming.field_state(self.acre).update(stage='plowed', cycle=0)
         newer = {'kind': 'acre', 'x': 4, 'y': 4, 'farm_index': 1,

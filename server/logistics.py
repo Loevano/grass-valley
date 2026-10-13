@@ -515,9 +515,16 @@ def worker(town, landscape, villager, building, route, elapsed):
     if villager.get('logistics_trip'):
         # Use room freed by delivery before another producer refills the buffer.
         return advance_trip(town, landscape, villager, elapsed, resume_work=True)
-    collect = building.get('buffer_full', False) or any(
-        amount > 0 and economy.local_room(building, key) <= 1e-9
-        for key, amount in collection_inventory(building).items())
+    if villager['job'] == 'farming':
+        # Farms store several crops independently. Full stock from another
+        # crop (or a stale buffer_full flag) must not stop this farmer's pass.
+        field = villager.get('work_target') or building
+        crop = field.get('field', {}).get('crop', field.get('crop', 'vegetables'))
+        collect = economy.local_room(building, crop) <= 1e-9
+    else:
+        collect = building.get('buffer_full', False) or any(
+            amount > 0 and economy.local_room(building, key) <= 1e-9
+            for key, amount in collection_inventory(building).items())
     request = supply_request(town, building, villager) if not collect else {}
     if not collect and not request:
         return False
