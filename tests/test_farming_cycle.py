@@ -1,3 +1,4 @@
+from fixtures import flat_town
 import copy
 import json
 import unittest
@@ -11,7 +12,7 @@ from navigation import routes
 
 class FarmingCycle(unittest.TestCase):
     def setUp(self):
-        self.town = server.new_town('Fields')
+        self.town = flat_town('Fields')
         self.town.update(terrain=['g' * 16] * 16, map_size=16, map_resources=[], npcs=[],
                          forage_version=1, forage_halls=[[5, 5]], sandbox=True)
         self.farm = {'kind': 'farm', 'x': 3, 'y': 3}
@@ -169,7 +170,10 @@ class FarmingCycle(unittest.TestCase):
         other.update(job='farming', building_index=1, construction_position={'x': 4, 'y': 4})
         work_cycles.advance(self.town, self.town, other, self.farm, second, 1, 30)
         self.assertTrue(any(s['phase'] == 'collecting_water' for s in other['work_animation']['playback']))
-        self.assertEqual(self.acre['field']['cycle'], 1)
+        self.assertEqual(self.worker['watering_round'], ['farm', 3, 3, 0])
+        self.assertEqual(other['watering_round'], ['farm', 3, 3, 0])
+        self.assertEqual(self.acre['field']['stage'], 'growing')
+        self.assertEqual(second['field']['stage'], 'growing')
 
     def test_missing_water_waits_and_new_well_resumes_same_crop(self):
         self.advance()

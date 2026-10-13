@@ -1,3 +1,4 @@
+from fixtures import flat_town
 import copy
 import json
 import unittest
@@ -10,7 +11,7 @@ import server
 
 class WoodChain(unittest.TestCase):
     def setUp(self):
-        self.town = server.new_town('Wood chain')
+        self.town = flat_town('Wood chain')
         self.town.update(level=4, terrain=['g' * 16] * 16, map_size=16,
                          map_resources=[], npcs=[], town_origin={'x': 5, 'y': 5})
         for worker in self.town['villagers']:

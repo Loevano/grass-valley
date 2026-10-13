@@ -24,39 +24,41 @@ for(const [kind,recipes] of Object.entries(progression.profession_recipes)){
   const town={villagers:[worker,{job,building_index:4,[job]:100}],player:{[job]:100}};
   let {chooser,description}=panel(town,item,index);
   assert.strictEqual(chooser.value,recipes[0].output);
-  assert.strictEqual(chooser.children.length,5);
+  assert.strictEqual(chooser.children.length,recipes.length,'Every catalog recipe is offered, including crafted worker tools');
   assert(!chooser.children[0].disabled);
   assert(chooser.children.slice(1).every(option=>option.disabled));
   assert.equal(chooser.children[0].textContent.toLowerCase(),recipes[0].output.replaceAll('_',' ')+' · lv 1');
   assert.equal(chooser.children[1].textContent.toLowerCase(),recipes[1].output.replaceAll('_',' ')+' · lv 2 · locked');
   assert(panel(town,item,index).note.textContent.includes('→ '+recipes[0].amount));
   assert(description.includes(recipes[0].output.replaceAll('_',' ')));
-  for(let level=2;level<=5;level++){
+  for(const [recipeIndex,recipe] of recipes.entries()){
+    if(recipeIndex===0)continue;
+    const level=recipe.level;
     worker[job]=level-.001;
-    assert(panel(town,item,index).chooser.children[level-1].disabled);
+    assert(panel(town,item,index).chooser.children[recipeIndex].disabled);
     worker[job]=level;
     chooser=panel(town,item,index).chooser;
-    assert(!chooser.children[level-1].disabled);
-    chooser.value=recipes[level-1].output;chooser.onchange();
-    assert.deepStrictEqual(commands.at(-1),{action:'set_recipe',index,recipe:recipes[level-1].output});
-    item.recipe=recipes[level-1].output;
+    assert(!chooser.children[recipeIndex].disabled);
+    chooser.value=recipe.output;chooser.onchange();
+    assert.deepStrictEqual(commands.at(-1),{action:'set_recipe',index,recipe:recipe.output});
+    item.recipe=recipe.output;
     description=panel(town,item,index).description;
     const note=panel(town,item,index).note.textContent;
-    const seconds=progression.production_seconds[recipes[level-1].output];
+    const seconds=progression.production_seconds[recipe.output];
     assert(note.includes(`${seconds}s`));
     assert(note.includes(`${(0.04*seconds/3).toFixed(2)} practice`));
     assert(description.includes(`/ ${seconds}s batch`));
-    assert(note.includes(recipes[level-1].output.replaceAll('_',' ')));
+    assert(note.includes(recipe.output.replaceAll('_',' ')));
     assert(note.includes('Worker level '+level+'+'));
     assert(description.includes('Recipe level '+level));
-    assert(description.includes(recipes[level-1].output.replaceAll('_',' ')));
+    assert(description.includes(recipe.output.replaceAll('_',' ')));
   }
   const before=commands.length;
   chooser=panel(town,item,index,false).chooser;
   assert(chooser.disabled);chooser.onchange();assert.strictEqual(commands.length,before);
   worker[job]=0;
   chooser=panel(town,item,index).chooser;
-  assert.strictEqual(chooser.value,recipes[4].output);
-  assert(chooser.children[4].disabled);
+  assert.strictEqual(chooser.value,recipes.at(-1).output);
+  assert(chooser.children.at(-1).disabled);
 }
-console.log('Five-level production recipe selector checks passed');
+console.log('Production recipe and crafted-tool selector checks passed');

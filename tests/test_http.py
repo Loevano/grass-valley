@@ -138,7 +138,9 @@ class LanHost(unittest.TestCase):
         server.activate('legacy')
         server.SAVE = Path(self.directory.name) / 'savegame.json'
         self.host = ThreadingHTTPServer(('127.0.0.1', 0), server.Handler)
-        self.thread = threading.Thread(target=self.host.serve_forever, daemon=True)
+        # Default polling adds a half-second shutdown wait to every HTTP test.
+        self.thread = threading.Thread(target=self.host.serve_forever,
+                                       kwargs={'poll_interval': .01}, daemon=True)
         self.thread.start()
 
     def tearDown(self):
@@ -229,7 +231,15 @@ class LanHost(unittest.TestCase):
             self.assertEqual(status, 200)
             identities.append(json.loads(body))
         self.assertEqual(self.call('/api/join', {'name': 'Fifth'})[0], 400)
-        build = {'action': 'build', 'kind': 'farm', 'x': 1, 'y': 2,
+        # Ownership is the behavior under test; random terrain must not decide
+        # whether the authorized request happens to hit an occupied tile.
+        own = server.WORLD['towns'][identities[0]['town_id']]
+        occupied = {(item['x'], item['y']) for item in
+                    own['buildings'] + own['map_resources'] + own.get('npcs', [])}
+        player = (round(own['player']['x']), round(own['player']['y']))
+        x, y = next((x, y) for x in range(2, 8) for y in range(2, 9)
+                    if (x, y) not in occupied and (x, y) != player and own['terrain'][y][x] != 'v')
+        build = {'action': 'build', 'kind': 'farm', 'x': x, 'y': y,
                  'town_id': identities[1]['town_id']}
         self.assertEqual(self.call('/api/command', build)[0], 401)
         self.assertEqual(self.call('/api/command', build, identities[0]['token'])[0], 200)

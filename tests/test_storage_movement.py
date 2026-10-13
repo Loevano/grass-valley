@@ -1,3 +1,4 @@
+from fixtures import flat_town
 import unittest
 from unittest.mock import patch
 
@@ -8,7 +9,7 @@ import server
 
 class StorageMovement(unittest.TestCase):
     def setUp(self):
-        self.town = server.new_town('Storage')
+        self.town = flat_town('Storage')
         self.town.update(terrain=['g' * 16] * 16, map_size=16, map_resources=[],
                          npcs=[], forage_version=1, forage_halls=[[5, 5]])
         economy.ensure_inventory(self.town)
@@ -98,7 +99,7 @@ class AllWorkplaceStorage(unittest.TestCase):
     cases += [('barn', spec['output']) for animal, spec in economy.ANIMALS.items() if animal not in {'pig', 'horse'}]
 
     def workplace(self, kind, output, stored):
-        town = server.new_town('All storage')
+        town = flat_town('All storage')
         town.update(terrain=['g' * 16] * 16, map_size=16, map_resources=[],
                     npcs=[], forage_version=1, forage_halls=[[5, 5]])
         economy.ensure_inventory(town)

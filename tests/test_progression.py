@@ -1,3 +1,4 @@
+from fixtures import flat_town
 import copy
 import json
 import unittest
@@ -9,7 +10,7 @@ from server import command, construct, new_town, prepare_landscapes, tick
 
 class Progression(unittest.TestCase):
     def setUp(self):
-        self.town = new_town('Progression')
+        self.town = flat_town('Progression', size=120)
         # These tests isolate base rates; talent effects have dedicated coverage.
         for villager in self.town['villagers']:
             villager['talents'] = {}
@@ -52,7 +53,9 @@ class Progression(unittest.TestCase):
 
     def test_locked_buildings_crops_animals_and_tools_do_not_spend(self):
         self.town['wood'] = 500
-        for kind in economy.BUILDINGS:
+        for kind, spec in economy.BUILDINGS.items():
+            if spec['level'] <= self.town['level']:
+                continue
             before = copy.deepcopy(self.town)
             with self.assertRaisesRegex(ValueError, 'hall level'):
                 command(self.town, {'action': 'build', 'kind': kind, 'x': 3, 'y': 3})

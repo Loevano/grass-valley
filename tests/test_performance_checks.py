@@ -42,5 +42,35 @@ class PerformanceComparison(unittest.TestCase):
             self.assertIn('timed out', log.read_text())
 
 
+class SelectedCorrectness(unittest.TestCase):
+    def test_selected_python_case_and_javascript_file_are_the_only_commands(self):
+        with tempfile.TemporaryDirectory() as directory:
+            output = Path(directory)
+            selected = {'test_logistics.ResourceLogistics.test_camp_wood_can_pay_for_construction_before_hauling': ['explicit'],
+                        'tests/test_hauling.js': ['explicit']}
+            with patch.object(checks, 'run', return_value=0) as run:
+                results = checks.correctness(output, selected)
+            self.assertEqual(len(results), 2)
+            python, javascript = [call.args[0] for call in run.call_args_list]
+            self.assertEqual(python[-1], next(iter(selected)))
+            self.assertNotIn('discover', python)
+            self.assertEqual(javascript, ['node', 'tests/test_hauling.js'])
+
+    def test_empty_selection_runs_nothing(self):
+        with tempfile.TemporaryDirectory() as directory, patch.object(checks, 'run') as run:
+            self.assertEqual(checks.correctness(Path(directory), {}), [])
+            run.assert_not_called()
+
+    def test_reusing_output_cannot_report_old_python_timings(self):
+        with tempfile.TemporaryDirectory() as directory:
+            output = Path(directory)
+            timings = output / 'python-timings.json'
+            timings.write_text('{"timings": [{"test": "stale", "seconds": 99}]}')
+            with patch.object(checks, 'run', return_value=1):
+                results = checks.correctness(output, {'tests/test_logistics.py': ['explicit']})
+            self.assertEqual(results[0]['status'], 'fail')
+            self.assertFalse(timings.exists())
+
+
 if __name__ == '__main__':
     unittest.main()
