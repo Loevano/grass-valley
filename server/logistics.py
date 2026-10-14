@@ -552,39 +552,39 @@ def transfer(town, building, storage, operation, villager, planned=None):
 
 
 def worker(town, landscape, villager, building, route, elapsed):
+    """Producers fetch required inputs; storehouse haulers move their outputs."""
+    if villager.get('logistics_trip', {}).get('operation') == 'collect':
+        # Older saves may contain producer output trips. Collection transfers
+        # stock only at delivery, so cancellation preserves goods in place.
+        cancel_trip(town, villager)
     if villager.get('logistics_trip'):
-        # Use room freed by delivery before another producer refills the buffer.
         return advance_trip(town, landscape, villager, elapsed, resume_work=True)
     if villager['job'] == 'farming':
-        # Farms store several crops independently. Full stock from another
-        # crop (or a stale buffer_full flag) must not stop this farmer's pass.
+        # Other crops' full stores must not block this farmer's current pass.
         field = villager.get('work_target') or building
         crop = field.get('field', {}).get('crop', field.get('crop', 'vegetables'))
-        collect = economy.local_room(building, crop) <= 1e-9
+        full = economy.local_room(building, crop) <= 1e-9
     elif building['kind'] in economy.RECIPES:
-        # Full ingredient storage must not prevent processing those supplies.
+        # Full ingredient storage still allows processing those supplies.
         outputs = economy.SMOKED_FISH if building['kind'] == 'smokehouse' else (economy.production_recipe(building)[1],)
-        collect = building.get('buffer_full', False) or (
-            any(collection_inventory(building).get(output, 0) > 0
-                and economy.local_room(building, output) <= 1e-9 for output in outputs))
+        full = building.get('buffer_full', False) or any(
+            collection_inventory(building).get(output, 0) > 0
+            and economy.local_room(building, output) <= 1e-9 for output in outputs)
     else:
-        collect = building.get('buffer_full', False) or any(
+        full = building.get('buffer_full', False) or any(
             amount > 0 and economy.local_room(building, key) <= 1e-9
             for key, amount in collection_inventory(building).items())
-    request = supply_request(town, building, villager) if not collect else {}
-    if not collect and not request:
+    request = supply_request(town, building, villager)
+    if not request:
+        if full:
+            villager['production_status'] = 'Workplace buffer full'
+            return True
         return False
-    keys = collection_inventory(building) if collect else request
-    stores = [b for b in storage_for(town, keys, 'collect' if collect else 'supply') if b is not building]
+    stores = [b for b in storage_for(town, request, 'supply') if b is not building]
     stores.sort(key=lambda b: abs(b['x'] - building['x']) + abs(b['y'] - building['y']))
     for storage in stores:
-        if collect and not any(economy.local_room(storage, k) > 0 for k, n in keys.items() if n):
-            continue
-        if start_trip(town, landscape, villager, building, storage, 'collect' if collect else 'supply', route):
+        if start_trip(town, landscape, villager, building, storage, 'supply', route):
             return advance_trip(town, landscape, villager, elapsed, resume_work=True)
-    if collect:
-        villager['production_status'] = 'Workplace buffer full: storage full, disabled, or unreachable'
-        return True
     villager['production_status'] = 'Waiting for reachable storage with supplies'
     return True
 

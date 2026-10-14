@@ -61,6 +61,8 @@ and two bakeries, with downstream storage sized for harvest and hauling gaps.
 
 The implemented [grain flow](GRAINFLOW.md) keeps one worker per mill and bakery.
 Equipment upgrades scale throughput, storage, and producer carrying capacity.
+Producers fetch only required inputs; storehouse haulers collect finished outputs.
+Full workplace output storage pauses production until hauling or consumption frees room.
 Advanced bakery recipes now require 5/10/15/20 baking practice for rolls, herb
 bread, fruit pies, and cakes; basic bread remains available to beginners.
 Meals cost 1.5 food/minute per working resident and 0.6 per idle resident.

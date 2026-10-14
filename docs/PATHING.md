@@ -41,7 +41,7 @@ Movement and routing decisions for Lantern Vale.
     Reference: [server/server.py](../server/server.py): `construct`, `construction_route`
   - **Browser:** animates the host's assignment; visual progress does not complete construction.\
     Reference: [web/app.js](../web/app.js): `animatedVillagers`; [web/animations.js](../web/animations.js): `planSteps`, `advanceSteps`
-- **Haulers, merchants, and producers fetching or delivering goods:**
+- **Haulers, merchants, and producers fetching required inputs:**
   - **Host:** selects and advances trips, validates pickup and delivery, and transfers cargo.\
     Reference: [server/logistics.py](../server/logistics.py): `start_trip`, `advance_trip`, `transfer`; [server/server.py](../server/server.py): `logistics_route`
   - **Browser:** animates the host's trip and cargo; may plan an approach to its remaining path.\

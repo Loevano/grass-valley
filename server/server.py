@@ -976,6 +976,8 @@ def harvest_crop(town, villager, building, source):
 
 def advance_farmer(town, walking, villager, building, source, index, seconds, reservations=None):
     """Chain field actions within the tick and retain one continuous playback."""
+    if villager.get('logistics_trip', {}).get('operation') == 'collect':
+        logistics.cancel_trip(town, villager)
     remaining, timeline = seconds, []
     while remaining > 1e-9:
         villager['work_target'] = source
@@ -987,8 +989,8 @@ def advance_farmer(town, walking, villager, building, source, index, seconds, re
         if not villager.get('pending_output') and not watering:
             crop = farming.field_state(source).get('crop', source.get('crop', 'vegetables'))
             if timeline and economy.local_room(building, crop) <= 1e-9:
-                # Transport playback is separate from field playback. Begin
-                # hauling on the next tick after this confirmed farm drop-off.
+                # Wait for a hauler or consumption to free crop storage after
+                # this confirmed farm drop-off.
                 villager['production_status'] = 'Workplace buffer full'
                 break
             if logistics.worker(town, walking, villager, building, logistics_route, remaining):

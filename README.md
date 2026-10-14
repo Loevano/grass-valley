@@ -579,8 +579,8 @@ the Python host, refresh both browsers, and create a new world to use the shared
   for construction. Assign a hauler to each storehouse to run this chain.
 - Assign settlers to a **Storehouse** as haulers. They collect small batches and
   distribute recipe ingredients and animal feed so producers can keep working.
-  Without hauling support, producers fetch their own inputs and deliver outputs
-  once their output's storage allowance fills. Transport takes time and follows
+  Producers fetch only the inputs their job requires. Finished outputs stay at
+  the workplace for storehouse haulers to collect. Transport takes time and follows
   open paths; roads speed it up. Full, disabled, or unreachable storage leaves outputs at
   their workplace and pauses production when the buffer fills. Moving, upgrading,
   or reassigning during transport preserves goods and cancels affected deliveries.

@@ -60,29 +60,35 @@ class GrainChain(unittest.TestCase):
             self.assertAlmostEqual(baker['baking'], .8)
         self.assertAlmostEqual(miller['milling'], .8)
 
-    def test_chain_delivers_bread_from_fields_with_normal_worker_hauling(self):
+    def test_chain_delivers_bread_with_producers_fetching_inputs_and_hauler_collecting_outputs(self):
         self.farms()
         # Fuel and output storage isolate the grain chain from forestry and sales.
         self.town['wood'] = 200
-        self.add('storehouse', x=6, y=14, level=8, storage_enabled={'bread': True})
+        _, store_index = self.add('storehouse', x=6, y=14, level=8, storage_enabled={'bread': True})
         for worker, kind, x, y in zip(self.town['villagers'][2:],
                                      ('mill', 'bakery', 'bakery'), (5, 4, 7), (11, 13, 13)):
             _, index = self.add(kind, x=x, y=y)
             job = economy.BUILDINGS[kind]['job']
             worker.update(job=job, building_index=index, **{job: 0},
                           **economy.JOB_REQUIREMENTS[job])
+        bakers = self.town['villagers'][3:5]
+        self.town['villagers'].append(dict(name='Hauler', job='hauling', building_index=store_index,
+                                          talents={}, hauling=0))
         self.advance(20)
         before = dict(self.town.get('produced', {}))
-        practice_before = [baker.get('baking', 0) for baker in self.town['villagers'][3:]]
+        practice_before = [baker.get('baking', 0) for baker in bakers]
         self.advance(100)
         # Travel reduces throughput; both bakers should sustain at least 80%.
         produced = self.town['produced']
         self.assertGreaterEqual(produced['wheat'] - before.get('wheat', 0), 200)
         self.assertGreaterEqual(produced['flour'] - before.get('flour', 0), 160)
         self.assertGreaterEqual(produced['bread'] - before.get('bread', 0), 160)
-        for baker, practice in zip(self.town['villagers'][3:], practice_before):
+        for baker, practice in zip(bakers, practice_before):
             self.assertGreaterEqual(baker['baking'] - practice, 5 * .8 * .8)
         self.assertGreater(self.town['goods']['bread'], 0)
+        self.assertGreater(self.town['buildings'][store_index]['stored_goods']['bread'], 0)
+        for producer in self.town['villagers'][:5]:
+            self.assertNotEqual(producer.get('logistics_trip', {}).get('operation'), 'collect')
 
     def test_storage_upgrades_grow_buffers_without_changing_workers_or_batches(self):
         for kind, base, allocations in (

@@ -46,7 +46,7 @@ class ProducerDeliveryResume(unittest.TestCase):
         server.tick(self.world)
         self.assertIn('work_animation', bram)
 
-    def test_cancelled_delivery_does_not_resume_production(self):
+    def test_saved_output_trip_is_cancelled_and_full_farm_waits(self):
         self.town['buildings'][0].update(x=2, y=2)
         bram = self.town['villagers'][3]
         server.assign_settler(self.town, 3, 1)
@@ -59,13 +59,19 @@ class ProducerDeliveryResume(unittest.TestCase):
             acre['stored_goods'] = {'vegetables': 20}
         self.town['food'] += 60
         self.town['goods']['vegetables'] += 60
-        server.tick(self.world)
-        self.assertIn('logistics_trip', bram)
+        bram['logistics_trip'] = {
+            'operation': 'collect', 'workplace': {'kind': 'farm', 'x': 8, 'y': 8},
+            'storage': {'kind': 'hall', 'x': 2, 'y': 2},
+            'path': [[8, 7], [7, 7]], 'delivery_step': 1, 'delivered': False,
+        }
         practice = bram['farming']
+        stock = farm['output_buffer']['vegetables']
         self.town['buildings'][0]['x'] += 1
         server.tick(self.world)
-        self.assertIn('Delivery cancelled', bram['production_status'])
+        self.assertNotIn('logistics_trip', bram)
+        self.assertIn('Workplace buffer full', bram['production_status'])
         self.assertEqual(bram['farming'], practice)
+        self.assertEqual(farm['output_buffer']['vegetables'], stock)
 
 
 if __name__ == '__main__':

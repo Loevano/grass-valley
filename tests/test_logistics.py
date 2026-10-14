@@ -500,17 +500,73 @@ class ResourceLogistics(unittest.TestCase):
         self.assertEqual(logistics.produce(self.town, saw, worker, duration), 'Working')
         self.assertEqual(saw['pending_output'], {'planks': 1})
 
-    def test_producer_hauls_at_resource_limit_before_total_buffer_is_full(self):
-        saw = self.add('sawpit', output_buffer={'planks': 20})
-        store = self.add('storehouse', x=8, storage_enabled={'planks': True})
+    def test_producers_leave_full_outputs_for_haulers(self):
+        for kind, output, inputs in [('woodcutter', 'wood', {}), ('farm', 'wheat', {}),
+                                     ('fishing_hut', 'fish', {}), ('barn', 'wool', {}),
+                                     ('sawpit', 'planks', {'wood': 10})]:
+            with self.subTest(kind=kind):
+                self.setUp()
+                amount = economy.storage_allocations({'kind': kind})[output]
+                building = self.add(kind, output_buffer={output: amount},
+                                    input_buffer=inputs, buffer_full=True)
+                if kind == 'farm':
+                    building['crop'] = output
+                self.add('storehouse', x=8, storage_enabled={output: True})
+                worker = self.assign(0, building)
+                economy.ensure_inventory(self.town)
+                before = copy.deepcopy(self.town)
+                self.assertTrue(logistics.worker(self.town, self.town, worker, building,
+                                                 server.construction_route, 100))
+                before['villagers'][0]['production_status'] = 'Workplace buffer full'
+                self.assertEqual(self.town, before)
+                self.assertNotIn('logistics_trip', worker)
+
+    def test_producer_fetches_only_required_inputs_even_with_full_outputs(self):
+        saw = self.add('sawpit', output_buffer={'planks': 20}, buffer_full=True)
+        store = self.add('storehouse', x=8, stored_goods={'wood': 12, 'tools': 5},
+                         storage_enabled={'wood': True, 'planks': True, 'tools': True})
         worker = self.assign(0, saw)
         economy.ensure_inventory(self.town)
+        self.town['buildings'][0]['stored_goods']['wood'] = 0
         self.assertTrue(logistics.worker(self.town, self.town, worker, saw,
                                          server.construction_route, 0))
-        trip = worker['logistics_trip']
-        self.assertEqual(trip['operation'], 'collect')
-        self.assertEqual(trip['storage'], {k: store[k] for k in ('kind', 'x', 'y')})
-        self.assertEqual(trip['cargo'], {'planks': 20})
+        self.assertEqual(worker['logistics_trip']['operation'], 'supply')
+        self.assertEqual(worker['logistics_trip']['cargo'], {'wood': 12})
+        self.assertEqual(worker['logistics_trip']['storage'],
+                         {k: store[k] for k in ('kind', 'x', 'y')})
+        self.assertFalse(logistics.worker(self.town, self.town, worker, saw,
+                                          server.construction_route, 100))
+        self.assertEqual(saw['input_buffer'], {'wood': 12})
+        self.assertEqual(saw['output_buffer'], {'planks': 20})
+        self.assertEqual(store['stored_goods']['tools'], 5)
+        self.assertEqual(logistics.produce(self.town, saw, worker,
+                                          economy.production_seconds(saw)), 'Workplace buffer full')
+
+    def test_saved_producer_output_trips_cancel_without_losing_goods(self):
+        for delivered in (False, True):
+            with self.subTest(delivered=delivered):
+                self.setUp()
+                camp = self.add('woodcutter', output_buffer={'wood': 50})
+                store = self.add('storehouse', x=8, storage_enabled={'wood': True})
+                worker = self.assign(0, camp)
+                economy.ensure_inventory(self.town)
+                self.assertTrue(logistics.start_trip(self.town, self.town, worker, camp, store,
+                                                     'collect', server.construction_route))
+                if delivered:
+                    logistics.transfer(self.town, camp, store, 'collect', worker)
+                    worker['logistics_trip']['delivered'] = True
+                saved = json.loads(json.dumps(self.town))
+                camp, store, worker = saved['buildings'][1], saved['buildings'][2], saved['villagers'][0]
+                position = dict(worker['logistics_position'])
+                stock = copy.deepcopy(saved['buildings'])
+                total = saved['wood']
+                self.assertEqual(logistics.worker(saved, saved, worker, camp,
+                                                  server.construction_route, 100), not delivered)
+                self.assertNotIn('logistics_trip', worker)
+                self.assertNotIn('logistics_target', worker)
+                self.assertEqual(worker['logistics_position'], position)
+                self.assertEqual(saved['buildings'], stock)
+                self.assertEqual(saved['wood'], total)
 
     def test_full_processor_ingredient_storage_does_not_block_production(self):
         for kind, ingredient, stored, inputs, output, amount in [
@@ -602,17 +658,20 @@ class ResourceLogistics(unittest.TestCase):
         self.assertEqual(saved['stored_goods'], original)
         self.assertEqual(economy.local_room(saved, 'smoked_fish'), 50)
 
-    def test_producer_delivers_and_returns_without_counting_output_twice(self):
+    def test_producer_waits_with_full_output_without_hauling_or_training(self):
         b = self.add('woodcutter', output_buffer={'wood': 50})
         self.town['wood'] = 0
         self.town['map_resources'] = [{'kind': 'tree', 'x': 3, 'y': 1}]
         v = self.assign(0, b)
         self.town.update(harvested=50, produced={'wood': 50})
+        practice = v['woodcutting']
         self.ticks(3)
-        self.assertEqual(self.town['wood'], 50 + sum(economy.inventory(b).values()))
-        self.assertLess(logistics.buffered(b), 50)
-        self.assertEqual(self.town['harvested'], 50 + logistics.buffered(b))
-        self.assertEqual(self.town['produced']['wood'], self.town['harvested'])
+        self.assertEqual(self.town['wood'], 50)
+        self.assertEqual(logistics.buffered(b), 50)
+        self.assertEqual(self.town['harvested'], 50)
+        self.assertEqual(self.town['produced']['wood'], 50)
+        self.assertEqual(v['woodcutting'], practice)
+        self.assertIn('buffer full', v['production_status'])
         self.assertNotIn('logistics_trip', v)
 
     def test_storage_worker_collects_small_batches_while_producer_works(self):
@@ -630,17 +689,22 @@ class ResourceLogistics(unittest.TestCase):
                                self.town['produced']['wood'])
         self.assertGreater(store['stored_goods']['wood'], 0)
 
-    def test_farmer_delivers_through_surrounding_completed_acres(self):
+    def test_hauler_collects_through_surrounding_completed_acres(self):
         farm = self.add('farm', x=8, y=8, output_buffer={'vegetables': economy.storage_allocations({'kind': 'farm'})['vegetables']})
         self.town['map_resources'] = [{'kind': 'water', 'x': 8, 'y': 9}]
         for x, y in [(7, 8), (9, 8), (8, 7)]:
             self.add('acre', x=x, y=y, farm_index=self.town['buildings'].index(farm))
         farmer = self.assign(0, farm)
+        store = self.add('storehouse', x=10, y=8, storage_enabled={'vegetables': True})
+        hauler = self.assign(1, store)
         self.town['food'] = 0
         self.ticks(10)
         self.assertGreater(self.town['food'], 0)
         self.assertLess(logistics.buffered(farm), economy.storage_allocations(farm)['vegetables'])
         self.assertGreater(farmer['farming'], 0)
+        self.assertGreater(store['stored_goods']['vegetables'], 0)
+        self.assertEqual(hauler['job'], 'hauling')
+        self.assertNotIn('logistics_trip', farmer)
 
     def test_unfinished_acres_still_block_deliveries(self):
         farm = self.add('farm', x=8, y=8, output_buffer={'vegetables': economy.storage_allocations({'kind': 'farm'})['vegetables']})
@@ -788,7 +852,8 @@ class ResourceLogistics(unittest.TestCase):
     def test_trip_survives_save_and_cancels_safely_when_building_moves(self):
         b = self.add('woodcutter', x=20, y=20, output_buffer={'wood': 50})
         self.town['map_resources'] = [{'kind': 'tree', 'x': 20, 'y': 19}]
-        v = self.assign(0, b)
+        store = self.add('storehouse', storage_enabled={'wood': True})
+        v = self.assign(0, store)
         self.town['wood'] = 0
         self.ticks()
         self.assertIn('logistics_trip', v)
@@ -796,7 +861,9 @@ class ResourceLogistics(unittest.TestCase):
         self.assertEqual(saved['towns']['a']['villagers'][0]['logistics_trip'], v['logistics_trip'])
         for _ in range(18):
             server.tick(saved)
-        self.assertEqual(saved['towns']['a']['wood'], 50 + sum(economy.inventory(saved['towns']['a']['buildings'][-1]).values()))
+        self.assertEqual(saved['towns']['a']['wood'], 50)
+        self.assertEqual(saved['towns']['a']['buildings'][1]['output_buffer']['wood'], 0)
+        self.assertEqual(saved['towns']['a']['buildings'][2]['stored_goods']['wood'], 50)
         b['x'] = 21
         self.ticks()
         self.assertEqual(b['output_buffer']['wood'], 50)
@@ -827,7 +894,7 @@ class ResourceLogistics(unittest.TestCase):
         self.assertEqual(self.town['goods']['wool'], 10)
         self.assertEqual(barn['output_buffer']['wool'], 0)
 
-    def test_partial_recipe_batch_triggers_delivery_without_losing_inputs(self):
+    def test_partial_recipe_batch_waits_for_hauler_without_losing_inputs(self):
         store = self.add('storehouse', x=1, storage_allocations={'planks': 100})
         saw = self.add('sawpit', input_buffer={'wood': 10}, output_buffer={'planks': 19.5})
         v = self.assign(0, saw)
@@ -835,6 +902,9 @@ class ResourceLogistics(unittest.TestCase):
         self.assertTrue(saw['buffer_full'])
         self.assertEqual(saw['input_buffer']['wood'], 10)
         self.assertEqual(v.get('woodworking', 0), 0)
+        self.assertNotIn('logistics_trip', v)
+        self.assertEqual(saw['output_buffer']['planks'], 19.5)
+        self.assign(1, store)
         self.ticks(3)
         self.assertEqual(store['stored_goods']['planks'], 19.5)
         self.assertEqual(self.town['goods']['planks'], 19.5 + sum(economy.inventory(saw).values()))

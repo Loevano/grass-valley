@@ -75,14 +75,16 @@ class Smoking(unittest.TestCase):
         self.assertEqual(saved['food'], 2.25)
         self.assertEqual(economy.quantity(saved, 'smoked_fish'), 1.5)
 
-    def test_full_smoked_species_is_collected_without_blocking_on_raw_storage(self):
+    def test_full_smoked_species_waits_for_hauler_without_consuming_inputs(self):
         self.smoke.update(output_buffer={'smoked_sturgeon': 45},
                           input_buffer={'sturgeon': 1, 'wood': .25})
         economy.add_stock(self.town, 'smoked_sturgeon', 45)
         self.assertTrue(logistics.worker(self.town, self.town, self.worker, self.smoke,
                                          server.construction_route, 0))
-        self.assertEqual(self.worker['logistics_trip']['operation'], 'collect')
-        self.assertEqual(self.worker['logistics_trip']['cargo'], {'smoked_sturgeon': 45})
+        self.assertNotIn('logistics_trip', self.worker)
+        self.assertEqual(logistics.produce(self.town, self.smoke, self.worker), 'Workplace buffer full')
+        self.assertEqual(self.smoke['input_buffer'], {'sturgeon': 1, 'wood': .25})
+        self.assertEqual(self.smoke['output_buffer'], {'smoked_sturgeon': 45})
 
 
 if __name__ == '__main__':

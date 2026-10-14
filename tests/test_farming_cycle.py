@@ -551,7 +551,7 @@ class FarmingCycle(unittest.TestCase):
         self.assertEqual(self.town.get('produced', {}).get('carrots', 0), 0)
         self.assertEqual(economy.local_room(self.farm, 'carrots'), 0)
 
-    def test_full_current_crop_still_hauls_before_resuming(self):
+    def test_full_current_crop_waits_for_hauler_before_resuming(self):
         self.farm['output_buffer'] = {'wheat': farming.storage_capacity(self.farm)}
         self.acre['stored_goods'] = {'wheat': 10}
         farming.field_state(self.acre).update(stage='ripe', crop='wheat')
@@ -559,14 +559,32 @@ class FarmingCycle(unittest.TestCase):
                  'storage_enabled': {'wheat': True}}
         self.town['buildings'].append(store)
         server.tick(self.world)
-        self.assertEqual(self.worker['logistics_trip']['operation'], 'collect')
+        self.assertNotIn('logistics_trip', self.worker)
+        self.assertIn('Workplace buffer full', self.worker['production_status'])
+        self.assertEqual(self.farm['output_buffer']['wheat'], farming.storage_capacity(self.farm))
         self.assertNotIn('pending_output', self.worker)
+        self.town['villagers'][1].update(job='hauling', building_index=len(self.town['buildings']) - 1)
         for _ in range(20):
             server.tick(self.world)
             if self.town.get('produced', {}).get('wheat', 0):
                 break
         self.assertEqual(store['stored_goods']['wheat'], economy.storage_size(store))
         self.assertEqual(self.town['produced']['wheat'], farming.HARVEST_YIELD)
+
+    def test_saved_output_trip_does_not_block_a_farmer_with_water_ready(self):
+        farming.field_state(self.acre).update(stage='thirsty', crop='wheat')
+        self.worker['watering_round'] = farming.watering_round(self.farm, self.acre)
+        self.worker['logistics_trip'] = {
+            'operation': 'collect', 'workplace': {'kind': 'farm', 'x': 3, 'y': 3},
+            'storage': {'kind': 'hall', 'x': 5, 'y': 5},
+            'path': [[3, 4], [4, 4]], 'delivery_step': 1, 'delivered': False,
+        }
+        restored = json.loads(json.dumps(self.world))
+        server.tick(restored)
+        farmer = restored['towns']['fields']['villagers'][0]
+        field = restored['towns']['fields']['buildings'][2]['field']
+        self.assertNotIn('logistics_trip', farmer)
+        self.assertEqual(field['stage'], 'growing')
 
     def test_direct_acre_worker_waits_for_the_older_farm_cycle(self):
         farming.field_state(self.acre).update(stage='plowed', cycle=0)

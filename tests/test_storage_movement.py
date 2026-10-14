@@ -47,8 +47,7 @@ class StorageMovement(unittest.TestCase):
         self.assertEqual(self.worker['production_status'], 'Working')
         self.assertGreater(self.worker['woodcutting'], 0)
 
-    def test_freeing_central_storage_allows_full_buffer_to_be_hauled(self):
-        # Keep the round trip longer than one tick, including diagonal walking.
+    def test_freeing_storage_does_not_make_producer_haul_full_output(self):
         self.camp.update(x=1, y=1)
         self.tree.update(x=1, y=0)
         self.camp['output_buffer'] = {'wood': 50}
@@ -58,13 +57,10 @@ class StorageMovement(unittest.TestCase):
         economy.withdraw(self.town, 'wood', 10, source=self.hall)
         economy.add_stock(self.town, 'wood', -10)
         server.tick(self.world)
-        self.assertIn('logistics_trip', self.worker)
-        for _ in range(30):
-            server.tick(self.world)
-            if self.hall['stored_goods']['wood'] > 90:
-                break
-        self.assertEqual(self.hall['stored_goods']['wood'], 100)
-        self.assertLess(self.camp['output_buffer']['wood'], 50)
+        self.assertNotIn('logistics_trip', self.worker)
+        self.assertEqual(self.hall['stored_goods']['wood'], 90)
+        self.assertEqual(self.camp['output_buffer']['wood'], 50)
+        self.assertIn('Workplace buffer full', self.worker['production_status'])
 
     def test_pending_goods_finish_delivery_with_central_storage_full(self):
         self.worker['construction_position'] = {'x': 3, 'y': 0}
