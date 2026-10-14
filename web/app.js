@@ -221,12 +221,12 @@ function renderWorkerTools(town,v,index,target){
   const owner=viewed===identity?.town_id;
   if(v.worker_tool&&workerTools[v.worker_tool]){
     const gear=workerTools[v.worker_tool],row=document.createElement('p');
-    row.textContent=`${gear.name} · +${gear.bonus*100}% ${gear.job} output${v.worker_tool==='crafted_saw'?' and ingredients per batch':''}`;
+    row.textContent=`${gear.name} · +${gear.bonus*100}% ${goodName(gear.job).toLowerCase()} output${v.worker_tool==='crafted_saw'?' and ingredients per batch':''}`;
     if(owner){const button=document.createElement('button');button.textContent='Take back tool';button.onclick=()=>act({action:'take_worker_tool',index});row.append(button);}
     target.append(row);
   }else if(owner)for(const [key,gear] of Object.entries(workerTools)){
     if(availableWorkerTools(town,key)<1)continue;
-    const button=document.createElement('button');button.textContent=`Give ${gear.name.toLowerCase()} · +${gear.bonus*100}% ${gear.job} output${key==='crafted_saw'?' and ingredients per batch':''}`;
+    const button=document.createElement('button');button.textContent=`Give ${gear.name.toLowerCase()} · +${gear.bonus*100}% ${goodName(gear.job).toLowerCase()} output${key==='crafted_saw'?' and ingredients per batch':''}`;
     button.onclick=()=>act({action:'give_worker_tool',item:key,index});target.append(button);
   }
 }
@@ -784,8 +784,8 @@ Object.assign(colors,{barn:'#b9866b',sawpit:'#aa8b60',mill:'#c1b080',smokehouse:
 Object.assign(labels,{tannery:'Tannery',mine:'Mine',smelter:'Forgery',stable:'Stable',saddler:'Saddler',steelworks:'Steelworks',tradehouse:'Trade house'});
 Object.assign(costs,{tannery:30,mine:40,smelter:40,stable:40,saddler:30,steelworks:40,tradehouse:50});
 Object.assign(colors,{tannery:'#ad8a67',mine:'#7f8c8c',smelter:'#a08875',stable:'#bda077',saddler:'#b89268',steelworks:'#758792',tradehouse:'#a1ab7e'});
-const professionJobs={trading:'Merchant',mining:'Mining',smelting:'Smelting',tanning:'Leatherworking',horsekeeping:'Horsekeeping',saddlery:'Saddlery',steelmaking:'Steelmaking',packing:'Trade packing',husbandry:'Husbandry',woodworking:'Woodworking',milling:'Milling',preserving:'Preserving',crafting:'Crafting',breeding:'Fish breeding',orcharding:'Orcharding',baking:'Baking',butchery:'Butchery'};
-const goodName=key=>key.replaceAll('_',' ').replace(/^./,c=>c.toUpperCase());
+const professionJobs={trading:'Merchant',mining:'Mining',smelting:'Smelting',tanning:'Leatherworking',horsekeeping:'Horsekeeping',saddlery:'Saddlery',steelmaking:'Steelmaking',packing:'Trade packing',husbandry:'Husbandry',woodworking:'Sawing',milling:'Milling',preserving:'Preserving',crafting:'Crafting',breeding:'Fish breeding',orcharding:'Orcharding',baking:'Baking',butchery:'Butchery'};
+const goodName=key=>key==='woodworking'?'Sawing':key.replaceAll('_',' ').replace(/^./,c=>c.toUpperCase());
 function resourceCategories(keys){
   const remaining=new Set(keys),catalog=world.progression || {};
   const products=kind=>(catalog.profession_recipes?.[kind] || []).map(recipe=>recipe.output);
@@ -903,7 +903,7 @@ function renderItems(town){
     const available=availableWorkerTools(town,key);
     const assigned=town.villagers.map((v,index)=>({v,index})).filter(({v})=>v.worker_tool===key);
     if(available<1&&!assigned.length)continue;
-    const row=itemCard(key,gear.name,`+${gear.bonus*100}% ${gear.job} output${key==='crafted_saw'?' and ingredients per batch':''}`,`${Number(available.toFixed(2))} available · ${assigned.length} assigned`);
+    const row=itemCard(key,gear.name,`+${gear.bonus*100}% ${goodName(gear.job).toLowerCase()} output${key==='crafted_saw'?' and ingredients per batch':''}`,`${Number(available.toFixed(2))} available · ${assigned.length} assigned`);
     for(const {v,index} of assigned){
       const recipient=toolRecipientPicker(town,key,index);recipient.setAttribute('aria-label',`Assign ${gear.name.toLowerCase()} carried by ${v.name}`);row.append(recipient);
     }
@@ -1268,7 +1268,7 @@ function villagerRow(town,v,index){
   const gear=workerTools[v.worker_tool];
   if(gear){
     const equipped=document.createElement('span');equipped.className='villager-equipment';equipped.tabIndex=0;equipped.setAttribute('role','img');
-    const description=`${gear.name} · +${gear.bonus*100}% ${gear.job} output · ${v.job===gear.job?'Active for current job':'Inactive for current job'}`;
+    const description=`${gear.name} · +${gear.bonus*100}% ${goodName(gear.job).toLowerCase()} output · ${v.job===gear.job?'Active for current job':'Inactive for current job'}`;
     equipped.title=description;equipped.setAttribute('aria-label',description);equipped.append(illustration(v.worker_tool));
     const tooltip=document.createElement('span');tooltip.className='skill-tooltip';tooltip.textContent=description;tooltip.setAttribute('aria-hidden','true');equipped.append(tooltip);name.append(equipped);
   }
@@ -1732,7 +1732,7 @@ function renderSelection(town){
       const row=document.createElement('p');row.textContent=`Keepsake: ${keepsake}`;$('selection-details').append(row);
     }
     for(const [key,gear] of Object.entries(workerTools)){
-      const row=document.createElement('p');row.textContent=`${gear.name} · ${Number(availableWorkerTools(town,key).toFixed(2))} available · Give to a worker from their panel (+${gear.bonus*100}% ${gear.job} output${key==='crafted_saw'?' and ingredients per batch':''})`;$('selection-details').append(row);
+      const row=document.createElement('p');row.textContent=`${gear.name} · ${Number(availableWorkerTools(town,key).toFixed(2))} available · Give to a worker from their panel (+${gear.bonus*100}% ${goodName(gear.job).toLowerCase()} output${key==='crafted_saw'?' and ingredients per batch':''})`;$('selection-details').append(row);
     }
     if(viewed===identity?.town_id){
       const quarry=document.createElement('button');quarry.textContent='The Sealed Quarry · Puzzle prototype';
@@ -1788,13 +1788,13 @@ function renderSelection(town){
         renderLocalStory(own,item,selection.index,nearby,$('selection-details'));
         if(gift){
           const gear=workerTools[gift] || equipmentItems[gift],note=document.createElement('p');
-          note.textContent=workerTools[gift]?`Gift for a worker · +${gear.bonus*100}% ${gear.job} output`:`Clothing gift · ${gear.perk} · Equip from your character panel`;$('selection-details').append(note);
+          note.textContent=workerTools[gift]?`Gift for a worker · +${gear.bonus*100}% ${goodName(gear.job).toLowerCase()} output`:`Clothing gift · ${gear.perk} · Equip from your character panel`;$('selection-details').append(note);
           const button=document.createElement('button');button.textContent=progress.gift_claimed?`${gear.name} gift collected`:`Accept ${gear.name.toLowerCase()} · ${workerTools[gift]?'Gift for a worker':'Clothing gift'}`;
           button.disabled=!nearby||!!progress.gift_claimed;button.onclick=()=>act({action:'claim_local_gift',npc_index:selection.index});$('selection-details').append(button);
         }
         for(const key of localToolShops[item.name] || []){
           const gear=workerTools[key],button=document.createElement('button');
-          button.textContent=`Buy ${gear.name.toLowerCase()} · ${gear.price} coins · +${gear.bonus*100}% ${gear.job} output`;
+          button.textContent=`Buy ${gear.name.toLowerCase()} · ${gear.price} coins · +${gear.bonus*100}% ${goodName(gear.job).toLowerCase()} output`;
           button.disabled=!nearby||own.coins<gear.price;
           button.onclick=()=>act({action:'buy_worker_tool',item:key,npc_index:selection.index});$('selection-details').append(button);
         }
@@ -2070,8 +2070,8 @@ function drawBuildingEffects(seconds){
 function departureMessage(town){
   const departed=town.last_departure;
   if(!departed)return '';
-  const role=departed.job==='idle'?'settler':departed.job==='baking'?'baker':departed.job==='butchery'?'butcher':departed.job==='building'?'builder':departed.job;
-  const practice=Object.entries(departed.practice || {}).map(([job,xp])=>`${Math.floor(xp)} ${job} practice`).join(', ');
+  const role=departed.job==='idle'?'settler':departed.job==='baking'?'baker':departed.job==='butchery'?'butcher':departed.job==='building'?'builder':departed.job==='woodworking'?'sawyer':departed.job;
+  const practice=Object.entries(departed.practice || {}).map(([job,xp])=>`${Math.floor(xp)} ${job==='woodworking'?'sawing':job} practice`).join(', ');
   const reason=departed.reason || 'food';
   return `${departed.name}, your ${role}, left after prolonged ${reason} shortages. ${practice?`Lost ${practice}. `:''}Their experience is gone; their work needs a new settler.`;
 }
@@ -2702,6 +2702,8 @@ function drawVillager(b,highlighted=false){
   const fishing=s.phase==='working'&&!walking&&b.villager.job==='fishing';
   const farming=s.phase==='working'&&!walking&&b.villager.job==='farming'&&(!s.fieldCycle||!!s.farmAction);
   const constructing=working&&!!b.villager.construction_target;
+  const sawing=working&&!walking&&!constructing&&b.villager.job==='woodworking';
+  const sawHandX=4+Math.sin((s.elapsed || 0)*7)*4;
   const farmStage=s.farmAction?['plowing','sowing','watering','harvesting'].indexOf(s.farmAction):Math.min(3,Math.floor((s.elapsed || 0)/2));
   const farmSwing=(Math.sin((s.elapsed || 0)*Math.PI*3)+1)/2;
   const fishingTime=s.activityElapsed ?? s.elapsed ?? 0;
@@ -2721,7 +2723,7 @@ function drawVillager(b,highlighted=false){
   if(b.mounted){paintHorse(ctx,stride);ctx.translate(0,-12);}
   ctx.strokeStyle='#283c38';ctx.lineWidth=2.5;ctx.lineCap='round';
   if(!b.aboard){ctx.beginPath();ctx.moveTo(-2,-4);ctx.lineTo(-2-stride*3,1);ctx.moveTo(2,-4);ctx.lineTo(2+stride*3,1);ctx.stroke();}
-  const bob=walking?Math.abs(stride)*1.2:fishing?reel*1.5:farming?farmSwing*(farmStage===0?2:1):chopping?swing*2.5:working?swing:Math.sin(s.clock*2)*.3;
+  const bob=walking?Math.abs(stride)*1.2:sawing?0:fishing?reel*1.5:farming?farmSwing*(farmStage===0?2:1):chopping?swing*2.5:working?swing:Math.sin(s.clock*2)*.3;
   ctx.translate(0,-bob);
   ctx.fillStyle=b.kind==='npc'?npcColors[b.biome][0]:b.kind==='player'?'#d6b85d':outfit?.color || ['#7899a2','#b9866b','#a0a16b','#947ca0','#c6aa62'][b.index%5];ctx.fillRect(-4,-13,8,10);
   const gear=b.kind==='player'?b.equipment:null;
@@ -2777,7 +2779,7 @@ function drawVillager(b,highlighted=false){
   if(accessories.scarf){
     ctx.fillStyle='#6baeb5';ctx.fillRect(-4,-14,8,2);ctx.fillRect(2,-12,2,5);
   }
-  if(outfit?.tool&&accessories.level>=5){
+  if(outfit?.tool&&accessories.level>=5&&!sawing){
     const tool=outfit.tool;
     ctx.strokeStyle='#a78454';ctx.lineWidth=2;
     ctx.beginPath();ctx.moveTo(-6,0);ctx.lineTo(-7,-9);ctx.stroke();
@@ -2801,7 +2803,15 @@ function drawVillager(b,highlighted=false){
   ctx.strokeStyle='#e7c68c';ctx.lineWidth=2;
   const farmHandX=farmStage===1?7+farmSwing*8:7;
   const farmHandY=farmStage===0?-8+farmSwing*4: farmStage===2?-8:-9-farmSwing*3;
-  ctx.beginPath();ctx.moveTo(-3,-11);ctx.lineTo(chopping?6:-5-stride*2,chopping?-14+swing*5:-6);ctx.moveTo(3,-11);ctx.lineTo(farming?farmHandX:7,chopping?-14+swing*5:fishing?-10-reel*3:farming?farmHandY:-9-swing*4);ctx.stroke();
+  ctx.beginPath();
+  if(sawing){
+    // One hand steadies the timber; the other follows the saw handle.
+    ctx.moveTo(-3,-11);ctx.lineTo(9,-10);ctx.lineTo(17,-6);
+    ctx.moveTo(3,-11);ctx.lineTo(sawHandX,-12);
+  }else{
+    ctx.moveTo(-3,-11);ctx.lineTo(chopping?6:-5-stride*2,chopping?-14+swing*5:-6);ctx.moveTo(3,-11);ctx.lineTo(farming?farmHandX:7,chopping?-14+swing*5:fishing?-10-reel*3:farming?farmHandY:-9-swing*4);
+  }
+  ctx.stroke();
   if(constructing){
     const handY=-9-swing*4;
     ctx.strokeStyle='#a78454';ctx.lineWidth=2;
@@ -2885,7 +2895,7 @@ function drawVillager(b,highlighted=false){
       ctx.strokeStyle='#a78454';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(0,3);ctx.lineTo(0,-5);ctx.stroke();
       ctx.strokeStyle='#dce5df';ctx.lineWidth=2;ctx.beginPath();ctx.arc(1,-8,5,-Math.PI/2,Math.PI/2);ctx.stroke();ctx.restore();
     }
-  }else if(working&&['husbandry','woodworking','milling','preserving','crafting','breeding','orcharding','baking','butchery'].includes(b.villager.job)){
+  }else if(sawing||working&&['husbandry','milling','preserving','crafting','breeding','orcharding','baking','butchery'].includes(b.villager.job)){
     drawProfessionAction(b.villager.job,s.elapsed || 0);
   }else if(working){
     ctx.save();ctx.translate(chopping?6:5,chopping?-13+swing*4:-11);ctx.rotate(chopping?-1+swing*2.5:-1.4+swing*2);
@@ -2943,9 +2953,16 @@ function drawProfessionAction(job,time){
   ctx.fillStyle='#806448';ctx.fillRect(5,-3,17,3);
   ctx.strokeStyle='#d5dfd8';ctx.lineWidth=2;
   if(job==='woodworking'){
-    ctx.fillStyle='#b78b57';ctx.fillRect(6,-7,17,4);
-    polygon([[5+motion*7,-11],[19+motion*7,-11],[18+motion*7,-7],[6+motion*7,-7]],'#c4d2ce');
-    ctx.fillStyle='#e4c98a';for(let i=0;i<3;i++)ctx.fillRect(15+i*3,-3+((time*4+i)%1)*6,2,2);
+    // Fixed trestles and timber make the push/pull stroke readable.
+    ctx.fillStyle='#806448';ctx.fillRect(7,-3,3,7);ctx.fillRect(20,-3,3,7);
+    ctx.fillStyle='#b78b57';ctx.fillRect(6,-7,20,4);
+    ctx.strokeStyle='#725333';ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(16,-7);ctx.lineTo(16,-3);ctx.stroke();
+    const handleX=4+Math.sin(time*7)*4;
+    polygon([[handleX+2,-12],[handleX+23,-12],[handleX+22,-8],
+      ...Array.from({length:10},(_,i)=>[handleX+21-i*2,i%2?-8:-6]),[handleX+2,-8]],'#c4d2ce','#6b7d79');
+    ctx.strokeStyle='#8b5e3b';ctx.lineWidth=2;ctx.strokeRect(handleX-1,-14,4,6);
+    ctx.fillStyle='#e7c68c';ctx.fillRect(handleX-1,-13,3,3);
+    ctx.fillStyle='#e4c98a';for(let i=0;i<3;i++){const fall=(time*4+i/3)%1;ctx.fillRect(15+fall*(i-1)*5,-3+fall*8,1.5,1.5);}
   }else if(job==='crafting'||job==='butchery'){
     ctx.fillStyle=job==='crafting'?'#7c8985':'#b66e65';ctx.fillRect(8,-7,12,4);
     ctx.save();ctx.translate(9,-9-motion*6);ctx.rotate(-motion*.8);

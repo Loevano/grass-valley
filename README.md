@@ -362,10 +362,12 @@ the Python host, refresh both browsers, and create a new world to use the shared
   Resting settlers are labeled and listed first, including cottage residents
   who can be reassigned directly to a workplace.
   Basic woodcutting, farming, fishing, and husbandry train anyone. Advanced roles
-  require that settler's own practice: sawpit workers need 10 woodcutting,
-  millers 10 farming, preservers 10 fishing, crafters 2 woodworking,
+  require that settler's own practice: sawyers at sawpits need 10 woodcutting,
+  millers 10 farming, preservers 10 fishing, crafters 2 sawing,
   fish breeders 20 fishing, orchard workers 20 farming, bakers 2 milling,
   and butchers 2 husbandry. Another settler or the player's skill cannot qualify them.
+  Sawing shows a toothed saw moving through steady timber, with the worker's hand
+  following its handle. The action stops while waiting, walking, or delivering.
   Existing settlers gain saved talents when loading; unqualified advanced workers
   pause until trained in the prerequisite job.
 - Hall level 4 unlocks bakeries (30 wood + 5 planks) and butcher shops

@@ -233,10 +233,10 @@ assigned settler's own practice, never the founder's or another resident's skill
 
 | Role | Required personal practice |
 | --- | --- |
-| Woodworking | 10 woodcutting |
+| Sawing | 10 woodcutting |
 | Milling | 10 farming |
 | Preserving | 10 fishing |
-| Crafting | 2 woodworking |
+| Crafting | 2 sawing |
 | Fish breeding | 20 fishing |
 | Orcharding | 20 farming |
 | Baking | 2 milling |

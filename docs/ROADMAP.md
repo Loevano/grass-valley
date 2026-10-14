@@ -135,8 +135,10 @@ pigs use 10 feed and yield 32 food as prepared meat, with profitable advanced
 recipes. Base bread is about 24% more efficient per active worker-second than
 a full pig barn before travel and byproducts. Delivered livestock pacing and
 its interaction with grain equipment still need play experience.
-The wood and grain rates still need play experience across town layouts to assess
-delivered supply and pacing, including continuous forestry supply for the grain
+Sawpit work is labeled Sawing throughout job and skill controls, with a hand-driven
+sawing animation during productive work. Saved practice and production rates are
+preserved. The wood and grain rates still need play experience across town layouts
+to assess delivered supply and pacing, including continuous forestry supply for the grain
 chain. The grain chain has compact host fixtures for base rates and 200 residents.
 The [hall upgrade path](HALL_PROGRESSION.md) now requires output from the previous
 level's production unlocks, with tools and processed food at level 5 and saddle

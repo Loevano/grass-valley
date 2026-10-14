@@ -62,7 +62,7 @@ practice, shared barn work, or different recipes.
 
 | Full chain | Work breakdown | Total production time cost | Total reward |
 | --- | --- | --- | --- |
-| Tree → wood → 1 plank | Gather 2 wood: 8s; saw: 6s | 14 worker-seconds | 1 plank; approximately 0.187 practice (0.107 woodcutting + 0.08 woodworking) |
+| Tree → wood → 1 plank | Gather 2 wood: 8s; saw: 6s | 14 worker-seconds | 1 plank; approximately 0.187 practice (0.107 woodcutting + 0.08 sawing) |
 
 ### How many woodcutters for a sawpit?
 
@@ -113,7 +113,7 @@ recipes make useful tools, each yielding one item at neutral talent/low practice
 | Item | Crafting practice required | Inputs | Active work | Equipped effect |
 | --- | --- | --- | --- | --- |
 | Crafted axe | 2 | 2 planks + 1 tool | 9 seconds | +25% woodcutting output |
-| Crafted saw | 3 | 2 planks + 2 tools | 12 seconds | +25% woodworking batch output and ingredient use |
+| Crafted saw | 3 | 2 planks + 2 tools | 12 seconds | +25% sawing batch output and ingredient use |
 
 Assign tools through Items or a villager's panel. Each villager carries one tool;
 returning or transferring it preserves the item. Produced tools use normal goods
@@ -137,7 +137,7 @@ inventory, without stacking duplicate bonuses. New sawpits start with one space.
 
 | Milestone from zero practice | Current neutral requirement | Ideal active time | Limitation |
 | --- | --- | --- | --- |
-| Qualify for woodworking | 10 woodcutting | 12.5 minutes | Requires productive chopping, not simply assignment. |
+| Qualify for sawing | 10 woodcutting | 12.5 minutes | Requires productive chopping, not simply assignment. |
 
 ## Grains
 
