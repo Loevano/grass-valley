@@ -78,12 +78,12 @@ Use these formulas when tuning consumption:
 
 ### Reference using current consumption
 
-| Part | Base rate, one worker | Minimum rate to feed 200 working villagers |
-| --- | --- | --- |
-| Wheat supply | Varies with acres, farmers, water, and hauling | 800 wheat/min delivered |
-| Mill | 40 flour/min; uses 40 wheat/min | 800 flour/min; uses 800 wheat/min |
-| Bread bakery | 20 bread/min; uses 20 flour and 5 wood/min | 800 bread/min; uses 800 flour and 200 wood/min |
-| Food supplied | 30 food/min; feeds 5 working villagers | 1,200 food/min; feeds 200 working villagers |
+| Part          | Base rate, one worker                          | Minimum rate to feed 200 working villagers     |
+| ------------- | ---------------------------------------------- | ---------------------------------------------- |
+| Wheat supply  | Varies with acres, farmers, water, and hauling | 800 wheat/min delivered                        |
+| Mill          | 40 flour/min; uses 40 wheat/min                | 800 flour/min; uses 800 wheat/min              |
+| Bread bakery  | 20 bread/min; uses 20 flour and 5 wood/min     | 800 bread/min; uses 800 flour and 200 wood/min |
+| Food supplied | 30 food/min; feeds 5 working villagers         | 1,200 food/min; feeds 200 working villagers    |
 
 - These rates assume uninterrupted production.
 - The mill needs at least **20×** its base capacity.
