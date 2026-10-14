@@ -11,12 +11,13 @@ and cache rules are in [Backend](BACKEND.md#cached-zoomed-out-map).
 
 ## Sawpit artwork review
 
-**Status:** three [SVG concepts](sawpit-concepts.svg) are ready for review;
-the visual direction remains unselected. The current sawpit is still difficult
-to recognize. Choose between an open pit, a raised sawing deck, and a saw bench
-with a rear shed before implementing another artwork change. The comparison
-includes views at approximately normal game size; preserve the existing style
-and 3×2 footprint. Details are in [Artwork](ARTWORK.md#sawpit-concepts-awaiting-review).
+**Status:** concept C, a saw bench with a rear shed, was selected from the
+[three SVG concepts](sawpit-concepts.svg). A [refined SVG](sawpit-c-refined.svg)
+is ready for review before implementation. It adds a pitched timber shed, half
+walls and tools, a braced open bench, and a proportionate hand saw. Confirm the
+refined drawing at normal game size, then implement the selected artwork while
+preserving the existing style and 3×2 footprint. Details are in
+[Artwork](ARTWORK.md#sawpit-concepts-awaiting-review).
 
 ## Cached zoomed-out town overview
 

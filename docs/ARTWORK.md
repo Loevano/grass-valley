@@ -48,7 +48,13 @@ staffing or animation behavior.
 | B — Raised sawing deck | A timber platform with workers above and below | A taller silhouette, with more structure |
 | C — Saw bench + rear shed | A familiar hand-saw profile on an open workbench | Fits the building family, but is less literal as a pit |
 
-No concept has been selected or implemented.
+Concept C has been selected for refinement. The [revised SVG](sawpit-c-refined.svg)
+adds a pitched rear shed with half walls, a tool rack and lantern, an open bench
+on braced trestles, a smaller hand saw, and separate log and board storage. The
+sheet includes a view at approximately normal game size. This refined sketch
+is awaiting review before implementation.
+
+![Refined concept C: a rear timber shed and an open sawing bench.](sawpit-c-refined.png)
 
 ## Composition sketch
 

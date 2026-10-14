@@ -1,0 +1,118 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1040" height="730" viewBox="0 0 1040 730" role="img" aria-labelledby="title description">
+  <title id="title">Lantern Vale — refined sawpit concept C</title>
+  <desc id="description">A refined saw bench and rear timber shed in the existing angled game style. A small pitched roof, half walls, a hanging lantern and a tool rack form the rear shed. An open front bench has braced trestles, a log, a visible cutting mark and a proportionate toothed hand saw held by a worker. Round logs and finished square boards occupy separate sides of the existing three-by-two lot. The same drawing is also shown at approximately normal game size. This is an SVG design study awaiting review.</desc>
+  <defs>
+    <symbol id="incoming-logs" viewBox="0 0 44 34">
+      <g stroke="#735439" stroke-width=".9">
+        <path d="M2 15 27 27 32 21 7 9Z" fill="#a47c4e"/>
+        <ellipse cx="29" cy="24" rx="4" ry="5" transform="rotate(-25 29 24)" fill="#dbb580"/>
+        <path d="M10 11 35 23 40 17 15 5Z" fill="#b48a56"/>
+        <ellipse cx="37" cy="20" rx="4" ry="5" transform="rotate(-25 37 20)" fill="#dbb580"/>
+        <path d="M5 7 30 19 35 13 10 1Z" fill="#b48a56"/>
+        <ellipse cx="32" cy="16" rx="4" ry="5" transform="rotate(-25 32 16)" fill="#dbb580"/>
+      </g>
+      <path d="M28 23 30 25M36 19 38 21M31 15 33 17" stroke="#9c784b" stroke-width="1"/>
+    </symbol>
+    <symbol id="finished-boards" viewBox="0 0 40 34">
+      <g stroke="#735439" stroke-width=".8">
+        <path d="M2 19 26 31 37 26 13 14Z" fill="#c4a477"/><path d="M26 31 37 26 37 29 26 34Z" fill="#e0bd84"/>
+        <path d="M2 15 26 27 37 22 13 10Z" fill="#c4a477"/><path d="M26 27 37 22 37 25 26 30Z" fill="#e0bd84"/>
+        <path d="M2 11 26 23 37 18 13 6Z" fill="#c4a477"/><path d="M26 23 37 18 37 21 26 26Z" fill="#e0bd84"/>
+        <path d="M2 7 26 19 37 14 13 2Z" fill="#c4a477"/><path d="M26 19 37 14 37 17 26 22Z" fill="#e0bd84"/>
+      </g>
+      <path d="M7 7 30 18M13 4 35 15" stroke="#e0bd84" stroke-width=".8"/>
+      <path d="M18 10 18 23" stroke="#68563e" stroke-width="1.6"/>
+    </symbol>
+    <symbol id="refined-yard" viewBox="0 0 220 185">
+      <!-- One connected lot, with the front path kept open around the bench. -->
+      <path d="M17 113 129 57 203 94 91 150Z" fill="#a48d66" stroke="#6c715c"/>
+      <path d="M17 113 91 150 91 153 17 116ZM91 150 203 94 203 97 91 153Z" fill="#8c7758"/>
+      <path d="M45 99 99 126 161 95 107 68Z" fill="#735439" opacity=".18"/>
+      <!-- Rear timber shed: shaded back panel and low open-front half wall. -->
+      <path d="M95 108 144 84 144 57 95 81Z" fill="#847053" stroke="#594d38"/>
+      <path d="M105 80 105 102M116 75 116 97M127 70 127 92M138 65 138 87" stroke="#a48d66" stroke-width=".8"/>
+      <path d="M48 94 95 117 95 98 48 75Z" fill="#b69a70" stroke="#735439"/>
+      <path d="M49 81 94 104M49 87 94 110" stroke="#947044" stroke-width=".8"/>
+      <path d="M48 75 95 98 95 102 48 79Z" fill="#c4a477" stroke="#735439" stroke-width=".7"/>
+      <!-- Posts and diagonal braces use the same material scale as the bench. -->
+      <path d="M47 56 47 99 51 101 51 58ZM94 79 94 117 98 115 98 77ZM143 54 143 92 147 90 147 52Z" fill="#735439" stroke="#c4a477" stroke-width=".8"/>
+      <path d="M50 67 62 62M143 63 133 68" stroke="#b48a56" stroke-width="2.5"/>
+      <!-- Tool rack and a warm lantern sit behind the cutting station. -->
+      <path d="M107 78 136 64" stroke="#594d38" stroke-width="2.5"/>
+      <path d="M111 76 111 84M123 70 123 78M131 67 131 75" stroke="#c4a477" stroke-width="1.6"/>
+      <path d="M108 83 114 80M120 76 126 73M128 73 134 70" stroke="#98aaa7" stroke-width="2"/>
+      <path d="M54 60 54 68 59 70" fill="none" stroke="#735439" stroke-width="1.8"/>
+      <path d="M54 68 59 70 59 77 54 75Z" fill="#edc77d" stroke="#594d38" stroke-width=".7"/>
+      <!-- A compact pitched roof finishes the shed without covering the bench. -->
+      <path d="M95 80 154 50 124 45Z" fill="#b69a70" stroke="#735439"/>
+      <path d="M100 23 154 50 124 45 70 18Z" fill="#a58d66" stroke="#735439"/>
+      <path d="M41 53 95 80 124 45 70 18Z" fill="#8e7752" stroke="#735439" stroke-width="1.2"/>
+      <path d="M49 44 103 71M57 35 111 62M65 26 119 53" stroke="#ac926b" stroke-width=".8"/>
+      <path d="M60 31 52 41M78 40 70 50M96 49 88 59M114 58 106 68" stroke="#735439" stroke-width=".65"/>
+      <path d="M41 53 95 80 154 50" fill="none" stroke="#c9a579" stroke-width="2"/>
+      <path d="M70 18 124 45" stroke="#c4a477" stroke-width="1.5"/>
+      <!-- Materials have separate input and output silhouettes. -->
+      <use href="#incoming-logs" x="23" y="99" width="42" height="32"/>
+      <use href="#finished-boards" x="157" y="68" width="37" height="31"/>
+      <!-- Foreground sawing bench on two braced trestles, not a floating table. -->
+      <path d="M78 112 122 134 163 114 119 92Z" fill="#223b29" opacity=".16"/>
+      <path d="M85 92 83 116 87 118 90 94ZM105 81 108 104 112 102 110 79Z" fill="#735439" stroke="#c4a477" stroke-width=".8"/>
+      <path d="M128 112 126 132 130 130 133 110ZM150 100 152 119 156 117 154 98Z" fill="#735439" stroke="#c4a477" stroke-width=".8"/>
+      <path d="M87 115 108 85M130 128 152 102" stroke="#947044" stroke-width="2.4"/>
+      <path d="M80 87 130 112 154 100 104 75Z" fill="#c4a477" stroke="#735439"/>
+      <path d="M80 87 130 112 130 116 80 91Z" fill="#947044" stroke="#735439" stroke-width=".8"/>
+      <path d="M130 112 154 100 154 104 130 116Z" fill="#735439"/>
+      <path d="M87 84 137 109M98 79 148 104" stroke="#e0bd84" stroke-width=".7"/>
+      <!-- Raised log, visible end grain and a cut aligned with the saw teeth. -->
+      <path d="M86 79 143 107 145 100 88 72Z" fill="#947044" stroke="#735439"/>
+      <path d="M88 72 92 70 149 98 145 100Z" fill="#c4a477" stroke="#735439"/>
+      <ellipse cx="146" cy="103" rx="4" ry="5.5" transform="rotate(-25 146 103)" fill="#dbb580" stroke="#735439" stroke-width=".8"/>
+      <ellipse cx="146" cy="103" rx="2" ry="3.2" transform="rotate(-25 146 103)" fill="none" stroke="#9c784b" stroke-width=".8"/>
+      <path d="M97 81 136 100" stroke="#735439" stroke-width=".7"/>
+      <path d="M136 93 131 99 131 104" fill="none" stroke="#594d38" stroke-width="1.5"/>
+      <!-- The worker stands beside the bench and grips a human-sized hand saw. -->
+      <ellipse cx="94" cy="124" rx="9" ry="3" fill="#223b29" opacity=".2"/>
+      <path d="M89 113 88 123M96 115 98 124" stroke="#594d38" stroke-width="3"/>
+      <path d="M87 103 96 103 100 116 84 115Z" fill="#71806a" stroke="#4c594e" stroke-width=".7"/>
+      <path d="M89 104 95 104 97 115 87 114Z" fill="#c4a477"/>
+      <circle cx="92" cy="99" r="4" fill="#d3b68b"/>
+      <path d="M87 98 89 94 95 94 97 98Z" fill="#735439"/>
+      <!-- Four larger teeth remain visible in the normal-size preview. -->
+      <g transform="rotate(-24 108 99)">
+      <path d="M114 94 144 101 141 108 135 105 132 109 127 106 124 110 119 107 115 110 111 105Z" fill="#c4d2ce" stroke="#68563e" stroke-width=".8"/>
+      <path d="M115 97 140 103" stroke="#e8efdf" stroke-width="1"/>
+      <path d="M104 90 114 94 111 106 102 102Z" fill="#c4a477" stroke="#735439" stroke-width=".8"/>
+      <path d="M106 95 110 96 108 102 105 100Z" fill="#594d38"/>
+      </g>
+      <path d="M97 105 102 106 108 99M87 106 94 111 102 109" fill="none" stroke="#71806a" stroke-width="3"/>
+      <path d="M105 102 108 99M100 109 104 108" stroke="#d3b68b" stroke-width="2"/>
+      <!-- A few chips indicate cutting, leaving the walking edge uncluttered. -->
+      <path d="M113 128 116 129 115 131 112 130ZM122 123 125 124 124 126 121 125ZM107 130 109 132 107 133 105 131Z" fill="#d3bc83"/>
+    </symbol>
+  </defs>
+  <rect width="1040" height="730" rx="16" fill="#172b27"/>
+  <g font-family="system-ui, sans-serif" fill="#e8eadb">
+    <text x="30" y="45" font-size="26" font-weight="650">Sawpit · refined concept C</text>
+    <text x="30" y="74" font-size="14" fill="#bdcdb5">Rear timber shed + open sawing bench · existing palette and 3×2 footprint</text>
+    <rect x="24" y="100" width="658" height="574" rx="10" fill="#243f33" stroke="#51683e"/>
+    <rect x="702" y="100" width="314" height="574" rx="10" fill="#243f33" stroke="#51683e"/>
+    <text x="44" y="133" font-size="14" fill="#bdcdb5">ENLARGED DESIGN VIEW</text>
+    <use href="#refined-yard" x="43" y="151" width="620" height="521"/>
+    <text x="722" y="133" font-size="16" font-weight="600">At normal game size</text>
+    <use href="#refined-yard" x="779" y="151" width="160" height="135"/>
+    <path d="M722 304H996" stroke="#51683e"/>
+    <g font-size="15" font-weight="600">
+      <text x="722" y="339">Clear work area</text>
+      <text x="722" y="414">A useful rear shed</text>
+      <text x="722" y="489">Better proportions</text>
+      <text x="722" y="564">Readable materials</text>
+    </g>
+    <g font-size="13" fill="#bdcdb5">
+      <text x="722" y="362">Log, saw and worker stay in front.</text>
+      <text x="722" y="437">Half walls, tool rack and lantern.</text>
+      <text x="722" y="512">Smaller saw; sturdy braced trestles.</text>
+      <text x="722" y="587">Round logs in, squared boards out.</text>
+    </g>
+    <text x="30" y="708" font-size="13" fill="#bdcdb5">SVG design study · worker pose illustrates the work · refined sketch awaiting review</text>
+  </g>
+</svg>
