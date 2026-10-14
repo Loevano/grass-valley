@@ -44,7 +44,14 @@ const run=new Function('document','window','localStorage','setTimeout','clearTim
  check(panelNodes().some(c=>c.textContent?.includes('25 eggs per growth cycle')),'Fixed lifetime output is visible');
  town.buildings[1].animals.chicken=4;render();check(buy('Add young chicken').disabled,'Barn capacity still limits free animals');
  const beforeFull=commands.length;buy('Add young chicken').onclick();check(commands.length===beforeFull,'Full barns send no add command');
- town.buildings[1].animals.chicken=2;
+ town.buildings[1].animals.chicken=3;town.buildings[1].animal_growth={chicken:[0,150,300]};
+ const originalHerd=JSON.stringify(town.buildings[1]);render();
+ check(panelNodes().filter(c=>c.tag==='progress'&&c.attributes['aria-label']?.includes('growth')).length===2,'Only growing animals have growth bars');
+ check(panelNodes().some(c=>c.textContent==='37.5 eggs left in this herd’s growth cycle'),'Remaining products follow each animal’s confirmed growth');
+ check(panelNodes().some(c=>c.className==='livestock-state ready'&&c.textContent.includes('1 ready')),'Adults are marked ready');
+ check($('selection-details').children[0].children[0].textContent==='Animals','Barn animals appear before storage and workers');
+ check(JSON.stringify(town.buildings[1])===originalHerd,'Rendering leaves authoritative animal state unchanged');
+ town.buildings[1].animals.chicken=2;delete town.buildings[1].animal_growth;
  inspect('building',2);
  const crops=panelNodes().find(b=>b.tag==='select'&&b.attributes['aria-label']==='Crop for all acres');
  check(!crops.children.some(b=>b.value==='fodder'),'Locked crops are omitted');

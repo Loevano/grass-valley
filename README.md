@@ -647,6 +647,9 @@ the Python host, refresh both browsers, and create a new world to use the shared
   panel. Building construction and moves reserve the enclosed tiles, including
   during barn construction. New or moved barns need a range free of other buildings.
 - Choose free young barn animals within the existing hall unlocks and capacity.
+  The barn's Animals panel shows each species, growing animals' progress, fixed
+  cycle yields, remaining herd output, and adults ready for the butcher. Open the
+  butcher from the barn, then choose **Butcher & replace** to start the next cycle.
   They grow visibly over five minutes of full
   feeding by barn workers, with smooth size changes between growth updates.
   Each chicken produces a fixed 25 eggs, each sheep 25 wool, and each cow 25 milk
@@ -656,7 +659,7 @@ the Python host, refresh both browsers, and create a new world to use the shared
   Adults stop producing and consume no more feed. Existing saved growth is kept;
   animals from older saves without growth data remain adults ready for butchery.
   Farm animals no longer breed; horse capture, feeding, and breeding are unchanged.
-  At a butcher shop, select an adult from a barn and choose **Use animal for meat**.
+  At a butcher shop, select an adult from a barn and choose **Butcher & replace**.
   A free young animal of the same species immediately takes its place in the barn,
   including when the barn is full. A qualified butcher needs one minute of
   work at the shop to produce 2/4/8/10 raw meat for a chicken/sheep/pig/cow.

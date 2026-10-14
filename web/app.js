@@ -1501,12 +1501,72 @@ function animalAges(barn,animal){
   const duration=world.progression?.animal_growth_seconds || 300;
   return Array.from({length:barn.animals?.[animal] || 0},(_,i)=>barn.animal_growth?.[animal]?.[i] ?? duration);
 }
+function renderBarnAnimals(town,item,index,target){
+  const catalog=world.progression,owner=viewed===identity?.town_id;
+  const duration=catalog.animal_growth_seconds || 300,capacity=4*buildingLevel(item);
+  const count=Object.values(item.animals || {}).reduce((sum,n)=>sum+n,0);
+  const ready=Object.keys(item.animals || {}).reduce((sum,animal)=>sum+animalAges(item,animal).filter(age=>age>=duration).length,0);
+  const overview=document.createElement('div');overview.className='livestock-overview';
+  const spaces=document.createElement('strong');spaces.textContent=`${count} / ${capacity} animal spaces`;
+  const state=document.createElement('span');state.textContent=`${count-ready} growing · ${ready} ready`;
+  overview.append(spaces,state);target.append(overview);
+  const cycle=document.createElement('p');cycle.className='livestock-cycle';cycle.textContent='Grow → Butcher → Free replacement';target.append(cycle);
+  const note=document.createElement('p');note.className='livestock-note';
+  note.textContent=`${Math.ceil(duration/60)} fed minutes per cycle. Growth and products pause without feed or output space. Adults need no feed and stop producing.`;target.append(note);
+  if(owner&&count>=capacity){const full=document.createElement('p');full.className='livestock-note';full.textContent='Barn full. Butchering renews existing animals; upgrade the barn to add more.';target.append(full);}
+  if(owner&&ready){
+    const butcher=town.buildings.findIndex(b=>b.kind==='butcher'&&(!b.construction||b.construction.upgrade));
+    if(butcher>=0){const open=document.createElement('button');open.className='quiet';open.textContent=`Open butcher shop · ${ready} ready`;open.onclick=()=>{if(viewed===identity?.town_id)inspect('building',butcher);};target.append(open);}
+    else{const hint=document.createElement('p');hint.className='livestock-note';hint.textContent=`Build a butcher shop at Hall level ${catalog.buildings?.butcher?.level || 4} to butcher adults and start a new growth cycle.`;target.append(hint);}
+  }
+  for(const [animal,spec] of Object.entries(catalog.animals)){
+    if(animal==='horse'||town.level<spec.level)continue;
+    const ages=animalAges(item,animal),adults=ages.filter(age=>age>=duration).length;
+    const products=catalog.animal_products?.[animal] ?? 25;
+    const card=document.createElement('div');card.className='livestock-card';
+    const heading=document.createElement('div');heading.className='livestock-heading';
+    const name=document.createElement('strong');name.textContent=goodName(animal);
+    const stock=document.createElement('span');stock.className=adults?'livestock-state ready':'livestock-state';stock.textContent=ages.length?`${ages.length} kept${adults?` · ${adults} ready`:''}`:'Not stocked';
+    heading.append(name,stock);card.append(heading);
+    const yieldNote=document.createElement('p');yieldNote.className='livestock-yield';
+    yieldNote.textContent=animal==='pig'?'Raised for meat and hides':`${products} ${goodName(spec.output).toLowerCase()} per growth cycle`;
+    card.append(yieldNote);
+    const meat=document.createElement('small');meat.className='livestock-note';meat.textContent=`${catalog.animal_meat?.[animal] || 0} meat at butcher + free young ${animal}`;card.append(meat);
+    ages.forEach((age,number)=>{
+      if(age>=duration)return;
+      const row=document.createElement('div');row.className='livestock-growth';
+      const caption=document.createElement('div');caption.className='livestock-growth-caption';
+      const label=document.createElement('span');label.textContent=`Animal ${number+1} · Growing`;
+      const percent=document.createElement('span');percent.textContent=`${Math.floor(age/duration*100)}%`;
+      caption.append(label,percent);row.append(caption);
+      const progress=document.createElement('progress');progress.max=duration;progress.value=age;
+      progress.setAttribute('aria-label',`${goodName(animal)} ${number+1} growth`);row.append(progress);
+      const seconds=Math.ceil(duration-age),time=document.createElement('small');time.textContent=`${Math.floor(seconds/60)}m ${seconds%60}s of feeding left`;row.append(time);card.append(row);
+    });
+    const remaining=document.createElement('p');remaining.className='livestock-note';
+    const productLeft=products*ages.reduce((sum,age)=>sum+Math.max(0,1-age/duration),0);
+    remaining.textContent=!ages.length?'Choose a free young animal to start.':ages.length===adults?'Ready for the butcher. This growth cycle is complete.':animal==='pig'?'Feed until fully grown to unlock butchery.':`${Number(productLeft.toFixed(2))} ${goodName(spec.output).toLowerCase()} left in this herd’s growth cycle`;
+    card.append(remaining);
+    if(owner){
+      const add=document.createElement('button');add.className='livestock-add';add.textContent=`Add young ${animal} · Free`;
+      add.disabled=count>=capacity;add.onclick=()=>{if(!add.disabled&&viewed===identity?.town_id)act({action:'buy_animal',index,animal});};card.append(add);
+    }
+    target.append(card);
+  }
+
+}
 function renderAnimalButchery(town,item,index,target){
   const catalog=world.progression,owner=viewed===identity?.town_id;
-  const note=document.createElement('p');
-  const task=item.butchering;
-  note.textContent=task?`Butchering ${goodName(task.animal).toLowerCase()} → ${task.amount} meat · ${Math.ceil(task.remaining)}s of work remaining${task.remaining===0?' · Waiting for buffer space or production cap':''}`:`Uses 1 adult animal · A free young animal of the same species replaces it immediately · ${catalog.butcher_seconds || 60}s of work.`;
-  target.append(note);
+  const card=document.createElement('div');card.className='animal-butchery';target.append(card);
+  const heading=document.createElement('h3');heading.textContent='Butcher & replace';card.append(heading);
+  const note=document.createElement('p');note.className='livestock-note';note.textContent='Choose one fully grown animal. A free young animal of the same species replaces it immediately in its barn.';card.append(note);
+  const task=item.butchering,duration=catalog.butcher_seconds || 60;
+  if(task){
+    const status=document.createElement('p');status.className='butchery-status';
+    status.textContent=`${goodName(task.animal)} → ${task.amount} meat · ${Math.ceil(task.remaining)}s of work remaining${task.remaining===0?' · Waiting for buffer space or production cap':''}`;card.append(status);
+    const progress=document.createElement('progress');progress.max=duration;progress.value=duration-task.remaining;progress.setAttribute('aria-label','Animal butchery progress');card.append(progress);
+    const replaced=document.createElement('small');replaced.className='livestock-note';replaced.textContent='The young replacement is already in the barn.';card.append(replaced);
+  }
   if(!owner)return;
   const chooser=document.createElement('select');chooser.setAttribute('aria-label','Animal to butcher');
   const choices=[];
@@ -1514,21 +1574,26 @@ function renderAnimalButchery(town,item,index,target){
     if(barn.kind!=='barn'||barn.construction&&!barn.construction.upgrade)return;
     for(const animal of Object.keys(catalog.animal_meat || {}).filter(animal=>animal!=='horse')){
       const adults=animalAges(barn,animal).filter(age=>age>=(catalog.animal_growth_seconds || 300)).length;
-      if(!adults)continue;
-      choices.push({barn,barnIndex,animal});
+      if(adults)choices.push({barn,barnIndex,animal,adults});
     }
   });
-  for(const {barn,barnIndex,animal} of choices){
+  for(const {barn,barnIndex,animal,adults} of choices){
     const option=document.createElement('option');option.value=`${barnIndex}:${animal}`;
     const multipleBarns=choices.some(choice=>choice.animal===animal&&choice.barnIndex!==barnIndex);
-    option.textContent=`${goodName(animal)} → ${catalog.animal_meat?.[animal] || 0} meat${multipleBarns?` · Barn (${barn.x}, ${barn.y})`:''}`;
-    chooser.append(option);
+    option.textContent=`${goodName(animal)} · ${adults} ready${multipleBarns?` · Barn (${barn.x}, ${barn.y})`:''}`;chooser.append(option);
   }
+  if(choices.length)chooser.value=chooser.children[0].value;
+  const label=document.createElement('label');label.hidden=!!task;label.textContent='Fully grown animal';label.append(chooser);card.append(label);
+  const preview=document.createElement('p');preview.className='livestock-yield';preview.hidden=!!task;
+  const updatePreview=()=>{
+    const animal=chooser.value?.split(':')[1];
+    preview.textContent=animal?`${catalog.animal_meat[animal]} meat + 1 free young ${animal} · ${duration}s butcher work`:'Keep feeding barn animals until fully grown.';
+  };
+  chooser.onchange=updatePreview;updatePreview();card.append(preview);
   const qualified=town.villagers.some(v=>v.building_index===index&&v.job==='butchery'&&!jobRequirement(v,'butchery'));
-  const button=document.createElement('button');button.textContent=task?'Butchering in progress':!chooser.children.length?'No fully grown animals':!qualified?'Assign a qualified butcher':'Use animal for meat';
-  button.disabled=!!task||!chooser.children.length||!qualified;chooser.disabled=button.disabled;
-  button.onclick=()=>{if(button.disabled||viewed!==identity?.town_id)return;const [barnIndex,animal]=chooser.value.split(':');act({action:'butcher_animal',index,barn_index:Number(barnIndex),animal});};
-  target.append(chooser,button);
+  const button=document.createElement('button');button.className='livestock-butcher';button.textContent=task?'Butchering in progress':!choices.length?'No fully grown animals':!qualified?'Assign a qualified butcher':'Butcher & replace';
+  button.disabled=!!task||!choices.length||!qualified;chooser.disabled=button.disabled;
+  button.onclick=()=>{if(button.disabled||viewed!==identity?.town_id)return;const [barnIndex,animal]=chooser.value.split(':');act({action:'butcher_animal',index,barn_index:Number(barnIndex),animal});};card.append(button);
 }
 function renderProfession(town,item,index,target,upgrades,details,boats,unlockedUpgrades){
   if(item.construction)return;
@@ -1540,8 +1605,11 @@ function renderProfession(town,item,index,target,upgrades,details,boats,unlocked
     note.textContent=fishingBoatLevel(item)?`Boat owned by this hut · Tier ${fishingBoatLevel(item)}/3 · Crew ${fishingBoatLevel(item)} · Cargo ${Number(fishingBoatLoad(town,item).toFixed(2))}/${fishingBoatCapacity(item)} fish · Other fishers use the dock · Reach ${resourceReach(item)} tiles · Maximum depth ${fishingBoatLevel(item)+1}. Prefers deeper water; ${['','trout','salmon','sturgeon'][fishingBoatLevel(item)]} require this depth. Returns when full or the fishing spot runs out; unloads without leaving the boat. Click its boat on the map to manage it.`:'No boat owned · Buy one boat for this fishing hut. It appears beside nearby water immediately.';
     boats.append(note);
   }
+  if(item.kind==='butcher'){
+    renderAnimalButchery(town,item,index,target);
+    const heading=document.createElement('h3');heading.textContent='Prepare meat';target.append(heading);
+  }
   renderRecipes(town,item,index,target);
-  if(item.kind==='butcher')renderAnimalButchery(town,item,index,target);
   if(item.kind==='farm'){
     const acres=town.buildings.filter(a=>a.kind==='acre'&&a.farm_index===index);
     const crops=new Set(acres.map(a=>a.crop || 'vegetables'));
@@ -1558,23 +1626,18 @@ function renderProfession(town,item,index,target,upgrades,details,boats,unlocked
     const label=document.createElement('label');label.textContent='Crop for all acres';label.append(chooser);target.append(label);
     target.append(fact(`${catalog.farming_harvest_yield ?? 10} crops`,'Base harvest per acre · Skills, tools and upgrades apply'));
   }
-  if(['barn','stable'].includes(item.kind)){
+  if(item.kind==='barn')renderBarnAnimals(town,item,index,target);
+  if(item.kind==='stable'){
     target.append(fact(`${Object.values(item.animals || {}).reduce((a,n)=>a+n,0)} / ${4*buildingLevel(item)}`,'Animal capacity'));
     for(const [animal,spec] of Object.entries(catalog.animals)){
       if(town.level<spec.level || (animal==='horse')!==(item.kind==='stable'))continue;
       const ages=animalAges(item,animal),duration=catalog.animal_growth_seconds || 300;
       const adults=ages.filter(age=>age>=duration).length;
-      const products=catalog.animal_products?.[animal] ?? 25;
-      target.append(fact(`${adults} ${animal==='horse'?'adult':'ready for butcher'} · ${ages.length-adults} growing`,`${goodName(animal)} → ${animal==='horse'?'Riding / breeding':animal==='pig'?'Meat and hides at butcher':`${products} ${goodName(spec.output).toLowerCase()} per growth cycle`}`));
+      target.append(fact(`${adults} adult · ${ages.length-adults} growing`,`${goodName(animal)} → Riding / breeding`));
       ages.forEach(age=>{if(age<duration){const growth=document.createElement('small');growth.style.display='block';growth.textContent=`${Math.floor(age/duration*100)}%`;target.append(growth);}});
       if(owner){
         const full=Object.values(item.animals || {}).reduce((a,n)=>a+n,0)>=4*buildingLevel(item);
-        if(animal==='horse'){
-          const breed=document.createElement('button');breed.textContent=`Breed ${animal} · 3 fodder + 1 herb`;breed.disabled=adults<2 || !canAfford(town,{fodder:3,herbs:1}) || full;breed.onclick=()=>{if(!breed.disabled)act({action:'breed_animal',index,animal});};target.append(breed);
-        }else{
-          const add=document.createElement('button');add.textContent=`Add young ${animal} · Free`;
-          add.disabled=full;add.onclick=()=>{if(!add.disabled)act({action:'buy_animal',index,animal});};target.append(add);
-        }
+        const breed=document.createElement('button');breed.textContent=`Breed ${animal} · 3 fodder + 1 herb`;breed.disabled=adults<2 || !canAfford(town,{fodder:3,herbs:1}) || full;breed.onclick=()=>{if(!breed.disabled)act({action:'breed_animal',index,animal});};target.append(breed);
       }
     }
   }
@@ -1816,7 +1879,7 @@ function renderSelection(town){
     $('selection-level').hidden=false;$('selection-level').textContent=`Lv ${item.kind==='hall'?town.level:buildingLevel(item)}`;
     const decoration=decorationKinds.includes(item.kind);
     const workers=buildingSection(decoration?'Decoration':item.kind==='well'?'Water':['hall','home'].includes(item.kind)?'Settlers':'Workers');
-    const production=decoration?document.createElement('div'):buildingSection(item.kind==='market'?'Trade':['hall','home','storehouse'].includes(item.kind)?'Benefits':'Production');
+    const production=decoration?document.createElement('div'):buildingSection(item.kind==='barn'?'Animals':item.kind==='butcher'?'Butchery':item.kind==='market'?'Trade':['hall','home','storehouse'].includes(item.kind)?'Benefits':'Production');
     const upgrades=decoration?document.createElement('div'):buildingSection('Upgrades'),details=buildingSection('Building details',true),storageOverview=decoration?document.createElement('div'):buildingSection('Storage');
     const boats=item.kind==='fishing_hut'?buildingSection('Fishing boats'):null;
     const unlockedUpgrades=decoration?document.createElement('div'):buildingSection('Unlocked upgrades',true);
@@ -1868,7 +1931,7 @@ function renderSelection(town){
     }
     if(costs[item.kind]&&item.kind!=='well'){
       const level=buildingLevel(item),cost=costs[item.kind]*level,maxLevel=item.kind==='storehouse'?storehouseCapacities.length:3;
-      if(!item.construction){
+      if(!item.construction&&!['barn','butcher'].includes(item.kind)){
         const benefits=document.createElement('p');benefits.className='info-copy';
         benefits.textContent=upgradeBenefit(item.kind,level,item);production.append(benefits);
       }
@@ -1893,9 +1956,10 @@ function renderSelection(town){
       button.onclick=()=>{acreFarmIndex=selection.index;openPanel('build');tool='acre';moveIndex=null;buildTile=null;hoverTile=null;render();};
       production.append(button);
     }
+    if(['barn','butcher'].includes(item.kind)&&production.children.length>1)$('selection-details').append(production);
     if(!item.construction&&!['home','market','well',...decorationKinds].includes(item.kind))$('selection-details').append(storageOverview);
     $('selection-details').append(workers);
-    if(production.children.length>1)$('selection-details').append(production);
+    if(!['barn','butcher'].includes(item.kind)&&production.children.length>1)$('selection-details').append(production);
     if(boats?.children.length>1)$('selection-details').append(boats);
     if(item.kind==='hall'){
       const preview=upgradePreview({action:'upgrade'},town,item);

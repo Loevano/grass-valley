@@ -149,6 +149,9 @@ Barns now use free young animals, fixed products during fed growth, and automati
 young replacements when adults are sent to the butcher. Farm-animal breeding is
 removed. Play experience should assess the five-minute cycle and fixed 25 eggs,
 wool, or milk per animal alongside feed supply, hauling, and manual butcher pacing.
+The barn inspector now shows animal cards, fed-growth progress, remaining products,
+capacity, and access to the butcher. The butcher panel previews meat and the free
+replacement and shows active processing progress. Delivered pacing remains unmeasured.
 
 ## Scalable villager pathfinding
 
