@@ -629,6 +629,8 @@ the Python host, refresh both browsers, and create a new world to use the shared
 - Barns show each purchased or bred chicken, sheep, pig, and cow with walking,
   pecking, and grazing animations. They roam up to two open tiles from their barn
   and return, avoiding buildings, resources, and impassable ground.
+  A decorative wooden fence surrounds each completed barn, extending three tiles
+  in every direction to match the farm's 7×7 range.
 - Bought and bred animals start young and grow visibly over five minutes of full
   feeding by barn workers, with smooth size changes between growth updates.
   Growth pauses without a full ration of fodder or

@@ -3399,6 +3399,39 @@ function villageAnimalBuildings(buildings,data){
   const result=barns.length?[...buildings,...barns]:buildings;
   villageAnimalBuildings.cache={buildings,barns,result};return result;
 }
+function barnFenceSprites(buildings,landscape={}){
+  const sprites=[],reach=gameplayRange({kind:'farm'}).reach,size=landscape.map_size || 120;
+  for(const barn of buildings){
+    if(barn.kind!=='barn'||(barn.construction&&!barn.construction.upgrade))continue;
+    const left=Math.max(-.5,barn.x-reach-.5),right=Math.min(size-.5,barn.x+reach+.5);
+    const back=Math.max(-.5,barn.y-reach-.5),front=Math.min(size-.5,barn.y+reach+.5);
+    const corners=[[left,back],[right,back],[right,front],[left,front]];
+    // Individual sections interleave with animals and characters by ground depth.
+    for(let side=0;side<4;side++){
+      const [x,y]=corners[side],[endX,endY]=corners[(side+1)%4];
+      const length=Math.max(Math.abs(endX-x),Math.abs(endY-y));
+      for(let step=0;step<length;step++){
+        const start={x:x+(endX-x)*step/length,y:y+(endY-y)*step/length};
+        const end={x:x+(endX-x)*(step+1)/length,y:y+(endY-y)*(step+1)/length};
+        sprites.push({kind:'barn_fence',x:(start.x+end.x)/2,y:(start.y+end.y)/2,start,end});
+      }
+    }
+  }
+  return sprites;
+}
+function drawBarnFence(section){
+  const s=tileW/46,[x,y]=point(section.start.x,section.start.y),[endX,endY]=point(section.end.x,section.end.y);
+  const base=y+tileH/2,endBase=endY+tileH/2;
+  ctx.save();ctx.lineCap='round';
+  for(const height of [5,11]){
+    ctx.strokeStyle='#705236';ctx.lineWidth=3*s;
+    ctx.beginPath();ctx.moveTo(x,base-height*s);ctx.lineTo(endX,endBase-height*s);ctx.stroke();
+    ctx.strokeStyle='#c8a06a';ctx.lineWidth=1.5*s;
+    ctx.beginPath();ctx.moveTo(x,base-(height+1)*s);ctx.lineTo(endX,endBase-(height+1)*s);ctx.stroke();
+  }
+  polygon([[x-2*s,base],[x-2*s,base-15*s],[x,base-17*s],[x+2*s,base-15*s],[x+2*s,base]],'#a57d4f','#624b35');
+  ctx.restore();
+}
 // Animals roam nearby open tiles; their motion is purely visual.
 function barnAnimalSprites(buildings,time,landscape={}){
   const sprites=[],size=landscape.map_size || 120;
@@ -3639,13 +3672,15 @@ function draw(seconds=0){
   };
   const boats=fishingBoatSprites(entries,resources,villagers);
   const passengers=new Set(boats.flatMap(b=>b.crew));
-  const objects=mergeDepthObjects([...buildings,...cropObjects,...boats].filter(visible),visibleResourceObjects(resourceData,rect),
+  const fences=barnFenceSprites(buildings,world.shared_map || town);
+  const objects=mergeDepthObjects([...buildings,...cropObjects,...boats,...fences].filter(visible),visibleResourceObjects(resourceData,rect),
     [...villagers.filter(v=>!passengers.has(v)),...npcSprites(world.shared_map || town,typeof ClientScene==='undefined'?seconds:0),...barnAnimalSprites(villageAnimalBuildings(buildings,resourceData),animalClock,world.shared_map || town),...otherPlayers,...(hero?[hero]:[])].filter(visible));
   for(const b of objects){
     const position=b.kind==='wild_horse'?wildHorsePosition(b):[b.x,b.y];
     const [px,py]=point(position[0],position[1]),scale=tileW/46;
     if(px < -tileW || px > rect.width+tileW || py < -tileH || py > rect.height+80*scale)continue;
     if(b.kind==='animal'){drawBarnAnimal(b);continue;}
+    if(b.kind==='barn_fence'){drawBarnFence(b);continue;}
     if(b.kind==='crop'){drawFarmCrop(b);continue;}
     if(b.kind==='fishing_boat'){
       drawFishingBoat(b);
