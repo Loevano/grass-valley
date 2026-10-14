@@ -39,4 +39,18 @@ assert.equal(app.run(`JSON.stringify(path.at(-1))`),'{"x":11,"y":12}','Browser r
 assert.equal(app.run(`JSON.stringify(townOutline([town.buildings[1]]))`),'[[10,10],[12,10],[12,12],[10,12]]','Overview outlines the full footprint');
 app.run(`tool=null;selectTile(11,11);`);
 assert.equal(app.run(`selection.index`),1,'Stock tile selects its owning building');
+app.run(`town.buildings.push({kind:'barn',x:20,y:20,construction:{progress:0}});tool='home';`);
+assert.equal(app.run(`rangeContains(town.buildings[2],{x:23,y:23},town)`),true,'Barn range includes square corners');
+assert.equal(app.run(`rangeContains(town.buildings[2],{x:24,y:20},town)`),false,'Barn range stops three tiles away');
+assert.equal(app.run(`placementValid(town,{x:23,y:23},'home')`),false,'Barn construction reserves its full pen');
+assert.equal(app.run(`placementValid(town,{x:24,y:24},'home')`),true,'Buildings can sit beyond the fence');
+assert.equal(app.run(`placementValid(town,{x:16,y:20},'mill')`),false,'Secondary footprint cannot enter a pen');
+assert.equal(app.run(`placementValid(town,{x:14,y:14},'barn')`),false,'New pens cannot surround existing stock tiles');
+app.run(`tool='move';moveIndex=2;`);
+assert.equal(app.run(`placementValid(town,{x:21,y:20},'barn')`),true,'Barn moves can reuse their old pen');
+assert.equal(app.run(`placementValid(town,{x:13,y:13},'barn')`),false,'Moved pens cannot surround existing buildings');
+app.run(`tool='move';moveIndex=1;`);
+assert.equal(app.run(`placementValid(town,{x:16,y:20},'mill')`),false,'Moved stock tiles cannot enter a pen');
+app.run(`town.buildings.pop();world.towns.friend={buildings:[{kind:'barn',x:20,y:20}]};tool='home';moveIndex=null;`);
+assert.equal(app.run(`placementValid(town,{x:23,y:23},'home')`),false,'Other towns reserve their barn pens too');
 console.log('Full building placement, scene collision, ranges, edge access and selection passed');

@@ -172,7 +172,8 @@ are collected in [Pathing decisions](PATHING.md).
 - Decorative barn, stable, and village animals follow nearby outdoor routes,
   avoiding their own shelter as well as other occupied tiles. Enclosed herds
   stay out of view until an adjacent tile becomes available.
-  Completed barns now have a decorative wooden fence matching the farm's 7×7 range.
+  Barn animals roam throughout their fenced 7×7 range. Construction and moves
+  keep other buildings out of the pen; selection and build tools show its range.
 - Browser planning is resumable and runs through a queue with an approximately
   2 ms frame budget. The host still performs route searches synchronously.
 - Gameplay movement remains authoritative on the host. Browser playback follows

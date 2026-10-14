@@ -123,7 +123,7 @@ const ClientScene = (() => {
     return null;
   }
   function animalRoutes(buildings,landscape,barn){
-    const key=tile(barn),radius=2,resources=landscape.map_resources || [];
+    const key=tile(barn),square=barn.kind==='barn',radius=square?3:2,width=radius*2+1,resources=landscape.map_resources || [];
     let cache=animalRoutes.cache;
     if(!cache||cache.resources!==resources||cache.buildings!==buildings||cache.terrain!==landscape.terrain){
       const buckets=current?.resources===resources?current.buckets:new Map();
@@ -145,15 +145,15 @@ const ClientScene = (() => {
     }
     const signature=available.join('');
     const old=cache.routes.get(key);if(old?.signature===signature)return old.routes;
-    const open=p=>Math.abs(p.x-barn.x)+Math.abs(p.y-barn.y)<=radius
-      &&tile(p)!==key&&available[(p.x-barn.x+radius)*5+p.y-barn.y+radius];
+    const open=p=>(square?Math.max(Math.abs(p.x-barn.x),Math.abs(p.y-barn.y)):Math.abs(p.x-barn.x)+Math.abs(p.y-barn.y))<=radius
+      &&tile(p)!==key&&available[(p.x-barn.x+radius)*width+p.y-barn.y+radius];
     const routes=[];
     // Start outside each accessible side; the barn itself is never a waypoint.
     for(const [dx,dy] of [[1,0],[0,1],[-1,0],[0,-1]]){
       const start={x:barn.x+dx,y:barn.y+dy};if(!open(start))continue;
       const work=[{...start,path:[start]}],seen=new Set([tile(start)]);
       for(const p of work){
-        routes.push(p.path);if(p.path.length>=3)continue;
+        routes.push(p.path);if(!square&&p.path.length>=3)continue;
         for(const [dx,dy] of [[1,0],[0,1],[-1,0],[0,-1]]){
           const next={x:p.x+dx,y:p.y+dy},k=tile(next);
           if(!open(next)||seen.has(k))continue;

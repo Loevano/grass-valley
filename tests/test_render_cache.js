@@ -115,7 +115,7 @@ const run=new Function('document','window','localStorage','setTimeout','clearTim
   panel=null;fills.length=0;draw();assert(!fills.includes('#e4c98022'),'Closing Build clears overlays without leaving marks');
   panel='selection';selection={type:'building',index:0};fills.length=0;draw();
   assert(fills.includes('#e4c98022'),'Selected hall retains its building range');
-  for(const kind of ['farm','woodcutter','fishing_hut','mine','home']){
+  for(const kind of ['farm','barn','woodcutter','fishing_hut','mine','home']){
     world.towns.own.buildings.push({kind,x:32,y:30});
     selection={type:'building',index:world.towns.own.buildings.length-1};fills.length=0;draw();
     assert.equal(fills.includes('#82b9ae18'),kind!=='home','Selected '+kind+' shows only its gameplay range');

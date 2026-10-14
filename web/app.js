@@ -3449,19 +3449,20 @@ function barnAnimalSprites(buildings,time,landscape={}){
   for(const barn of buildings){
     if(!['barn','stable','village_hut'].includes(barn.kind)||(barn.construction&&!barn.construction.upgrade))continue;
     if(!Object.values(barn.animals || {}).some(n=>n>0))continue;
-    // Short outdoor trips stay connected to an accessible side of the barn.
+    const square=barn.kind==='barn',reach=square?3:2;
+    // Outdoor trips stay connected to an accessible side of the shelter.
     const routes=prepared?ClientScene.animalRoutes(buildings,landscape,barn):[];
     if(!prepared)for(const [dx,dy] of [[1,0],[0,1],[-1,0],[0,-1]]){
       const open=p=>{
         const biome=landscape.terrain?.[p.y]?.[p.x];
-        return Math.abs(p.x-barn.x)+Math.abs(p.y-barn.y)<=2&&key(p)!==key(barn)
+        return (square?Math.max(Math.abs(p.x-barn.x),Math.abs(p.y-barn.y)):Math.abs(p.x-barn.x)+Math.abs(p.y-barn.y))<=reach&&key(p)!==key(barn)
           &&p.x>=0&&p.y>=0&&p.x<size&&p.y<size&&!blocked.has(key(p))
           &&biome!=='v'&&(!landscape.chunked||!!biome);
       };
       const start={x:barn.x+dx,y:barn.y+dy};if(!open(start))continue;
       const queue=[{...start,path:[start]}],seen=new Set([key(start)]);
       for(const tile of queue){
-        routes.push(tile.path);if(tile.path.length>=3)continue;
+        routes.push(tile.path);if(!square&&tile.path.length>=3)continue;
         for(const [dx,dy] of [[1,0],[0,1],[-1,0],[0,-1]]){
           const next={x:tile.x+dx,y:tile.y+dy};
           if(!open(next)||seen.has(key(next)))continue;
@@ -3488,17 +3489,18 @@ function barnAnimalSprites(buildings,time,landscape={}){
         stock.push({species,growth});
       }
     for(const [index,{species,growth}] of stock.entries()){
-      const phase=time+(barn.x*7+barn.y*11+index*3.17)%13,cycle=phase%16;
       const path=routes[index%routes.length];
-      const outbound=cycle<3,returning=cycle>=8&&cycle<11;
+      const walkSeconds=Math.max(3,(path.length-1)*1.5),period=walkSeconds*2+10;
+      const phase=time+(barn.x*7+barn.y*11+index*3.17)%13,cycle=phase%period;
+      const outbound=cycle<walkSeconds,returning=cycle>=walkSeconds+5&&cycle<walkSeconds*2+5;
       const walking=path.length>1&&(outbound||returning);
-      const progress=outbound?cycle/3:returning?1-(cycle-8)/3:cycle<8?1:0;
+      const progress=outbound?cycle/walkSeconds:returning?1-(cycle-walkSeconds-5)/walkSeconds:cycle<walkSeconds+5?1:0;
       const step=progress*(path.length-1),segment=Math.min(Math.floor(step),Math.max(0,path.length-2));
       const start=path[segment],end=path[Math.min(segment+1,path.length-1)],fraction=step-segment;
-      const side=(index%4-1.5)*.06,front=.12+Math.floor(index/4)*.04;
+      const side=(index%4-1.5)*.06,front=.12+Math.min(5,Math.floor(index/4))*.04;
       sprites.push({kind:'animal',species,x:start.x+(end.x-start.x)*fraction+front+side,
         y:start.y+(end.y-start.y)*fraction+front-side,phase,walking,
-        feeding:!walking&&((cycle>=4&&cycle<7)||cycle>=12),
+        feeding:!walking&&((cycle>=walkSeconds+1&&cycle<walkSeconds+4)||cycle>=walkSeconds*2+6),
         facing:((end.x-start.x)-(end.y-start.y))*(returning?-1:1)>=0?1:-1,
         size:(stock.length>4?.62:.8)*(.5+.5*growth)});
     }
@@ -3785,7 +3787,7 @@ function occupies(building,x,y){return footprintTiles(building).some(p=>p.x===x&
 function placementBuilding(tile,kind){return {...tile,kind,footprint:(world.progression?.building_footprints || buildingFootprints)[kind] || [1,1]};}
 function gameplayRange(building,town){
   if(building.kind==='hall')return {reach:buildingRange(town),square:false};
-  if(building.kind==='farm')return {reach:3,square:true};
+  if(['farm','barn'].includes(building.kind))return {reach:3,square:true};
   if(['woodcutter','fishing_hut','mine'].includes(building.kind))return {reach:resourceReach(building),square:false};
   return null;
 }
@@ -3818,13 +3820,16 @@ function placementValid(town,tile,kind,moving=null){
   }
   const proposed=placementBuilding(tile,kind),tiles=footprintTiles(proposed);
   const buildings=world.shared_map?Object.values(world.towns).flatMap(t=>t.buildings):town.buildings;
+  const obstacles=buildings.filter(b=>!moving?.includes(b));
   return tiles.every(p=>p.x>=0&&p.y>=0&&p.x<mapSize(town)&&p.y<mapSize(town)
     && insideBuildingRange(town,p)&&town.terrain?.[p.y]?.[p.x]!=='v'
     && !buildings.some(b=>!moving?.includes(b)&&occupies(b,p.x,p.y))
+    && !obstacles.some(b=>b.kind==='barn'&&rangeContains(b,p,town))
     && !(town.npcs || []).some(n=>n.x===p.x&&n.y===p.y)
     && !town.map_resources.some(r=>r.x===p.x&&r.y===p.y)
     && (tiles.length===1||!mapRoads(town).some(r=>r.x===p.x&&r.y===p.y))
     && !(world.shared_map?Object.values(world.towns):[town]).some(t=>t.player&&Math.abs(t.player.x-p.x)<.68&&Math.abs(t.player.y-p.y)<.68))
+    && (kind!=='barn'||!obstacles.some(b=>footprintTiles(b).some(p=>rangeContains(proposed,p,town))))
     && (moving||kind!=='acre'||acrePlacementValid(town,tile,tool==='move'?town.buildings[moveIndex]?.farm_index:acreFarmIndex))
     && (!world.shared_map || kind!=='hall' || !Object.values(world.towns).some(t=>t!==town&&t.buildings.some(b=>b.kind==='hall'&&Math.hypot(b.x-tile.x,b.y-tile.y)<40)))
     && (tool==='move' || town.sandbox || town.wood>=costs[kind]);

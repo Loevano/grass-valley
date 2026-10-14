@@ -42,10 +42,16 @@ let farthest=0;
 for(const animate of [sprites,cachedSprites])for(let time=0;time<32;time+=.1)for(const animal of animate([barn],time)){
   const distance=Math.abs(animal.x-barn.x)+Math.abs(animal.y-barn.y);
   farthest=Math.max(farthest,distance);
-  assert(distance<2.5,'Animals remain close to their own barn');
+  assert(Math.max(Math.abs(animal.x-barn.x),Math.abs(animal.y-barn.y))<3.5,'Animals remain inside their barn fence');
   assert(Math.round(animal.x)!==barn.x||Math.round(animal.y)!==barn.y,'Walking and grazing avoid the barn footprint');
 }
-assert(farthest>2,'Animals roam beyond the barn tile');
+assert(farthest>6,'Animals reach the corners of the full fenced range');
+for(const animate of [sprites,cachedSprites])for(let time=0;time<40;time+=.5){
+  for(const animal of animate([{...barn,level:10,animals:{chicken:40}}],time))
+    assert(Math.max(Math.abs(animal.x-barn.x),Math.abs(animal.y-barn.y))<3.5,'Large herds stay inside the fence');
+  for(const animal of animate([{...barn,kind:'stable',animals:{horse:4}}],time))
+    assert(Math.abs(animal.x-barn.x)+Math.abs(animal.y-barn.y)<2.5,'Stable roaming retains its original range');
+}
 const obstacle={kind:'home',x:6,y:5};
 const landscape={map_size:12,map_resources:[{kind:'water',x:5,y:6},{kind:'tree',x:4,y:5}],
   terrain:Array.from({length:12},()=>Array(12).fill('g'))};
@@ -84,8 +90,9 @@ assert(moving.walking,'Animals enter a walking phase');
 assert(Math.hypot(later.x-moving.x,later.y-moving.y)>0,'Walking interpolates inside the yard');
 assert(Math.hypot(later.x-moving.x,later.y-moving.y)<.08,'Walking moves smoothly');
 assert(resting.feeding,'Animals also peck or graze');
-const returned=sprites([lone],16)[0];
-assert.deepEqual([returned.x,returned.y],[resting.x,resting.y],'Animals return to their outdoor resting spot after each trip');
+const returned=Array.from({length:160},(_,i)=>sprites([lone],12+i*.5)[0])
+  .find(a=>!a.walking&&a.x===resting.x&&a.y===resting.y);
+assert(returned,'Animals return to their outdoor resting spot after each trip');
 function render(animal){marks.length=0;draw(animal);return JSON.stringify(marks);}
 assert.notEqual(render(moving),render(later),'Legs and body animate between frames');
 assert.notEqual(render(resting),render(moving),'Feeding and walking have different poses');

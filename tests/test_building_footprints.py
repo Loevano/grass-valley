@@ -36,6 +36,38 @@ class BuildingFootprints(unittest.TestCase):
             self.town['buildings'].pop()
         self.assertEqual(len(footprint_tiles(self.town['buildings'][0])), 4)
 
+    def test_barn_range_rejects_builds_and_moves_without_changing_state(self):
+        barn = self.build('barn', 16, 16)
+        home = self.build('home', 22, 16)
+        for data in [dict(action='build', kind='home', x=19, y=19),
+                     dict(action='build', kind='mill', x=12, y=16),
+                     dict(action='move', index=2, x=13, y=13),
+                     dict(action='build', kind='barn', x=23, y=19),
+                     dict(action='move', index=1, x=20, y=16)]:
+            with self.subTest(data=data):
+                before = copy.deepcopy(self.town)
+                with self.assertRaisesRegex(ValueError, 'barn|fenced'):
+                    command(self.town, data)
+                self.assertEqual(self.town, before)
+        self.build('home', 20, 20)
+        command(self.town, dict(action='move', index=1, x=15, y=16))
+        self.assertEqual((barn['x'], barn['y']), (15, 16))
+        self.assertEqual((home['x'], home['y']), (22, 16))
+        # Moving the pen releases its old far edge, while construction already reserves it.
+        self.build('home', 19, 19)
+
+    def test_other_town_barn_range_and_new_pen_stock_overlap_are_reserved(self):
+        friend = flat_town('Friend', size=32)
+        friend['buildings'] = [{'kind': 'barn', 'x': 16, 'y': 16}]
+        world = {'shared_map': {}, 'towns': {'own': self.town, 'friend': friend}}
+        for data in [dict(action='build', kind='home', x=19, y=19),
+                     dict(action='build', kind='mill', x=12, y=16)]:
+            with self.assertRaisesRegex(ValueError, 'fenced'):
+                command(self.town, data, world)
+        friend['buildings'] = [{'kind': 'mill', 'x': 19, 'y': 19, 'footprint': [2, 2]}]
+        with self.assertRaisesRegex(ValueError, 'barn range'):
+            command(self.town, dict(action='build', kind='barn', x=22, y=22), world)
+
     def test_secondary_tile_obstacles_reject_build_without_spending(self):
         for obstacle in ('resource', 'building', 'road', 'npc', 'player', 'void'):
             with self.subTest(obstacle=obstacle):

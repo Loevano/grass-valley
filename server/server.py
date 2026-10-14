@@ -1254,6 +1254,17 @@ def validate_building_range(town, x, y):
 def validate_footprint(town, building, moving=(), world=None):
     tiles = footprint_tiles(building)
     obstacles = [b for i, b in enumerate(town['buildings']) if i not in moving]
+    pen_obstacles = obstacles + ([b for owner in world['towns'].values() if owner is not town
+                                 for b in owner['buildings']]
+                                if world and 'shared_map' in world else [])
+    pens = [b for b in pen_obstacles if b['kind'] == 'barn']
+    if any(max(abs(x - barn['x']), abs(y - barn['y'])) <= RESOURCE_REACH
+           for x, y in tiles for barn in pens):
+        raise ValueError('Keep buildings outside the barn\'s fenced range.')
+    if building['kind'] == 'barn' and any(
+            max(abs(x - building['x']), abs(y - building['y'])) <= RESOURCE_REACH
+            for x, y in occupied_tiles(pen_obstacles)):
+        raise ValueError('Choose a barn range without other buildings inside it.')
     occupied = occupied_tiles(obstacles)
     if len(tiles) > 1:
         owners = world['towns'].values() if world and 'shared_map' in world else [town]

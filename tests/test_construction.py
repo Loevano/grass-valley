@@ -77,7 +77,9 @@ class Construction(unittest.TestCase):
         for index, kind in enumerate(kind for kind, cost in COSTS.items() if cost):
             with self.subTest(kind=kind):
                 wood = self.town['wood']
-                site = self.build(kind, x=8, y=6, **({'farm_index': 1} if kind == 'acre' else {}))
+                site = self.build(kind, x=12 if kind == 'barn' else 8,
+                                  y=12 if kind == 'barn' else 6,
+                                  **({'farm_index': 1} if kind == 'acre' else {}))
                 self.assertEqual(site['construction'], {'progress': 0, 'total': BUILD_SECONDS})
                 self.assertEqual(self.town['wood'], wood - COSTS[kind])
                 self.town['buildings'].pop()

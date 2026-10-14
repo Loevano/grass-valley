@@ -58,7 +58,7 @@ class Progression(unittest.TestCase):
                 continue
             before = copy.deepcopy(self.town)
             with self.assertRaisesRegex(ValueError, 'hall level'):
-                command(self.town, {'action': 'build', 'kind': kind, 'x': 3, 'y': 3})
+                command(self.town, {'action': 'build', 'kind': kind, 'x': 10, 'y': 10})
             self.assertEqual(self.town, before)
         barn, index = self.workplace('barn')
         for action in ['buy_animal', 'breed_animal']:
