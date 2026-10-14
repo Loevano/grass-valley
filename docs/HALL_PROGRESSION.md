@@ -8,7 +8,7 @@ are spent when construction starts; coins are awarded once when it finishes.
 
 | Upgrade | Development required at the current level | Hall investment | Builder work | Main unlocks |
 | --- | --- | --- | --- | --- |
-| 1 → 2 | Completed home and a completed farm or fishing hut within 3 tile steps of water; at least 20 food | 40 wood | 30 seconds | Wheat, barn, chickens, fishing nets |
+| 1 → 2 | Completed cottage and a completed farm or fishing hut within 10 tile steps of natural water or a completed well; at least 20 food | 40 wood | 30 seconds | Wheat, barn, chickens, fishing nets |
 | 2 → 3 | Harvest 20 wheat and produce 6 eggs | 50 wood | 60 seconds | Sawpit, planks, sheep, carrots, fodder, boats |
 | 3 → 4 | Produce 20 planks | 60 wood + 15 planks | 90 seconds | Mill, bakery, smokehouse, workshop, butcher, pigs |
 | 4 → 5 | Craft 5 tools and produce 10 processed food items, in any mix | 70 wood + 20 planks + 5 tools | 120 seconds | Tannery, market, fish pond, orchard, cows, timber framing |

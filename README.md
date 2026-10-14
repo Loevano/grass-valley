@@ -523,7 +523,9 @@ the Python host, refresh both browsers, and create a new world to use the shared
   Two crafted saws raise demand to 50 wood/minute. Assigned workers consume
   0.075 food each three-second tick (1.5/minute), compared with 0.03 for resting
   villagers (0.6/minute). Idle residents helping construction pay the worker rate.
-- Hall upgrades also require a builder at the hall. The first requires housing and reliable food, costs 40 wood, and
+- Hall upgrades also require a builder at the hall. The first requires a completed
+  cottage, a completed farm or fishing hut within 10 tile steps of natural water
+  or a completed well, and at least 20 food. It costs 40 wood and
   takes 30 seconds of construction after arrival; the hall
   panel shows remaining time. Closing the host pauses the upgrade.
 - Completed workplaces hold storage: **50 material units** in ordinary workplaces,

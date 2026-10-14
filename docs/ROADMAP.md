@@ -148,7 +148,10 @@ to assess delivered supply and pacing, including continuous forestry supply for 
 chain. The grain chain has compact host fixtures for base rates and 200 residents.
 The [hall upgrade path](HALL_PROGRESSION.md) now requires output from the previous
 level's production unlocks, with tools and processed food at level 5 and saddle
-production at level 9. Play experience should also assess these batch sizes and
+production at level 9. The level 2 milestone accepts natural water or a completed
+well within 10 tile steps of a completed farm or fishing hut; the hall requirements
+show this range and the completed-cottage and food requirements.
+Play experience should also assess these batch sizes and
 material investments alongside the remaining fishing balance work.
 Advanced woodcraft and metal sale values now cover ingredients, including fuel;
 higher workshop recipe tiers preserve or improve profit per active work second.

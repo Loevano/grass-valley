@@ -132,7 +132,8 @@ def player_boat_level(player):
 
 
 HALL_UPGRADES = [
-    {'level': 2, 'wood': 40, 'seconds': 30, 'coins': 30, 'milestone': 'Housing and reliable food'},
+    {'level': 2, 'wood': 40, 'seconds': 30, 'coins': 30,
+     'milestone': 'Completed cottage and completed farm or fishing hut within 10 tile steps of natural water or a completed well; at least 20 food'},
     {'level': 3, 'wood': 50, 'seconds': 60, 'coins': 40, 'production': {'wheat': 20, 'eggs': 6},
      'milestone': 'Harvest 20 wheat and produce 6 eggs from your barn'},
     {'level': 4, 'wood': 60, 'planks': 15, 'seconds': 90, 'coins': 50, 'production': {'planks': 20},
@@ -679,7 +680,7 @@ def milestone(town, level):
     if level == 2:
         housing = any(b['kind'] == 'home' and 'construction' not in b for b in town['buildings'])
         food = any(b['kind'] in {'farm', 'fishing_hut'} and 'construction' not in b
-                   and any(r['kind'] == 'water' and distance(b, r) <= 3 for r in town['map_resources'])
+                   and any(distance(b, r) <= 10 for r in water_sources(town))
                    for b in town['buildings'])
         return housing and food and town['food'] >= 20
     upgrade = next((u for u in HALL_UPGRADES if u['level'] == level), None)
