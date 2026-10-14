@@ -239,8 +239,8 @@ saved stock stays available and production resumes once a complete batch fits.
 | Wheat → 2 flour | Harvest 10 wheat: 8s; mill 2 wheat: 3s | 11 worker-seconds + water collection/travel | 2 flour + 8 spare wheat; approximately 0.147 practice (0.107 farming + 0.04 milling) |
 | Wheat + wood → flour → 2 bread | Harvest 10 wheat: 8s; mill 2 wheat: 3s; gather 0.5 wood: 2s; bake: 6s | 19 worker-seconds + water collection/travel | 2 bread (3 food value) + 8 spare wheat; approximately 0.253 practice (0.107 farming + 0.04 milling + 0.027 woodcutting + 0.08 baking) |
 
-The base farming yield is 6 vegetables or 10 wheat, carrots, or fodder per acre
-per completed harvest. Vegetable output is reduced by 40%; other crops retain
+The base farming yield is 4.8 vegetables or 10 wheat, carrots, or fodder per acre
+per completed harvest. Vegetable output is reduced by a further 20% from 6; other crops retain
 the old one-crop-per-three-seconds rate over 30 seconds of passive growth. Plowing,
 seeding, watering, and harvesting each take two worker-seconds. Seeding waits for
 all acres of that farm in the current cycle to be plowed. Workers follow rows
@@ -279,7 +279,7 @@ and end after all its raw meat becomes basic prepared meat. Each animal needs
 100 successful three-second tending cycles to reach 300 fed seconds. Feed per
 cycle is 0.15 for chickens, 0.25 for sheep, 0.1 for pigs, and 0.5 for cows.
 Growing fodder costs eight active field worker-seconds per harvest of 10 feed;
-vegetables take the same work but yield 6 feed. The examples below use fodder.
+vegetables take the same work but yield 4.8 feed. The examples below use fodder.
 Both add passive growth, water collection, travel, and delivery as described
 above. Feeding produces 0.1 manure per animal per
 cycle, so each example retains 10 manure. No extra adult tending is included.

@@ -53,8 +53,8 @@ const run=new Function('document','window','localStorage','setTimeout','clearTim
  check(JSON.stringify(town.buildings[1])===originalHerd,'Rendering leaves authoritative animal state unchanged');
  town.buildings[1].animals.chicken=2;delete town.buildings[1].animal_growth;
  inspect('building',2);
- world.progression.farming_harvest_yields={vegetables:6,wheat:10,carrots:10,fodder:10};render();
- check(panelNodes().some(c=>c.textContent==='6 vegetables · 10 other crops'),'Farm shows crop-specific base harvests');
+ world.progression.farming_harvest_yields={vegetables:4.8,wheat:10,carrots:10,fodder:10};render();
+ check(panelNodes().some(c=>c.textContent==='4.8 vegetables · 10 other crops'),'Farm shows crop-specific base harvests');
  const crops=panelNodes().find(b=>b.tag==='select'&&b.attributes['aria-label']==='Crop for all acres');
  check(!crops.children.some(b=>b.value==='fodder'),'Locked crops are omitted');
  crops.value='wheat';crops.onchange();check(commands.at(-1).crop==='wheat'&&commands.at(-1).index===2,'Crop selector targets the farm and all linked acres');
