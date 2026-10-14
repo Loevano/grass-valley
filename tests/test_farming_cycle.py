@@ -1,6 +1,7 @@
 from fixtures import flat_town
 import copy
 import json
+import math
 import unittest
 
 import farming
@@ -34,11 +35,11 @@ class FarmingCycle(unittest.TestCase):
 
     def test_field_playback_keeps_before_and_after_action_snapshots(self):
         self.advance()
-        self.advance()
+        self.advance(3)
         samples = self.worker['work_animation']['playback']
         self.assertEqual(samples[0]['farmField']['stage'], 'plowed')
         completed = next(s for s in samples if s['farmField']['stage'] == 'sprouting')
-        self.assertEqual(completed['time'], farming.WORK_SECONDS)
+        self.assertAlmostEqual(completed['time'], farming.WORK_SECONDS + math.hypot(.45, .1) / 1.8)
         farming.grow(self.town, 5)
         self.assertEqual(completed['farmField']['elapsed'], 0)
         self.assertEqual(self.acre['field']['elapsed'], 5)
@@ -64,7 +65,7 @@ class FarmingCycle(unittest.TestCase):
         self.assertEqual(self.worker['work_animation']['phase'], 'waiting_plowing')
         self.assertEqual(self.acre['field']['stage'], 'plowed')
         farming.complete_action(second)
-        self.advance()
+        self.advance(3)
         self.assertEqual(self.acre['field']['stage'], 'sprouting')
         self.assertEqual(farming.field_state(other_acre)['stage'], 'unplowed')
 
@@ -92,7 +93,7 @@ class FarmingCycle(unittest.TestCase):
     def test_last_plowing_starts_sowing_without_waiting_for_a_tick(self):
         server.tick(self.world)
         self.assertEqual(self.acre['field']['stage'], 'plowed')
-        self.assertEqual(self.acre['field']['progress'], 1)
+        self.assertAlmostEqual(self.acre['field']['progress'], 1 - math.hypot(.45, .1) / 1.8)
         self.assertEqual(self.worker['work_animation']['farmAction'], 'sowing')
 
     def harvest_fields(self, crops=('vegetables', 'vegetables')):
@@ -191,13 +192,13 @@ class FarmingCycle(unittest.TestCase):
                      'field': {'stage': 'unplowed', 'elapsed': 0, 'progress': 0, 'cycle': 2}}
         self.town['buildings'].append(replanted)
         self.assertIs(server.work_source(self.town, 'farming', 0), self.acre)
-        self.advance()
+        self.advance(3)
         self.assertEqual(self.acre['field']['stage'], 'sprouting')
         self.assertEqual(replanted['field']['stage'], 'unplowed')
 
     def test_growth_survives_reload_and_needs_no_farmer_or_storage_room(self):
         self.advance()
-        self.advance()
+        self.advance(3)
         self.worker['job'] = 'idle'
         self.farm['output_buffer'] = {'wheat': 10}
         farming.grow(self.town, 6)
@@ -286,7 +287,7 @@ class FarmingCycle(unittest.TestCase):
 
     def test_missing_water_waits_and_new_well_resumes_same_crop(self):
         self.advance()
-        self.advance()
+        self.advance(3)
         farming.grow(self.town, 15)
         self.town['buildings'].remove(self.well)
         self.advance(30)
@@ -302,7 +303,7 @@ class FarmingCycle(unittest.TestCase):
 
     def test_two_workers_do_not_collect_water_for_the_same_acre(self):
         self.advance()
-        self.advance()
+        self.advance(3)
         farming.grow(self.town, 15)
         self.advance(1)
         second = self.town['villagers'][1]
@@ -313,7 +314,7 @@ class FarmingCycle(unittest.TestCase):
 
     def test_blocked_water_return_keeps_the_filled_can(self):
         self.advance()
-        self.advance()
+        self.advance(3)
         farming.grow(self.town, 15)
         for _ in range(15):
             self.advance(1)
@@ -333,7 +334,7 @@ class FarmingCycle(unittest.TestCase):
 
     def test_crop_changes_apply_to_next_seeding(self):
         self.advance()
-        self.advance()
+        self.advance(3)
         self.acre['crop'] = 'vegetables'
         self.assertEqual(self.acre['field']['crop'], 'wheat')
         snapshot = copy.deepcopy(self.acre['field'])

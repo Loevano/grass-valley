@@ -39,11 +39,15 @@ for(const tileWidth of [46,92]){
     source.slice(source.indexOf('function villagerAccessories('),source.indexOf('function draw(seconds=0)'))+
     '\nreturn drawVillager;'
   )(ctx,()=>{},(x,y)=>[(x-y)*tileWidth/2,(x+y)*tileWidth/4],tileWidth,tileWidth/2,{});
-  for(const [farmAction,color,rate,count] of [['sowing','#efd59a',2,5],['watering','#9fd8e5',3,6]]){
+  for(const [farmAction,color,rate,count] of [['sowing','#efd59a',2,5],['watering','#9fd8e5',3,3]]){
     for(const facing of [-1,1])for(const index of [0,5,11])for(const confirmed of [false,true]){
       const field={x:6,y:3};
-      const state={...field,path:[],phase:'working',clock:0,facing,farmAction,
+      const state={x:field.x+(facing===1?-.45:.1),y:field.y+(facing===1?.1:-.45),
+        path:[],phase:'working',clock:0,facing,farmAction,
         source:confirmed?{x:6+facing,y:3}:field,farmField:confirmed?field:undefined};
+      assert.strictEqual(render(state,'farming',true,index,drawWorker)
+        .filter(mark=>mark.method==='fillRect'&&mark.color===color).length,count,
+        `${farmAction} uses the intended sparse particle count`);
       for(let particle=0;particle<count;particle++){
         state.elapsed=(1-1e-7-particle/count)/rate;
         const mark=render(state,'farming',true,index,drawWorker)
@@ -59,6 +63,16 @@ for(const tileWidth of [46,92]){
       }
     }
   }
+}
+for(const farmAction of ['sowing','watering']){
+  const state={x:6,y:3,path:[],phase:'working',clock:0,facing:1,
+    elapsed:0,farmAction,source:{x:6,y:3}};
+  const original=JSON.stringify(state),body=elapsed=>{state.elapsed=elapsed;return render(state).find(mark=>mark.method==='fillRect'&&mark.args.join(',')==='-4,-13,8,10').center;};
+  const beginning=body(0),during=body(.5),ending=body(2);
+  assert.strictEqual(during[0],beginning[0],'Work never slides the tender horizontally');
+  assert(Math.abs(during[1]-beginning[1])<=1,'Only the working pose can bob vertically');
+  assert.deepStrictEqual(ending,beginning,'The tender keeps its actual destination at action completion');
+  state.elapsed=0;assert.strictEqual(JSON.stringify(state),original,'Drawing offsets never mutate confirmed worker coordinates');
 }
 const town={map_size:12,buildings:[{kind:'farm',x:6,y:2},{kind:'acre',x:6,y:3,farm_index:0}],
   map_resources:[{kind:'water',x:9,y:2}]};

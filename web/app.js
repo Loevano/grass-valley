@@ -2726,9 +2726,9 @@ function drawVillager(b){
       const spoutX=farmHandX+10*Math.cos(tilt)+2*Math.sin(tilt);
       const spoutY=farmHandY+10*Math.sin(tilt)-2*Math.cos(tilt);
       ctx.fillStyle='#9fd8e5';
-      for(let i=0;i<6;i++){
-        const fall=((s.elapsed || 0)*3+i/6)%1;
-        const [x,y]=cropPoint(i*3);
+      for(let i=0;i<3;i++){
+        const fall=((s.elapsed || 0)*3+i/3)%1;
+        const [x,y]=cropPoint(i*5);
         ctx.fillRect(spoutX+(x-spoutX)*fall-.75,spoutY+(y-spoutY)*fall*fall-1.5,1.5,3);
       }
     }else{
