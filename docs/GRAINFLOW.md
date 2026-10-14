@@ -167,16 +167,10 @@ Top-tier storage at building level 1:
 
 ## Feeding-capacity displays
 
-Open a hall, farm, mill, or bakery to see **Village grain flow**:
+Mill and bakery Production panels show only their own production information.
+The village-wide grain summary has been removed from building panels.
 
-- Current meal demand for all residents.
-- Wheat acres and recent delivered wheat.
-- Staffed mill capacity and recent flour deliveries.
-- Combined bakery flour and fuel demand at capacity.
-- Staffed bakery food capacity and recent delivered food.
-- Suggestions for staffing, upgrades, supplies, hauling, or storage.
-
-Mill and bakery panels also show:
+Their panels show:
 
 - **“Feeds X working villagers”** for the selected recipe.
 - Ingredient demand per minute.

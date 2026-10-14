@@ -8,7 +8,6 @@ and cache rules are in [Backend](BACKEND.md#cached-zoomed-out-map).
 | 1     | Cached zoomed-out town overview    | Implemented              | Show the landscape and city sizes without refreshing animated scene detail.                                      |
 | 2     | Production line balancing          | Wood and grain implemented; fishing remains | Develop clear fishing chains with capped staffing and simple upgrades. |
 | 3     | Scalable villager pathfinding       | Foundations implemented; host scheduling and shared navigation remain | Keep movement responsive as villager counts and towns grow, with bounded routing work. |
-| 6     | Remove village grain flow summary  | Planned                  | Remove the detailed village grain flow summary from building Production panels. |
 | 7     | Building range indicators in build mode | Planned             | Show building ranges on the map to help choose placement positions. |
 | 8     | Larger production buildings and town hall | Planned           | Give mills, sawpits, and forgeries larger footprints with workplace and stock areas; make town halls occupy four tiles. |
 | 9     | Fix harvesting tool visuals        | Planned                  | Remove the duplicate sickle and the extra attribute shown during harvesting. |
@@ -195,19 +194,6 @@ Completion criteria:
 
 Host work budgets, urgency rules, crowd spacing, and the villager counts that
 justify flow fields or hierarchical routing remain open implementation decisions.
-
-## Remove village grain flow summary
-
-**Status:** planned.
-
-Remove the "Village grain flow" summary from hall, farm, mill, and bakery
-Production panels, including its village demand, wheat acreage, delivery rates,
-mill and bakery capacities, ingredient demand, and advice.
-
-Completion criteria:
-
-- Building Production panels no longer show the village grain flow summary.
-- Building-specific production information remains available.
 
 ## Building range indicators in build mode
 

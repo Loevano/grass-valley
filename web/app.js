@@ -472,33 +472,8 @@ function renderGrainFlow(town,item,index,target){
       target.append(fact(mill?`${number(delivered.flour || 0)} flour/min`:`Feeds ${number(food/foodRates().working)} working villagers`,'Recent delivered supply · Smoothed over about 2 minutes'));
     }
   }
-  const summary=document.createElement('div');summary.className='grain-flow';
-  const heading=document.createElement('h3');heading.textContent='Village grain flow';summary.append(heading);
-  const totals={wheat:0,flour:0,food:0,mill:0,bakery:0,demand:0};
-  let fuel=0;
-  town.buildings.forEach((building,i)=>{
-    const rates=building.grain_flow?.rates || {};
-    totals.wheat+=rates.wheat || 0;totals.flour+=rates.flour || 0;
-    if(building.kind==='bakery')totals.food+=Object.entries(rates).reduce((sum,[key,n])=>sum+n*(foodGoods()[key] || 0),0);
-    if(!['mill','bakery'].includes(building.kind)||building.construction&&!building.construction.upgrade)return;
-    const worker=grainWorker(town,building,i);if(!worker)return;
-    const rate=grainProduction(building,worker);if(!rate)return;
-    if(building.kind==='mill')totals.mill+=rate.amount;
-    else {totals.bakery+=rate.food;totals.demand+=rate.inputs.flour || 0;fuel+=rate.inputs.wood || 0;}
-  });
-  const demand=villageFoodDemand(town),acres=town.buildings.filter(b=>b.kind==='acre'&&(b.crop || 'vegetables')==='wheat'&&(!b.construction||b.construction.upgrade)).length;
-  summary.append(fact(`${number(demand)} food/min`,`${town.villagers.length} residents · Current meal demand`));
-  summary.append(fact(`${acres} wheat acres · ${number(totals.wheat)} wheat/min`,'Recent delivered wheat · Add farmers, acres or improve water and hauling'));
-  summary.append(fact(`${number(totals.mill)} flour/min capacity · ${number(totals.flour)} delivered`,'Staffed mills · Before travel and hauling'));
-  summary.append(fact(`${number(totals.demand)} flour + ${number(fuel)} wood/min`,'Staffed bakeries: demand at capacity · Other recipes need their listed ingredients'));
-  summary.append(fact(`${number(totals.bakery)} food/min capacity · ${number(totals.food)} delivered`,'Staffed bakeries · Recent delivered food'));
-  const notes=document.createElement('p'),advice=[];
-  if(totals.bakery<demand)advice.push('Assign a qualified baker or upgrade bakery equipment.');
-  if(totals.mill<totals.demand)advice.push('Assign a qualified miller or upgrade mill equipment.');
-  if(totals.wheat<totals.demand)advice.push('Wheat deliveries are below bakery demand: add or staff acres, or improve water access and hauling.');
-  if(totals.food<demand)advice.push('Delivered baked food is below village demand. Check worker status, flour, fuel, recipe ingredients and storage; other foods can cover the gap.');
-  notes.textContent=advice.join(' ') || 'Grain deliveries cover current village demand. Add another bakery for variety.';summary.append(notes);target.append(summary);
 }
+
 function housingCapacity(town){
   return 5+town.buildings.filter(b=>b.kind==='home'&&!b.construction).reduce((sum,b)=>sum+Math.max(2*(buildingLevel(b)+(b.profession_upgrades?.includes('timber_frame')?1:0)),town.sandbox?settlerSpaces.home*(b.settler_level || 1):0),0);
 }

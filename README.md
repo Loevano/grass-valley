@@ -439,10 +439,10 @@ the Python host, refresh both browsers, and create a new world to use the shared
   200 delivered; a compact host test sustains that with 12 farms, 24 wheat acres,
   four haulers, nearby water, and supplied fuel. Eight base farms is an estimate
   for the minimum wheat demand, not a tested guarantee.
-  Add another bakery and choose its recipe for variety. Open a hall, farm, mill,
-  or bakery for **Village grain flow**: food demand, wheat acres, ingredient
-  demand, staffed capacity, and recent delivered supply. Delivery rates are
-  smoothed over about two minutes; pending output and repeated hauling do not count.
+  Add another bakery and choose its recipe for variety. Open a mill
+  or bakery for its own capacity, ingredient demand, and recent delivered supply.
+  Delivery rates are smoothed over about two minutes; pending output and repeated
+  hauling do not count. Building panels no longer include a village-wide grain summary.
   Older extra mill/bakery slots become the first equipment upgrade. Excess
   workers rest with their skills and tools; cargo and partial work are retained.
   See [grain flow](docs/GRAINFLOW.md) for equipment costs and limitations.
