@@ -35,6 +35,11 @@ const run=new Function('document','window','localStorage','setTimeout','clearTim
     if(progress===12)assert(fills.includes('#b69a7044'),'Middle stage has timber framing');
     if(progress===24)assert(fills.includes('#80574b'),'Final stage adds the roof');
   }
+  const acre={kind:'acre',x:7,y:6,construction:{progress:0,total:5}};
+  for(const progress of [0,2,4]){
+    acre.construction.progress=progress;fills.length=0;drawBuilding(acre,town);
+    assert.deepStrictEqual(fills,['#80764a'],'Acres remain flat soil without framing, walls or a roof at every construction stage');
+  }
   const worker=town.villagers[0];
   const state=WorkerAnimation.plan(town,worker,0);
   for(let i=0;i<100&&state.path.length;i++)WorkerAnimation.advance(state,.1,true);

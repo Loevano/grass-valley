@@ -42,6 +42,7 @@ BUILDING_JOBS = {'storehouse': 'hauling', 'woodcutter': 'woodcutting', 'farm': '
                  'fishing_hut': 'fishing', 'acre': 'farming'}
 TICK_SECONDS = 3
 BUILD_SECONDS = 30
+ACRE_BUILD_SECONDS = 5
 ROAD_BUILD_SECONDS = 10
 # New towns develop professions instead of repeating wood-only upgrades.
 HALL_UPGRADES = economy.HALL_UPGRADES
@@ -1446,7 +1447,7 @@ def command(town, data, world=None):
             validate_acre(town, data.get('farm_index'), x, y)
         economy.spend(town, costs)
         building = {'kind': kind, 'x': x, 'y': y,
-                    'construction': {'progress': 0, 'total': BUILD_SECONDS}}
+                    'construction': {'progress': 0, 'total': ACRE_BUILD_SECONDS if kind == 'acre' else BUILD_SECONDS}}
         if kind in BUILDING_FOOTPRINTS:
             building['footprint'] = list(BUILDING_FOOTPRINTS[kind])
         if kind in economy.DECORATIONS:

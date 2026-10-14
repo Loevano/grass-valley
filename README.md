@@ -266,7 +266,8 @@ the Python host, refresh both browsers, and create a new world to use the shared
 - New buildings and acres start as construction sites. Idle villagers automatically
   help build; assign **Builder** in the villager panel to give a resident priority.
   Builders walk to reachable sites, then work through foundations, framing, and
-  finishing over 30 seconds. Housing, storage, and workplaces activate only on
+  finishing over 30 seconds. Acres take 5 seconds of builder work and stay flat
+  soil throughout construction. Housing, storage, and workplaces activate only on
   completion. Progress survives saving, moving a site, and restarting the host.
 - Trees are felled when their remaining wood reaches zero, freeing their tile for
   building. In new worlds, forest trees leave a stump and regrow after about five

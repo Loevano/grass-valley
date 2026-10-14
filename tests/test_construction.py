@@ -4,7 +4,7 @@ from unittest.mock import patch
 
 import server
 
-from server import (BUILD_SECONDS, COSTS, capacity, command, construct,
+from server import (ACRE_BUILD_SECONDS, BUILD_SECONDS, COSTS, capacity, command, construct,
                     construction_route, new_town, tick, work_source)
 from spatial import SpatialIndex
 
@@ -80,9 +80,23 @@ class Construction(unittest.TestCase):
                 site = self.build(kind, x=12 if kind == 'barn' else 8,
                                   y=12 if kind == 'barn' else 6,
                                   **({'farm_index': 1} if kind == 'acre' else {}))
-                self.assertEqual(site['construction'], {'progress': 0, 'total': BUILD_SECONDS})
+                seconds = ACRE_BUILD_SECONDS if kind == 'acre' else BUILD_SECONDS
+                self.assertEqual(site['construction'], {'progress': 0, 'total': seconds})
                 self.assertEqual(self.town['wood'], wood - COSTS[kind])
                 self.town['buildings'].pop()
+
+    def test_acre_finishes_after_five_seconds_of_builder_work(self):
+        self.town['buildings'].append({'kind': 'farm', 'x': 7, 'y': 6})
+        worker = self.town['villagers'][0]
+        worker.update(job='building', construction_position={'x': 8, 'y': 7})
+        acre = self.build('acre', farm_index=1)
+        self.assertEqual(acre['construction'], {'progress': 0, 'total': 5})
+        construct(self.town, self.town, {0}, elapsed=4)
+        self.assertEqual(acre['construction'], {'progress': 4, 'total': 5})
+        construct(self.town, self.town, {0}, elapsed=1)
+        self.assertNotIn('construction', acre)
+        self.assertEqual(acre['field']['stage'], 'unplowed')
+        self.assertNotIn('construction_target', worker)
 
     def test_builder_walks_before_starting_and_finishes_in_stages(self):
         site = self.build(x=5, y=1)

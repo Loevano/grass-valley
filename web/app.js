@@ -4263,15 +4263,15 @@ function paintBuilding(b,town,farmState=null,target=ctx,usable=buildingUsable(to
   if(b.construction){
     const [x,top]=point(b.x,b.y),y=top+tileH/2,s=tileW/46;
     const progress=b.construction.progress/b.construction.total,w=tileW*.38,d=w*tileH/tileW;
-    paintPolygon([[x-w,y],[x,y+d],[x+w,y],[x,y-d]],'#8b795c','#d0b68a');
+    paintPolygon([[x-w,y],[x,y+d],[x+w,y],[x,y-d]],b.kind==='acre'?'#80764a':'#8b795c','#d0b68a');
     ctx.strokeStyle='#d0b68a';ctx.lineWidth=3*s;
-    if(progress>=1/3){
+    if(b.kind!=='acre'&&progress>=1/3){
       for(const [px,py] of [[x-w,y],[x,y+d],[x+w,y]]){
         ctx.beginPath();ctx.moveTo(px,py);ctx.lineTo(px,py-25*s);ctx.stroke();
       }
       paintPolygon([[x-w,y-25*s],[x,y+d-25*s],[x+w,y-25*s],[x,y-d-25*s]],'#b69a7044','#d0b68a');
     }
-    if(progress>=2/3){
+    if(b.kind!=='acre'&&progress>=2/3){
       paintPolygon([[x-w,y],[x,y+d],[x,y+d-25*s],[x-w,y-25*s]],colors[b.kind] || '#b69a70');
       paintPolygon([[x,y+d],[x+w,y],[x+w,y-25*s],[x,y+d-25*s]],'#857659');
       paintPolygon([[x-w,y-25*s],[x,y-40*s],[x+w,y-25*s],[x,y+d-24*s]],'#80574b');
