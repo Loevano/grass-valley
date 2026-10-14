@@ -159,6 +159,9 @@ are collected in [Pathing decisions](PATHING.md).
 - Gameplay movement remains authoritative on the host. Browser playback follows
   confirmed movement and reconnects missed updates at walking speed, with field
   changes aligned to completed farmer actions.
+  Farmers leave their work position directly along neighboring rows and columns,
+  without walking back across the completed acre; diagonal departures retain
+  their tile-center waypoint.
 - Maps already support chunks and local search bounds. Farmers reserve work on
   acres and woodcutters retain separate tree targets through their work trips,
   waiting when nearby trees are all claimed. Villagers do not block one another's

@@ -64,6 +64,65 @@ class FarmingDestinations(unittest.TestCase):
             self.assertEqual((round(spot['x']), round(spot['y'])), (x, y))
             self.assertTrue(0 <= spot['x'] < 16 and 0 <= spot['y'] < 16)
 
+    def test_worker_already_at_work_position_does_not_walk_back_to_center(self):
+        for stage in ('unplowed', 'plowed', 'thirsty'):
+            with self.subTest(stage=stage):
+                self.field['field'] = {'stage': stage, 'elapsed': 0, 'progress': 0, 'cycle': 0}
+                origin = work_cycles.field_work_spot(self.field)
+                self.worker.pop('work_animation', None)
+                self.worker['construction_position'] = origin.copy()
+                self.worker['watering_round'] = farming.watering_round(self.farm, self.field)
+                state = self.advance(farming.WORK_SECONDS)
+                self.assertNotEqual(self.field['field']['stage'], stage)
+                self.assertTrue(all((sample['x'], sample['y']) == (origin['x'], origin['y'])
+                                    for sample in state['playback']))
+
+    def test_neighboring_acres_depart_from_work_position_without_backtracking(self):
+        self.farm.update(x=8, y=8)
+        self.town['buildings'][0].update(x=1, y=1)
+        for stage in ('unplowed', 'plowed', 'thirsty'):
+            for dx, dy in ((0, -1), (0, 1), (-1, 0), (1, 0)):
+                with self.subTest(stage=stage, direction=(dx, dy)):
+                    self.field.update(x=5, y=5)
+                    self.field['field'] = {'stage': stage, 'elapsed': 0, 'progress': 0, 'cycle': 0}
+                    neighbor = {'kind': 'acre', 'x': 5 + dx, 'y': 5 + dy, 'farm_index': 1,
+                                'field': {'stage': stage, 'elapsed': 0, 'progress': 0, 'cycle': 0}}
+                    self.town['buildings'] = self.town['buildings'][:4] + [neighbor]
+                    origin = work_cycles.field_work_spot(self.field)
+                    destination = work_cycles.field_work_spot(neighbor)
+                    self.worker.pop('work_animation', None)
+                    self.worker['construction_position'] = {'x': self.field['x'], 'y': self.field['y']}
+                    self.worker['watering_round'] = farming.watering_round(self.farm, self.field)
+                    completed = self.advance(3)
+                    self.assertIsNone(completed['farmAction'])
+                    self.assertEqual((completed['x'], completed['y']), (origin['x'], origin['y']))
+
+                    work_cycles.advance(self.town, self.town, self.worker, self.farm, neighbor, 0, 1)
+                    state = self.worker['work_animation']
+                    self.assertEqual(state['phase'], 'working')
+                    self.assertEqual((state['x'], state['y']), (destination['x'], destination['y']))
+                    self.assertAlmostEqual(neighbor['field']['progress'], 1 - 1 / 1.8)
+                    for sample in state['playback']:
+                        # The departure and arrival share a straight row/column.
+                        self.assertAlmostEqual(sample['x'] if dx == 0 else sample['y'],
+                                               origin['x'] if dx == 0 else origin['y'])
+                    for start, end in zip(state['playback'], state['playback'][1:]):
+                        self.assertGreaterEqual((end['x'] - start['x']) * dx +
+                                                (end['y'] - start['y']) * dy, -1e-9)
+
+    def test_diagonal_departure_keeps_tile_center_waypoint(self):
+        self.farm.update(x=8, y=8)
+        self.town['buildings'][0].update(x=1, y=1)
+        self.field.update(x=5, y=5)
+        origin = work_cycles.field_work_spot(self.field)
+        self.worker['construction_position'] = origin.copy()
+        self.advance(3)
+        neighbor = {'kind': 'acre', 'x': 6, 'y': 4, 'farm_index': 1}
+        self.town['buildings'].append(neighbor)
+        work_cycles.advance(self.town, self.town, self.worker, self.farm, neighbor, 0, 0)
+        self.assertEqual(self.worker['work_animation']['path'],
+                         [{'x': 5, 'y': 5}, work_cycles.field_work_spot(neighbor)])
+
     def advance_unreachable(self):
         route = work_cycles.route
         attempts = 0

@@ -84,7 +84,7 @@ class FarmingCycle(unittest.TestCase):
         server.tick(self.world)
         self.assertEqual(self.acre['field']['stage'], 'plowed')
         approach = math.hypot(.45, .1) / 1.8
-        next_approach = (math.hypot(.45, .1) + math.hypot(.55, .1)) / 1.8
+        next_approach = 1 / 1.8
         self.assertAlmostEqual(second['field']['progress'], 1 - approach - next_approach)
         samples = self.worker['work_animation']['playback']
         self.assertEqual(samples[-1]['time'], server.TICK_SECONDS)

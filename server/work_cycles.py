@@ -299,7 +299,13 @@ def _advance(town, landscape, villager, building, source, index, seconds, stop_a
             villager['work_animation'] = state
         else:
             path = travel(state, work_spot or source, not work_spot)
-            if path is not None and (state['x'], state['y']) != (x, y):
+            # A cardinal step stays inside the two walkable tiles, even from
+            # a fractional work position. Recentering first makes farmers
+            # walk back across the acre they have just finished.
+            direct_departure = (farming_job and source['kind'] == 'acre' and path is not None
+                                and (not path or abs(round(path[0]['x']) - x)
+                                     + abs(round(path[0]['y']) - y) <= 1))
+            if path is not None and (state['x'], state['y']) != (x, y) and not direct_departure:
                 path.insert(0, {'x': x, 'y': y})
             state.update(path=path or [], phase='waiting' if path is None else 'walking' if path else 'working')
             villager['work_animation'] = state
