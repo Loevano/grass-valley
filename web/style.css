@@ -121,3 +121,4 @@ canvas{cursor:pointer}button:focus-visible,canvas:focus-visible,select:focus-vis
 #lanterns-board{display:grid;grid-template-columns:repeat(13,minmax(0,1fr));gap:3px;margin:16px 0;background:#172c29;padding:6px;border-radius:8px}
 .quarry-cell.warning{background:#c09442;color:#241e12}.quarry-cell.strike{background:#aa493a;color:white}
 #lanterns-error{color:#f1b9a3}
+#regenerate-world-error{color:#f1b9a3}

@@ -11,6 +11,7 @@ let buildTile = null, building = false, hoverTile = null;
 let acreFarmIndex = null;
 let panel = null, selection = null, hitTargets = [], keyboardTile = null;
 let catalog = {worlds:[], can_manage:false}, menuStarted = false, refreshing = null, menuBusy = false, deletingWorld = null;
+let regeneratingWorld = null;
 let tileW = 46, tileH = 23, originX = 0, originY = 0;
 let camera = {x:5.5,y:5.5,zoom:1}, cameraTown = null;
 const mapSize = town => town?.map_size || world.shared_map?.map_size || 120;
@@ -161,7 +162,7 @@ function canControlPlayer(allowBuilding=false){
   return (world.shared_map || viewed===identity?.town_id) && !!world.towns[identity?.town_id]?.player && (allowBuilding || !tool)
     && !world.quarry?.members?.[identity?.town_id]?.inside && !$('quarry-dialog')?.open
     && !world.lanterns?.members?.[identity?.town_id]?.inside && !$('lanterns-dialog')?.open
-    && !$('world-menu').open && !$('delete-world-dialog').open && !$('upgrade-dialog').open
+    && !$('world-menu').open && !$('delete-world-dialog').open && !$('regenerate-world-dialog').open && !$('upgrade-dialog').open
     && !$('settings-panel').open && !document.activeElement?.isContentEditable
     && !['INPUT','TEXTAREA','SELECT'].includes(document.activeElement?.tagName)
     && (allowBuilding || document.activeElement?.tagName!=='BUTTON');
@@ -947,26 +948,30 @@ $('close-world-menu').onclick=()=>{if(world.world_id)$('world-menu').close();};
 $('world-menu').addEventListener('cancel',event=>{if(!world.world_id)event.preventDefault();});
 $('cancel-delete-world').onclick=()=>{$('delete-world-dialog').close();deletingWorld=null;};
 $('delete-world-dialog').addEventListener('close',()=>{deletingWorld=null;});
+$('cancel-regenerate-world').onclick=()=>{$('regenerate-world-dialog').close();regeneratingWorld=null;};
+$('regenerate-world-dialog').addEventListener('close',()=>{regeneratingWorld=null;});
 async function manageWorld(path,data,closeMenu=false){
   if(menuBusy)return;
   menuBusy=true;
-  $('world-menu-error').textContent='';$('delete-world-error').textContent='';
+  $('world-menu-error').textContent='';$('delete-world-error').textContent='';$('regenerate-world-error').textContent='';
   for(const button of document.querySelectorAll('dialog button'))button.disabled=true;
   try{
     await request(path,data);
-    if(path==='/api/worlds/delete'){
+    if(path==='/api/worlds/delete'||path==='/api/worlds/regenerate'){
       delete identities[data.world_id];localStorage.setItem('lantern-identities',JSON.stringify(identities));
       if(data.world_id==='legacy')localStorage.removeItem('lantern-identity');
       $('delete-world-dialog').close();deletingWorld=null;
+      $('regenerate-world-dialog').close();regeneratingWorld=null;
     }
     if(refreshing)await refreshing;
     await refresh();
     if(closeMenu)$('world-menu').close();
-  }catch(e){$(deletingWorld?'delete-world-error':'world-menu-error').textContent=e.message;}
+  }catch(e){$(deletingWorld?'delete-world-error':regeneratingWorld?'regenerate-world-error':'world-menu-error').textContent=e.message;}
   finally{menuBusy=false;for(const button of document.querySelectorAll('dialog button'))button.disabled=false;$('close-world-menu').disabled=!world.world_id;}
 }
 $('new-world-form').onsubmit=event=>{event.preventDefault();manageWorld('/api/worlds/create',{name:$('world-name').value,sandbox:$('world-mode').value==='sandbox'},true);};
 $('delete-world-form').onsubmit=event=>{event.preventDefault();if(deletingWorld)manageWorld('/api/worlds/delete',{world_id:deletingWorld.id,confirmation:$('delete-world-name').value});};
+$('regenerate-world-form').onsubmit=event=>{event.preventDefault();if(regeneratingWorld)manageWorld('/api/worlds/regenerate',{world_id:regeneratingWorld.id,confirmation:$('regenerate-world-name').value},true);};
 function renderWorldMenu(){
   $('new-world-form').hidden=!catalog.can_manage;
   $('close-world-menu').disabled=!world.world_id;
@@ -982,6 +987,7 @@ function renderWorldMenu(){
     const details=document.createElement('small');details.textContent=`${entry.sandbox?'Sandbox · ':''}${entry.town_count}/4 towns · ${entry.id===catalog.active_world?'Playing now':'Saved'}`;row.append(details);
     if(catalog.can_manage || entry.id===catalog.active_world){const open=document.createElement('button');open.textContent=entry.id===catalog.active_world?'Continue playing':'Open world';open.onclick=()=>catalog.can_manage?manageWorld('/api/worlds/open',{world_id:entry.id},true):$('world-menu').close();row.append(open);}
     if(catalog.can_manage){const remove=document.createElement('button');remove.className='danger quiet';remove.textContent='Destroy world';remove.onclick=()=>{deletingWorld=entry;$('delete-world-description').textContent=`Destroy “${entry.name}”?`;$('delete-world-name').value='';$('delete-world-error').textContent='';$('delete-world-dialog').showModal();};row.append(remove);}
+    if(catalog.can_manage&&entry.sandbox){const regenerate=document.createElement('button');regenerate.className='quiet';regenerate.textContent='Regenerate world';regenerate.onclick=()=>{clearWalk();regeneratingWorld=entry;$('regenerate-world-description').textContent=`Generate fresh terrain for “${entry.name}” and reset its progress?`;$('regenerate-world-name').value='';$('regenerate-world-error').textContent='';$('regenerate-world-dialog').showModal();};row.append(regenerate);}
     $('world-list').append(row);
   }
 }
@@ -1011,11 +1017,11 @@ window.addEventListener('keydown',event=>{
   const key=event.key.toLowerCase();
   if(key===','&&event.metaKey&&!event.ctrlKey&&!event.altKey&&!event.shiftKey){
     event.preventDefault();
-    if(!event.repeat&&!$('settings-panel').open&&!$('world-menu').open&&!$('delete-world-dialog').open && !$('upgrade-dialog').open)$('settings-button').onclick();
+    if(!event.repeat&&!$('settings-panel').open&&!$('world-menu').open&&!$('delete-world-dialog').open && !$('regenerate-world-dialog').open && !$('upgrade-dialog').open)$('settings-button').onclick();
     return;
   }
   if(/^[1-9]$/.test(key)&&!event.ctrlKey&&!event.metaKey&&!event.altKey&&!event.shiftKey){
-    if(!event.repeat&&!$('settings-panel').open&&!$('world-menu').open&&!$('delete-world-dialog').open && !$('upgrade-dialog').open
+    if(!event.repeat&&!$('settings-panel').open&&!$('world-menu').open&&!$('delete-world-dialog').open && !$('regenerate-world-dialog').open && !$('upgrade-dialog').open
       &&!document.activeElement?.isContentEditable&&!['INPUT','TEXTAREA','SELECT'].includes(document.activeElement?.tagName)){
       const name=['world-menu','build','villagers','resources','items','valley','help','rules'][Number(key)-1];
       if(name&&!$(name+'-button').disabled){
@@ -1069,7 +1075,7 @@ window.addEventListener('keydown',event=>{
   for(const action of ['fish','chop','gather'])if(key===keybindings[action]&&!event.repeat&&!event.ctrlKey&&!event.metaKey&&!event.altKey&&canControlPlayer()){
     event.preventDefault();playerAction(action);
   }
-  if(event.key==='Escape' && !$('settings-panel').open && !$('world-menu').open && !$('delete-world-dialog').open && !$('upgrade-dialog').open){
+  if(event.key==='Escape' && !$('settings-panel').open && !$('world-menu').open && !$('delete-world-dialog').open && !$('regenerate-world-dialog').open && !$('upgrade-dialog').open){
     if(world.towns[identity?.town_id]?.player?.activity)playerAction('stop_activity');
     openPanel(null);canvas.focus();
   }
@@ -1660,8 +1666,10 @@ function renderSelection(town){
       }
     }
     if(item.kind==='tree'){
-      $('selection-title').textContent=swamp?'Swamp willow':item.species==='ancient'?'Ancient tree':'Forest';
-      p.textContent=`Chop: ${keybindings.chop.toUpperCase()} / nearby woodcutter\nWoodcutter reach: 10 tile steps\nFelling: leaves a stump, clears tile\nRegrowth: ${swamp||item.species==='ancient'?15:5} min · all ground\nRegrowth requires an empty tile`;
+      const landscape=world.shared_map || town,biome=landscape.terrain?.[item.y]?.[item.x];
+      const regrows=(landscape.terrain_version || 1)<6 || biome==='f' || biome==='b';
+      $('selection-title').textContent=swamp?'Swamp willow':item.species==='ancient'?'Ancient tree':regrows?'Forest':'Grassland tree';
+      p.textContent=`Chop: ${keybindings.chop.toUpperCase()} / nearby woodcutter\nWoodcutter reach: 10 tile steps\nFelling: ${regrows?'leaves a stump, clears tile':'permanently clears this tree'}\nRegrowth: ${regrows?`${swamp||item.species==='ancient'?15:5} min · requires an empty tile`:'None on grassland'}`;
       if(swamp||item.species==='ancient')p.textContent+='\nChopping time: 5×';
     }
     if(item.kind==='wild_horse'){

@@ -50,19 +50,36 @@ backend structure and animation priorities, balancing, game design, and artwork.
 
 ## Confirmed terrain direction
 
-**Planned; not implemented:** the landscape should feel less eclectic, with large,
-coherent terrain regions and natural transitions rather than a patchwork of small,
-unrelated biomes.
+**Implemented for new explorable worlds:** large, coherent terrain regions use
+seeded world coordinates, with irregular edges and smaller surrounding patches.
 
-- Consider an icy region in one corner of the world; its exact placement is open.
-- Create a larger main swamp with smaller swamp spots around its edges.
-- Include large rivers and a major lake, plus smaller lakes near cities.
-- Make deserts substantial, continuous regions. Small sand patches can still
-  exist elsewhere.
+- A smaller northern ice region around Frostbrook mixes snow, groves, pools,
+  and rocky outcrops.
+- A western swamp surrounds Reedhaven, with dense willow groves interspersed
+  with pools and narrow water channels.
+- A smaller eastern desert surrounds Sunwell, with rocky areas and palm-lined
+  oases; small sand patches remain elsewhere.
+- Winding northern and western rivers feed a southern lake with three wooded
+  islands. Smaller tributaries branch through the ice, swamp, and eastern land.
+- Green terrain has three types: light-green grassland with no trees and occasional
+  bushes; darker grassland with sparse trees that do not regrow; and forest with
+  regenerating trees, in patches and large woods. Riverbanks and lake shores have
+  more trees, forming forest strips. Swamp willows keep their regrowth behavior.
+- Broad light-green grassland leaves open space for larger farming areas;
+  rock outcrops and scattered rocks are less frequent across the landscape.
+- Isolated water bodies of one or two tiles are removed, including tiny starter
+  pools. Water connected across chunk boundaries still counts as one body.
+- Each starting town has a smaller fishing lake nearby. The central treasure
+  lake, its islands, starter clearings, and paths between towns remain available.
 
-Region sizes and water layouts remain open. See the
-[game design reference](GAME_DESIGN.md#terrain-and-water) and
-[roadmap](ROADMAP.md#coherent-terrain-regions-and-water) for planned work.
+The main swamp spans roughly 210 by 240 tiles across a 480-tile world; the desert
+spans roughly 160 by 200 tiles and the southern lake about 140 by 110 tiles.
+Seeds vary region centers, edges, and river bends. Existing saves retain their
+original generator, including unexplored chunks; create a new world or use
+**Regenerate world** on a sandbox world to get the latest layout. Regeneration
+resets that sandbox world's towns and progress after host confirmation. Registered
+players keep their names and PINs and receive fresh villages with the same names. See the
+[game design reference](GAME_DESIGN.md#terrain-and-water).
 
 ## Questions to answer later
 

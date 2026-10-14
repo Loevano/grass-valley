@@ -6,15 +6,26 @@ import secrets
 TREE_BIOMES = frozenset('gfmb')
 
 
+def tree_regrows(landscape, source):
+    """Older worlds retain their original regrowth rules."""
+    if landscape.get('terrain_version', 1) < 6:
+        return True
+    terrain = landscape.get('terrain')
+    return bool(terrain and terrain[source['y']][source['x']] in 'fb')
+
+
 def remove_invalid_trees(landscape):
     """Keep saved trees and regrowing stumps on green ground."""
     terrain = landscape.get('terrain')
     if not terrain:
         return
     for field in ('map_resources', 'tree_stumps'):
+        allowed = TREE_BIOMES
+        if landscape.get('terrain_version', 1) >= 6:
+            allowed = 'fb' if field == 'tree_stumps' else 'gfb'
         resources = landscape.get(field, [])
         resources[:] = [r for r in resources if r['kind'] != 'tree'
-                        or terrain[r['y']][r['x']] in TREE_BIOMES]
+                        or terrain[r['y']][r['x']] in allowed]
 
 
 def ground_variant(x, y):

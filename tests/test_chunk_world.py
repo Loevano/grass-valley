@@ -5,9 +5,20 @@ import unittest
 from unittest.mock import patch
 
 import server
-from chunk_world import CHUNK_SIZE, WORLD_SIZE, LEGACY_WORLD_SIZE, LEGACY_START_OFFSET, attach, chunk_key, generate_chunk
+from chunk_world import CHUNK_SIZE, WORLD_SIZE, LEGACY_WORLD_SIZE, LEGACY_START_OFFSET, attach, chunk_key, generate_chunk, remove_tiny_water
 from shared_world import bind_map, export_world, new_world, walking_map
 import test_http
+
+
+class SmallWaterBodies(unittest.TestCase):
+    def test_tiny_patches_are_removed_but_connected_water_across_seams_stays(self):
+        water = {(1, 1), (1, 2), (39, 5), (40, 5), (41, 5), (39, 10), (40, 10)}
+        record = {'map_resources': [{'kind': 'water', 'x': x, 'y': y}
+                                    for x, y in sorted(water) if x < CHUNK_SIZE]}
+        rock = {'kind': 'rock', 'x': 2, 'y': 2}
+        record['map_resources'].append(rock)
+        remove_tiny_water(record, lambda x, y: (x, y) in water)
+        self.assertEqual(record['map_resources'], [{'kind': 'water', 'x': 39, 'y': 5}, rock])
 
 
 class ExplorableMap(unittest.TestCase):
@@ -131,33 +142,35 @@ class ExplorableMap(unittest.TestCase):
         self.assertLessEqual(len(self.manager.snapshots), len(self.manager.records) + 1)
 
     def test_removals_and_regrowth_survive_eviction_and_reload(self):
-        self.visit(80, 80)
+        # Use northeastern woodland; the southeast now has broad meadows.
+        self.visit(440, 80)
         landscape = self.world['shared_map']
-        tree = next(r for r in landscape['map_resources'] if r['kind'] == 'tree' and r['x'] < 120
+        tree = next(r for r in landscape['map_resources'] if r['kind'] == 'tree' and r['x'] > 360
                     and landscape['terrain'][r['y']][r['x']] == 'f')
         position = tree['x'], tree['y']
         server.economy.take_supply(landscape, tree, 100)
         self.assertTrue(any((r['x'], r['y']) == position for r in landscape['tree_stumps']))
-        self.visit(440, 440)
+        self.visit(80, 440)
         self.world['shared_map']['chunk_clock'] += 600
-        self.visit(80, 80)
+        self.visit(440, 80)
         server.prepare_landscapes(self.world, regenerate=True)
         self.assertTrue(any((r['x'], r['y']) == position for r in landscape['map_resources']))
         # A chest removal must remain permanent even outside the working set.
-        chest = {'kind': 'chest', 'x': 80, 'y': 80}
+        chest = {'kind': 'chest', 'x': 440, 'y': 80}
         landscape['map_resources'].append(chest)
         self.manager.flush()
         landscape['map_resources'].remove(chest)
-        self.visit(440, 440)
+        self.visit(80, 440)
         stored = json.loads(json.dumps(export_world(self.world)))
         restored = attach(stored, self.root / 'save_chunks')
-        stored['towns']['own']['player'].update(x=80, y=80)
+        stored['towns']['own']['player'].update(x=440, y=80)
         restored.activate()
-        self.assertFalse(any(r['kind'] == 'chest' and r['x'] == 80 and r['y'] == 80
+        self.assertFalse(any(r['kind'] == 'chest' and r['x'] == 440 and r['y'] == 80
                              for r in stored['shared_map']['map_resources']))
 
     def test_sleeping_stumps_use_reduced_regrowth_rate(self):
         record = self.manager.read('2,2')
+        record['terrain'][0] = 'f' + record['terrain'][0][1:]
         record['tree_stumps'] = [{'kind': 'tree', 'x': 80, 'y': 80, 'remaining': 300}]
         self.world['shared_map']['chunk_clock'] += 30
         self.manager.catch_up('2,2', record)
@@ -218,7 +231,7 @@ class ExplorableMap(unittest.TestCase):
     def test_legacy_chunked_maps_keep_dimensions_and_starter_layout(self):
         # Recreate the persisted metadata used before the smaller default.
         with patch('chunk_world.WORLD_SIZE', LEGACY_WORLD_SIZE), patch('chunk_world.START_OFFSET', LEGACY_START_OFFSET):
-            old = new_world(42, explorable=True)
+            old = new_world(42, explorable=True, terrain_version=1)
         stored = json.loads(json.dumps(export_world(old)))
         del stored['shared_map']['starter_offset']
         original_sites = json.loads(json.dumps(stored['town_sites']))

@@ -45,6 +45,12 @@ leave because of food or housing shortages. Their normal talents, practice, and
 production rates still apply. Production ingredients, hauling, storage, animal
 care, and food consumption run normally, so you can observe the chain's bottlenecks.
 Sandbox worlds save and reopen with these rules and are labeled in the Worlds menu.
+The host can choose **Regenerate world** on a sandbox world's row in **Worlds**
+to try the latest terrain generator with a new seed. Type its name to confirm:
+this resets that sandbox world's towns and all progress. Registered players keep
+their names and PINs and reconnect to fresh villages with the same village names.
+Other worlds stay saved. Restart the Python host after changing generator code, then
+regenerate; creating a new world also uses the latest generator.
 
 ## Join from another Mac
 
@@ -78,6 +84,23 @@ the browser retains at most 128 terrain chunks. Resource regeneration catches
 up when a sleeping area becomes active again. Changed chunks save separately.
 Map refreshes send only terrain and resource chunks the browser needs, and walking
 saves with the regular three-second simulation update.
+
+New worlds have winding, branching rivers feeding a southern lake with wooded
+islands. Green terrain has three types: light-green grassland has no trees and
+occasional bushes; darker grassland has sparse trees that stay cleared after
+chopping; forest grows in patches and large woods, with trees that regrow.
+Trees are more common along rivers and lake shores, forming wooded banks.
+Broad light-green grassland provides larger farming areas, with fewer rock
+outcrops and scattered rocks across the landscape.
+Isolated one- and two-tile water patches are removed; rivers and larger ponds remain.
+Reedhaven's western swamp mixes dense willow groves, pools, and narrow channels.
+The smaller desert around Sunwell has rocky areas and palm-lined oases, while the
+northern ice region around Frostbrook has groves, pools, and rock outcrops.
+Smaller fishing lakes sit near each starting town, alongside the existing central
+lake and its treasure islands. Region edges and river bends vary with the world's
+seed and continue across terrain chunks. Existing worlds retain their original
+generator, including unexplored areas; create a new world or regenerate a sandbox
+world to see the latest layout.
 
 Explorable worlds also have three small wilderness villages: Reedhaven in the
 swamp, Sunwell in the desert, and Frostbrook on the snowy ice fields. Each has
@@ -246,8 +269,10 @@ the Python host, refresh both browsers, and create a new world to use the shared
   finishing over 30 seconds. Housing, storage, and workplaces activate only on
   completion. Progress survives saving, moving a site, and restarting the host.
 - Trees are felled when their remaining wood reaches zero, freeing their tile for
-  building and leaving a visible stump. They regrow after about five minutes 34 seconds on all ground while
-  the tile is unoccupied. Buildings and roads pause regrowth until removed.
+  building. In new worlds, forest trees leave a stump and regrow after about five
+  minutes 34 seconds while the tile is unoccupied. Darker grassland trees stay
+  cleared permanently; light-green grassland has no trees. Buildings and roads
+  pause regrowth until removed. Older worlds retain their original regrowth rules.
   Swamp willows and rare ancient trees take five times as much chopping and
   about sixteen minutes 40 seconds to regrow.
   Water regenerates its shared supply. Rock outcrops cannot be mined yet.

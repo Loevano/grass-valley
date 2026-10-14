@@ -106,7 +106,7 @@ def _field(seed, label, x, y, scale):
     return a * (1 - fy) + b * fy
 
 
-def generate_chunk(seed, key):
+def _legacy_chunk(seed, key):
     """Coordinate noise keeps terrain continuous and independent of visit order."""
     cx, cy = map(int, key.split(','))
     rng = random.Random(f'{seed}:chunk-v1:{key}')
@@ -131,6 +131,145 @@ def generate_chunk(seed, key):
     return {'terrain': rows, 'map_resources': resources, 'tree_stumps': [], 'clock': 0}
 
 
+@lru_cache(maxsize=64)
+def _region_layout(seed):
+    """Keep landmarks near their villages, with variation between worlds."""
+    rng = random.Random(f'{seed}:regions-v2')
+    return {
+        'swamp': (.17 + rng.uniform(-.025, .025), .42, .22, .26),
+        'desert': (.78 + rng.uniform(-.025, .025), .43, .25, .30),
+        'ice': (.28, .04, .36, .25),
+        'lake': (.57 + rng.uniform(-.025, .025), .79, .16, .13),
+        'phase': rng.uniform(0, math.tau),
+    }
+
+
+def regional_tile(seed, x, y, size=WORLD_SIZE):
+    """Sample world coordinates, never chunk-local noise or visit order."""
+    layout = _region_layout(seed)
+    u, v = x / size, y / size
+    detail = _field(seed, 'region-edge', x, y, size / 20)
+
+    def distance(name):
+        cx, cy, rx, ry = layout[name]
+        return ((u - cx) / rx) ** 2 + ((v - cy) / ry) ** 2
+
+    wet = _field(seed, 'regional-moisture', x, y, size / 5)
+    soil = _field(seed, 'regional-ground', x, y, size / 8)
+    biome = 'f' if wet > .56 else 'r' if soil > .76 else 'm' if wet > .38 else 'g'
+    edge = .88 + detail * .24
+    marsh = distance('swamp')
+    if distance('ice') < edge:
+        biome = 'i'
+    elif distance('desert') < edge:
+        biome = 'd'
+    elif marsh < edge or (marsh < 1.6 and detail > .67):
+        biome = 'b'
+    elif soil < .23 and detail < .30:
+        biome = 's'
+
+    # Two uninterrupted channels meet the major lake. Smooth centerlines and
+    # widths keep water connected even where chunks are generated separately.
+    lx, ly, _, _ = layout['lake']
+    phase = layout['phase']
+    # Keep the northern channel east of the starter valley and west of
+    # Sunwell, so authored clearings/paths cannot cut the river into pieces.
+    approach = min(1, max(0, (v - .60) / (ly - .60)))
+    river_x = (.65 * (1 - approach) + lx * approach
+               + .012 * (math.sin((v - ly) * math.tau + phase) - math.sin(phase)))
+    tributary_y = ly + .035 * math.sin((u - lx) * math.tau)
+    water = (distance('lake') < .92 + detail * .16
+             or (v <= ly and abs(u - river_x) < .012)
+             or (u <= lx and abs(v - tributary_y) < .010))
+    if biome == 'b' and _field(seed, 'marsh-pools', x, y, size / 24) < .27:
+        water = True
+    if water and biome not in ('b', 'd', 'i'):
+        biome = 's'
+    return biome, water
+
+
+def generate_chunk(seed, key, version=1, size=WORLD_SIZE):
+    """Version saved worlds so untouched legacy chunks never change generator."""
+    if version == 1:
+        return _legacy_chunk(seed, key)
+    if version not in (2, 3, 4, 5, 6, 7):
+        raise ValueError(f'Unsupported terrain generator version: {version}')
+    if version >= 3:
+        from terrain_regions import sample_tile
+    cx, cy = map(int, key.split(','))
+    rng = random.Random(f'{seed}:chunk-v{min(version, 3)}:{key}')
+    rows, resources = [], []
+    for y in range(cy * CHUNK_SIZE, (cy + 1) * CHUNK_SIZE):
+        row = []
+        for x in range(cx * CHUNK_SIZE, (cx + 1) * CHUNK_SIZE):
+            if version >= 3:
+                biome, water, trees, rocks, species = sample_tile(
+                    seed, x, y, size, _field, sparse_grass=version >= 4,
+                    open_farmland=version >= 5, green_habitats=version >= 6)
+            else:
+                biome, water = regional_tile(seed, x, y, size)
+                trees, rocks, species = (.45 if biome in ('f', 'b') else 0), (.15 if biome == 'r' else 0), None
+            kind = ('water' if water else
+                    'tree' if biome in 'gfmb' and trees and rng.random() < trees else
+                    'rock' if rocks and rng.random() < rocks else None)
+            row.append(biome)
+            if kind:
+                resource = {'kind': kind, 'x': x, 'y': y}
+                if kind == 'tree' and species:
+                    resource['species'] = species
+                resources.append(resource)
+            elif biome in ('g', 'f', 'm', 'b') and rng.random() < .012:
+                resources.append({'kind': rng.choice(['berry_bush', 'herb_patch']), 'x': x, 'y': y})
+        rows.append(''.join(row))
+    return {'terrain': rows, 'map_resources': resources, 'tree_stumps': [], 'clock': 0}
+
+
+def regional_starter(seed, version=2):
+    """The inhabited valley uses the same underlying terrain as its neighbors."""
+    chunks = {(cx, cy): generate_chunk(seed, f'{cx},{cy}', version=version)
+              for cy in range(4, 7) for cx in range(4, 7)}
+    rows = [''.join(chunks[cx, y // CHUNK_SIZE]['terrain'][y % CHUNK_SIZE]
+                    for cx in range(4, 7)) for y in range(START_OFFSET, START_OFFSET + 120)]
+    resources = [dict(r, x=r['x'] - START_OFFSET, y=r['y'] - START_OFFSET)
+                 for record in chunks.values() for r in record['map_resources']]
+    return rows, resources
+
+
+def remove_tiny_water(record, water_at):
+    """Keep connected water bodies of at least three tiles, including seams."""
+    water = {(r['x'], r['y']) for r in record['map_resources'] if r['kind'] == 'water'}
+    remove = set()
+    for start in water:
+        if start in remove:
+            continue
+        seen, pending = {start}, [start]
+        # Most rivers and ponds already have three local tiles. Establish
+        # that before requesting any neighboring chunk at a seam.
+        while pending and len(seen) < 3:
+            x, y = pending.pop()
+            for point in ((x-1, y), (x+1, y), (x, y-1), (x, y+1)):
+                if point not in seen and point in water:
+                    seen.add(point)
+                    pending.append(point)
+                    if len(seen) >= 3:
+                        break
+        if len(seen) >= 3:
+            continue
+        pending = list(seen)
+        while pending and len(seen) < 3:
+            x, y = pending.pop()
+            for point in ((x-1, y), (x+1, y), (x, y-1), (x, y+1)):
+                if point not in seen and water_at(*point):
+                    seen.add(point)
+                    pending.append(point)
+                    if len(seen) >= 3:
+                        break
+        if len(seen) < 3:
+            remove.update(seen)
+    record['map_resources'][:] = [r for r in record['map_resources']
+        if r['kind'] != 'water' or (r['x'], r['y']) not in remove]
+
+
 class ChunkMap:
     def __init__(self, world, directory=None, base=None):
         self.world = world
@@ -149,7 +288,8 @@ class ChunkMap:
     def _starter(self):
         if self.base is None:
             from shared_world import new_world
-            self.base = new_world(self.landscape['terrain_seed'])['shared_map']
+            self.base = new_world(self.landscape['terrain_seed'],
+                                  terrain_version=self.landscape.get('terrain_version', 1))['shared_map']
         return self.base
 
     def read(self, key):
@@ -161,11 +301,32 @@ class ChunkMap:
                 self.catch_up(key, self.views[key])
             return self.views[key]
         record = apply_villages(self._read(key), key, self.landscape.get('villages', []), CHUNK_SIZE)
+        if self.landscape.get('terrain_version', 1) >= 7:
+            self._remove_tiny_water(key, record)
         self.catch_up(key, record)
         self.views[key] = record
         while len(self.views) > MAX_VIEW_CHUNKS:
             self.views.popitem(last=False)
         return record
+
+    def _remove_tiny_water(self, key, record):
+        # Neighbor samples include starter and village edits. Inspect raw
+        # neighboring records without recursively loading/pruning their views.
+        waters = {key: {(r['x'], r['y']) for r in record['map_resources'] if r['kind'] == 'water'}}
+
+        def water_at(x, y):
+            if not (0 <= x < self.size and 0 <= y < self.size):
+                return False
+            other = chunk_key(x, y)
+            if other not in waters:
+                adjacent = self.records.get(other) or self.views.get(other)
+                if adjacent is None:
+                    adjacent = apply_villages(self._read(other), other,
+                                              self.landscape.get('villages', []), CHUNK_SIZE)
+                waters[other] = {(r['x'], r['y']) for r in adjacent['map_resources'] if r['kind'] == 'water'}
+            return (x, y) in waters[other]
+
+        remove_tiny_water(record, water_at)
 
     def catch_up(self, key, record):
         from progression import SUPPLIES, TREE_REGROWTH_RATE, source_limits
@@ -177,7 +338,8 @@ class ChunkMap:
         obstacles += [dict(x=round(t['player']['x']), y=round(t['player']['y']))
                       for t in self.world['towns'].values() if 'player' in t]
         ensure_industry(record, obstacles, (cx * CHUNK_SIZE, cy * CHUNK_SIZE))
-        landscape = dict(record, terrain=ChunkTerrain({key: record}, self.size))
+        landscape = dict(record, terrain=ChunkTerrain({key: record}, self.size),
+                         terrain_version=self.landscape.get('terrain_version', 1))
         remove_invalid_trees(landscape)
         for resource in record['map_resources']:
             if resource['kind'] not in SUPPLIES:
@@ -204,7 +366,8 @@ class ChunkMap:
                          for r in base['map_resources'] if x <= r['x'] < x + CHUNK_SIZE and y <= r['y'] < y + CHUNK_SIZE]
             return {'terrain': [row[x:x + CHUNK_SIZE].replace('v', 'g') for row in base['terrain'][y:y + CHUNK_SIZE]],
                     'map_resources': resources, 'tree_stumps': [], 'clock': 0}
-        return generate_chunk(self.landscape['terrain_seed'], key)
+        return generate_chunk(self.landscape['terrain_seed'], key,
+                              version=self.landscape.get('terrain_version', 1), size=self.size)
 
     def desired(self):
         towns = self.world['towns'].values()
@@ -343,6 +506,8 @@ def expand_new_world(world, directory=None):
                            'chunked': 1, 'chunk_size': CHUNK_SIZE, 'chunk_clock': 0, 'starter_offset': START_OFFSET,
                            'npc_placement_version': base.get('npc_placement_version', 0),
                            'npcs': [dict(n, x=n['x'] + START_OFFSET, y=n['y'] + START_OFFSET) for n in base['npcs']]}
+    if 'terrain_version' in base:
+        world['shared_map']['terrain_version'] = base['terrain_version']
     ensure_villages(world)
     world['_chunks'] = ChunkMap(world, directory, base)
     world['_chunks'].activate()

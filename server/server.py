@@ -1598,7 +1598,7 @@ class Handler(SimpleHTTPRequestHandler):
             if not isinstance(data, dict):
                 raise ValueError('Invalid request.')
             with LOCK:
-                if self.path in {'/api/worlds/create', '/api/worlds/open', '/api/worlds/delete'}:
+                if self.path in {'/api/worlds/create', '/api/worlds/open', '/api/worlds/delete', '/api/worlds/regenerate'}:
                     deleted_chunks = None
                     if not self.is_host():
                         self.reply(403, {'error': 'Only the host at localhost can manage worlds.'})
@@ -1621,6 +1621,37 @@ class Handler(SimpleHTTPRequestHandler):
                             raise ValueError('That world no longer exists.')
                         if self.path == '/api/worlds/open':
                             activate(world_id)
+                        elif self.path == '/api/worlds/regenerate':
+                            entry = WORLDS[world_id]
+                            if not entry['world'].get('sandbox', False):
+                                raise ValueError('Only sandbox worlds can be regenerated.')
+                            if data.get('confirmation') != entry['name']:
+                                raise ValueError('Type the world name to confirm regeneration.')
+                            # Build the replacement before discarding any old state.
+                            # A new ID invalidates every client's terrain/ownership cache.
+                            replacement = {'name': entry['name'], 'tokens': {},
+                                'world': new_world(explorable=True,
+                                    chunk_directory=SAVE.with_name(SAVE.stem + '_chunks'), sandbox=True)}
+                            # Keep salted credentials privately, but recreate each
+                            # registered player's village with fresh sandbox state.
+                            replacement['players'] = {}
+                            for key, account in entry.get('players', {}).items():
+                                town_id = account['town_id']
+                                old_town = entry['world']['towns'].get(town_id)
+                                if old_town is None:
+                                    raise ValueError('A registered player has no village. Restore it before regenerating.')
+                                if town_id not in replacement['world']['towns']:
+                                    replacement['world']['towns'][town_id] = new_town(
+                                        old_town['name'], replacement['world'])
+                                replacement['players'][key] = dict(account)
+                            replacement_id = secrets.token_hex(8)
+                            WORLDS[replacement_id] = replacement
+                            activate(replacement_id)
+                            prepare_landscapes(WORLD)
+                            landscape = entry['world'].get('shared_map', {})
+                            if landscape.get('chunked'):
+                                deleted_chunks = SAVE.with_name(SAVE.stem + '_chunks') / str(landscape['terrain_seed'])
+                            del WORLDS[world_id]
                         else:
                             if data.get('confirmation') != WORLDS[world_id]['name']:
                                 raise ValueError('Type the world name to confirm deletion.')

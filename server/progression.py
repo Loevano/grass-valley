@@ -4,6 +4,7 @@ from math import ceil
 import secrets
 import farming
 from equipment import find_item, gathering_bonus
+from terrain import tree_regrows
 
 BUILDINGS = {
     'well': {'label': 'Well', 'level': 1, 'wood': 15, 'slots': 0},
@@ -692,6 +693,8 @@ def renew(landscape, obstacles=()):
         occupied.update((r['x'], r['y']) for r in obstacles)
     remaining = []
     for stump in stumps:
+        if not tree_regrows(landscape, stump):
+            continue
         x, y = stump['x'], stump['y']
         if (x, y) in occupied:
             remaining.append(stump)
@@ -731,9 +734,10 @@ def take_supply(landscape, source, amount):
     if kind == 'tree' and available - taken <= 1e-9:
         landscape['map_resources'].remove(source)
         _supply_cache = None
-        stump = {k: source[k] for k in ('kind', 'x', 'y', 'species') if k in source}
-        stump['remaining'] = 300 if source_limits(landscape, source)[0] == 8 else 900
-        landscape.setdefault('tree_stumps', []).append(stump)
+        if tree_regrows(landscape, source):
+            stump = {k: source[k] for k in ('kind', 'x', 'y', 'species') if k in source}
+            stump['remaining'] = 300 if source_limits(landscape, source)[0] == 8 else 900
+            landscape.setdefault('tree_stumps', []).append(stump)
     return taken
 
 

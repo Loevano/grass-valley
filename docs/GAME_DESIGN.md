@@ -19,22 +19,25 @@ independent town management, exploration, and cooperation between 2–4 friends.
 
 ## Terrain and water
 
-**Confirmed direction; planned, not implemented:** make the landscape less
-eclectic. Large, coherent regions should give places a recognizable identity,
-with natural transitions between them.
+**Implemented in new explorable worlds:** large, coherent regions give places
+a recognizable identity. Seeded boundaries vary smoothly in world coordinates
+and continue across chunk boundaries.
 
 | Feature | Design direction |
 | --- | --- |
-| Ice | Consider a distinct icy corner of the world; exact placement remains open. |
-| Swamp | A larger main swamp, with smaller swamp spots around its edges. |
-| Rivers | Large rivers that read as continuous landscape features. |
-| Lakes | A major lake, with smaller lakes near cities. |
-| Desert | A large, continuous desert region; scattered small sand patches are still allowed elsewhere. |
+| Ice | A smaller northern region around Frostbrook, with groves, pools, and rock outcrops. |
+| Swamp | A broad western swamp around Reedhaven, mixing dense willow groves, pools, and narrow channels. |
+| Rivers | Winding northern and western rivers with connected tributaries through the surrounding regions. |
+| Lakes | A southern lake with wooded islands, smaller fishing lakes near starting towns, and the existing central treasure lake. |
+| Desert | A smaller eastern desert around Sunwell, with rocky areas and palm-lined oases. |
+| Green terrain | Light grassland has no trees and occasional bushes; darker grassland has sparse trees that do not regrow; forests grow in patches and large woods with regenerating trees. |
+| Waterside trees | More trees on riverbanks and lake shores, forming forest strips. |
 
-Success means players can recognize the main regions and water features while
-exploring and on the world map. Exact sizes, river and lake layouts, and the ice
-corner remain open. Implementation is planned after the cached zoomed-out town
-overview; see the [roadmap](ROADMAP.md#coherent-terrain-regions-and-water).
+The regions and water features appear while exploring and on the world map.
+Worlds save their terrain generator version; existing saves keep their original
+landscape and unexplored terrain. Hosts can regenerate sandbox worlds to try
+the latest generator, resetting their towns and progress after confirmation. See the
+[working design](DESIGN.md#confirmed-terrain-direction) for sizes and placement.
 
 ## Proposed experience loop
 

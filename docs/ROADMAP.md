@@ -6,9 +6,8 @@ and cache rules are in [Backend](BACKEND.md#cached-zoomed-out-map).
 | Order | Improvement                        | Status                   | Goal                                                                                                             |
 | ----- | ---------------------------------- | ------------------------ | ---------------------------------------------------------------------------------------------------------------- |
 | 1     | Cached zoomed-out town overview    | Implemented              | Show the landscape and city sizes without refreshing animated scene detail.                                      |
-| 2     | Coherent terrain regions and water | Planned; not implemented | Create recognizable large regions, rivers, and lakes while retaining smaller local patches.                      |
-| 3     | Production line balancing          | Wood and field cycle implemented; farming and fishing chain balance remains | Develop clear farming and fishing chains with capped staffing and simple upgrades. |
-| 4     | Scalable villager pathfinding       | Foundations implemented; host scheduling and shared navigation remain | Keep movement responsive as villager counts and towns grow, with bounded routing work. |
+| 2     | Production line balancing          | Wood and field cycle implemented; farming and fishing chain balance remains | Develop clear farming and fishing chains with capped staffing and simple upgrades. |
+| 3     | Scalable villager pathfinding       | Foundations implemented; host scheduling and shared navigation remain | Keep movement responsive as villager counts and towns grow, with bounded routing work. |
 
 ## Cached zoomed-out town overview
 
@@ -47,33 +46,6 @@ The existing world API still refreshes host state and interface data, including
 collision indexes used by founder movement. A lightweight overview request/change
 mechanism remains future work; this feature does not reduce snapshot traffic.
 
-## Coherent terrain regions and water
-
-**Status:** planned; not implemented. **Priority:** after the cached zoomed-out
-town overview. Design direction is recorded in
-[Game design](GAME_DESIGN.md#terrain-and-water) and the
-[working design](DESIGN.md#confirmed-terrain-direction).
-
-Make the landscape less eclectic by creating large, coherent terrain regions
-with natural transitions.
-
-| Part | Planned behavior |
-| --- | --- |
-| Ice | Consider an icy region in one corner of the world. |
-| Swamp | Create a larger main swamp with smaller swamp spots around its edges. |
-| Rivers and lakes | Include large, continuous rivers and a major lake, plus smaller lakes near cities. |
-| Desert | Create a substantial, continuous desert while still allowing scattered small sand patches elsewhere. |
-
-Completion criteria:
-
-- Main terrain regions are recognizable while exploring and on the world map.
-- The swamp and desert read as large regions, with smaller surrounding swamp
-  spots and occasional sand patches retaining local variety.
-- Large rivers and a major lake are visible, with smaller lakes near cities.
-
-Exact region sizes, water layouts, and whether and where to place an icy corner
-remain open design decisions before implementation.
-
 ## Production line balancing
 
 **Status:** wood chain implemented. Farming and fishing remain.
@@ -85,6 +57,9 @@ unlocked, construction and upgrades are free and instant, cottages add residents
 automatically, and villagers need no training and never depart. Production inputs,
 hauling, storage, food consumption, and normal output rates still apply. The
 farming and fishing changes below remain planned.
+Hosts can also regenerate sandbox worlds from the Worlds menu to try the latest
+terrain layout; confirmation resets only the selected sandbox's towns and progress.
+Registered players retain their names and PINs and reconnect to fresh villages.
 
 ### Worker capacity
 

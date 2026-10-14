@@ -7,6 +7,30 @@ from terrain import TREE_BIOMES, generate_map, remove_invalid_trees
 
 
 class RandomTerrain(unittest.TestCase):
+    def test_new_green_habitats_keep_grassland_clear_and_only_forest_regrows(self):
+        from progression import take_supply, renew
+        landscape = {'terrain_version': 6, 'terrain': ['mgfb'],
+                     'map_resources': [{'kind': 'tree', 'x': x, 'y': 0, 'supply': 8}
+                                       for x in range(4)], 'tree_stumps': []}
+        remove_invalid_trees(landscape)
+        self.assertEqual([r['x'] for r in landscape['map_resources']], [1, 2, 3])
+        for source in list(landscape['map_resources']):
+            take_supply(landscape, source, 40)
+        self.assertEqual(landscape['map_resources'], [])
+        self.assertEqual([s['x'] for s in landscape['tree_stumps']], [2, 3])
+        for stump in landscape['tree_stumps']:
+            stump['remaining'] = 0
+        renew(landscape)
+        self.assertEqual([r['x'] for r in landscape['map_resources']], [2, 3])
+        self.assertEqual(landscape['tree_stumps'], [])
+
+    def test_older_worlds_still_regrow_grassland_trees(self):
+        from progression import take_supply
+        source = {'kind': 'tree', 'x': 0, 'y': 0, 'supply': 8}
+        landscape = {'terrain_version': 5, 'terrain': ['g'], 'map_resources': [source]}
+        take_supply(landscape, source, 8)
+        self.assertEqual(len(landscape['tree_stumps']), 1)
+
     def test_trees_only_spawn_on_green_ground_including_starter_trees(self):
         for size in (12, 120):
             for seed in range(10):
