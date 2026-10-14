@@ -23,7 +23,7 @@ class WoodChain(unittest.TestCase):
         return building, len(self.town['buildings']) - 1
 
     def test_worker_upgrades_are_separate_from_storage_and_stop_at_limits(self):
-        for kind, capacities in [('woodcutter', [1, 2, 4]), ('sawpit', [1, 2]), ('workshop', [1])]:
+        for kind, capacities in [('woodcutter', [1, 2, 3]), ('sawpit', [1, 2]), ('workshop', [1])]:
             with self.subTest(kind=kind):
                 self.setUp()
                 building, index = self.add(kind)

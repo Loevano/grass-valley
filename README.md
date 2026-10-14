@@ -330,13 +330,17 @@ the Python host, refresh both browsers, and create a new world to use the shared
   Escape. On small screens, panels appear as a bottom drawer.
 - Every finished building except the town hall has an **Add settler** control,
   an assigned roster, and removal controls. Woodcutters, fishing huts, storehouses,
-  and acres start with 1 space, cottages with 2, and farms with 4. Most buildings upgrade settler capacity twice
+  and acres start with 1 space, cottages with 2. Most buildings upgrade settler capacity twice
   for 20 then 40 wood to reach twice then three times the initial spaces. Capacity
   upgrades take 30 then 60 seconds of builder work and do not increase housing
   or storage.
-  The wood chain has its own worker limits: woodcutters upgrade from 1 to 2 to 4
-  spaces, sawpits from 1 to 2, and woodworker's workshops stay at 1. The same
-  costs and builder times apply to their available capacity upgrades.
+  Farms, mills, bakeries, woodcutters, sawpits, woodworker's workshops, mines,
+  Forgery (formerly Iron smelter), and steelworks start with 1 worker space.
+  Farms upgrade 1 → 2 → 4, mines 1 → 2 → 4 → 8, woodcutters and Forgery
+  1 → 2 → 3, and mills and sawpits 1 → 2. Bakeries, workshops, and steelworks
+  stay at 1. Each capacity upgrade costs 20 wood and takes 30 seconds times the
+  current tier. Existing saves retain unlocked spaces up to these caps; excess
+  workers rest with skills, tools, and produced goods preserved.
   Assignment transfers an existing resident; it does not create a new settler.
   Workplaces set the appropriate job; acres assign farmers to that specific field.
   The town hall is reserved for your controllable character and has no resident

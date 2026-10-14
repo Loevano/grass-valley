@@ -37,7 +37,7 @@ LOCK = threading.RLock()
 COSTS = {'home': 20, 'woodcutter': 15, 'farm': 15, 'storehouse': 25, 'fishing_hut': 15, 'acre': 5}
 JOBS = {'idle', 'building', 'woodcutting', 'farming', 'fishing', 'hauling'}
 SETTLER_SPACES = {'hall': 1, 'home': 2, 'storehouse': 1, 'woodcutter': 1,
-                  'fishing_hut': 1, 'farm': 4, 'acre': 1}
+                  'fishing_hut': 1, 'farm': 1, 'acre': 1}
 BUILDING_JOBS = {'storehouse': 'hauling', 'woodcutter': 'woodcutting', 'farm': 'farming',
                  'fishing_hut': 'fishing', 'acre': 'farming'}
 TICK_SECONDS = 3
@@ -259,6 +259,7 @@ def ensure_resources(town):
             villager['job'] = 'trading'
     if 'town_origin' in town:
         migrate_wood_chain(town)
+        migrate_worker_capacities(town)
         return
     if 'map_resources' not in town:
         town['map_resources'] = map_resources(town['buildings'])
@@ -272,6 +273,7 @@ def ensure_resources(town):
     ensure_terrain(town)
     ensure_npcs(town)
     migrate_wood_chain(town)
+    migrate_worker_capacities(town)
 
 
 def migrate_wood_chain(town):
@@ -322,10 +324,45 @@ def migrate_wood_chain(town):
     town['wood_chain_version'] = 1
 
 
+def migrate_worker_capacities(town):
+    """Retain unlocked spaces up to the new caps without losing residents or goods."""
+    if town.get('worker_capacity_version') == 1:
+        return
+    legacy_tiers = {'woodcutter': (1, 2, 4), 'sawpit': (1, 2), 'workshop': (1,)}
+    legacy_spaces = {'farm': 4, 'mill': 2, 'bakery': 2, 'mine': 2,
+                     'smelter': 2, 'steelworks': 2}
+    for index, building in enumerate(town['buildings']):
+        kind = building['kind']
+        tiers = economy.WORKER_CAPACITIES.get(kind)
+        if not tiers:
+            continue
+        assigned = assigned_settlers(town, index)
+        for worker_index in assigned:
+            town['villagers'][worker_index]['building_index'] = index
+        pending = building.get('construction', {}).get('upgrade', {})
+        for state in (building, pending):
+            if state is pending and 'settler_level' not in state:
+                continue
+            level = state.get('settler_level', 1)
+            old_tiers = legacy_tiers.get(kind)
+            spaces = old_tiers[min(level, len(old_tiers)) - 1] if old_tiers else legacy_spaces[kind] * level
+            state['settler_level'] = next((i for i, capacity in enumerate(tiers, 1)
+                                          if capacity >= spaces), len(tiers))
+        for worker_index in assigned[settler_capacity(building):]:
+            villager = town['villagers'][worker_index]
+            logistics.cancel_output(town, villager)
+            logistics.cancel_trip(town, villager)
+            villager['job'] = 'idle'
+            for key in ('building_index', 'work_target', 'watering_round',
+                        'construction_target', 'construction_arrived', 'production_status'):
+                villager.pop(key, None)
+    town['worker_capacity_version'] = 1
+
+
 def settler_capacity(building):
     if building['kind'] == 'hall':
         return 0
-    tiers = economy.WOOD_WORKER_CAPACITIES.get(building['kind'])
+    tiers = economy.WORKER_CAPACITIES.get(building['kind'])
     if tiers:
         return tiers[min(len(tiers), building.get('settler_level', 1)) - 1]
     return SETTLER_SPACES[building['kind']] * building.get('settler_level', 1)
@@ -540,7 +577,7 @@ def production_bonus(building):
 
 def new_town(name, world=None):
     town = {'map_size': MAP_SIZE, 'name': name, 'wood': 65, 'food': 40, 'coins': 20, 'level': 1,
-            'wood_chain_version': 1,
+            'wood_chain_version': 1, 'worker_capacity_version': 1,
             'harvested': 0, 'achievements': [],
             'player': {'x': 5., 'y': 7., 'facing': 1},
             'map_resources': map_resources([{'x': 5, 'y': 5}]),
@@ -1403,7 +1440,7 @@ def command(town, data, world=None):
         if building['kind'] == 'hall':
             raise ValueError('The town hall is reserved for your controllable character.')
         level = building.get('settler_level', 1)
-        max_level = len(economy.WOOD_WORKER_CAPACITIES.get(building['kind'], (1, 2, 3)))
+        max_level = len(economy.WORKER_CAPACITIES.get(building['kind'], (1, 2, 3)))
         if not completed(building) or level >= max_level or building['kind'] in economy.DECORATIONS:
             raise ValueError('Capacity cannot be upgraded at this time.')
         cost = 0 if town.get('sandbox') else 20 * level

@@ -20,7 +20,7 @@ const run=new Function('document','window','localStorage','setTimeout','clearTim
   return (async()=>{
     function check(condition,message){if(!condition)throw Error(message);}
     const town={name:'Our town',wood:65,food:40,coins:20,level:1,harvested:0,
-      buildings:[{kind:'hall',x:5,y:5},{kind:'farm',x:6,y:2},{kind:'home',x:2,y:2}],
+      buildings:[{kind:'hall',x:5,y:5},{kind:'farm',x:6,y:2,settler_level:2},{kind:'home',x:2,y:2}],
       map_resources:[{kind:'water',x:9,y:2}],
       villagers:[{name:'Ada',job:'idle',woodcutting:0,farming:0},{name:'Bea',job:'farming',building_index:1,woodcutting:0,farming:7}]};
     world={world_id:'test',towns:{own:town,friend:town}};identity={town_id:'own'};viewed='own';
@@ -30,7 +30,7 @@ const run=new Function('document','window','localStorage','setTimeout','clearTim
     const capacityUpgrade=()=>controls().find(c=>c.tag==='button'&&/^Upgrade (worker|settler) capacity:/.test(c.attributes['aria-label'] || ''));
     const workerRows=()=>controls().find(c=>c.className==='building-workers').children;
     inspect('building',1);
-    check(controls().some(c=>c.children?.[0]?.textContent==='1 / 4'),'Farm shows occupied and total spaces');
+    check(controls().some(c=>c.children?.[0]?.textContent==='1 / 2'),'Farm shows occupied and upgraded total spaces');
     check(workerRows().length===1&&workerRows()[0].children[0].children[0].textContent==='Bea','Building lists its assigned worker compactly');
     check(workerRows()[0].children[0].children[1].textContent==='Farming · Lv 7','Farm worker shows relevant skill level');
     check(workerRows()[0].children[1].attributes['aria-label']==='Kick Bea from Farm','Kick control names the worker and building');
@@ -101,6 +101,30 @@ const run=new Function('document','window','localStorage','setTimeout','clearTim
     check(WorkerAnimation.plan(town,assigned,1).home===town.buildings[1],'Animation uses explicitly selected workplace');
     assigned.job='idle';assigned.building_index=2;assigned.work_target=null;
     check(WorkerAnimation.plan(town,assigned,1).home===town.buildings[2],'Resting settlers return to their assigned cottage');
+    world.progression.crops={vegetables:1};
+    const paths={farm:[1,2,4],mill:[1,2],bakery:[1],woodcutter:[1,2,3],sawpit:[1,2],workshop:[1],mine:[1,2,4,8],smelter:[1,2,3],steelworks:[1]};
+    for(const [kind,tiers] of Object.entries(paths)){
+      const building={kind,x:4,y:4};town.buildings.push(building);
+      const index=town.buildings.length-1;
+      check(settlerCapacity(building)===1,kind+' starts with one worker');
+      for(let tier=1;tier<=tiers.length;tier++){
+        building.settler_level=tier;inspect('building',index);
+        check(settlerCapacity(building)===tiers[tier-1],kind+' has expected tier capacity');
+        if(tier<tiers.length){
+          const preview=upgradePreview({action:'upgrade_capacity',index},town,building);
+          check(preview.ready&&preview.benefits[0]===tiers[tier-1]+' → '+tiers[tier]+' worker spaces',kind+' previews the next slots');
+          check(capacityUpgrade(),kind+' offers its remaining upgrade');
+        }else{
+          check(!capacityUpgrade()&&controls().some(c=>c.className==='upgrade-card-status'&&c.textContent==='Maxed'),kind+' ends at its cap');
+          town.villagers[0].building_index=index;render();
+          if(tiers.length===1)check(button('Add worker').disabled,kind+' blocks assignment at its single slot');
+          delete town.villagers[0].building_index;
+        }
+      }
+      check(settlerCapacity({...building,settler_level:99})===tiers.at(-1),kind+' caps legacy tiers');
+      town.buildings.pop();
+    }
+    check(labels.smelter==='Forgery','Iron smelter is displayed as Forgery');
   })();
 `);
 

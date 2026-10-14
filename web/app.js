@@ -426,14 +426,16 @@ function remotePlayerSprite(townId,town,seconds){
 }
 const labels = {road:'Dirt road',hall:'Town hall',home:'Cottage',woodcutter:'Woodcutter',farm:'Farm',storehouse:'Storehouse',fishing_hut:'Fishing hut',acre:'Acre',well:'Well'};
 function buildingLevel(building){return building.level || 1;}
-const woodWorkerCapacities={woodcutter:[1,2,4],sawpit:[1,2],workshop:[1]};
+const woodWorkerCapacities={woodcutter:[1,2,3],sawpit:[1,2],workshop:[1]};
+const workerCapacities={...woodWorkerCapacities,farm:[1,2,4],mill:[1,2],bakery:[1],mine:[1,2,4,8],smelter:[1,2,3],steelworks:[1]};
 const decorationKinds=['wooden_bench','wooden_statue'];
 function woodCapacities(){return world.progression?.wood_worker_capacities || woodWorkerCapacities;}
+function capacityTiers(){return world.progression?.worker_capacities || workerCapacities;}
 function settlerCapacity(building){
-  const level=building.settler_level || 1,tiers=woodCapacities()[building.kind];
+  const level=building.settler_level || 1,tiers=capacityTiers()[building.kind];
   return tiers?tiers[Math.min(level,tiers.length)-1]:settlerSpaces[building.kind]*level;
 }
-function capacityMaxLevel(building){return woodCapacities()[building.kind]?.length || 3;}
+function capacityMaxLevel(building){return capacityTiers()[building.kind]?.length || 3;}
 function storageMultiplier(building){return building.kind in woodCapacities()?1+.25*(buildingLevel(building)-1):1;}
 function housingCapacity(town){
   return 5+town.buildings.filter(b=>b.kind==='home'&&!b.construction).reduce((sum,b)=>sum+Math.max(2*(buildingLevel(b)+(b.profession_upgrades?.includes('timber_frame')?1:0)),town.sandbox?settlerSpaces.home*(b.settler_level || 1):0),0);
@@ -713,7 +715,7 @@ Object.assign(labels,{workshop:"Woodworker's workshop",wooden_bench:'Wooden benc
 Object.assign(costs,{wooden_bench:0,wooden_statue:0});
 Object.assign(costs,{barn:25,sawpit:25,mill:30,smokehouse:25,workshop:30,fish_pond:25,orchard:25,market:20,bakery:30,butcher:25});
 Object.assign(colors,{barn:'#b9866b',sawpit:'#aa8b60',mill:'#c1b080',smokehouse:'#8c8173',workshop:'#a28c72',fish_pond:'#7899a2',orchard:'#83a36b',market:'#c5ad80',bakery:'#c1a078',butcher:'#b9866b'});
-Object.assign(labels,{tannery:'Tannery',mine:'Mine',smelter:'Iron smelter',stable:'Stable',saddler:'Saddler',steelworks:'Steelworks',tradehouse:'Trade house'});
+Object.assign(labels,{tannery:'Tannery',mine:'Mine',smelter:'Forgery',stable:'Stable',saddler:'Saddler',steelworks:'Steelworks',tradehouse:'Trade house'});
 Object.assign(costs,{tannery:30,mine:40,smelter:40,stable:40,saddler:30,steelworks:40,tradehouse:50});
 Object.assign(colors,{tannery:'#ad8a67',mine:'#7f8c8c',smelter:'#a08875',stable:'#bda077',saddler:'#b89268',steelworks:'#758792',tradehouse:'#a1ab7e'});
 const professionJobs={trading:'Merchant',mining:'Mining',smelting:'Smelting',tanning:'Leatherworking',horsekeeping:'Horsekeeping',saddlery:'Saddlery',steelmaking:'Steelmaking',packing:'Trade packing',husbandry:'Husbandry',woodworking:'Woodworking',milling:'Milling',preserving:'Preserving',crafting:'Crafting',breeding:'Fish breeding',orcharding:'Orcharding',baking:'Baking',butchery:'Butchery'};
@@ -1236,7 +1238,7 @@ function villagersTable(town){
   for(const [index,v] of town.villagers.entries())body.append(villagerRow(town,v,index));
   table.append(body);return table;
 }
-const settlerSpaces={hall:1,home:2,storehouse:1,woodcutter:1,fishing_hut:1,farm:4,acre:1,barn:2,sawpit:1,mill:2,smokehouse:2,workshop:1,fish_pond:2,orchard:2,market:1,bakery:2,butcher:2,wooden_bench:0,wooden_statue:0};
+const settlerSpaces={hall:1,home:2,storehouse:1,woodcutter:1,fishing_hut:1,farm:1,acre:1,barn:2,sawpit:1,mill:1,smokehouse:2,workshop:1,fish_pond:2,orchard:2,market:1,bakery:1,butcher:2,wooden_bench:0,wooden_statue:0};
 function settlerBuilding(town,v,index){
   if(Number.isInteger(v.building_index))return v.building_index;
   const kind={woodcutting:'woodcutter',farming:'farm',fishing:'fishing_hut'}[v.job];

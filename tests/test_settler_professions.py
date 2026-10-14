@@ -112,6 +112,7 @@ class SettlerProfessions(unittest.TestCase):
 
     def test_farming_expertise_improves_a_field_without_duplicate_output(self):
         index = self.workplace('farm')
+        self.town['buildings'][index]['settler_level'] = 2
         self.town['map_resources'] = [{'kind': 'water', 'x': 4, 'y': 7}]
         self.worker.update(farming=20, talents={'farming': 1})
         self.assign(index)

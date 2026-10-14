@@ -44,6 +44,7 @@ class BuildingSettlers(unittest.TestCase):
         with self.assertRaises(ValueError):
             self.assign(1, 4)
         self.assertEqual(before, self.town)
+        self.town['buildings'][1]['settler_level'] = 3
         for i in range(4):
             self.assign(i, 1)
         self.assign(4, 2)
@@ -59,9 +60,9 @@ class BuildingSettlers(unittest.TestCase):
 
     def test_capacity_upgrades_charge_wood_and_stop_at_level_three(self):
         self.town['wood'] = 60
-        for expected in [8, 12]:
+        for previous, expected in [(1, 2), (2, 4)]:
             command(self.town, {'action': 'upgrade_capacity', 'index': 1})
-            self.assertEqual(settler_capacity(self.town['buildings'][1]), expected - 4)
+            self.assertEqual(settler_capacity(self.town['buildings'][1]), previous)
             for _ in range(100):
                 construct(self.town, self.town)
                 if 'construction' not in self.town['buildings'][1]:

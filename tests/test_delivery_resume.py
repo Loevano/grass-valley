@@ -22,6 +22,7 @@ class ProducerDeliveryResume(unittest.TestCase):
             villager['talents'] = {}
 
     def test_shared_farm_delivery_returns_to_work_before_buffer_refills(self):
+        self.town['buildings'][1]['settler_level'] = 2
         rowan, bram = self.town['villagers'][1], self.town['villagers'][3]
         server.assign_settler(self.town, 1, 1)
         server.assign_settler(self.town, 3, 1)

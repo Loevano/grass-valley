@@ -10,21 +10,21 @@ BUILDINGS = {
     'well': {'label': 'Well', 'level': 1, 'wood': 15, 'slots': 0},
     'barn': {'label': 'Barn', 'level': 2, 'wood': 25, 'job': 'husbandry', 'slots': 2},
     'sawpit': {'label': 'Sawpit', 'level': 3, 'wood': 25, 'job': 'woodworking', 'slots': 1},
-    'mill': {'label': 'Mill', 'level': 4, 'wood': 30, 'planks': 5, 'job': 'milling', 'slots': 2},
+    'mill': {'label': 'Mill', 'level': 4, 'wood': 30, 'planks': 5, 'job': 'milling', 'slots': 1},
     'smokehouse': {'label': 'Smokehouse', 'level': 4, 'wood': 25, 'planks': 5, 'job': 'preserving', 'slots': 2},
     'workshop': {'label': "Woodworker's workshop", 'level': 4, 'wood': 30, 'planks': 5, 'job': 'crafting', 'slots': 1},
     'wooden_bench': {'label': 'Wooden bench', 'level': 4, 'wood': 0, 'furniture': 1, 'slots': 0},
     'wooden_statue': {'label': 'Carved wooden statue', 'level': 4, 'wood': 0, 'carved_furniture': 1, 'slots': 0},
     'fish_pond': {'label': 'Fish pond', 'level': 5, 'wood': 25, 'planks': 10, 'job': 'breeding', 'slots': 2},
     'orchard': {'label': 'Orchard', 'level': 5, 'wood': 25, 'job': 'orcharding', 'slots': 2},
-    'bakery': {'label': 'Bakery', 'level': 4, 'wood': 30, 'planks': 5, 'job': 'baking', 'slots': 2},
+    'bakery': {'label': 'Bakery', 'level': 4, 'wood': 30, 'planks': 5, 'job': 'baking', 'slots': 1},
     'butcher': {'label': 'Butcher shop', 'level': 4, 'wood': 25, 'planks': 5, 'job': 'butchery', 'slots': 2},
     'tannery': {'label': 'Tannery', 'level': 5, 'wood': 30, 'planks': 10, 'job': 'tanning', 'slots': 2},
-    'mine': {'label': 'Mine', 'level': 6, 'wood': 40, 'planks': 15, 'tools': 3, 'job': 'mining', 'slots': 2},
-    'smelter': {'label': 'Iron smelter', 'level': 7, 'wood': 40, 'planks': 15, 'job': 'smelting', 'slots': 2},
+    'mine': {'label': 'Mine', 'level': 6, 'wood': 40, 'planks': 15, 'tools': 3, 'job': 'mining', 'slots': 1},
+    'smelter': {'label': 'Forgery', 'level': 7, 'wood': 40, 'planks': 15, 'job': 'smelting', 'slots': 1},
     'stable': {'label': 'Stable', 'level': 8, 'wood': 40, 'planks': 20, 'iron': 5, 'job': 'horsekeeping', 'slots': 2},
     'saddler': {'label': 'Saddler', 'level': 8, 'wood': 30, 'planks': 15, 'job': 'saddlery', 'slots': 2},
-    'steelworks': {'label': 'Steelworks', 'level': 9, 'wood': 40, 'planks': 20, 'iron': 10, 'job': 'steelmaking', 'slots': 2},
+    'steelworks': {'label': 'Steelworks', 'level': 9, 'wood': 40, 'planks': 20, 'iron': 10, 'job': 'steelmaking', 'slots': 1},
     'tradehouse': {'label': 'Trade house', 'level': 10, 'wood': 50, 'planks': 25, 'steel': 10, 'job': 'packing', 'slots': 2},
     'market': {'label': 'Market stall', 'level': 5, 'wood': 20, 'planks': 5, 'job': 'trading', 'slots': 1},
 }
@@ -39,7 +39,12 @@ ANIMALS['horse'] = {'level': 8, 'coins': 0, 'output': 'horse', 'feed': .5}
 ANIMAL_GROWTH_SECONDS = 300
 TREE_REGROWTH_RATE = .9
 WOOD_PER_CYCLE = .75
-WOOD_WORKER_CAPACITIES = {'woodcutter': (1, 2, 4), 'sawpit': (1, 2), 'workshop': (1,)}
+WOOD_WORKER_CAPACITIES = {'woodcutter': (1, 2, 3), 'sawpit': (1, 2), 'workshop': (1,)}
+WORKER_CAPACITIES = {
+    **WOOD_WORKER_CAPACITIES,
+    'farm': (1, 2, 4), 'mill': (1, 2), 'bakery': (1,),
+    'mine': (1, 2, 4, 8), 'smelter': (1, 2, 3), 'steelworks': (1,),
+}
 DECORATIONS = ('wooden_bench', 'wooden_statue')
 CRAFTED_WORKER_TOOLS = {
     'crafted_axe': {'name': 'Crafted axe', 'job': 'woodcutting', 'bonus': .25},
@@ -869,5 +874,6 @@ def public_catalog():
             'production_seconds': PRODUCTION_SECONDS, 'sale_prices': SALE_PRICES, 'sellable_goods': SELLABLE_GOODS,
             'boats': PLAYER_BOATS, 'fish': FISH, 'upgrades': PROFESSION_UPGRADES, 'recipes': RECIPES, 'edible': EDIBLE,
             'storage_goods': STORAGE_GOODS, 'fixed_storage': FIXED_STORAGE,
-            'wood_worker_capacities': WOOD_WORKER_CAPACITIES, 'decorations': DECORATIONS,
+            'wood_worker_capacities': WOOD_WORKER_CAPACITIES,
+            'worker_capacities': WORKER_CAPACITIES, 'decorations': DECORATIONS,
             'crafted_worker_tools': CRAFTED_WORKER_TOOLS, 'wood_per_cycle': WOOD_PER_CYCLE}

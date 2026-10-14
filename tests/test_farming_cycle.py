@@ -164,6 +164,7 @@ class FarmingCycle(unittest.TestCase):
         self.assertEqual(town['buildings'][1]['output_buffer']['vegetables'], 20)
 
     def test_harvest_batch_respects_production_cap_with_multiple_farmers(self):
+        self.farm['settler_level'] = 2
         self.harvest_fields()
         self.town.setdefault('rules', {}).setdefault('production_caps', {})['vegetables'] = 15
         other = self.town['villagers'][1]
@@ -382,6 +383,7 @@ class FarmingCycle(unittest.TestCase):
                 self.assertLess(walking, 80)
 
     def test_workers_choose_separate_rows(self):
+        self.farm['settler_level'] = 2
         second_row = {'kind': 'acre', 'x': 3, 'y': 5, 'farm_index': 1}
         same_row = {'kind': 'acre', 'x': 4, 'y': 4, 'farm_index': 1}
         self.town['buildings'].extend([same_row, second_row])
@@ -390,6 +392,7 @@ class FarmingCycle(unittest.TestCase):
         self.assertIs(server.work_source(self.town, 'farming', 1), second_row)
 
     def test_full_unrelated_crop_does_not_stop_multiple_farmers(self):
+        self.farm['settler_level'] = 2
         second = {'kind': 'acre', 'x': 4, 'y': 5, 'farm_index': 1, 'crop': 'wheat',
                   'stored_goods': {'fodder': 10}}
         self.town['buildings'].append(second)

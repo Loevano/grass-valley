@@ -84,8 +84,8 @@ output collection still limit the running town.
 | Configuration                                             | Ideal wood demand | Ideal supporting woodcutters | Practical implication                                               |
 | --------------------------------------------------------- | ----------------- | ---------------------------- | ------------------------------------------------------------------- |
 | One base sawpit worker                                    | 20/minute         | 2                            | Leaves 10 wood/minute before downtime and other demand. |
-| Both upgraded sawpit slots filled                         | 40/minute         | 3                            | Four woodcutters leave 20 wood/minute before downtime and other demand. |
-| One neutral, low-practice worker with crafted saw (+25%)  | 25/minute         | 2                            | Two equipped sawyers consume 50/minute; four base woodcutters leave 10/minute. |
+| Both upgraded sawpit slots filled                         | 40/minute         | 3                            | Three woodcutters leave 5 wood/minute before downtime and other demand. |
+| One neutral, low-practice worker with crafted saw (+25%)  | 25/minute         | 2                            | Two equipped sawyers consume 50/minute; three base woodcutters supply 45/minute. |
 
 For a real town use observed delivered supply: `effective rate = ideal rate ×
 productive fraction`. Add construction and other consumers to demand. A surplus
@@ -95,7 +95,7 @@ solve an exhausted forest or blocked storage.
 
 ### Staffing, storage, and crafted items
 
-Woodcutters start with one slot, upgrade to two for 20 wood/30 seconds, then four
+Woodcutters start with one slot, upgrade to two for 20 wood/30 seconds, then three
 for 40 wood/60 seconds. Sawpits start with one slot and upgrade once to two for
 20 wood/30 seconds. Woodworker's workshops have one slot and no worker upgrade.
 These limits apply to each building, including sandbox buildings.
@@ -126,8 +126,9 @@ the town's build range. Decorations occupy one tile, provide no gameplay bonus,
 and can be moved or removed like buildings; removal gives no refund. Sandbox
 placement and upgrades follow the existing free/instant rules.
 
-Existing sawpits retain their two spaces and higher saved tiers are capped at two;
-workshops are capped at one. Excess assigned workers rest, retaining skills and
+Existing woodcutters are capped at three. Existing sawpits retain their two spaces
+and higher saved tiers are capped at two; workshops are capped at one.
+Excess assigned workers rest, retaining skills and
 tools. Residents and inventories are preserved. Existing workplace axe/saw bonuses
 (including queued upgrades) become crafted tools for retained workers or the Items
 inventory, without stacking duplicate bonuses. New sawpits start with one space.

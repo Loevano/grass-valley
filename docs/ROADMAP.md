@@ -62,17 +62,6 @@ Hosts can also regenerate sandbox worlds from the Worlds menu to try the latest
 terrain layout; confirmation resets only the selected sandbox's towns and progress.
 Registered players retain their names and PINs and reconnect to fresh villages.
 
-### Worker capacity
-
-These are maximum workers per building after worker-capacity upgrades, not
-starting capacities. Upgrades unlock additional slots up to each limit.
-
-| Production chain | Building | Maximum workers |
-| --- | --- | --- |
-| Farming | Farm | 8 |
-| Farming | Mill | 3 |
-| Farming | Bakery | 2 |
-
 ### Farming
 
 Farm acre placement and work reach now cover a 7×7 square aligned with map tiles,
@@ -108,7 +97,7 @@ old buffered animations also preserves that speed and delays field changes.
 Oldest cycles finish before any acre repeats, preventing untouched tiles from
 being skipped. The base harvest is now 10 crops per acre for the two 15-second
 growth periods; existing bonuses apply. Remaining farming work is downstream
-ingredient demand, worker limits, and storage balancing below.
+ingredient demand and storage balancing below.
 
 - Farmers supply crops to the mill, which supplies ingredients to the bakery.
   Full ingredient storage now allows processors to keep working while their
@@ -130,8 +119,8 @@ ingredient demand, worker limits, and storage balancing below.
 The upgrade panel now uses compact rows with a short benefit, cost and work time,
 and an Upgrade action. Completed upgrades show a status without a disabled button;
 the purchase popup retains full benefits and requirements. The compact rows retain
-the implemented wood worker limits and storage upgrades. Farming and fishing
-balancing, storage scaling, and worker limits below remain planned.
+the implemented worker limits and wood storage upgrades. Farming and fishing
+balancing and downstream storage scaling below remain planned.
 
 Production now respects each resource's existing storage allowance, including
 pending deliveries. Each edible good and fish species now has an independent
@@ -155,16 +144,15 @@ production balancing and storage upgrades below remain planned.
 
 Completion criteria:
 
-- Worker upgrades respect the per-building limits above.
 - Fishing experience improves catch chance and access to valuable species.
 - The smoke station displays stored fish by species, including smoked varieties.
 - Storage and worker upgrades have clear effects; items and skills govern
   production improvements and options.
 
-For farming and fishing, starting worker counts, upgrade steps and costs, storage
-sizes, skill thresholds, catch probabilities, fish values, smoke-station staffing,
-and handling existing saves above the new worker limits remain open before
-implementation. Their production rates also need review against these limits.
+For farming and fishing, downstream storage sizes, skill thresholds, catch
+probabilities, fish values, and smoke-station staffing remain open before
+implementation. Their production rates also need review against the implemented
+worker limits documented in README.md.
 The wood rates still need play experience to assess delivered supply and pacing.
 
 ## Scalable villager pathfinding
