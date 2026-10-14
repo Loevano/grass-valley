@@ -52,7 +52,7 @@ class AcreUpgrades(unittest.TestCase):
         server.ensure_resources(self.town)
         self.assertEqual(self.town, before)
 
-    def test_pending_upgrade_refunds_once_and_initial_construction_remains(self):
+    def test_pending_upgrade_refunds_once_and_initial_construction_completes(self):
         for key, cost in [('level', 10), ('settler_level', 40)]:
             with self.subTest(key=key):
                 self.setUp()
@@ -65,7 +65,7 @@ class AcreUpgrades(unittest.TestCase):
                 before = self.town['wood']
                 server.ensure_resources(self.town)
                 self.assertNotIn('construction', self.acre)
-                self.assertIn('construction', self.town['buildings'][3])
+                self.assertNotIn('construction', self.town['buildings'][3])
                 self.assertEqual(self.town['wood'], before + cost)
                 self.assertEqual(self.town['buildings'][0]['stored_goods']['wood'], before + cost)
                 server.ensure_resources(self.town)

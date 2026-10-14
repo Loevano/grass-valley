@@ -4,7 +4,7 @@ from unittest.mock import patch
 
 import server
 
-from server import (ACRE_BUILD_SECONDS, BUILD_SECONDS, COSTS, capacity, command, construct,
+from server import (BUILD_SECONDS, COSTS, capacity, command, construct,
                     construction_route, new_town, tick, work_source)
 from spatial import SpatialIndex
 
@@ -71,7 +71,7 @@ class Construction(unittest.TestCase):
             construct(self.town, self.town, {0})
         self.fail('Builder did not finish reachable construction')
 
-    def test_every_placeable_kind_starts_as_a_site_and_costs_wood(self):
+    def test_buildings_start_as_sites_and_acres_are_ready_both_cost_wood(self):
         self.town['buildings'].append({'kind': 'farm', 'x': 7, 'y': 6})
         self.town.update(level=10, wood=1000, goods={'planks': 200, 'tools': 10, 'iron': 20, 'steel': 20})
         for index, kind in enumerate(kind for kind, cost in COSTS.items() if cost):
@@ -80,23 +80,43 @@ class Construction(unittest.TestCase):
                 site = self.build(kind, x=12 if kind == 'barn' else 8,
                                   y=12 if kind == 'barn' else 6,
                                   **({'farm_index': 1} if kind == 'acre' else {}))
-                seconds = ACRE_BUILD_SECONDS if kind == 'acre' else BUILD_SECONDS
-                self.assertEqual(site['construction'], {'progress': 0, 'total': seconds})
+                if kind == 'acre':
+                    self.assertNotIn('construction', site)
+                else:
+                    self.assertEqual(site['construction'], {'progress': 0, 'total': BUILD_SECONDS})
                 self.assertEqual(self.town['wood'], wood - COSTS[kind])
                 self.town['buildings'].pop()
 
-    def test_acre_finishes_after_five_seconds_of_builder_work(self):
+    def test_acre_is_accessible_immediately_without_builder_work(self):
         self.town['buildings'].append({'kind': 'farm', 'x': 7, 'y': 6})
         worker = self.town['villagers'][0]
-        worker.update(job='building', construction_position={'x': 8, 'y': 7})
+        worker.update(job='farming', building_index=1)
         acre = self.build('acre', farm_index=1)
-        self.assertEqual(acre['construction'], {'progress': 0, 'total': 5})
-        construct(self.town, self.town, {0}, elapsed=4)
-        self.assertEqual(acre['construction'], {'progress': 4, 'total': 5})
-        construct(self.town, self.town, {0}, elapsed=1)
         self.assertNotIn('construction', acre)
         self.assertEqual(acre['field']['stage'], 'unplowed')
+        self.assertIs(work_source(self.town, 'farming', 0), acre)
+        self.assertNotIn((acre['x'], acre['y']), server.construction_blocked(self.town))
+        construct(self.town, self.town, {1})
+        self.assertNotIn('construction_target', self.town['villagers'][1])
         self.assertNotIn('construction_target', worker)
+
+    def test_saved_unfinished_acre_is_ready_on_load_without_spending(self):
+        self.town['buildings'].append({'kind': 'farm', 'x': 7, 'y': 6})
+        self.town['buildings'].append({'kind': 'acre', 'x': 8, 'y': 6, 'farm_index': 1,
+                                      'construction': {'progress': 2, 'total': 5}})
+        site = self.build(x=10, y=6)
+        self.town['villagers'][0].update(job='farming', building_index=1)
+        self.town = json.loads(json.dumps(self.town))
+        wood = self.town['wood']
+        server.ensure_resources(self.town)
+        acre = self.town['buildings'][2]
+        self.assertNotIn('construction', acre)
+        self.assertEqual(acre['field']['stage'], 'unplowed')
+        self.assertIs(work_source(self.town, 'farming', 0), acre)
+        self.assertEqual(self.town['wood'], wood)
+        self.assertEqual(self.town['buildings'][3], site)
+        server.ensure_resources(self.town)
+        self.assertEqual(self.town['wood'], wood)
 
     def test_builder_walks_before_starting_and_finishes_in_stages(self):
         site = self.build(x=5, y=1)

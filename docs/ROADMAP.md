@@ -104,9 +104,9 @@ capacities are preserved; Option/Alt-click toggles only the shown resources.
 Producers haul when an allowance fills;
 existing excess stock is preserved. Workplace storage totals appear beside the
 Storage heading. Wood, mill, and bakery upgrades increase these allowances by 25% per
-level; farm crop storage scales with its building level. Individual acres have
-no upgrades and retain a fixed crop allowance. Fishing
-storage scaling remains planned.
+level; farm crop storage scales with its building level. Individual acres are
+available immediately on placement, have no upgrades, and retain a fixed crop
+allowance. Fishing storage scaling remains planned.
 
 Worker drop-offs now preserve the rest of the simulation tick for the next trip,
 removing the extra pause after unloading. Stock accounting remains on the host;

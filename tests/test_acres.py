@@ -22,7 +22,6 @@ class FarmAcres(unittest.TestCase):
     def build(self, **changes):
         data = {'action': 'build', 'kind': 'acre', 'farm_index': 1, 'x': 6, 'y': 3}
         command(self.town, {**data, **changes})
-        self.finish_construction()
 
     def test_build_save_and_produce_food_at_acre(self):
         wood = self.town['wood']
@@ -83,7 +82,7 @@ class FarmAcres(unittest.TestCase):
                          [(6, 3), (6, 4), (7, 3)])
         self.assertEqual((acre['crop'], acre['level'], acre['stored_goods']),
                          ('wheat', 2, {'wheat': 4}))
-        self.assertIn('construction', self.town['buildings'][3])
+        self.assertNotIn('construction', self.town['buildings'][3])
         self.assertEqual(self.town['villagers'][0]['building_index'], 2)
         self.assertIs(work_source(self.town, 'farming', 0), acre)
         self.assertEqual(self.town['coins'], coins - 1)

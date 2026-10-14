@@ -263,11 +263,12 @@ the Python host, refresh both browsers, and create a new world to use the shared
   take longer than straight steps because they cover more distance.
   Everyone can use roads in the shared valley. Click a road to inspect it; its
   owner can remove it for free. Roads are saved with the town.
-- New buildings and acres start as construction sites. Idle villagers automatically
+- New buildings start as construction sites. Idle villagers automatically
   help build; assign **Builder** in the villager panel to give a resident priority.
   Builders walk to reachable sites, then work through foundations, framing, and
-  finishing over 30 seconds. Acres take 5 seconds of builder work and stay flat
-  soil throughout construction. Housing, storage, and workplaces activate only on
+  finishing over 30 seconds. Acres are available immediately when placed and start
+  as unplowed soil; unfinished acres in older saves also become available immediately.
+  Housing, storage, and workplaces activate only on
   completion. Progress survives saving, moving a site, and restarting the host.
 - Trees are felled when their remaining wood reaches zero, freeing their tile for
   building. In new worlds, forest trees leave a stump and regrow after about five
@@ -320,10 +321,10 @@ the Python host, refresh both browsers, and create a new world to use the shared
   preserving crops, upgrades, stored goods, and assignments. The whole move costs
   one coin (free in sandbox or with no coins) and requires every destination tile
   to be clear and inside the building area. The move preview includes the acres.
-  Destroying a farm also destroys its linked acres, including construction sites,
+  Destroying a farm also destroys its linked acres,
   releases their assigned workers, and salvages their stored goods at the hall.
   In the farm's **Production** section, use **Crop for all acres** to change every
-  linked acre to one unlocked crop, including acres still under construction.
+  linked acre to one unlocked crop.
   The selector shows **Mixed crops** when the acres grow different types.
   Assign farmers at the farm. Clicking an acre shows its state and owning farm;
   **Destroy** is its only action.
