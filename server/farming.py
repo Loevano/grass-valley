@@ -103,10 +103,15 @@ def choose_field(town, farm, fields, index, reservations=None):
             ('fetching_water', 'collecting_water', 'returning_water')):
         return previous
     cycle, stage = work_pass(town, farm)
-    ready = [a for a in fields if field_state(a)['cycle'] == cycle and field_state(a)['stage'] == stage
-             and (stage != 'plowed' or can_sow(town, farm, cycle))
-             and not claimed(town, a, index, reservations)
-             and (not worker.get('pending_output') or harvest_room(town, farm, a) > 1e-9)]
+    if worker.get('pending_output'):
+        # Finish gathering this farm's ripe crops before unloading, even when
+        # newly planted or slower acres put the farm in another work pass.
+        ready = [a for a in fields if harvest_room(town, farm, a) > 1e-9
+                 and not claimed(town, a, index, reservations)]
+    else:
+        ready = [a for a in fields if field_state(a)['cycle'] == cycle and field_state(a)['stage'] == stage
+                 and (stage != 'plowed' or can_sow(town, farm, cycle))
+                 and not claimed(town, a, index, reservations)]
     if previous in ready and (animation.get('phase') in ('walking', 'working', 'fetching_water',
                                                         'collecting_water', 'returning_water', 'harvest_ready')
                               or (field_state(previous)['stage'] == 'thirsty' and animation.get('waterReady'))):

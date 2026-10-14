@@ -382,7 +382,8 @@ def _advance(town, landscape, villager, building, source, index, seconds, stop_a
                 return finished, 0
             cycle, stage = farming.work_pass(town, building)
             carrying_water = field['stage'] == 'thirsty' and state['waterReady']
-            if not carrying_water and (field['cycle'] != cycle or field['stage'] != stage):
+            continuing_harvest = field['stage'] == 'ripe' and villager.get('pending_output')
+            if not (carrying_water or continuing_harvest) and (field['cycle'] != cycle or field['stage'] != stage):
                 state.update(phase='waiting_pass', elapsed=0, farmAction=None)
                 return finished, 0
             if field['stage'] == 'thirsty' and not state['waterReady']:

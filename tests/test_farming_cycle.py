@@ -171,6 +171,41 @@ class FarmingCycle(unittest.TestCase):
         self.assertEqual(self.worker['work_animation']['phase'], 'returning')
         self.assertEqual(economy.local_room(self.farm, 'vegetables'), 0)
 
+    def test_harvest_batch_finishes_ripe_acres_across_farm_passes(self):
+        for stage in ('unplowed', 'plowed', 'sprouting', 'thirsty', 'growing', 'ripe'):
+            with self.subTest(stage=stage):
+                self.setUp()
+                fields = self.harvest_fields()
+                # End exactly at the first harvest, before choosing the next acre.
+                server.advance_farmer(self.town, self.town, self.worker, self.farm, fields[0], 0, 2)
+                self.assertEqual(self.worker['pending_output'], {'vegetables': 10})
+                fields[1]['field']['cycle'] = 2
+                blocker = {'kind': 'acre', 'x': 5, 'y': 5, 'farm_index': 1}
+                farming.field_state(blocker).update(stage=stage)
+                self.town['buildings'].append(blocker)
+
+                source = server.work_source(self.town, 'farming', 0)
+                self.assertIs(source, fields[1])
+                server.advance_farmer(self.town, self.town, self.worker, self.farm, source, 0, 3)
+                self.assertEqual(fields[1]['field']['stage'], 'unplowed')
+                self.assertEqual(self.worker['pending_output'], {'vegetables': 20})
+                self.assertFalse(any(s['phase'] in ('returning', 'depositing')
+                                     for s in self.worker['work_animation']['playback']
+                                     if s['time'] < 2 + 1 / 1.8 - 1e-9))
+
+    def test_harvest_batch_does_not_visit_another_farms_ripe_acres(self):
+        fields = self.harvest_fields(('vegetables',))
+        other_farm = {'kind': 'farm', 'x': 6, 'y': 3}
+        other_index = len(self.town['buildings'])
+        other_acre = {'kind': 'acre', 'x': 4, 'y': 5, 'farm_index': other_index}
+        farming.field_state(other_acre).update(stage='ripe')
+        self.town['buildings'].extend([other_farm, other_acre])
+
+        server.advance_farmer(self.town, self.town, self.worker, self.farm, fields[0], 0, 3)
+        self.assertEqual(self.worker['pending_output'], {'vegetables': 10})
+        self.assertIn(self.worker['work_animation']['phase'], ('returning', 'depositing'))
+        self.assertEqual(other_acre['field']['stage'], 'ripe')
+
     def test_harvest_batch_combines_crops_then_returns_when_no_acres_remain(self):
         fields = self.harvest_fields(('wheat', 'vegetables', 'fodder'))
         server.advance_farmer(self.town, self.town, self.worker, self.farm, fields[0], 0, 8)

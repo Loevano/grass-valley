@@ -112,6 +112,10 @@ Worker drop-offs now preserve the rest of the simulation tick for the next trip,
 removing the extra pause after unloading. Stock accounting remains on the host;
 fishing production balancing and storage upgrades below remain planned.
 
+Farmers carrying crops continue harvesting available ripe acres on their own farm
+before unloading, even across different field cycles or unfinished farm passes.
+Storage allowances, production caps, and other farmers' acre claims still apply.
+
 - Production building upgrades increase internal storage or worker capacity.
 - Items and worker skill levels improve conversion rates and unlock available
   options, rather than production building levels providing output bonuses.
