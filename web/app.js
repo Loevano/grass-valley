@@ -494,16 +494,16 @@ function storageCapacity(town){return town.buildings.filter(b=>!b.construction).
 const storageKeys=['wood','food','planks','wheat','fodder','flour','wool','tools','manure','herbs'];
 function buildingName(building){return building.kind==='storehouse'&&buildingLevel(building)>=5?'Warehouse':labels[building.kind];}
 const storageGoods={
-  hall:[...storageKeys,'vegetables','carrots','fish','trout','salmon','sturgeon','berries','eggs','meat','milk','fruit','smoked_fish','bread','prepared_meat'],
-  storehouse:[...storageKeys,'vegetables','carrots','fish','trout','salmon','sturgeon','berries','eggs','meat','milk','fruit','smoked_fish','bread','prepared_meat'],
+  hall:[...storageKeys,'vegetables','carrots','fish','trout','salmon','sturgeon','berries','eggs','meat','milk','fruit','smoked_fish','smoked_trout','smoked_salmon','smoked_sturgeon','bread','prepared_meat'],
+  storehouse:[...storageKeys,'vegetables','carrots','fish','trout','salmon','sturgeon','berries','eggs','meat','milk','fruit','smoked_fish','smoked_trout','smoked_salmon','smoked_sturgeon','bread','prepared_meat'],
   market:[],
   home:[],woodcutter:['wood'],fishing_hut:['fish','trout','salmon','sturgeon'],farm:['vegetables','wheat','carrots','fodder','manure'],acre:['vegetables','wheat','carrots','fodder','manure'],
   barn:['fodder','vegetables','manure','eggs','wool','meat','milk'],orchard:['fruit'],
   bakery:['flour','wood','bread'],butcher:['meat','prepared_meat'],sawpit:['wood','planks'],mill:['wheat','flour'],
-  smokehouse:['fish','trout','salmon','sturgeon','wood','smoked_fish'],workshop:['planks','wood','tools'],fish_pond:['fodder','fish']
+  smokehouse:['fish','trout','salmon','sturgeon','wood','smoked_fish','smoked_trout','smoked_salmon','smoked_sturgeon'],workshop:['planks','wood','tools'],fish_pond:['fodder','fish']
 };
 function buildingStorageGoods(building){return (world.progression?.storage_goods || storageGoods)[building.kind] || [];}
-function foodGoods(){return world.progression?.edible || {vegetables:1,carrots:1,fish:1,trout:1.5,salmon:2,sturgeon:3,berries:1,eggs:1,meat:1,milk:1,fruit:1,smoked_fish:1.5,bread:1.5,prepared_meat:1.5};}
+function foodGoods(){return world.progression?.edible || {vegetables:1,carrots:1,fish:1,trout:1.5,salmon:2,sturgeon:3,berries:1,eggs:1,meat:1,milk:1,fruit:1,smoked_fish:1.5,smoked_trout:2,smoked_salmon:2.5,smoked_sturgeon:3.5,bread:1.5,prepared_meat:1.5};}
 function buildingStorageKeys(building){
   const goods=new Set(buildingStorageGoods(building));
   return [...new Set([...(world.progression?.storage_keys || storageKeys),...Object.keys(foodGoods())])].filter(key=>goods.has(key));
@@ -766,7 +766,7 @@ function resourceCategories(keys){
   const categories=[
     ['Overview',['food','coins']],
     ['Baking',['wheat','flour','bread','bread_rolls','herb_bread','fruit_pies','cakes',...products('bakery')]],
-    ['Fishing',['fish','trout','salmon','sturgeon',...Object.keys(catalog.fish || {}),'smoked_fish']],
+    ['Fishing',['fish','trout','salmon','sturgeon',...Object.keys(catalog.fish || {}),'smoked_fish','smoked_trout','smoked_salmon','smoked_sturgeon',...Object.keys(catalog.smoked_fish || {})]],
     ['Timber',['wood','planks','tools','wooden_bowls','crates','furniture','carved_furniture','crafted_axe','crafted_saw',...products('workshop')]],
     ['Farming',['vegetables','carrots','fodder','manure','herbs']],
     ['Orcharding and gathering',['fruit','berries']],
@@ -1394,7 +1394,7 @@ function renderTownTrades(town,target){
   }
 }
 function marketSaleGoods(catalog){
-  return catalog.sellable_goods || [...new Set(['hides','leather','iron_ore','iron','saddles','steel','trade_crates','fish','trout','salmon','sturgeon','planks','wool','flour','smoked_fish','tools','herbs','fruit','milk','eggs','meat','bread','prepared_meat',...Object.values(catalog.profession_recipes || {}).flat().map(recipe=>recipe.output)])];
+  return catalog.sellable_goods || [...new Set(['hides','leather','iron_ore','iron','saddles','steel','trade_crates','fish','trout','salmon','sturgeon','planks','wool','flour','smoked_fish','smoked_trout','smoked_salmon','smoked_sturgeon','tools','herbs','fruit','milk','eggs','meat','bread','prepared_meat',...Object.values(catalog.profession_recipes || {}).flat().map(recipe=>recipe.output)])];
 }
 function renderMarketSales(town,target){
   const keys=marketSaleGoods(world.progression);
@@ -1468,7 +1468,7 @@ function productionDescription(item){
   if(item.kind==='mine')return 'Output: 2 iron ore / 9s batch\nRequires an iron vein within 10 tile steps\nOre regenerates slowly; steel pickaxes add 25% output';
   const spec=selectedProfessionRecipe(item);
   const recipe=spec?[spec.inputs,spec.output,spec.amount]:world.progression.recipes[item.kind];
-  if(recipe){const seconds=world.progression.production_seconds?.[recipe[1]] || 3;return `${costText(recipe[0])} → ${recipe[2]} ${goodName(recipe[1]).toLowerCase()} / ${seconds}s batch${item.kind==='smokehouse'?'\nAccepts fish, trout, salmon, and sturgeon':''}\n${(0.04*seconds/3).toFixed(2)} practice / batch (neutral talent)\nSkill: larger batches + more ingredients\nRequires qualified workers${spec?` · Recipe level ${spec.level}`:''}`;}
+  if(recipe){const seconds=world.progression.production_seconds?.[recipe[1]] || 3;return `${costText(recipe[0])} → ${recipe[2]} ${goodName(recipe[1]).toLowerCase()} / ${seconds}s batch${item.kind==='smokehouse'?'\nEach raw fish becomes its own smoked species\n+0.5 food and +1 coin per fish\nAccepts fish, trout, salmon, and sturgeon':''}\n${(0.04*seconds/3).toFixed(2)} practice / batch (neutral talent)\nSkill: larger batches + more ingredients\nRequires qualified workers${spec?` · Recipe level ${spec.level}`:''}`;}
   return {barn:'Adult output: eggs, wool, milk\nFeed: fodder / vegetables\nGrowth: 5 minutes of full feeding\nPigs provide meat at the butcher\n4 animals / level',orchard:'Output: fruit\nRequires workers',stable:'Capture wild horses and bring them here\nFeed: fodder / vegetables\nSettling and growth: 5 minutes of full feeding\nBreed two adults; saddle one to ride\n4 horses / level',market:'Sell goods for coins\nOffer goods to another town\nBoth owners need a completed market'}[item.kind] || 'Requires workers';
 }
 function animalAges(barn,animal){

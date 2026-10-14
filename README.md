@@ -418,7 +418,7 @@ the Python host, refresh both browsers, and create a new world to use the shared
 - Mills turn 2 wheat into 2 flour in 3 seconds. Bread, rolls, and herb bread
   take 6 seconds per batch; fruit pies take 9 seconds and cakes take 12.
   Prepared and herbed meat take 6 seconds, smoked meat and sausages 9,
-  and meat pies 12. Planks and smoked fish take 6 seconds; workshop recipes
+  and meat pies 12. Planks take 6 seconds and smoked fish take 3; workshop recipes
   take 6–15 seconds according to complexity. These are active production times,
   excluding transport and blocked work. Each worker has an independent saved
   batch timer. Ingredients are consumed and goods awarded only at completion;
@@ -650,7 +650,10 @@ the Python host, refresh both browsers, and create a new world to use the shared
 - Select an acre to choose its crop, a barn to buy/breed animals, or a workplace
   to unlock profession improvements. Assign settlers to new production buildings.
   Sawpits use wood; mills use wheat; smokehouses use any mix of fish, trout, salmon,
-  or sturgeon plus wood (2 raw fish and 0.5 wood per base batch); workshops use
+  or sturgeon plus wood (1 raw fish and 0.25 wood per three-second base batch).
+  Each fish becomes one smoked fish of the same species, adding 0.5 food and
+  1 coin of sale value: smoked fish/trout/salmon/sturgeon provide 1.5/2/2.5/3.5
+  food and sell for 2/3/4/6 coins. Workshops use
   planks and wood; breeding ponds use fodder. The Build panel shows stored goods.
 - Forest trees and connected fishing waters have limited supplies
   shared by workers and players. Additional huts cannot duplicate a pond's supply.

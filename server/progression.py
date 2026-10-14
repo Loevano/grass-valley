@@ -140,9 +140,11 @@ FISH = {
     'salmon': {'label': 'Salmon', 'depth': 3, 'boat': 2, 'food': 2, 'coins': 3},
     'sturgeon': {'label': 'Sturgeon', 'depth': 4, 'boat': 3, 'food': 3, 'coins': 5},
 }
+SMOKED_FISH = {f'smoked_{key}': {'food': spec['food'] + .5, 'coins': spec['coins'] + 1}
+               for key, spec in FISH.items()}
 EDIBLE = {'vegetables': 1, 'carrots': 1, 'fish': 1, 'berries': 1, 'eggs': 1,
           'meat': 1, 'milk': 1, 'fruit': 1, 'smoked_fish': 1.5, 'bread': 1.5, 'prepared_meat': 1.5,
-          **{key: spec['food'] for key, spec in FISH.items()}}
+          **{key: spec['food'] for key, spec in {**FISH, **SMOKED_FISH}.items()}}
 
 
 def fishing_catch(building, depth):
@@ -161,7 +163,7 @@ RECIPES = {
     'butcher': ({'meat': 2}, 'prepared_meat', 2),
     'sawpit': ({'wood': 2}, 'planks', 1),
     'mill': ({'wheat': 2}, 'flour', 2),
-    'smokehouse': ({'fish': 2, 'wood': .5}, 'smoked_fish', 2),
+    'smokehouse': ({'fish': 1, 'wood': .25}, 'smoked_fish', 1),
     'workshop': ({'planks': 2, 'wood': 1}, 'tools', 1),
     'fish_pond': ({'fodder': .5}, 'fish', 1),
 }
@@ -198,7 +200,7 @@ EDIBLE.update({r['output']: 1.5 + .25 * (r['level'] - 1)
 EDIBLE.update({'fruit_pies': 3.5, 'cakes': 4.5, 'meat_pies': 4})
 PRODUCTION_SECONDS = {
     'leather': 9, 'iron_ore': 9, 'iron': 12, 'saddles': 15, 'steel': 15, 'trade_crates': 18,
-    'flour': 3, 'planks': 6, 'smoked_fish': 6, 'fish': 3,
+    'flour': 3, 'planks': 6, **{key: 3 for key in SMOKED_FISH}, 'fish': 3,
     'tools': 9, 'wooden_bowls': 6, 'crates': 9,
     'furniture': 12, 'carved_furniture': 15,
     'crafted_axe': 9, 'crafted_saw': 12,
@@ -209,6 +211,7 @@ PRODUCTION_SECONDS = {
 SALE_PRICES = {r['output']: ceil(EDIBLE.get(r['output'], 1)) if r['level'] > 1 else 1
                for recipes in PROFESSION_RECIPES.values() for r in recipes}
 SALE_PRICES['tools'] = 3
+SALE_PRICES.update({key: spec['coins'] for key, spec in SMOKED_FISH.items()})
 # Woodcraft prices cover ingredients and reward higher tiers per active work second.
 SALE_PRICES.update(wooden_bowls=2, crates=6, furniture=10, carved_furniture=15,
                    crafted_axe=8, crafted_saw=12)
@@ -216,7 +219,7 @@ SALE_PRICES.update(wooden_bowls=2, crates=6, furniture=10, carved_furniture=15,
 SALE_PRICES.update(hides=2, leather=4, iron_ore=2, iron=10, saddles=35, steel=26, trade_crates=45)
 LATE_GOODS = ('hides', 'leather', 'iron_ore', 'iron', 'saddles', 'steel', 'trade_crates')
 SELLABLE_GOODS = tuple(dict.fromkeys((*LATE_GOODS, *FISH, 'planks', 'wool', 'flour',
-                                    'smoked_fish', 'tools', 'herbs', 'fruit', 'milk',
+                                    *SMOKED_FISH, 'tools', 'herbs', 'fruit', 'milk',
                                     'eggs', 'meat', 'bread', 'prepared_meat',
                                     *(r['output'] for recipes in PROFESSION_RECIPES.values() for r in recipes))))
 TRADABLE_GOODS = tuple(dict.fromkeys(('coins', 'wood', 'planks', 'wool', 'flour', 'tools',
@@ -419,7 +422,7 @@ for kind, recipes in PROFESSION_RECIPES.items():
     STORAGE_GOODS[kind] = tuple(dict.fromkeys(k for r in recipes for k in (*r['inputs'], r['output'])))
 
 STORAGE_GOODS['butcher'] = (*STORAGE_GOODS['butcher'], 'hides')
-STORAGE_GOODS['smokehouse'] = (*FISH, 'wood', 'smoked_fish')
+STORAGE_GOODS['smokehouse'] = (*FISH, 'wood', *SMOKED_FISH)
 FIXED_STORAGE = {
     'hall': {'wood': 100, 'food': 100},
     'stable': {'fodder': 30, 'food': 15, 'manure': 5},
@@ -656,7 +659,7 @@ def milestone(town, level):
     if level == 4:
         return town.get('produced', {}).get('planks', 0) >= 10
     if level == 5:
-        return any(town.get('produced', {}).get(k, 0) >= 1 for k in ('flour', 'smoked_fish', 'tools'))
+        return any(town.get('produced', {}).get(k, 0) >= 1 for k in ('flour', *SMOKED_FISH, 'tools'))
     produced = town.get('produced', {})
     if level in {6, 7, 8}:
         key, count = {6: ('leather', 5), 7: ('iron_ore', 10), 8: ('iron', 10)}[level]
@@ -866,12 +869,15 @@ def extra_worker(town, villager, building, capacity):
         inputs, output, amount = production_recipe(building)
         amount *= speed
         costs = production_costs(building, speed, {key: quantity(town, key) for key in FISH})
+        outputs = ({f'smoked_{key}': count for key, count in costs.items() if key in FISH}
+                   if kind == 'smokehouse' else {output: amount})
         if not afford(town, costs):
             return 'Waiting for ' + ', '.join(inputs)
-        if quantity(town, output) + amount > capacity:
+        if any(quantity(town, key) + count > capacity for key, count in outputs.items()):
             return 'Storage full'
         spend(town, costs)
-        deliver(town, output, amount, capacity)
+        for key, count in outputs.items():
+            deliver(town, key, count, capacity)
     elif kind == 'orchard':
         if deliver(town, 'fruit', speed, capacity) == 0:
             return 'Storage full'
@@ -913,7 +919,8 @@ def public_catalog():
             'job_requirements': JOB_REQUIREMENTS, 'talent_roots': TALENT_ROOTS,
             'profession_recipes': PROFESSION_RECIPES, 'storage_keys': STORAGE_KEYS,
             'production_seconds': PRODUCTION_SECONDS, 'sale_prices': SALE_PRICES, 'sellable_goods': SELLABLE_GOODS,
-            'boats': PLAYER_BOATS, 'fish': FISH, 'upgrades': PROFESSION_UPGRADES, 'recipes': RECIPES, 'edible': EDIBLE,
+            'boats': PLAYER_BOATS, 'fish': FISH, 'smoked_fish': SMOKED_FISH,
+            'upgrades': PROFESSION_UPGRADES, 'recipes': RECIPES, 'edible': EDIBLE,
             'storage_goods': STORAGE_GOODS, 'fixed_storage': FIXED_STORAGE,
             'wood_worker_capacities': WOOD_WORKER_CAPACITIES,
             'storage_upgrade_kinds': STORAGE_UPGRADE_KINDS,

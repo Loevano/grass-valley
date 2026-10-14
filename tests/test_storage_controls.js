@@ -28,7 +28,7 @@ const run=new Function('document','window','localStorage','setTimeout','clearTim
  const meters=()=>panelNodes().filter(c=>c.tag==='meter');
  const button=text=>panelNodes().find(c=>c.tag==='button'&&c.textContent===text);
  const toggle=key=>fields().find(c=>c.attributes['aria-label']==='Accept '+key);
- check(meters().length===24&&fields().length===24,'Storage has meters and resource switches');
+ check(meters().length===27&&fields().length===27,'Storage has meters and resource switches');
  check(meters().find(c=>c.attributes['aria-label']==='Fish stored').value===10&&meters().find(c=>c.attributes['aria-label']==='Smoked fish stored').value===4,'Food types have separate item counts');
  check(meters().find(c=>c.attributes['aria-label']==='Wood stored').max===150,'Each enabled resource has full level capacity');
  check(toggle('Wood').checked&&!toggle('Planks').checked,'Old positive allocations become enabled resources');
@@ -69,7 +69,7 @@ const run=new Function('document','window','localStorage','setTimeout','clearTim
  check(panelNodes().find(c=>c.className==='storage-summary').textContent==='350 capacity per enabled resource','Level 8 warehouses show the expanded capacity');
  check(!panelNodes().some(c=>c.tag==='button'&&c.title?.startsWith('Upgrade to level'))&&panelNodes().some(c=>c.className==='upgrade-card-status'&&c.textContent==='Maxed'),'Level 8 shows maxed storage without an action');
  viewed='friend';inspect('building',1);
- check(meters().length===24&&!fields().length,'Visitors see storage meters without switches');
+ check(meters().length===27&&!fields().length,'Visitors see storage meters without switches');
  check(!button('Allocate')&&!button('Save allocations'),'Visitors cannot change allocations');
  viewed='own';
  town.buildings.push({kind:'woodcutter',x:3,y:3,output_buffer:{wood:2.5},stored_goods:{wood:1}});
@@ -109,6 +109,16 @@ const run=new Function('document','window','localStorage','setTimeout','clearTim
  world.progression={fixed_storage:{mill:{wheat:35,flour:15}},workplace_storage_sizes:{mill:90},storage_upgrade_kinds:['mill']};
  check(roomAllocations(town.buildings[5]).wheat===35,'Client uses host fixed capacities');
  check(buildingStorageSize({...town.buildings[5],level:2})===112.5,'Client uses host buffer sizes and upgrade kinds');
+ delete world.progression;
+ const smoke={kind:'smokehouse',x:1,y:3,output_buffer:{smoked_trout:2,smoked_sturgeon:3}};
+ const smokePanel=document.createElement('div');smokePanel.append(document.createElement('h3'));renderStorage(town,smoke,6,smokePanel);
+ check(panelNodes(smokePanel).some(c=>c.attributes?.['aria-label']==='Smoked trout stored'&&c.value===2),'Smokehouse displays stored smoked trout');
+ check(panelNodes(smokePanel).some(c=>c.attributes?.['aria-label']==='Smoked sturgeon stored'&&c.value===3),'Smokehouse displays stored smoked sturgeon');
+ check(resourceCategories(['sturgeon','smoked_sturgeon','smoked_trout']).every(([title])=>title==='Fishing'),'Smoked species stay in Fishing');
+ check(marketSaleGoods({}).includes('smoked_sturgeon'),'Market includes smoked species');
+ world.progression={recipes:{smokehouse:[{fish:1,wood:.25},'smoked_fish',1]},production_seconds:{smoked_fish:3}};
+ const smokeDescription=productionDescription(smoke);
+ check(smokeDescription.includes('1 fish + 0.25 wood')&&smokeDescription.includes('3s batch')&&smokeDescription.includes('+0.5 food and +1 coin per fish'),'Smokehouse explains conversion and added value');
  delete world.progression;
  const catalogFoods={...foodGoods(),bread_rolls:1.75};
  world.progression={edible:catalogFoods,storage_keys:[...storageKeys,'bread_rolls'],

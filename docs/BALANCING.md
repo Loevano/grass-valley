@@ -325,13 +325,18 @@ in parallel, so do not add five growth minutes to every animal when estimating a
 | Activity | Base work | Output or practice | Ideal rate |
 | --- | --- | --- | --- |
 | Settler fishing, ordinary fish | Three-second productive attempt; 90% catch chance | 1 fish on success; 0.04 practice per supplied attempt, including misses | Expected 18 fish/minute; 0.8 practice/minute |
-| One smokehouse worker | Six-second completed batch | 2 raw fish + 0.5 wood → 2 smoked fish; 0.08 practice | Uses 20 raw fish + 5 wood/minute; makes 20 smoked fish/minute |
+| One smokehouse worker | Three-second completed batch | 1 raw fish + 0.25 wood → 1 smoked fish of the same species; 0.04 practice | Uses 20 raw fish + 5 wood/minute; makes 20 smoked fish/minute |
+
+Smoking preserves species, adds 0.5 food and 1 coin per fish, and keeps a
+one-to-one conversion even in mixed or skill-scaled batches. Smoked ordinary
+fish, trout, salmon, and sturgeon respectively provide 1.5, 2, 2.5, and 3.5 food
+and sell for 2, 3, 4, and 6 coins. The sale gain covers the 0.25 wood per fish.
 
 ### Total production time cost vs total reward
 
 | Full chain | Work breakdown | Total production time cost | Total reward |
 | --- | --- | --- | --- |
-| Ordinary fish + wood → 2 smoked fish | Catch 2 fish: expected 6.67s; gather 0.5 wood: 2s; smoke: 6s | Expected 14.67 worker-seconds | 2 smoked fish (3 food value); expected 0.196 practice (0.089 fishing + 0.027 woodcutting + 0.08 preserving) |
+| Ordinary fish + wood → 1 smoked fish | Catch 1 fish: expected 3.33s; gather 0.25 wood: 1s; smoke: 3s | Expected 7.33 worker-seconds | 1 smoked fish (1.5 food value, 2 coins); expected 0.098 practice (0.044 fishing + 0.013 woodcutting + 0.04 preserving) |
 
 Expected fishing work is `required fish ÷ (fish per successful attempt × catch
 probability) × seconds per attempt`. Misses use work time and still earn practice;

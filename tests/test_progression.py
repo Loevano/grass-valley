@@ -270,10 +270,10 @@ class Progression(unittest.TestCase):
     def test_edible_goods_are_counted_once_when_processed_eaten_and_sold(self):
         self.town.update(level=5,goods={},food=0,wood=0)
         b,index=self.workplace('smokehouse',input_buffer={'fish':2,'wood':.5})
-        tick(self.world)
-        tick(self.world)
-        self.assertEqual(self.town['food'],0)
         import logistics
+        for _ in range(2):
+            self.assertEqual(logistics.produce(self.town,b,self.town['villagers'][0]),'Working')
+        self.assertEqual(self.town['food'],0)
         logistics.drop_off(self.town,b,self.town['villagers'][0])
         economy.eat(self.town,.78)
         self.assertAlmostEqual(self.town['food'],3 - .78)

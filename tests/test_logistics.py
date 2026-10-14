@@ -392,13 +392,15 @@ class ResourceLogistics(unittest.TestCase):
                 self.assertEqual(logistics.transfer(self.town, smoke, source, 'supply', worker), {key: 40})
                 self.assertEqual(source['output_buffer'][key], 10)
                 self.assertEqual(economy.quantity(self.town, key), before - 40)
-                self.assertEqual(logistics.produce(self.town, smoke, worker, 6), 'Working')
-                self.assertEqual(smoke['input_buffer'], {'wood': 9.5, key: 38})
-                self.assertEqual(worker['pending_output'], {'smoked_fish': 2})
-                self.assertEqual(economy.quantity(self.town, 'smoked_fish'), 0)
+                output = f'smoked_{key}'
+                self.assertEqual(logistics.produce(self.town, smoke, worker, 3), 'Working')
+                self.assertEqual(smoke['input_buffer'], {'wood': 9.75, key: 39})
+                self.assertEqual(worker['pending_output'], {output: 1})
+                self.assertEqual(economy.quantity(self.town, output), 0)
                 logistics.drop_off(self.town, smoke, worker)
-                self.assertEqual(economy.quantity(self.town, 'smoked_fish'), 2)
+                self.assertEqual(economy.quantity(self.town, output), 1)
                 self.assertGreater(economy.local_room({'kind': 'smokehouse'}, key), 0)
+                self.assertGreater(economy.local_room({'kind': 'smokehouse'}, output), 0)
 
     def test_smokehouse_mixed_fish_reserve_wood_space_and_scale_with_talent(self):
         smoke = self.add('smokehouse', input_buffer={'fish': 1})
@@ -409,13 +411,13 @@ class ResourceLogistics(unittest.TestCase):
         self.assertEqual(logistics.transfer(self.town, smoke, source, 'supply', worker),
                          {'trout': 1, 'salmon': 1, 'sturgeon': 37, 'wood': 10})
         before = copy.deepcopy(smoke['input_buffer'])
-        self.assertIn('3s remaining', logistics.produce(self.town, smoke, worker, 3))
+        self.assertIn('2s remaining', logistics.produce(self.town, smoke, worker, 1))
         self.assertEqual(smoke['input_buffer'], before)
-        self.assertEqual(logistics.produce(self.town, smoke, worker, 3), 'Working')
-        self.assertEqual(smoke['input_buffer'], {'fish': 0, 'trout': 0, 'salmon': .5, 'sturgeon': 37, 'wood': 9.375})
-        self.assertEqual(worker['pending_output'], {'smoked_fish': 2.5})
+        self.assertEqual(logistics.produce(self.town, smoke, worker, 2), 'Working')
+        self.assertEqual(smoke['input_buffer'], {'fish': 0, 'trout': .75, 'salmon': 1, 'sturgeon': 37, 'wood': 9.6875})
+        self.assertEqual(worker['pending_output'], {'smoked_fish': 1, 'smoked_trout': .25})
         # A full output buffer must preserve the next batch's raw ingredients.
-        smoke['output_buffer'] = {'smoked_fish': 50}
+        smoke['output_buffer'] = {'smoked_trout': 45}
         before = copy.deepcopy(smoke['input_buffer'])
         self.assertEqual(logistics.produce(self.town, smoke, worker, 6), 'Workplace buffer full')
         self.assertEqual(smoke['input_buffer'], before)

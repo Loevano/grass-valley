@@ -255,7 +255,9 @@ new outputs participate in storage, hauling, production caps, food, and trading.
 
 Milling converts 2 wheat into 2 flour per three-second batch. Baking takes six
 seconds for bread, rolls, and herb bread, nine for fruit pies, and twelve for
-cakes. Planks and smoked fish take six seconds; workshop batches take six to
+cakes. Planks take six seconds. Smoking converts one raw fish and 0.25 wood
+into one smoked fish of the same species in three seconds, adding 0.5 food and
+one coin of sale value per fish. Workshop batches take six to
 fifteen. Butcher recipes take six to twelve seconds. Batch timers belong to each
 worker and persist in saves. Missing inputs, caps, and full buffers pause progress;
 ingredients, outputs, and practice are committed together when a batch completes.

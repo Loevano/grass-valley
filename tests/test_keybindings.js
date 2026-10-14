@@ -185,8 +185,9 @@ function session(saved=null){
   check(resource('Coins')==='5','Coins do not have a storage limit');
   check(resource('Fish')==='0 / 0'&&resource('Prepared meat')==='0 / 0'&&resource('Herbs')==='0 / 0','Unproduced resources remain visible');
   check(resource('Trout')==='0 / 0'&&resource('Salmon')==='0 / 0'&&resource('Sturgeon')==='0 / 0','Premium fish appear in Resources');
-  check(resources.length===25,'Resources include all storage categories, edible goods, and coins');
-  check(new Set(resources.map(row=>row.children[1].textContent)).size===25,'Each resource appears in exactly one section');
+  check(resource('Smoked trout')==='0 / 0'&&resource('Smoked salmon')==='0 / 0'&&resource('Smoked sturgeon')==='0 / 0','Smoked species appear in Resources');
+  check(resources.length===28,'Resources include all storage categories, edible goods, and coins');
+  check(new Set(resources.map(row=>row.children[1].textContent)).size===28,'Each resource appears in exactly one section');
   windows.key('4');check(windows.state.panel===null,'4 closes Resources');
   windows.key('3');
   windows.key('8');

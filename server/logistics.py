@@ -531,10 +531,10 @@ def worker(town, landscape, villager, building, route, elapsed):
         collect = economy.local_room(building, crop) <= 1e-9
     elif building['kind'] in economy.RECIPES:
         # Full ingredient storage must not prevent processing those supplies.
-        output = economy.production_recipe(building)[1]
+        outputs = economy.SMOKED_FISH if building['kind'] == 'smokehouse' else (economy.production_recipe(building)[1],)
         collect = building.get('buffer_full', False) or (
-            collection_inventory(building).get(output, 0) > 0
-            and economy.local_room(building, output) <= 1e-9)
+            any(collection_inventory(building).get(output, 0) > 0
+                and economy.local_room(building, output) <= 1e-9 for output in outputs))
     else:
         collect = building.get('buffer_full', False) or any(
             amount > 0 and economy.local_room(building, key) <= 1e-9

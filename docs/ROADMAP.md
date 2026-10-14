@@ -49,7 +49,8 @@ mechanism remains future work; this feature does not reduce snapshot traffic.
 
 ## Production line balancing
 
-**Status:** wood and grain chains implemented. Fishing remains.
+**Status:** wood and grain chains and species-preserving smoking implemented.
+Fishing catch progression, storage scaling, and staffing remain.
 Implemented capacities, storage upgrades, tools, decorations, and base rates are
 documented in [wood balance](BALANCING.md#wood) and
 [grain balance](BALANCING.md#grains). The grain chain uses two farms, one miller,
@@ -68,7 +69,7 @@ Sandbox worlds are available for supply chain experiments: all buildings are
 unlocked, construction and upgrades are free and instant, cottages add residents
 automatically, and villagers need no training and never depart. Production inputs,
 hauling, storage, food consumption, and normal output rates still apply. The
-fishing changes below remain planned.
+remaining fishing changes below remain planned.
 Hosts can also regenerate sandbox worlds from the Worlds menu to try the latest
 terrain layout; confirmation resets only the selected sandbox's towns and progress.
 Registered players retain their names and PINs and reconnect to fresh villages.
@@ -79,8 +80,10 @@ Registered players retain their names and PINs and reconnect to fresh villages.
   changing them into a different profession.
 - More experienced fishermen have a higher chance of catching fish.
 - Higher fishing levels unlock additional, more valuable fish species.
-- A separate smoke station processes and stores smoked fish. Its panel shows all
-  the fish species held there, retaining species identity through smoking.
+
+The smokehouse now retains species through one-to-one smoking, adding 0.5 food
+and 1 coin per fish. Storage and market panels show each raw and smoked species.
+Catch progression, storage scaling, and smokehouse staffing remain planned.
 
 ### Simple production upgrades
 
@@ -117,7 +120,6 @@ fishing production balancing and storage upgrades below remain planned.
 Completion criteria:
 
 - Fishing experience improves catch chance and access to valuable species.
-- The smoke station displays stored fish by species, including smoked varieties.
 - Storage and worker upgrades have clear effects; items and skills govern
   production improvements and options.
 
