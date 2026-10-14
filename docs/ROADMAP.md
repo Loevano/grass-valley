@@ -11,6 +11,7 @@ and cache rules are in [Backend](BACKEND.md#cached-zoomed-out-map).
 | 4     | Simplify acre interaction           | Planned                  | Show only current acre state and a Destroy action; manage everything else through the owning farm. |
 | 5     | Watering and plowing animation positions | Planned             | Apply the seeding animation's worker-position recalculation fix to watering and plowing. |
 | 6     | Remove village grain flow summary  | Planned                  | Remove the detailed village grain flow summary from building Production panels. |
+| 7     | Building range indicators in build mode | Planned             | Show building ranges on the map to help choose placement positions. |
 
 ## Cached zoomed-out town overview
 
@@ -234,3 +235,16 @@ Completion criteria:
 
 - Building Production panels no longer show the village grain flow summary.
 - Building-specific production information remains available.
+
+## Building range indicators in build mode
+
+**Status:** planned.
+
+Show range indicators for buildings with a defined gameplay range while in
+build mode, so players can see the area covered before placing a building.
+
+Completion criteria:
+
+- Building ranges are visible on the map while in build mode.
+- The building placement preview's range indicator follows its proposed position.
+- Indicators reflect the actual gameplay range of each building.
