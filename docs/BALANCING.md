@@ -141,6 +141,14 @@ inventory, without stacking duplicate bonuses. New sawpits start with one space.
 
 ## Grains
 
+The proposed [grain flow](grainflow.md) shifts planning toward **villagers fed**:
+one mill and one bakery, each with one worker and equipment throughput upgrades,
+should support an initial target of 200 working villagers. Lower food consumption
+per worker is proposed before choosing equipment tiers. Additional bakeries
+provide recipe variety. Meal costs, equipment tiers, supporting supply and
+storage, and feeding-capacity displays remain planned; the values below describe
+the current game.
+
 ### Current base rates
 
 | Activity                         | Base work                                             | Output or practice                          | Ideal rate                                              |
