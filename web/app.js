@@ -1795,7 +1795,8 @@ function renderSelection(town){
         fact(farm?`${buildingName(farm)} · ${farm.x}, ${farm.y}`:'No linked farm','Owning farm'));
       if(item.construction)$('selection-details').append(fact(`${Math.ceil(item.construction.total-item.construction.progress)}s work remaining`,'Under construction'));
       $('selection-level').hidden=true;$('selection-move').hidden=true;
-      $('selection-destroy').hidden=true;
+      $('selection-destroy').hidden=viewed!==identity?.town_id;
+      $('selection-destroy').textContent='Destroy · No refund';
       return;
     }
     const foldKey=`${world.world_id}/${viewed}/${selection.index}/${item.kind}/${item.x},${item.y}`;

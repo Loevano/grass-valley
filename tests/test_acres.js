@@ -40,7 +40,8 @@ const run=new Function('document','window','localStorage','setTimeout','clearTim
     check(town.wood===60&&tool==='acre','Build spends wood and allows more acres');
     $('cancel').onclick();inspect('building',2);
     check($('selection-title').textContent==='Acre','Crop field can be inspected');
-    check($('selection-level').hidden&&$('selection-move').hidden&&$('selection-destroy').hidden,'Acre inspection is read-only');
+    check($('selection-level').hidden&&$('selection-move').hidden&&!$('selection-destroy').hidden,'Destroy is the only acre action');
+    check($('selection-destroy').textContent==='Destroy · No refund','Acre destruction explains there is no refund');
     check(!panelNodes().some(b=>b.onchange||b.onclick),'Acre details have no management controls');
     check(panelNodes().some(b=>b.textContent==='Owning farm'),'Acre identifies its farm');
     inspect('building',1);
