@@ -26,16 +26,17 @@ reference, not a finished asset or a decision about the final art medium.
 The enlarged hall, mill, sawpit, and woodworker's workshop keep the established
 palette, angled roofs, simple shading, and warm lanterns. Their current refinement
 adds connected yards, recognizable work equipment, cut timber, grain bins, and
-flour sacks. The sawpit exposes its recessed cutting area and a large toothed saw
-with two handles; round logs and square-ended boards mark its input and output.
+flour sacks. The sawpit uses the approved concept C: a rear timber shed and an
+open front bench with a hand saw; round logs and square-ended boards mark its
+input and output.
 The workshop has a bench canopy and tool rack, and the hall is wider without
 scaling up its doors and windows. Their
 existing footprints and visible upgrade conventions remain unchanged.
 
-## Sawpit concepts awaiting review
+## Sawpit artwork
 
-The current sawpit is still difficult to recognize. Compare these
-[SVG sketches](sawpit-concepts.svg) before changing the game artwork again.
+The [SVG concept comparison](sawpit-concepts.svg) explored alternatives to the
+previous sawpit, which was difficult to recognize.
 Each includes an enlarged view and an approximately normal-size view, using the
 current palette and 3×2 lot. Worker poses illustrate the work rather than specify
 staffing or animation behavior.
@@ -48,11 +49,15 @@ staffing or animation behavior.
 | B — Raised sawing deck | A timber platform with workers above and below | A taller silhouette, with more structure |
 | C — Saw bench + rear shed | A familiar hand-saw profile on an open workbench | Fits the building family, but is less literal as a pit |
 
-Concept C has been selected for refinement. The [revised SVG](sawpit-c-refined.svg)
-adds a pitched rear shed with half walls, a tool rack and lantern, an open bench
-on braced trestles, a smaller hand saw, and separate log and board storage. The
-sheet includes a view at approximately normal game size. This refined sketch
-is awaiting review before implementation.
+The approved [refined concept C](sawpit-c-refined.svg) is implemented in the canvas
+renderer: a pitched rear shed with half walls, a tool rack and lantern, an open
+bench on braced trestles, a proportionate hand saw, and separate log and board
+storage. The SVG remains the design reference, including a view at approximately
+normal game size. The host still owns worker positions and production; the
+illustrative worker in the sketch is not baked into the cached building sprite.
+Storage tiers add visible board layers, capacity has its own plaque, and the saw
+upgrade changes the blade. Older crowded one-tile sites use a compact version
+until moved to a clear site with the full 3×2 footprint.
 
 ![Refined concept C: a rear timber shed and an open sawing bench.](sawpit-c-refined.png)
 
