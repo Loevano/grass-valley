@@ -94,6 +94,8 @@ stock of an unrelated crop does not stop other farmers or field passes. Crops
 that share food storage still respect that shared allowance.
 Field visuals follow confirmed worker playback, changing after each action finishes
 even when the host has already assigned the farmer another acre.
+Seed and water particles land on crop positions in the acre being worked, including
+buffered actions on a previous acre, at either facing and detailed zoom level.
 Missed updates and resumed tasks reconnect playback at walking speed; trimming
 old buffered animations also preserves that speed and delays field changes.
 Oldest cycles finish before any acre repeats, preventing untouched tiles from

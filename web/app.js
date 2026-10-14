@@ -2641,6 +2641,13 @@ function drawVillager(b){
     ctx.translate(swing*4,swing*3);
     ctx.fillStyle='#ac895d';ctx.fillRect(5,-7,10,8);ctx.fillStyle='#b35b69';ctx.beginPath();ctx.arc(10,-8,3,0,Math.PI*2);ctx.fill();
   }else if(farming){
+    const field=s.farmField || s.workSpot || s.source || b;
+    const cropPoint=order=>{
+      const [x,y]=point(field.x-.3+Math.floor(order/4)*.2,field.y-.3+order%4*.2);
+      // Undo the worker's offset, facing and bob to land on the crop's ground anchor.
+      return [(x-px-(b.index%3-1)*3)/(tileW/46)*facing,
+        (y+tileH/2-py-tileH*.65-Math.floor(b.index/3))/(tileW/46)+bob];
+    };
     if(farmStage===0){
       // Pull a hoe through the soil, with small clods at the blade.
       const bladeX=17-farmSwing*7;
@@ -2653,7 +2660,8 @@ function drawVillager(b){
       ctx.fillStyle='#efd59a';
       for(let i=0;i<5;i++){
         const flight=((s.elapsed || 0)*2+i*.2)%1;
-        ctx.fillRect(farmHandX+flight*12,-8+flight*flight*12+i*.4,2,2);
+        const [x,y]=cropPoint(i*3);
+        ctx.fillRect(farmHandX+(x-farmHandX)*flight-1,farmHandY+(y-farmHandY)*flight*flight-1,2,2);
       }
     }else if(farmStage===2){
       // Tilt the can and pour a moving stream of droplets.
@@ -2661,10 +2669,14 @@ function drawVillager(b){
       ctx.strokeStyle='#607f83';ctx.lineWidth=2;ctx.beginPath();ctx.arc(-2,-3,4,Math.PI,Math.PI*2);ctx.stroke();
       polygon([[-6,-3],[3,-3],[3,4],[-6,4]],'#7faeb2','#4f757b');
       polygon([[3,0],[9,-4],[10,-2],[3,3]],'#7faeb2','#4f757b');ctx.restore();
+      const tilt=.15+farmSwing*.35;
+      const spoutX=farmHandX+10*Math.cos(tilt)+2*Math.sin(tilt);
+      const spoutY=farmHandY+10*Math.sin(tilt)-2*Math.cos(tilt);
       ctx.fillStyle='#9fd8e5';
       for(let i=0;i<6;i++){
         const fall=((s.elapsed || 0)*3+i/6)%1;
-        ctx.fillRect(16+fall*5+i%2,-9+fall*14,1.5,3);
+        const [x,y]=cropPoint(i*3);
+        ctx.fillRect(spoutX+(x-spoutX)*fall-.75,spoutY+(y-spoutY)*fall*fall-1.5,1.5,3);
       }
     }else{
       // Sweep a curved sickle through a small stand of ripe grain.

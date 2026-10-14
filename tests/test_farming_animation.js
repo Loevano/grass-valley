@@ -3,21 +3,63 @@ const assert=require('assert');
 const source=require('fs').readFileSync('web/app.js','utf8');
 const animation=require('../web/animations.js');
 const marks=[];
+let transform=[1,0,0,1,0,0];
+const transforms=[];
 const ctx=new Proxy({}, {get(target,key){
   if(key in target)return target[key];
-  return (...args)=>marks.push({method:key,args,color:key==='fillRect'?target.fillStyle:target.strokeStyle});
+  return (...args)=>{
+    const [a,b,c,d,e,f]=transform;
+    if(key==='save')transforms.push(transform.slice());
+    if(key==='restore')transform=transforms.pop();
+    if(key==='translate')transform=[a,b,c,d,e+a*args[0]+c*args[1],f+b*args[0]+d*args[1]];
+    if(key==='scale')transform=[a*args[0],b*args[0],c*args[1],d*args[1],e,f];
+    if(key==='rotate'){
+      const cos=Math.cos(args[0]),sin=Math.sin(args[0]);
+      transform=[a*cos+c*sin,b*cos+d*sin,c*cos-a*sin,d*cos-b*sin,e,f];
+    }
+    const center=key==='fillRect'?[e+a*(args[0]+args[2]/2)+c*(args[1]+args[3]/2),
+      f+b*(args[0]+args[2]/2)+d*(args[1]+args[3]/2)]:undefined;
+    marks.push({method:key,args,color:key==='fillRect'?target.fillStyle:target.strokeStyle,center});
+  };
 }});
 const draw=new Function('ctx','polygon','point','tileW','tileH','npcColors',
   source.slice(source.indexOf('function villagerAccessories('),source.indexOf('function draw(seconds=0)'))+
   '\nreturn drawVillager;'
 )(ctx,(points,color)=>marks.push({method:'polygon',points,color}),
   (x,y)=>[(x-y)*23,(x+y)*11.5],46,23,{});
-function render(state,job='farming',active=true){
+function render(state,job='farming',active=true,index=0,drawWorker=draw){
   marks.length=0;ctx.strokeStyle=undefined;ctx.fillStyle=undefined;
-  draw({kind:'villager',index:0,x:state.x,y:state.y,state,active,villager:{job}});
+  drawWorker({kind:'villager',index,x:state.x,y:state.y,state,active,villager:{job}});
   return marks.slice();
 }
 const stages=[['plowing','#aab9b4'],['sowing','#efd59a'],['watering','#9fd8e5'],['harvesting','#e5c77f']];
+// Follow particles to the ground through the same canvas transforms as the worker.
+for(const tileWidth of [46,92]){
+  const drawWorker=new Function('ctx','polygon','point','tileW','tileH','npcColors',
+    source.slice(source.indexOf('function villagerAccessories('),source.indexOf('function draw(seconds=0)'))+
+    '\nreturn drawVillager;'
+  )(ctx,()=>{},(x,y)=>[(x-y)*tileWidth/2,(x+y)*tileWidth/4],tileWidth,tileWidth/2,{});
+  for(const [farmAction,color,rate,count] of [['sowing','#efd59a',2,5],['watering','#9fd8e5',3,6]]){
+    for(const facing of [-1,1])for(const index of [0,5,11])for(const confirmed of [false,true]){
+      const field={x:6,y:3};
+      const state={...field,path:[],phase:'working',clock:0,facing,farmAction,
+        source:confirmed?{x:6+facing,y:3}:field,farmField:confirmed?field:undefined};
+      for(let particle=0;particle<count;particle++){
+        state.elapsed=(1-1e-7-particle/count)/rate;
+        const mark=render(state,'farming',true,index,drawWorker)
+          .filter(mark=>mark.method==='fillRect'&&mark.color===color)[particle];
+        const [px,py]=mark.center;
+        const x=px/tileWidth+(py-tileWidth/4)/(tileWidth/2);
+        const y=(py-tileWidth/4)/(tileWidth/2)-px/tileWidth;
+        assert(Math.abs(x-field.x)+Math.abs(y-field.y)<.8,
+          `${farmAction} lands inside the worked acre at either facing and zoom`);
+        const plants=Array.from({length:16},(_,i)=>[field.x-.3+Math.floor(i/4)*.2,field.y-.3+i%4*.2]);
+        assert(plants.some(([cx,cy])=>Math.hypot(x-cx,y-cy)<1e-5),
+          `${farmAction} lands on a crop anchor, including buffered work on the previous acre`);
+      }
+    }
+  }
+}
 const town={map_size:12,buildings:[{kind:'farm',x:6,y:2},{kind:'acre',x:6,y:3,farm_index:0}],
   map_resources:[{kind:'water',x:9,y:2}]};
 for(const target of [town.buildings[1],town.buildings[0]]){
