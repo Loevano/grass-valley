@@ -141,6 +141,11 @@ sequenceDiagram
 This is the ordinary `act()` path. Walking has a separate command path with local
 prediction and host reconciliation; adventures have their own browser modules.
 
+Worker unloading records its completion and continues walking or working for the
+rest of the simulation tick. The caller credits the completed delivery once;
+the confirmed playback timeline retains the actual phase transition and waypoints
+instead of inserting a stationary wait until the next tick.
+
 | Request/work | Current trigger or cadence | Proposed response priority | Important constraint |
 | --- | --- | --- | --- |
 | Founder movement command | Pending steps are submitted from `playerSprite()`; at most one walking request in flight. | 1 | Local prediction gives immediate response; the host validates the movement. |

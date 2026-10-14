@@ -118,9 +118,12 @@ class SettlerProfessions(unittest.TestCase):
         self.town['villagers'][1].update(farming=0, talents={})
         server.command(self.town, {'action': 'assign_settler', 'index': 1,
                                   'building_index': index})
+        farm = self.town['buildings'][index]
+        farm['field'] = {'stage': 'ripe', 'crop': 'vegetables', 'elapsed': 0, 'progress': 0, 'cycle': 0}
+        self.worker['construction_position'] = {'x': 5, 'y': 6}
         server.tick({'towns': {'a': self.town}})
-        self.assertEqual(self.town['produced']['vegetables'], 2.5)
-        self.assertEqual(self.worker['farming'], 20.05)
+        self.assertEqual(self.town['produced']['vegetables'] + farm['field']['yield_remaining'], 25)
+        self.assertEqual(self.worker['farming'], 20.033)
         self.assertEqual(self.town['villagers'][1]['farming'], 0)
 
     def test_new_foods_can_be_sold_without_double_counting_the_pantry(self):

@@ -72,6 +72,10 @@ def buffered(building):
     return sum(economy.inventory(building).values()) + sum(building.get('pending_output', {}).values())
 
 
+def buffer_size(building):
+    return BUFFER_SIZE * economy.storage_multiplier(building)
+
+
 def production_stock(building, key):
     return max(0, economy.inventory(building).get(key, 0))
 
@@ -171,8 +175,7 @@ def requirements(building, villager):
     if kind in economy.RECIPES:
         if economy.recipe_requirement(villager, building):
             return {}
-        speed = economy.efficiency(villager, villager['job'])
-        speed *= 1.25 if any(k in building.get('profession_upgrades', []) for k in ('saw', 'steel_pickaxe')) else 1
+        speed = economy.processing_efficiency(villager, building)
         return economy.production_costs(building, speed, building.get('input_buffer', {}))
     if kind in {'barn', 'stable'}:
         feed = sum(economy.ANIMALS[a]['feed'] * n for a, n in building.get('animals', {}).items())
@@ -196,8 +199,8 @@ def supply_request(town, building, villager):
         fish = sum(needs.pop(key, 0) for key in economy.FISH)
         needs = {'fish': fish, **needs}
     # Reserve each ingredient's share so separate storage workers can supply a recipe.
-    batches = BUFFER_SIZE / sum(needs.values()) if needs else 0
-    room = max(0, BUFFER_SIZE - sum(inputs.values()))
+    batches = buffer_size(building) / sum(needs.values()) if needs else 0
+    room = max(0, buffer_size(building) - sum(inputs.values()))
     request = {}
     for key, amount in needs.items():
         keys = economy.FISH if building['kind'] == 'smokehouse' and key == 'fish' else (key,)
@@ -237,7 +240,7 @@ def produce(town, building, villager, elapsed=3):
              '_local_production': True}
     worker = dict(villager)
     # Raw fish can exceed 50 food value; output space is checked separately below.
-    capacity = BUFFER_SIZE + local['food'] if building['kind'] == 'smokehouse' else BUFFER_SIZE
+    capacity = buffer_size(building) + local['food'] if building['kind'] == 'smokehouse' else buffer_size(building)
     status = economy.extra_worker(local, worker, building, capacity)
     produced = local.get('produced', {})
     if not output_fits(building, produced):
@@ -515,9 +518,16 @@ def worker(town, landscape, villager, building, route, elapsed):
     if villager.get('logistics_trip'):
         # Use room freed by delivery before another producer refills the buffer.
         return advance_trip(town, landscape, villager, elapsed, resume_work=True)
-    collect = building.get('buffer_full', False) or any(
-        amount > 0 and economy.local_room(building, key) <= 1e-9
-        for key, amount in collection_inventory(building).items())
+    if villager['job'] == 'farming':
+        # Farms store several crops independently. Full stock from another
+        # crop (or a stale buffer_full flag) must not stop this farmer's pass.
+        field = villager.get('work_target') or building
+        crop = field.get('field', {}).get('crop', field.get('crop', 'vegetables'))
+        collect = economy.local_room(building, crop) <= 1e-9
+    else:
+        collect = building.get('buffer_full', False) or any(
+            amount > 0 and economy.local_room(building, key) <= 1e-9
+            for key, amount in collection_inventory(building).items())
     request = supply_request(town, building, villager) if not collect else {}
     if not collect and not request:
         return False

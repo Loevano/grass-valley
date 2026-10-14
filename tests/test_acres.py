@@ -29,15 +29,17 @@ class FarmAcres(unittest.TestCase):
         self.build()
         self.assertEqual(self.town['wood'], wood - 5)
         acre = self.town['buildings'][-1]
-        self.assertEqual(acre, {'kind': 'acre', 'farm_index': 1, 'x': 6, 'y': 3})
+        self.assertEqual(acre, {'kind': 'acre', 'farm_index': 1, 'x': 6, 'y': 3,
+                                'field': {'stage': 'unplowed', 'elapsed': 0, 'progress': 0, 'cycle': 0}})
         self.town = json.loads(json.dumps(self.town))
+        acre = self.town['buildings'][-1]
         command(self.town, {'action': 'job', 'index': 0, 'job': 'farming'})
         food = self.town['food']
         tick({'towns': {'a': self.town}})
         self.assertAlmostEqual(self.town['food'], food - .78)
-        self.assertEqual(self.town['buildings'][1]['pending_output']['vegetables'], 1)
+        self.assertFalse(self.town['buildings'][1].get('pending_output'))
         self.assertEqual(self.town['villagers'][0]['work_target'], acre)
-        self.assertEqual(self.town['villagers'][0]['farming'], 1.04)
+        self.assertNotIn('vegetables', self.town.get('produced', {}))
 
     def test_invalid_acres_do_not_spend_wood(self):
         for change in [{'farm_index': None}, {'farm_index': True}, {'farm_index': 0},

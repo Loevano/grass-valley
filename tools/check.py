@@ -14,6 +14,8 @@ import tempfile
 import time
 
 ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(ROOT))
+from tools.test_selection import affected_tests, changed_files, explicit_tests, test_files
 
 
 def compare(baseline, candidate, absolute=2, relative=.20):
@@ -56,15 +58,19 @@ def run(command, log, cwd=ROOT):
     return completed.returncode
 
 
-def correctness(output):
+def correctness(output, selected):
     results = []
-    commands = [('python', [sys.executable, '-m', 'unittest', 'discover', '-s', 'tests', '-v'])]
-    commands.extend((test.stem, ['node', str(test.relative_to(ROOT))])
-                    for test in sorted((ROOT / 'tests').glob('test_*.js')))
-    for name, command in commands:
+    python = [Path(test).stem if test.endswith('.py') else test for test in selected if not test.endswith('.js')]
+    commands = [('python', [sys.executable, 'tools/test_python.py', '--output', str(output / 'python-timings.json'), *python], python)] if python else []
+    commands.extend((Path(test).stem, ['node', test], [test]) for test in selected if test.endswith('.js'))
+    for name, command, tests in commands:
         log = output / f'{name}.log'
+        if name == 'python':
+            (output / 'python-timings.json').unlink(missing_ok=True)
+        started = time.perf_counter()
         code = run(command, log)
-        results.append({'name': name, 'status': 'pass' if code == 0 else 'fail', 'log': str(log)})
+        results.append({'name': name, 'status': 'pass' if code == 0 else 'fail',
+                        'log': str(log), 'tests': tests, 'seconds': time.perf_counter() - started})
         if code:
             print(f'FAIL {name}: {log}', flush=True)
     print(f'Correctness: {sum(r["status"] == "pass" for r in results)}/{len(results)} test commands passed.', flush=True)
@@ -155,18 +161,40 @@ def main():
     parser.add_argument('--headed', action='store_true', help='Measure in a visible browser')
     parser.add_argument('--trace', action='store_true', help='Also save diagnostic Chrome traces')
     parser.add_argument('--performance-only', action='store_true', help='Skip correctness, explicitly reported')
+    selection = parser.add_mutually_exclusive_group()
+    selection.add_argument('--all', action='store_true', help='Explicitly run every correctness test')
+    selection.add_argument('--tests', nargs='+', help='Test files/globs or Python module.Class.method names')
+    selection.add_argument('--since', help='Select tests affected by changes since this Git revision')
+    parser.add_argument('--list', action='store_true', help='Explain selected tests without executing them')
     parser.add_argument('--output', type=Path)
     args = parser.parse_args()
     if args.runs < 3 or args.cycles < 1:
         parser.error('Use at least three paired runs and one server cycle.')
+    try:
+        changed = [] if args.performance_only or args.all or args.tests else changed_files(ROOT, args.since)
+        selected = {} if args.performance_only else ({test: ['Explicit full suite'] for test in test_files(ROOT)}
+                    if args.all else explicit_tests(ROOT, args.tests) if args.tests else affected_tests(ROOT, changed))
+    except (ValueError, subprocess.CalledProcessError) as error:
+        parser.error(str(error))
+    mode = 'performance_only' if args.performance_only else 'all' if args.all else 'explicit' if args.tests else 'affected'
+    print(f'Selection: {len(selected)} test files/cases ({mode}).', flush=True)
+    if args.list:
+        for test, reasons in selected.items():
+            print(f'{test}: {", ".join(reasons)}')
+        if not selected:
+            print('No applicable tests. Use --tests to select checks or --all for the full suite.')
+        return 0
     output = (args.output or ROOT / 'performance-results' / time.strftime('%Y%m%d-%H%M%S')).resolve()
     output.mkdir(parents=True, exist_ok=True)
     report = {'schema': 1, 'candidate_commit': subprocess.check_output(['git', 'rev-parse', 'HEAD'], cwd=ROOT, text=True).strip(),
               'candidate_dirty': bool(subprocess.check_output(['git', 'status', '--porcelain'], cwd=ROOT)),
               'host': {'system': platform.system(), 'machine': platform.machine()},
+              'selection': {'mode': mode, 'changed_files': changed, 'tests': selected},
               'correctness': [], 'performance': {'status': 'not_run'}}
     if not args.performance_only:
-        report['correctness'] = correctness(output)
+        report['correctness'] = correctness(output, selected)
+        if not selected:
+            print('No applicable correctness tests; nothing ran. Use --tests or --all to select checks.', flush=True)
     if args.performance or args.performance_only:
         try:
             report['performance'] = performance(args, output)
@@ -175,15 +203,25 @@ def main():
     failed = any(r['status'] == 'fail' for r in report['correctness']) or report['performance']['status'] == 'regression'
     uncertain = report['performance']['status'] == 'inconclusive'
     report['status'] = 'fail' if failed else 'inconclusive' if uncertain else 'pass'
+    if not report['correctness'] and report['performance']['status'] == 'not_run':
+        report['status'] = 'not_run'
+    timings_file = output / 'python-timings.json'
+    report['slowest_tests'] = sorted((json.loads(timings_file.read_text()).get('timings', [])
+                                    if any(r['name'] == 'python' for r in report['correctness']) and timings_file.exists() else [])
+                                    + [{'test': result['name'], 'seconds': result['seconds'], 'status': result['status']}
+                                       for result in report['correctness'] if result['name'] != 'python'],
+                                    key=lambda test: test['seconds'], reverse=True)[:10]
     (output / 'report.json').write_text(json.dumps(report, indent=2))
     lines = [f'Overall: {report["status"]}', f'Performance: {report["performance"]["status"]}',
-             f'Correctness: {"skipped" if args.performance_only else str(sum(r["status"] == "fail" for r in report["correctness"])) + " failing commands"}',
+             f'Correctness: {"skipped" if args.performance_only else "not run (no applicable tests)" if not report["correctness"] else str(sum(r["status"] == "fail" for r in report["correctness"])) + " failing commands"}',
              '', '| Metric | Baseline | Candidate | Change | Result |', '|---|---:|---:|---:|---|']
     for metric, value in report['performance'].get('comparisons', {}).items():
         percent = f'{value["percent"]:+.1f}%' if value['percent'] is not None else 'n/a'
         lines.append(f'| {metric} | {value["baseline"]:.2f} | {value["candidate"]:.2f} | {percent} | {value["status"]} |')
     lines.extend(['', 'Absolute frame budgets:'] + [f'- {b["metric"]}: {b["value_ms"]:.2f} ms / {b["limit_ms"]} ms ({"pass" if b["ok"] else "fail"})' for b in report['performance'].get('budgets', [])])
     lines.extend(report['performance'].get('reasons', []))
+    lines.extend(['', f'Selected tests: {len(selected)} ({mode})', '', 'Slowest applicable tests:']
+                 + [f'- {test["test"]}: {test["seconds"]:.3f}s ({test["status"]})' for test in report['slowest_tests']])
     (output / 'report.md').write_text('\n'.join(lines) + '\n')
     print(f'Overall: {report["status"]}; performance: {report["performance"]["status"]}. Report: {output / "report.md"}', flush=True)
     return 1 if failed else 2 if uncertain else 0

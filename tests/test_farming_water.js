@@ -54,4 +54,19 @@ animation.advance(state,4,true);
 assert.deepEqual(state.waterSource,town.map_resources[0],'Farmer finds farther water when the nearest bank is blocked');
 assert.equal(state.phase,'fetching_water');
 assert(!animation.plan(town,{job:'idle'},0,state).farming,'Changing jobs cancels the water cycle');
+
+const savedField={...field,field:{stage:'sprouting',elapsed:6,progress:0,cycle:0,crop:'wheat'}};
+const savedTown={...town,buildings:[farm,savedField]};
+const snapshot=JSON.stringify(savedTown);
+state=animation.plan(savedTown,{job:'farming',building_index:1,work_target:savedField},0);
+arrive(state);
+animation.advance(state,60,true);
+assert.equal(state.elapsed,0,'Client does not predict host-owned field work or growth');
+assert.equal(JSON.stringify(savedTown),snapshot,'Visual animation cannot mutate saved field progress');
+animation.playback(state,{task:['farming','farm',2,2,'acre',2,3,'field_cycle',0],version:1,
+  x:2,y:3,phase:'working',elapsed:.5,farmAction:'watering',waterReady:true,
+  playback:[{time:0,x:2,y:3,phase:'working',elapsed:0,farmAction:'watering',waterReady:true},
+    {time:3,x:2,y:3,phase:'growing',elapsed:0,farmAction:null,waterReady:true}]},0);
+assert.equal(state.farmAction,'watering','Watering tools follow the confirmed action, independent of elapsed time');
+assert(state.waterReady,'Confirmed playback retains the tender’s filled can');
 console.log('Farming water checks passed');

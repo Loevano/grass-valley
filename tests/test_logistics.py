@@ -1,3 +1,4 @@
+from fixtures import flat_town
 import copy
 import json
 import unittest
@@ -9,7 +10,7 @@ import server
 
 class ResourceLogistics(unittest.TestCase):
     def setUp(self):
-        self.town = server.new_town('Logistics')
+        self.town = flat_town('Logistics', size=120)
         self.town.update(terrain=['g' * 120] * 120, npcs=[], map_resources=[], level=5,
                          forage_version=1, forage_halls=[[5, 5]])
         for v in self.town['villagers']:
@@ -36,7 +37,7 @@ class ResourceLogistics(unittest.TestCase):
         self.town['map_resources'] = [{'kind': 'tree', 'x': 3, 'y': 1}]
         v = self.assign(0, b)
         self.ticks()
-        self.assertEqual(b['pending_output']['wood'], .5)
+        self.assertEqual(b['pending_output']['wood'], .75)
         self.assertEqual(self.town['wood'], 65)
         b.setdefault('output_buffer', {})['wood'] = 50
         self.town['buildings'][0]['stored_goods']['wood'] = 100
@@ -53,7 +54,9 @@ class ResourceLogistics(unittest.TestCase):
         self.town['map_resources'] = [{'kind': 'tree', 'x': 3, 'y': 1}]
         self.assign(0, camp)
         self.ticks()
-        logistics.record_output(self.town, camp, 'wood', 19.5)
+        # 19.25 available plus the new 0.75 gathered per tick pays 20 only
+        # after the pending delivery is credited.
+        logistics.record_output(self.town, camp, 'wood', 19.25)
         with self.assertRaisesRegex(ValueError, 'Missing building materials'):
             server.command(self.town, {'action': 'build', 'kind': 'home', 'x': 4, 'y': 4})
         logistics.drop_off(self.town, camp, self.town['villagers'][0])
@@ -142,7 +145,17 @@ class ResourceLogistics(unittest.TestCase):
             building = {'kind': kind, 'storage_allocations': {'herbs': 999}}
             limits = economy.storage_allocations(building)
             with self.subTest(kind=kind):
-                self.assertEqual(sum(limits.values()), economy.storage_size(building))
+                if kind == 'workshop':
+                    # Additional crafted tools have individual allowances,
+                    # sharing the workshop's 50-space total inventory limit.
+                    self.assertEqual(sum(limits.values()), 60)
+                    building['stored_goods'] = {'planks': 15, 'wood': 5, 'wool': 5,
+                                                'tools': 5, 'wooden_bowls': 5,
+                                                'crates': 5, 'furniture': 5, 'carved_furniture': 5}
+                    self.assertEqual(economy.local_room(building, 'crafted_axe'), 0)
+                    self.assertEqual(economy.local_room(building, 'crafted_saw'), 0)
+                else:
+                    self.assertEqual(sum(limits.values()), economy.storage_size(building))
                 self.assertLessEqual(set(limits), set(economy.building_storage_keys(building)))
                 if kind != 'hall':
                     self.assertEqual(set(limits), set(economy.building_storage_keys(building)))
@@ -532,7 +545,7 @@ class ResourceLogistics(unittest.TestCase):
         self.ticks(6)
         self.assertEqual(producer['woodcutting'], .24)
         self.assertGreater(self.town['wood'], 65)
-        self.assertAlmostEqual(self.town['wood'] - 65 + sum(b.get('pending_output', {}).values()), 3)
+        self.assertAlmostEqual(self.town['wood'] - 65 + sum(b.get('pending_output', {}).values()), 4.5)
         self.assertGreater(store['stored_goods']['wood'], 0)
 
     def test_farmer_delivers_through_surrounding_completed_acres(self):
@@ -734,15 +747,15 @@ class ResourceLogistics(unittest.TestCase):
 
     def test_partial_recipe_batch_triggers_delivery_without_losing_inputs(self):
         store = self.add('storehouse', x=1, storage_allocations={'planks': 100})
-        saw = self.add('sawpit', input_buffer={'wood': 10}, output_buffer={'planks': 49.5})
+        saw = self.add('sawpit', input_buffer={'wood': 10}, output_buffer={'planks': 19.5})
         v = self.assign(0, saw)
         self.ticks()
         self.assertTrue(saw['buffer_full'])
         self.assertEqual(saw['input_buffer']['wood'], 10)
         self.assertEqual(v.get('woodworking', 0), 0)
         self.ticks(3)
-        self.assertEqual(store['stored_goods']['planks'], 49.5)
-        self.assertEqual(self.town['goods']['planks'], 49.5 + sum(economy.inventory(saw).values()))
+        self.assertEqual(store['stored_goods']['planks'], 19.5)
+        self.assertEqual(self.town['goods']['planks'], 19.5 + sum(economy.inventory(saw).values()))
         self.assertNotIn('buffer_full', saw)
 
     def test_food_uses_one_shared_allocation_and_preserves_undelivered_goods(self):

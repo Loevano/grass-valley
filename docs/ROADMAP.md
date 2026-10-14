@@ -5,9 +5,10 @@ and cache rules are in [Backend](BACKEND.md#cached-zoomed-out-map).
 
 | Order | Improvement                        | Status                   | Goal                                                                                                             |
 | ----- | ---------------------------------- | ------------------------ | ---------------------------------------------------------------------------------------------------------------- |
-| 1     | Cached zoomed-out town overview    | Implemented | Show the landscape and city sizes without refreshing animated scene detail.                                      |
+| 1     | Cached zoomed-out town overview    | Implemented              | Show the landscape and city sizes without refreshing animated scene detail.                                      |
 | 2     | Coherent terrain regions and water | Planned; not implemented | Create recognizable large regions, rivers, and lakes while retaining smaller local patches.                      |
-| 3     | Production line balancing          | Planned; not implemented | Develop clear wood, farming, and fishing chains with capped staffing, useful crafted items, and simple upgrades. |
+| 3     | Production line balancing          | Wood and field cycle implemented; farming and fishing chain balance remains | Develop clear farming and fishing chains with capped staffing and simple upgrades. |
+| 4     | Scalable villager pathfinding       | Foundations implemented; host scheduling and shared navigation remain | Keep movement responsive as villager counts and towns grow, with bounded routing work. |
 
 ## Cached zoomed-out town overview
 
@@ -75,14 +76,15 @@ remain open design decisions before implementation.
 
 ## Production line balancing
 
-**Status:** planned; not implemented. Start with the wood chain, then develop
-farming and fishing. This records the agreed direction; implementation is deferred.
+**Status:** wood chain implemented. Farming and fishing remain.
+Implemented wood capacities, storage upgrades, crafted worker tools, decorations,
+and base rates are documented in [Balancing](BALANCING.md#wood).
 
 Sandbox worlds are available for supply chain experiments: all buildings are
 unlocked, construction and upgrades are free and instant, cottages add residents
 automatically, and villagers need no training and never depart. Production inputs,
-hauling, storage, food consumption, and normal output rates still apply. The chain
-balancing and capacity changes below remain planned.
+hauling, storage, food consumption, and normal output rates still apply. The
+farming and fishing changes below remain planned.
 
 ### Worker capacity
 
@@ -91,14 +93,11 @@ starting capacities. Upgrades unlock additional slots up to each limit.
 
 | Production chain | Building | Maximum workers |
 | --- | --- | --- |
-| Wood | Woodcutter | 4 |
-| Wood | Sawpit | 2 |
-| Wood | Woodworker's workshop | 1 |
 | Farming | Farm | 8 |
 | Farming | Mill | 3 |
 | Farming | Bakery | 2 |
 
-### Wood and farming
+### Farming
 
 Farm acre placement and work reach now cover a 7×7 square aligned with map tiles,
 including its corners. Farms can change the crop of all their linked acres in one
@@ -108,11 +107,24 @@ destination tiles to be valid. Farming chain balancing below remains planned.
 
 Completed wells now provide water for crop watering alongside natural water
 sources. Farmers fetch from the nearest reachable source; wells need no staff.
-Farming chain balancing remains planned.
+The field cycle is implemented: acres start unplowed, seeding waits until every
+linked acre is plowed, and each seeded acre sprouts for 15 seconds. One tender
+fetches water once per farm watering round, uses that fill for all acres it tends
+in the round, waters each acre once, and it grows for another 15
+seconds before harvest and delivery. Field progress is saved, growth needs no
+worker, and farmers finish plowing, seeding, watering, and harvesting in rows.
+Farmers pause to haul when their current crop's storage allowance fills; full
+stock of an unrelated crop does not stop other farmers or field passes. Crops
+that share food storage still respect that shared allowance.
+Field visuals follow confirmed worker playback, changing after each action finishes
+even when the host has already assigned the farmer another acre.
+Missed updates and resumed tasks reconnect playback at walking speed; trimming
+old buffered animations also preserves that speed and delays field changes.
+Oldest cycles finish before any acre repeats, preventing untouched tiles from
+being skipped. The base harvest is now 10 crops per acre for the two 15-second
+growth periods; existing bonuses apply. Remaining farming work is downstream
+ingredient demand, worker limits, and storage balancing below.
 
-- Woodcutters supply wood, sawpit workers make planks, and the woodworker crafts
-  items that help workers work better or decorate the village.
-- Higher woodworker skill levels unlock more craftable items.
 - Farmers supply crops to the mill, which supplies ingredients to the bakery.
 - Balance the chains around their worker limits, ingredient demand, and delivered
   supply, including materials needed elsewhere in the village.
@@ -130,14 +142,19 @@ Farming chain balancing remains planned.
 
 The upgrade panel now uses compact rows with a short benefit, cost and work time,
 and an Upgrade action. Completed upgrades show a status without a disabled button;
-the purchase popup retains full benefits and requirements. Production balancing,
-storage scaling, and worker limits below remain planned.
+the purchase popup retains full benefits and requirements. The compact rows retain
+the implemented wood worker limits and storage upgrades. Farming and fishing
+balancing, storage scaling, and worker limits below remain planned.
 
 Production now respects each resource's existing storage allowance, including
 pending deliveries and shared food space. Producers haul when an allowance fills;
 existing excess stock is preserved. Workplace storage totals appear beside the
-Storage heading. Increasing those allowances through building upgrades remains
-planned.
+Storage heading. Wood-building upgrades increase these allowances by 25% per
+level; storage scaling for farming and fishing remains planned.
+
+Worker drop-offs now preserve the rest of the simulation tick for the next trip,
+removing the extra pause after unloading. Delivery accounting remains on the host;
+production balancing and storage upgrades below remain planned.
 
 - Production building upgrades increase internal storage or worker capacity.
 - Items and worker skill levels improve conversion rates and unlock available
@@ -148,15 +165,67 @@ planned.
 Completion criteria:
 
 - Worker upgrades respect the per-building limits above.
-- Woodworker progression unlocks usable worker improvements and placeable village
-  decorations.
 - Fishing experience improves catch chance and access to valuable species.
 - The smoke station displays stored fish by species, including smoked varieties.
 - Storage and worker upgrades have clear effects; items and skills govern
   production improvements and options.
 
-Starting worker counts, upgrade steps and costs, storage sizes, item recipes and
-effects, skill thresholds, catch probabilities, fish values, smoke-station
-staffing, and handling existing saves above the new worker limits remain open
-before implementation. Existing production rates also need review against these
-limits; this plan does not yet choose replacement rates.
+For farming and fishing, starting worker counts, upgrade steps and costs, storage
+sizes, skill thresholds, catch probabilities, fish values, smoke-station staffing,
+and handling existing saves above the new worker limits remain open before
+implementation. Their production rates also need review against these limits.
+The wood rates still need play experience to assess delivered supply and pacing.
+
+## Scalable villager pathfinding
+
+**Status:** partially implemented. Prioritize a host pathfinding queue before
+adding shared destination routing or navigation between regions.
+
+### Existing foundations
+
+- Workers retain valid work, delivery, and construction paths until their task
+  changes or a next step becomes blocked. Builders keep their claimed site and
+  saved route across ticks and reloads; fishers reuse valid pier paths.
+- Browser geometry updates refresh collision data without discarding valid paths.
+  Roads change walking speed immediately and influence the next planned leg.
+  Confirmed host playback does not perform a duplicate browser work-route search.
+- Host and browser each maintain bounded route caches that workers reuse.
+  Terrain, obstacles, roads, and search bounds affect validity; crop growth does not.
+  Search uses BFS for cardinal routes on uniform ground and travel-time A*
+  for roads or diagonal walking.
+- Browser planning is resumable and runs through a queue with an approximately
+  2 ms frame budget. The host still performs route searches synchronously.
+- Gameplay movement remains authoritative on the host. Browser playback follows
+  confirmed movement and reconnects missed updates at walking speed, with field
+  changes aligned to completed farmer actions.
+- Maps already support chunks and local search bounds. Farmers reserve work on
+  acres, but villagers do not block one another's movement.
+
+### Remaining work
+
+| Order | Improvement | Planned behavior |
+| --- | --- | --- |
+| 1 | Host pathfinding queue | Spread resumable searches across simulation updates under a bounded work budget. Prioritize blocked workers and urgent deliveries, keep ordinary requests from starving, and cancel obsolete requests when tasks or navigation change. |
+| 2 | Cache refinement | Limit shared-cache invalidation to affected navigation where practical. Existing route caches are bounded; bound pending requests when host scheduling is added. |
+| 3 | Flow fields for shared destinations | Reuse a map of travel directions toward common wells, warehouses, and workplaces across many villagers. Account for road speeds and access rules, and retain individual searches for specific acres and other unique destinations. |
+| 4 | Local crowd avoidance | Add local spacing, short waits, or avoidance adjustments where villagers crowd together. Keep moving villagers out of the static obstacle map so crowds do not trigger constant global replanning. |
+| 5 | Hierarchical routing | Route between connected regions first, then calculate detailed paths within those regions. Define connections across chunk boundaries and handle navigation changes or unavailable terrain. |
+
+Completion criteria:
+
+- Many simultaneous task changes do not require every route search to finish in
+  one simulation update; workers awaiting routes remain in a valid waiting state.
+- Requests cannot starve, obsolete routes are discarded, and caches and queues
+  remain bounded as villagers and towns are added.
+- Workers reach accessible destinations, honor road travel times, and recover
+  when obstacles, buildings, or roads change.
+- Crowds do not cause repeated full-map searches; region and chunk boundaries
+  preserve valid routes and destination access.
+- Browser movement stays at the intended speed and crop changes follow worker
+  actions while the host remains authoritative for gameplay and saves.
+- Compare routing cost and simulation responsiveness against a recorded baseline
+  with increasing villager counts, multiple towns, warm and cold caches, and
+  obstacle changes before claiming a scaling improvement.
+
+Host work budgets, urgency rules, crowd spacing, and the villager counts that
+justify flow fields or hierarchical routing remain open implementation decisions.

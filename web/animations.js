@@ -176,7 +176,7 @@ const WorkerAnimation = (() => {
     const center=town.town_origin || hall || preferred;
     const bounds=town.navigation?.bounds || (town.chunked?{minX:Math.max(0,center.x-60),maxX:Math.min(size-1,center.x+60),
       minY:Math.max(0,center.y-60),maxY:Math.min(size-1,center.y+60)}:null);
-    const current=state?(state.path[0] || {x:Math.round(state.x),y:Math.round(state.y)}):villager.logistics_position || villager.construction_position || preferred;
+    const current=state?(!state.needsPlan&&state.path[0] || {x:Math.round(state.x),y:Math.round(state.y)}):villager.logistics_position || villager.construction_position || preferred;
     const minX=bounds?.minX || 0,maxX=bounds?.maxX ?? size-1,minY=bounds?.minY || 0,maxY=bounds?.maxY ?? size-1;
     const currentBiome=town.terrain?.[current.y]?.[current.x];
     const currentOpen=Number.isInteger(current.x)&&Number.isInteger(current.y)
@@ -276,7 +276,8 @@ const WorkerAnimation = (() => {
       approach=distance(position,start)>1e-9?[start]:[];
     }
     const routing={blocked,size,bounds,sailing,source,roads,roadMode};
-    let path=source?(yield* travelSteps(start,workSpot || source,routing,!workSpot)):home?(yield* routeSteps(start,home,blocked,size,true,bounds,roads,'smooth',true)):[];
+    const confirmed=!!villager.work_animation?.playback?.length&&!villager.construction_target&&!villager.logistics_target;
+    let path=confirmed?[]:source?(yield* travelSteps(start,workSpot || source,routing,!workSpot)):home?(yield* routeSteps(start,home,blocked,size,true,bounds,roads,'smooth',true)):[];
     if(path!==null)path=[...approach,...path];
     let castTarget=villager.job==='fishing'?source:null;
     if(villager.job==='fishing'&&source){
@@ -295,9 +296,55 @@ const WorkerAnimation = (() => {
     return {...position,phase:path===null?'waiting':path.length?'walking':source?'working':'idle',
       path:path || [],source,home,pier,workSpot,castTarget,fishingCaught:null,blocked,size,bounds,roads,roadMode,boating,sailing,boatCapacity:[0,5,10,20][boatLevel(home)],boatLoad:0,workDuration:villager.job==='farming'?8:3.2,
       farming:villager.job==='farming'&&!villager.construction_target,
+      fieldCycle:villager.job==='farming'&&!!source?.field,
       water:[...town.map_resources.filter(r=>r.kind==='water'),...(town.obstacles || town.buildings).filter(b=>b.kind==='well'&&!b.construction).map(b=>({kind:'well',x:b.x,y:b.y}))],waterReady:false,
       stationary:!!source&&source.kind===workplace?.kind&&distance(source,workplace)===0&&!villager.construction_target,
-      construction:!!villager.construction_target,elapsed:0,clock:state?.clock || index*.37,facing:state?.facing || 1};
+      construction:!!villager.construction_target,terrain:town.terrain,elapsed:0,clock:state?.clock || index*.37,facing:state?.facing || 1};
+  }
+  function pathBlocked(state) {
+    const next=state.path[0];
+    if(!next)return false;
+    const biome=state.terrain?.[next.y]?.[next.x];
+    return state.blocked?.has(key(next)) || next.x<0 || next.y<0 || next.x>=state.size || next.y>=state.size
+      || biome==='v' || (state.bounds&&(!biome || next.x<state.bounds.minX || next.x>state.bounds.maxX
+        || next.y<state.bounds.minY || next.y>state.bounds.maxY));
+  }
+  function refreshNavigation(state, town, villager) {
+    // Geometry updates refresh collision data without changing an ongoing route.
+    const blocked=town.navigation?town.navigation.overlay():new Set([...(town.obstacles || town.buildings),
+      ...town.map_resources,...(town.npcs || [])].map(key));
+    if(state.farming || state.construction || state.transport)
+      for(const acre of (town.obstacles || town.buildings).filter(b=>b.kind==='acre'&&!b.construction))blocked.delete(key(acre));
+    const occupied=new Set([...(town.obstacles || town.buildings),...(town.npcs || [])].map(key));
+    const water=new Set(town.map_resources.filter(r=>r.kind==='water').map(key));
+    const home=state.home&&town.buildings.find(b=>b.kind===state.home.kind&&key(b)===key(state.home));
+    if(state.home&&!home)return false; // The destination moved or disappeared.
+    for(const p of state.pier || []){
+      const biome=town.terrain?.[p.y]?.[p.x];
+      if(biome!=='v'&&(!town.chunked||biome)
+        &&((home&&key(p)===key(home))||(!occupied.has(key(p))&&water.has(key(p)))))blocked.delete(key(p));
+    }
+    if(state.sailing){
+      const sailing=state.sailing,landBlocked=new Set(blocked);
+      landBlocked.delete(key(sailing.berth));
+      const boardingBlocked=new Set(landBlocked);
+      if(key(sailing.dock)!==key(sailing.berth))boardingBlocked.add(key(sailing.berth));
+      const available=new Set([...sailing.water].filter(k=>{
+        const [x,y]=k.split(',').map(Number),biome=town.terrain?.[y]?.[x];
+        return water.has(k)&&!occupied.has(k)&&biome!=='v'&&(!town.chunked||biome);
+      }));
+      const seaBlocked=new Set(),bounds=sailing.seaBounds;
+      for(let x=bounds.minX;x<=bounds.maxX;x++)for(let y=bounds.minY;y<=bounds.maxY;y++)
+        if(!available.has(`${x},${y}`))seaBlocked.add(`${x},${y}`);
+      for(const k of available)blocked.delete(k);
+      state.sailing={...sailing,water:available,landBlocked,boardingBlocked,seaBlocked};
+    }
+    Object.assign(state,{blocked,terrain:town.terrain,size:town.map_size || 120,
+      bounds:town.navigation?.bounds || state.bounds,home:home || state.home,
+      source:villager.construction_target || (state.transport?state.source:villager.work_target) || state.source,
+      water:[...town.map_resources.filter(r=>r.kind==='water'),...(town.obstacles || town.buildings)
+        .filter(b=>b.kind==='well'&&!b.construction).map(b=>({kind:'well',x:b.x,y:b.y}))]});
+    return !pathBlocked(state)&&!(state.phase==='waiting'&&!state.path.length&&!villager.work_animation?.playback?.length);
   }
   function* fetchWaterSteps(state) {
     // Search all reachable banks in one pass; water need not be near the farm.
@@ -321,6 +368,7 @@ const WorkerAnimation = (() => {
     if(state.path.length){
       let remaining=seconds;
       while(state.path.length&&remaining>0){
+        if(pathBlocked(state)){state.needsPlan=true;state.phase='waiting';return;}
         const next=state.path[0],dx=next.x-state.x,dy=next.y-state.y,length=Math.hypot(dx,dy);
         if(dx-dy!==0)state.facing=dx-dy>0?1:-1;
         const speed=1.8*(state.transport?(state.transportSpeed || 1):1)*(state.roads?.has(`${Math.floor(state.x+.5)},${Math.floor(state.y+.5)}`)?1.5:1);
@@ -339,6 +387,8 @@ const WorkerAnimation = (() => {
     }
     if(state.transport){state.phase='waiting';return;}
     if(state.construction){state.elapsed+=seconds;return;}
+    // Field actions and growth are confirmed by the host, never predicted here.
+    if(state.fieldCycle)return;
     if(!active || !state.source || state.phase==='waiting')return;
     if(state.phase==='waiting_water')return;
     if(state.phase==='collecting_water'){
@@ -369,6 +419,15 @@ const WorkerAnimation = (() => {
       state.path=path || [];state.phase=path===null?'waiting':path.length?'walking':'working';state.elapsed=0;state.fishingCaught=null;state.waterReady=false;
     }
   }
+  function joinPlayback(samples, position) {
+    const start=samples[0],duration=Math.hypot(start.x-position.x,start.y-position.y)/1.8;
+    if(duration<1e-9)return samples;
+    // Missed updates and job changes can leave a gap before the first confirmed
+    // waypoint. Walk that gap separately; changing just its starting position
+    // compresses the distance into the next waypoint's short (or zero) time.
+    return [{...start,x:position.x,y:position.y,time:0,phase:'walking',elapsed:0,farmAction:null},
+      ...samples.map(sample=>({...sample,time:sample.time+duration}))];
+  }
   // Play confirmed host waypoints one simulation cycle behind. No route searches.
   function playback(state, host, seconds) {
     const task=JSON.stringify(host.task);
@@ -377,19 +436,18 @@ const WorkerAnimation = (() => {
     if(!state.playbackQueue)state.playbackQueue=[];
     if(state.hostVersion!==host.version || state.hostTask!==task){
       if(state.hostVersion===undefined&&first){
-        Object.assign(state,{x:host.x,y:host.y,phase:host.phase,elapsed:host.elapsed,path:[]});
+        Object.assign(state,{x:host.x,y:host.y,phase:host.phase,elapsed:host.elapsed,
+          farmAction:host.farmAction,farmField:host.playback.at(-1)?.farmField,
+          waterReady:host.waterReady,waterSource:host.waterSource,path:[]});
       }else if(host.playback?.length){
-        const samples=host.playback.map(p=>({...p}));
-        // Task changes and recovery can relocate the host. Blend from the visible
-        // endpoint rather than applying that relocation in a single frame.
+        const hostSamples=host.playback.map(p=>({...p}));
         const tail=state.playbackQueue.at(-1)?.samples.at(-1) || state;
-        samples[0]={...samples[0],x:tail.x,y:tail.y};
-        state.playbackQueue.push({samples,time:0,index:0});
+        state.playbackQueue.push({samples:joinPlayback(hostSamples,tail),hostSamples,time:0,index:0});
         // A background tab may miss updates. Bound retained presentation history.
         if(state.playbackQueue.length>3){
           state.playbackQueue.splice(0,state.playbackQueue.length-3);
-          Object.assign(state.playbackQueue[0],{time:0,index:0});
-          Object.assign(state.playbackQueue[0].samples[0],{x:state.x,y:state.y});
+          const next=state.playbackQueue[0];
+          Object.assign(next,{samples:joinPlayback(next.hostSamples,state),time:0,index:0});
         }
       }
       state.hostVersion=host.version;state.hostTask=task;state.hostWork=true;
@@ -403,7 +461,7 @@ const WorkerAnimation = (() => {
       const fraction=b.time>a.time?(chunk.time-a.time)/(b.time-a.time):0;
       Object.assign(state,{x:a.x+(b.x-a.x)*fraction,y:a.y+(b.y-a.y)*fraction,
         phase:a.phase,elapsed:(a.elapsed || 0)+(a.x===b.x&&a.y===b.y?chunk.time-a.time:0),
-        waterElapsed:(a.elapsed || 0)+chunk.time-a.time,waterReady:a.waterReady,waterSource:a.waterSource,
+        waterElapsed:(a.elapsed || 0)+chunk.time-a.time,waterReady:a.waterReady,waterSource:a.waterSource,farmAction:a.farmAction,farmField:a.farmField,
         facing:b.x-b.y!==a.x-a.y?(b.x-b.y>a.x-a.y?1:-1):a.facing,
         path:a.x!==b.x||a.y!==b.y?[{x:b.x,y:b.y}]:[]});
       state.clock+=take;
@@ -412,12 +470,26 @@ const WorkerAnimation = (() => {
       if(remaining<=0)break;
     }
   }
+  function fieldPresentation(state, field) {
+    // Keep each acre at its earliest unplayed state, even after the host has
+    // assigned the farmer another acre. Finished playback uses live growth.
+    for(const chunk of state.playbackQueue || []){
+      const sample=chunk.samples[chunk.index],view=sample.farmField;
+      if(view?.x===field.x&&view?.y===field.y){
+        // The crop clears when the sickle action finishes, not before arrival.
+        return {...view,progress:sample.phase==='working'&&sample.farmAction==='harvesting'?0:view.progress};
+      }
+    }
+    const view=state.farmField;
+    if(state.phase==='working'&&state.farmAction==='harvesting'&&view?.stage==='ripe'
+      &&view.x===field.x&&view.y===field.y)return {...view,progress:0};
+  }
   function finish(steps){let result;do{result=steps.next();}while(!result.done);return result.value;}
   const route=(...args)=>finish(routeSteps(...args));
   const plan=(...args)=>finish(planSteps(...args));
   const advance=(...args)=>finish(advanceSteps(...args));
   const waterDepths=(...args)=>finish(waterDepthsSteps(...args));
   const fishingPier=(...args)=>finish(fishingPierSteps(...args));
-  return {playback,route,plan,advance,waterDepths,fishingPier,fishingBoating,routeSteps,planSteps,advanceSteps};
+  return {playback,fieldPresentation,refreshNavigation,route,plan,advance,waterDepths,fishingPier,fishingBoating,routeSteps,planSteps,advanceSteps};
 })();
 if(typeof module!=='undefined')module.exports=WorkerAnimation;

@@ -2,15 +2,18 @@
 from collections import deque
 from math import ceil
 import secrets
+import farming
 from equipment import find_item, gathering_bonus
 
 BUILDINGS = {
     'well': {'label': 'Well', 'level': 1, 'wood': 15, 'slots': 0},
     'barn': {'label': 'Barn', 'level': 2, 'wood': 25, 'job': 'husbandry', 'slots': 2},
-    'sawpit': {'label': 'Sawpit', 'level': 3, 'wood': 25, 'job': 'woodworking', 'slots': 2},
+    'sawpit': {'label': 'Sawpit', 'level': 3, 'wood': 25, 'job': 'woodworking', 'slots': 1},
     'mill': {'label': 'Mill', 'level': 4, 'wood': 30, 'planks': 5, 'job': 'milling', 'slots': 2},
     'smokehouse': {'label': 'Smokehouse', 'level': 4, 'wood': 25, 'planks': 5, 'job': 'preserving', 'slots': 2},
-    'workshop': {'label': 'Workshop', 'level': 4, 'wood': 30, 'planks': 5, 'job': 'crafting', 'slots': 2},
+    'workshop': {'label': "Woodworker's workshop", 'level': 4, 'wood': 30, 'planks': 5, 'job': 'crafting', 'slots': 1},
+    'wooden_bench': {'label': 'Wooden bench', 'level': 4, 'wood': 0, 'furniture': 1, 'slots': 0},
+    'wooden_statue': {'label': 'Carved wooden statue', 'level': 4, 'wood': 0, 'carved_furniture': 1, 'slots': 0},
     'fish_pond': {'label': 'Fish pond', 'level': 5, 'wood': 25, 'planks': 10, 'job': 'breeding', 'slots': 2},
     'orchard': {'label': 'Orchard', 'level': 5, 'wood': 25, 'job': 'orcharding', 'slots': 2},
     'bakery': {'label': 'Bakery', 'level': 4, 'wood': 30, 'planks': 5, 'job': 'baking', 'slots': 2},
@@ -34,6 +37,13 @@ ANIMALS = {
 ANIMALS['horse'] = {'level': 8, 'coins': 0, 'output': 'horse', 'feed': .5}
 ANIMAL_GROWTH_SECONDS = 300
 TREE_REGROWTH_RATE = .9
+WOOD_PER_CYCLE = .75
+WOOD_WORKER_CAPACITIES = {'woodcutter': (1, 2, 4), 'sawpit': (1, 2), 'workshop': (1,)}
+DECORATIONS = ('wooden_bench', 'wooden_statue')
+CRAFTED_WORKER_TOOLS = {
+    'crafted_axe': {'name': 'Crafted axe', 'job': 'woodcutting', 'bonus': .25},
+    'crafted_saw': {'name': 'Crafted saw', 'job': 'woodworking', 'bonus': .25},
+}
 BUTCHER_SECONDS = 60
 ANIMAL_MEAT = {'chicken': 2, 'sheep': 4, 'pig': 8, 'cow': 10}
 
@@ -63,14 +73,11 @@ def grow_animals(building, seconds):
 
 
 PROFESSION_UPGRADES = {
-    'axe': {'label': 'Improved axe', 'building': 'woodcutter', 'level': 2, 'skill': 'woodcutting', 'xp': 10, 'wood': 10, 'coins': 5},
     'nets': {'label': 'Fishing nets', 'building': 'fishing_hut', 'level': 2, 'skill': 'fishing', 'xp': 10, 'wood': 10, 'coins': 5},
     'boat': {'label': 'Fishing boat', 'building': 'fishing_hut', 'level': 3, 'skill': 'fishing', 'xp': 20, 'planks': 10, 'capacity': 5},
     'improved_boat': {'label': 'Improved fishing boat', 'building': 'fishing_hut', 'level': 4, 'skill': 'fishing', 'xp': 30, 'requires': 'boat', 'planks': 15, 'coins': 20, 'capacity': 10},
     'master_boat': {'label': 'Masterwork fishing boat', 'building': 'fishing_hut', 'level': 5, 'skill': 'fishing', 'xp': 40, 'requires': 'improved_boat', 'planks': 20, 'coins': 40, 'capacity': 20},
     'wool_nets': {'label': 'Durable wool nets', 'building': 'fishing_hut', 'level': 3, 'skill': 'fishing', 'xp': 20, 'wool': 5},
-    'tools': {'label': 'Crafted axe', 'building': 'woodcutter', 'level': 4, 'skill': 'woodcutting', 'xp': 30, 'tools': 3},
-    'saw': {'label': 'Improved saw', 'building': 'sawpit', 'level': 5, 'skill': 'woodworking', 'xp': 20, 'tools': 3},
     'steel_pickaxe': {'label': 'Steel pickaxes', 'building': 'mine', 'level': 9, 'skill': 'mining', 'xp': 10, 'steel': 5, 'leather': 3},
     'timber_frame': {'label': 'Timber framing', 'building': 'home', 'level': 5, 'planks': 10},
 }
@@ -147,6 +154,8 @@ PROFESSION_RECIPES = {
         {'level': 3, 'inputs': {'planks': 3}, 'output': 'crates', 'amount': 1},
         {'level': 4, 'inputs': {'planks': 4, 'wool': 1}, 'output': 'furniture', 'amount': 1},
         {'level': 5, 'inputs': {'planks': 5, 'wool': 2}, 'output': 'carved_furniture', 'amount': 1},
+        {'level': 2, 'inputs': {'planks': 2, 'tools': 1}, 'output': 'crafted_axe', 'amount': 1},
+        {'level': 3, 'inputs': {'planks': 2, 'tools': 2}, 'output': 'crafted_saw', 'amount': 1},
     ],
     'bakery': [
         {'level': 1, 'inputs': {'flour': 2, 'wood': .5}, 'output': 'bread', 'amount': 2},
@@ -172,6 +181,7 @@ PRODUCTION_SECONDS = {
     'flour': 3, 'planks': 6, 'smoked_fish': 6, 'fish': 3,
     'tools': 9, 'wooden_bowls': 6, 'crates': 9,
     'furniture': 12, 'carved_furniture': 15,
+    'crafted_axe': 9, 'crafted_saw': 12,
     'bread': 6, 'bread_rolls': 6, 'herb_bread': 6, 'fruit_pies': 9, 'cakes': 12,
     'prepared_meat': 6, 'herbed_meat': 6, 'smoked_meat': 9,
     'sausages': 9, 'meat_pies': 12,
@@ -226,6 +236,18 @@ def production_costs(building, speed, stock):
 
 def production_seconds(building):
     return PRODUCTION_SECONDS[production_recipe(building)[1]] if building['kind'] in RECIPES else 3
+
+
+def processing_efficiency(villager, building):
+    tool = CRAFTED_WORKER_TOOLS.get(villager.get('worker_tool'), {})
+    bonus = tool.get('bonus', 0) if tool.get('job') == villager['job'] else 0
+    if 'steel_pickaxe' in building.get('profession_upgrades', []):
+        bonus += .25
+    return efficiency(villager, villager['job']) * (1 + bonus)
+
+
+def storage_multiplier(building):
+    return 1 + .25 * (building.get('level', 1) - 1) if building['kind'] in WOOD_WORKER_CAPACITIES else 1
 
 
 SUPPLIES = {'tree': (8, .5), 'water': (12, 3.2), 'berry_bush': (6, .3), 'herb_patch': (4, .2), 'rock': (60, .15)}
@@ -334,7 +356,7 @@ def spend(town, costs):
 
 
 def costs_of(spec):
-    return {k: v for k, v in spec.items() if k in {'wood', 'coins', 'planks', 'wool', 'tools', *LATE_GOODS}}
+    return {k: v for k, v in spec.items() if k in {'wood', 'coins', 'planks', 'wool', 'tools', *CRAFTED_GOODS, *LATE_GOODS} and v}
 
 
 STOREHOUSE_CAPACITIES = (50, 75, 100, 150, 200, 250, 300, 350)
@@ -390,7 +412,7 @@ def building_storage_keys(building):
 
 
 def storage_size(building):
-    return 0 if building['kind'] in {'home', 'market', 'well'} else 200 if building['kind'] == 'hall' else STOREHOUSE_CAPACITIES[building.get('level', 1) - 1] if building['kind'] == 'storehouse' else 50
+    return 0 if building['kind'] in {'home', 'market', 'well', *DECORATIONS} else 200 if building['kind'] == 'hall' else STOREHOUSE_CAPACITIES[building.get('level', 1) - 1] if building['kind'] == 'storehouse' else 50 * storage_multiplier(building)
 
 
 def inventory(building):
@@ -484,7 +506,8 @@ def local_room(building, key):
 
 def storage_allocations(building):
     if building['kind'] != 'storehouse':
-        return dict(FIXED_STORAGE.get(building['kind'], {}))
+        return {key: amount * storage_multiplier(building)
+                for key, amount in FIXED_STORAGE.get(building['kind'], {}).items()}
     enabled = storage_enabled(building)
     return {k: storage_size(building) if enabled[k] else 0 for k in building_storage_keys(building)}
 
@@ -768,7 +791,7 @@ def player_tick(town, landscape, capacity):
         r['kind'] == 'water' and (r['x'], r['y']) == (int(player['x'] + .5), int(player['y'] + .5))
         for r in landscape['map_resources']) else 0
     clothing_bonus = gathering_bonus(player, key) if job == 'gathering' else 0
-    amount = min(room, (1 if key != 'wood' else .5) * (1 + player.get(job, 0) // 20)
+    amount = min(room, (1 if key != 'wood' else WOOD_PER_CYCLE) * (1 + player.get(job, 0) // 20)
                  * (1 + boat_bonus) * (1 + clothing_bonus))
     amount = take_supply(landscape, source, amount)
     caught = job != 'fishing' or secrets.randbelow(5) != 0
@@ -784,8 +807,7 @@ def extra_worker(town, villager, building, capacity):
     if reason:
         return reason
     kind = building['kind']
-    upgrades = building.get('profession_upgrades', [])
-    speed = (1.25 if 'saw' in upgrades or 'steel_pickaxe' in upgrades else 1) * efficiency(villager, villager['job'])
+    speed = processing_efficiency(villager, building)
     if kind in RECIPES:
         reason = recipe_requirement(villager, building)
         if reason:
@@ -833,10 +855,14 @@ def extra_worker(town, villager, building, capacity):
 
 def public_catalog():
     return {'buildings': BUILDINGS, 'crops': CROPS, 'animals': ANIMALS,
+            'farming_growth_seconds': farming.GROWTH_SECONDS,
+            'farming_harvest_yield': farming.HARVEST_YIELD,
             'animal_growth_seconds': ANIMAL_GROWTH_SECONDS, 'butcher_seconds': BUTCHER_SECONDS,
             'animal_meat': ANIMAL_MEAT, 'tradable_goods': TRADABLE_GOODS,
             'job_requirements': JOB_REQUIREMENTS, 'talent_roots': TALENT_ROOTS,
             'profession_recipes': PROFESSION_RECIPES, 'storage_keys': STORAGE_KEYS,
             'production_seconds': PRODUCTION_SECONDS, 'sale_prices': SALE_PRICES, 'sellable_goods': SELLABLE_GOODS,
             'boats': PLAYER_BOATS, 'fish': FISH, 'upgrades': PROFESSION_UPGRADES, 'recipes': RECIPES, 'edible': EDIBLE,
-            'storage_goods': STORAGE_GOODS, 'fixed_storage': FIXED_STORAGE}
+            'storage_goods': STORAGE_GOODS, 'fixed_storage': FIXED_STORAGE,
+            'wood_worker_capacities': WOOD_WORKER_CAPACITIES, 'decorations': DECORATIONS,
+            'crafted_worker_tools': CRAFTED_WORKER_TOOLS, 'wood_per_cycle': WOOD_PER_CYCLE}

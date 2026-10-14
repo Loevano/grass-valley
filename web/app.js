@@ -172,6 +172,8 @@ document.addEventListener?.('visibilitychange',clearWalk);
 // Buffer at most half a second of input while a host reply is delayed.
 let movementMap=null;
 const workerTools={
+  crafted_axe:{name:'Crafted axe',job:'woodcutting',bonus:.25},
+  crafted_saw:{name:'Crafted saw',job:'woodworking',bonus:.25},
   fine_axe:{name:'Fine axe',job:'woodcutting',bonus:.25},
   fine_fishing_rod:{name:'Fine fishing rod',job:'fishing',bonus:.25},
   steel_fishing_rod:{name:'Steel fishing rod',job:'fishing',bonus:.5,price:30},
@@ -218,12 +220,12 @@ function renderWorkerTools(town,v,index,target){
   const owner=viewed===identity?.town_id;
   if(v.worker_tool&&workerTools[v.worker_tool]){
     const gear=workerTools[v.worker_tool],row=document.createElement('p');
-    row.textContent=`${gear.name} · +${gear.bonus*100}% ${gear.job} output`;
+    row.textContent=`${gear.name} · +${gear.bonus*100}% ${gear.job} output${v.worker_tool==='crafted_saw'?' and ingredients per batch':''}`;
     if(owner){const button=document.createElement('button');button.textContent='Take back tool';button.onclick=()=>act({action:'take_worker_tool',index});row.append(button);}
     target.append(row);
   }else if(owner)for(const [key,gear] of Object.entries(workerTools)){
-    if(!(town.player?.worker_tools?.[key]>0))continue;
-    const button=document.createElement('button');button.textContent=`Give ${gear.name.toLowerCase()} · +${gear.bonus*100}% ${gear.job} output`;
+    if(availableWorkerTools(town,key)<1)continue;
+    const button=document.createElement('button');button.textContent=`Give ${gear.name.toLowerCase()} · +${gear.bonus*100}% ${gear.job} output${key==='crafted_saw'?' and ingredients per batch':''}`;
     button.onclick=()=>act({action:'give_worker_tool',item:key,index});target.append(button);
   }
 }
@@ -423,6 +425,15 @@ function remotePlayerSprite(townId,town,seconds){
 }
 const labels = {road:'Dirt road',hall:'Town hall',home:'Cottage',woodcutter:'Woodcutter',farm:'Farm',storehouse:'Storehouse',fishing_hut:'Fishing hut',acre:'Acre',well:'Well'};
 function buildingLevel(building){return building.level || 1;}
+const woodWorkerCapacities={woodcutter:[1,2,4],sawpit:[1,2],workshop:[1]};
+const decorationKinds=['wooden_bench','wooden_statue'];
+function woodCapacities(){return world.progression?.wood_worker_capacities || woodWorkerCapacities;}
+function settlerCapacity(building){
+  const level=building.settler_level || 1,tiers=woodCapacities()[building.kind];
+  return tiers?tiers[Math.min(level,tiers.length)-1]:settlerSpaces[building.kind]*level;
+}
+function capacityMaxLevel(building){return woodCapacities()[building.kind]?.length || 3;}
+function storageMultiplier(building){return building.kind in woodCapacities()?1+.25*(buildingLevel(building)-1):1;}
 function housingCapacity(town){
   return 5+town.buildings.filter(b=>b.kind==='home'&&!b.construction).reduce((sum,b)=>sum+Math.max(2*(buildingLevel(b)+(b.profession_upgrades?.includes('timber_frame')?1:0)),town.sandbox?settlerSpaces.home*(b.settler_level || 1):0),0);
 }
@@ -445,10 +456,11 @@ function buildingVisualLevel(building,town){
   return building.kind==='hall'?Math.min(5,town?.level || 1):Math.min(3,buildingLevel(building));
 }
 function buildingHeight(building,town){
+  if(decorationKinds.includes(building.kind))return building.kind==='wooden_bench'?15:32;
   return ({hall:42,woodcutter:23,mine:27,smelter:36,steelworks:38,stable:32,tannery:28,saddler:27,tradehouse:35,barn:34,mill:40,smokehouse:32,workshop:25,sawpit:16,market:17,fish_pond:18,orchard:20,bakery:30,butcher:25}[building.kind] || 27)+4*(buildingVisualLevel(building,town)-1);
 }
 const storehouseCapacities=[50,75,100,150,200,250,300,350];
-function buildingStorageSize(building){return ['home','market','well'].includes(building.kind)?0:building.kind==='hall'?200:building.kind==='storehouse'?storehouseCapacities[buildingLevel(building)-1]:50;}
+function buildingStorageSize(building){return ['home','market','well',...decorationKinds].includes(building.kind)?0:building.kind==='hall'?200:building.kind==='storehouse'?storehouseCapacities[buildingLevel(building)-1]:50*storageMultiplier(building);}
 function storageCapacity(town){return town.buildings.filter(b=>!b.construction).reduce((sum,b)=>sum+buildingStorageSize(b),0);}
 
 const storageKeys=['wood','food','planks','wheat','fodder','flour','wool','tools','manure','herbs'];
@@ -482,7 +494,7 @@ function roomAllocations(building){
     market:{}
   };
   const allocations=fixed[building.kind] || {};
-  return Object.fromEntries(Object.entries(allocations).filter(([key])=>buildingStorageKeys(building).includes(key)));
+  return Object.fromEntries(Object.entries(allocations).filter(([key])=>buildingStorageKeys(building).includes(key)).map(([key,amount])=>[key,amount*storageMultiplier(building)]));
 }
 function resourceStorage(town,key){
   const scene=typeof ClientScene!=='undefined'&&ClientScene.current?.world===world?ClientScene.current:null;
@@ -523,6 +535,11 @@ function renderStorage(town,item,index,target=$('selection-details')){
   else{
     const heading=target.children[0];heading.className='storage-heading';heading.append(summary);
   }
+  if(item.kind in woodCapacities()){
+    const note=document.createElement('p');note.className='storage-note';
+    note.textContent=`Production buffer: ${capacity} spaces${['sawpit','workshop'].includes(item.kind)?` · Separate input buffer: ${Number(Object.values(item.input_buffer || {}).reduce((sum,n)=>sum+n,0).toFixed(2))} / ${capacity}`:''}. Storage levels increase these limits; worker capacity is separate.`;
+    target.append(note);
+  }
   if(item.kind==='storehouse'){
     const note=document.createElement('p');note.className='storage-note';
     note.textContent='Enable resources for incoming deliveries. Disabled goods remain available to use. Food shares one capacity for edible goods.';target.append(note);
@@ -552,6 +569,10 @@ function renderStorage(town,item,index,target=$('selection-details')){
 }
 
 function upgradeBenefit(kind,level,item){
+  if(kind in woodCapacities()){
+    const building={...item,kind,level};
+    return `${buildingStorageSize(building)} storage spaces\n${Object.entries(roomAllocations(building)).map(([key,amount])=>`${goodName(key)}: ${amount}`).join(', ')}\nWorker capacity upgraded separately`;
+  }
   if(kind==='home'&&item?.profession_upgrades?.includes('timber_frame'))level++;
   if(kind==='fishing_hut')return `+${25*(level-1)}% food / catch / worker\n${resourceReach({...item,kind,level})} tile reach`;
   return kind==='barn'?`${4*level} animal spaces`:['sawpit','mill','smokehouse','workshop','fish_pond','orchard','market','bakery','butcher'].includes(kind)?'Separate worker capacity':kind==='home'?`${2*level} spaces\n-${25*(level-1)}% departure`:kind==='storehouse'?`${buildingStorageSize({kind,level})} capacity per resource${level>=5?'\nWarehouse':''}`:`+${25*(level-1)}% ${kind==='woodcutter'?'wood':kind==='fishing_hut'?'food / catch':kind==='acre'?'field food':'food'} / worker`;
@@ -591,8 +612,10 @@ function buildingUpgradePreview(command,town,item){
     return {title:spec.label,benefits:[professionBenefits[command.upgrade] || spec.label],cost:materialCosts(spec),seconds:command.upgrade==='boat'?0:30,requirements:`Hall level ${spec.level}${spec.xp&&!town.sandbox?` · ${spec.xp} ${goodName(spec.skill).toLowerCase()} practice`:''}${spec.requires?` · ${world.progression.upgrades[spec.requires]?.label || goodName(spec.requires)}`:''}`,ready:town.level>=spec.level&&(town.sandbox||professionSkill(town,spec.skill)>=(spec.xp || 0))&&(!spec.requires||item.profession_upgrades?.includes(spec.requires))&&!item.profession_upgrades?.includes(command.upgrade)};
   }
   const capacity=command.action==='upgrade_capacity',level=capacity?item.settler_level || 1:buildingLevel(item);
+  if(decorationKinds.includes(item.kind))return null;
   const currentBenefits=upgradeBenefit(item.kind,level,item).split('\n'),nextBenefits=upgradeBenefit(item.kind,level+1,item).split('\n');
-  return {title:`${buildingName(item)} · ${capacity?'Capacity tier':'Level'} ${level+1}`,benefits:capacity?[`${settlerSpaces[item.kind]*level} → ${settlerSpaces[item.kind]*(level+1)} spaces`]:nextBenefits.map((benefit,i)=>currentBenefits[i]&&currentBenefits[i]!==benefit?`${currentBenefits[i]} → ${benefit}`:benefit),cost:{wood:capacity?20*level:costs[item.kind]*level},seconds:30*level,requirements:'',ready:level<(capacity?3:item.kind==='storehouse'?storehouseCapacities.length:3)};
+  const maxLevel=capacity?capacityMaxLevel(item):item.kind==='storehouse'?storehouseCapacities.length:3;
+  return {title:`${buildingName(item)} · ${capacity?'Capacity tier':'Level'} ${level+1}`,benefits:capacity?[`${settlerCapacity(item)} → ${settlerCapacity({...item,settler_level:level+1})} worker spaces`]:nextBenefits.map((benefit,i)=>currentBenefits[i]&&currentBenefits[i]!==benefit?`${currentBenefits[i]} → ${benefit}`:benefit),cost:{wood:capacity?20*level:costs[item.kind]*level},seconds:30*level,requirements:'',ready:level<maxLevel};
 }
 function upgradeCard(button,preview,{title=preview?.title,status='',benefits=preview?.benefits || []}={}){
   const card=document.createElement('div');card.className='upgrade-card';
@@ -670,6 +693,8 @@ const costs = {road:0,home:20,woodcutter:15,farm:15,storehouse:25,fishing_hut:15
 const colors = {hall:'#a88861',home:'#c5ad80',woodcutter:'#947b55',farm:'#bc9b5c',storehouse:'#8c9b8b',fishing_hut:'#7899a2'};
 // Small vector illustrations share the map's earth, sage, and amber palette.
 Object.assign(labels,{barn:'Barn',sawpit:'Sawpit',mill:'Mill',smokehouse:'Smokehouse',workshop:'Workshop',fish_pond:'Fish pond',orchard:'Orchard',market:'Market stall',bakery:'Bakery',butcher:'Butcher shop'});
+Object.assign(labels,{workshop:"Woodworker's workshop",wooden_bench:'Wooden bench',wooden_statue:'Carved wooden statue'});
+Object.assign(costs,{wooden_bench:0,wooden_statue:0});
 Object.assign(costs,{barn:25,sawpit:25,mill:30,smokehouse:25,workshop:30,fish_pond:25,orchard:25,market:20,bakery:30,butcher:25});
 Object.assign(colors,{barn:'#b9866b',sawpit:'#aa8b60',mill:'#c1b080',smokehouse:'#8c8173',workshop:'#a28c72',fish_pond:'#7899a2',orchard:'#83a36b',market:'#c5ad80',bakery:'#c1a078',butcher:'#b9866b'});
 Object.assign(labels,{tannery:'Tannery',mine:'Mine',smelter:'Iron smelter',stable:'Stable',saddler:'Saddler',steelworks:'Steelworks',tradehouse:'Trade house'});
@@ -726,7 +751,7 @@ function renderRules(town){
     row.append(label,input,save);target.append(row);
   }
 }
-function materialCosts(spec){return Object.fromEntries(Object.entries(spec).filter(([k])=>['wood','coins','planks','wool','tools','leather','iron_ore','iron','saddles','steel','trade_crates'].includes(k)));}
+function materialCosts(spec){return Object.fromEntries(Object.entries(spec).filter(([k,v])=>v&&['wood','coins','planks','wool','tools','leather','iron_ore','iron','saddles','steel','trade_crates','furniture','carved_furniture'].includes(k)));}
 function buildingCosts(town,spec){return town?.sandbox?{}:materialCosts(spec);}
 function canAfford(town,cost){return Object.entries(cost).every(([k,v])=>amountOf(town,k)>=v);}
 function costText(cost){return Object.entries(cost).map(([k,v])=>`${v} ${goodName(k).toLowerCase()}`).join(' + ');}
@@ -738,6 +763,9 @@ function itemCard(key,name,stats,quantity){
   const effect=document.createElement('small');effect.className='item-stats';effect.textContent=stats;details.append(effect);
   const count=document.createElement('small');count.className='item-quantity';count.textContent=quantity;details.append(count);
   header.append(details);card.append(header);return card;
+}
+function availableWorkerTools(town,key){
+  return (town.player?.worker_tools?.[key] || 0)+(['crafted_axe','crafted_saw'].includes(key)?amountOf(town,key):0);
 }
 function toolRecipientPicker(town,key,carrierIndex=null){
   const gear=workerTools[key];
@@ -765,14 +793,14 @@ function renderItems(town){
   const heading=document.createElement('h3');heading.textContent='Villager tools';tools.append(heading);
   const hint=document.createElement('p');hint.className='muted';hint.textContent='Select a villager to assign. Nobody returns the tool. Matching workers appear first.';tools.append(hint);
   for(const [key,gear] of Object.entries(workerTools)){
-    const available=town.player?.worker_tools?.[key] || 0;
+    const available=availableWorkerTools(town,key);
     const assigned=town.villagers.map((v,index)=>({v,index})).filter(({v})=>v.worker_tool===key);
     if(available<1&&!assigned.length)continue;
-    const row=itemCard(key,gear.name,`+${gear.bonus*100}% ${gear.job} output`,`${available} available · ${assigned.length} assigned`);
+    const row=itemCard(key,gear.name,`+${gear.bonus*100}% ${gear.job} output${key==='crafted_saw'?' and ingredients per batch':''}`,`${Number(available.toFixed(2))} available · ${assigned.length} assigned`);
     for(const {v,index} of assigned){
       const recipient=toolRecipientPicker(town,key,index);recipient.setAttribute('aria-label',`Assign ${gear.name.toLowerCase()} carried by ${v.name}`);row.append(recipient);
     }
-    if(available>0)row.append(toolRecipientPicker(town,key));
+    if(available>=1)row.append(toolRecipientPicker(town,key));
     tools.append(row);
   }
   if(tools.children.length>2)target.append(tools);
@@ -807,6 +835,10 @@ async function playerAction(action){
   }catch(e){notice(e.message);}
 }
 const iconPaths = {
+  crafted_axe:'<path fill="#94704c" d="m6 28 15-24 3 2-15 24z"/><path fill="#bacac5" d="m18 5 7-3 5 9-8 4z"/>',
+  crafted_saw:'<path fill="#bacac5" d="M4 13h22v8l-3-2-3 2-3-2-3 2-3-2-3 2-4-2z"/><path fill="none" stroke="#94704c" stroke-width="3" d="M26 11h4v12h-4z"/>',
+  wooden_bench:'<path fill="#a78454" d="M3 9h26v5H3zm0 9h26v5H3zM5 23h3v7H5zm19 0h3v7h-3z"/>',
+  wooden_statue:'<path fill="#b18a58" d="M6 26h20v5H6zm6-14h8l4 14H8z"/><circle fill="#b18a58" cx="16" cy="7" r="6"/>',
   fine_axe:'<path fill="#94704c" d="m6 28 15-24 3 2-15 24z"/><path fill="#bacac5" d="m18 5 7-3 5 9-8 4z"/>',
   steel_axe:'<path fill="#94704c" d="m6 28 15-24 3 2-15 24z"/><path fill="#dce8ed" d="m18 5 7-3 5 9-8 4z"/>',
   masterwork_axe:'<path fill="#94704c" d="m6 28 15-24 3 2-15 24z"/><path fill="#d9bd70" d="m18 5 7-3 5 9-8 4z"/>',
@@ -1160,7 +1192,7 @@ function villagersTable(town){
   for(const [index,v] of town.villagers.entries())body.append(villagerRow(town,v,index));
   table.append(body);return table;
 }
-const settlerSpaces={hall:1,home:2,storehouse:1,woodcutter:1,fishing_hut:1,farm:4,acre:1,barn:2,sawpit:2,mill:2,smokehouse:2,workshop:2,fish_pond:2,orchard:2,market:1,bakery:2,butcher:2};
+const settlerSpaces={hall:1,home:2,storehouse:1,woodcutter:1,fishing_hut:1,farm:4,acre:1,barn:2,sawpit:1,mill:2,smokehouse:2,workshop:1,fish_pond:2,orchard:2,market:1,bakery:2,butcher:2,wooden_bench:0,wooden_statue:0};
 function settlerBuilding(town,v,index){
   if(Number.isInteger(v.building_index))return v.building_index;
   const kind={woodcutting:'woodcutter',farming:'farm',fishing:'fishing_hut'}[v.job];
@@ -1176,7 +1208,7 @@ function renderSettlers(town,item,buildingIndex,target=$('selection-details'),up
     const note=document.createElement('p');note.textContent='Only the town owner’s controllable character can settle here. Assign other settlers to cottages or workplaces.';
     details.append(note);return;
   }
-  const level=item.settler_level || 1,capacity=settlerSpaces[item.kind]*level;
+  const level=item.settler_level || 1,capacity=settlerCapacity(item),maxLevel=capacityMaxLevel(item);
   const assigned=town.villagers.map((v,i)=>({v,i})).filter(({v,i})=>settlerBuilding(town,v,i)===buildingIndex);
   target.append(fact(`${assigned.length} / ${capacity}`,['hall','home'].includes(item.kind)?'Settlers':'Workers'));
   const note=document.createElement('p');
@@ -1221,11 +1253,11 @@ function renderSettlers(town,item,buildingIndex,target=$('selection-details'),up
   const assignment=document.createElement('div');assignment.className='worker-assignment';
   assignment.append(chooser);assignment.append(add);target.append(assignment);
   const upgrade=document.createElement('button');upgrade.className='upgrade-button';upgrade.textContent='Upgrade';
-  upgrade.title=level>=3?'Settler capacity fully upgraded':`Upgrade to ${settlerSpaces[item.kind]*(level+1)} spaces · ${town.sandbox?'Free · Instant':`${20*level} wood · ${30*level} seconds`}`;
+  upgrade.title=level>=maxLevel?'Settler capacity fully upgraded':`Upgrade to ${settlerCapacity({...item,settler_level:level+1})} spaces · ${town.sandbox?'Free · Instant':`${20*level} wood · ${30*level} seconds`}`;
   upgrade.setAttribute('aria-label',`Upgrade ${item.kind==='home'?'settler':'worker'} capacity: ${upgrade.title}`);
-  upgrade.disabled=level>=3;
+  upgrade.disabled=level>=maxLevel;
   upgrade.onclick=()=>{if(!upgrade.disabled)showUpgrade({action:'upgrade_capacity',index:buildingIndex});};
-  upgrades.append(upgradeCard(upgrade,upgradePreview({action:'upgrade_capacity',index:buildingIndex},town,item),{title:item.kind==='home'?'Settler capacity':'Worker capacity',status:level>=3?'Maxed':'',benefits:[`${capacity}${level<3?` → ${settlerSpaces[item.kind]*(level+1)}`:''} space${capacity===1&&level>=3?'':'s'}`]}));
+  upgrades.append(upgradeCard(upgrade,upgradePreview({action:'upgrade_capacity',index:buildingIndex},town,item),{title:item.kind==='home'?'Settler capacity':'Worker capacity',status:level>=maxLevel?'Maxed':'',benefits:[`${capacity}${level<maxLevel?` → ${settlerCapacity({...item,settler_level:level+1})}`:''} space${capacity===1&&level>=maxLevel?'':'s'}`]}));
 }
 function selectedProfessionRecipe(item){
   const recipes=world.progression?.profession_recipes?.[item.kind];
@@ -1406,6 +1438,15 @@ function renderProfession(town,item,index,target,upgrades,details,boats,unlocked
     if(item.kind==='farm'){
       const label=document.createElement('label');label.textContent='Crop for all acres';label.append(chooser);target.append(label);
     }else target.append(chooser);
+    target.append(fact(`${catalog.farming_harvest_yield ?? 10} crops`,'Base harvest per acre · Skills, tools and upgrades apply'));
+    if(item.kind==='acre'){
+      const field=item.field || {stage:'unplowed',elapsed:0};
+      const labels={unplowed:'Unplowed soil',plowed:'Plowed · Waiting for seeding',sprouting:'Sprouting',
+        thirsty:'Needs water',growing:'Growing',ripe:'Ready to harvest'};
+      const remaining=['sprouting','growing'].includes(field.stage)?` · ${Math.ceil((catalog.farming_growth_seconds || 15)-field.elapsed)}s remaining`:'';
+      target.append(fact((labels[field.stage] || field.stage)+remaining,'Field stage'));
+      if(field.crop&&field.crop!==(item.crop || 'vegetables'))target.append(fact(goodName(field.crop),'Current crop · Selection applies next seeding'));
+    }
   }
   if(['barn','stable'].includes(item.kind)){
     target.append(fact(`${Object.values(item.animals || {}).reduce((a,n)=>a+n,0)} / ${4*buildingLevel(item)}`,'Animal capacity'));
@@ -1507,7 +1548,7 @@ function renderSelection(town){
       const row=document.createElement('p');row.textContent=`Keepsake: ${keepsake}`;$('selection-details').append(row);
     }
     for(const [key,gear] of Object.entries(workerTools)){
-      const row=document.createElement('p');row.textContent=`${gear.name} · ${town.player?.worker_tools?.[key] || 0} available · Give to a worker from their panel (+${gear.bonus*100}% ${gear.job} output)`;$('selection-details').append(row);
+      const row=document.createElement('p');row.textContent=`${gear.name} · ${Number(availableWorkerTools(town,key).toFixed(2))} available · Give to a worker from their panel (+${gear.bonus*100}% ${gear.job} output${key==='crafted_saw'?' and ingredients per batch':''})`;$('selection-details').append(row);
     }
     if(viewed===identity?.town_id){
       const quarry=document.createElement('button');quarry.textContent='The Sealed Quarry · Puzzle prototype';
@@ -1636,20 +1677,21 @@ function renderSelection(town){
     if(buildingFolds.key!==foldKey)buildingFolds={key:foldKey,open:{}};
     $('selection-art').append(illustration(item.kind));
     $('selection-level').hidden=false;$('selection-level').textContent=`Lv ${item.kind==='hall'?town.level:buildingLevel(item)}`;
-    const workers=buildingSection(item.kind==='well'?'Water':['hall','home'].includes(item.kind)?'Settlers':'Workers');
-    const production=buildingSection(item.kind==='market'?'Trade':['hall','home','storehouse'].includes(item.kind)?'Benefits':'Production');
-    const upgrades=buildingSection('Upgrades'),details=buildingSection('Building details',true),storageOverview=buildingSection('Storage');
+    const decoration=decorationKinds.includes(item.kind);
+    const workers=buildingSection(decoration?'Decoration':item.kind==='well'?'Water':['hall','home'].includes(item.kind)?'Settlers':'Workers');
+    const production=decoration?document.createElement('div'):buildingSection(item.kind==='market'?'Trade':['hall','home','storehouse'].includes(item.kind)?'Benefits':'Production');
+    const upgrades=decoration?document.createElement('div'):buildingSection('Upgrades'),details=buildingSection('Building details',true),storageOverview=decoration?document.createElement('div'):buildingSection('Storage');
     const boats=item.kind==='fishing_hut'?buildingSection('Fishing boats'):null;
-    const unlockedUpgrades=buildingSection('Unlocked upgrades',true);
+    const unlockedUpgrades=decoration?document.createElement('div'):buildingSection('Unlocked upgrades',true);
     const upgradeActions=document.createElement('div');upgradeActions.className='building-upgrade-actions';
     const assigned=town.villagers.filter((v,i)=>settlerBuilding(town,v,i)===selection.index);
     const status=document.createElement('p');status.className='workplace-status';
     const sourceWork=['woodcutter','farm','fishing_hut'].includes(item.kind);
-    status.textContent=item.construction?'Under construction':town.upgrade_remaining&&item.kind==='hall'?`Upgrading · ${town.upgrade_remaining}s remaining`:
+    status.textContent=decoration?'Village decoration · No production bonus':item.construction?'Under construction':town.upgrade_remaining&&item.kind==='hall'?`Upgrading · ${town.upgrade_remaining}s remaining`:
       sourceWork&&!buildingUsable(town,item)?'Needs a source in reach':
       ['hall','home'].includes(item.kind)?'':item.kind==='well'?'Water available':item.kind==='acre'?'Field ready':
       !assigned.length?'Needs workers':[...new Set(assigned.map(v=>productionStatus(v,item)).filter(Boolean))].join(' · ') || `${assigned.length} assigned worker${assigned.length===1?'':'s'}.`;
-    if(!item.construction&&item.kind!=='well')renderSettlers(town,item,selection.index,workers,upgradeActions,details);
+    if(!item.construction&&!decoration&&item.kind!=='well')renderSettlers(town,item,selection.index,workers,upgradeActions,details);
     if(item.kind==='well'){
       const note=document.createElement('p');note.textContent='Workers fetch water here for watering crops. Keep a path to an adjacent tile clear. Supplies water automatically once built; no assigned workers are needed.';details.append(note);
     }
@@ -1684,7 +1726,7 @@ function renderSelection(town){
       const progress=document.createElement('progress');progress.max=c.total;progress.value=c.progress;progress.setAttribute('aria-label',`${labels[item.kind]} construction`);workers.append(progress);
     }
     renderProfession(town,item,selection.index,production,upgrades,details,boats,unlockedUpgrades);
-    if(!item.construction&&!['home','market','well'].includes(item.kind)){
+    if(!item.construction&&!['home','market','well',...decorationKinds].includes(item.kind)){
       renderStorage(town,item,selection.index,storageOverview);
     }
     if(costs[item.kind]&&item.kind!=='well'){
@@ -1714,7 +1756,7 @@ function renderSelection(town){
       button.onclick=()=>{acreFarmIndex=selection.index;openPanel('build');tool='acre';moveIndex=null;buildTile=null;hoverTile=null;render();};
       production.append(button);
     }
-    if(!item.construction&&!['home','market','well'].includes(item.kind))$('selection-details').append(storageOverview);
+    if(!item.construction&&!['home','market','well',...decorationKinds].includes(item.kind))$('selection-details').append(storageOverview);
     $('selection-details').append(workers);
     if(production.children.length>1)$('selection-details').append(production);
     if(boats?.children.length>1)$('selection-details').append(boats);
@@ -1732,6 +1774,7 @@ const buildingCategories=[
   ['Housing & storage',['home','storehouse']],
   ['Food & farming',['farm','well','fishing_hut','barn','fish_pond','orchard','mill','smokehouse','bakery','butcher']],
   ['Crafting',['woodcutter','sawpit','workshop','tannery','saddler']],
+  ['Decorations',decorationKinds],
   ['Mining & metal',['mine','smelter','steelworks']],
   ['Horses',['stable']],
   ['Trade',['market','tradehouse']],
@@ -2272,8 +2315,16 @@ function animatedVillagers(town, seconds, townId=viewed, frameLayout=null){
     const signature=prepared?.signature ?? JSON.stringify([task,trip?[trip.id,trip.operation,trip.workplace,trip.storage,trip.path]:villager.logistics_target]);
     const workerKey=world.shared_map?`${townId}/${index}`:index;
     let state=workers.get(workerKey);
-    const finishingDelivery=state?.transport&&state.path.length&&state.task===task&&state.layout===layout;
-    if(!state || state.layout!==layout || (state.signature!==signature&&!finishingDelivery)){
+    let finishingDelivery=state?.transport&&state.path.length&&state.task===task;
+    if(state&&!state.pendingPlan&&!state.pendingAdvance&&state.layout!==layout
+      &&(state.signature===signature||finishingDelivery)){
+      const routing=region?.routing || (world.shared_map?{...town,roads:mapRoads(town),
+        obstacles:Object.values(world.towns).flatMap(t=>t.buildings)}:town);
+      if(WorkerAnimation.refreshNavigation(state,routing,villager))state.layout=layout;
+      else state.needsPlan=true;
+    }
+    finishingDelivery=finishingDelivery&&!state?.needsPlan;
+    if(!state || state.layout!==layout || state.needsPlan || (state.signature!==signature&&!finishingDelivery)){
       if(region){
         if(state?.pendingPlan?.signature!==signature||state?.pendingPlan?.layout!==layout){
           const version={signature,layout};
@@ -2286,13 +2337,14 @@ function animatedVillagers(town, seconds, townId=viewed, frameLayout=null){
           ClientScene.queue.schedule('plan/'+workerKey,version,WorkerAnimation.planSteps(region.routing,villager,index,previous),planned=>{
             if(workers.get(workerKey)!==state)return;
             const visible=state.playbackQueue?{x:state.x,y:state.y,path:state.path,phase:state.phase,elapsed:state.elapsed,clock:state.clock}:{};
-            Object.assign(state,planned,visible,{signature,layout,task,pendingPlan:null,transport:!!planned.transport});
+            Object.assign(state,planned,visible,{signature,layout,task,pendingPlan:null,needsPlan:false,transport:!!planned.transport});
           });
         }
       }else{
         const visible=state?.playbackQueue?{x:state.x,y:state.y,path:state.path,phase:state.phase,elapsed:state.elapsed,clock:state.clock,
-          playbackQueue:state.playbackQueue,hostVersion:state.hostVersion,hostTask:state.hostTask}:{};
-        state=Object.assign(WorkerAnimation.plan(world.shared_map?{...town,roads:mapRoads(town),obstacles:Object.values(world.towns).flatMap(t=>t.buildings),home_hall:town.buildings.find(b=>b.kind==='hall')}:town,villager,index,state),visible,{signature,layout,task});workers.set(workerKey,state);
+          playbackQueue:state.playbackQueue,hostVersion:state.hostVersion,hostTask:state.hostTask,
+          farmAction:state.farmAction,farmField:state.farmField}:{};
+        state=Object.assign(WorkerAnimation.plan(world.shared_map?{...town,roads:mapRoads(town),obstacles:Object.values(world.towns).flatMap(t=>t.buildings),home_hall:town.buildings.find(b=>b.kind==='hall')}:town,villager,index,state),visible,{signature,layout,task,needsPlan:false});workers.set(workerKey,state);
       }
     }
     state.roads=roads;
@@ -2309,7 +2361,7 @@ function animatedVillagers(town, seconds, townId=viewed, frameLayout=null){
       if(state.hostVersion!==hostWork.version || state.hostTask!==JSON.stringify(hostWork.task)){
         Object.assign(state,{x:hostWork.x,y:hostWork.y,phase:hostWork.phase,
           elapsed:hostWork.phase==='collecting_water'?0:hostWork.elapsed,waterElapsed:hostWork.elapsed,
-          waterReady:hostWork.waterReady,waterSource:hostWork.waterSource,facing:hostWork.facing,
+          waterReady:hostWork.waterReady,waterSource:hostWork.waterSource,farmAction:hostWork.farmAction,facing:hostWork.facing,
           fishingCaught:null,
           path:hostWork.path.map(p=>({...p})),hostWork:true,hostVersion:hostWork.version,
           hostTask:JSON.stringify(hostWork.task)});
@@ -2406,7 +2458,7 @@ function villagerAccessories(b){
     saddlery:{color:'#b89268',apron:'#ddc7a2',tool:'hammer'},steelmaking:{color:'#758792',apron:'#705345',tool:'hammer'},packing:{color:'#a1ab7e',tool:'pack'},
     butchery:{color:'#966d65',apron:'#dfc9bf',cap:'#d8b6a7',tool:'cleaver'},
   };
-  return {axe:job==='woodcutting'&&(level>=5||['fine_axe','steel_axe','masterwork_axe'].includes(v.worker_tool)),
+  return {axe:job==='woodcutting'&&(level>=5||['crafted_axe','fine_axe','steel_axe','masterwork_axe'].includes(v.worker_tool)),
     blouse:job==='woodcutting'&&level>=10,woodcuttingMaster:job==='woodcutting'&&level>=20,
     sickle:job==='farming'&&(level>=5||['fine_sickle','steel_sickle','masterwork_sickle'].includes(v.worker_tool)),
     hat:job==='farming'&&level>=10,farmingMaster:job==='farming'&&level>=20,
@@ -2441,7 +2493,7 @@ function drawVillager(b){
   const fishing=s.phase==='working'&&!walking&&b.villager.job==='fishing';
   const farming=s.phase==='working'&&!walking&&b.villager.job==='farming';
   const constructing=working&&!!b.villager.construction_target;
-  const farmStage=Math.min(3,Math.floor((s.elapsed || 0)/2));
+  const farmStage=s.farmAction?['plowing','sowing','watering','harvesting'].indexOf(s.farmAction):Math.min(3,Math.floor((s.elapsed || 0)/2));
   const farmSwing=(Math.sin((s.elapsed || 0)*Math.PI*3)+1)/2;
   const fishingTime=s.activityElapsed ?? s.elapsed ?? 0;
   const fishingUpgrades=s.home?.profession_upgrades || [];
@@ -3431,8 +3483,10 @@ function draw(seconds=0){
     const [px,py]=point(field.x,field.y);
     if(px < -tileW || px > rect.width+tileW || py < -tileH || py > rect.height+80*tileW/46)continue;
     const farmer=villagers.find(worker=>worker.villager.job==='farming'&&!worker.state.construction
-      &&worker.state.phase==='working'&&worker.state.source?.kind==='acre'
-      &&worker.state.source.x===field.x&&worker.state.source.y===field.y);
+      &&(field.townId===undefined||field.townId===worker.townId)
+      &&(WorkerAnimation.fieldPresentation(worker.state,field)
+        ||(worker.state.phase==='working'&&worker.state.source?.kind==='acre'
+          &&worker.state.source.x===field.x&&worker.state.source.y===field.y)));
     // Soil and furrows stay below every character; stalks use their own depth.
     drawFarmCrops(field,farmer?.state,crop=>cropObjects.push(crop));
   }
@@ -3578,9 +3632,13 @@ function buildingUsable(town,b){
   return buildingUsable.results.get(key);
 }
 function drawFarmCrops(b,state,collectCrop=null){
-  const elapsed=state?.elapsed ?? 6;
-  const stage=Math.min(3,Math.floor(elapsed/2)),progress=(elapsed%2)/2;
-  const cropType=['vegetables','wheat','carrots','fodder'].includes(b.crop)?b.crop:'vegetables';
+  const field=(state&&WorkerAnimation.fieldPresentation(state,b)) || b.field || {stage:'unplowed',elapsed:0,progress:0};
+  const elapsed=field.elapsed || 0;
+  const growthSeconds=world?.progression?.farming_growth_seconds || 15;
+  const stage=['unplowed','plowed'].includes(field.stage)?0:field.stage==='ripe'?3:2;
+  const progress=['sprouting','growing'].includes(field.stage)?elapsed/growthSeconds:0;
+  const plantedCrop=field.crop || b.crop;
+  const cropType=['vegetables','wheat','carrots','fodder'].includes(plantedCrop)?plantedCrop:'vegetables';
   const colors={vegetables:['#68934e','#8eae60'],wheat:['#d9bd70','#b8b458'],
     carrots:['#dd9048','#efa754'],fodder:['#72a65c','#9bbf70']}[cropType];
   const [x,y]=point(b.x,b.y),scale=tileW/46;
@@ -3599,15 +3657,17 @@ function drawFarmCrops(b,state,collectCrop=null){
   }
   for(let row=0;row<4;row++){
     const [ax,ay]=point(b.x-.3+row*.2,b.y-.35),[bx,by]=point(b.x-.3+row*.2,b.y+.35);
-    ctx.strokeStyle='#655638';ctx.lineWidth=scale;
-    ctx.beginPath();ctx.moveTo(ax,ay+tileH/2);ctx.lineTo(bx,by+tileH/2);ctx.stroke();
+    if(field.stage!=='unplowed'){
+      ctx.strokeStyle='#655638';ctx.lineWidth=scale;
+      ctx.beginPath();ctx.moveTo(ax,ay+tileH/2);ctx.lineTo(bx,by+tileH/2);ctx.stroke();
+    }
     for(let crop=0;crop<4;crop++){
       const order=row*4+crop;
-      if(stage===0 || (stage===1&&order>=progress*16) || (state&&stage===3&&order<progress*16))continue;
+      if(stage===0 || (stage===3&&order<(field.progress || 0)/2*16))continue;
       const x=b.x-.3+row*.2,y=b.y-.3+crop*.2;
       // Characters' feet sit .15 tile heights ahead of a crop's ground anchor.
       const stalk={kind:'crop',cropType,x,y,depth:x+y-.3,stage,
-        height:stage===2?2+progress*4:6,
+        height:field.stage==='sprouting'?1+progress*2:stage===2?3+progress*3:6,
         sway:state?Math.sin(elapsed*4+order):0,
         color:stage===2?'#8db568':colors[(row+crop)%2]};
       if(collectCrop)collectCrop(stalk);else drawFarmCrop(stalk);
@@ -3726,6 +3786,22 @@ function paintBuilding(b,town,farmState=null,target=ctx,usable=buildingUsable(to
   if(b.kind==='acre'){
     drawFarmCrops(b,farmState);
     return;
+  }
+  if(decorationKinds.includes(b.kind)){
+    const [x,top]=point(b.x,b.y),y=top+tileH/2,s=tileW/46;
+    ctx.save();ctx.translate(x,y);ctx.scale(s,s);
+    ctx.fillStyle='#223b2944';ctx.beginPath();ctx.ellipse(3,5,21,7,0,0,Math.PI*2);ctx.fill();
+    if(b.kind==='wooden_bench'){
+      for(const px of [-15,12]){ctx.fillStyle='#674c33';ctx.fillRect(px,-3,3,13);}
+      ctx.fillStyle='#a78454';ctx.fillRect(-18,-13,36,5);ctx.fillRect(-18,-5,36,6);
+      ctx.strokeStyle='#d6b17b';ctx.lineWidth=1;ctx.strokeRect(-18,-13,36,5);ctx.strokeRect(-18,-5,36,6);
+    }else{
+      ctx.fillStyle='#674c33';ctx.fillRect(-12,1,24,7);
+      ctx.fillStyle='#b18a58';ctx.beginPath();ctx.moveTo(-9,1);ctx.lineTo(-5,-20);ctx.lineTo(5,-20);ctx.lineTo(9,1);ctx.fill();
+      ctx.beginPath();ctx.arc(0,-25,7,0,Math.PI*2);ctx.fill();
+      ctx.strokeStyle='#d6b17b';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(-4,-17);ctx.lineTo(-3,-2);ctx.stroke();
+    }
+    ctx.restore();return;
   }
   const [x,top]=point(b.x,b.y),y=top+tileH/2,s=tileW/46;
   if(b.kind==='well'){

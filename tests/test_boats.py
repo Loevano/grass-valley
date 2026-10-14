@@ -1,3 +1,4 @@
+from fixtures import flat_town
 import copy
 import json
 import unittest
@@ -13,10 +14,26 @@ from spatial import SpatialIndex
 
 class Boats(unittest.TestCase):
     def setUp(self):
-        self.town = new_town('Boats')
+        self.town = flat_town('Boats', size=120)
         self.town.update(level=5, coins=200, wood=200, goods={'planks': 100},
                          npcs=[], terrain=['g' * 120] * 120)
         self.town['player']['fishing'] = 40
+
+    def test_pier_and_route_are_retained_during_unchanged_work(self):
+        hut = {'kind': 'fishing_hut', 'x': 2, 'y': 2, 'profession_upgrades': ['boat']}
+        self.town['buildings'].append(hut)
+        self.town['map_resources'] = [{'kind': 'water', 'x': x, 'y': 2} for x in range(3, 9)]
+        fisher = self.town['villagers'][0]
+        fisher.update(job='fishing', logistics_position={'x': 2, 'y': 3})
+        source = self.town['map_resources'][-1]
+        with patch.object(work_cycles, 'route', wraps=work_cycles.route) as route:
+            work_cycles.advance(self.town, self.town, fisher, hut, source, 0, .1)
+            queries = route.call_count
+            path = fisher['work_animation']['path']
+            self.town['buildings'].append({'kind': 'home', 'x': 50, 'y': 50})
+            work_cycles.advance(self.town, self.town, fisher, hut, source, 0, .1)
+            self.assertEqual(route.call_count, queries)
+            self.assertIs(fisher['work_animation']['path'], path)
 
     def test_boat_crew_capacity_leaves_other_fishers_on_the_dock(self):
         hut = {'kind': 'fishing_hut', 'x': 6, 'y': 2, 'settler_level': 4}
@@ -62,7 +79,9 @@ class Boats(unittest.TestCase):
         self.assertTrue(unloaded)
         self.assertTrue({'working', 'returning', 'depositing'} <= phases)
         self.assertIn((12, 2), positions)
-        self.assertEqual((state['x'], state['y']), (8, 2), 'Unloading keeps the fisher aboard one tile beyond the dock')
+        departure = next(p for p in state['playback'] if p['phase'] == 'walking')
+        self.assertEqual((departure['x'], departure['y']), (8, 2), 'Unloading finishes aboard one tile beyond the dock')
+        self.assertGreater(state['x'], departure['x'], 'Remaining tick time starts the next voyage')
         self.assertEqual(state['phase'], 'walking')
 
     def test_partial_cargo_waits_for_full_load_or_empty_source_and_survives_save(self):
@@ -82,7 +101,8 @@ class Boats(unittest.TestCase):
         for _ in range(100):
             if work_cycles.advance(self.town, self.town, worker, hut, source, 0, .1):
                 break
-        self.assertEqual((worker['work_animation']['x'], worker['work_animation']['y']), (8, 2))
+        departure = next(p for p in worker['work_animation']['playback'] if p['phase'] == 'walking')
+        self.assertEqual((departure['x'], departure['y']), (8, 2))
         logistics.drop_off(self.town, hut, worker)
         self.assertEqual(hut['output_buffer']['fish'], 2)
         self.assertEqual(work_cycles.boat_load(self.town, hut), 0)
@@ -104,7 +124,9 @@ class Boats(unittest.TestCase):
                     tick({'towns': {'a': self.town}})
                 self.assertAlmostEqual(work_cycles.boat_load(self.town, hut), capacity)
                 leader = self.town['villagers'][0]['work_animation']
-                for worker in self.town['villagers'][1:]:
+                # Tick may also add an idle resident; only the original crew
+                # shares this voyage.
+                for worker in self.town['villagers'][1:tier]:
                     self.assertEqual(worker['work_animation'], leader, 'Crew shares one confirmed voyage')
                 for _ in range(20):
                     tick({'towns': {'a': self.town}})
@@ -148,7 +170,8 @@ class Boats(unittest.TestCase):
             if unloaded:
                 break
         self.assertTrue(unloaded)
-        self.assertEqual((fisher['work_animation']['x'], fisher['work_animation']['y']), tiles[1])
+        departure = next(p for p in fisher['work_animation']['playback'] if p['phase'] == 'walking')
+        self.assertEqual((departure['x'], departure['y']), tiles[1])
 
     def test_upgrades_choose_deeper_water_and_catch_better_species(self):
         upgrades = []

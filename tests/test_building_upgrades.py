@@ -163,16 +163,16 @@ class BuildingUpgrades(unittest.TestCase):
         self.assertEqual(hauler['job'], 'hauling')
 
     def test_profession_worker_helps_equipment_upgrade(self):
-        camp = self.add('woodcutter')
+        camp = self.add('fishing_hut')
         self.town.update(level=2, coins=20)
-        self.town['map_resources'] = [{'kind': 'tree', 'x': 7, 'y': 2}]
+        self.town['map_resources'] = [{'kind': 'water', 'x': 7, 'y': 2}]
         for villager in self.town['villagers']:
-            villager.update(job='woodcutting', building_index=camp, woodcutting=10)
-        command(self.town, {'action': 'profession_upgrade', 'index': camp, 'upgrade': 'axe'})
+            villager.update(job='fishing', building_index=camp, fishing=10)
+        command(self.town, {'action': 'profession_upgrade', 'index': camp, 'upgrade': 'nets'})
         for _ in range(30):
             construct(self.town, self.town)
-        self.assertIn('axe', self.town['buildings'][camp]['profession_upgrades'])
-        self.assertTrue(all(v['job'] == 'woodcutting' for v in self.town['villagers']))
+        self.assertIn('nets', self.town['buildings'][camp]['profession_upgrades'])
+        self.assertTrue(all(v['job'] == 'fishing' for v in self.town['villagers']))
 
     def test_housing_and_storage_benefits(self):
         index = self.add('home')
@@ -190,8 +190,8 @@ class BuildingUpgrades(unittest.TestCase):
 
     @patch('server.secrets.randbelow', return_value=1)
     def test_each_workplace_boosts_only_its_workers(self, _roll):
-        for kind, job, resource, base in [('woodcutter', 'woodcutting', 'wood', .5),
-                                          ('farm', 'farming', 'food', 1),
+        for kind, job, resource, base in [('woodcutter', 'woodcutting', 'wood', .75),
+                                          ('farm', 'farming', 'food', 10),
                                           ('fishing_hut', 'fishing', 'food', 1)]:
             with self.subTest(kind=kind):
                 self.setUp()
@@ -202,12 +202,17 @@ class BuildingUpgrades(unittest.TestCase):
                 self.town['buildings'][second]['y'] = 3
                 for i, workplace in enumerate([first, second]):
                     self.town['villagers'][i].update(job=job, building_index=workplace)
+                    if job == 'farming':
+                        building = self.town['buildings'][workplace]
+                        building['field'] = {'stage': 'ripe', 'elapsed': 0, 'progress': 0, 'cycle': 0,
+                                             'crop': 'vegetables'}
+                        self.town['villagers'][i]['construction_position'] = {'x': building['x'] + 1, 'y': building['y']}
                 self.town['wood'] = self.town['food'] = 30
                 tick({'towns': {'a': self.town}})
                 upkeep = 5 * .12 + 2 * .18 if resource == 'food' else 0
                 self.assertAlmostEqual(self.town[resource], 30 - upkeep)
                 output = 'wood' if resource == 'wood' else 'fish' if job == 'fishing' else 'vegetables'
-                self.assertAlmostEqual(sum(b.get('pending_output', {}).get(output, 0) for b in self.town['buildings']), base * 2.25)
+                self.assertAlmostEqual(sum(b.get('pending_output', {}).get(output, 0) for b in self.town['buildings']), base * (2 if kind == 'woodcutter' else 2.25))
 
     @patch('server.secrets.randbelow', return_value=0)
     def test_failed_catches_and_full_storage_do_not_gain_bonus_food(self, _roll):
@@ -220,7 +225,7 @@ class BuildingUpgrades(unittest.TestCase):
             tick({'towns': {'a': self.town}})
             self.assertAlmostEqual(self.town['food'], food - .78)
 
-    def test_farm_and_acre_bonuses_add_and_respect_storage(self):
+    def test_farm_and_acre_bonuses_add_at_harvest_only(self):
         farm = self.add('farm')
         self.upgrade(farm)
         acre = self.add('acre', farm_index=farm)
@@ -228,14 +233,18 @@ class BuildingUpgrades(unittest.TestCase):
         self.upgrade(acre)
         self.town['map_resources'] = [{'kind': 'water', 'x': 7, 'y': 2}]
         command(self.town, {'action': 'job', 'index': 0, 'job': 'farming'})
+        self.town['buildings'][acre]['field'] = {'stage': 'ripe', 'elapsed': 0, 'progress': 0,
+                                                'cycle': 0, 'crop': 'vegetables'}
+        self.town['villagers'][0]['construction_position'] = {'x': 6, 'y': 3}
         self.town['food'] = 30
         tick({'towns': {'a': self.town}})
         self.assertAlmostEqual(self.town['food'], 30 - .78)
-        self.assertEqual(self.town['buildings'][farm]['pending_output']['vegetables'], 1.5)
+        self.assertEqual(self.town['buildings'][farm]['pending_output']['vegetables'], 15)
         self.town['food'] = 99.9
         tick({'towns': {'a': self.town}})
-        self.assertAlmostEqual(self.town['food'], 99.9 - .78)
-        self.assertEqual(self.town['buildings'][farm]['pending_output']['vegetables'], 3)
+        self.assertAlmostEqual(self.town['food'], 99.9 + 15 - .78)
+        self.assertEqual(self.town['buildings'][farm]['pending_output']['vegetables'], 0)
+        self.assertEqual(self.town['produced']['vegetables'], 15)
         self.town['map_resources'] = []
         tick({'towns': {'a': self.town}})
         self.assertIs(self.town['villagers'][0]['work_target'], self.town['buildings'][acre])

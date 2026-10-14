@@ -69,7 +69,7 @@ assert.equal(JSON.stringify(initial),before,'Preparing routes preserves snapshot
 const completed=world(sites.map(({x,y})=>({x,y}))),second=finish(Scene.prepare(completed,first));
 const fast=Animation.plan(second.regions.get('own').routing,completed.towns.own.villagers[0],0);
 assert(fast.path.some(p=>p.y===1),'Workers use the completed road');assert.deepEqual(fast.path[0],{x:1,y:1});
-assert.notEqual(second.regions.get('own').layout,first.regions.get('own').layout,'Road completion triggers worker replanning');
+assert.notEqual(second.regions.get('own').layout,first.regions.get('own').layout,'Road completion refreshes navigation costs');
 assert.strictEqual(second.regions.get('own').blocked,first.regions.get('own').blocked,'Road changes preserve occupancy indexes');
 function arrival(state){let time=0;while(state.path.length&&time<10){Animation.advance(state,.005,true);time+=.005;}return time;}
 assert(arrival(fast)<arrival(slow),'Chosen road route actually arrives sooner at existing animation speeds');
@@ -81,7 +81,7 @@ assert(Animation.plan(scene.regions.get('own').routing,shared.towns.own.villager
 const separate=world();separate.towns.friend={...separate.towns.own,roads:completed.towns.own.roads,villagers:[]};
 assert.equal(finish(Scene.prepare(separate,null)).regions.get('own').routing.navigation.roads.size,0,'Separate maps retain their own roads');
 
-// Exercise the real client update loop so a road-only snapshot changes plans.
+// A road-only snapshot updates costs for future legs and preserves active paths.
 const harness=client();
 harness.run(`
   const finish=steps=>{let r;do{r=steps.next();}while(!r.done);return r.value;};
@@ -93,6 +93,7 @@ harness.run(`
   world=${JSON.stringify(completed)};
   ClientScene.commit(finish(ClientScene.prepare(world,ClientScene.current)));
   animatedVillagers(world.towns.own,0);ClientScene.queue.run();
-  if(workers.get(0)===oldState||!workers.get(0).path.some(p=>p.y===1))throw Error('Road completion must replan the active worker');
+  if(workers.get(0)!==oldState||workers.get(0).path.length!==7)throw Error('Road completion must preserve a valid active route');
+  if(!workers.get(0).roads.has('0,1'))throw Error('Road completion must update movement speed data');
 `);
 console.log('Road travel costs, weighted optimality, cache invalidation, and shared route checks passed');

@@ -33,7 +33,7 @@ const context={document:{createElement:element},$:find,
   world:{world_id:'test',towns:{own:town},hall_ready:{own:true},
     hall_upgrades:[{level:2,milestone:'Housing',coins:30,wood:40,seconds:30}]},
   viewed:'own',identity:{town_id:'own'},selection:{type:'building',index:0},
-  costs:{},buildingName:b=>b.kind,buildingLevel:()=>1,buildingRange:()=>10,
+  costs:{},decorationKinds:[],buildingName:b=>b.kind,buildingLevel:()=>1,buildingRange:()=>10,
   illustration:()=>element(),fact:()=>element(),costText:()=> '40 wood',canAfford:()=>true,
   renderSettlers(){},renderProfession(){},renderStorage(){}};
 const source=fs.readFileSync('web/app.js','utf8');
@@ -65,5 +65,7 @@ assert.strictEqual(find('upgrade'),upgradeButton,'Closing the panel preserves co
 context.selection={type:'building',index:0};render();
 assert(hall.hidden,'Legacy hall details stay hidden when reopening the hall');
 assert.strictEqual(find('upgrade'),upgradeButton,'Reopening the hall restores its upgrade card');
+assert.strictEqual(upgradeButton.parent,hall,'An in-progress upgrade parks its action while displaying status');
+town.upgrade_remaining=0;render();
 assert.notStrictEqual(upgradeButton.parent,hall,'Upgrade control appears in its visible card');
 console.log('Town hall refresh checks passed');

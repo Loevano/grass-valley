@@ -138,7 +138,7 @@ const run=new Function('document','window','localStorage','setTimeout','clearTim
     for(const row of rosterRows()){
       check(row.tag==='tr'&&row.children[0].attributes.scope==='row','Each villager has a table row header');
       check(row.children[3].children[0].className==='villager-skills','Skills use a compact icon group');
-      check(!row.children[1].children[1].disabled,'Every owner row has a job control');
+      check(!row.children[1].children.find(child=>child.tag==='select').disabled,'Every owner row has a job control');
       check(row.children[2].textContent==='Shared, lvl 1','Housing is compact in the table');
       check(row.children[5].children.length>=1,'Work status is visible in the table');
     }
@@ -163,10 +163,10 @@ const run=new Function('document','window','localStorage','setTimeout','clearTim
     check(rosterRows()[0].children[4].children[0].textContent.includes('Weakness: Farming'),'Table preserves talent strengths and weaknesses');
     check(rosterRows()[1].children[4].children[0].textContent==='No special talent','Empty talents have a readable fallback');
     render();check(rosterRows().length===2,'Refresh keeps every row visible');
-    const rosterJob=rosterRows()[1].children[1].children[1];
+    const rosterJob=rosterRows()[1].children[1].children.find(child=>child.tag==='select');
     rosterJob.value='woodcutting';rosterJob.onchange();check(commands.at(-1).index===1&&commands.at(-1).job==='woodcutting','Overview assigns the correct villager job');
     viewed='friend';render();
-    check(rosterRows().every(row=>row.children[1].children[1].disabled),'Overview respects visitor restrictions');
+    check(rosterRows().every(row=>row.children[1].children.find(child=>child.tag==='select').disabled),'Overview respects visitor restrictions');
     viewed='own';town.villagers.pop();render();
     listeners.keydown({key:'Escape'});check($('side-panel').hidden,'Escape closes inspector');
     check(!$('side-panel').classList['villagers-overview'],'Closing clears the wide layout');

@@ -1,3 +1,4 @@
+from fixtures import flat_town
 import unittest
 from unittest.mock import patch
 
@@ -8,7 +9,7 @@ import server
 
 class StorageMovement(unittest.TestCase):
     def setUp(self):
-        self.town = server.new_town('Storage')
+        self.town = flat_town('Storage')
         self.town.update(terrain=['g' * 16] * 16, map_size=16, map_resources=[],
                          npcs=[], forage_version=1, forage_halls=[[5, 5]])
         economy.ensure_inventory(self.town)
@@ -29,7 +30,7 @@ class StorageMovement(unittest.TestCase):
         server.tick(self.world)
         self.assertEqual(self.worker['production_status'], 'Working')
         self.assertIn('work_animation', self.worker)
-        self.assertEqual(self.worker['pending_output'], {'wood': .5})
+        self.assertEqual(self.worker['pending_output'], {'wood': .75})
         self.assertGreater(self.worker['woodcutting'], 0)
 
     def test_full_local_buffer_stops_production_until_space_is_freed(self):
@@ -46,6 +47,9 @@ class StorageMovement(unittest.TestCase):
         self.assertGreater(self.worker['woodcutting'], 0)
 
     def test_freeing_central_storage_allows_full_buffer_to_be_hauled(self):
+        # Keep the round trip longer than one tick, including diagonal walking.
+        self.camp.update(x=1, y=1)
+        self.tree.update(x=1, y=0)
         self.camp['output_buffer'] = {'wood': 50}
         self.town['wood'] += 50
         server.tick(self.world)
@@ -75,7 +79,7 @@ class StorageMovement(unittest.TestCase):
         self.assertIn('Workplace buffer full', self.worker['production_status'])
 
     def test_hauler_keeps_round_trip_moving_while_producer_waits(self):
-        store = {'kind': 'storehouse', 'x': 8, 'y': 3,
+        store = {'kind': 'storehouse', 'x': 12, 'y': 3,
                  'storage_allocations': {'wood': 100}}
         self.town['buildings'].append(store)
         self.camp['output_buffer'] = {'wood': 5}
@@ -98,7 +102,7 @@ class AllWorkplaceStorage(unittest.TestCase):
     cases += [('barn', spec['output']) for animal, spec in economy.ANIMALS.items() if animal not in {'pig', 'horse'}]
 
     def workplace(self, kind, output, stored):
-        town = server.new_town('All storage')
+        town = flat_town('All storage')
         town.update(terrain=['g' * 16] * 16, map_size=16, map_resources=[],
                     npcs=[], forage_version=1, forage_halls=[[5, 5]])
         economy.ensure_inventory(town)
@@ -132,6 +136,11 @@ class AllWorkplaceStorage(unittest.TestCase):
                 for key, amount in town['buildings'][-1]['stored_goods'].items():
                     economy.add_stock(town, key, amount)
                 worker['building_index'] = 3
+            field = town['buildings'][-1] if kind == 'acre' else building
+            # Buffer checks start at a crop ready for harvest, after its growth/water stages.
+            field['field'] = {'stage': 'ripe', 'elapsed': 0, 'progress': 0, 'cycle': 0, 'crop': output}
+            worker['construction_position'] = ({'x': field['x'], 'y': field['y']} if kind == 'acre'
+                                               else {'x': building['x'], 'y': building['y'] + 1})
         elif kind in economy.RECIPES:
             if kind == 'mine':
                 town['mineral_version'] = 1
@@ -187,6 +196,11 @@ class AllWorkplaceStorage(unittest.TestCase):
         server.tick(world)
         self.assertEqual(worker['pending_output'], {'wheat': .25})
         practice = worker['farming']
+        # Harvest cargo is returned even when it fills the buffer; then hauling pauses work.
+        for _ in range(10):
+            if not worker.get('pending_output'):
+                break
+            server.tick(world)
         server.tick(world)
         self.assertIn('Workplace buffer full', worker['production_status'])
         self.assertEqual(worker['farming'], practice)

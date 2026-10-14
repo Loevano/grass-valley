@@ -53,8 +53,10 @@ for(const color of ['#aab9b4','#efd59a','#9fd8e5','#e5c77f']){
   assert(farmingColors.has(color),'Every farming action is actually rendered');
 }
 assert(fishingPhases.has('working')&&fishingPhases.has('depositing'),'Fisher fishes and delivers after reaching the pier');
-// Moving a source without changing the resource count must invalidate the route.
+// Moving a water source without changing the current acre task updates future
+// water trips without discarding the field action or its existing route.
 world.towns.own.map_resources[0].x=2;
 harness.frame(world.towns.own,0);
-assert.notStrictEqual(harness.frame(world.towns.own,0)[0].state,farmer,'Changed terrain resources trigger replanning');
+assert.strictEqual(harness.frame(world.towns.own,0)[0].state,farmer,'A changed resource outside the route preserves the current acre task');
+assert(farmer.water.some(w=>w.x===2&&w.y===2),'The next water trip uses current source coordinates');
 console.log('Worker trigger checks passed');

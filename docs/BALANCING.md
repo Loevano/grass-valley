@@ -25,14 +25,14 @@ work are assumed. Travel, supply regeneration, hauling, food, and storage limits
 make actual elapsed time longer. Practice means the game's saved skill points (XP).
 
 Talents apply a 0.75× or 1.25× modifier to output and practice. Every 20 practice
-adds another base output multiplier. Processing expertise and the improved saw
+adds another base output multiplier. Processing expertise and the crafted saw
 increase batch output **and inputs**; they do not make materials free.
 
 `active minutes to target = remaining practice ÷ practice per active minute`
 
 **Total production time cost** adds the active work needed to produce every
 consumed input and complete the final recipe. Totals use **worker-seconds**:
-12 seconds of woodcutting plus six seconds of sawing costs 18 worker-seconds,
+Eight seconds of woodcutting plus six seconds of sawing costs 14 worker-seconds,
 even when several workers shorten the elapsed wait. These are ideal production
 budgets using the base rates below, not measured end-to-end completion times.
 
@@ -55,22 +55,23 @@ practice, shared barn work, or different recipes.
 
 | Activity                         | Base work                                             | Output or practice                          | Ideal rate                                              |
 | -------------------------------- | ----------------------------------------------------- | ------------------------------------------- | ------------------------------------------------------- |
-| Settler woodcutting              | Three-second productive cycle                         | 0.5 wood; 0.04 practice                     | 10 wood/minute; 0.8 practice/minute                     |
+| Settler woodcutting              | Three-second productive cycle                         | 0.75 wood; 0.04 practice                    | 15 wood/minute; 0.8 practice/minute                     |
 | One sawpit worker                | Six-second completed batch                            | 2 wood → 1 plank; 0.08 practice             | Uses 20 wood/minute; makes 10 planks/minute             |
 
 ### Total production time cost vs total reward
 
 | Full chain | Work breakdown | Total production time cost | Total reward |
 | --- | --- | --- | --- |
-| Tree → wood → 1 plank | Gather 2 wood: 12s; saw: 6s | 18 worker-seconds | 1 plank; 0.24 practice (0.16 woodcutting + 0.08 woodworking) |
+| Tree → wood → 1 plank | Gather 2 wood: 8s; saw: 6s | 14 worker-seconds | 1 plank; approximately 0.187 practice (0.107 woodcutting + 0.08 woodworking) |
 
 ### How many woodcutters for a sawpit?
 
 ```mermaid
 flowchart LR
-    A[Woodcutter 1: 10 wood/min] --> Wood[20 wood/min combined]
-    B[Woodcutter 2: 10 wood/min] --> Wood
+    A[Woodcutter 1: 15 wood/min] --> Wood[30 wood/min combined]
+    B[Woodcutter 2: 15 wood/min] --> Wood
     Wood --> Saw[One sawpit worker: 2 wood per 6 seconds]
+    Wood --> Spare[10 wood/min for other uses]
     Saw --> Planks[10 planks/min]
     Planks --> Uses[Construction, boats, and workshop inputs]
 ```
@@ -82,14 +83,54 @@ output collection still limit the running town.
 
 | Configuration                                             | Ideal wood demand | Ideal supporting woodcutters | Practical implication                                               |
 | --------------------------------------------------------- | ----------------- | ---------------------------- | ------------------------------------------------------------------- |
-| One base sawpit worker                                    | 20/minute         | 2                            | Exactly matches demand; leaves no wood for other uses or downtime.  |
-| Both initial sawpit slots filled                          | 40/minute         | 4                            | Worker count matters more than the number of sawpit buildings.      |
-| One neutral, low-practice worker with improved saw (+25%) | 25/minute         | 3 base woodcutters           | Recalculate when woodcutters also have tools, talents, or practice. |
+| One base sawpit worker                                    | 20/minute         | 2                            | Leaves 10 wood/minute before downtime and other demand. |
+| Both upgraded sawpit slots filled                         | 40/minute         | 3                            | Four woodcutters leave 20 wood/minute before downtime and other demand. |
+| One neutral, low-practice worker with crafted saw (+25%)  | 25/minute         | 2                            | Two equipped sawyers consume 50/minute; four base woodcutters leave 10/minute. |
 
 For a real town use observed delivered supply: `effective rate = ideal rate ×
 productive fraction`. Add construction and other consumers to demand. A surplus
-can cover interruptions, but its desired size remains open; more workers cannot
+can cover interruptions; the new base wood rate supplies a margin at the worker
+limits, but delivered rates and pacing still need play experience. More workers cannot
 solve an exhausted forest or blocked storage.
+
+### Staffing, storage, and crafted items
+
+Woodcutters start with one slot, upgrade to two for 20 wood/30 seconds, then four
+for 40 wood/60 seconds. Sawpits start with one slot and upgrade once to two for
+20 wood/30 seconds. Woodworker's workshops have one slot and no worker upgrade.
+These limits apply to each building, including sandbox buildings.
+
+Building levels increase wood-building storage, input buffers, and production
+buffers from 50 to 62.5 to 75 spaces. Resource allocations increase by 25%/50%
+too. Storage upgrades use the existing building wood cost times current level
+and 30/60 seconds of builder work. Worker capacity upgrades are independent.
+Wood-building levels provide no output bonus; skill and equipped tools improve
+production. The founder also chops 0.75 wood per base cycle.
+
+The original five workshop recipes and qualification gates remain. Two additional
+recipes make useful tools, each yielding one item at neutral talent/low practice:
+
+| Item | Crafting practice required | Inputs | Active work | Equipped effect |
+| --- | --- | --- | --- | --- |
+| Crafted axe | 2 | 2 planks + 1 tool | 9 seconds | +25% woodcutting output |
+| Crafted saw | 3 | 2 planks + 2 tools | 12 seconds | +25% woodworking batch output and ingredient use |
+
+Assign tools through Items or a villager's panel. Each villager carries one tool;
+returning or transferring it preserves the item. Produced tools use normal goods
+storage, hauling, production caps, and sales until equipped. Returned tools enter
+the Items inventory. Workplace axe/saw purchases are replaced by these recipes.
+
+One furniture places a wooden bench; one carved furniture places a carved wooden
+statue through Build → Decorations. Placement is immediate on an open tile within
+the town's build range. Decorations occupy one tile, provide no gameplay bonus,
+and can be moved or removed like buildings; removal gives no refund. Sandbox
+placement and upgrades follow the existing free/instant rules.
+
+Existing sawpits retain their two spaces and higher saved tiers are capped at two;
+workshops are capped at one. Excess assigned workers rest, retaining skills and
+tools. Residents and inventories are preserved. Existing workplace axe/saw bonuses
+(including queued upgrades) become crafted tools for retained workers or the Items
+inventory, without stacking duplicate bonuses. New sawpits start with one space.
 
 ### Training
 
@@ -110,12 +151,24 @@ solve an exhausted forest or blocked storage.
 
 | Full chain | Work breakdown | Total production time cost | Total reward |
 | --- | --- | --- | --- |
-| Wheat → 2 flour | Grow 2 wheat: 6s; mill: 3s | 9 worker-seconds | 2 flour; 0.12 practice (0.08 farming + 0.04 milling) |
-| Wheat + wood → flour → 2 bread | Grow 2 wheat: 6s; mill: 3s; gather 0.5 wood: 3s; bake: 6s | 18 worker-seconds | 2 bread (3 food value); 0.24 practice (0.08 farming + 0.04 milling + 0.04 woodcutting + 0.08 baking) |
+| Wheat → 2 flour | Harvest 10 wheat: 8s; mill 2 wheat: 3s | 11 worker-seconds + water collection/travel | 2 flour + 8 spare wheat; approximately 0.147 practice (0.107 farming + 0.04 milling) |
+| Wheat + wood → flour → 2 bread | Harvest 10 wheat: 8s; mill 2 wheat: 3s; gather 0.5 wood: 2s; bake: 6s | 19 worker-seconds + water collection/travel | 2 bread (3 food value) + 8 spare wheat; approximately 0.253 practice (0.107 farming + 0.04 milling + 0.027 woodcutting + 0.08 baking) |
 
-The base farming reference is one wheat per three-second productive cycle;
-watering, field occupancy, and delivery add elapsed time. Bread's wood input is
-included even though it comes from another sector.
+The base farming reference is 10 crops per acre per completed harvest, matching
+the old one-crop-per-three-seconds rate to 30 seconds of passive growth. Plowing,
+seeding, watering, and harvesting each take two worker-seconds. Seeding waits for
+all acres of that farm in the current cycle to be plowed. Workers follow rows
+through each pass and finish the oldest cycle before repeating harvested acres.
+Each seeded acre sprouts for 15 seconds,
+waits for a watering action, then grows for 15 more
+seconds. Growth is passive and overlaps work on other acres; it is excluded from
+worker-second totals. Each farmer fills the can once per farm watering round
+(0.65 seconds), then waters every acre it tends in that round without refilling.
+Field/water travel and
+delivery add time, and the host confirms progress on its three-second rhythm.
+Existing skill, tool, building, and manure yield bonuses still apply, with manure
+consumed once per harvest. Crop changes take effect at the next seeding. Bread's
+wood input is included even though it comes from another sector.
 
 ### Training
 
@@ -139,16 +192,17 @@ These examples start with one newly acquired young animal, alone in a barn,
 and end after all its raw meat becomes basic prepared meat. Each animal needs
 100 successful three-second tending cycles to reach 300 fed seconds. Feed per
 cycle is 0.15 for chickens, 0.25 for sheep, 0.4 for pigs, and 0.5 for cows.
-Growing vegetables or fodder at one unit per three-second productive cycle costs
-three worker-seconds per feed unit. Feeding produces 0.1 manure per animal per
+Growing vegetables or fodder costs eight active field worker-seconds per harvest
+of 10 feed, plus passive growth, water collection, travel, and delivery as described
+above. Feeding produces 0.1 manure per animal per
 cycle, so each example retains 10 manure. No extra adult tending is included.
 
 | Full chain | Work breakdown | Total production time cost | Total reward |
 | --- | --- | --- | --- |
-| Feed → young chicken → meat → prepared meat | Grow 15 feed: 45s; tend: 300s; butcher: 60s; prepare: 6s | 411 worker-seconds (6m 51s) | 2 prepared meat (3 food value) + 10 manure; 5.7 practice (0.6 farming + 4 husbandry + 1.1 butchery) |
-| Feed → young sheep → meat → prepared meat | Grow 25 feed: 75s; tend: 300s; butcher: 60s; prepare: 12s | 447 worker-seconds (7m 27s) | 4 prepared meat (6 food value) + 1 hide + 10 manure; 6.2 practice (1 farming + 4 husbandry + 1.2 butchery) |
-| Feed → young pig → meat → prepared meat | Grow 40 feed: 120s; tend: 300s; butcher: 60s; prepare: 24s | 504 worker-seconds (8m 24s) | 8 prepared meat (12 food value) + 2 hides + 10 manure; 7 practice (1.6 farming + 4 husbandry + 1.4 butchery) |
-| Feed → young cow → meat → prepared meat | Grow 50 feed: 150s; tend: 300s; butcher: 60s; prepare: 30s | 540 worker-seconds (9m) | 10 prepared meat (15 food value) + 3 hides + 10 manure; 7.5 practice (2 farming + 4 husbandry + 1.5 butchery) |
+| Feed → young chicken → meat → prepared meat | Harvest 20 feed: 16s; tend animal: 300s; butcher: 60s; prepare: 6s | 382 worker-seconds + water collection/travel | 2 prepared meat (3 food value) + 10 manure + 5 spare feed; approximately 5.313 practice (0.213 farming + 4 husbandry + 1.1 butchery) |
+| Feed → young sheep → meat → prepared meat | Harvest 30 feed: 24s; tend animal: 300s; butcher: 60s; prepare: 12s | 396 worker-seconds + water collection/travel | 4 prepared meat (6 food value) + 1 hide + 10 manure + 5 spare feed; approximately 5.52 practice (0.32 farming + 4 husbandry + 1.2 butchery) |
+| Feed → young pig → meat → prepared meat | Harvest 40 feed: 32s; tend animal: 300s; butcher: 60s; prepare: 24s | 416 worker-seconds + water collection/travel | 8 prepared meat (12 food value) + 2 hides + 10 manure; approximately 5.827 practice (0.427 farming + 4 husbandry + 1.4 butchery) |
+| Feed → young cow → meat → prepared meat | Harvest 50 feed: 40s; tend animal: 300s; butcher: 60s; prepare: 30s | 430 worker-seconds + water collection/travel | 10 prepared meat (15 food value) + 3 hides + 10 manure; approximately 6.033 practice (0.533 farming + 4 husbandry + 1.5 butchery) |
 
 A barn tends all its animals in one shared cycle. For a same-age herd tended by
 one worker, count the 300 seconds of tending and its 4 husbandry practice once
@@ -192,7 +246,7 @@ in parallel, so do not add five growth minutes to every animal when estimating a
 
 | Full chain | Work breakdown | Total production time cost | Total reward |
 | --- | --- | --- | --- |
-| Ordinary fish + wood → 2 smoked fish | Catch 2 fish: expected 6.67s; gather 0.5 wood: 3s; smoke: 6s | Expected 15.67 worker-seconds | 2 smoked fish (3 food value); expected 0.209 practice (0.089 fishing + 0.04 woodcutting + 0.08 preserving) |
+| Ordinary fish + wood → 2 smoked fish | Catch 2 fish: expected 6.67s; gather 0.5 wood: 2s; smoke: 6s | Expected 14.67 worker-seconds | 2 smoked fish (3 food value); expected 0.196 practice (0.089 fishing + 0.027 woodcutting + 0.08 preserving) |
 
 Expected fishing work is `required fish ÷ (fish per successful attempt × catch
 probability) × seconds per attempt`. Misses use work time and still earn practice;
