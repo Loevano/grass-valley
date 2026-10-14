@@ -2582,7 +2582,13 @@ function paintHorse(target,stride=0){
   target.fillStyle='#433428';target.fillRect(8,-24,3,16);target.fillRect(12,-28,2,6);target.fillRect(-17,-9,4,12);
   target.fillStyle='#efe3cb';target.fillRect(18,-19,3,2);
 }
-function drawVillager(b){
+function drawVillager(b,highlighted=false){
+  if(highlighted){
+    const [x,y]=point(b.x,b.y),scale=tileW/46;
+    const centerX=x+(b.index%3-1)*3,top=y+tileH*.65+Math.floor(b.index/3)-29*scale;
+    ctx.save();ctx.strokeStyle='#fff0b1';ctx.lineWidth=2;
+    ctx.beginPath();ctx.moveTo(centerX-6*scale,top);ctx.lineTo(centerX+6*scale,top);ctx.stroke();ctx.restore();
+  }
   const accessories=villagerAccessories(b),outfit=accessories.outfit;
   if(tileW<32&&!(b.villager.job==='fishing'&&b.state.phase==='working'&&!b.state.path.length)){
     const [x,y]=point(b.x,b.y),scale=tileW/46;
@@ -3582,6 +3588,12 @@ function draw(seconds=0){
   const workerLayout=(typeof ClientScene!=='undefined'&&ClientScene.current?.world===world?ClientScene.current.geometry:null) ?? ('['+JSON.stringify(buildings.map(({kind,x,y,footprint,farm_index,construction})=>[kind,x,y,footprint,farm_index,!!construction]))+','+resourceData.layout+']');
   const villagers=frameActors?.world===world?frameActors.villagers:entries.flatMap(([id,t])=>animatedVillagers(t,seconds,id,
     t?.chunked?townWorkerLayout(t,buildings,resources):workerLayout));
+  const selectedWorkers=new Set(selection?.type==='building'&&selected?villagers.filter(worker=>{
+    if(worker.townId!==undefined&&worker.townId!==viewed)return false;
+    const index=settlerBuilding(town,worker.villager,worker.index);
+    return index===selection.index || selected.kind==='farm'&&town.buildings[index]?.kind==='acre'
+      &&town.buildings[index].farm_index===selection.index;
+  }):[]);
   const drawnPiers=new Set();
   if(draw.pierLayout!==workerLayout){
     draw.pierLayout=workerLayout;
@@ -3639,7 +3651,7 @@ function draw(seconds=0){
       drawFishingBoat(b);
       for(const [seat,passenger] of b.crew.entries()){
         const offset=(seat-(b.crew.length-1)/2)*.28;
-        drawVillager({...passenger,aboard:true,x:b.x+offset,y:b.y-offset,state:{...passenger.state,path:[]}});
+        drawVillager({...passenger,aboard:true,x:b.x+offset,y:b.y-offset,state:{...passenger.state,path:[]}},selectedWorkers.has(passenger));
       }
       // The near hull covers seated passengers' feet inside the boat.
       const boatY=py+tileH/2;
@@ -3682,7 +3694,7 @@ function draw(seconds=0){
     if(simplifiedResource)continue;
     if(['tree','rock','wild_horse','berry_bush','herb_patch','chest','village_hut','village_market'].includes(b.kind)){drawResource(b,resourceData.rockJoins.get(b));continue;}
     if(character){
-      drawVillager(b);
+      drawVillager(b,selectedWorkers.has(b));
       continue;
     }
     if(b.kind==='acre'&&!b.construction)continue;
