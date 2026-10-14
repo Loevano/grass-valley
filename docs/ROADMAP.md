@@ -9,6 +9,15 @@ and cache rules are in [Backend](BACKEND.md#cached-zoomed-out-map).
 | 2     | Production line balancing          | Wood and grain implemented; fishing remains | Develop clear fishing chains with capped staffing and simple upgrades. |
 | 3     | Scalable villager pathfinding       | Foundations implemented; host scheduling and shared navigation remain | Keep movement responsive as villager counts and towns grow, with bounded routing work. |
 
+## Sawpit artwork review
+
+**Status:** three [SVG concepts](sawpit-concepts.svg) are ready for review;
+the visual direction remains unselected. The current sawpit is still difficult
+to recognize. Choose between an open pit, a raised sawing deck, and a saw bench
+with a rear shed before implementing another artwork change. The comparison
+includes views at approximately normal game size; preserve the existing style
+and 3×2 footprint. Details are in [Artwork](ARTWORK.md#sawpit-concepts-awaiting-review).
+
 ## Cached zoomed-out town overview
 
 | Part | Behavior |

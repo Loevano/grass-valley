@@ -32,6 +32,24 @@ The workshop has a bench canopy and tool rack, and the hall is wider without
 scaling up its doors and windows. Their
 existing footprints and visible upgrade conventions remain unchanged.
 
+## Sawpit concepts awaiting review
+
+The current sawpit is still difficult to recognize. Compare these
+[SVG sketches](sawpit-concepts.svg) before changing the game artwork again.
+Each includes an enlarged view and an approximately normal-size view, using the
+current palette and 3×2 lot. Worker poses illustrate the work rather than specify
+staffing or animation behavior.
+
+![Three sawpit concepts: an open pit, a raised sawing deck, and a saw bench with a rear shed.](sawpit-concepts.png)
+
+| Concept | Recognition cue | Tradeoff |
+| --- | --- | --- |
+| A — Open pit | Above/below sawing action over an exposed dark pit | The clearest pit view, with a low silhouette |
+| B — Raised sawing deck | A timber platform with workers above and below | A taller silhouette, with more structure |
+| C — Saw bench + rear shed | A familiar hand-saw profile on an open workbench | Fits the building family, but is less literal as a pit |
+
+No concept has been selected or implemented.
+
 ## Composition sketch
 
 ![Proposed artwork reference: an angled cottage, founder, path, and palette, with a diagram of depth layers.](artwork-reference.svg)

@@ -1,0 +1,156 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1320" height="850" viewBox="0 0 1320 850" role="img" aria-labelledby="title description">
+  <title id="title">Lantern Vale — three sawpit sketch ideas</title>
+  <desc id="description">Three proposed sawpit silhouettes in the existing angled timber-and-lantern style. A: an exposed pit with one sawyer above the log and one in the pit. B: a raised timber sawing deck with workers above and below. C: an open workbench with a familiar horizontal hand saw and a small rear shed. Each concept is shown enlarged and at approximately normal game size. These are review sketches, not implemented artwork.</desc>
+  <defs>
+    <symbol id="lot" viewBox="0 0 180 165">
+      <path d="M12 99 105 53 167 84 74 130Z" fill="#a48d66" stroke="#6c715c" stroke-width="1"/>
+      <path d="M18 103 75 131 164 88 164 91 75 135 18 107Z" fill="#8c7758"/>
+    </symbol>
+    <symbol id="logs" viewBox="0 0 42 30">
+      <g stroke="#735439" stroke-width="1">
+        <path d="M3 10 28 22 33 16 8 4Z" fill="#a47c4e"/>
+        <ellipse cx="30" cy="19" rx="4" ry="5" transform="rotate(-25 30 19)" fill="#dbb580"/>
+        <path d="M10 6 35 18 40 12 15 0Z" fill="#b48a56"/>
+        <ellipse cx="37" cy="15" rx="4" ry="5" transform="rotate(-25 37 15)" fill="#dbb580"/>
+        <path d="M5 3 30 15 35 9 10 -3Z" fill="#b48a56"/>
+        <ellipse cx="32" cy="12" rx="4" ry="5" transform="rotate(-25 32 12)" fill="#dbb580"/>
+      </g>
+      <path d="M29 18 31 20M36 14 38 16M31 11 33 13" stroke="#9c784b" stroke-width="1"/>
+    </symbol>
+    <symbol id="boards" viewBox="0 0 40 30">
+      <g stroke="#735439" stroke-width=".8">
+        <path d="M2 15 26 27 37 22 13 10Z" fill="#c4a477"/><path d="M26 27 37 22 37 25 26 30Z" fill="#e0bd84"/>
+        <path d="M2 11 26 23 37 18 13 6Z" fill="#c4a477"/><path d="M26 23 37 18 37 21 26 26Z" fill="#e0bd84"/>
+        <path d="M2 7 26 19 37 14 13 2Z" fill="#c4a477"/><path d="M26 19 37 14 37 17 26 22Z" fill="#e0bd84"/>
+      </g>
+      <path d="M7 7 30 18M13 4 35 15" stroke="#e0bd84" stroke-width=".8"/>
+    </symbol>
+    <symbol id="sawyer" viewBox="0 0 20 34">
+      <ellipse cx="10" cy="32" rx="9" ry="3" fill="#223b29" opacity=".2"/>
+      <path d="M6 21 6 31M13 22 14 32" stroke="#594d38" stroke-width="3"/>
+      <path d="M4 11 14 11 17 24 2 22Z" fill="#71806a" stroke="#4c594e" stroke-width=".8"/>
+      <path d="M6 12 12 12 13 23 5 22Z" fill="#c4a477"/>
+      <path d="M4 15 1 20M14 15 18 20" stroke="#71806a" stroke-width="3"/>
+      <circle cx="9" cy="7" r="4" fill="#d3b68b"/>
+      <path d="M4 6 6 2 12 2 14 6Z" fill="#735439"/>
+    </symbol>
+    <symbol id="cut-log" viewBox="0 0 85 50">
+      <path d="M4 4 75 39 78 47 4 13Z" fill="#947044" stroke="#735439"/>
+      <path d="M4 4 10 0 81 35 75 39Z" fill="#c4a477" stroke="#735439"/>
+      <ellipse cx="78" cy="41" rx="5" ry="7" transform="rotate(-25 78 41)" fill="#dbb580" stroke="#735439"/>
+      <ellipse cx="78" cy="41" rx="2.5" ry="4" transform="rotate(-25 78 41)" fill="none" stroke="#9c784b"/>
+      <path d="M16 11 68 37M19 5 71 31" stroke="#735439" stroke-width=".7"/>
+    </symbol>
+    <symbol id="pit-saw" viewBox="0 0 24 64">
+      <path d="M6 7 12 7 15 11 12 15 15 19 12 23 15 27 12 31 15 35 12 39 15 43 12 47 15 51 12 55 6 55Z" fill="#c4d2ce" stroke="#68563e" stroke-width=".8"/>
+      <path d="M8 10 8 52" stroke="#84958e"/>
+      <path d="M1 3 21 3 21 7 1 7ZM1 55 21 55 21 59 1 59Z" fill="#c4a477" stroke="#735439" stroke-width=".8"/>
+    </symbol>
+    <symbol id="concept-a" viewBox="0 0 180 165">
+      <use href="#lot" width="180" height="165"/>
+      <use href="#logs" x="13" y="85" width="42" height="30"/>
+      <use href="#boards" x="129" y="73" width="35" height="26"/>
+      <!-- An open pit: the inside, rim, and near retaining wall are distinct. -->
+      <path d="M47 95 92 118 140 94 95 72Z" fill="#b48a56" stroke="#735439"/>
+      <path d="M55 95 92 113 131 94 95 77Z" fill="#302b25"/>
+      <path d="M55 95 92 113 92 119 55 101Z" fill="#594633"/>
+      <path d="M92 113 131 94 131 100 92 119Z" fill="#42382d"/>
+      <path d="M60 89 60 103 64 105 64 91M123 91 123 105 127 103 127 89" fill="#735439"/>
+      <path d="M57 87 70 93 73 91 60 85ZM115 87 128 93 131 91 118 85Z" fill="#c4a477" stroke="#735439"/>
+      <use href="#cut-log" x="51" y="63" width="79" height="47"/>
+      <use href="#pit-saw" x="84" y="60" width="24" height="64" transform="rotate(-8 95 92)"/>
+      <use href="#sawyer" x="66" y="43" width="20" height="34"/>
+      <path d="M80 59 88 65 94 64" fill="none" stroke="#71806a" stroke-width="3"/>
+      <path d="M88 65 94 64" stroke="#d3b68b" stroke-width="2"/>
+      <!-- The lower sawyer is partly hidden by the pit lip. -->
+      <path d="M95 103 105 104 109 120 93 119Z" fill="#71806a"/>
+      <circle cx="100" cy="99" r="4" fill="#d3b68b"/><path d="M95 98 97 94 103 94 105 98Z" fill="#735439"/>
+      <path d="M96 108 94 116 100 117M104 108 108 114 103 118" fill="none" stroke="#71806a" stroke-width="3"/>
+      <path d="M96 116 100 117M105 116 103 118" stroke="#d3b68b" stroke-width="2"/>
+      <path d="M47 95 92 118 92 128 47 105Z" fill="#947044" stroke="#c4a477"/>
+      <path d="M92 118 140 94 140 104 92 128Z" fill="#735439" stroke="#a47c4e"/>
+      <path d="M48 99 91 121M96 122 138 101" stroke="#c4a477" stroke-width="1"/>
+    </symbol>
+    <symbol id="concept-b" viewBox="0 0 180 165">
+      <use href="#lot" width="180" height="165"/>
+      <use href="#logs" x="13" y="83" width="40" height="29"/>
+      <use href="#boards" x="132" y="96" width="33" height="25"/>
+      <!-- A raised open deck makes the above/below sawing action the silhouette. -->
+      <path d="M47 81 47 113 52 115 52 83ZM105 108 105 137 110 135 110 106ZM140 89 140 117 144 115 144 87ZM79 65 79 98 83 100 83 67Z" fill="#735439" stroke="#c4a477"/>
+      <path d="M49 110 106 83M108 130 140 94" stroke="#947044" stroke-width="3"/>
+      <path d="M43 78 106 110 145 91 82 59Z" fill="#b48a56" stroke="#735439"/>
+      <path d="M43 78 106 110 106 115 43 83Z" fill="#947044" stroke="#735439"/>
+      <path d="M106 110 145 91 145 96 106 115Z" fill="#735439"/>
+      <path d="M55 79 117 110M69 72 131 103M83 64 144 95" stroke="#e0bd84" stroke-width="1"/>
+      <path d="M87 87 111 99 121 94 97 82Z" fill="#302b25" stroke="#735439"/>
+      <use href="#cut-log" x="57" y="50" width="81" height="48"/>
+      <use href="#pit-saw" x="101" y="54" width="24" height="64" transform="rotate(-5 112 85)"/>
+      <use href="#sawyer" x="77" y="28" width="20" height="34"/>
+      <path d="M91 43 99 55 109 59" fill="none" stroke="#71806a" stroke-width="3"/>
+      <path d="M104 57 109 59" stroke="#d3b68b" stroke-width="2"/>
+      <use href="#sawyer" x="96" y="104" width="20" height="34"/>
+      <path d="M103 120 101 115 108 112M110 119 117 115 114 111" fill="none" stroke="#71806a" stroke-width="3"/>
+      <path d="M105 113 108 112M116 113 114 111" stroke="#d3b68b" stroke-width="2"/>
+    </symbol>
+    <symbol id="concept-c" viewBox="0 0 180 165">
+      <use href="#lot" width="180" height="165"/>
+      <use href="#logs" x="17" y="73" width="40" height="29"/>
+      <!-- The roof covers only the back of the lot, leaving the work in front. -->
+      <path d="M38 42 38 84 42 86 42 44ZM118 44 118 85 122 83 122 42ZM79 60 79 98 83 100 83 58Z" fill="#735439" stroke="#c4a477"/>
+      <path d="M38 48 79 68 120 48M38 61 49 53M120 59 110 51" fill="none" stroke="#b48a56" stroke-width="3"/>
+      <path d="M29 42 76 17 130 43 83 68Z" fill="#8e7752" stroke="#735439" stroke-width="1.5"/>
+      <path d="M29 42 83 68 130 43" fill="none" stroke="#c9a579" stroke-width="2"/>
+      <path d="M51 32 103 58M67 23 119 49" stroke="#ac926b" stroke-width=".8"/>
+      <path d="M43 60 43 67 46 67 46 60Z" fill="#edc77d"/>
+      <use href="#boards" x="132" y="98" width="32" height="24"/>
+      <path d="M70 98 70 118 75 120 75 100ZM109 116 109 134 114 132 114 113ZM140 99 140 118 145 116 145 96Z" fill="#735439" stroke="#c4a477"/>
+      <path d="M66 94 111 117 147 99 102 76Z" fill="#c4a477" stroke="#735439"/>
+      <path d="M66 94 111 117 111 121 66 98ZM111 117 147 99 147 103 111 121Z" fill="#947044" stroke="#735439"/>
+      <use href="#cut-log" x="68" y="70" width="73" height="43"/>
+      <!-- A broad familiar hand-saw profile offers an alternative to a pit saw. -->
+      <path d="M89 81 130 91 127 99 122 97 118 101 114 98 110 101 106 98 102 100 98 97 94 99 89 96Z" fill="#c4d2ce" stroke="#68563e"/>
+      <path d="M90 84 125 93" stroke="#e8efdf"/>
+      <path d="M81 77 90 80 90 95 81 91Z" fill="#c4a477" stroke="#735439"/>
+      <path d="M84 82 87 83 87 90 84 88Z" fill="#594d38"/>
+      <use href="#sawyer" x="65" y="59" width="20" height="34"/>
+      <path d="M79 74 83 84 86 85" fill="none" stroke="#71806a" stroke-width="3"/>
+      <path d="M83 84 86 85" stroke="#d3b68b" stroke-width="2"/>
+    </symbol>
+  </defs>
+  <rect width="1320" height="850" rx="16" fill="#172b27"/>
+  <g font-family="system-ui, sans-serif" fill="#e8eadb">
+    <text x="32" y="46" font-size="26" font-weight="650">Sawpit · three sketch ideas</text>
+    <text x="32" y="75" font-size="14" fill="#bdcdb5">Existing palette and angled style · focus on recognizable work and silhouette</text>
+    <g fill="#243f33" stroke="#51683e">
+      <rect x="24" y="101" width="408" height="690" rx="10"/>
+      <rect x="456" y="101" width="408" height="690" rx="10"/>
+      <rect x="888" y="101" width="408" height="690" rx="10"/>
+    </g>
+    <text x="46" y="138" font-size="22" font-weight="650">A · Open pit</text>
+    <text x="478" y="138" font-size="22" font-weight="650">B · Raised sawing deck</text>
+    <text x="910" y="138" font-size="22" font-weight="650">C · Saw bench + rear shed</text>
+    <g font-size="13" fill="#bdcdb5">
+      <text x="46" y="165">The sawing action is the main shape.</text>
+      <text x="478" y="165">The tall deck gives it a distinct silhouette.</text>
+      <text x="910" y="165">A familiar saw shape on an open workbench.</text>
+    </g>
+    <use href="#concept-a" x="44" y="197" width="368" height="337"/>
+    <use href="#concept-b" x="476" y="197" width="368" height="337"/>
+    <use href="#concept-c" x="908" y="197" width="368" height="337"/>
+    <g stroke="#51683e"><path d="M46 548H410M478 548H842M910 548H1274"/></g>
+    <g font-size="13" fill="#bdcdb5">
+      <text x="46" y="577">SMALL VIEW · approx. normal game size</text>
+      <text x="478" y="577">SMALL VIEW · approx. normal game size</text>
+      <text x="910" y="577">SMALL VIEW · approx. normal game size</text>
+    </g>
+    <use href="#concept-a" x="153" y="593" width="150" height="138"/>
+    <use href="#concept-b" x="585" y="593" width="150" height="138"/>
+    <use href="#concept-c" x="1017" y="593" width="150" height="138"/>
+    <g font-size="14">
+      <text x="46" y="749">Clearest view of the pit and both workers.</text>
+      <text x="478" y="749">More structure; cutting stays fully visible.</text>
+      <text x="910" y="749">Familiar tool profile; less literal pit.</text>
+    </g>
+    <text x="32" y="826" font-size="13" fill="#bdcdb5">Review sketches · work poses are illustrative · all three keep the existing 3×2 lot</text>
+  </g>
+</svg>
