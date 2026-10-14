@@ -1,12 +1,13 @@
 # Improvement references
 
-These four areas organize what we want to improve in Lantern Vale. Each reference
+These references organize what we want to improve in Lantern Vale. Each reference
 starts with the current implementation, then records proposals and open questions.
 Tables and drawings are working references that we can expand as decisions are made.
 
 | Area | Goal | Reference |
 | --- | --- | --- |
 | Backend | Understand request flow, calculation ownership, and animation response priorities separately from smooth playback. | [Backend](BACKEND.md) |
+| Pathing | Keep movement, destination selection, routing, caching, and scheduling decisions together, with planned work distinguished from current behavior. | [Pathing decisions](PATHING.md) |
 | Balancing | Set satisfying progression times, production ratios, and rewards for manual work. | [Balancing](BALANCING.md) |
 | Game design | Make town building and exploration fun, with connected stories, rewarding items, and cosmetics. | [Game design](GAME_DESIGN.md) |
 | Artwork | Give the game a cohesive, attractive appearance with readable characters, buildings, and landscapes. | [Artwork](ARTWORK.md) |

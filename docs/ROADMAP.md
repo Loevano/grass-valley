@@ -121,6 +121,9 @@ delivered supply and pacing; the grain chain has a compact host-simulation fixtu
 **Status:** partially implemented. Prioritize a host pathfinding queue before
 adding shared destination routing or navigation between regions.
 
+Current movement and routing decisions, implementation references, and open choices
+are collected in [Pathing decisions](PATHING.md).
+
 ### Existing foundations
 
 - Workers retain valid work, delivery, and construction paths until their task
