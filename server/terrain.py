@@ -1,4 +1,5 @@
 """Saved, seed-based terrain with clustered renewable resources."""
+from spatial import occupied_tiles
 import math
 import random
 import secrets
@@ -125,7 +126,7 @@ def ensure_terrain(town, new=False):
         # Adding ground to old saves must keep their playable area intact.
         town['terrain'] = [row.replace('v', 'g') for row in town['terrain']]
     if new:
-        occupied = {(b['x'], b['y']) for b in town['buildings']}
+        occupied = occupied_tiles(town['buildings'])
         town['map_resources'] = [r for r in resources if (r['x'], r['y']) not in occupied]
 
 
@@ -148,7 +149,7 @@ def ensure_industry(landscape, obstacles=(), origin=(0, 0)):
         landscape['industry_version'] = 2
         return
     occupied = {(r['x'], r['y']) for r in landscape['map_resources']}
-    occupied.update((b['x'], b['y']) for b in obstacles)
+    occupied.update(occupied_tiles(obstacles))
     occupied.update((r['x'], r['y']) for r in landscape.get('tree_stumps', []))
     ox, oy = origin
     for y, row in enumerate(landscape.get('terrain', [])):

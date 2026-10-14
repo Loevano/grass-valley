@@ -1,4 +1,5 @@
 """Host-owned ambient routines for wilderness villagers; no player production."""
+from spatial import occupied_tiles
 from collections import deque
 import math
 
@@ -43,8 +44,8 @@ def blocked_tiles(world, village):
                     continue
                 blocked = {p for p in blocked if not (p[0]//40 == cx and p[1]//40 == cy)}
                 blocked.update((r['x'], r['y']) for r in record['map_resources'])
-    blocked.update((b['x'], b['y']) for town in world['towns'].values()
-                   for b in town['buildings'])
+    blocked.update(occupied_tiles(b for town in world['towns'].values()
+                                  for b in town['buildings']))
     blocked.update((n['x'], n['y']) for n in world['shared_map']['npcs'] if not n.get('village'))
     return blocked
 

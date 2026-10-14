@@ -1,4 +1,5 @@
 """Town professions, finite renewable supplies, and founder activities (hall 1–10)."""
+from spatial import occupied_tiles, BUILDING_FOOTPRINTS
 from collections import deque
 from math import ceil
 import secrets
@@ -672,7 +673,7 @@ def ensure_forage(landscape, buildings):
     halls = landscape.get('forage_halls', [])
     if landscape.get('forage_version') == 1 and len(halls) >= len(hall_buildings):
         return
-    occupied = {(b['x'], b['y']) for b in buildings + landscape['map_resources'] + landscape.get('npcs', [])}
+    occupied = occupied_tiles(buildings + landscape['map_resources'] + landscape.get('npcs', []))
     terrain = landscape.get('terrain', [])
     size = landscape.get('map_size', 120)
     candidates = []
@@ -900,7 +901,7 @@ def extra_worker(town, villager, building, capacity):
 
 
 def public_catalog():
-    return {'buildings': BUILDINGS, 'crops': CROPS, 'animals': ANIMALS,
+    return {'buildings': BUILDINGS, 'building_footprints': BUILDING_FOOTPRINTS, 'crops': CROPS, 'animals': ANIMALS,
             'farming_growth_seconds': farming.GROWTH_SECONDS,
             'farming_harvest_yield': farming.HARVEST_YIELD,
             'animal_growth_seconds': ANIMAL_GROWTH_SECONDS, 'butcher_seconds': BUTCHER_SECONDS,

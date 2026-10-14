@@ -32,7 +32,7 @@ class EconomyRules(unittest.TestCase):
 
     def test_assigned_workers_consume_extra_food(self):
         idle = copy.deepcopy(self.town)
-        command(self.town, {'action': 'build', 'kind': 'woodcutter', 'x': 6, 'y': 6})
+        command(self.town, {'action': 'build', 'kind': 'woodcutter', 'x': 7, 'y': 6})
         self.finish_construction()
         command(self.town, {'action': 'job', 'index': 0, 'job': 'woodcutting'})
         tick(self.world)
@@ -57,7 +57,7 @@ class EconomyRules(unittest.TestCase):
         self.assertEqual(self.town['buildings'][1]['pending_output']['fish'], 1)
         self.assertEqual(self.town['villagers'][0]['fishing'], .04)
         self.assertEqual(self.town['villagers'][0]['work_target']['kind'], 'water')
-        command(self.town, {'action': 'move', 'index': 1, 'x': 6, 'y': 6})
+        command(self.town, {'action': 'move', 'index': 1, 'x': 7, 'y': 6})
         tick(self.world)
         self.assertIsNone(self.town['villagers'][0]['work_target'])
         self.assertEqual(self.town['villagers'][0]['fishing'], .04)

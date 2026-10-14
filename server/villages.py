@@ -1,4 +1,5 @@
 """Small wilderness settlements, persisted independently of player towns."""
+from spatial import occupied_tiles
 
 VILLAGE_RADIUS = 24
 THEMES = (
@@ -70,7 +71,7 @@ def expand_villages(world):
                      for field in ('buildings', 'roads') for item in town.get(field, [])]
         obstacles += [n for n in landscape.get('npcs', []) if n.get('village') != village['name']]
         # Existing player work takes priority over expanding an old settlement.
-        if any(max(abs(o['x'] - vx), abs(o['y'] - vy)) <= 10 for o in obstacles):
+        if any(max(abs(x - vx), abs(y - vy)) <= 10 for x, y in occupied_tiles(obstacles)):
             village['layout_version'] = 1
             continue
         for name, role, dx, dy, dialogue in RESIDENTS[village['name']]:
@@ -96,6 +97,7 @@ def ensure_villages(world):
     obstacles = [item for town in world['towns'].values()
                  for field in ('buildings', 'roads') for item in town.get(field, [])]
     obstacles += landscape.get('npcs', [])
+    occupied = occupied_tiles(obstacles)
     villages = []
     for name, biome, dx, dy, names, dialogue in THEMES:
         # Prefer the wilderness beside the starter valley. In old worlds, move
@@ -110,8 +112,8 @@ def ensure_villages(world):
             if (offset - VILLAGE_RADIUS <= x < offset + 120 + VILLAGE_RADIUS
                     and offset - VILLAGE_RADIUS <= y < offset + 120 + VILLAGE_RADIUS):
                 continue
-            if any(abs(x - o['x']) <= VILLAGE_RADIUS + 2
-                   and abs(y - o['y']) <= VILLAGE_RADIUS + 2 for o in obstacles):
+            if any(abs(x - ox) <= VILLAGE_RADIUS + 2
+                   and abs(y - oy) <= VILLAGE_RADIUS + 2 for ox, oy in occupied):
                 continue
             if any(abs(x - v['x']) < 2 * VILLAGE_RADIUS + 4
                    and abs(y - v['y']) < 2 * VILLAGE_RADIUS + 4 for v in villages):
@@ -138,7 +140,7 @@ def ensure_village_life(world):
                       for _, dx, dy in PLANTINGS}
         footprints.update((village['x'] + dx, village['y'] + dy)
                           for _, dx, dy, _, _ in LIFE_BUILDINGS)
-        village['life_version'] = 0 if any((o['x'], o['y']) in footprints for o in obstacles) else 1
+        village['life_version'] = 0 if occupied_tiles(obstacles).intersection(footprints) else 1
 
 
 def apply_villages(record, key, villages, chunk_size):

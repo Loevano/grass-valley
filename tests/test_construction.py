@@ -15,7 +15,7 @@ class Construction(unittest.TestCase):
         self.town.update(terrain=['g' * 120] * 120, map_resources=[], npcs=[], wood=500)
         self.world = {'towns': {'a': self.town}}
 
-    def build(self, kind='home', x=6, y=6, **extra):
+    def build(self, kind='home', x=8, y=6, **extra):
         command(self.town, dict(action='build', kind=kind, x=x, y=y, **extra))
         return self.town['buildings'][-1]
 
@@ -77,7 +77,7 @@ class Construction(unittest.TestCase):
         for index, kind in enumerate(kind for kind, cost in COSTS.items() if cost):
             with self.subTest(kind=kind):
                 wood = self.town['wood']
-                site = self.build(kind, x=6, y=6, **({'farm_index': 1} if kind == 'acre' else {}))
+                site = self.build(kind, x=8, y=6, **({'farm_index': 1} if kind == 'acre' else {}))
                 self.assertEqual(site['construction'], {'progress': 0, 'total': BUILD_SECONDS})
                 self.assertEqual(self.town['wood'], wood - COSTS[kind])
                 self.town['buildings'].pop()
@@ -106,7 +106,7 @@ class Construction(unittest.TestCase):
         construct(self.town, self.town, set())
         self.assertEqual(site['construction']['progress'], 0)
         self.town['map_resources'] = [{'kind': 'rock', 'x': x, 'y': y}
-                                      for x, y in [(5, 6), (7, 6), (6, 5), (6, 7)]]
+                                      for x, y in [(7, 6), (9, 6), (8, 5), (8, 7)]]
         construct(self.town, self.town, {0})
         self.assertEqual(site['construction']['progress'], 0)
         self.assertNotIn('construction_target', self.town['villagers'][0])
@@ -156,12 +156,12 @@ class Construction(unittest.TestCase):
 
     def test_progress_survives_save_and_relocation(self):
         site = self.build()
-        construct(self.town, self.town, {0})
-        construct(self.town, self.town, {0})
+        for _ in range(3):
+            construct(self.town, self.town, {0})
         progress = site['construction']['progress']
         self.assertGreater(progress, 0)
         self.town = json.loads(json.dumps(self.town))
-        command(self.town, dict(action='move', index=1, x=8, y=6))
+        command(self.town, dict(action='move', index=1, x=9, y=6))
         self.assertEqual(self.town['buildings'][1]['construction']['progress'], progress)
         self.finish(self.town['buildings'][1])
 
@@ -209,8 +209,8 @@ class Construction(unittest.TestCase):
         self.assertEqual(site['construction']['progress'], 0)
         self.assertEqual(len(self.town['villagers']), 5, 'Unfinished homes provide no housing')
         command(self.town, dict(action='job', index=0, job='building'))
-        tick(self.world)
-        tick(self.world)
+        for _ in range(3):
+            tick(self.world)
         progress = site['construction']['progress']
         self.assertGreater(progress, 0)
         command(self.town, dict(action='job', index=0, job='idle'))

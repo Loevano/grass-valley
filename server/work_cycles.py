@@ -5,7 +5,7 @@ import math
 import progression as economy
 import farming
 from navigation import routes
-from spatial import SpatialIndex
+from spatial import SpatialIndex, occupied_tiles
 
 
 def fishing_crew(town, building):
@@ -54,7 +54,7 @@ def fishing_water(building, water, occupied, reach, terrain=None, depths=None):
 
 
 def fishing_pier(building, landscape, blocked, size, terrain, bounds):
-    occupied = {(b['x'], b['y']) for b in landscape['buildings'] + landscape.get('npcs', [])}
+    occupied = occupied_tiles(landscape['buildings'] + landscape.get('npcs', []))
     water = sorted((r for r in landscape['map_resources'] if r['kind'] == 'water'
                     and (r['x'], r['y']) not in occupied
                     and abs(r['x'] - building['x']) + abs(r['y'] - building['y']) <= 3),
@@ -74,7 +74,7 @@ def retained_pier(state, building, landscape, blocked, terrain, source=None):
     pier = state.get('pier')
     if not pier or (source and (pier[-1]['x'], pier[-1]['y']) != (source['x'], source['y'])):
         return None
-    occupied = {(b['x'], b['y']) for b in landscape['buildings'] + landscape.get('npcs', [])}
+    occupied = occupied_tiles(landscape['buildings'] + landscape.get('npcs', []))
     water = {(r['x'], r['y']) for r in landscape['map_resources'] if r['kind'] == 'water'}
     for tile in pier[1:]:
         p = tile['x'], tile['y']
@@ -188,7 +188,7 @@ def _advance(town, landscape, villager, building, source, index, seconds, stop_a
         state.update(path=[], phase='waiting_water', elapsed=0)
     size, terrain = landscape.get('map_size', 120), landscape.get('terrain', [])
     roads = {(r['x'], r['y']) for r in landscape.get('roads', []) if 'construction' not in r}
-    blocked = {(b['x'], b['y']) for b in landscape['buildings'] + landscape['map_resources'] + landscape.get('npcs', [])}
+    blocked = occupied_tiles(landscape['buildings'] + landscape['map_resources'] + landscape.get('npcs', []))
     hall = next(b for b in town['buildings'] if b['kind'] == 'hall')
     center = town.get('town_origin', hall)
     bounds = (max(0, center['x'] - 60), min(size - 1, center['x'] + 60),
@@ -199,7 +199,7 @@ def _advance(town, landscape, villager, building, source, index, seconds, stop_a
     pier = []
     if boating:
         reach = 2 + building.get('level', 1) + 3 + 2 * (economy.fishing_boat_level(building) - 1)
-        occupied = {(b['x'], b['y']) for b in landscape['buildings'] + landscape.get('npcs', [])}
+        occupied = occupied_tiles(landscape['buildings'] + landscape.get('npcs', []))
         depths = landscape.get('_spatial_index', SpatialIndex(landscape['map_resources'])).water_depths()
         water = fishing_water(building, [r for r in landscape['map_resources'] if r['kind'] == 'water'], occupied, reach, terrain, depths)
         water_tiles = {(r['x'], r['y']) for r in water}

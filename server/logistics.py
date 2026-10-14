@@ -1,4 +1,5 @@
 """Building inventories and host-controlled transport between workplaces and storage."""
+from spatial import occupied_tiles
 import math
 
 import progression as economy
@@ -407,7 +408,7 @@ def advance_trip(town, landscape, villager, elapsed, resume_work=False):
     obstacles = [b for b in landscape['buildings'] if b['kind'] != 'acre' or 'construction' in b]
     spatial = landscape.get('_spatial_index')
     blocked = (spatial.blocked(dict(landscape, buildings=obstacles)) if spatial is not None else
-               {(b['x'], b['y']) for b in obstacles + landscape['map_resources'] + landscape.get('npcs', [])})
+               occupied_tiles(obstacles + landscape['map_resources'] + landscape.get('npcs', [])))
     terrain = landscape.get('terrain', [])
     roads = {(r['x'], r['y']) for r in landscape.get('roads', []) if 'construction' not in r}
     path = trip['path']

@@ -1,7 +1,13 @@
 // Derived browser data. The host remains authoritative; drawing only reads this data.
 const ClientScene = (() => {
   const tile = p => `${p.x},${p.y}`;
-  const geometry = items => JSON.stringify(items.map(p => [p.kind,p.x,p.y,p.farm_index,!!p.construction]));
+  const footprint = p => {
+    const [width,depth]=p.footprint || [1,1],tiles=[];
+    for(let dx=0;dx<width;dx++)for(let dy=0;dy<depth;dy++)tiles.push({x:p.x+dx,y:p.y+dy});
+    return tiles;
+  };
+
+  const geometry = items => JSON.stringify(items.map(p => [p.kind,p.x,p.y,p.footprint,p.farm_index,!!p.construction]));
   class Overlay {
     constructor(base){this.base=base;this.added=new Set();this.removed=new Set();}
     has(key){return this.added.has(key)||(!this.removed.has(key)&&this.base.has(key));}
@@ -49,9 +55,9 @@ const ClientScene = (() => {
       if(r.kind==='water')scene.water.add(tile(r));
       if(i%256===255)yield;
     }
-    for(const building of buildings)scene.playerBuildings.add(tile(building));
+    for(const building of buildings)footprint(building).forEach(p=>scene.playerBuildings.add(tile(p)));
     for(const [,town] of entries)for(const road of town.roads || [])if(!road.construction)scene.roads.add(tile(road));
-    for(const p of [...buildings,...(landscape?.npcs || [])])scene.occupied.add(tile(p));
+    for(const p of [...buildings,...(landscape?.npcs || [])])footprint(p).forEach(p=>scene.occupied.add(tile(p)));
     // Only affected towns rebuild their local geometry. No global scans per worker.
     for(const [id,town] of entries){
       const source=landscape || town;
@@ -83,7 +89,7 @@ const ClientScene = (() => {
       let blocked;
       if(old?.occupancy===occupancy)blocked=old.blocked;
       else{
-        blocked=new Set([...obstacles,...localResources,...npcs].map(tile));
+        blocked=new Set([...obstacles,...localResources,...npcs].flatMap(footprint).map(tile));
         for(let y=bounds.minY;y<=bounds.maxY;y++){
           for(let x=bounds.minX;x<=bounds.maxX;x++){
             const biome=source.terrain?.[y]?.[x];
@@ -125,13 +131,13 @@ const ClientScene = (() => {
         const bucket=`${Math.floor(p.x/16)},${Math.floor(p.y/16)}`;
         if(!buckets.has(bucket))buckets.set(bucket,[]);buckets.get(bucket).push(p);
       }
-      cache=animalRoutes.cache={resources,buildings,terrain:landscape.terrain,buckets,occupied:new Set([...buildings,...(landscape.npcs || [])].map(tile)),routes:new Map()};
+      cache=animalRoutes.cache={resources,buildings,terrain:landscape.terrain,buckets,occupied:new Set([...buildings,...(landscape.npcs || [])].flatMap(footprint).map(tile)),routes:new Map()};
     }
     if(cache.routes.has(key))return cache.routes.get(key).routes;
     const nearby=[];
     for(let x=Math.floor((barn.x-radius)/16);x<=Math.floor((barn.x+radius)/16);x++)
       for(let y=Math.floor((barn.y-radius)/16);y<=Math.floor((barn.y+radius)/16);y++)nearby.push(...(cache.buckets.get(`${x},${y}`) || []));
-    const blocked=new Set(nearby.filter(p=>Math.abs(p.x-barn.x)<=radius&&Math.abs(p.y-barn.y)<=radius).map(tile));
+    const blocked=new Set(nearby.filter(p=>Math.abs(p.x-barn.x)<=radius&&Math.abs(p.y-barn.y)<=radius).flatMap(footprint).map(tile));
     const available=[];
     for(let x=barn.x-radius;x<=barn.x+radius;x++)for(let y=barn.y-radius;y<=barn.y+radius;y++){
       const biome=landscape.terrain?.[y]?.[x],k=`${x},${y}`;

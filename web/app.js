@@ -264,7 +264,7 @@ function predictPlayerStep(town,player,dx,dy){
       const [x,y]=key.split(',').map(Number),resource=ClientScene.resourceAt(x,y);
       return !!resource&&resource.kind!=='tree'&&resource.kind!=='berry_bush'&&!(resource.kind==='water'&&town.player?.boat);
     }}}:{world,town,boat:!!town.player?.boat,water:new Set((town.map_resources || []).filter(r=>r.kind==='water').map(r=>`${r.x},${r.y}`)),blocked:new Set([...buildings,...(town.map_resources || [])]
-      .filter(b=>b.kind!=='tree'&&b.kind!=='berry_bush'&&!(b.kind==='water'&&town.player?.boat)).map(b=>`${b.x},${b.y}`))};
+      .filter(b=>b.kind!=='tree'&&b.kind!=='berry_bush'&&!(b.kind==='water'&&town.player?.boat)).flatMap(b=>footprintTiles(b).map(p=>`${p.x},${p.y}`)))};
   }
   const size=town.map_size || 12,terrain=town.terrain;
   const open=(x,y)=>{
@@ -2427,7 +2427,7 @@ function animatedVillagers(town, seconds, townId=viewed, frameLayout=null){
   }
   const roads=animatedVillagers.roadSets.get(roadKey);
   const region=typeof ClientScene!=='undefined'?ClientScene.region(town):null;
-  const tiles=items=>items.map(({kind,x,y,farm_index,construction})=>[kind,x,y,farm_index,!!construction]);
+  const tiles=items=>items.map(({kind,x,y,footprint,farm_index,construction})=>[kind,x,y,footprint,farm_index,!!construction]);
   const layout=region?.layoutVersion ?? frameLayout ?? JSON.stringify([tiles(world.shared_map?Object.values(world.towns).flatMap(t=>t.buildings):town.buildings),tiles(town.map_resources),[...roads].sort()]);
   // Names are unique within a town and survive arrivals/departures. Remap the
   // index-based rendering slots without restarting surviving residents.
@@ -2540,7 +2540,7 @@ function townWorkerLayout(town,buildings,resources){
   if(townWorkerLayout.layouts.has(town))return townWorkerLayout.layouts.get(town);
   const center=town.town_origin || town.buildings.find(b=>b.kind==='hall');
   const near=item=>Math.abs(item.x-center.x)<=60&&Math.abs(item.y-center.y)<=60;
-  const tiles=items=>items.filter(near).map(({kind,x,y,farm_index,construction})=>[kind,x,y,farm_index,!!construction]);
+  const tiles=items=>items.filter(near).map(({kind,x,y,footprint,farm_index,construction})=>[kind,x,y,footprint,farm_index,!!construction]);
   const terrain=[];
   for(let y=Math.max(0,center.y-60);y<=Math.min(town.map_size-1,center.y+60);y++){
     let row='';
@@ -2924,7 +2924,7 @@ function mapOverview(rect=canvas.getBoundingClientRect()){
 function townOutline(buildings){
   // Include the whole footprint, including one-building and collinear towns.
   const tiles=new Map();
-  for(const {x,y} of buildings)for(const [dx,dy] of [[0,0],[1,0],[1,1],[0,1]])tiles.set(`${x+dx},${y+dy}`,[x+dx,y+dy]);
+  for(const building of buildings)for(const {x,y} of footprintTiles(building))for(const [dx,dy] of [[0,0],[1,0],[1,1],[0,1]])tiles.set(`${x+dx},${y+dy}`,[x+dx,y+dy]);
   const points=[...tiles.values()].sort((a,b)=>a[0]-b[0]||a[1]-b[1]);
   const cross=(a,b,c)=>(b[0]-a[0])*(c[1]-a[1])-(b[1]-a[1])*(c[0]-a[0]);
   const half=items=>{
@@ -2942,7 +2942,7 @@ function prepareOverview(resources){
     const towns=new Map();
     for(const [id,town] of entries){
       const hallIndex=town.buildings.findIndex(b=>b.kind==='hall'),hall=town.buildings[hallIndex];
-      const footprint=JSON.stringify(town.buildings.map(b=>[b.x,b.y]));
+      const footprint=JSON.stringify(town.buildings.map(b=>[b.x,b.y,b.footprint]));
       const signature=JSON.stringify([town.name,town.level,hallIndex,footprint]);
       const old=cache.towns.get(id);
       towns.set(id,old?.signature===signature?old:{signature,footprint,name:town.name,hallIndex,hall:hall?{x:hall.x,y:hall.y}:null,
@@ -3008,7 +3008,7 @@ function renderResources(resources,detailed=true){
 }
 function* prepareResourceData(resources,detailed=true,previous=resourceCache){
   if(previous?.resources!==resources || previous.count!==resources.length || previous.detailed!==detailed){
-    const layout=JSON.stringify(resources.map(({kind,x,y,farm_index,construction})=>[kind,x,y,farm_index,!!construction]));
+    const layout=JSON.stringify(resources.map(({kind,x,y,footprint,farm_index,construction})=>[kind,x,y,footprint,farm_index,!!construction]));
     const sameLayout=previous?.layout===layout&&previous.detailed===detailed;
     const water=new Set(),objects=[],indexes=new Map(),buckets=new Map(),villageBarns=[];
     for(const [index,r] of resources.entries()){
@@ -3574,6 +3574,7 @@ function draw(seconds=0){
   const showBuildingRange=town && (panel==='build' || (selection?.type==='building' && town.buildings[selection.index]?.kind==='hall'));
   const preview=hoverTile || keyboardTile;
   const previewKind=tool in costs?tool:tool==='move'&&moveIndex!==null?town?.buildings[moveIndex]?.kind:null;
+  const rangePreview=previewKind&&preview?{...(tool==='move'&&moveIndex!==null?town.buildings[moveIndex]:{}),...placementBuilding(preview,previewKind)}:null;
   const sourceKind=previewKind==='woodcutter'?'tree':(previewKind==='farm'||previewKind==='fishing_hut')?'water':null;
   const previewReach=resourceReach(tool==='move'&&moveIndex!==null?town.buildings[moveIndex]:{kind:previewKind});
   const reachable=new Set(preview&&sourceKind?resources.filter(r=>r.kind===sourceKind&&Math.abs(r.x-preview.x)+Math.abs(r.y-preview.y)<=previewReach).map(r=>`${r.x},${r.y}`):[]);
@@ -3598,11 +3599,11 @@ function draw(seconds=0){
       if(tool)polygon(diamond,'#00000000','#91a37455');
       if(showBuildingRange && insideBuildingRange(town,{x,y}))polygon(diamond,'#e4c98022','#e4c98088');
       if(reachable.has(`${x},${y}`))polygon(diamond,'#b8dcad44','#c6dfaa');
-      if(preview?.x===x&&preview?.y===y&&previewKind&&town){const valid=placementValid(town,preview,previewKind)&&buildingUsable(town,{...preview,kind:previewKind});ctx.save();ctx.lineWidth=2;polygon(diamond,valid?'#d6d8a366':'#c76d6455',valid?'#eee5ab':'#f3a295');ctx.restore();}
+      if(rangePreview&&occupies(rangePreview,x,y)&&town){const valid=placementValid(town,preview,previewKind)&&buildingUsable(town,{...preview,kind:previewKind});ctx.save();ctx.lineWidth=2;polygon(diamond,valid?'#d6d8a366':'#c76d6455',valid?'#eee5ab':'#f3a295');ctx.restore();}
     }
   }
   const selected=selection?.type==='building'?town?.buildings[selection.index]:selection?.type==='road'?town?.roads?.[selection.index]:selection?.type==='resource'?resources[selection.index]:null;
-  const highlights=[selected,!previewKind?keyboardTile:null].filter(Boolean);
+  const highlights=[...(selected?footprintTiles(selected):[]),!previewKind?keyboardTile:null].filter(Boolean);
   for(let i=0;i<highlights.length;i++){
     const {x,y}=highlights[i];
     if(i&&x===highlights[0].x&&y===highlights[0].y)continue;
@@ -3614,7 +3615,7 @@ function draw(seconds=0){
   }
   const entries=world.shared_map?Object.entries(world.towns):town?[[viewed,town]]:[];
   const buildings=(typeof ClientScene!=='undefined'&&ClientScene.current?.world===world?(world.shared_map?ClientScene.current.buildings:town?.buildings):null) ?? (world.shared_map?entries.flatMap(([id,t])=>t.buildings.map((b,index)=>({...b,townId:id,objectIndex:index}))):town?.buildings || [{kind:'hall',x:5,y:5}]);
-  const workerLayout=(typeof ClientScene!=='undefined'&&ClientScene.current?.world===world?ClientScene.current.geometry:null) ?? ('['+JSON.stringify(buildings.map(({kind,x,y,farm_index,construction})=>[kind,x,y,farm_index,!!construction]))+','+resourceData.layout+']');
+  const workerLayout=(typeof ClientScene!=='undefined'&&ClientScene.current?.world===world?ClientScene.current.geometry:null) ?? ('['+JSON.stringify(buildings.map(({kind,x,y,footprint,farm_index,construction})=>[kind,x,y,footprint,farm_index,!!construction]))+','+resourceData.layout+']');
   const villagers=frameActors?.world===world?frameActors.villagers:entries.flatMap(([id,t])=>animatedVillagers(t,seconds,id,
     t?.chunked?townWorkerLayout(t,buildings,resources):workerLayout));
   const drawnPiers=new Set();
@@ -3707,7 +3708,10 @@ function draw(seconds=0){
     const simplifiedResource=tileW<32&&(b.kind==='tree'||b.kind==='rock');
     const height=simplifiedResource?tileH/(2*scale):b.kind==='tree'?(b.species==='ancient'?94:70):character?26:b.kind==='acre'?0:b.kind==='rock'?80:type==='building'?buildingHeight(b,owner)+(b.kind==='hall'?(owner?.level>=4?35:33):18):45;
     const halfWidth=simplifiedResource?tileW*.45:character?9*scale:b.kind==='rock'?28*scale:tileW*.45;
-    hitTargets.push({type,index,townId:b.townId || viewed,left:centerX-halfWidth,right:centerX+halfWidth,top:baseY-height*scale,bottom:baseY+(character?5*scale:tileH/2)});
+    const groundPoints=type==='building'&&footprintTiles(b).length>1?footprintTiles(b).map(p=>point(p.x,p.y)):[];
+    hitTargets.push({type,index,townId:b.townId || viewed,
+      left:Math.min(centerX-halfWidth,...groundPoints.map(p=>p[0]-tileW/2)),right:Math.max(centerX+halfWidth,...groundPoints.map(p=>p[0]+tileW/2)),
+      top:baseY-height*scale,bottom:Math.max(baseY+(character?5*scale:tileH/2),...groundPoints.map(p=>p[1]+tileH))});
     if(character&&selection?.type===type&&selection.index===b.index&&(!world.shared_map||b.townId===viewed||type==='npc')){
       ctx.fillStyle='#fff0b144';ctx.strokeStyle='#fff0b1';ctx.lineWidth=2;ctx.beginPath();ctx.ellipse(centerX,baseY,12*scale,6*scale,0,0,Math.PI*2);ctx.fill();ctx.stroke();
     }
@@ -3747,7 +3751,7 @@ function draw(seconds=0){
         drawBuilding(b,town);
       }
     }
-    else drawBuilding({...preview,kind:previewKind},town);
+    else drawBuilding(placementBuilding(preview,previewKind),town);
     ctx.restore();
   }
 }
@@ -3755,6 +3759,14 @@ function acrePlacementValid(town,tile,index){
   const farm=town.buildings[index];
   return farm?.kind==='farm'&&!farm.construction&&Math.max(Math.abs(tile.x-farm.x),Math.abs(tile.y-farm.y))<=3;
 }
+const buildingFootprints={hall:[2,2],mill:[2,2],sawpit:[3,2],workshop:[2,2]};
+function footprintTiles(building){
+  const [width,depth]=building.footprint || [1,1],tiles=[];
+  for(let dx=0;dx<width;dx++)for(let dy=0;dy<depth;dy++)tiles.push({x:building.x+dx,y:building.y+dy});
+  return tiles;
+}
+function occupies(building,x,y){return footprintTiles(building).some(p=>p.x===x&&p.y===y);}
+function placementBuilding(tile,kind){return {...tile,kind,footprint:(world.progression?.building_footprints || buildingFootprints)[kind] || [1,1]};}
 function buildingRange(town){return 30+5*(town.level-1);}
 function insideBuildingRange(town,tile){
   const hall=town.buildings.find(b=>b.kind==='hall');
@@ -3771,14 +3783,21 @@ function placementValid(town,tile,kind,moving=null){
     return (tile.x!==farm.x||tile.y!==farm.y)
       && group.every(b=>placementValid(town,{x:b.x+tile.x-farm.x,y:b.y+tile.y-farm.y},b.kind,group));
   }
-  return tile.x>=0&&tile.y>=0&&tile.x<mapSize(town)&&tile.y<mapSize(town)
-    && insideBuildingRange(town,tile) && town.terrain?.[tile.y]?.[tile.x]!=='v'
+  if(!moving&&tool==='move'&&moveIndex!==null){
+    const selected=town.buildings[moveIndex];
+    if(selected?.x===tile.x&&selected?.y===tile.y)return false;
+    moving=selected?[selected]:null;
+  }
+  const proposed=placementBuilding(tile,kind),tiles=footprintTiles(proposed);
+  const buildings=world.shared_map?Object.values(world.towns).flatMap(t=>t.buildings):town.buildings;
+  return tiles.every(p=>p.x>=0&&p.y>=0&&p.x<mapSize(town)&&p.y<mapSize(town)
+    && insideBuildingRange(town,p)&&town.terrain?.[p.y]?.[p.x]!=='v'
+    && !buildings.some(b=>!moving?.includes(b)&&occupies(b,p.x,p.y))
+    && !(town.npcs || []).some(n=>n.x===p.x&&n.y===p.y)
+    && !town.map_resources.some(r=>r.x===p.x&&r.y===p.y)
+    && (tiles.length===1||!mapRoads(town).some(r=>r.x===p.x&&r.y===p.y))
+    && !(world.shared_map?Object.values(world.towns):[town]).some(t=>t.player&&Math.abs(t.player.x-p.x)<.68&&Math.abs(t.player.y-p.y)<.68))
     && (moving||kind!=='acre'||acrePlacementValid(town,tile,tool==='move'?town.buildings[moveIndex]?.farm_index:acreFarmIndex))
-    && !(world.shared_map?Object.values(world.towns).flatMap(t=>t.buildings):town.buildings).some(b=>!moving?.includes(b)&&b.x===tile.x&&b.y===tile.y)
-    && !(town.npcs || []).some(n=>n.x===tile.x&&n.y===tile.y)
-    && !town.map_resources.some(r=>r.x===tile.x&&r.y===tile.y)
-    && (!world.shared_map || !Object.values(world.towns).some(t=>t.player&&Math.abs(t.player.x-tile.x)<.68&&Math.abs(t.player.y-tile.y)<.68))
-    && (!moving || !town.player || Math.abs(town.player.x-tile.x)>=.68||Math.abs(town.player.y-tile.y)>=.68)
     && (!world.shared_map || kind!=='hall' || !Object.values(world.towns).some(t=>t!==town&&t.buildings.some(b=>b.kind==='hall'&&Math.hypot(b.x-tile.x,b.y-tile.y)<40)))
     && (tool==='move' || town.sandbox || town.wood>=costs[kind]);
 }
@@ -3895,8 +3914,9 @@ function drawBuilding(b,town=world.towns[viewed],farmState=null){
   if(b.construction || b.kind==='acre')return paintBuilding(b,town,farmState);
   const usable=buildingUsable(town,b),s=tileW/46;
   const resolution=2**Math.ceil(Math.log2(Math.max(.5,s*renderPixelRatio())));
-  const bytes=128*144*resolution*resolution*4;
-  const key=JSON.stringify([b.kind,buildingVisualLevel(b,town),b.kind==='hall'?town?.level || 1:buildingLevel(b),b.settler_level || 1,
+  const large=footprintTiles(b).length>1,width=large?256:128,height=large?224:144,offsetX=width/2,offsetY=large?160:112;
+  const bytes=width*height*resolution*resolution*4;
+  const key=JSON.stringify([b.kind,b.footprint,buildingVisualLevel(b,town),b.kind==='hall'?town?.level || 1:buildingLevel(b),b.settler_level || 1,
     [...(b.profession_upgrades || [])].sort(),
     usable,resolution,tileW>=32]);
   let sprite=buildingSprites.get(key);
@@ -3908,17 +3928,37 @@ function drawBuilding(b,town=world.towns[viewed],farmState=null){
         const oldest=buildingSprites.keys().next().value,evicted=buildingSprites.get(oldest);
         buildingSpriteBytes-=evicted.width*evicted.height*4;buildingSprites.delete(oldest);
       }
-      surface.width=128*resolution;surface.height=144*resolution;
-      target.setTransform(resolution/s,0,0,resolution/s,(64-x/s)*resolution,(112-top/s)*resolution);
+      surface.width=width*resolution;surface.height=height*resolution;
+      target.setTransform(resolution/s,0,0,resolution/s,(offsetX-x/s)*resolution,(offsetY-top/s)*resolution);
       paintBuilding(b,town,null,target,usable);
       sprite=surface;buildingSprites.set(key,sprite);buildingSpriteBytes+=bytes;
     }
   }
   if(sprite){
     buildingSprites.delete(key);buildingSprites.set(key,sprite);
-    ctx.drawImage(sprite,x-64*s,top-112*s,128*s,144*s);
+    ctx.drawImage(sprite,x-offsetX*s,top-offsetY*s,width*s,height*s);
   }else paintBuilding(b,town,null,ctx,usable);
   drawBuildingAnimation(b,town,farmState?.elapsed || 0);
+}
+function paintBuildingGround(b,target,paintPolygon){
+  const tiles=footprintTiles(b);if(tiles.length===1)return;
+  const s=tileW/46;
+  for(const tile of tiles){
+    const [x,y]=point(tile.x,tile.y);
+    paintPolygon([[x,y+2*s],[x+tileW/2-2*s,y+tileH/2],[x,y+tileH-2*s],[x-tileW/2+2*s,y+tileH/2]],b.kind==='hall'?'#929387':'#a48d66','#6c715c');
+    if(b.kind==='hall'||b.construction||tile.x===b.x&&tile.y===b.y)continue;
+    if(tile.x===b.x){
+      // Outdoor workbench and tool rack alongside the covered workplace.
+      target.fillStyle='#735439';target.fillRect(x-12*s,y+tileH/2-9*s,24*s,5*s);
+      target.fillRect(x-10*s,y+tileH/2-4*s,3*s,9*s);target.fillRect(x+7*s,y+tileH/2-4*s,3*s,9*s);
+      target.strokeStyle='#c9d5d2';target.lineWidth=2*s;target.beginPath();target.moveTo(x-7*s,y+tileH/2-10*s);target.lineTo(x+8*s,y+tileH/2-10*s);target.stroke();
+    }else{
+      // Stock yard: sacks for grain, stacked timber for the wood trades.
+      target.fillStyle=b.kind==='mill'?'#d3bc83':'#a47c4e';
+      for(let i=0;i<3;i++)target.fillRect(x-12*s+i*8*s,y+tileH/2-(6+i%2*3)*s,7*s,8*s);
+      target.strokeStyle='#68563e';target.lineWidth=s;target.strokeRect(x-14*s,y+tileH/2-11*s,28*s,14*s);
+    }
+  }
 }
 function paintBuilding(b,town,farmState=null,target=ctx,usable=buildingUsable(town,b)){
   const ctx=target;
@@ -3928,6 +3968,7 @@ function paintBuilding(b,town,farmState=null,target=ctx,usable=buildingUsable(to
     if(stroke){ctx.strokeStyle=stroke;ctx.stroke();}
   };
 
+  paintBuildingGround(b,ctx,paintPolygon);
   if(b.construction){
     const [x,top]=point(b.x,b.y),y=top+tileH/2,s=tileW/46;
     const progress=b.construction.progress/b.construction.total,w=tileW*.38,d=w*tileH/tileW;
@@ -3968,7 +4009,8 @@ function paintBuilding(b,town,farmState=null,target=ctx,usable=buildingUsable(to
     }
     ctx.restore();return;
   }
-  const [x,top]=point(b.x,b.y),y=top+tileH/2,s=tileW/46;
+  const largeHall=b.kind==='hall'&&footprintTiles(b).length===4;
+  const [x,top]=point(b.x+(largeHall ? .5 : 0),b.y+(largeHall ? .5 : 0)),y=top+tileH/2,s=tileW/46*(largeHall?1.6:1);
   if(b.kind==='well'){
     ctx.fillStyle='#223b2944';ctx.beginPath();ctx.ellipse(x+4*s,y+5*s,20*s,9*s,0,0,Math.PI*2);ctx.fill();
     // A stone ring, timber windlass, and bucket mark the water collection point.
@@ -3986,7 +4028,7 @@ function paintBuilding(b,town,farmState=null,target=ctx,usable=buildingUsable(to
     return;
   }
   const level=buildingVisualLevel(b,town),upgrades=b.profession_upgrades || [];
-  const w=tileW*(b.kind==='storehouse' ? .43 : .38),depth=w*tileH/tileW,h=buildingHeight(b,town)*s;
+  const w=46*s*(b.kind==='storehouse' ? .43 : .38),depth=w*tileH/tileW,h=buildingHeight(b,town)*s;
   // Wall bases share the tile's ground plane and its isometric slope.
   ctx.fillStyle='#223b2944';ctx.beginPath();ctx.ellipse(x+8*s,y+depth*.6,w+8*s,depth+2*s,0,0,Math.PI*2);ctx.fill();
   paintPolygon([[x-w,y],[x,y+depth],[x,y+depth-h],[x-w,y-h]],usable?(colors[b.kind] || '#a28c72'):'#c76d64');
@@ -4178,15 +4220,15 @@ async function selectTile(x,y){
   if(town.terrain?.[y]?.[x]==='v')return;
   if(mapOverview()){
     const entries=world.shared_map?Object.entries(world.towns):[[viewed,town]];
-    for(const [id,t] of entries){const i=t.buildings.findIndex(b=>b.kind==='hall'&&b.x===x&&b.y===y);if(i>=0){inspect('building',i,id);return;}}
+    for(const [id,t] of entries){const i=t.buildings.findIndex(b=>b.kind==='hall'&&occupies(b,x,y));if(i>=0){inspect('building',i,id);return;}}
     openPanel(null);return;
   }
   const npc=(town.npcs || []).findIndex(n=>{const p=npcPosition(n);return Math.round(p.x)===x&&Math.round(p.y)===y;});
   const resource=town.map_resources.findIndex(r=>r.x===x&&r.y===y);
-  const index=town.buildings.findIndex(b=>b.x===x&&b.y===y);
+  const index=town.buildings.findIndex(b=>occupies(b,x,y));
   if(!tool){
     if(world.shared_map){
-      for(const [id,t] of Object.entries(world.towns)){const i=t.buildings.findIndex(b=>b.x===x&&b.y===y);if(i>=0){inspect('building',i,id);return;}}
+      for(const [id,t] of Object.entries(world.towns)){const i=t.buildings.findIndex(b=>occupies(b,x,y));if(i>=0){inspect('building',i,id);return;}}
     }
     if(npc>=0&&tileW>=32)inspect('npc',npc);
     else if(index>=0)inspect('building',index);
@@ -4229,8 +4271,7 @@ canvas.onmousemove=event=>{
   const hit=hitTargetAt(px,py);
   buildingHover=!tool&&hit?.type==='building'?{index:hit.index,townId:hit.townId}:null;
   const town=world.towns[viewed],tile=tileAt(event);
-  buildTile=(tool in costs)&&viewed===identity?.town_id&&town&&insideBuildingRange(town,tile)&&tile.x>=0&&tile.y>=0&&tile.x<mapSize(town)&&tile.y<mapSize(town)
-    &&(tool!=='acre'||acrePlacementValid(town,tile,acreFarmIndex))&&town.terrain?.[tile.y]?.[tile.x]!=='v'&&!(town.npcs || []).some(n=>n.x===tile.x&&n.y===tile.y)&&!town.buildings.some(b=>b.x===tile.x&&b.y===tile.y)&&!town.map_resources.some(r=>r.x===tile.x&&r.y===tile.y)?tile:null;
+  buildTile=(tool in costs)&&viewed===identity?.town_id&&town&&placementValid(town,tile,tool)?tile:null;
   hoverTile=((tool in costs)||tool==='move'&&moveIndex!==null)&&viewed===identity?.town_id&&town&&tile.x>=0&&tile.y>=0&&tile.x<(town.map_size || 12)&&tile.y<(town.map_size || 12)?tile:null;
 };
 canvas.onmouseleave=()=>{buildTile=null;hoverTile=null;buildingHover=null;};

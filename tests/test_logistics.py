@@ -770,7 +770,7 @@ class ResourceLogistics(unittest.TestCase):
         self.town['map_resources'] = [{'kind': 'tree', 'x': 3, 'y': 1}]
         hall = self.town['buildings'][0]
         self.town['map_resources'] += [{'kind': 'rock', 'x': hall['x'] + dx, 'y': hall['y'] + dy}
-                                      for dx, dy in [(1, 0), (-1, 0), (0, 1), (0, -1)]]
+                                      for dx, dy in [(2, 0), (2, 1), (-1, 0), (-1, 1), (0, 2), (1, 2), (0, -1), (1, -1)]]
         v = self.assign(0, b)
         self.ticks()
         self.assertEqual(self.town['wood'], 115)

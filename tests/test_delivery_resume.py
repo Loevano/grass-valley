@@ -47,6 +47,7 @@ class ProducerDeliveryResume(unittest.TestCase):
         self.assertIn('work_animation', bram)
 
     def test_cancelled_delivery_does_not_resume_production(self):
+        self.town['buildings'][0].update(x=2, y=2)
         bram = self.town['villagers'][3]
         server.assign_settler(self.town, 3, 1)
         # Fill the farm and field stores so this delivery must travel to the hall.

@@ -24,7 +24,7 @@ import player_login
 from navigation import routes
 import lanterns
 import village_life
-from spatial import SpatialIndex
+from spatial import SpatialIndex, BUILDING_FOOTPRINTS, footprint_tiles, occupied_tiles
 
 from terrain import ensure_terrain, remove_invalid_trees, ensure_industry
 from npcs import ensure_npcs
@@ -159,9 +159,9 @@ def walkable(town, x, y, blocked=None, water=None):
             and radius - .5 <= y <= size - .5 - radius):
         return False
     if blocked is None:
-        blocked = {(b['x'], b['y']) for b in
+        blocked = occupied_tiles(b for b in
                    town['buildings'] + town['map_resources']
-                   if b['kind'] not in {'tree', 'berry_bush'} and not (b['kind'] == 'water' and town.get('player', {}).get('boat'))}
+                   if b['kind'] not in {'tree', 'berry_bush'} and not (b['kind'] == 'water' and town.get('player', {}).get('boat')))
     terrain = town.get('terrain')
     if water is None:
         water = {(r['x'], r['y']) for r in town['map_resources'] if r['kind'] == 'water'}
@@ -182,9 +182,9 @@ def ensure_player(town):
     player = town.setdefault('player', {'x': 5., 'y': 7., 'facing': 1})
     if not walkable(town, player['x'], player['y']):
         size = town.get('map_size', 12)
-        blocked = {(b['x'], b['y']) for b in
+        blocked = occupied_tiles(b for b in
                    town['buildings'] + town['map_resources']
-                   if b['kind'] not in {'tree', 'berry_bush'} and not (b['kind'] == 'water' and player.get('boat'))}
+                   if b['kind'] not in {'tree', 'berry_bush'} and not (b['kind'] == 'water' and player.get('boat')))
         terrain = town.get('terrain')
         tiles = terrain.tiles() if hasattr(terrain, 'tiles') else ((x, y) for x in range(size) for y in range(size))
         for x, y in sorted(tiles, key=lambda p:
@@ -206,9 +206,9 @@ def move_player(town, data):
         roads = {(r['x'], r['y']) for r in town.get('roads', []) if completed(r)}
         player.pop('activity', None)
         player.pop('activity_status', None)
-        blocked = {(b['x'], b['y']) for b in
+        blocked = occupied_tiles(b for b in
                    town['buildings'] + town['map_resources']
-                   if b['kind'] not in {'tree', 'berry_bush'} and not (b['kind'] == 'water' and player.get('boat'))}
+                   if b['kind'] not in {'tree', 'berry_bush'} and not (b['kind'] == 'water' and player.get('boat')))
         # Small steps prevent tunnelling through obstacles; slide along walls.
         water = {(r['x'], r['y']) for r in town['map_resources'] if r['kind'] == 'water'}
         for _ in range(5):
@@ -228,7 +228,7 @@ def move_player(town, data):
 
 
 def map_resources(buildings):
-    occupied = {(b['x'], b['y']) for b in buildings}
+    occupied = occupied_tiles(buildings)
     locations = {
         'tree': [(0, 2), (0, 3), (1, 4), (2, 0), (3, 0), (3, 1),
                  (0, 7), (1, 8), (2, 9), (3, 10), (7, 0), (8, 1),
@@ -266,7 +266,7 @@ def ensure_resources(town):
     if 'map_resources' not in town:
         town['map_resources'] = map_resources(town['buildings'])
     if town.get('map_size') != MAP_SIZE:
-        occupied = {(b['x'], b['y']) for b in town['buildings']}
+        occupied = occupied_tiles(town['buildings'])
         occupied.update((r['x'], r['y']) for r in town['map_resources'])
         town['map_resources'].extend(r for r in map_resources(town['buildings'])
                                      if (r['x'] >= 12 or r['y'] >= 12)
@@ -563,7 +563,7 @@ def work_assignment(town, job, worker_index, spatial=None, reservations=None):
                    and abs(r['x'] - b['x']) + abs(r['y'] - b['y']) <= reach])
         if boating:
             depths = (spatial or SpatialIndex(town['map_resources'])).water_depths()
-            occupied = {(item['x'], item['y']) for item in town['buildings'] + town.get('npcs', [])}
+            occupied = occupied_tiles(town['buildings'] + town.get('npcs', []))
             nearby = work_cycles.fishing_water(b, nearby, occupied, reach, depths=depths)
         if nearby or job == 'farming':
             if job == 'farming':
@@ -624,7 +624,7 @@ def new_town(name, world=None):
             'harvested': 0, 'achievements': [],
             'player': {'x': 5., 'y': 7., 'facing': 1},
             'map_resources': map_resources([{'x': 5, 'y': 5}]),
-            'buildings': [{'kind': 'hall', 'x': 5, 'y': 5}],
+            'buildings': [{'kind': 'hall', 'x': 5, 'y': 5, 'footprint': [2, 2]}],
             'villagers': [{'name': n, 'job': 'idle', 'woodcutting': i % 3,
                            'farming': (i + 1) % 3, 'fishing': 0} for i, n in enumerate(
                                VILLAGER_NAMES[:5])]}
@@ -632,7 +632,7 @@ def new_town(name, world=None):
         site = dict(world['town_sites'][len(world['towns'])])
         town.update(world['shared_map'])
         town['town_origin'] = site
-        town['buildings'] = [{'kind': 'hall', **site}]
+        town['buildings'] = [{'kind': 'hall', **site, 'footprint': [2, 2]}]
         town['player'] = {'x': float(site['x']), 'y': float(site['y'] + 2), 'facing': 1}
     else:
         ensure_terrain(town, new=True)
@@ -665,7 +665,7 @@ def construction_blocked(town):
     if spatial is not None:
         blocked = spatial.blocked(town)
     else:
-        blocked = {(b['x'], b['y']) for b in town['buildings'] + town['map_resources']}
+        blocked = occupied_tiles(town['buildings'] + town['map_resources'])
         blocked.update((n['x'], n['y']) for n in town.get('npcs', []))
     # Completed fields are walkable, including around farms awaiting upgrades.
     # Subtraction leaves the spatial index's cached obstacles unchanged.
@@ -774,6 +774,8 @@ def construct(town, landscape, workers=None, elapsed=TICK_SECONDS):
             if index in helpers and site_index != helpers[index]:
                 continue
             target = {'kind': site.get('kind', 'road'), 'x': site['x'], 'y': site['y']}
+            if 'footprint' in site:
+                target['footprint'] = site['footprint']
             retained = (walk and walk['target'] == target and walk.get('job') == villager['job']
                         and tuple(walk['path'][walk['step']]) == start)
             path = walk['path'] if retained else construction_route(landscape, start, site)
@@ -1213,6 +1215,56 @@ def validate_building_range(town, x, y):
         raise ValueError(f'Build within {reach} tile steps of your town hall.')
 
 
+def validate_footprint(town, building, moving=(), world=None):
+    tiles = footprint_tiles(building)
+    obstacles = [b for i, b in enumerate(town['buildings']) if i not in moving]
+    occupied = occupied_tiles(obstacles)
+    if len(tiles) > 1:
+        owners = world['towns'].values() if world and 'shared_map' in world else [town]
+        occupied.update(occupied_tiles(r for owner in owners for r in owner.get('roads', [])))
+    resources = occupied_tiles(town['map_resources'])
+    locals_ = occupied_tiles(town.get('npcs', []))
+    size, terrain = town.get('map_size', MAP_SIZE), town.get('terrain', [])
+    for x, y in tiles:
+        if not (0 <= x < size and 0 <= y < size):
+            raise ValueError('Choose a tile inside your town for the full building footprint.')
+        if (x, y) in occupied:
+            raise ValueError('That tile is already occupied.')
+        if (x, y) in resources:
+            raise ValueError('Choose open grass; trees, water, and rocks occupy this tile.')
+        if (x, y) in locals_:
+            raise ValueError('A local is standing here. Choose another tile.')
+        if terrain and terrain[y][x] == 'v':
+            raise ValueError('Choose a tile inside the valley boundary.')
+        player = ensure_player(town)
+        if abs(player['x'] - x) < .68 and abs(player['y'] - y) < .68:
+            raise ValueError('Walk away from this tile before building here.')
+        validate_building_range(town, x, y)
+        if world and 'shared_map' in world:
+            validate_placement(world, town, {'x': x, 'y': y})
+
+
+def migrate_footprints(world):
+    """Expand clear saved sites once, preserving crowded legacy sites until moved."""
+    towns = list(world['towns'].values())
+    for town in towns:
+        landscape = world.get('shared_map', town)
+        for building in town.get('buildings', []):
+            if building['kind'] not in BUILDING_FOOTPRINTS or 'footprint' in building:
+                continue
+            candidate = dict(building, footprint=BUILDING_FOOTPRINTS[building['kind']])
+            others = [b for t in towns for b in t.get('buildings', []) if b is not building]
+            obstacles = others + list(landscape.get('map_resources', [])) + list(landscape.get('npcs', []))
+            obstacles += [r for t in towns for r in t.get('roads', [])]
+            tiles = footprint_tiles(candidate)
+            terrain, size = landscape.get('terrain', []), landscape.get('map_size', MAP_SIZE)
+            clear = (not landscape.get('chunked') or bool(terrain)) and all(0 <= x < size and 0 <= y < size and (not terrain or terrain[y][x] and terrain[y][x] != 'v')
+                        and not any(abs(t['player']['x'] - x) < .68 and abs(t['player']['y'] - y) < .68
+                                for t in towns if 'player' in t)
+                        for x, y in tiles)
+            building['footprint'] = list(candidate['footprint'] if clear and not tiles.intersection(occupied_tiles(obstacles)) else (1, 1))
+
+
 def command(town, data, world=None):
     if world and world.get('shared_map', {}).get('chunked'):
         attach_chunks(world, SAVE.with_name(SAVE.stem + '_chunks'))
@@ -1294,7 +1346,7 @@ def command(town, data, world=None):
             validate_placement(world, town, data)
         terrain = town.get('terrain', [])
         obstacles = town['buildings'] + town['map_resources'] + town.get('npcs', [])
-        if (terrain and terrain[y][x] == 'v') or any(r['x'] == x and r['y'] == y for r in obstacles):
+        if (terrain and terrain[y][x] == 'v') or (x, y) in occupied_tiles(obstacles):
             raise ValueError('Place roads on open ground.')
         if not any(r['x'] == x and r['y'] == y for r in town.get('roads', [])):
             road = {'x': x, 'y': y}
@@ -1335,6 +1387,8 @@ def command(town, data, world=None):
         if abs(player['x'] - x) < .68 and abs(player['y'] - y) < .68:
             raise ValueError('Walk away from this tile before building here.')
         validate_building_range(town, x, y)
+        validate_footprint(town, {'kind': kind, 'x': x, 'y': y,
+                                 'footprint': BUILDING_FOOTPRINTS.get(kind, (1, 1))}, world=world)
         spec = economy.BUILDINGS.get(kind, {'wood': COSTS[kind]})
         if town['level'] < spec.get('level', 1):
             raise ValueError(f"Requires town hall level {spec['level']}.")
@@ -1346,6 +1400,8 @@ def command(town, data, world=None):
         economy.spend(town, costs)
         building = {'kind': kind, 'x': x, 'y': y,
                     'construction': {'progress': 0, 'total': BUILD_SECONDS}}
+        if kind in BUILDING_FOOTPRINTS:
+            building['footprint'] = list(BUILDING_FOOTPRINTS[kind])
         if kind in economy.DECORATIONS:
             building.pop('construction')
         if kind == 'acre':
@@ -1370,6 +1426,8 @@ def command(town, data, world=None):
         # Validate every destination before charging or moving any part of the farm.
         for i, building in group:
             nx, ny = building['x'] + dx, building['y'] + dy
+            validate_footprint(town, dict(building, x=nx, y=ny,
+                                         footprint=BUILDING_FOOTPRINTS.get(building['kind'], (1, 1))), moving_indices, world)
             if not (0 <= nx < size and 0 <= ny < size):
                 raise ValueError('Choose a tile inside your town for every linked acre.')
             if any(j not in moving_indices and b['x'] == nx and b['y'] == ny
@@ -1403,6 +1461,8 @@ def command(town, data, world=None):
                 villager.pop('work_animation', None)
         for _, building in group:
             building.update(x=building['x'] + dx, y=building['y'] + dy)
+            if building['kind'] in BUILDING_FOOTPRINTS:
+                building['footprint'] = list(BUILDING_FOOTPRINTS[building['kind']])
     elif action == 'destroy':
         index = data.get('index')
         if type(index) is not int or not 0 <= index < len(town['buildings']):
@@ -1914,6 +1974,7 @@ def activate(world_id):
     WORLD, TOKENS = (entry['world'], entry['tokens']) if entry else ({'towns': {}}, {})
     attach_chunks(WORLD, SAVE.with_name(SAVE.stem + '_chunks'))
     bind_map(WORLD)
+    migrate_footprints(WORLD)
 
 
 def load():

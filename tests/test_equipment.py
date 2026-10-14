@@ -64,6 +64,7 @@ class Equipment(unittest.TestCase):
                 self.reject('sell_equipment', key)
 
     def test_biome_access_requires_equipping_and_keeps_boat_rules(self):
+        self.town['buildings'][0].update(x=2, y=2)
         self.town['terrain'][5] = 'g' * 6 + 'b' + 'g' * 113
         self.assertFalse(walkable(self.town, 6, 5))
         self.action('buy_equipment')

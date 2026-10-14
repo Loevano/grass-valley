@@ -1,4 +1,5 @@
 """Wild horse capture, stable breeding stock, and the founder's riding horse."""
+from spatial import occupied_tiles
 import random
 import time
 
@@ -87,7 +88,7 @@ def wander(landscape, towns, seconds):
     occupied = {(r['x'], r['y']) for r in resources}
     occupied.update((r['x'], r['y']) for r in landscape.get('tree_stumps', []))
     occupied.update((n['x'], n['y']) for n in landscape.get('npcs', []))
-    occupied.update((b['x'], b['y']) for town in towns for b in town['buildings'] + town.get('roads', []))
+    occupied.update(occupied_tiles(b for town in towns for b in town['buildings'] + town.get('roads', [])))
     players = [town['player'] for town in towns if 'player' in town]
     size = landscape.get('map_size', len(terrain))
     for horse in resources:

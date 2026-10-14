@@ -1,0 +1,39 @@
+const assert=require('node:assert/strict');
+const client=require('./client_harness');
+const app=client();
+app.run(`
+  const town={name:'Footprints',level:10,map_size:32,sandbox:true,wood:100,food:40,coins:20,
+    player:{x:3,y:9,facing:1},villagers:[],map_resources:[],npcs:[],roads:[],
+    terrain:Array(32).fill('g'.repeat(32)),buildings:[{kind:'hall',x:5,y:5,footprint:[2,2]},
+      {kind:'mill',x:10,y:10,footprint:[2,2]}]};
+  world={world_id:'footprints',towns:{own:town},shared_map:{map_size:32,terrain:town.terrain,map_resources:[],npcs:[]}};
+  viewed='own';identity={town_id:'own'};tool='mill';panel='build';
+`);
+assert.equal(app.run(`placementValid(town,{x:9,y:9},'mill')`),false,'Secondary tile overlaps a saved workplace');
+assert.equal(app.run(`placementValid(town,{x:13,y:13},'sawpit')`),true);
+assert.equal(app.run(`placementValid(town,{x:31,y:13},'mill')`),false,'Entire footprint stays within the map');
+app.run(`town.map_resources.push({kind:'rock',x:14,y:14});`);
+assert.equal(app.run(`placementValid(town,{x:13,y:13},'mill')`),false,'Stock yard cannot overlap resources');
+app.run(`town.map_resources=[];tool='move';moveIndex=1;`);
+assert.equal(app.run(`placementValid(town,{x:11,y:10},'mill')`),true,'Move preview can reuse the original footprint');
+assert.equal(app.run(`placementValid(town,{x:10,y:10},'mill')`),false,'Unchanged moves remain invalid');
+app.run(`tool='mill';moveIndex=null;`);
+app.run(`
+  const sceneSteps=ClientScene.prepare(world);let prepared;
+  do{prepared=sceneSteps.next();}while(!prepared.done);
+  ClientScene.commit(prepared.value);
+`);
+for(const key of ['10,10','11,10','10,11','11,11']){
+  assert.equal(app.run(`ClientScene.current.playerBuildings.has('${key}')`),true);
+  assert.equal(app.run(`ClientScene.current.regions.get('own').blocked.has('${key}')`),true);
+}
+app.run(`
+  const block=new Set(footprintTiles(town.buildings[1]).map(p=>p.x+','+p.y));
+  for(const [x,y] of [[9,10],[9,11],[10,9],[11,9],[12,10],[12,11],[10,12]])block.add(x+','+y);
+  const path=WorkerAnimation.route({x:11,y:14},town.buildings[1],block,32,true);
+`);
+assert.equal(app.run(`JSON.stringify(path.at(-1))`),'{"x":11,"y":12}','Browser routing reaches an open far edge');
+assert.equal(app.run(`JSON.stringify(townOutline([town.buildings[1]]))`),'[[10,10],[12,10],[12,12],[10,12]]','Overview outlines the full footprint');
+app.run(`tool=null;selectTile(11,11);`);
+assert.equal(app.run(`selection.index`),1,'Stock tile selects its owning building');
+console.log('Full building placement, scene collision, edge access and selection passed');

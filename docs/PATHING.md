@@ -139,10 +139,13 @@ Movement and routing decisions for Lantern Vale.
 
 | Query | Arrival rule | Search |
 | --- | --- | --- |
-| Ordinary destination | Cardinal neighbor: Manhattan distance exactly 1, even with diagonals enabled. | BFS on cardinal uniform ground; travel-time A* with roads or diagonals. |
+| Ordinary destination | An open cardinal neighbor of any occupied footprint tile, even with diagonals enabled. | BFS on cardinal uniform ground; travel-time A* with roads or diagonals. |
 | Exact destination | Requested tile, such as an acre or dock endpoint. | Same algorithm selection. |
 | Set of destinations | Any member of the set, such as a usable water bank. | BFS on cardinal uniform ground; otherwise Dijkstra (weighted search with zero heuristic). |
 
+- Larger building destinations use a set of open perimeter tiles; routes never
+  enter their workplace or stock yard. Saved footprint dimensions are part of
+  host and browser navigation validity.
 - Optimize travel time to the supplied goal, rather than waypoint count.
 - **A* lower bound:**
   - Manhattan distance for cardinal movement; octile distance for diagonals.

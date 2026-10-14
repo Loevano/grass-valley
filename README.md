@@ -831,3 +831,12 @@ these additions in existing worlds.
 
 `AGENTS.md` stays at the root to provide repository-wide contributor instructions.
 Save files and terrain chunks stay at the root, outside version control.
+
+## Building footprints
+
+Town halls and mills occupy 2×2 tiles; sawpits occupy 3×2 and woodworker's workshops (forgeries) 2×2.
+Production buildings include a covered workplace, outdoor workbench, and stock yard.
+Placement and moves validate every tile, including resources, players, other towns,
+and the hall's building range. Workers approach any reachable outside edge.
+Older buildings expand when their saved site is clear. Crowded older sites retain
+one tile until moved to a clear site with room for the new footprint.

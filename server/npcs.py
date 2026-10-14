@@ -1,4 +1,5 @@
 """Friendly locals placed on open ground in their home biome."""
+from spatial import occupied_tiles
 import math
 import random
 
@@ -66,9 +67,8 @@ def ensure_npcs(town, obstacles=()):
     locals_ = town.setdefault('npcs', [])
     names = {npc['name'] for npc in locals_}
     rng = random.Random(str(town.get('terrain_seed', 0)) + ':npcs')
-    occupied = {(obj['x'], obj['y']) for obj in
-                town.get('buildings', []) + town['map_resources'] + locals_
-                + town.get('roads', []) + list(obstacles)}
+    occupied = occupied_tiles(town.get('buildings', []) + town['map_resources'] + locals_
+                              + town.get('roads', []) + list(obstacles))
     player = town.get('player')
     if player:
         occupied.add((round(player['x']), round(player['y'])))

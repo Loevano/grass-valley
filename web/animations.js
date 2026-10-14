@@ -1,6 +1,12 @@
 // Visual worker state stays in the browser; the host owns production and skills.
 const WorkerAnimation = (() => {
   const key = p => `${p.x},${p.y}`;
+  const footprint = p => {
+    const [width,depth]=p.footprint || [1,1],tiles=[];
+    for(let dx=0;dx<width;dx++)for(let dy=0;dy<depth;dy++)tiles.push({x:p.x+dx,y:p.y+dy});
+    return tiles;
+  };
+
   const distance = (a,b) => Math.abs(a.x-b.x)+Math.abs(a.y-b.y);
   const neighbors = p => [{x:p.x+1,y:p.y},{x:p.x,y:p.y+1},{x:p.x-1,y:p.y},{x:p.x,y:p.y-1}];
   const boatLevel = b => b?.profession_upgrades?.includes('master_boat')?3:b?.profession_upgrades?.includes('improved_boat')?2:b?.profession_upgrades?.includes('boat')?1:0;
@@ -33,7 +39,7 @@ const WorkerAnimation = (() => {
           resources.push(...(town.resourceBuckets.get(`${x},${y}`) || []));
     }
     resources=resources.filter(r=>r.x>=bounds.minX&&r.x<=bounds.maxX&&r.y>=bounds.minY&&r.y<=bounds.maxY);
-    const occupied=new Set([...(town.obstacles || town.buildings),...(town.npcs || [])].map(key));
+    const occupied=new Set([...(town.obstacles || town.buildings),...(town.npcs || [])].flatMap(footprint).map(key));
     const waters=resources.filter(r=>r.kind==='water'&&distance(home,r)<=3&&!occupied.has(key(r)))
       .sort((a,b)=>distance(home,a)-distance(home,b)||a.y-b.y||a.x-b.x);
     const blocked=new Set([...occupied,...resources.map(key)]);
@@ -69,6 +75,10 @@ const WorkerAnimation = (() => {
     return depths;
   }
   function* routeSteps(start, target, blocked, size=120, adjacent=true, bounds=null, roads=null, roadMode='smooth', diagonal=false) {
+    if(adjacent&&!(target instanceof Set)&&target.footprint){
+      const tiles=new Set(footprint(target).map(key));
+      target=new Set(footprint(target).flatMap(neighbors).map(key).filter(p=>!tiles.has(p)&&!blocked.has(p)));
+    }
     const cache=cachedRoutes(blocked);
     const cacheKey=cache?JSON.stringify([key(start),target instanceof Set?[...target].sort():key(target),size,adjacent,
       bounds?[bounds.minX,bounds.maxX,bounds.minY,bounds.maxY]:null,[...blocked.added].sort(),[...blocked.removed].sort(),
@@ -166,7 +176,7 @@ const WorkerAnimation = (() => {
   function* planSteps(town, villager, index, state) {
     const roads=town.navigation?.roads || new Set((town.roads || []).filter(r=>!r.construction).map(key));
     const roadMode=villager.construction_target?'departure':'smooth';
-    const blocked=town.navigation?town.navigation.overlay():new Set([...(town.obstacles || town.buildings),...town.map_resources,...(town.npcs || [])].map(key));
+    const blocked=town.navigation?town.navigation.overlay():new Set([...(town.obstacles || town.buildings),...town.map_resources,...(town.npcs || [])].flatMap(footprint).map(key));
     if(villager.construction_target || villager.logistics_target || villager.job==='farming'){
       for(const acre of (town.obstacles || town.buildings).filter(b=>b.kind==='acre'&&!b.construction))blocked.delete(key(acre));
     }
@@ -227,7 +237,7 @@ const WorkerAnimation = (() => {
       const depths=(yield* waterDepthsSteps(town.map_resources));
       const water=new Set(town.map_resources.filter(r=>r.kind==='water'&&distance(home,r)<=fishingReach(home)
         &&depths.get(key(r))<=boatLevel(home)+1&&town.terrain?.[r.y]?.[r.x]!=='v').map(key));
-      const occupied=new Set([...(town.obstacles || town.buildings),...(town.npcs || [])].map(key));
+      const occupied=new Set([...(town.obstacles || town.buildings),...(town.npcs || [])].flatMap(footprint).map(key));
       const queue=[source],seen=new Set([key(source)]);
       for(const tile of queue){
         if(!water.has(key(tile))||occupied.has(key(tile)))continue;
@@ -240,7 +250,7 @@ const WorkerAnimation = (() => {
       const dock=pier.at(-1) || home,berth=fishingBerth(home,pier,connected);
       const seaBounds={minX:Math.max(0,home.x-fishingReach(home)),maxX:Math.min(size-1,home.x+fishingReach(home)),
         minY:Math.max(0,home.y-fishingReach(home)),maxY:Math.min(size-1,home.y+fishingReach(home))};
-      const seaBlocked=new Set(),landBlocked=new Set([...(town.obstacles || town.buildings),...town.map_resources,...(town.npcs || [])].map(key));
+      const seaBlocked=new Set(),landBlocked=new Set([...(town.obstacles || town.buildings),...town.map_resources,...(town.npcs || [])].flatMap(footprint).map(key));
       for(const tile of pier)landBlocked.delete(key(tile));
       landBlocked.delete(key(home));landBlocked.delete(key(berth));
       const connectedWater=new Set(connected.map(key));
@@ -282,7 +292,7 @@ const WorkerAnimation = (() => {
     let castTarget=villager.job==='fishing'?source:null;
     if(villager.job==='fishing'&&source){
       const water=new Set(town.map_resources.filter(r=>r.kind==='water').map(key));
-      const occupied=new Set([...(town.obstacles || town.buildings),...(town.npcs || [])].map(key));
+      const occupied=new Set([...(town.obstacles || town.buildings),...(town.npcs || [])].flatMap(footprint).map(key));
       // Keep the entire cast over connected water, preferring farther water away from the hut.
       for(const direction of neighbors({x:0,y:0})){
         for(let reach=1;reach<=(boating?1:3);reach++){
@@ -312,10 +322,10 @@ const WorkerAnimation = (() => {
   function refreshNavigation(state, town, villager) {
     // Geometry updates refresh collision data without changing an ongoing route.
     const blocked=town.navigation?town.navigation.overlay():new Set([...(town.obstacles || town.buildings),
-      ...town.map_resources,...(town.npcs || [])].map(key));
+      ...town.map_resources,...(town.npcs || [])].flatMap(footprint).map(key));
     if(state.farming || state.construction || state.transport)
       for(const acre of (town.obstacles || town.buildings).filter(b=>b.kind==='acre'&&!b.construction))blocked.delete(key(acre));
-    const occupied=new Set([...(town.obstacles || town.buildings),...(town.npcs || [])].map(key));
+    const occupied=new Set([...(town.obstacles || town.buildings),...(town.npcs || [])].flatMap(footprint).map(key));
     const water=new Set(town.map_resources.filter(r=>r.kind==='water').map(key));
     const home=state.home&&town.buildings.find(b=>b.kind===state.home.kind&&key(b)===key(state.home));
     if(state.home&&!home)return false; // The destination moved or disappeared.

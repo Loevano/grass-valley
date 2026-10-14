@@ -2,6 +2,25 @@
 
 CELL_SIZE = 8
 
+# Dimensions are saved on each building; absent dimensions preserve old layouts.
+BUILDING_FOOTPRINTS = {'hall': (2, 2), 'mill': (2, 2), 'sawpit': (3, 2), 'workshop': (2, 2)}
+
+
+def footprint_tiles(building):
+    width, depth = building.get('footprint', (1, 1))
+    return {(building['x'] + dx, building['y'] + dy)
+            for dx in range(width) for dy in range(depth)}
+
+
+def occupied_tiles(items):
+    return {tile for item in items for tile in footprint_tiles(item)}
+
+
+def perimeter(building):
+    tiles = footprint_tiles(building)
+    return {(x + dx, y + dy) for x, y in tiles
+            for dx, dy in ((1, 0), (0, 1), (-1, 0), (0, -1))} - tiles
+
 
 class SpatialIndex:
     def __init__(self, resources):
@@ -56,7 +75,7 @@ class SpatialIndex:
 
     def blocked(self, landscape):
         self.refresh()
-        buildings = tuple((b['x'], b['y']) for b in landscape['buildings'])
+        buildings = tuple(sorted(occupied_tiles(landscape['buildings'])))
         npcs = tuple((n['x'], n['y']) for n in landscape.get('npcs', []))
         key = buildings, npcs
         if key not in self.obstacles:

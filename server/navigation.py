@@ -2,6 +2,7 @@
 from collections import OrderedDict, deque
 import heapq
 from math import sqrt
+from spatial import perimeter
 
 
 class RouteCache:
@@ -11,6 +12,8 @@ class RouteCache:
 
     def route(self, start, target, blocked, size, terrain, adjacent=True, bounds=None,
               roads=(), road_mode='smooth', diagonal=False):
+        if adjacent and isinstance(target, dict) and target.get('footprint'):
+            target = perimeter(target) - set(blocked)
         # Chunk records are sparse. Include loaded chunk keys as well as terrain
         # rows so loading/evicting terrain cannot reuse an obsolete route.
         if hasattr(terrain, 'records'):

@@ -1,6 +1,7 @@
 """One saved landscape and separated town sites for new worlds."""
 import random
 import secrets
+from spatial import occupied_tiles
 
 from npcs import ensure_npcs
 from terrain import generate_map
@@ -144,7 +145,7 @@ def validate_placement(world, town, data):
     if abs(x - origin['x']) + abs(y - origin['y']) > max(TOWN_RADIUS, building_range(town)):
         raise ValueError('Build inside your town territory.')
     for other in world['towns'].values():
-        if other is not town and any(b['x'] == x and b['y'] == y for b in other['buildings']):
+        if other is not town and (x, y) in occupied_tiles(other['buildings']):
             raise ValueError('Another town occupies this tile.')
         player = other['player']
         if abs(player['x'] - x) < .68 and abs(player['y'] - y) < .68:

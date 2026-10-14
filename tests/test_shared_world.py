@@ -66,7 +66,7 @@ class SharedMap(unittest.TestCase):
     def test_territory_and_visiting_player_block_construction_without_spending(self):
         world = self.make_world(2)
         town, friend = world['towns'].values()
-        x, y = town['town_origin']['x'] + 1, town['town_origin']['y']
+        x, y = town['town_origin']['x'] + 2, town['town_origin']['y']
         friend['player'].update(x=x, y=y)
         before = copy.deepcopy(world)
         with self.assertRaisesRegex(ValueError, 'player'):
@@ -83,11 +83,11 @@ class SharedMap(unittest.TestCase):
         world = self.make_world(2)
         town, friend = world['towns'].values()
         hall = friend['buildings'][0]
-        town['player'].update(x=float(hall['x']), y=float(hall['y'] + 1))
+        town['player'].update(x=float(hall['x']), y=float(hall['y'] + 2))
         friend_before = copy.deepcopy(friend['player'])
         for _ in range(8):
             server.command(town, {'action': 'walk', 'dx': 0, 'dy': -1}, world)
-        self.assertGreaterEqual(town['player']['y'], hall['y'] + .68)
+        self.assertGreaterEqual(town['player']['y'], hall['y'] + 1.68)
         self.assertEqual(friend['player'], friend_before)
         x = town['player']['x']
         server.command(town, {'action': 'walk', 'dx': 1, 'dy': 0}, world)

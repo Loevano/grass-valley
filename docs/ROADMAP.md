@@ -9,7 +9,6 @@ and cache rules are in [Backend](BACKEND.md#cached-zoomed-out-map).
 | 2     | Production line balancing          | Wood and grain implemented; fishing remains | Develop clear fishing chains with capped staffing and simple upgrades. |
 | 3     | Scalable villager pathfinding       | Foundations implemented; host scheduling and shared navigation remain | Keep movement responsive as villager counts and towns grow, with bounded routing work. |
 | 7     | Building range indicators in build mode | Planned             | Show building ranges on the map to help choose placement positions. |
-| 8     | Larger production buildings and town hall | Planned           | Give mills, sawpits, and forgeries larger footprints with workplace and stock areas; make town halls occupy four tiles. |
 | 9     | Fix harvesting tool visuals        | Planned                  | Remove the duplicate sickle and the extra attribute shown during harvesting. |
 
 ## Cached zoomed-out town overview
@@ -173,8 +172,6 @@ are collected in [Pathing decisions](PATHING.md).
 | 1 | Host pathfinding queue | Spread resumable searches across simulation updates under a bounded work budget. Prioritize blocked workers and urgent deliveries, keep ordinary requests from starving, and cancel obsolete requests when tasks or navigation change. |
 | 2 | Cache refinement | Limit shared-cache invalidation to affected navigation where practical. Existing route caches are bounded; bound pending requests when host scheduling is added. |
 | 3 | Flow fields for shared destinations | Reuse a map of travel directions toward common wells, warehouses, and workplaces across many villagers. Account for road speeds and access rules, and retain individual searches for specific acres and other unique destinations. |
-| 4 | Local crowd avoidance | Add local spacing, short waits, or avoidance adjustments where villagers crowd together. Keep moving villagers out of the static obstacle map so crowds do not trigger constant global replanning. |
-| 5 | Hierarchical routing | Route between connected regions first, then calculate detailed paths within those regions. Define connections across chunk boundaries and handle navigation changes or unavailable terrain. |
 
 Completion criteria:
 
@@ -207,23 +204,6 @@ Completion criteria:
 - Building ranges are visible on the map while in build mode.
 - The building placement preview's range indicator follows its proposed position.
 - Indicators reflect the actual gameplay range of each building.
-
-## Larger production buildings and town hall
-
-**Status:** planned.
-
-- Give the Mill, Sawpit, and Forgery larger tile footprints to reflect their
-  production scale, with a workplace and a stock area for each building.
-- Make the Town hall occupy four tiles.
-- Exact tile counts and layouts for the three production buildings remain to be
-  decided.
-
-Completion criteria:
-
-- Mills, sawpits, and forgeries occupy more tiles and include visible workplace
-  and stock areas.
-- Town halls occupy four tiles.
-- Placement, collision, and worker access respect the complete building footprints.
 
 ## Fix harvesting tool visuals
 
