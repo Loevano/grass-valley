@@ -39,13 +39,17 @@ ANIMALS['horse'] = {'level': 8, 'coins': 0, 'output': 'horse', 'feed': .5}
 ANIMAL_GROWTH_SECONDS = 300
 TREE_REGROWTH_RATE = .9
 WOOD_PER_CYCLE = .75
+# Meals are charged once per three-second host tick.
+IDLE_FOOD = .03
+WORKER_FOOD = .045
+FOOD_TICK_SECONDS = 3
 WOOD_WORKER_CAPACITIES = {'woodcutter': (1, 2, 3), 'sawpit': (1, 2), 'workshop': (1,)}
 STORAGE_UPGRADE_KINDS = (*WOOD_WORKER_CAPACITIES, 'mill', 'bakery')
 # Grain processors buffer two minutes of base production, independently of staffing.
 WORKPLACE_STORAGE_SIZES = {'mill': 160, 'bakery': 100}
 WORKER_CAPACITIES = {
     **WOOD_WORKER_CAPACITIES,
-    'farm': (1, 2, 4), 'mill': (1, 2), 'bakery': (1,),
+    'farm': (1, 2, 4), 'mill': (1,), 'bakery': (1,),
     'mine': (1, 2, 4, 8), 'smelter': (1, 2, 3), 'steelworks': (1,),
 }
 DECORATIONS = ('wooden_bench', 'wooden_statue')
@@ -89,6 +93,12 @@ PROFESSION_UPGRADES = {
     'wool_nets': {'label': 'Durable wool nets', 'building': 'fishing_hut', 'level': 3, 'skill': 'fishing', 'xp': 20, 'wool': 5},
     'steel_pickaxe': {'label': 'Steel pickaxes', 'building': 'mine', 'level': 9, 'skill': 'mining', 'xp': 10, 'steel': 5, 'leather': 3},
     'timber_frame': {'label': 'Timber framing', 'building': 'home', 'level': 5, 'planks': 10},
+    'improved_millstones': {'label': 'Improved millstones', 'building': 'mill', 'level': 4, 'skill': 'milling', 'xp': 2, 'wood': 30, 'planks': 10, 'throughput': 2},
+    'geared_millstones': {'label': 'Geared millstones', 'building': 'mill', 'level': 5, 'skill': 'milling', 'xp': 3, 'requires': 'improved_millstones', 'wood': 60, 'planks': 20, 'tools': 5, 'throughput': 4},
+    'masterwork_millstones': {'label': 'Masterwork millstones', 'building': 'mill', 'level': 6, 'skill': 'milling', 'xp': 5, 'requires': 'geared_millstones', 'wood': 90, 'planks': 30, 'tools': 10, 'throughput': 8},
+    'larger_oven': {'label': 'Larger oven', 'building': 'bakery', 'level': 4, 'skill': 'baking', 'xp': 2, 'wood': 30, 'planks': 10, 'throughput': 4},
+    'double_hearth_oven': {'label': 'Double hearth oven', 'building': 'bakery', 'level': 5, 'skill': 'baking', 'xp': 3, 'requires': 'larger_oven', 'wood': 60, 'planks': 20, 'tools': 5, 'throughput': 8},
+    'masterwork_oven': {'label': 'Masterwork oven', 'building': 'bakery', 'level': 6, 'skill': 'baking', 'xp': 5, 'requires': 'double_hearth_oven', 'wood': 90, 'planks': 30, 'tools': 10, 'throughput': 16},
 }
 PLAYER_BOATS = {
     1: {'label': 'Exploration boat', 'level': 3, 'xp': 0, 'coins': 20},
@@ -252,11 +262,28 @@ def processing_efficiency(villager, building):
     bonus = tool.get('bonus', 0) if tool.get('job') == villager['job'] else 0
     if 'steel_pickaxe' in building.get('profession_upgrades', []):
         bonus += .25
-    return efficiency(villager, villager['job']) * (1 + bonus)
+    return efficiency(villager, villager['job']) * (1 + bonus) * grain_equipment_multiplier(building)
+
+
+def grain_equipment_multiplier(building):
+    return max((PROFESSION_UPGRADES.get(key, {}).get('throughput', 1)
+                for key in building.get('profession_upgrades', [])
+                if PROFESSION_UPGRADES.get(key, {}).get('building') == building['kind']), default=1)
+
+
+def food_per_minute(working=True):
+    return (IDLE_FOOD + (WORKER_FOOD if working else 0)) * 60 / FOOD_TICK_SECONDS
+
+
+def food_demand(town):
+    working = sum(v['job'] != 'idle' or bool(v.get('construction_target'))
+                  for v in town['villagers'])
+    return (len(town['villagers']) * IDLE_FOOD + working * WORKER_FOOD) * 60 / FOOD_TICK_SECONDS
 
 
 def storage_multiplier(building):
-    return 1 + .25 * (building.get('level', 1) - 1) if building['kind'] in STORAGE_UPGRADE_KINDS else 1
+    return ((1 + .25 * (building.get('level', 1) - 1)) * grain_equipment_multiplier(building)
+            if building['kind'] in STORAGE_UPGRADE_KINDS else 1)
 
 
 SUPPLIES = {'tree': (8, .5), 'water': (12, 3.2), 'berry_bush': (6, .3), 'herb_patch': (4, .2), 'rock': (60, .15)}
@@ -887,4 +914,5 @@ def public_catalog():
             'storage_upgrade_kinds': STORAGE_UPGRADE_KINDS,
             'workplace_storage_sizes': WORKPLACE_STORAGE_SIZES,
             'worker_capacities': WORKER_CAPACITIES, 'decorations': DECORATIONS,
+            'food_per_minute': {'idle': food_per_minute(False), 'working': food_per_minute()},
             'crafted_worker_tools': CRAFTED_WORKER_TOOLS, 'wood_per_cycle': WOOD_PER_CYCLE}

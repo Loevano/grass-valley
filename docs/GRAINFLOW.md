@@ -2,42 +2,28 @@
 
 [Balancing reference](BALANCING.md#grains)
 
-## Goal
+## Goal and status
 
-**Confirmed direction:** plan wheat → flour → bread around
-**how many villagers the chain can feed**.
+**Implemented:** plan wheat → flour → bread around **villagers fed**.
 
-- One upgraded mill and one upgraded bakery should feed the village.
-- Keep one worker per mill and bakery.
-- Equipment upgrades increase production capacity.
-- Add bakeries to make different varieties at the same time.
-- Start with a target of **200 working villagers**. Refine it through playtesting.
-- Include everyone in that target: farmers, millers, bakers, fuel producers,
-  haulers, and other residents.
-
-**Proposed:** lower food consumption before choosing equipment tiers.
-The new meal rate is still open.
-
-**Status:** design recorded. Equipment upgrades and feeding-capacity displays
-remain planned.
-
-The current game has different limits:
-
-- The base chain uses one miller and two bread bakers.
-- A mill can upgrade to two workers.
-- Mill and bakery building levels only increase storage.
-- Current rates are listed in [Balancing](BALANCING.md#grains).
+- One upgraded mill and one upgraded bakery can feed 200 working villagers.
+- Each mill and bakery has one worker.
+- Equipment upgrades increase production, ingredient demand, storage, and carrying capacity.
+- Extra bakeries make different recipes and share the flour supply.
+- The target includes farmers, millers, bakers, haulers, and all other residents.
+- Delivered supply depends on acres, water, fuel, hauling, and storage.
+- Larger layouts and continuous fuel supply still need playtesting.
 
 ## The player's decisions
 
-- **Enough wheat acres?** Check wheat demand against delivered harvests.
-  Provide enough farmers, reachable water, and clear delivery paths.
+- **Enough wheat acres?** Compare delivered wheat with bakery demand.
+  Add or staff acres. Improve water access and hauling when needed.
 - **Mill upgraded enough?** Compare flour capacity with total bakery demand.
-  Upgrade the mill when it cannot keep up.
-- **Bakery upgraded enough?** Compare bread capacity with village food demand.
-  Upgrade the bakery when it cannot keep up.
+  Upgrade its equipment when it cannot keep up.
+- **Bakery upgraded enough?** Compare food capacity with village food demand.
+  Upgrade its equipment when it cannot keep up.
 - **Want more variety?** Add a bakery and choose another recipe.
-  Expand wheat supply and mill capacity if needed.
+  Supply its extra ingredients and enough flour.
 
 ```mermaid
 flowchart LR
@@ -50,153 +36,181 @@ flowchart LR
     Variety --> Village
 ```
 
-- One bakery should be enough for basic survival.
-- Each bakery makes its own selected recipe.
-- Extra bakeries share the mill's flour supply.
-- Variety adds no happiness or nutrition rule in this design.
+- One bakery is enough for basic bread.
+- Each bakery keeps its selected recipe.
+- Variety adds no happiness or nutrition rule.
 
-## Translate production into villagers fed
+## Meals and villagers fed
 
-Current meal costs:
+**Current:** food consumption is one quarter of the previous rate.
 
-- Every resident uses 0.12 food every three seconds.
-- A job or construction assignment adds 0.18 food every three seconds.
-- A working villager needs **6 food per minute**.
-- An idle resident needs **2.4 food per minute**.
-- Basic bread supplies **1.5 food per item**.
-- A working villager needs **4 bread per minute** on a bread-only diet.
+- Every resident uses **0.03 food per three-second tick**.
+- A job or construction assignment adds **0.045 food per tick**.
+- A working villager needs **1.5 food per minute**.
+- An idle resident needs **0.6 food per minute**.
+- One basic bread supplies **1.5 food**.
+- One working villager needs **one bread per minute** on a bread-only diet.
+- Arrivals still need 20 food after meals and use 10 food.
+- The shortage grace period remains 60 seconds.
 
-Use these formulas when tuning consumption:
+`working villagers fed = delivered food per minute ÷ 1.5`
 
-`working villagers fed = delivered food per minute ÷ food needed per working villager per minute`
+`village food demand per minute = idle residents × 0.6 + working residents × 1.5`
 
-`village food demand per minute = idle residents × idle food rate + working residents × working food rate`
+## Equipment upgrades
 
-- Update capacity displays and chain requirements when meal costs change.
-- Tune the idle rate and extra worker cost together.
-- Resting residents still need food. Working should add a proportionate cost.
+Base recipes keep their ingredients, work time, and practice rewards.
+Equipment multiplies batch size and ingredient use together.
+Skills and talents still apply.
 
-### Reference using current consumption
+| Mill equipment | Multiplier | Flour/min | Bread-equivalent villagers fed |
+| --- | --- | --- | --- |
+| Base | 1× | 40 | 40 |
+| Improved millstones | 2× | 80 | 80 |
+| Geared millstones | 4× | 160 | 160 |
+| Masterwork millstones | 8× | 320 | 320 |
 
-| Part          | Base rate, one worker                          | Minimum rate to feed 200 working villagers     |
-| ------------- | ---------------------------------------------- | ---------------------------------------------- |
-| Wheat supply  | Varies with acres, farmers, water, and hauling | 800 wheat/min delivered                        |
-| Mill          | 40 flour/min; uses 40 wheat/min                | 800 flour/min; uses 800 wheat/min              |
-| Bread bakery  | 20 bread/min; uses 20 flour and 5 wood/min     | 800 bread/min; uses 800 flour and 200 wood/min |
-| Food supplied | 30 food/min; feeds 5 working villagers         | 1,200 food/min; feeds 200 working villagers    |
+| Bakery equipment | Multiplier | Bread/min | Working villagers fed |
+| --- | --- | --- | --- |
+| Base | 1× | 20 | 20 |
+| Larger oven | 4× | 80 | 80 |
+| Double hearth oven | 8× | 160 | 160 |
+| Masterwork oven | 16× | 320 | 320 |
 
-- These rates assume uninterrupted production.
-- The mill needs at least **20×** its base capacity.
-- The bakery needs at least **40×** its base capacity.
-- These figures are requirements, not agreed upgrade tiers.
-- Equipment must increase ingredient use along with output.
-- Skills and talents still apply.
-- Neutral workers should reach the target without exceptional skill.
-- Fuel needs at least **14 base woodcutters** at 15 wood/minute each.
-  Travel and other wood uses increase that requirement.
+- Rates assume neutral talent, low practice, and continuous inputs.
+- Mill feeding figures assume enough capacity to bake its flour into basic bread.
+- The top tier leaves room above the 200-villager minimum for hauling pauses.
+- Other bakery recipes use their own food values, work times, and ingredients.
+- Each additional bakery adds flour demand. It adds no milling capacity.
 
-Lower meal costs could make this chain much smaller.
+### Costs and unlocks
 
-### Explore lower consumption first
+The mill and bakery each have three equipment upgrades.
+Each upgrade after the first requires the previous equipment tier.
 
-Compare meal rates using current recipes and neutral workers.
-The lower rates are tuning examples. No new rate has been chosen.
-
-| Food/worker/min | Food/min for 200 | Bread, flour, wheat/min, each | Wood/min | Mill / bakery capacity vs base |
+| Upgrade | Hall level | Profession practice | Cost | Builder work |
 | --- | --- | --- | --- | --- |
-| 6 (current) | 1,200 | 800 | 200 | 20× / 40× |
-| 3 (example) | 600 | 400 | 100 | 10× / 20× |
-| 1.5 (example) | 300 | 200 | 50 | 5× / 10× |
+| First equipment tier | 4 | 2 milling or baking | 30 wood + 10 planks | 30 seconds |
+| Second equipment tier | 5 | 3 milling or baking | 60 wood + 20 planks + 5 tools | 30 seconds |
+| Third equipment tier | 6 | 5 milling or baking | 90 wood + 30 planks + 10 tools | 30 seconds |
 
-Choose a rate that keeps acres, fuel, and upgrades manageable.
-Reliable food production should still matter.
-
-Check how lower meal costs affect:
-
-- Other food chains.
-- How long stored food lasts.
-- Settler arrivals and village growth.
-- How quickly shortages develop.
-
-Leave spare production capacity:
-
-- Allow for hauling and supply interruptions.
-- Test **delivered bread** against consumption.
-- Capacity equal to demand leaves no room to recover from shortages.
-- Stockpiles cover temporary gaps. They cannot fix a lasting shortfall.
+- Existing profession unlock rules use the town's highest matching practice.
+- A worker still needs their own qualifications and recipe practice.
+- Sandbox upgrades are free and instant. Training requirements are waived.
 
 ## Supply enough wheat
 
-The compact grain test supplies **50 wheat/minute** after startup.
+For 200 working villagers fed entirely on basic bread, deliver at least:
+
+- **200 wheat/minute** to the mill.
+- **200 flour/minute** to the bakery.
+- **50 wood/minute** for fuel.
+- **200 bread/minute**, worth 300 food.
+
+The compact farm test supplies **50 wheat/minute** after startup.
 It uses **four acres and two farmers** in a specific layout.
 
-Scaling that result gives these examples for 200 working villagers:
+Scaling that result gives these planning estimates:
 
 | Food/worker/min | Wheat/min needed | Illustrative acres | Illustrative farmers |
 | --- | --- | --- | --- |
-| 6 (current) | 800 | 64 | 32 |
-| 1.5 (example) | 200 | 16 | 8 |
+| 6 (previous) | 800 | 64 | 32 |
+| 1.5 (current) | 200 | 16 | 8 |
 
-- These are planning estimates, not guaranteed yields.
-- More acres need enough farmers, water access, and hauling.
-- Test larger layouts before choosing the final farm balance.
+- At the current meal rate, this suggests **eight base farms** with 16 acres.
+- Each base farm has one farmer and two wheat acres in that estimate.
+- Upgraded farms can hold 2 or 4 farmers. Fewer buildings may be sufficient.
+- These are estimates, not guaranteed delivered yields.
 
-## Scale storage and hauling
+### Tested 200-resident layout
 
-Faster equipment needs larger input buffers and finished-goods storage.
-Transport must keep up too.
+The host test sustains 200 working residents with:
 
-Example storage for two minutes of production:
+- One masterwork mill and one masterwork bread bakery.
+- **12 farms, 24 wheat acres, and 12 farmers**.
+- Nearby wells and a central grain storehouse.
+- **Four haulers**.
+- Supplied fuel and room for finished bread.
 
-| Building | At 6 food/worker/min | At 1.5 food/worker/min |
-| --- | --- | --- |
-| Mill | 1,600 wheat and 1,600 flour | 400 wheat and 400 flour |
-| Bakery | 1,600 flour, 400 wood, and 1,600 bread | 400 flour, 100 wood, and 400 bread |
+The test runs real crop growth, water trips, production, and worker hauling.
+After five minutes of startup, it checks five more minutes of food supply.
+The pantry does not shrink and recent bread deliveries cover 300 food/minute.
 
-- Account for reserved inputs separately.
-- Current storage upgrades are too small for either example.
-- Choose meal costs and equipment tiers first.
-- Then set storage and hauling requirements.
+- Fuel production is outside this test. Provide forestry for a running village.
+- At minimum demand, 50 wood/minute needs at least four base woodcutters.
+- At full equipment capacity, baking uses 80 wood/minute.
+- Longer paths and other consumers need extra supply.
 
-## Make the bottleneck visible
+## Storage and hauling
 
-Production panels should show:
+Equipment scales these allowances by its throughput multiplier:
+
+- Available input and finished-good storage.
+- The separate reserved-input buffer and total material storage.
+- The assigned miller's or baker's carrying capacity.
+
+Building levels add another **25%/50%** storage independently.
+They do not add throughput or worker slots.
+Dedicated haulers keep their normal skill-based carrying limits.
+
+Top-tier storage at building level 1:
+
+| Building | Available stock | Reserved-input buffer / material storage, each | Producer carrying capacity before hauling skill |
+| --- | --- | --- | --- |
+| Mill | 640 wheat and 640 flour | 1,280 | 400 |
+| Bakery | 640 flour, 160 wood, 320 herbs, and 640 of each baked good, milk, eggs, and fruit | 1,600 | 800 |
+
+- These basic-bread allowances cover two minutes at full equipment capacity.
+- Reserved inputs remain separate from available stock.
+- Full output storage still pauses production.
+- A central storehouse can combine small farm harvests into larger supply loads.
+
+## Feeding-capacity displays
+
+Open a hall, farm, mill, or bakery to see **Village grain flow**:
+
+- Current meal demand for all residents.
+- Wheat acres and recent delivered wheat.
+- Staffed mill capacity and recent flour deliveries.
+- Combined bakery flour and fuel demand at capacity.
+- Staffed bakery food capacity and recent delivered food.
+- Suggestions for staffing, upgrades, supplies, hauling, or storage.
+
+Mill and bakery panels also show:
 
 - **“Feeds X working villagers”** for the selected recipe.
 - Ingredient demand per minute.
-- Capacity with continuous inputs.
-- Actual delivered supply, including pauses and shortages.
+- Capacity with the assigned worker, or a neutral worker if unstaffed.
+- Recent delivered supply, shown separately from capacity.
 
-Upgrade previews should show feeding capacity and input demand before and after.
+Upgrade previews show production, feeding capacity, and ingredient demand
+before and after. They use neutral talent and low practice for comparison.
 
-A grain-flow overview should compare:
+### Recent delivered supply
 
-- Village food demand.
-- Delivered wheat supply.
-- Mill capacity.
-- Total bakery demand and output.
+- The host counts output when it first becomes available after unloading.
+- Pending production does not count as delivered food.
+- Hauling available stock again does not count it twice.
+- Startup uses the average since the first delivery.
+- After two minutes, rates use a bounded smoothed average.
+- Rates fall during blocked work. They describe recent supply, not guaranteed output.
+- Browser displays do not change gameplay or saved stock.
 
-Make the next action clear:
+## Existing saves
 
-- Add or staff acres.
-- Improve water access or delivery paths.
-- Upgrade the mill or a bakery.
-- Supply fuel or recipe ingredients.
-- Free storage space.
+- Mills and bakeries are capped at one worker.
+- Existing extra worker slots become the first equipment upgrade.
+- Excess workers rest. They retain skills and tools.
+- Their completed cargo stays at the workplace for collection.
+- Their partial batches queue at the workplace for the retained producer.
+- Queued work resumes when its original recipe is produced.
+- Existing stock, reserved inputs, and construction progress are preserved.
+- Migration runs once and survives saving and reopening.
 
-Use each variety's own food value, work time, and ingredients.
-Another bakery adds flour demand. It adds no milling capacity.
+## Remaining balance work
 
-## Remaining implementation and balance work
-
-- Tune lower worker and idle meal costs.
-- Check effects on other food chains and village growth.
-- Choose equipment tiers, costs, unlocks, and construction times.
-- Provide enough delivered capacity for 200 working villagers.
-- Implement equipment upgrades with one worker per mill and bakery.
-- Plan migration for existing two-worker mills.
-  Preserve residents, goods, and unfinished work.
-- Balance acres, fuel, storage, and hauling.
-- Add feeding-capacity figures, upgrade previews, and a grain-flow overview.
-- Test a town fed by one upgraded mill and one upgraded bread bakery.
-- Test extra bakeries with different recipes and shared flour demand.
+- Playtest different farm layouts and town sizes.
+- Check continuous forestry supply alongside the grain chain.
+- Review equipment costs, unlocks, and progression speed.
+- Review other food chains and village growth at the lower meal rate.
+- Refine the 200-villager target using delivered supply.

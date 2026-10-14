@@ -146,6 +146,167 @@ class GrainChain(unittest.TestCase):
         self.assertEqual(building['input_buffer'], {'flour': 48, 'wood': 4.5})
         self.assertEqual(baker['pending_output'], {'bread': 2})
 
+    def test_equipment_scales_inputs_storage_and_capacity_without_extra_workers(self):
+        for kind in ('mill', 'bakery'):
+            building, index = self.add(kind)
+            job = economy.BUILDINGS[kind]['job']
+            self.town['level'] = 6
+            worker = dict(job=job, talents={}, **economy.JOB_REQUIREMENTS[job])
+            for key, spec in economy.PROFESSION_UPGRADES.items():
+                if spec['building'] != kind or 'throughput' not in spec:
+                    continue
+                server.command(self.town, dict(action='profession_upgrade', index=index, upgrade=key))
+                self.assertEqual(server.settler_capacity(building), 1)
+                self.assertEqual(economy.grain_equipment_multiplier(building), spec['throughput'])
+                self.assertEqual(logistics.buffer_size(building), economy.WORKPLACE_STORAGE_SIZES[kind] * spec['throughput'])
+            inputs, output, amount = economy.production_recipe(building)
+            multiplier = economy.grain_equipment_multiplier(building)
+            building['input_buffer'] = {k: n * multiplier for k, n in inputs.items()}
+            self.assertEqual(logistics.produce(self.town, building, worker, economy.production_seconds(building)), 'Working')
+            self.assertEqual(worker['pending_output'], {output: amount * multiplier})
+            self.assertTrue(all(n == 0 for n in building['input_buffer'].values()))
+            self.assertEqual(logistics.carry_capacity(worker, building), 50 * multiplier)
+            with self.assertRaises(ValueError):
+                server.command(self.town, dict(action='upgrade_capacity', index=index))
+
+    def test_old_mill_migration_preserves_stock_cargo_and_partial_work_once(self):
+        mill, index = self.add('mill', settler_level=2, input_buffer={'wheat': 80},
+                               construction={'progress': 12, 'total': 30,
+                                             'upgrade': {'settler_level': 2}})
+        self.town.pop('grain_chain_version')
+        for worker in self.town['villagers'][:2]:
+            worker.update(job='milling', building_index=index, farming=10, milling=3)
+        first, second = self.town['villagers'][:2]
+        first['production_work'] = {'task': ['milling', 'mill', 7, 5, 'flour'], 'elapsed': 1}
+        second['production_work'] = {'task': ['milling', 'mill', 7, 5, 'flour'], 'elapsed': 2}
+        logistics.record_output(self.town, mill, 'flour', 2, second)
+        server.ensure_resources(self.town)
+        self.assertEqual(first['production_work']['elapsed'], 1)
+        self.assertEqual(second['job'], 'idle')
+        self.assertEqual(second['milling'], 3)
+        self.assertEqual(mill['grain_work_queue'][0]['elapsed'], 2)
+        self.assertEqual(mill['orphaned_output'], {'flour': 2})
+        self.assertEqual(mill['input_buffer'], {'wheat': 80})
+        self.assertEqual(mill['construction']['progress'], 12)
+        self.assertEqual(mill['construction']['upgrade']['settler_level'], 1)
+        self.assertIn('improved_millstones', mill['profession_upgrades'])
+        restored = json.loads(json.dumps(self.town))
+        before = copy.deepcopy(restored)
+        server.ensure_resources(restored)
+        self.assertEqual(restored, before)
+        mill.pop('construction')
+        self.assertEqual(logistics.produce(self.town, mill, first, 2), 'Working')
+        self.assertEqual(logistics.produce(self.town, mill, first, 1), 'Working')
+        self.assertEqual(mill['grain_work_queue'], [])
+
+    def test_recent_supply_counts_dropoffs_once_and_decays_while_blocked(self):
+        bakery, _ = self.add('bakery')
+        worker = dict(job='baking')
+        logistics.record_output(self.town, bakery, 'bread', 4, worker)
+        logistics.update_grain_deliveries(self.town, 3)
+        self.assertNotIn('grain_flow', bakery)
+        logistics.drop_off(self.town, bakery, worker)
+        logistics.update_grain_deliveries(self.town, 3)
+        self.assertEqual(bakery['grain_flow']['rates']['bread'], 80)
+        logistics.drop_off(self.town, bakery, worker)
+        logistics.update_grain_deliveries(self.town, 3)
+        self.assertEqual(bakery['grain_flow']['rates']['bread'], 40)
+        for _ in range(100):
+            logistics.update_grain_deliveries(self.town, 3)
+        self.assertLess(bakery['grain_flow']['rates']['bread'], 1)
+        self.assertEqual(bakery['grain_flow']['seconds'], 120)
+
+    def test_200_working_residents_eat_300_food_per_minute(self):
+        self.town['villagers'] = [dict(name=str(i), job='building') for i in range(200)]
+        self.town['food'] = 1000
+        for _ in range(20):
+            server.feed_settlers(self.town)
+        self.assertAlmostEqual(self.town['food'], 700)
+        self.assertAlmostEqual(economy.food_demand(self.town), 300)
+
+    def test_idle_residents_and_construction_helpers_keep_the_meal_ratio(self):
+        self.town['villagers'] = [dict(job='idle'), dict(job='idle', construction_target={'x': 7, 'y': 5})]
+        self.town['food'] = 10
+        self.assertAlmostEqual(economy.food_demand(self.town), 2.1)
+        server.feed_settlers(self.town)
+        self.assertAlmostEqual(self.town['food'], 10 - .03 - .075)
+
+    def test_equipment_requires_previous_tier_and_finishes_after_builder_work(self):
+        self.town.update(level=6, sandbox=False, wood=500, goods={'planks': 100, 'tools': 50})
+        bakery, index = self.add('bakery')
+        self.town['villagers'][0].update(job='baking', building_index=index, milling=2, baking=5)
+        with self.assertRaisesRegex(ValueError, 'previous equipment tier'):
+            server.command(self.town, dict(action='profession_upgrade', index=index, upgrade='double_hearth_oven'))
+        wood = self.town['wood']
+        server.command(self.town, dict(action='profession_upgrade', index=index, upgrade='larger_oven'))
+        self.assertEqual(self.town['wood'], wood - 30)
+        self.assertEqual(economy.grain_equipment_multiplier(bakery), 1)
+        self.assertEqual(bakery['construction']['total'], 30)
+        for _ in range(100):
+            server.construct(self.town, self.town, workers={0})
+            if 'construction' not in bakery:
+                break
+        self.assertNotIn('construction', bakery)
+        self.assertEqual(economy.grain_equipment_multiplier(bakery), 4)
+        with self.assertRaisesRegex(ValueError, 'Already unlocked'):
+            server.command(self.town, dict(action='profession_upgrade', index=index, upgrade='larger_oven'))
+
+    def test_variety_bakeries_share_flour_and_require_their_own_extra_ingredients(self):
+        bakeries = [self.add('bakery', x=x, recipe=recipe, profession_upgrades=['larger_oven'])[0]
+                    for x, recipe in ((9, 'bread'), (11, 'herb_bread'))]
+        workers = [dict(job='baking', milling=2, baking=3, talents={}) for _ in bakeries]
+        for building, worker in zip(bakeries, workers):
+            building['input_buffer'] = {'flour': 8, 'wood': 2}
+        self.assertEqual(logistics.produce(self.town, bakeries[0], workers[0], 6), 'Working')
+        before = copy.deepcopy(bakeries[1]['input_buffer'])
+        self.assertIn('herbs', logistics.produce(self.town, bakeries[1], workers[1], 6))
+        self.assertEqual(bakeries[1]['input_buffer'], before)
+        bakeries[1]['input_buffer']['herbs'] = 4
+        self.assertEqual(logistics.produce(self.town, bakeries[1], workers[1], 6), 'Working')
+        self.assertEqual(workers[0]['pending_output'], {'bread': 8})
+        self.assertEqual(workers[1]['pending_output'], {'herb_bread': 8})
+        self.assertEqual(sum(b['input_buffer']['flour'] for b in bakeries), 0)
+
+    def test_one_upgraded_mill_and_bakery_deliver_food_for_200_residents(self):
+        self.town = flat_town('Large grain chain', size=64)
+        self.town.update(level=6, sandbox=True, wood=5000, food=0)
+        self.town['villagers'] = [dict(name=f'Worker {i}', job='building', talents={}) for i in range(200)]
+        # Six compact farm groups: real growth, water trips, and harvest hauling.
+        for group in range(6):
+            y = 8 + group * 4
+            self.add('well', x=5, y=y)
+            for offset, x in enumerate((3, 8)):
+                _, index = self.add('farm', x=x, y=y, crop='wheat')
+                for field_x in (x, x + 1):
+                    self.add('acre', x=field_x, y=y + 1, farm_index=index, crop='wheat')
+                self.town['villagers'][group * 2 + offset].update(
+                    job='farming', building_index=index, farming=0,
+                    construction_position={'x': x, 'y': y + 1})
+        for kind, x, y, worker_index, upgrade in (
+            ('mill', 6, 15, 12, 'masterwork_millstones'),
+            ('bakery', 6, 17, 13, 'masterwork_oven'),
+        ):
+            _, index = self.add(kind, x=x, y=y, profession_upgrades=[upgrade])
+            job = economy.BUILDINGS[kind]['job']
+            self.town['villagers'][worker_index].update(job=job, building_index=index,
+                                                      **economy.JOB_REQUIREMENTS[job])
+        # Fuel and overflow space isolate this check from forestry and sales.
+        _, store = self.add('storehouse', x=6, y=14, level=8,
+                            storage_enabled={'wheat': True, 'flour': True})
+        for worker in self.town['villagers'][14:18]:
+            worker.update(job='hauling', building_index=store, hauling=0)
+        self.add('storehouse', x=7, y=17, level=8, storage_enabled={'bread': True})
+        for i in range(33):
+            self.add('home', x=30 + i % 11, y=8 + i // 11, level=3)
+        self.advance(100)  # Startup: seed fields and fill the processors.
+        food = self.town['food']
+        self.advance(100)
+        self.assertGreaterEqual(self.town['food'], food)
+        self.assertEqual(self.town['food_shortage_seconds'], 0)
+        bakeries = [b for b in self.town['buildings'] if b['kind'] == 'bakery']
+        self.assertEqual(len(bakeries), 1)
+        self.assertGreaterEqual(bakeries[0]['grain_flow']['rates']['bread'] * 1.5, 300)
+
 
 if __name__ == '__main__':
     unittest.main()

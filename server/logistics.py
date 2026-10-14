@@ -60,8 +60,9 @@ def sale_cargo(town, building, villager):
     return {}
 
 
-def carry_capacity(villager):
-    return BUFFER_SIZE * economy.efficiency(villager, 'hauling')
+def carry_capacity(villager, building=None):
+    equipment = economy.grain_equipment_multiplier(building) if building and villager.get('job') in {'milling', 'baking'} else 1
+    return BUFFER_SIZE * economy.efficiency(villager, 'hauling') * equipment
 
 
 def travel_speed(villager):
@@ -125,7 +126,28 @@ def drop_off(town, building, villager):
         buffer = building.setdefault('output_buffer', {})
         buffer[key] = buffer.get(key, 0) + amount
         economy.add_stock(town, key, amount)
+        record_grain_delivery(building, key, amount)
     villager.pop('pending_workplace', None)
+
+
+def record_grain_delivery(building, key, amount):
+    """Count completed goods only when they first become available, never on rehauls."""
+    if amount > 0 and key in {'wheat', 'flour', *(r['output'] for r in economy.PROFESSION_RECIPES['bakery'])}:
+        pending = building.setdefault('grain_delivery_pending', {})
+        pending[key] = pending.get(key, 0) + amount
+
+
+def update_grain_deliveries(town, seconds):
+    """Bounded recent rates: average startup, then smooth over about two minutes."""
+    for building in town['buildings']:
+        pending = building.pop('grain_delivery_pending', {})
+        if not pending and 'grain_flow' not in building:
+            continue
+        flow = building.setdefault('grain_flow', {'seconds': 0, 'rates': {}})
+        flow['seconds'] = min(120, flow['seconds'] + seconds)
+        weight = seconds / flow['seconds']
+        flow['rates'] = {key: flow['rates'].get(key, 0) * (1 - weight) + pending.get(key, 0) * 60 / seconds * weight
+                         for key in flow['rates'].keys() | pending.keys()}
 
 
 def cancel_output(town, villager):
@@ -256,6 +278,11 @@ def produce(town, building, villager, elapsed=3):
         progress = villager.get('production_work', {})
         if progress.get('task') != task:
             progress = {'task': task, 'elapsed': 0}
+            queued = building.get('grain_work_queue', [])
+            saved = next((p for p in queued if p.get('task', [None])[-1] == output), None)
+            if saved:
+                progress['elapsed'] = saved['elapsed']
+                queued.remove(saved)
         duration = economy.production_seconds(building)
         progress['elapsed'] = min(duration, progress['elapsed'] + elapsed)
         villager['production_work'] = progress
@@ -309,7 +336,7 @@ def planned_cargo(town, building, storage, operation, villager):
     """Describe the batch this trip can deliver without reserving town stock."""
     if operation == 'sell':
         return sale_cargo(town, building, villager)
-    remaining = carry_capacity(villager)
+    remaining = carry_capacity(villager, building)
     cargo = {}
     if operation == 'collect':
         target = {**storage, 'stored_goods': dict(storage.get('stored_goods', {}))}
@@ -467,7 +494,7 @@ def transfer(town, building, storage, operation, villager, planned=None):
             cargo[key] = amount
         return_sale_cargo(town, {'workplace': {k: building[k] for k in ('kind', 'x', 'y')}}, unsold)
         return cargo
-    remaining = carry_capacity(villager)
+    remaining = carry_capacity(villager, building)
     total_moved = 0
     cargo = {}
     if operation == 'collect':
@@ -482,6 +509,7 @@ def transfer(town, building, storage, operation, villager, planned=None):
                     if field == 'orphaned_output':
                         building['pending_output'][key] -= moved
                         economy.add_stock(town, key, moved)
+                        record_grain_delivery(building, key, moved)
                     remaining -= moved
                     total_moved += moved
                     cargo[key] = cargo.get(key, 0) + moved

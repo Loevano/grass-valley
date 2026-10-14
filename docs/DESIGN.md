@@ -268,9 +268,15 @@ Farming expertise improves a field's yield while retaining its shared cycle limi
 barns still have one animal-limited production cycle regardless of worker count.
 
 The base grain chain is two farms (one farmer and at least two wheat acres each),
-one miller, and two bakeries (one bread baker each). Mill and bakery levels increase
-storage and separate ingredient buffers by 25%/50%, without increasing output;
-worker capacity upgrades stay separate. Base milling supplies 40 flour per active
+one miller, and two bakeries (one bread baker each). Mills and bakeries each retain
+one worker. Equipment upgrades increase batch output, ingredient demand, storage,
+and producer carrying capacity. Building levels add 25%/50% storage independently.
+Meals cost 1.5 food/minute per working resident and 0.6 per idle resident.
+One top-tier mill and bread bakery target 200 working villagers with enough
+wheat, fuel, and hauling. The compact host test uses 12 farms, 24 acres, and four
+haulers with supplied fuel. Extra bakeries make different recipes.
+Capacity figures and recent deliveries appear in the village grain-flow overview.
+Base milling supplies 40 flour per active
 minute to two bakers consuming 40 flour and 10 wood. Delivered rates depend on
 field layout, water, hauling, and room for finished goods. Current capacities and
 the gameplay fixture are documented in [Balancing](BALANCING.md#grains).

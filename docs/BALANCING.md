@@ -141,13 +141,13 @@ inventory, without stacking duplicate bonuses. New sawpits start with one space.
 
 ## Grains
 
-The proposed [grain flow](GRAINFLOW.md) shifts planning toward **villagers fed**:
+The implemented [grain flow](GRAINFLOW.md) shifts planning toward **villagers fed**:
 one mill and one bakery, each with one worker and equipment throughput upgrades,
-should support an initial target of 200 working villagers. Lower food consumption
-per worker is proposed before choosing equipment tiers. Additional bakeries
-provide recipe variety. Meal costs, equipment tiers, supporting supply and
-storage, and feeding-capacity displays remain planned; the values below describe
-the current game.
+support an initial target of 200 working villagers with sufficient supply and
+hauling. Meals cost 1.5 food/minute per working villager and 0.6 per idle resident.
+Additional bakeries provide recipe variety. Equipment tiers, scaled storage and
+producer carrying capacity, and feeding-capacity displays are implemented.
+The base rates below exclude equipment. Larger layouts still need playtesting.
 
 ### Current base rates
 
@@ -213,8 +213,17 @@ ingredient storage does not block processing when the output batch fits.
 Mill and bakery building upgrades grow storage allocations and both buffers by
 25%/50%, with no production bonus. They cost 30/60 wood and take 30/60 seconds
 of builder work, following the existing building-upgrade rules. Worker upgrades
-remain separate: farms have 1/2/4 spaces, mills 1/2, and bakeries one. The second
-miller can supply four base bread bakeries if farms and fuel can support them.
+remain separate for farms, which have 1/2/4 spaces. Mills and bakeries stay at one
+worker. Equipment upgrades multiply mill throughput by 2/4/8 and bakery throughput
+by 4/8/16. Item allowances, both buffers, and producer carrying capacity scale by
+the same factor, multiplied by any storage-level bonus.
+The top neutral mill and bread bakery each handle 320 items/minute before hauling,
+providing capacity for 320 working villagers at the lower meal rate. The minimum
+for 200 is 200 wheat, flour, and bread plus 50 wood/minute. The compact delivered
+chain test sustains 200 residents using 12 farms, 24 acres, and four haulers with
+fuel supplied. Eight base farms with 16 acres is an estimate, not a verified layout.
+Equipment costs, unlocks, migration, and delivery measurements are in
+[Grain flow](GRAINFLOW.md).
 Better skills and talents increase real ingredient demand along with output.
 Advanced bakery recipes also need their listed milk, herbs, fruit, or eggs;
 the base grain ratio does not promise those supplies.

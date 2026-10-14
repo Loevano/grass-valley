@@ -427,7 +427,7 @@ function remotePlayerSprite(townId,town,seconds){
 const labels = {road:'Dirt road',hall:'Town hall',home:'Cottage',woodcutter:'Woodcutter',farm:'Farm',storehouse:'Storehouse',fishing_hut:'Fishing hut',acre:'Acre',well:'Well'};
 function buildingLevel(building){return building.level || 1;}
 const woodWorkerCapacities={woodcutter:[1,2,3],sawpit:[1,2],workshop:[1]};
-const workerCapacities={...woodWorkerCapacities,farm:[1,2,4],mill:[1,2],bakery:[1],mine:[1,2,4,8],smelter:[1,2,3],steelworks:[1]};
+const workerCapacities={...woodWorkerCapacities,farm:[1,2,4],mill:[1],bakery:[1],mine:[1,2,4,8],smelter:[1,2,3],steelworks:[1]};
 const decorationKinds=['wooden_bench','wooden_statue'];
 function woodCapacities(){return world.progression?.wood_worker_capacities || woodWorkerCapacities;}
 function storageUpgradeKinds(){return world.progression?.storage_upgrade_kinds || [...Object.keys(woodCapacities()),'mill','bakery'];}
@@ -438,7 +438,67 @@ function settlerCapacity(building){
   return tiers?tiers[Math.min(level,tiers.length)-1]:settlerSpaces[building.kind]*level;
 }
 function capacityMaxLevel(building){return capacityTiers()[building.kind]?.length || 3;}
-function storageMultiplier(building){return storageUpgradeKinds().includes(building.kind)?1+.25*(buildingLevel(building)-1):1;}
+function grainEquipmentMultiplier(building){
+  return Math.max(1,...(building.profession_upgrades || []).map(key=>{
+    const spec=world.progression?.upgrades?.[key];
+    return spec?.building===building.kind?spec.throughput || 1:1;
+  }));
+}
+function storageMultiplier(building){return storageUpgradeKinds().includes(building.kind)?(1+.25*(buildingLevel(building)-1))*grainEquipmentMultiplier(building):1;}
+function foodRates(){return world.progression?.food_per_minute || {idle:.6,working:1.5};}
+function villageFoodDemand(town){return (town.villagers || []).reduce((sum,v)=>sum+foodRates()[v.job!=='idle'||v.construction_target?'working':'idle'],0);}
+function grainProduction(building,worker=null){
+  const catalog=world.progression,recipe=selectedProfessionRecipe(building);
+  const base=recipe?[recipe.inputs,recipe.output,recipe.amount]:catalog?.recipes?.[building.kind];
+  if(!base)return null;
+  const factor=60/(catalog.production_seconds?.[base[1]] || 3)*grainEquipmentMultiplier(building)*(worker?workerEfficiency(worker,catalog.buildings[building.kind].job):1);
+  const amount=base[2]*factor,food=amount*(foodGoods()[base[1]] || (base[1]==='flour'?foodGoods().bread || 1.5:0));
+  return {inputs:Object.fromEntries(Object.entries(base[0]).map(([key,n])=>[key,n*factor])),output:base[1],amount,food,feeds:food/foodRates().working};
+}
+function grainWorker(town,item,index){
+  const job=world.progression?.buildings?.[item.kind]?.job,recipe=selectedProfessionRecipe(item);
+  return town.villagers.find(v=>v.building_index===index&&v.job===job&&!jobRequirement(v,job)
+    &&(town.sandbox||!recipe||recipe.level===1||(v[job] || 0)>=recipe.level));
+}
+function renderGrainFlow(town,item,index,target){
+  const number=n=>Number(n.toFixed(1)),mill=item.kind==='mill';
+  if(['mill','bakery'].includes(item.kind)){
+    const worker=grainWorker(town,item,index),rate=grainProduction(item,worker);
+    if(rate){
+      target.append(fact(`Feeds ${number(rate.feeds)} working villagers`,mill?'Flour capacity as basic bread · Needs enough bakery capacity':'Recipe capacity with continuous inputs'));
+      target.append(fact(`${number(rate.amount)} ${goodName(rate.output).toLowerCase()}/min`,worker?'Capacity with assigned worker · Before travel and hauling':'Equipment capacity with one neutral worker · Assign a qualified worker'));
+      target.append(fact(costText(rate.inputs)+'/min','Ingredient demand at capacity'));
+      const delivered=item.grain_flow?.rates || {},food=Object.entries(delivered).reduce((sum,[key,n])=>sum+n*(foodGoods()[key] || 0),0);
+      target.append(fact(mill?`${number(delivered.flour || 0)} flour/min`:`Feeds ${number(food/foodRates().working)} working villagers`,'Recent delivered supply · Smoothed over about 2 minutes'));
+    }
+  }
+  const summary=document.createElement('div');summary.className='grain-flow';
+  const heading=document.createElement('h3');heading.textContent='Village grain flow';summary.append(heading);
+  const totals={wheat:0,flour:0,food:0,mill:0,bakery:0,demand:0};
+  let fuel=0;
+  town.buildings.forEach((building,i)=>{
+    const rates=building.grain_flow?.rates || {};
+    totals.wheat+=rates.wheat || 0;totals.flour+=rates.flour || 0;
+    if(building.kind==='bakery')totals.food+=Object.entries(rates).reduce((sum,[key,n])=>sum+n*(foodGoods()[key] || 0),0);
+    if(!['mill','bakery'].includes(building.kind)||building.construction&&!building.construction.upgrade)return;
+    const worker=grainWorker(town,building,i);if(!worker)return;
+    const rate=grainProduction(building,worker);if(!rate)return;
+    if(building.kind==='mill')totals.mill+=rate.amount;
+    else {totals.bakery+=rate.food;totals.demand+=rate.inputs.flour || 0;fuel+=rate.inputs.wood || 0;}
+  });
+  const demand=villageFoodDemand(town),acres=town.buildings.filter(b=>b.kind==='acre'&&(b.crop || 'vegetables')==='wheat'&&(!b.construction||b.construction.upgrade)).length;
+  summary.append(fact(`${number(demand)} food/min`,`${town.villagers.length} residents · Current meal demand`));
+  summary.append(fact(`${acres} wheat acres · ${number(totals.wheat)} wheat/min`,'Recent delivered wheat · Add farmers, acres or improve water and hauling'));
+  summary.append(fact(`${number(totals.mill)} flour/min capacity · ${number(totals.flour)} delivered`,'Staffed mills · Before travel and hauling'));
+  summary.append(fact(`${number(totals.demand)} flour + ${number(fuel)} wood/min`,'Staffed bakeries: demand at capacity · Other recipes need their listed ingredients'));
+  summary.append(fact(`${number(totals.bakery)} food/min capacity · ${number(totals.food)} delivered`,'Staffed bakeries · Recent delivered food'));
+  const notes=document.createElement('p'),advice=[];
+  if(totals.bakery<demand)advice.push('Assign a qualified baker or upgrade bakery equipment.');
+  if(totals.mill<totals.demand)advice.push('Assign a qualified miller or upgrade mill equipment.');
+  if(totals.wheat<totals.demand)advice.push('Wheat deliveries are below bakery demand: add or staff acres, or improve water access and hauling.');
+  if(totals.food<demand)advice.push('Delivered baked food is below village demand. Check worker status, flour, fuel, recipe ingredients and storage; other foods can cover the gap.');
+  notes.textContent=advice.join(' ') || 'Grain deliveries cover current village demand. Add another bakery for variety.';summary.append(notes);target.append(summary);
+}
 function housingCapacity(town){
   return 5+town.buildings.filter(b=>b.kind==='home'&&!b.construction).reduce((sum,b)=>sum+Math.max(2*(buildingLevel(b)+(b.profession_upgrades?.includes('timber_frame')?1:0)),town.sandbox?settlerSpaces.home*(b.settler_level || 1):0),0);
 }
@@ -600,7 +660,7 @@ function renderStorage(town,item,index,target=$('selection-details')){
 function upgradeBenefit(kind,level,item){
   if(storageUpgradeKinds().includes(kind)){
     const building={...item,kind,level};
-    return `${buildingStorageSize(building)} storage spaces\n${Object.entries(roomAllocations(building)).map(([key,amount])=>`${goodName(key)}: ${amount}`).join(', ')}\nWorker capacity upgraded separately`;
+    return `${buildingStorageSize(building)} storage spaces\n${Object.entries(roomAllocations(building)).map(([key,amount])=>`${goodName(key)}: ${amount}`).join(', ')}\n${['mill','bakery'].includes(kind)?'One worker · Equipment increases production':'Worker capacity upgraded separately'}`;
   }
   if(['farm','acre'].includes(kind))return `+${25*(level-1)}% crops / worker\n${farmStorageCapacity({kind,level})} capacity per crop`;
   if(kind==='home'&&item?.profession_upgrades?.includes('timber_frame'))level++;
@@ -639,7 +699,17 @@ function buildingUpgradePreview(command,town,item){
   if(command.action==='profession_upgrade'){
     const spec=world.progression?.upgrades?.[command.upgrade];
     if(!spec)return null;
-    return {title:spec.label,benefits:[professionBenefits[command.upgrade] || spec.label],cost:materialCosts(spec),seconds:command.upgrade==='boat'?0:30,requirements:`Hall level ${spec.level}${spec.xp&&!town.sandbox?` · ${spec.xp} ${goodName(spec.skill).toLowerCase()} practice`:''}${spec.requires?` · ${world.progression.upgrades[spec.requires]?.label || goodName(spec.requires)}`:''}`,ready:town.level>=spec.level&&(town.sandbox||professionSkill(town,spec.skill)>=(spec.xp || 0))&&(!spec.requires||item.profession_upgrades?.includes(spec.requires))&&!item.profession_upgrades?.includes(command.upgrade)};
+    const benefits=[professionBenefits[command.upgrade] || spec.label];
+    if(spec.throughput){
+      const next={...item,profession_upgrades:[...(item.profession_upgrades || []),command.upgrade]};
+      const before=grainProduction(item),after=grainProduction(next);
+      benefits.splice(0,1,`${before.amount} → ${after.amount} ${goodName(after.output).toLowerCase()}/min`,
+        `Feeds ${before.feeds} → ${after.feeds} working villagers${item.kind==='mill'?' as basic bread':''}`,
+        `Ingredients: ${costText(before.inputs)}/min → ${costText(after.inputs)}/min`,
+        `Storage and producer carrying capacity: ${grainEquipmentMultiplier(item)}× → ${grainEquipmentMultiplier(next)}×`,
+        'One worker · Neutral talent and low practice · Continuous inputs');
+    }
+    return {title:spec.label,benefits,cost:materialCosts(spec),seconds:command.upgrade==='boat'?0:30,requirements:`Hall level ${spec.level}${spec.xp&&!town.sandbox?` · ${spec.xp} ${goodName(spec.skill).toLowerCase()} practice`:''}${spec.requires?` · ${world.progression.upgrades[spec.requires]?.label || goodName(spec.requires)}`:''}`,ready:town.level>=spec.level&&(town.sandbox||professionSkill(town,spec.skill)>=(spec.xp || 0))&&(!spec.requires||item.profession_upgrades?.includes(spec.requires))&&!item.profession_upgrades?.includes(command.upgrade)};
   }
   const capacity=command.action==='upgrade_capacity',level=capacity?item.settler_level || 1:buildingLevel(item);
   if(decorationKinds.includes(item.kind))return null;
@@ -1310,6 +1380,7 @@ function renderSettlers(town,item,buildingIndex,target=$('selection-details'),up
   add.onclick=()=>{if(!add.disabled)act({action:'assign_settler',index:Number(chooser.value),building_index:buildingIndex});};
   const assignment=document.createElement('div');assignment.className='worker-assignment';
   assignment.append(chooser);assignment.append(add);target.append(assignment);
+  if(['mill','bakery'].includes(item.kind))return;
   const upgrade=document.createElement('button');upgrade.className='upgrade-button';upgrade.textContent='Upgrade';
   upgrade.title=level>=maxLevel?'Settler capacity fully upgraded':`Upgrade to ${settlerCapacity({...item,settler_level:level+1})} spaces · ${town.sandbox?'Free · Instant':`${20*level} wood · ${30*level} seconds`}`;
   upgrade.setAttribute('aria-label',`Upgrade ${item.kind==='home'?'settler':'worker'} capacity: ${upgrade.title}`);
@@ -1486,6 +1557,7 @@ function renderProfession(town,item,index,target,upgrades,details,boats,unlocked
     boats.append(note);
   }
   renderRecipes(town,item,index,target);
+  if(['hall','farm','mill','bakery'].includes(item.kind))renderGrainFlow(town,item,index,target);
   if(item.kind==='butcher')renderAnimalButchery(town,item,index,target);
   if(item.kind==='acre'||item.kind==='farm'){
     const acres=item.kind==='acre'?[item]:town.buildings.filter(a=>a.kind==='acre'&&a.farm_index===index);

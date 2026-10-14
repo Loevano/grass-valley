@@ -37,11 +37,11 @@ class EconomyRules(unittest.TestCase):
         command(self.town, {'action': 'job', 'index': 0, 'job': 'woodcutting'})
         tick(self.world)
         tick({'towns': {'a': idle}})
-        self.assertAlmostEqual(idle['food'] - self.town['food'], .18)
+        self.assertAlmostEqual(idle['food'] - self.town['food'], .045)
         command(self.town, {'action': 'job', 'index': 0, 'job': 'idle'})
         before = self.town['food']
         tick(self.world)
-        self.assertAlmostEqual(before - self.town['food'], .6)
+        self.assertAlmostEqual(before - self.town['food'], .15)
 
     @patch('server.secrets.randbelow', return_value=1)
     def test_fishing_requires_hut_and_water_and_learns_skill(self, _roll):
@@ -53,7 +53,7 @@ class EconomyRules(unittest.TestCase):
         del self.town['villagers'][0]['fishing']  # Older saves have no fishing skill.
         food = self.town['food']
         tick(self.world)
-        self.assertAlmostEqual(self.town['food'], food - .78)
+        self.assertAlmostEqual(self.town['food'], food - .195)
         self.assertEqual(self.town['buildings'][1]['pending_output']['fish'], 1)
         self.assertEqual(self.town['villagers'][0]['fishing'], .04)
         self.assertEqual(self.town['villagers'][0]['work_target']['kind'], 'water')

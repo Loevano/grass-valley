@@ -337,7 +337,7 @@ the Python host, refresh both browsers, and create a new world to use the shared
   Farms, mills, bakeries, woodcutters, sawpits, woodworker's workshops, mines,
   Forgery (formerly Iron smelter), and steelworks start with 1 worker space.
   Farms upgrade 1 → 2 → 4, mines 1 → 2 → 4 → 8, woodcutters and Forgery
-  1 → 2 → 3, and mills and sawpits 1 → 2. Bakeries, workshops, and steelworks
+  1 → 2 → 3, and sawpits 1 → 2. Mills, bakeries, workshops, and steelworks
   stay at 1. Each capacity upgrade costs 20 wood and takes 30 seconds times the
   current tier. Existing saves retain unlocked spaces up to these caps; excess
   workers rest with skills, tools, and produced goods preserved.
@@ -428,8 +428,22 @@ the Python host, refresh both browsers, and create a new world to use the shared
   and 40 of each baked good, milk, eggs, or fruit. Separate reserved-input buffers
   hold 160 items at a mill and 100 at a bakery. Building storage upgrades increase
   these limits by 25%/50%, costing 30/60 wood and 30/60 seconds of builder work.
-  Worker spaces upgrade separately; storage levels do not increase processing output.
-  See [grain-chain balance](docs/BALANCING.md#grains) for rates and limitations.
+  Mills and bakeries each have one worker. Three equipment upgrades increase
+  mill throughput to 2×/4×/8× and bakery throughput to 4×/8×/16×.
+  Each tier scales ingredients, item allowances, both buffers, and the producer's
+  carrying capacity. Storage levels still add 25%/50% independently.
+  A top-tier neutral mill and bread bakery each handle 320 items/minute:
+  capacity for 320 working villagers before travel and hauling. The target is
+  200 delivered; a compact host test sustains that with 12 farms, 24 wheat acres,
+  four haulers, nearby water, and supplied fuel. Eight base farms is an estimate
+  for the minimum wheat demand, not a tested guarantee.
+  Add another bakery and choose its recipe for variety. Open a hall, farm, mill,
+  or bakery for **Village grain flow**: food demand, wheat acres, ingredient
+  demand, staffed capacity, and recent delivered supply. Delivery rates are
+  smoothed over about two minutes; pending output and repeated hauling do not count.
+  Older extra mill/bakery slots become the first equipment upgrade. Excess
+  workers rest with their skills and tools; cargo and partial work are retained.
+  See [grain flow](docs/GRAINFLOW.md) for equipment costs and limitations.
 - Open **Villagers** for a screen-wide roster with every resident’s details and job
   controls visible together. The roster scrolls when needed and stacks on smaller
   screens. You can also select one villager on the map to assign a job.
@@ -497,7 +511,8 @@ the Python host, refresh both browsers, and create a new world to use the shared
   15 wood per active minute. Four base woodcutters supply two sawpit workers
   (40 wood/minute) with a 20 wood/minute margin before transport and other demand.
   Two crafted saws raise demand to 50 wood/minute. Assigned workers consume
-  0.30 food each tick, compared with 0.12 for resting villagers.
+  0.075 food each three-second tick (1.5/minute), compared with 0.03 for resting
+  villagers (0.6/minute). Idle residents helping construction pay the worker rate.
 - Hall upgrades also require a builder at the hall. The first requires housing and reliable food, costs 40 wood, and
   takes 30 seconds of construction after arrival; the hall
   panel shows remaining time. Closing the host pauses the upgrade.

@@ -9,7 +9,7 @@ import server
 
 
 CAPACITIES = {
-    'farm': (1, 2, 4), 'mill': (1, 2), 'bakery': (1,),
+    'farm': (1, 2, 4), 'mill': (1,), 'bakery': (1,),
     'woodcutter': (1, 2, 3), 'sawpit': (1, 2), 'workshop': (1,),
     'mine': (1, 2, 4, 8), 'smelter': (1, 2, 3), 'steelworks': (1,),
 }
@@ -96,7 +96,7 @@ class WorkerCapacity(unittest.TestCase):
             town['buildings'].append({'kind': kind, 'x': 7, 'y': 5})
         server.ensure_resources(town)
         for building in town['buildings'][1:]:
-            expected = {'farm': 4, 'mill': 2, 'mine': 2, 'smelter': 2}.get(building['kind'], 1)
+            expected = {'farm': 4, 'mill': 1, 'mine': 2, 'smelter': 2}.get(building['kind'], 1)
             self.assertEqual(server.settler_capacity(building), expected)
         self.assertEqual(economy.public_catalog()['worker_capacities'], CAPACITIES)
         self.assertEqual(economy.public_catalog()['buildings']['smelter']['label'], 'Forgery')

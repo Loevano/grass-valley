@@ -720,7 +720,7 @@ class ResourceLogistics(unittest.TestCase):
         self.assertEqual(self.town['goods']['wool'], 3)
         self.assertEqual(barn['output_buffer']['eggs'], 0)
         self.assertEqual(self.town.get('produced', {}).get('wool', 0), 0)
-        self.assertAlmostEqual(self.town['food'], 44 - 8 * .78)
+        self.assertAlmostEqual(self.town['food'], 44 - 8 * .195)
 
     def test_enabled_resources_have_independent_capacity_and_preserve_old_saves(self):
         store = self.add('storehouse', storage_allocations={'wood': 30, 'planks': 40, 'wool': 0})

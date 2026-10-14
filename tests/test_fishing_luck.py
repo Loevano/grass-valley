@@ -2,7 +2,7 @@ import unittest
 from unittest.mock import patch
 
 import progression as economy
-from server import WORKER_FOOD, new_town, tick
+from server import IDLE_FOOD, WORKER_FOOD, new_town, tick
 
 
 class FishingLuck(unittest.TestCase):
@@ -16,7 +16,7 @@ class FishingLuck(unittest.TestCase):
         self.fisher = self.town['villagers'][0]
         self.fisher['job'] = 'fishing'
         self.world = {'towns': {'a': self.town}}
-        self.upkeep = len(self.town['villagers']) * .12 + WORKER_FOOD
+        self.upkeep = len(self.town['villagers']) * IDLE_FOOD + WORKER_FOOD
 
     def test_success_and_failure_have_different_food_rewards(self):
         food = self.town['food']

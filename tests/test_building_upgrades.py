@@ -220,7 +220,7 @@ class BuildingUpgrades(unittest.TestCase):
                         self.town['villagers'][i]['construction_position'] = {'x': building['x'] + 1, 'y': building['y']}
                 self.town['wood'] = self.town['food'] = 30
                 tick({'towns': {'a': self.town}})
-                upkeep = 5 * .12 + 2 * .18 if resource == 'food' else 0
+                upkeep = 5 * .03 + 2 * .045 if resource == 'food' else 0
                 output = 'wood' if resource == 'wood' else 'fish' if job == 'fishing' else 'vegetables'
                 pending = sum(b.get('pending_output', {}).get(output, 0) for b in self.town['buildings'])
                 expected = base * (2 if kind == 'woodcutter' else 2.25)
@@ -236,7 +236,7 @@ class BuildingUpgrades(unittest.TestCase):
         for food in [30, 100]:
             self.town['food'] = food
             tick({'towns': {'a': self.town}})
-            self.assertAlmostEqual(self.town['food'], food - .78)
+            self.assertAlmostEqual(self.town['food'], food - .195)
 
     def test_farm_and_acre_bonuses_add_at_harvest_only(self):
         farm = self.add('farm')
@@ -251,11 +251,11 @@ class BuildingUpgrades(unittest.TestCase):
         self.town['villagers'][0]['construction_position'] = {'x': 6, 'y': 3}
         self.town['food'] = 30
         tick({'towns': {'a': self.town}})
-        self.assertAlmostEqual(self.town['food'], 30 + 15 - .78)
+        self.assertAlmostEqual(self.town['food'], 30 + 15 - .195)
         self.assertEqual(self.town['buildings'][farm]['pending_output']['vegetables'], 0)
         self.town['food'] = 99.9
         tick({'towns': {'a': self.town}})
-        self.assertAlmostEqual(self.town['food'], 99.9 - .78)
+        self.assertAlmostEqual(self.town['food'], 99.9 - .195)
         self.assertEqual(self.town['buildings'][farm]['pending_output']['vegetables'], 0)
         self.assertEqual(self.town['produced']['vegetables'], 15)
         self.town['map_resources'] = []

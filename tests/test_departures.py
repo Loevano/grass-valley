@@ -17,7 +17,7 @@ class SettlerDepartures(unittest.TestCase):
             feed_settlers(self.town)
         self.assertEqual(len(self.town['villagers']), 5)
         roll.assert_not_called()
-        self.town['food'] = .6  # Enough to feed everyone, even if the pantry empties.
+        self.town['food'] = .15  # Enough to feed everyone, even if the pantry empties.
         feed_settlers(self.town)
         self.assertEqual(self.town['food_shortage_seconds'], 0)
         self.assertEqual(self.town['food'], 0)
@@ -151,7 +151,7 @@ class SettlerDepartures(unittest.TestCase):
         self.town['food'] = 21
         tick(world)
         self.assertEqual(len(self.town['villagers']), 6)
-        self.assertAlmostEqual(self.town['food'], 10.4)
+        self.assertAlmostEqual(self.town['food'], 10.85)
 
 
 if __name__ == '__main__':

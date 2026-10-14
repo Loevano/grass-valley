@@ -102,7 +102,7 @@ const run=new Function('document','window','localStorage','setTimeout','clearTim
     assigned.job='idle';assigned.building_index=2;assigned.work_target=null;
     check(WorkerAnimation.plan(town,assigned,1).home===town.buildings[2],'Resting settlers return to their assigned cottage');
     world.progression.crops={vegetables:1};
-    const paths={farm:[1,2,4],mill:[1,2],bakery:[1],woodcutter:[1,2,3],sawpit:[1,2],workshop:[1],mine:[1,2,4,8],smelter:[1,2,3],steelworks:[1]};
+    const paths={farm:[1,2,4],mill:[1],bakery:[1],woodcutter:[1,2,3],sawpit:[1,2],workshop:[1],mine:[1,2,4,8],smelter:[1,2,3],steelworks:[1]};
     for(const [kind,tiers] of Object.entries(paths)){
       const building={kind,x:4,y:4};town.buildings.push(building);
       const index=town.buildings.length-1;
@@ -115,7 +115,8 @@ const run=new Function('document','window','localStorage','setTimeout','clearTim
           check(preview.ready&&preview.benefits[0]===tiers[tier-1]+' → '+tiers[tier]+' worker spaces',kind+' previews the next slots');
           check(capacityUpgrade(),kind+' offers its remaining upgrade');
         }else{
-          check(!capacityUpgrade()&&controls().some(c=>c.className==='upgrade-card-status'&&c.textContent==='Maxed'),kind+' ends at its cap');
+          check(!capacityUpgrade(),kind+' offers no further worker slots');
+          if(!['mill','bakery'].includes(kind))check(controls().some(c=>c.className==='upgrade-card-status'&&c.textContent==='Maxed'),kind+' shows its final capacity tier');
           town.villagers[0].building_index=index;render();
           if(tiers.length===1)check(button('Add worker').disabled,kind+' blocks assignment at its single slot');
           delete town.villagers[0].building_index;

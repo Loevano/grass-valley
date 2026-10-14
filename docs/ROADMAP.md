@@ -6,7 +6,7 @@ and cache rules are in [Backend](BACKEND.md#cached-zoomed-out-map).
 | Order | Improvement                        | Status                   | Goal                                                                                                             |
 | ----- | ---------------------------------- | ------------------------ | ---------------------------------------------------------------------------------------------------------------- |
 | 1     | Cached zoomed-out town overview    | Implemented              | Show the landscape and city sizes without refreshing animated scene detail.                                      |
-| 2     | Production line balancing          | Wood and base farming implemented; grain equipment and fishing remain | Scale grain production by villagers fed and develop clear fishing chains. |
+| 2     | Production line balancing          | Wood and grain implemented; fishing remains | Develop clear fishing chains with capped staffing and simple upgrades. |
 | 3     | Scalable villager pathfinding       | Foundations implemented; host scheduling and shared navigation remain | Keep movement responsive as villager counts and towns grow, with bounded routing work. |
 
 ## Cached zoomed-out town overview
@@ -49,19 +49,20 @@ mechanism remains future work; this feature does not reduce snapshot traffic.
 
 ## Production line balancing
 
-**Status:** wood and base farming chains implemented. Grain equipment upgrades
-and fishing remain.
+**Status:** wood and grain chains implemented. Fishing remains.
 Implemented capacities, storage upgrades, tools, decorations, and base rates are
 documented in [wood balance](BALANCING.md#wood) and
 [grain balance](BALANCING.md#grains). The grain chain uses two farms, one miller,
 and two bakeries, with downstream storage sized for harvest and hauling gaps.
 
-The proposed [grain flow](GRAINFLOW.md) keeps one worker per mill and bakery,
-using equipment throughput upgrades so one of each can feed an initial target
-of 200 working villagers. Additional bakeries provide variety. Remaining work
-includes lower food-consumption tuning, equipment tiers and costs, existing-mill
-migration, supporting acres, fuel, storage and hauling, feeding-capacity displays,
-and delivered-chain validation.
+The implemented [grain flow](GRAINFLOW.md) keeps one worker per mill and bakery.
+Equipment upgrades scale throughput, storage, and producer carrying capacity.
+Meals cost 1.5 food/minute per working resident and 0.6 per idle resident.
+The compact host test sustains 200 working residents with one top-tier mill,
+one bread bakery, 12 farms, 24 acres, and four haulers; fuel is supplied.
+Additional bakeries provide variety. Feeding-capacity displays distinguish
+continuous-input capacity from recent deliveries. Existing extra processor slots
+become equipment upgrades while preserving goods, residents, and partial work.
 
 Sandbox worlds are available for supply chain experiments: all buildings are
 unlocked, construction and upgrades are free and instant, cottages add residents
@@ -107,7 +108,7 @@ fishing production balancing and storage upgrades below remain planned.
 - Production building upgrades increase internal storage or worker capacity.
 - Items and worker skill levels improve conversion rates and unlock available
   options, rather than production building levels providing output bonuses.
-  Planned grain equipment upgrades increase mill and bakery throughput with
+  Grain equipment upgrades increase mill and bakery throughput with
   matching ingredient demand, independently of worker capacity.
 - Keep worker capacity and internal storage independently upgradeable and show
   their effects before purchase.
@@ -124,7 +125,8 @@ probabilities, fish values, and smoke-station staffing remain open before
 implementation. Their production rates also need review against the implemented
 worker limits documented in README.md.
 The wood and grain rates still need play experience across town layouts to assess
-delivered supply and pacing; the grain chain has a compact host-simulation fixture.
+delivered supply and pacing, including continuous forestry supply for the grain
+chain. The grain chain has compact host fixtures for base rates and 200 residents.
 
 ## Scalable villager pathfinding
 

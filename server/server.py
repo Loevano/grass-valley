@@ -50,7 +50,8 @@ JOBS.update(economy.JOB_BUILDINGS)
 SETTLER_SPACES.update({k: v['slots'] for k, v in economy.BUILDINGS.items()})
 BUILDING_JOBS.update({k: v['job'] for k, v in economy.BUILDINGS.items() if 'job' in v})
 
-WORKER_FOOD = .18
+IDLE_FOOD = economy.IDLE_FOOD
+WORKER_FOOD = economy.WORKER_FOOD
 SHORTAGE_GRACE_SECONDS = 60
 DEPARTURE_CHANCE = 5  # Percent per tick after the grace period, before housing.
 VILLAGER_NAMES = (
@@ -100,7 +101,7 @@ def housing_loyalty(town):
 
 
 def feed_settlers(town):
-    needed = len(town['villagers']) * .12 + WORKER_FOOD * sum(
+    needed = len(town['villagers']) * IDLE_FOOD + WORKER_FOOD * sum(
         v['job'] != 'idle' or bool(v.get('construction_target')) for v in town['villagers'])
     shortage = town['food'] + 1e-9 < needed
     economy.eat(town, needed)
@@ -259,6 +260,7 @@ def ensure_resources(town):
             villager['job'] = 'trading'
     if 'town_origin' in town:
         migrate_wood_chain(town)
+        migrate_grain_chain(town)
         migrate_worker_capacities(town)
         return
     if 'map_resources' not in town:
@@ -273,7 +275,46 @@ def ensure_resources(town):
     ensure_terrain(town)
     ensure_npcs(town)
     migrate_wood_chain(town)
+    migrate_grain_chain(town)
     migrate_worker_capacities(town)
+
+
+def migrate_grain_chain(town):
+    """Convert extra grain slots to equipment, keeping cargo and queued partial work."""
+    if town.get('grain_chain_version') == 1:
+        return
+    for index, building in enumerate(town['buildings']):
+        if building['kind'] not in {'mill', 'bakery'}:
+            continue
+        assigned = assigned_settlers(town, index)
+        for worker_index in assigned:
+            town['villagers'][worker_index]['building_index'] = index
+        first = 'improved_millstones' if building['kind'] == 'mill' else 'larger_oven'
+        pending = building.get('construction', {}).get('upgrade', {})
+        old_slots = (2 if town.get('worker_capacity_version') != 1 else
+                     min(2, building.get('settler_level', 1)) if building['kind'] == 'mill' else 1)
+        if old_slots > 1 or len(assigned) > 1:
+            upgrades = building.setdefault('profession_upgrades', [])
+            if first not in upgrades:
+                upgrades.append(first)
+        if 'settler_level' in pending:
+            if pending['settler_level'] > 1:
+                upgrades = pending.setdefault('profession_upgrades', list(building.get('profession_upgrades', [])))
+                if first not in upgrades:
+                    upgrades.append(first)
+            pending['settler_level'] = 1
+        building['settler_level'] = 1
+        for worker_index in assigned[1:]:
+            worker = town['villagers'][worker_index]
+            if worker.get('production_work'):
+                building.setdefault('grain_work_queue', []).append(dict(worker['production_work']))
+            logistics.cancel_output(town, worker)
+            logistics.cancel_trip(town, worker)
+            worker['job'] = 'idle'
+            for key in ('building_index', 'work_target', 'construction_target',
+                        'construction_arrived', 'production_status'):
+                worker.pop(key, None)
+    town['grain_chain_version'] = 1
 
 
 def migrate_wood_chain(town):
@@ -402,6 +443,8 @@ def assign_settler(town, worker_index, building_index):
         raise ValueError('Finish construction before assigning settlers.')
     others = [i for i in assigned_settlers(town, building_index) if i != worker_index]
     if len(others) >= settler_capacity(building):
+        if building['kind'] in {'mill', 'bakery'}:
+            raise ValueError('This building has one worker. Upgrade its equipment for more production.')
         raise ValueError('This building has no free settler spaces. Upgrade its capacity first.')
     villager = town['villagers'][worker_index]
     reason = economy.qualification(villager, BUILDING_JOBS.get(building['kind'], 'idle'))
@@ -577,7 +620,7 @@ def production_bonus(building):
 
 def new_town(name, world=None):
     town = {'map_size': MAP_SIZE, 'name': name, 'wood': 65, 'food': 40, 'coins': 20, 'level': 1,
-            'wood_chain_version': 1, 'worker_capacity_version': 1,
+            'wood_chain_version': 1, 'worker_capacity_version': 1, 'grain_chain_version': 1,
             'harvested': 0, 'achievements': [],
             'player': {'x': 5., 'y': 7., 'facing': 1},
             'map_resources': map_resources([{'x': 5, 'y': 5}]),
@@ -1133,6 +1176,7 @@ def tick(world):
             if job != 'farming':
                 economy.practice(villager, job)
             villager['production_status'] = 'Working' if caught else 'No catch — trying again'
+        logistics.update_grain_deliveries(town, TICK_SECONDS)
         feed_settlers(town)
         if (not town.get('sandbox') and len(town['villagers']) < housing_capacity(town) and town['food'] >= 20
                 and not town.get('arrival_delay_seconds')):
@@ -1588,7 +1632,7 @@ def command(town, data, world=None):
             if town['level'] < spec['level'] or (not town.get('sandbox') and economy.skill(town, spec.get('skill', '')) < spec.get('xp', 0)):
                 raise ValueError('Develop the profession and upgrade the town hall first.')
             if spec.get('requires') and spec['requires'] not in building.get('profession_upgrades', []):
-                raise ValueError('Purchase the previous boat tier first.')
+                raise ValueError('Purchase the previous equipment tier first.')
             if key in building.get('profession_upgrades', []):
                 raise ValueError('Already unlocked.')
             if not economy.afford(town, building_costs(town, spec)):
