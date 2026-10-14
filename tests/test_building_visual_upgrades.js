@@ -46,6 +46,13 @@ const run=new Function('document','window','localStorage','setTimeout','clearTim
   assert.strictEqual(appearance(hall,{...town,level:1,upgrade_remaining:10}),halls[0],'Hall keeps its completed level while upgrading');
   assert.notStrictEqual(appearance({...hall,settler_level:2}),halls[0],'Hall capacity upgrades add windows');
   assert.notStrictEqual(appearance({...hall,settler_level:2}),appearance({...hall,settler_level:3}),'Both hall capacity upgrades are visible');
+  for(const kind of ['hall','mill','sawpit','workshop']){
+    const expanded={kind,x:5,y:5,footprint:kind==='sawpit'?[3,2]:[2,2]},saved=JSON.stringify(expanded);
+    assert.notStrictEqual(appearance(expanded),appearance({...expanded,footprint:[1,1]}),kind+' uses its enlarged lot for its workplace');
+    assert.strictEqual(JSON.stringify(expanded),saved,'Workplace artwork preserves the authoritative footprint');
+  }
+  const warmWindows=building=>JSON.parse(appearance(building)).filter(mark=>mark[0]==='fillRect'&&mark[5]==='#edc77d');
+  assert.deepStrictEqual(warmWindows({...hall,footprint:[2,2]})[0].slice(3,5),warmWindows(hall)[0].slice(3,5),'Wider halls retain the original human-sized windows');
   for(const [kind,upgrade] of [['home','timber_frame'],['woodcutter','axe'],['woodcutter','tools'],['sawpit','saw'],['fishing_hut','nets'],['fishing_hut','wool_nets'],['fishing_hut','boat']]){
     const building={kind,x:5,y:5};
     assert.notStrictEqual(appearance(building),appearance({...building,profession_upgrades:[upgrade]}),upgrade+' adds visible equipment');

@@ -23,6 +23,13 @@ Rendering lives in [web/app.js](../web/app.js); interface styling lives in
 [web/style.css](../web/style.css). The sketch below is a proposed composition
 reference, not a finished asset or a decision about the final art medium.
 
+The enlarged hall, mill, sawpit, and woodworker's workshop keep the established
+palette, angled roofs, simple shading, and warm lanterns. Their current refinement
+adds connected yards, recognizable work equipment, cut timber, grain bins, and
+flour sacks. The sawpit is an open shelter, the workshop has a bench canopy and
+tool rack, and the hall is wider without scaling up its doors and windows. Their
+existing footprints and visible upgrade conventions remain unchanged.
+
 ## Composition sketch
 
 ![Proposed artwork reference: an angled cottage, founder, path, and palette, with a diagram of depth layers.](artwork-reference.svg)

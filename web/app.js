@@ -478,7 +478,7 @@ function buildingVisualLevel(building,town){
 }
 function buildingHeight(building,town){
   if(decorationKinds.includes(building.kind))return building.kind==='wooden_bench'?15:32;
-  return ({hall:42,woodcutter:23,mine:27,smelter:36,steelworks:38,stable:32,tannery:28,saddler:27,tradehouse:35,barn:34,mill:40,smokehouse:32,workshop:25,sawpit:16,market:17,fish_pond:18,orchard:20,bakery:30,butcher:25}[building.kind] || 27)+4*(buildingVisualLevel(building,town)-1);
+  return ({hall:42,woodcutter:23,mine:27,smelter:36,steelworks:38,stable:32,tannery:28,saddler:27,tradehouse:35,barn:34,mill:40,smokehouse:32,workshop:25,sawpit:28,market:17,fish_pond:18,orchard:20,bakery:30,butcher:25}[building.kind] || 27)+4*(buildingVisualLevel(building,town)-1)+(building.kind==='mill'&&footprintTiles(building).length>1?10:0);
 }
 const storehouseCapacities=[50,75,100,150,200,250,300,350];
 function farmStorageCapacity(building){
@@ -3918,23 +3918,78 @@ function drawBuilding(b,town=world.towns[viewed],farmState=null){
 }
 function paintBuildingGround(b,target,paintPolygon){
   const tiles=footprintTiles(b);if(tiles.length===1)return;
-  const s=tileW/46;
+  const s=tileW/46,[width,depth]=b.footprint;
+  const corners=[[b.x-.5,b.y-.5],[b.x+width-.5,b.y-.5],[b.x+width-.5,b.y+depth-.5],[b.x-.5,b.y+depth-.5]]
+    .map(([x,y])=>{const [px,py]=point(x,y);return [px,py+tileH/2];});
+  paintPolygon(corners,b.kind==='hall'?'#929387':'#a48d66','#6c715c');
   for(const tile of tiles){
     const [x,y]=point(tile.x,tile.y);
-    paintPolygon([[x,y+2*s],[x+tileW/2-2*s,y+tileH/2],[x,y+tileH-2*s],[x-tileW/2+2*s,y+tileH/2]],b.kind==='hall'?'#929387':'#a48d66','#6c715c');
-    if(b.kind==='hall'||b.construction||tile.x===b.x&&tile.y===b.y)continue;
-    if(tile.x===b.x){
-      // Outdoor workbench and tool rack alongside the covered workplace.
-      target.fillStyle='#735439';target.fillRect(x-12*s,y+tileH/2-9*s,24*s,5*s);
-      target.fillRect(x-10*s,y+tileH/2-4*s,3*s,9*s);target.fillRect(x+7*s,y+tileH/2-4*s,3*s,9*s);
-      target.strokeStyle='#c9d5d2';target.lineWidth=2*s;target.beginPath();target.moveTo(x-7*s,y+tileH/2-10*s);target.lineTo(x+8*s,y+tileH/2-10*s);target.stroke();
+    if(b.kind==='hall'||b.construction||tile.y===b.y)continue;
+    const base=y+tileH/2;
+    if(b.kind==='mill'){
+      // Flour sacks and grain bins distinguish the mill yard from the wood trades.
+      if(tile.x===b.x){
+        paintPolygon([[x-12*s,base],[x,base+6*s],[x+12*s,base],[x,base-6*s]],'#ac895d','#68563e');
+        target.fillStyle='#735439';target.fillRect(x-12*s,base-8*s,12*s,8*s);target.fillRect(x,base-2*s,12*s,8*s);
+        paintPolygon([[x-12*s,base-8*s],[x,base-2*s],[x+12*s,base-8*s],[x,base-14*s]],'#d3bc83','#68563e');
+      }else for(let i=0;i<3;i++){
+        const px=x-8*s+i*8*s,py=base-(i%2?8:3)*s;
+        target.fillStyle='#d3bc83';target.beginPath();target.ellipse(px,py,5*s,7*s,0,0,Math.PI*2);target.fill();
+        target.strokeStyle='#9b7a4b';target.lineWidth=s;target.beginPath();target.moveTo(px-3*s,py-5*s);target.lineTo(px+3*s,py-5*s);target.stroke();
+      }
+    }else if(tile.x===b.x){
+      // A perspective workbench, vise, and loose boards form a usable workspace.
+      for(const [px,py] of [[x-12*s,base],[x+10*s,base+4*s]]){target.fillStyle='#735439';target.fillRect(px,py-6*s,3*s,12*s);}
+      paintPolygon([[x-15*s,base-7*s],[x+7*s,base+4*s],[x+16*s,base],[x-6*s,base-11*s]],'#c4a477','#735439');
+      paintPolygon([[x-7*s,base-10*s],[x+6*s,base-4*s],[x+8*s,base-6*s],[x-5*s,base-12*s]],'#e0bd84');
+      target.fillStyle='#84958e';target.fillRect(x+7*s,base-7*s,6*s,4*s);
+      target.strokeStyle='#d5dfd8';target.lineWidth=s;target.beginPath();target.moveTo(x+10*s,base-7*s);target.lineTo(x+10*s,base-11*s);target.stroke();
+      if(b.kind==='workshop'){
+        target.fillStyle='#735439';target.fillRect(x-14*s,base-20*s,3*s,24*s);target.fillRect(x+11*s,base-9*s,3*s,17*s);
+        paintPolygon([[x-17*s,base-21*s],[x+7*s,base-9*s],[x+16*s,base-13*s],[x-8*s,base-25*s]],'#9b825a','#735439');
+        target.strokeStyle='#c4a477';target.lineWidth=s;target.beginPath();target.moveTo(x-10*s,base-21*s);target.lineTo(x+10*s,base-11*s);target.stroke();
+      }
     }else{
-      // Stock yard: sacks for grain, stacked timber for the wood trades.
-      target.fillStyle=b.kind==='mill'?'#d3bc83':'#a47c4e';
-      for(let i=0;i<3;i++)target.fillRect(x-12*s+i*8*s,y+tileH/2-(6+i%2*3)*s,7*s,8*s);
-      target.strokeStyle='#68563e';target.lineWidth=s;target.strokeRect(x-14*s,y+tileH/2-11*s,28*s,14*s);
+      // Timber has cut ends and tied stacks, rather than anonymous yard boxes.
+      for(let i=0;i<3;i++){
+        const py=base-i*4*s;
+        paintPolygon([[x-13*s,py-5*s],[x+7*s,py+5*s],[x+13*s,py+2*s],[x-7*s,py-8*s]],'#b48a56','#735439');
+        target.fillStyle='#dbb580';target.beginPath();target.ellipse(x+10*s,py+3*s,3*s,2*s,-.45,0,Math.PI*2);target.fill();
+      }
+      target.strokeStyle='#68563e';target.lineWidth=2*s;target.beginPath();target.moveTo(x-3*s,base-15*s);target.lineTo(x-3*s,base+1*s);target.stroke();
     }
   }
+}
+function paintSawpit(b,town,target,paintPolygon,usable){
+  const large=footprintTiles(b).length>1,[x,top]=point(b.x+(large?.5:0),b.y),y=top+tileH/2,s=tileW/46;
+  const w=(large?30:17)*s,d=w/2,h=buildingHeight(b,town)*s;
+  // A roof over exposed trestles and a cutting pit keeps the original palette
+  // and roof shape while making this an open timber workplace.
+  paintPolygon([[x-w,y],[x,y+d],[x+w,y],[x,y-d]],'#735d43','#b69a70');
+  paintPolygon([[x-w+4*s,y],[x,y+d-2*s],[x+w-4*s,y],[x,y-d+2*s]],'#493f32','#c4a477');
+  for(const [px,py] of [[x,y-d],[x-w,y],[x+w,y],[x,y+d]]){
+    target.fillStyle='#735439';target.fillRect(px-2*s,py-h,4*s,h);
+    target.fillStyle='#c4a477';target.fillRect(px-s,py-h,s,h);
+  }
+  for(const px of [x-w*.6,x+w*.5]){
+    target.fillStyle='#735439';target.fillRect(px,y+2*s,3*s,10*s);
+    target.fillStyle='#b48a56';target.fillRect(px-4*s,y,11*s,3*s);
+  }
+  paintPolygon([[x-w*.8,y-3*s],[x+w*.65,y+10*s],[x+w*.8,y+6*s],[x-w*.65,y-7*s]],'#a47c4e','#735439');
+  target.fillStyle='#dbb580';target.beginPath();target.ellipse(x+w*.73,y+8*s,4*s,3*s,-.45,0,Math.PI*2);target.fill();
+  target.strokeStyle='#9c784b';target.lineWidth=s;target.beginPath();target.ellipse(x+w*.73,y+8*s,2*s,1.5*s,-.45,0,Math.PI*2);target.stroke();
+  target.strokeStyle='#c4a477';target.lineWidth=2*s;
+  for(const direction of [-1,1]){target.beginPath();target.moveTo(x+direction*w,y-h+10*s);target.lineTo(x+direction*(w-9*s),y-h+4*s);target.stroke();}
+  paintPolygon([[x-w-3*s,y-h],[x,y-h-15*s],[x+w+3*s,y-h],[x,y-h+d+s]],usable?'#8e7752':'#a34f49','#735439');
+  target.strokeStyle='#c9a579';target.lineWidth=2*s;target.beginPath();target.moveTo(x-w-3*s,y-h);target.lineTo(x,y-h+d+s);target.lineTo(x+w+3*s,y-h);target.stroke();
+  const improved=(b.profession_upgrades || []).includes('saw');
+  paintPolygon([[x+2*s,y-17*s],[x+5*s,y-17*s],[x+5*s,y+6*s],[x+2*s,y+4*s]],improved?'#dce8df':'#98aaa7','#68563e');
+  target.fillStyle='#c4a477';target.fillRect(x-2*s,y-19*s,11*s,3*s);
+  if(buildingLevel(b)>=2){target.strokeStyle='#dce8df';target.lineWidth=s;target.beginPath();target.moveTo(x-w+5*s,y-h+3*s);target.lineTo(x-w+5*s,y-h+11*s);target.stroke();}
+  target.fillStyle='#344b42';target.fillRect(x+w-7*s,y-h+4*s,10*s,7*s);
+  target.fillStyle='#fff0b1';target.font=`bold ${5*s}px sans-serif`;target.textAlign='center';target.fillText(String(buildingLevel(b)),x+w-2*s,y-h+10*s);
+  if((b.settler_level || 1)>1){target.fillStyle='#6baeb5';target.fillRect(x-w,y-h+5*s,3*s*(b.settler_level || 1),3*s);}
+  target.save();target.shadowColor='#f1c779';target.shadowBlur=7*s;target.fillStyle='#edc77d';target.fillRect(x-w+3*s,y-h+5*s,3*s,4*s);target.restore();
 }
 function paintBuilding(b,town,farmState=null,target=ctx,usable=buildingUsable(town,b)){
   const ctx=target;
@@ -3985,8 +4040,9 @@ function paintBuilding(b,town,farmState=null,target=ctx,usable=buildingUsable(to
     }
     ctx.restore();return;
   }
+  if(b.kind==='sawpit'){paintSawpit(b,town,ctx,paintPolygon,usable);return;}
   const largeHall=b.kind==='hall'&&footprintTiles(b).length===4;
-  const [x,top]=point(b.x+(largeHall ? .5 : 0),b.y+(largeHall ? .5 : 0)),y=top+tileH/2,s=tileW/46*(largeHall?1.6:1);
+  const [x,top]=point(b.x+(largeHall ? .5 : 0),b.y+(largeHall ? .5 : 0)),y=top+tileH/2,s=tileW/46;
   if(b.kind==='well'){
     ctx.fillStyle='#223b2944';ctx.beginPath();ctx.ellipse(x+4*s,y+5*s,20*s,9*s,0,0,Math.PI*2);ctx.fill();
     // A stone ring, timber windlass, and bucket mark the water collection point.
@@ -4004,7 +4060,7 @@ function paintBuilding(b,town,farmState=null,target=ctx,usable=buildingUsable(to
     return;
   }
   const level=buildingVisualLevel(b,town),upgrades=b.profession_upgrades || [];
-  const w=46*s*(b.kind==='storehouse' ? .43 : .38),depth=w*tileH/tileW,h=buildingHeight(b,town)*s;
+  const w=46*s*(largeHall?.65:b.kind==='storehouse'?.43:b.kind==='workshop'&&footprintTiles(b).length>1?.43:.38),depth=w*tileH/tileW,h=buildingHeight(b,town)*s;
   // Wall bases share the tile's ground plane and its isometric slope.
   ctx.fillStyle='#223b2944';ctx.beginPath();ctx.ellipse(x+8*s,y+depth*.6,w+8*s,depth+2*s,0,0,Math.PI*2);ctx.fill();
   paintPolygon([[x-w,y],[x,y+depth],[x,y+depth-h],[x-w,y-h]],usable?(colors[b.kind] || '#a28c72'):'#c76d64');
@@ -4033,6 +4089,10 @@ function paintBuilding(b,town,farmState=null,target=ctx,usable=buildingUsable(to
   const roofColors={home:'#98634f',woodcutter:'#7b714d',farm:'#af8e4f',storehouse:'#596e68',fishing_hut:'#537f91',barn:'#a4594d',sawpit:'#8e7752',mill:'#c2ac76',smokehouse:'#666c72',workshop:'#638078',fish_pond:'#497f85',orchard:'#65854e',market:'#bd8b59',bakery:'#aa744d',butcher:'#995d67'};
   const roof=b.kind==='hall'?['#5a747b','#52767b','#476975','#405c70','#374e65'][level-1]:roofColors[b.kind] || '#80574b';
   paintPolygon([[x-w-3*s,y-h],[x,y-h-15*s],[x+w+3*s,y-h],[x,y-h+depth+1*s]],usable?roof:'#a34f49');
+  if(largeHall){
+    ctx.strokeStyle='#849594';ctx.lineWidth=s;
+    for(const f of [.3,.6]){ctx.beginPath();ctx.moveTo(x-w*(1-f),y-h-15*s*f);ctx.lineTo(x+w*f,y-h+(depth+s)*(1-f));ctx.stroke();}
+  }
   if(tileW<32&&b.kind!=='hall'){
     ctx.fillStyle='#3d4438';ctx.fillRect(x-6*s,y-h+13*s,5*s,9*s);return;
   }
@@ -4085,6 +4145,17 @@ function paintBuilding(b,town,farmState=null,target=ctx,usable=buildingUsable(to
   }
   if(b.kind==='hall'){paintPolygon([[x+11*s,y-h+6*s],[x+17*s,y-h+3*s],[x+17*s,y-h+22*s],[x+14*s,y-h+19*s],[x+11*s,y-h+25*s]],'#d6c478');}
   if(b.kind==='hall'){ctx.fillStyle='#d6c478';ctx.fillRect(x,y-h-30*s,2*s,17*s);paintPolygon([[x+2*s,y-h-30*s],[x+16*s,y-h-26*s],[x+2*s,y-h-21*s]],'#d6c478');}
+  if(largeHall){
+    // Human-sized doors and windows stay in proportion to the wider civic hall.
+    paintPolygon([[x-9*s,y+depth-4*s],[x-2*s,y+depth-s],[x-2*s,y+depth-20*s],[x-9*s,y+depth-23*s]],'#594d38','#c4a477');
+    paintPolygon([[x-12*s,y+depth-3*s],[x,y+depth+3*s],[x+7*s,y+depth],[x-5*s,y+depth-6*s]],'#b1b3a2','#797665');
+    paintPolygon([[x-12*s,y+depth-3*s],[x,y+depth+3*s],[x,y+depth+6*s],[x-12*s,y+depth]],'#858e86');
+    for(const [wx,wy] of [[-22,-h/s+10],[19,-h/s+10]]){
+      ctx.fillStyle='#594d38';ctx.fillRect(x+wx*s,y+wy*s,6*s,9*s);
+      ctx.fillStyle='#edc77d';ctx.fillRect(x+(wx+1)*s,y+(wy+1)*s,4*s,6*s);
+      ctx.fillStyle='#c4a477';ctx.fillRect(x+(wx+2.5)*s,y+(wy+1)*s,s,7*s);
+    }
+  }
   if(b.kind==='hall'&&(b.settler_level || 1)>=2){
     ctx.fillStyle='#edc77d';
     for(let i=0;i<b.settler_level-1;i++)ctx.fillRect(x-15*s+i*6*s,y-h+17*s,3*s,5*s);
@@ -4135,6 +4206,8 @@ function drawBuildingAnimation(b,town,time){
     for(let i=0;i<4;i++){
       const a=i*Math.PI/2+Math.PI/4+time*2;
       ctx.beginPath();ctx.moveTo(0,-height);ctx.lineTo(Math.cos(a)*17,-height+Math.sin(a)*17);ctx.stroke();
+      const sail=(along,across)=>[Math.cos(a)*along-Math.sin(a)*across,-height+Math.sin(a)*along+Math.cos(a)*across];
+      polygon([sail(7,0),sail(17,0),sail(17,4),sail(8,3)],'#e8dab4');
     }
   }else if(b.kind==='fish_pond'){
     ctx.strokeStyle='#b8d8d5';ctx.lineWidth=1;
@@ -4173,9 +4246,13 @@ function drawBuildingFeatures(b,height,ctx,polygon){
     if(b.kind==='bakery'){polygon([[-15,0],[-15,-9],[-9,-14],[-3,-9],[-3,0]],'#b59878');ctx.fillStyle='#463b32';ctx.fillRect(-12,-8,6,8);ctx.fillStyle='#e7af5d';ctx.fillRect(-11,-3,4,2);}
     else{ctx.strokeStyle='#a78454';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(-17,-17);ctx.lineTo(-2,-17);ctx.stroke();for(let i=0;i<3;i++)polygon([[-15+i*5,-16],[-12+i*5,-12],[-15+i*5,-7],[-18+i*5,-12]],'#b28c75');}
   }else if(b.kind==='workshop'){
-    ctx.fillStyle='#ac895d';ctx.fillRect(-15,-5,30,5);ctx.fillRect(-12,0,3,7);ctx.fillRect(10,0,3,7);
-    polygon([[-5,-10],[8,-10],[4,-6],[-2,-6]],'#84958e');
+    if(footprintTiles(b).length===1){
+      ctx.fillStyle='#ac895d';ctx.fillRect(-15,-5,30,5);ctx.fillRect(-12,0,3,7);ctx.fillRect(10,0,3,7);
+      polygon([[-5,-10],[8,-10],[4,-6],[-2,-6]],'#84958e');
+    }
     ctx.strokeStyle='#d5dfd8';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(9,-height+8);ctx.lineTo(9,-height+18);ctx.moveTo(5,-height+8);ctx.lineTo(13,-height+8);ctx.stroke();
+    ctx.fillStyle='#735439';ctx.fillRect(-16,-height+11,13,2);
+    for(let i=0;i<3;i++){ctx.fillStyle='#c4a477';ctx.fillRect(-14+i*4,-height+11,2,8);ctx.fillStyle='#98aaa7';ctx.fillRect(-14+i*4,-height+18,2,3);}
   }else if(b.kind==='market'){
     for(let i=0;i<5;i++)polygon([[-22+i*9,-height],[-13+i*9,-height],[-9+i*9,-height+13],[-18+i*9,-height+13]],i%2?'#eee0bd':'#698a72');
     ctx.fillStyle='#ac895d';ctx.fillRect(-18,-2,36,5);
