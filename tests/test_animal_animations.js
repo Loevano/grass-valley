@@ -11,6 +11,11 @@ const {sprites,draw}=new Function('ctx','point','tileW','tileH',
 )(ctx,(x,y)=>[(x-y)*23,(x+y)*11.5],46,23);
 const barn={kind:'barn',x:5,y:5,level:3,animals:{chicken:3,sheep:3,pig:3,cow:3}};
 const original=JSON.stringify(barn);
+const Scene=require('../web/scene.js');
+const cachedSprites=new Function('ClientScene',
+  source.slice(source.indexOf('function barnAnimalSprites('),source.indexOf('function drawBarnAnimal('))+
+  'return barnAnimalSprites;'
+)(Scene);
 const animals=sprites([barn],0);
 assert.equal(animals.length,12,'Every animal appears, including upgraded barn capacity');
 const young=sprites([{...barn,animals:{pig:1},animal_growth:{pig:[0]}}],0)[0];
@@ -34,37 +39,45 @@ assert.equal(sprites([{...barn,construction:{upgrade:true}}],0).length,12,'Upgra
 assert.equal(sprites([{...barn,animals:{chicken:4}}],0).length,4,'Purchases and breeding appear from the current stock');
 assert.equal(sprites([],0).length,0,'Demolished barns leave no animals');
 let farthest=0;
-for(let time=0;time<32;time+=.1)for(const animal of sprites([barn],time)){
+for(const animate of [sprites,cachedSprites])for(let time=0;time<32;time+=.1)for(const animal of animate([barn],time)){
   const distance=Math.abs(animal.x-barn.x)+Math.abs(animal.y-barn.y);
   farthest=Math.max(farthest,distance);
   assert(distance<2.5,'Animals remain close to their own barn');
+  assert(Math.round(animal.x)!==barn.x||Math.round(animal.y)!==barn.y,'Walking and grazing avoid the barn footprint');
 }
 assert(farthest>2,'Animals roam beyond the barn tile');
 const obstacle={kind:'home',x:6,y:5};
 const landscape={map_size:12,map_resources:[{kind:'water',x:5,y:6},{kind:'tree',x:4,y:5}],
   terrain:Array.from({length:12},()=>Array(12).fill('g'))};
 landscape.terrain[4][5]='v';
-for(let time=0;time<32;time+=.1)for(const animal of sprites([barn,obstacle],time,landscape)){
-  assert.equal(Math.round(animal.x),barn.x,'An enclosed herd stays at its barn');
-  assert.equal(Math.round(animal.y),barn.y,'Animals avoid buildings, resources, and void terrain');
-  assert(!animal.walking,'Enclosed animals rest rather than walking in place');
+for(const animate of [sprites,cachedSprites]){
+  assert.equal(animate([barn,obstacle],4,landscape).length,0,'Enclosed herds stay sheltered instead of overlapping the barn');
+  assert.equal(animate([barn,obstacle],4,{...landscape,map_resources:[]}).length,12,'Animals appear when a side opens');
 }
-for(let time=0;time<32;time+=.1)for(const animal of sprites([{...barn,x:0,y:0}],time,{map_size:3})){
+for(const animate of [sprites,cachedSprites])for(let time=0;time<32;time+=.1)for(const animal of animate([{...barn,x:0,y:0}],time,{map_size:3})){
   assert(animal.x>=0&&animal.y>=0&&animal.x<3&&animal.y<3,'Edge barns keep their herd inside map bounds');
 }
 const openLandscape={...landscape,terrain:Array(12).fill('g'.repeat(12))};
-const blockedTiles=new Set(['6,5','5,6','4,5']);
-let previous=null;
-for(let time=0;time<32;time+=.1){
-  const herd=sprites([barn,obstacle],time,openLandscape);
-  for(const [index,animal] of herd.entries()){
-    assert(!blockedTiles.has(`${Math.round(animal.x)},${Math.round(animal.y)}`),'Trips go around occupied neighboring tiles');
-    if(previous)assert(Math.hypot(animal.x-previous[index].x,animal.y-previous[index].y)<.08,'Trips remain continuous through turns and rest transitions');
+const blockedTiles=new Set(['5,5','6,5','5,6','4,5']);
+for(const animate of [sprites,cachedSprites]){
+  let previous=null;
+  for(let time=0;time<32;time+=.1){
+    const herd=animate([barn,obstacle],time,openLandscape);
+    assert.equal(herd.length,12,'One accessible side still lets the entire herd roam');
+    for(const [index,animal] of herd.entries()){
+      assert(!blockedTiles.has(`${Math.round(animal.x)},${Math.round(animal.y)}`),'Trips go around occupied neighboring tiles');
+      if(previous)assert(Math.hypot(animal.x-previous[index].x,animal.y-previous[index].y)<.08,'Trips remain continuous through turns and rest transitions');
+    }
+    previous=herd;
   }
-  previous=herd;
+  const isolated={...openLandscape,map_resources:[...openLandscape.map_resources,
+    {kind:'rock',x:4,y:4},{kind:'rock',x:6,y:4},{kind:'rock',x:5,y:3}]};
+  const restingHerd=animate([barn,obstacle],4,isolated);
+  assert.equal(restingHerd.length,12,'A single open tile can hold a resting herd');
+  assert(restingHerd.every(a=>!a.walking&&Math.round(a.x)===5&&Math.round(a.y)===4),'Isolated outdoor animals rest without crossing obstacles');
 }
 const chunked={chunked:true,map_size:12,terrain:{5:{5:'g'}}};
-assert(sprites([barn],4,chunked).every(a=>!a.walking),'Animals avoid unloaded map chunks');
+for(const animate of [sprites,cachedSprites])assert.equal(animate([barn],4,chunked).length,0,'Animals avoid unloaded map chunks');
 const lone={...barn,animals:{chicken:1}};
 const resting=sprites([lone],0)[0],moving=sprites([lone],4)[0],later=sprites([lone],4.1)[0];
 assert(moving.walking,'Animals enter a walking phase');
@@ -72,7 +85,7 @@ assert(Math.hypot(later.x-moving.x,later.y-moving.y)>0,'Walking interpolates ins
 assert(Math.hypot(later.x-moving.x,later.y-moving.y)<.08,'Walking moves smoothly');
 assert(resting.feeding,'Animals also peck or graze');
 const returned=sprites([lone],16)[0];
-assert.deepEqual([returned.x,returned.y],[resting.x,resting.y],'Animals return to the barn after each trip');
+assert.deepEqual([returned.x,returned.y],[resting.x,resting.y],'Animals return to their outdoor resting spot after each trip');
 function render(animal){marks.length=0;draw(animal);return JSON.stringify(marks);}
 assert.notEqual(render(moving),render(later),'Legs and body animate between frames');
 assert.notEqual(render(resting),render(moving),'Feeding and walking have different poses');

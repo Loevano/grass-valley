@@ -139,14 +139,20 @@ const ClientScene = (() => {
     }
     const signature=available.join('');
     const old=cache.routes.get(key);if(old?.signature===signature)return old.routes;
-    const routes=[[]],work=[{x:barn.x,y:barn.y,path:[]}],seen=new Set([key]);
-    for(const p of work){
-      if(p.path.length>=2)continue;
-      for(const [dx,dy] of [[1,0],[0,1],[-1,0],[0,-1]]){
-        const next={x:p.x+dx,y:p.y+dy},k=tile(next);
-        const offset=(next.x-barn.x+radius)*5+next.y-barn.y+radius;
-        if(!available[offset]||seen.has(k))continue;
-        seen.add(k);const path=[...p.path,next];work.push({...next,path});routes.push(path);
+    const open=p=>Math.abs(p.x-barn.x)+Math.abs(p.y-barn.y)<=radius
+      &&tile(p)!==key&&available[(p.x-barn.x+radius)*5+p.y-barn.y+radius];
+    const routes=[];
+    // Start outside each accessible side; the barn itself is never a waypoint.
+    for(const [dx,dy] of [[1,0],[0,1],[-1,0],[0,-1]]){
+      const start={x:barn.x+dx,y:barn.y+dy};if(!open(start))continue;
+      const work=[{...start,path:[start]}],seen=new Set([tile(start)]);
+      for(const p of work){
+        routes.push(p.path);if(p.path.length>=3)continue;
+        for(const [dx,dy] of [[1,0],[0,1],[-1,0],[0,-1]]){
+          const next={x:p.x+dx,y:p.y+dy},k=tile(next);
+          if(!open(next)||seen.has(k))continue;
+          seen.add(k);work.push({...next,path:[...p.path,next]});
+        }
       }
     }
     routes.sort((a,b)=>b.length-a.length);cache.routes.set(key,{signature,routes});return routes;

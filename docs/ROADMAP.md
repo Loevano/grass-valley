@@ -138,6 +138,9 @@ are collected in [Pathing decisions](PATHING.md).
   Terrain, obstacles, roads, and search bounds affect validity; crop growth does not.
   Search uses BFS for cardinal routes on uniform ground and travel-time A*
   for roads or diagonal walking.
+- Decorative barn, stable, and village animals follow nearby outdoor routes,
+  avoiding their own shelter as well as other occupied tiles. Enclosed herds
+  stay out of view until an adjacent tile becomes available.
 - Browser planning is resumable and runs through a queue with an approximately
   2 ms frame budget. The host still performs route searches synchronously.
 - Gameplay movement remains authoritative on the host. Browser playback follows

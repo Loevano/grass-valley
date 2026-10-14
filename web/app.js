@@ -3373,18 +3373,27 @@ function barnAnimalSprites(buildings,time,landscape={}){
   for(const barn of buildings){
     if(!['barn','stable','village_hut'].includes(barn.kind)||(barn.construction&&!barn.construction.upgrade))continue;
     if(!Object.values(barn.animals || {}).some(n=>n>0))continue;
-    // A small breadth-first search keeps every trip connected to the barn.
-    const routes=prepared?ClientScene.animalRoutes(buildings,landscape,barn):[[]],queue=[{x:barn.x,y:barn.y,path:[]}],seen=new Set([key(barn)]);
-    if(!prepared)for(const tile of queue){
-      if(tile.path.length>=2)continue;
-      for(const [dx,dy] of [[1,0],[0,1],[-1,0],[0,-1]]){
-        const next={x:tile.x+dx,y:tile.y+dy},biome=landscape.terrain?.[next.y]?.[next.x];
-        if(next.x<0||next.y<0||next.x>=size||next.y>=size||blocked.has(key(next))||seen.has(key(next))
-          ||biome==='v'||(landscape.chunked&&!biome))continue;
-        seen.add(key(next));
-        const path=[...tile.path,next];queue.push({...next,path});routes.push(path);
+    // Short outdoor trips stay connected to an accessible side of the barn.
+    const routes=prepared?ClientScene.animalRoutes(buildings,landscape,barn):[];
+    if(!prepared)for(const [dx,dy] of [[1,0],[0,1],[-1,0],[0,-1]]){
+      const open=p=>{
+        const biome=landscape.terrain?.[p.y]?.[p.x];
+        return Math.abs(p.x-barn.x)+Math.abs(p.y-barn.y)<=2&&key(p)!==key(barn)
+          &&p.x>=0&&p.y>=0&&p.x<size&&p.y<size&&!blocked.has(key(p))
+          &&biome!=='v'&&(!landscape.chunked||!!biome);
+      };
+      const start={x:barn.x+dx,y:barn.y+dy};if(!open(start))continue;
+      const queue=[{...start,path:[start]}],seen=new Set([key(start)]);
+      for(const tile of queue){
+        routes.push(tile.path);if(tile.path.length>=3)continue;
+        for(const [dx,dy] of [[1,0],[0,1],[-1,0],[0,-1]]){
+          const next={x:tile.x+dx,y:tile.y+dy};
+          if(!open(next)||seen.has(key(next)))continue;
+          seen.add(key(next));queue.push({...next,path:[...tile.path,next]});
+        }
       }
     }
+    if(!routes.length)continue;
     routes.sort((a,b)=>b.length-a.length);
     const stock=[];
     for(const species of (barn.village?['chicken','sheep','pig','cow','horse']:barn.kind==='stable'?['horse']:['chicken','sheep','pig','cow']))
@@ -3404,7 +3413,7 @@ function barnAnimalSprites(buildings,time,landscape={}){
       }
     for(const [index,{species,growth}] of stock.entries()){
       const phase=time+(barn.x*7+barn.y*11+index*3.17)%13,cycle=phase%16;
-      const path=[barn,...routes[index%routes.length]];
+      const path=routes[index%routes.length];
       const outbound=cycle<3,returning=cycle>=8&&cycle<11;
       const walking=path.length>1&&(outbound||returning);
       const progress=outbound?cycle/3:returning?1-(cycle-8)/3:cycle<8?1:0;
