@@ -260,7 +260,7 @@ class GrainChain(unittest.TestCase):
     def test_variety_bakeries_share_flour_and_require_their_own_extra_ingredients(self):
         bakeries = [self.add('bakery', x=x, recipe=recipe, profession_upgrades=['larger_oven'])[0]
                     for x, recipe in ((9, 'bread'), (11, 'herb_bread'))]
-        workers = [dict(job='baking', milling=2, baking=3, talents={}) for _ in bakeries]
+        workers = [dict(job='baking', milling=2, baking=10, talents={}) for _ in bakeries]
         for building, worker in zip(bakeries, workers):
             building['input_buffer'] = {'flour': 8, 'wood': 2}
         self.assertEqual(logistics.produce(self.town, bakeries[0], workers[0], 6), 'Working')

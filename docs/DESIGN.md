@@ -248,8 +248,9 @@ Butcher shops cost 25 wood and 5 planks, processing 2 barn-produced meat into
 2 prepared meat. Both goods contribute 1.5 pantry food per unit and can be sold.
 Workshops have seven selectable recipes, including crafted axes and saws;
 bakeries and butcher shops each have five. Beginners
-can produce the first recipe; recipes 2–5 require 2–5 personal practice in the
-current profession. Only qualified assigned workers unlock selection, and each
+can produce the first recipe. Advanced workshop and butcher recipes require 2–5
+personal practice; rolls, herb bread, fruit pies, and cakes require 5/10/15/20
+baking practice. Only qualified assigned workers unlock selection, and each
 worker must meet the chosen recipe level. Recipes use existing ingredients and
 new outputs participate in storage, hauling, production caps, food, and trading.
 

@@ -28,7 +28,7 @@ for(const [kind,recipes] of Object.entries(progression.profession_recipes)){
   assert(!chooser.children[0].disabled);
   assert(chooser.children.slice(1).every(option=>option.disabled));
   assert.equal(chooser.children[0].textContent.toLowerCase(),recipes[0].output.replaceAll('_',' ')+' · lv 1');
-  assert.equal(chooser.children[1].textContent.toLowerCase(),recipes[1].output.replaceAll('_',' ')+' · lv 2 · locked');
+  assert.equal(chooser.children[1].textContent.toLowerCase(),recipes[1].output.replaceAll('_',' ')+` · lv ${recipes[1].level} · locked`);
   assert(panel(town,item,index).note.textContent.includes('→ '+recipes[0].amount));
   assert(description.includes(recipes[0].output.replaceAll('_',' ')));
   for(const [recipeIndex,recipe] of recipes.entries()){

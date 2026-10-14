@@ -61,6 +61,8 @@ and two bakeries, with downstream storage sized for harvest and hauling gaps.
 
 The implemented [grain flow](GRAINFLOW.md) keeps one worker per mill and bakery.
 Equipment upgrades scale throughput, storage, and producer carrying capacity.
+Advanced bakery recipes now require 5/10/15/20 baking practice for rolls, herb
+bread, fruit pies, and cakes; basic bread remains available to beginners.
 Meals cost 1.5 food/minute per working resident and 0.6 per idle resident.
 The compact host test sustains 200 working residents with one top-tier mill,
 one bread bakery, 12 farms, 24 acres, and four haulers; fuel is supplied.

@@ -192,7 +192,7 @@ RECIPES = {
     'fish_pond': ({'fodder': .5}, 'fish', 1),
 }
 # Recipe levels use the whole practice points shown in settler panels.
-# Beginners can make the level-one recipe; levels two to five need 2–5 practice.
+# Beginners can make the level-one recipe; advanced baking needs 5–20 practice.
 PROFESSION_RECIPES = {
     'workshop': [
         {'level': 1, 'inputs': {'planks': 2, 'wood': 1}, 'output': 'tools', 'amount': 1},
@@ -205,10 +205,10 @@ PROFESSION_RECIPES = {
     ],
     'bakery': [
         {'level': 1, 'inputs': {'flour': 2, 'wood': .5}, 'output': 'bread', 'amount': 2},
-        {'level': 2, 'inputs': {'flour': 2, 'milk': 1, 'wood': .5}, 'output': 'bread_rolls', 'amount': 3},
-        {'level': 3, 'inputs': {'flour': 2, 'herbs': 1, 'wood': .5}, 'output': 'herb_bread', 'amount': 2},
-        {'level': 4, 'inputs': {'flour': 2, 'fruit': 2, 'wood': .5}, 'output': 'fruit_pies', 'amount': 2},
-        {'level': 5, 'inputs': {'flour': 2, 'eggs': 2, 'milk': 1, 'wood': .5}, 'output': 'cakes', 'amount': 2},
+        {'level': 5, 'inputs': {'flour': 2, 'milk': 1, 'wood': .5}, 'output': 'bread_rolls', 'amount': 3},
+        {'level': 10, 'inputs': {'flour': 2, 'herbs': 1, 'wood': .5}, 'output': 'herb_bread', 'amount': 2},
+        {'level': 15, 'inputs': {'flour': 2, 'fruit': 2, 'wood': .5}, 'output': 'fruit_pies', 'amount': 2},
+        {'level': 20, 'inputs': {'flour': 2, 'eggs': 2, 'milk': 1, 'wood': .5}, 'output': 'cakes', 'amount': 2},
     ],
     'butcher': [
         {'level': 1, 'inputs': {'meat': 2}, 'output': 'prepared_meat', 'amount': 2},
@@ -219,9 +219,8 @@ PROFESSION_RECIPES = {
     ],
 }
 CRAFTED_GOODS = tuple(r['output'] for r in PROFESSION_RECIPES['workshop'][1:])
-EDIBLE.update({r['output']: 1.5 + .25 * (r['level'] - 1)
-               for kind in ('bakery', 'butcher') for r in PROFESSION_RECIPES[kind][1:]})
-EDIBLE.update({'fruit_pies': 3.5, 'cakes': 4.5,
+# Food values stay independent of recipe unlock levels.
+EDIBLE.update({'bread_rolls': 1.75, 'herb_bread': 2, 'fruit_pies': 3.5, 'cakes': 4.5,
                'herbed_meat': 5, 'smoked_meat': 6, 'sausages': 6, 'meat_pies': 7})
 PRODUCTION_SECONDS = {
     'leather': 9, 'iron_ore': 9, 'iron': 12, 'saddles': 15, 'steel': 15, 'trade_crates': 18,

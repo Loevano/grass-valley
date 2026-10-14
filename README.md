@@ -384,18 +384,19 @@ the Python host, refresh both browsers, and create a new world to use the shared
   together. Farmers' skill improves field yields; barn animal counts and keeper
   staffing determine livestock output.
 - Workshops offer seven recipes; bakeries and butcher shops offer five, selected in the
-  workplace panel. Level 1 is available to beginners; levels 2–5 require 2–5
-  practice in crafting, baking, or butchery respectively. Unlocks use qualified
+  workplace panel. Level 1 is available to beginners. Advanced workshop and butcher
+  recipes require 2–5 practice; baking requires 5/10/15/20 practice for rolls,
+  herb bread, fruit pies, and cakes. Unlocks use qualified
   workers assigned to that workplace. Each worker must meet the selected recipe's
   level to produce it. Existing workplaces retain their original recipe by default.
 
-  | Recipe level | Workshop | Bakery | Butcher shop |
+  | Recipe tier | Workshop | Bakery (baking level) | Butcher shop |
   | --- | --- | --- | --- |
-  | 1 | Tools | Bread | Prepared meat |
-  | 2 | Wooden bowls | Bread rolls | Herbed meat |
-  | 3 | Crates | Herb bread | Smoked meat |
-  | 4 | Furniture | Fruit pies | Sausages |
-  | 5 | Carved furniture | Cakes | Meat pies |
+  | 1 | Tools | Bread (beginner) | Prepared meat |
+  | 2 | Wooden bowls | Bread rolls (5) | Herbed meat |
+  | 3 | Crates | Herb bread (10) | Smoked meat |
+  | 4 | Furniture | Fruit pies (15) | Sausages |
+  | 5 | Carved furniture | Cakes (20) | Meat pies |
 
   Workshops also make **Crafted axes** at 2 crafting practice
   (2 planks + 1 tool, 9 seconds) and **Crafted saws** at 3 practice
@@ -414,7 +415,7 @@ the Python host, refresh both browsers, and create a new world to use the shared
 
   Recipes show ingredient costs in the selector and use existing town resources.
   New products can be stored, hauled, capped, and sold at the market. Prepared
-  foods supply 1.75–4.5 pantry food per unit at recipe levels 2–5. Fruit pies,
+  foods supply 1.75–4.5 pantry food per unit at recipe tiers 2–5. Fruit pies,
   cakes, and meat pies supply 7, 9, and 8 food per basic batch respectively.
   Advanced foods sell for their per-unit food value rounded up in coins;
   basic bread and prepared meat remain 1 coin each. Wooden bowls sell for 2 coins

@@ -41,31 +41,56 @@ class ProfessionRecipes(unittest.TestCase):
                     index, building, job = self.workplace(kind)
                     self.worker[job] = 0 if spec['level'] == 1 else spec['level']
                     self.select(index, spec['output'])
-                    building['input_buffer'] = {k: n * 2 for k, n in spec['inputs'].items()}
-                    self.assertEqual(logistics.requirements(building, self.worker), spec['inputs'])
+                    speed = economy.processing_efficiency(self.worker, building)
+                    costs = {k: n * speed for k, n in spec['inputs'].items()}
+                    amount = spec['amount'] * speed
+                    building['input_buffer'] = {k: n * 2 for k, n in costs.items()}
+                    self.assertEqual(logistics.requirements(building, self.worker), costs)
                     self.assertEqual(logistics.produce(self.town, building, self.worker, elapsed=economy.production_seconds(building)), 'Working')
-                    self.assertEqual(building['input_buffer'], spec['inputs'])
-                    self.assertEqual(self.worker['pending_output'], {spec['output']: spec['amount']})
+                    self.assertEqual(building['input_buffer'], costs)
+                    self.assertEqual(self.worker['pending_output'], {spec['output']: amount})
                     rate = .05 if job == 'butchery' else .04
                     self.assertAlmostEqual(self.worker[job], (0 if spec['level'] == 1 else spec['level']) + rate * economy.production_seconds(building) / 3)
                     logistics.drop_off(self.town, building, self.worker)
-                    self.assertEqual(economy.quantity(self.town, spec['output']), spec['amount'])
+                    self.assertEqual(economy.quantity(self.town, spec['output']), amount)
+
+    def test_bakery_milestones_gate_selection_and_existing_saved_recipes(self):
+        for output, level in [('bread_rolls', 5), ('herb_bread', 10),
+                              ('fruit_pies', 15), ('cakes', 20)]:
+            with self.subTest(output=output):
+                self.setUp()
+                index, building, job = self.workplace('bakery')
+                self.worker[job] = level - .001
+                with self.assertRaisesRegex(ValueError, f'level {level} baking'):
+                    self.select(index, output)
+                building['recipe'] = output  # A previously selected recipe in a save.
+                building['input_buffer'] = {'flour': 20, 'wood': 5, 'milk': 10,
+                                            'eggs': 10, 'fruit': 10, 'herbs': 10}
+                before = copy.deepcopy(self.town)
+                self.assertIn(f'Requires level {level}', logistics.produce(
+                    self.town, building, self.worker, elapsed=12))
+                self.assertEqual(self.town, before)
+                self.worker[job] = level
+                self.select(index, output)
+                self.assertEqual(logistics.produce(
+                    self.town, building, self.worker,
+                    elapsed=economy.production_seconds(building)), 'Working')
 
     def test_unlock_uses_assigned_worker_and_production_rechecks_each_worker(self):
         index, building, job = self.workplace('bakery')
-        self.worker[job] = 1.999
+        self.worker[job] = 4.999
         self.town['player'][job] = 100
         self.town['villagers'][1][job] = 100
         before = copy.deepcopy(self.town)
         with self.assertRaisesRegex(ValueError, 'assigned worker'):
             self.select(index, 'bread_rolls')
         self.assertEqual(self.town, before)
-        self.worker[job] = 2
+        self.worker[job] = 5
         self.select(index, 'bread_rolls')
         building['input_buffer'] = {'flour': 4, 'milk': 2, 'wood': 1}
-        self.worker[job] = 1.999
+        self.worker[job] = 4.999
         before = copy.deepcopy(self.town)
-        self.assertIn('Requires level 2', logistics.produce(self.town, building, self.worker, elapsed=economy.production_seconds(building)))
+        self.assertIn('Requires level 5', logistics.produce(self.town, building, self.worker, elapsed=economy.production_seconds(building)))
         self.assertEqual(logistics.supply_request(self.town, building, self.worker), {})
         self.assertEqual(self.town, before)
         self.select(index, 'bread')
@@ -108,9 +133,11 @@ class ProfessionRecipes(unittest.TestCase):
                 with self.subTest(output=spec['output']):
                     self.setUp()
                     index, building, job = self.workplace(kind)
-                    self.worker[job] = 5
+                    self.worker[job] = spec['level']
                     self.select(index, spec['output'])
-                    building['input_buffer'] = dict(spec['inputs'])
+                    speed = economy.processing_efficiency(self.worker, building)
+                    amount = spec['amount'] * speed
+                    building['input_buffer'] = {k: n * speed for k, n in spec['inputs'].items()}
                     logistics.configure_rules(self.town, {'resource': spec['output'], 'cap': 0})
                     before = copy.deepcopy(self.town)
                     self.assertEqual(logistics.produce(self.town, building, self.worker, elapsed=economy.production_seconds(building)), 'Production cap reached')
@@ -126,7 +153,7 @@ class ProfessionRecipes(unittest.TestCase):
                     server.command(self.town, {'action': 'sell_goods', 'resource': spec['output'], 'amount': 1})
                     self.assertEqual(self.town['coins'], coins + economy.SALE_PRICES[spec['output']])
                     self.assertAlmostEqual(self.town['food'], food - economy.EDIBLE.get(spec['output'], 0))
-                    self.assertEqual(economy.quantity(self.town, spec['output']), spec['amount'] - 1)
+                    self.assertEqual(economy.quantity(self.town, spec['output']), amount - 1)
 
     def test_new_recipe_missing_ingredients_and_full_buffer_preserve_inputs(self):
         index, building, job = self.workplace('butcher')

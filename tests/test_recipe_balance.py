@@ -8,6 +8,14 @@ import server
 
 
 class CraftingSaleBalance(unittest.TestCase):
+    def test_baking_unlocks_preserve_food_values_and_sale_prices(self):
+        for output, food, coins in [('bread', 1.5, 1), ('bread_rolls', 1.75, 2),
+                                    ('herb_bread', 2, 2), ('fruit_pies', 3.5, 4),
+                                    ('cakes', 4.5, 5)]:
+            with self.subTest(output=output):
+                self.assertEqual(economy.EDIBLE[output], food)
+                self.assertEqual(economy.sale_price(output), coins)
+
     def test_advanced_recipes_sell_for_more_than_all_inputs_including_fuel(self):
         recipes = [(r['inputs'], r['output'], r['amount'])
                    for rs in economy.PROFESSION_RECIPES.values() for r in rs
@@ -87,14 +95,15 @@ class RecipeBalance(unittest.TestCase):
     def test_recipe_switch_discards_partial_batch_without_consuming_inputs(self):
         logistics.produce(self.town, self.building, self.worker)
         self.town['level'] = 5
+        self.worker['baking'] = 20
         server.command(self.town, {'action': 'set_recipe',
                                   'index': self.worker['building_index'], 'recipe': 'cakes'})
-        self.building['input_buffer'].update(eggs=2, milk=1)
+        self.building['input_buffer'].update(eggs=4, milk=2)
         for remaining in (9, 6, 3):
             self.assertIn(f'{remaining}s remaining', logistics.produce(self.town, self.building, self.worker))
         self.assertEqual(logistics.produce(self.town, self.building, self.worker), 'Working')
-        self.assertEqual(self.worker['baking'], 5.16)
-        self.assertEqual(self.worker['pending_output'], {'cakes': 2})
+        self.assertEqual(self.worker['baking'], 20.16)
+        self.assertEqual(self.worker['pending_output'], {'cakes': 4})
 
     def test_complex_foods_reward_processing_over_eating_ingredients_separately(self):
         for key in ('fruit_pies', 'cakes', 'meat_pies'):
