@@ -64,15 +64,18 @@ class ProductionRules(unittest.TestCase):
         economy.spend(self.town, {'planks': 1})
         self.assertEqual(logistics.produce(self.town, second, worker, elapsed=economy.production_seconds(second)), 'Working')
 
-    def test_barn_waits_for_all_outputs_including_manure(self):
+    def test_barn_caps_limit_each_product_without_pausing_growth(self):
         barn = {'kind': 'barn', 'x': 3, 'y': 3, 'animals': {'chicken': 1},
-                'animal_growth': {'chicken': [0]}, 'input_buffer': {'vegetables': 10}}
+                'animal_growth': {'chicken': [0]}}
         self.town['buildings'].append(barn)
-        worker = {'job': 'husbandry', 'husbandry': 0, 'farming': 10, 'talents': {}}
         self.rule('manure', 0)
-        before = copy.deepcopy(barn)
-        self.assertEqual(logistics.produce(self.town, barn, worker), 'Production cap reached')
-        self.assertEqual(barn, before)
+        self.rule('eggs', 1)
+        logistics.advance_barn(self.town, barn, 3)
+        self.assertEqual(barn['animal_growth']['chicken'], [3])
+        self.assertEqual(barn['output_buffer'], {'eggs': 1})
+        logistics.advance_barn(self.town, barn, 3)
+        self.assertEqual(barn['animal_growth']['chicken'], [6])
+        self.assertEqual(barn['output_buffer'], {'eggs': 1})
 
     def test_gathering_stops_without_depleting_source_and_resumes(self):
         player = self.town['player']

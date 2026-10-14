@@ -31,10 +31,10 @@ BUILDINGS = {
 }
 CROPS = {'vegetables': 1, 'wheat': 2, 'carrots': 3, 'fodder': 3}
 ANIMALS = {
-    'chicken': {'level': 2, 'coins': 0, 'output': 'eggs', 'feed': .15},
-    'sheep': {'level': 3, 'coins': 0, 'output': 'wool', 'feed': .25},
-    'pig': {'level': 4, 'coins': 0, 'output': 'meat', 'feed': .1},
-    'cow': {'level': 5, 'coins': 0, 'output': 'milk', 'feed': .5},
+    'chicken': {'level': 2, 'coins': 0, 'output': 'eggs', 'feed': .15, 'growth_seconds': 30},
+    'sheep': {'level': 3, 'coins': 0, 'output': 'wool', 'feed': .25, 'growth_seconds': 60},
+    'pig': {'level': 4, 'coins': 0, 'output': 'meat', 'feed': .1, 'growth_seconds': 120},
+    'cow': {'level': 5, 'coins': 0, 'output': 'milk', 'feed': .5, 'growth_seconds': 180},
 }
 ANIMALS['horse'] = {'level': 8, 'coins': 0, 'output': 'horse', 'feed': .5}
 ANIMAL_GROWTH_SECONDS = 300
@@ -70,28 +70,32 @@ def water_sources(landscape):
                 for b in landscape['buildings'] if b['kind'] == 'well' and 'construction' not in b)
 
 
+def animal_duration(animal):
+    return ANIMALS[animal].get('growth_seconds', ANIMAL_GROWTH_SECONDS)
+
+
 def animal_growth(building, animal):
-    """Fed seconds per animal; animals from older saves are already adults."""
+    """Growth seconds per animal; animals from older saves are already adults."""
     count = building.get('animals', {}).get(animal, 0)
     ages = building.get('animal_growth', {}).get(animal, [])
-    return (ages + [ANIMAL_GROWTH_SECONDS] * count)[:count]
+    return (ages + [animal_duration(animal)] * count)[:count]
 
 
 def mature_animals(building, animal):
-    return sum(age >= ANIMAL_GROWTH_SECONDS for age in animal_growth(building, animal))
+    return sum(age >= animal_duration(animal) for age in animal_growth(building, animal))
 
 
 def animal_feed(building):
-    """Barn adults have finished their cycle; stable horses still need feeding."""
-    return sum(ANIMALS[animal]['feed'] * (
-        count if building['kind'] == 'stable' else
-        sum(age < ANIMAL_GROWTH_SECONDS for age in animal_growth(building, animal)))
-        for animal, count in building.get('animals', {}).items())
+    """Only stable horses need feed; barn growth is automatic."""
+    if building['kind'] == 'barn':
+        return 0
+    return sum(ANIMALS[animal]['feed'] * count
+               for animal, count in building.get('animals', {}).items())
 
 
 def grow_animals(building, seconds):
     building['animal_growth'] = {
-        animal: [min(ANIMAL_GROWTH_SECONDS, age + seconds) for age in animal_growth(building, animal)]
+        animal: [min(animal_duration(animal), age + seconds) for age in animal_growth(building, animal)]
         for animal in building.get('animals', {})}
 
 
@@ -437,7 +441,7 @@ STORAGE_GOODS = {
     'fishing_hut': tuple(FISH),
     'farm': (*CROPS, 'manure'),
     'acre': (*CROPS, 'manure'),
-    'barn': ('fodder', 'vegetables', 'manure', *(a['output'] for a in ANIMALS.values())),
+    'barn': ('fodder', 'vegetables', 'manure', 'hides', *(a['output'] for a in ANIMALS.values())),
     'orchard': ('fruit',),
     **{kind: (*inputs, output) for kind, (inputs, output, _) in RECIPES.items()},
 }
@@ -456,7 +460,7 @@ FIXED_STORAGE = {
     'fishing_hut': {'food': 50},
     'farm': {'food': 20, 'wheat': 10, 'fodder': 10, 'manure': 10},
     'acre': {'food': 20, 'wheat': 10, 'fodder': 10, 'manure': 10},
-    'barn': {'food': 20, 'fodder': 15, 'wool': 10, 'manure': 5},
+    'barn': {'food': 20, 'fodder': 15, 'wool': 10, 'manure': 5, 'hides': 10},
     'orchard': {'food': 50},
     'bakery': {'flour': 40, 'wood': 10, 'herbs': 20, 'food': 40},
     'butcher': {'hides': 10, 'food': 20, 'flour': 10, 'herbs': 5, 'wood': 5},
@@ -912,35 +916,20 @@ def extra_worker(town, villager, building, capacity):
     elif kind == 'orchard':
         if deliver(town, 'fruit', speed, capacity) == 0:
             return 'Storage full'
-    elif kind in {'barn', 'stable'}:
+    elif kind == 'barn':
+        # Growth and output are advanced once by the host, independently of keepers.
+        if not sum(building.get('animals', {}).values()):
+            return 'Choose animal counts first'
+    elif kind == 'stable':
         animals = building.get('animals', {})
-        output_amounts = {}
-        for animal, amount in ANIMAL_PRODUCTS.items():
-            growth = sum(min(3, max(0, ANIMAL_GROWTH_SECONDS - age))
-                         for age in animal_growth(building, animal))
-            if growth:
-                key = ANIMALS[animal]['output']
-                output_amounts[key] = amount * growth / ANIMAL_GROWTH_SECONDS
         if not sum(animals.values()):
-            return 'Capture horses first' if kind == 'stable' else 'Choose free young animals first'
-        # One barn cycle per tick regardless of the number of assigned workers.
+            return 'Capture horses first'
         feed = animal_feed(building)
-        if not feed:
-            return 'Fully grown animals ready for the butcher'
-        if quantity(town, 'fodder') < feed:
-            feed_cost = {'vegetables': feed}  # Chickens before fodder unlocks.
-        else:
-            feed_cost = {'fodder': feed}
+        feed_cost = {'fodder' if quantity(town, 'fodder') >= feed else 'vegetables': feed}
         if not afford(town, feed_cost):
             return 'Waiting for animal feed'
-        if any(quantity(town, k) + v > capacity for k, v in output_amounts.items()):
-            return 'Storage full'
         spend(town, feed_cost)
-        for key, amount in output_amounts.items():
-            deliver(town, key, amount, capacity)
-        tended = sum(animals.values()) if kind == 'stable' else sum(
-            age < ANIMAL_GROWTH_SECONDS for animal in animals for age in animal_growth(building, animal))
-        deliver(town, 'manure', .1 * tended, capacity)
+        deliver(town, 'manure', .1 * sum(animals.values()), capacity)
     else:
         return 'Resting'
     practice(villager, villager['job'], production_seconds(building))

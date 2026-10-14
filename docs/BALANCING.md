@@ -270,60 +270,42 @@ minutes of flour production, with wheat already supplied.
 | -------------------------------- | ----------------------------------------------------- | ------------------------------------------- | ------------------------------------------------------- |
 | One butcher, prepared meat       | Six-second completed batch                            | 2 meat → 2 prepared meat; 0.1 practice      | Uses 20 meat/minute; makes 20 prepared meat/minute      |
 | Manually ordered animal butchery | 60 seconds at the shop, one animal per shop at a time | 1 butchery practice; meat varies by animal  | One completed animal/minute while continuously supplied |
-| Animal maturity                  | 300 fully fed seconds                                 | Young animal becomes eligible for butchery  | Five fed minutes; growth pauses without feed            |
+| Automatic animal replacement | Chicken 30s; sheep 60s; pig 120s; cow 180s | Meat and hides, then a young replacement | No feed required; speed is 1 + assigned keepers |
 
 ### Total production time cost vs total reward
 
-These examples start with one newly acquired young animal, alone in a barn,
-and end after all its raw meat becomes basic prepared meat. Each animal needs
-100 successful three-second tending cycles to reach 300 fed seconds. Feed per
-cycle is 0.15 for chickens, 0.25 for sheep, 0.1 for pigs, and 0.5 for cows.
-Growing fodder costs eight active field worker-seconds per harvest of 10 feed;
-vegetables take the same work but yield 4.8 feed. The examples below use fodder.
-Both add passive growth, water collection, travel, and delivery as described
-above. Feeding produces 0.1 manure per animal per
-cycle, so each example retains 10 manure. No extra adult tending is included.
-Each chicken also yields 25 eggs, each sheep 25 wool, and each cow 25 milk during
-growth, in addition to the meat-chain rewards below. These product totals are
-fixed regardless of worker skill or talent. Barn animals are free; sending an
-adult to the butcher immediately replaces it with a young animal of the same
-species, without using another capacity slot. Farm-animal breeding is removed.
+Barns continuously grow and replace animals without feed or workers. The player
+sets a count per species, sharing four animal spaces per building level.
+Each assigned keeper adds one base growth speed: actual cycle time is the base
+cycle divided by `1 + keepers`. Routes and animation phases do not gate growth.
+Keepers helping construction do not add speed; new construction has no growth,
+while existing herds continue at base speed during an upgrade.
 
-| Full chain | Work breakdown | Total production time cost | Total reward |
-| --- | --- | --- | --- |
-| Feed → young chicken → meat → prepared meat | Harvest 20 feed: 16s; tend animal: 300s; butcher: 60s; prepare: 6s | 382 worker-seconds + water collection/travel | 2 prepared meat (8 food value) + 10 manure + 5 spare feed; approximately 5.313 practice (0.213 farming + 4 husbandry + 1.1 butchery) |
-| Feed → young sheep → meat → prepared meat | Harvest 30 feed: 24s; tend animal: 300s; butcher: 60s; prepare: 12s | 396 worker-seconds + water collection/travel | 4 prepared meat (16 food value) + 1 hide + 10 manure + 5 spare feed; approximately 5.52 practice (0.32 farming + 4 husbandry + 1.2 butchery) |
-| Feed → young pig → meat → prepared meat | Harvest 10 feed: 8s; tend animal: 300s; butcher: 60s; prepare: 24s | 392 worker-seconds + water collection/travel | 8 prepared meat (32 food value, 32 coins) + 2 hides + 10 manure; approximately 5.507 practice (0.107 farming + 4 husbandry + 1.4 butchery) |
-| Feed → young cow → meat → prepared meat | Harvest 50 feed: 40s; tend animal: 300s; butcher: 60s; prepare: 30s | 430 worker-seconds + water collection/travel | 10 prepared meat (40 food value) + 3 hides + 10 manure; approximately 6.033 practice (0.533 farming + 4 husbandry + 1.5 butchery) |
+| Animal | Base cycle | Products during growth | Automatic reward at completion | Basic prepared meat work and reward |
+| --- | --- | --- | --- | --- |
+| Chicken | 30s | 25 eggs | 2 meat | 6 worker-seconds → 2 prepared meat (8 food) |
+| Sheep | 60s | 25 wool | 4 meat + 1 hide | 12 worker-seconds → 4 prepared meat (16 food) |
+| Pig | 120s | None | 8 meat + 2 hides | 24 worker-seconds → 8 prepared meat (32 food) |
+| Cow | 180s | 25 milk | 10 meat + 3 hides | 30 worker-seconds → 10 prepared meat (40 food) |
 
-A barn tends all its animals in one shared cycle. For a same-age herd tended by
-one worker, count the 300 seconds of tending and its 4 husbandry practice once
-for the group; sum feed production,
-manual butchery, meat preparation, and byproducts per animal. Mature barn animals
-held longer consume no feed and produce no goods or practice. A replacement must
-complete its own fed growth cycle before it can be butchered again.
+Manure accrues at 0.1 per animal per three base growth seconds. Product totals
+per cycle are fixed independently of keeper skill and talent. Meat and hides
+are collected automatically, and the young replacement occupies the same slot.
+Output storage and production caps bound collected goods; excess output is not
+kept, and the growth clock still advances. Keepers and haulers transport goods
+through the normal workplace buffers. Existing saved adults finish one cycle
+on their next tick; existing manual butcher jobs can still finish normally.
 
 ### Grain staple and luxury meat
 
-Pigs are the dedicated meat animal. Five minutes of growth now uses **10 feed**;
-8 raw meat becomes **8 prepared meat worth 32 food**, so using vegetables as
-feed no longer destroys most of the edible value. Prepared meat provides 4 food
-and sells for 4 coins per item; raw meat still provides 1 food and sells for 2.
-Growth, manual slaughter, recipe times, animal yields, and practice rewards are
-unchanged by this balance adjustment. Hides and manure are additional rewards.
+A pig provides 8 raw meat per two-minute cycle without staffing, or every minute
+with one keeper. That meat becomes **8 prepared meat worth 32 food**. Prepared
+meat provides 4 food and sells for 4 coins per item; raw meat provides 1 food
+and sells for 2. Hides and manure are additional rewards.
 
-Compare base active work with a full four-pig barn, sharing its keeper's work:
-
-| Final food | Active work per batch | Food per worker-minute |
-| --- | --- | --- |
-| 2 bread (3 food) | 1.6s wheat farming + 3s milling + 2s fuel gathering + 6s baking = 12.6s | 14.29 |
-| 8 prepared meat (32 food) | 8s feed farming + 75s shared tending + 60s butchery + 24s preparation = 167s | 11.50 |
-
-Bread is approximately **24% more efficient** in this comparison, with continuous
-production and equipment upgrades for large towns. Meat is a valuable, slower
-luxury. A lone pig is less efficient because it bears all 300 tending seconds.
-These ideal totals use fodder, prorate harvests, and exclude water trips, travel, hauling,
-animal acquisition, and byproduct value; delivered balance still needs playtesting.
+The previous comparison based on growing feed and manual slaughter no longer
+applies to automatic barns. Delivered balance against the grain chain needs
+playtesting, including barn capacity, hauling, output limits, and processor staffing.
 
 | Butcher recipe | Food per item | Coins per item | Food per base batch |
 | --- | --- | --- | --- |
@@ -345,7 +327,7 @@ outputs, quantities, skills, and unfinished work are preserved.
 | --- | --- | --- | --- |
 | Qualify for butchery | 2 husbandry | 2.5 minutes | Requires successful animal tending. |
 | Unlock butcher recipe 2 | 2 butchery | Two completed animals, or two minutes of continuous prepared-meat processing | Starts after qualification; animals and ingredients must be available. |
-| Reach butcher recipe 5 | 5 butchery | Five completed animals, or five minutes of continuous processing | Manual selections and feeding/growth add elapsed time. |
+| Reach butcher recipe 5 | 5 butchery | Five completed animals, or five minutes of continuous processing | Automatic barn supply and hauling add elapsed time. |
 | First butchery efficiency step | 20 butchery | Twenty completed animals, or twenty minutes of continuous processing | The output multiplier changes at 20; recipe unlocks provide earlier milestones. |
 
 Animal butchery currently gives 25% more practice per credited work second than

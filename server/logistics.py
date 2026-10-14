@@ -163,6 +163,38 @@ def cancel_trip(town, villager):
     villager.pop('logistics_target', None)
 
 
+def advance_barn(town, building, seconds, keepers=0):
+    """Loop the herd's host clock even without keepers, feed, routes, or output room."""
+    elapsed = seconds * (1 + keepers)
+    outputs, growth = {}, {}
+    for animal, count in building.get('animals', {}).items():
+        if animal not in economy.ANIMAL_MEAT:
+            continue
+        duration = economy.animal_duration(animal)
+        ages, cycles = [], 0
+        for age in economy.animal_growth(building, animal):
+            completed, remaining = divmod(min(duration, max(0, age)) + elapsed, duration)
+            cycles += int(completed)
+            ages.append(remaining)
+        growth[animal] = ages
+        product = economy.ANIMAL_PRODUCTS.get(animal, 0) * count * elapsed / duration
+        if product:
+            key = economy.ANIMALS[animal]['output']
+            outputs[key] = outputs.get(key, 0) + product
+        if cycles:
+            outputs['meat'] = outputs.get('meat', 0) + cycles * economy.ANIMAL_MEAT[animal]
+            hides = cycles * {'sheep': 1, 'pig': 2, 'cow': 3}.get(animal, 0)
+            if hides:
+                outputs['hides'] = outputs.get('hides', 0) + hides
+    building['animal_growth'] = growth
+    outputs['manure'] = sum(building.get('animals', {}).values()) * .1 * elapsed / 3
+    for key, amount in outputs.items():
+        # A full buffer or production cap limits goods, never the growth clock.
+        amount = min(amount, economy.local_room(building, key), economy.production_room(town, key))
+        if amount > 1e-9:
+            record_output(town, building, key, amount)
+
+
 def collection_inventory(building):
     result = economy.inventory(building)
     for key, amount in building.get('orphaned_output', {}).items():

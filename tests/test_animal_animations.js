@@ -31,6 +31,17 @@ assert.equal(sprites([adultBarn],30)[0].size,halfGrown.size,'Reaching adulthood 
 const adult=sprites([adultBarn],33)[0];
 assert(young.size<halfGrown.size&&halfGrown.size<adult.size,'Fed growth gradually increases visual size');
 assert.equal(sprites([{...barn,animals:{pig:1},animal_growth:{pig:[0]}}],33)[0].size,young.size,'A replacement young animal starts small');
+const timedSprites=new Function('world',
+  source.slice(source.indexOf('function barnAnimalSprites('),source.indexOf('function drawBarnAnimal('))+'return barnAnimalSprites;'
+)({shared_map:{},progression:{animals:{chicken:{growth_seconds:30},sheep:{growth_seconds:60},pig:{growth_seconds:120},cow:{growth_seconds:180}}}});
+for(const [species,duration] of [['chicken',30],['sheep',60],['pig',120],['cow',180]]){
+  const growing={...barn,animals:{[species]:1},animal_growth:{[species]:[duration/2]}};
+  const original=JSON.stringify(growing),half=timedSprites([growing],0)[0];
+  assert(Math.abs(half.size-.6)<1e-9,'Each species reaches half size on its own growth timer');
+  growing.animal_growth[species]=[0];
+  assert.equal(timedSprites([growing],1)[0].size,.4,'Automatic replacement resets visible size');
+  assert.equal(JSON.stringify({...growing,animal_growth:{[species]:[duration/2]}}),original,'Rendering preserves confirmed ages');
+}
 for(const species of Object.keys(barn.animals))assert.equal(animals.filter(a=>a.species===species).length,3);
 assert.equal(sprites([{...barn,animals:{}}],0).length,0,'Empty barns have no animals');
 assert.equal(sprites([{...barn,kind:'farm'}],0).length,0,'Other workplaces have no barn animals');

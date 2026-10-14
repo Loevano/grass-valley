@@ -168,7 +168,7 @@ class AllWorkplaceStorage(unittest.TestCase):
                     self.assertEqual(economy.local_room(storage, output), 0)
                 for _ in range(economy.production_seconds(building) // 3):
                     server.tick(world)
-                if kind in ('farm', 'acre'):
+                if kind in ('farm', 'acre', 'barn'):
                     # A nearby farm can receive the harvest in the same tick.
                     self.assertGreater(town['produced'].get(output, 0), 0)
                     self.assertAlmostEqual(town['produced'][output], logistics.production_stock(building, output)
@@ -199,7 +199,7 @@ class AllWorkplaceStorage(unittest.TestCase):
                 economy.add_stock(town, output, -limit / 2)
                 for _ in range(economy.production_seconds(building) // 3):
                     server.tick(world)
-                if kind in ('farm', 'acre'):
+                if kind in ('farm', 'acre', 'barn'):
                     self.assertGreater(town['produced'].get(output, 0), 0)
                     self.assertAlmostEqual(town['produced'][output], logistics.production_stock(building, output)
                                            + building.get('pending_output', {}).get(output, 0) - limit / 2)

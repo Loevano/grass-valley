@@ -215,7 +215,7 @@ class Progression(unittest.TestCase):
         self.assertEqual(workshop['input_buffer']['planks'],2)
         self.assertFalse(economy.milestone(self.town,5), 'One flour/tool batch cannot complete the hall milestone')
 
-    def test_animals_feed_and_obey_capacity_without_worker_multiplier(self):
+    def test_animals_loop_without_feed_and_obey_capacity(self):
         self.town['buildings'].append({'kind': 'storehouse', 'x': 10, 'y': 10,
                                       'storage_allocations': {'wool': 50, 'manure': 50}})
         self.town.update(level=3,coins=100,goods={'fodder':10,'herbs':2})
@@ -224,8 +224,8 @@ class Progression(unittest.TestCase):
             command(self.town, {'action':'buy_animal','index':index,'animal':'sheep'})
         command(self.town, {'action':'assign_settler','index':1,'building_index':index})
         tick(self.world)
-        self.assertEqual(barn['pending_output']['wool'],.5)
-        self.assertEqual(barn['input_buffer']['fodder'],9.5)
+        self.assertEqual(barn['output_buffer']['wool'],7.5)
+        self.assertEqual(barn['input_buffer']['fodder'],10)
         self.assertEqual(self.town['goods']['fodder'],10)
         for _ in range(2):
             command(self.town, {'action':'buy_animal','index':index,'animal':'sheep'})
@@ -236,7 +236,7 @@ class Progression(unittest.TestCase):
         self.assertEqual(self.town,before)
         self.town['goods']['fodder']=0;barn['input_buffer']['fodder']=0
         tick(self.world)
-        self.assertEqual(barn.get('pending_output', {}).get('wool',0) + barn.get('output_buffer', {}).get('wool',0),.5)
+        self.assertEqual(barn.get('pending_output', {}).get('wool',0) + barn.get('output_buffer', {}).get('wool',0),10)
 
     @patch('server.secrets.randbelow', return_value=1)
     def test_profession_upgrade_needs_skill_and_charges_once(self, _roll):

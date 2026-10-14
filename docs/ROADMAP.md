@@ -139,11 +139,11 @@ For fishing, downstream storage sizes, skill thresholds, catch
 probabilities, fish values, and smoke-station staffing remain open before
 implementation. Their production rates also need review against the implemented
 worker limits documented in README.md.
-The [luxury meat balance](BALANCING.md#grain-staple-and-luxury-meat) is implemented:
-pigs use 10 feed and yield 32 food as prepared meat, with profitable advanced
-recipes. Base bread is about 24% more efficient per active worker-second than
-a full pig barn before travel and byproducts. Delivered livestock pacing and
-its interaction with grain equipment still need play experience.
+The [luxury meat balance](BALANCING.md#grain-staple-and-luxury-meat) gives
+8 raw pig meat a value of 32 food when prepared, with profitable advanced recipes.
+Barns now grow and replace animals automatically without feed, with additional
+keepers shortening cycles. Delivered livestock pacing and its interaction with
+grain equipment still need play experience.
 Sawpit work is labeled Sawing throughout job and skill controls, with a hand-driven
 sawing animation during productive work. Saved practice and production rates are
 preserved. The wood and grain rates still need play experience across town layouts
@@ -161,13 +161,14 @@ material investments alongside the remaining fishing balance work.
 Advanced woodcraft and metal sale values now cover ingredients, including fuel;
 higher workshop recipe tiers preserve or improve profit per active work second.
 
-Barns now use free young animals, fixed products during fed growth, and automatic
-young replacements when adults are sent to the butcher. Farm-animal breeding is
-removed. Play experience should assess the five-minute cycle and fixed 25 eggs,
-wool, or milk per animal alongside feed supply, hauling, and manual butcher pacing.
-The barn inspector now shows animal cards, fed-growth progress, remaining products,
-capacity, and access to the butcher. The butcher panel previews meat and the free
-replacement and shows active processing progress. Delivered pacing remains unmeasured.
+Barn animal counts are configurable per species within shared capacity. Automatic
+replacement cycles run without feed or workers at 30/60/120/180 seconds for
+chickens/sheep/pigs/cows; each assigned keeper adds one base growth speed.
+Growth is independent of animation, routes, output storage, and production caps.
+The inspector shows growth, current cycle times, and automatic collection of
+products, meat, and hides. Existing manual butcher jobs remain supported.
+Play experience should assess delivered output, hauling, and the new cycle pacing
+alongside the fixed 25 eggs, wool, or milk per animal. Delivered pacing remains unmeasured.
 
 ## Scalable villager pathfinding
 
@@ -198,8 +199,8 @@ are collected in [Pathing decisions](PATHING.md).
   keep other buildings out of the pen; selection and build tools show its range.
   Barn workers now follow host-confirmed feeding rounds through the pen, returning
   beside the barn to unload; their routes and round progress persist in saves.
-  All assigned keepers participate and train during successful feeding rounds;
-  shared feed use, growth, and output remain counted once per barn.
+  Assigned keepers tend and train on their rounds; growth and output advance once
+  per barn on an independent clock, sped up by keeper count.
 - Idle town villagers take short strolls with staggered pauses near their hall,
   avoiding occupied and impassable tiles. These ambient browser routes leave
   authoritative state untouched and stop when work or construction is assigned.

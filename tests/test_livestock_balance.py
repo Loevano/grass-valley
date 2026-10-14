@@ -9,62 +9,28 @@ import server
 
 
 class LivestockBalance(unittest.TestCase):
-    def test_pig_grows_on_ten_feed_and_returns_thirty_two_food(self):
-        for feed in ('fodder', 'vegetables'):
-            with self.subTest(feed=feed):
-                town = flat_town('Luxury meat')
-                economy.ensure_inventory(town)
-                town.update(level=4, food=0, goods={})
-                town['buildings'][0]['stored_goods'] = {}
-                barn = dict(kind='barn', x=3, y=7, animals={'pig': 1},
-                            animal_growth={'pig': [0]}, input_buffer={feed: 10})
-                shop = dict(kind='butcher', x=8, y=7)
-                town['buildings'].extend([barn, shop])
-                keeper = dict(job='husbandry', talents={})
-                for _ in range(100):
-                    self.assertEqual(logistics.produce(town, barn, keeper), 'Working')
-                    economy.grow_animals(barn, 3)
-                    # Hauling manure does not change feeding or growth.
-                    barn['pending_output'] = {}
-                    keeper.pop('pending_output', None)
-                self.assertAlmostEqual(barn['input_buffer'][feed], 0)
-                self.assertEqual(economy.mature_animals(barn, 'pig'), 1)
-                butcher = town['villagers'][0]
-                butcher.update(job='butchery', building_index=2, husbandry=2,
-                               talents={}, work_animation={'phase': 'working'})
-                server.command(town, dict(action='butcher_animal', index=2,
-                                          barn_index=1, animal='pig'))
-                self.assertEqual(logistics.butcher_animal(town, shop, butcher,
-                                                         economy.BUTCHER_SECONDS), 'Working')
-                self.assertEqual(economy.quantity(town, 'hides'), 2)
-                economy.spend(town, {'meat': 8})
-                shop['input_buffer'] = {'meat': 8}
-                for _ in range(4):
-                    self.assertEqual(logistics.produce(town, shop, butcher, 6), 'Working')
-                    logistics.drop_off(town, shop, butcher)
-                self.assertEqual(economy.quantity(town, 'prepared_meat'), 8)
-                self.assertEqual(town['food'], 32)
-                self.assertAlmostEqual(butcher['butchery'], 1.4)
-
-    def test_bread_has_a_modest_full_chain_efficiency_advantage_over_pigs(self):
-        # Base active work; no travel, water trips, equipment or byproduct credit.
-        bread = economy.PROFESSION_RECIPES['bakery'][0]
-        flour = bread['inputs']['flour']
-        grain_work = (flour * 8 / 10 + flour / 2 * economy.PRODUCTION_SECONDS['flour']
-                      + bread['inputs']['wood'] * 3 / economy.WOOD_PER_CYCLE
-                      + economy.PRODUCTION_SECONDS['bread'])
-        bread_rate = bread['amount'] * economy.EDIBLE['bread'] / grain_work
-        meat = economy.ANIMAL_MEAT['pig']
-        recipe = economy.PROFESSION_RECIPES['butcher'][0]
-        feed = economy.ANIMALS['pig']['feed'] * economy.ANIMAL_GROWTH_SECONDS / 3
-        # Four pigs share one keeper's growth work, but each needs butchery.
-        pig_work = (feed * 8 / 10 + economy.ANIMAL_GROWTH_SECONDS / 4
-                    + economy.BUTCHER_SECONDS + meat / recipe['inputs']['meat']
-                    * economy.PRODUCTION_SECONDS['prepared_meat'])
-        pig_rate = meat / recipe['inputs']['meat'] * recipe['amount'] * economy.EDIBLE['prepared_meat'] / pig_work
-        self.assertGreater(bread_rate, pig_rate)
-        self.assertLess(bread_rate / pig_rate, 1.35)
-        self.assertGreater(meat * economy.EDIBLE['prepared_meat'], feed)
+    def test_automatic_pig_cycle_supplies_meat_recipes_without_feed(self):
+        town = flat_town('Luxury meat')
+        economy.ensure_inventory(town)
+        town.update(level=4, food=0, goods={})
+        town['buildings'][0]['stored_goods'] = {}
+        barn = dict(kind='barn', x=3, y=7, animals={'pig': 1}, animal_growth={'pig': [0]})
+        shop = dict(kind='butcher', x=8, y=7)
+        town['buildings'].extend([barn, shop])
+        logistics.advance_barn(town, barn, 120)
+        self.assertEqual(barn['animal_growth']['pig'], [0])
+        self.assertEqual(economy.quantity(town, 'hides'), 2)
+        self.assertEqual(barn['output_buffer']['meat'], 8)
+        butcher = town['villagers'][0]
+        butcher.update(job='butchery', building_index=2, husbandry=2, talents={})
+        economy.spend(town, {'meat': 8})
+        shop['input_buffer'] = {'meat': 8}
+        for _ in range(4):
+            self.assertEqual(logistics.produce(town, shop, butcher, 6), 'Working')
+            logistics.drop_off(town, shop, butcher)
+        self.assertEqual(economy.quantity(town, 'prepared_meat'), 8)
+        self.assertEqual(town['food'], 32)
+        self.assertAlmostEqual(butcher['butchery'], .4)
 
     def test_every_meat_recipe_adds_food_and_sale_value_over_its_inputs(self):
         for recipe in economy.PROFESSION_RECIPES['butcher']:

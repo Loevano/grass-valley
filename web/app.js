@@ -498,7 +498,7 @@ const storageGoods={
   storehouse:[...storageKeys,'vegetables','carrots','fish','trout','salmon','sturgeon','berries','eggs','meat','milk','fruit','smoked_fish','smoked_trout','smoked_salmon','smoked_sturgeon','bread','prepared_meat'],
   market:[],
   home:[],woodcutter:['wood'],fishing_hut:['fish','trout','salmon','sturgeon'],farm:['vegetables','wheat','carrots','fodder','manure'],acre:['vegetables','wheat','carrots','fodder','manure'],
-  barn:['fodder','vegetables','manure','eggs','wool','meat','milk'],orchard:['fruit'],
+  barn:['fodder','vegetables','manure','eggs','wool','meat','milk','hides'],orchard:['fruit'],
   bakery:['flour','wood','bread'],butcher:['meat','prepared_meat'],sawpit:['wood','planks'],mill:['wheat','flour'],
   smokehouse:['fish','trout','salmon','sturgeon','wood','smoked_fish','smoked_trout','smoked_salmon','smoked_sturgeon'],workshop:['planks','wood','tools'],fish_pond:['fodder','fish']
 };
@@ -516,7 +516,7 @@ function roomAllocations(building){
   const fixed=world.progression?.fixed_storage || {
     hall:{wood:100,food:100},home:{},woodcutter:{wood:50},fishing_hut:{food:50},
     farm:{food:20,wheat:10,fodder:10,manure:10},acre:{food:20,wheat:10,fodder:10,manure:10},
-    barn:{food:20,fodder:15,wool:10,manure:5},orchard:{food:50},
+    barn:{food:20,fodder:15,wool:10,manure:5,hides:10},orchard:{food:50},
     bakery:{flour:40,wood:10,herbs:20,food:40},butcher:{food:50},sawpit:{wood:30,planks:20},mill:{wheat:80,flour:80},
     smokehouse:{food:45,wood:5},workshop:{planks:25,wood:15,tools:10},fish_pond:{fodder:15,food:35},
     market:{}
@@ -1495,71 +1495,72 @@ function productionDescription(item){
   const spec=selectedProfessionRecipe(item);
   const recipe=spec?[spec.inputs,spec.output,spec.amount]:world.progression.recipes[item.kind];
   if(recipe){const seconds=world.progression.production_seconds?.[recipe[1]] || 3;return `${costText(recipe[0])} → ${recipe[2]} ${goodName(recipe[1]).toLowerCase()} / ${seconds}s batch${item.kind==='smokehouse'?'\nEach raw fish becomes its own smoked species\n+0.5 food and +1 coin per fish\nAccepts fish, trout, salmon, and sturgeon':''}\n${(0.04*seconds/3).toFixed(2)} practice / batch (neutral talent)\nSkill: larger batches + more ingredients\nRequires qualified workers${spec?` · Recipe level ${spec.level}`:''}`;}
-  return {barn:'Choose free young animals\nFixed eggs, wool, or milk while growing\nFeed: fodder / vegetables\nGrowth: 5 minutes of full feeding\nAdults stop producing and need no feed\nButcher adults to receive free young replacements\n4 animals / level',orchard:'Output: fruit\nRequires workers',stable:'Capture wild horses and bring them here\nFeed: fodder / vegetables\nSettling and growth: 5 minutes of full feeding\nBreed two adults; saddle one to ride\n4 horses / level',market:'Sell goods for coins\nOffer goods to another town\nBoth owners need a completed market'}[item.kind] || 'Requires workers';
+  return {barn:'Set animal counts\nAutomatic growth and replacement\nChicken: 30s · Sheep: 60s · Pig: 120s · Cow: 180s\nNo feed or workers required\nEach keeper adds 1× growth speed\n4 animals / level',orchard:'Output: fruit\nRequires workers',stable:'Capture wild horses and bring them here\nFeed: fodder / vegetables\nSettling and growth: 5 minutes of full feeding\nBreed two adults; saddle one to ride\n4 horses / level',market:'Sell goods for coins\nOffer goods to another town\nBoth owners need a completed market'}[item.kind] || 'Requires workers';
 }
 function animalAges(barn,animal){
-  const duration=world.progression?.animal_growth_seconds || 300;
+  const duration=animalGrowthDuration(animal);
   return Array.from({length:barn.animals?.[animal] || 0},(_,i)=>barn.animal_growth?.[animal]?.[i] ?? duration);
 }
+function animalGrowthDuration(animal){
+  return world.progression?.animals?.[animal]?.growth_seconds || world.progression?.animal_growth_seconds || 300;
+}
 function renderBarnAnimals(town,item,index,target){
-  const catalog=world.progression,owner=viewed===identity?.town_id;
-  const duration=catalog.animal_growth_seconds || 300,capacity=4*buildingLevel(item);
+  const catalog=world.progression,owner=viewed===identity?.town_id,capacity=4*buildingLevel(item);
   const count=Object.values(item.animals || {}).reduce((sum,n)=>sum+n,0);
-  const ready=Object.keys(item.animals || {}).reduce((sum,animal)=>sum+animalAges(item,animal).filter(age=>age>=duration).length,0);
+  const assigned=town.villagers.filter((v,i)=>settlerBuilding(town,v,i)===index).slice(0,settlerCapacity(item));
+  const speed=1+assigned.filter(v=>v.job==='husbandry'&&!v.construction_target).length;
   const overview=document.createElement('div');overview.className='livestock-overview';
   const spaces=document.createElement('strong');spaces.textContent=`${count} / ${capacity} animal spaces`;
-  const state=document.createElement('span');state.textContent=`${count-ready} growing · ${ready} ready`;
+  const state=document.createElement('span');state.textContent=`${count} growing · ${speed}× speed`;
   overview.append(spaces,state);target.append(overview);
-  const cycle=document.createElement('p');cycle.className='livestock-cycle';cycle.textContent='Grow → Butcher → Free replacement';target.append(cycle);
+  const cycle=document.createElement('p');cycle.className='livestock-cycle';cycle.textContent='Grow → Collect products → Young replacement';target.append(cycle);
   const note=document.createElement('p');note.className='livestock-note';
-  note.textContent=`${Math.ceil(duration/60)} fed minutes per cycle. Growth and products pause without feed or output space. Adults need no feed and stop producing.`;target.append(note);
-  if(owner&&count>=capacity){const full=document.createElement('p');full.className='livestock-note';full.textContent='Barn full. Butchering renews existing animals; upgrade the barn to add more.';target.append(full);}
-  if(owner&&ready){
-    const butcher=town.buildings.findIndex(b=>b.kind==='butcher'&&(!b.construction||b.construction.upgrade));
-    if(butcher>=0){const open=document.createElement('button');open.className='quiet';open.textContent=`Open butcher shop · ${ready} ready`;open.onclick=()=>{if(viewed===identity?.town_id)inspect('building',butcher);};target.append(open);}
-    else{const hint=document.createElement('p');hint.className='livestock-note';hint.textContent=`Build a butcher shop at Hall level ${catalog.buildings?.butcher?.level || 4} to butcher adults and start a new growth cycle.`;target.append(hint);}
-  }
+  note.textContent='Animals always grow, without feed or workers. Each assigned keeper adds 1× growth speed. Products are collected automatically as storage and production caps allow; growth never pauses.';target.append(note);
   for(const [animal,spec] of Object.entries(catalog.animals)){
     if(animal==='horse'||town.level<spec.level)continue;
-    const ages=animalAges(item,animal),adults=ages.filter(age=>age>=duration).length;
-    const products=catalog.animal_products?.[animal] ?? 25;
+    const duration=animalGrowthDuration(animal),ages=animalAges(item,animal);
+    const products=catalog.animal_products?.[animal] ?? (animal==='pig'?0:25);
     const card=document.createElement('div');card.className='livestock-card';
     const heading=document.createElement('div');heading.className='livestock-heading';
     const name=document.createElement('strong');name.textContent=goodName(animal);
-    const stock=document.createElement('span');stock.className=adults?'livestock-state ready':'livestock-state';stock.textContent=ages.length?`${ages.length} kept${adults?` · ${adults} ready`:''}`:'Not stocked';
+    const stock=document.createElement('span');stock.className='livestock-state';stock.textContent=ages.length?`${ages.length} growing`:'Not stocked';
     heading.append(name,stock);card.append(heading);
+    const timing=document.createElement('p');timing.className='livestock-note';
+    timing.textContent=`${duration}s base cycle · ${Number((duration/speed).toFixed(1))}s with current keepers`;card.append(timing);
     const yieldNote=document.createElement('p');yieldNote.className='livestock-yield';
     yieldNote.textContent=animal==='pig'?'Raised for meat and hides':`${products} ${goodName(spec.output).toLowerCase()} per growth cycle`;
     card.append(yieldNote);
-    const meat=document.createElement('small');meat.className='livestock-note';meat.textContent=`${catalog.animal_meat?.[animal] || 0} meat at butcher + free young ${animal}`;card.append(meat);
+    const meat=document.createElement('small');meat.className='livestock-note';meat.textContent=`${catalog.animal_meat?.[animal] || 0} meat on completion + free young ${animal}`;card.append(meat);
     ages.forEach((age,number)=>{
-      if(age>=duration)return;
+      const confirmed=Math.min(duration,age);
       const row=document.createElement('div');row.className='livestock-growth';
       const caption=document.createElement('div');caption.className='livestock-growth-caption';
       const label=document.createElement('span');label.textContent=`Animal ${number+1} · Growing`;
-      const percent=document.createElement('span');percent.textContent=`${Math.floor(age/duration*100)}%`;
+      const percent=document.createElement('span');percent.textContent=`${Math.floor(confirmed/duration*100)}%`;
       caption.append(label,percent);row.append(caption);
-      const progress=document.createElement('progress');progress.max=duration;progress.value=age;
+      const progress=document.createElement('progress');progress.max=duration;progress.value=confirmed;
       progress.setAttribute('aria-label',`${goodName(animal)} ${number+1} growth`);row.append(progress);
-      const seconds=Math.ceil(duration-age),time=document.createElement('small');time.textContent=`${Math.floor(seconds/60)}m ${seconds%60}s of feeding left`;row.append(time);card.append(row);
+      const seconds=Math.ceil((duration-confirmed)/speed),time=document.createElement('small');time.textContent=`${Math.floor(seconds/60)}m ${seconds%60}s until replacement`;row.append(time);card.append(row);
     });
-    const remaining=document.createElement('p');remaining.className='livestock-note';
-    const productLeft=products*ages.reduce((sum,age)=>sum+Math.max(0,1-age/duration),0);
-    remaining.textContent=!ages.length?'Choose a free young animal to start.':ages.length===adults?'Ready for the butcher. This growth cycle is complete.':animal==='pig'?'Feed until fully grown to unlock butchery.':`${Number(productLeft.toFixed(2))} ${goodName(spec.output).toLowerCase()} left in this herd’s growth cycle`;
-    card.append(remaining);
     if(owner){
-      const add=document.createElement('button');add.className='livestock-add';add.textContent=`Add young ${animal} · Free`;
-      add.disabled=count>=capacity;add.onclick=()=>{if(!add.disabled&&viewed===identity?.town_id)act({action:'buy_animal',index,animal});};card.append(add);
+      const label=document.createElement('label');label.textContent='Animals to keep';
+      const input=document.createElement('input');input.id=`barn-count-${viewed}-${index}-${animal}`;input.type='number';input.min=0;input.max=capacity-count+ages.length;input.step=1;input.value=ages.length;
+      input.setAttribute('aria-label',`${goodName(animal)} to keep`);
+      input.onchange=()=>{
+        const value=Number(input.value);
+        if(viewed!==identity?.town_id||input.value===''||!Number.isInteger(value)||value<0||value>Number(input.max))return;
+        act({action:'set_animal_count',index,animal,count:value});
+      };
+      label.append(input);card.append(label);
     }
     target.append(card);
   }
-
 }
 function renderAnimalButchery(town,item,index,target){
   const catalog=world.progression,owner=viewed===identity?.town_id;
   const card=document.createElement('div');card.className='animal-butchery';target.append(card);
   const heading=document.createElement('h3');heading.textContent='Butcher & replace';card.append(heading);
-  const note=document.createElement('p');note.className='livestock-note';note.textContent='Choose one fully grown animal. A free young animal of the same species replaces it immediately in its barn.';card.append(note);
+  const note=document.createElement('p');note.className='livestock-note';note.textContent='Barns collect raw meat automatically. Older fully grown animals can still be selected here. A free young animal of the same species replaces it immediately in its barn.';card.append(note);
   const task=item.butchering,duration=catalog.butcher_seconds || 60;
   if(task){
     const status=document.createElement('p');status.className='butchery-status';
@@ -1573,7 +1574,7 @@ function renderAnimalButchery(town,item,index,target){
   town.buildings.forEach((barn,barnIndex)=>{
     if(barn.kind!=='barn'||barn.construction&&!barn.construction.upgrade)return;
     for(const animal of Object.keys(catalog.animal_meat || {}).filter(animal=>animal!=='horse')){
-      const adults=animalAges(barn,animal).filter(age=>age>=(catalog.animal_growth_seconds || 300)).length;
+      const adults=animalAges(barn,animal).filter(age=>age>=animalGrowthDuration(animal)).length;
       if(adults)choices.push({barn,barnIndex,animal,adults});
     }
   });
@@ -1587,7 +1588,7 @@ function renderAnimalButchery(town,item,index,target){
   const preview=document.createElement('p');preview.className='livestock-yield';preview.hidden=!!task;
   const updatePreview=()=>{
     const animal=chooser.value?.split(':')[1];
-    preview.textContent=animal?`${catalog.animal_meat[animal]} meat + 1 free young ${animal} · ${duration}s butcher work`:'Keep feeding barn animals until fully grown.';
+    preview.textContent=animal?`${catalog.animal_meat[animal]} meat + 1 free young ${animal} · ${duration}s butcher work`:'Barns collect raw meat automatically as their growth cycles complete.';
   };
   chooser.onchange=updatePreview;updatePreview();card.append(preview);
   const qualified=town.villagers.some(v=>v.building_index===index&&v.job==='butchery'&&!jobRequirement(v,'butchery'));
@@ -1682,6 +1683,7 @@ function buildingSection(label,folded=false){
 }
 function renderSelection(town){
   const marketFocus=document.activeElement?.id?.startsWith('sale-')?document.activeElement:null;
+  const barnFocus=document.activeElement?.id?.startsWith('barn-count-')?{id:document.activeElement.id,value:document.activeElement.value}:null;
   $('selection-panel').classList.toggle('building-info',selection?.type==='building');
   $('selection-art').replaceChildren();$('selection-level').hidden=true;
   // Park hall controls in the hidden attached container before rebuilding cards.
@@ -1970,6 +1972,7 @@ function renderSelection(town){
     if(unlockedUpgrades.children.length>1)$('selection-details').append(unlockedUpgrades);
   }
   if(marketFocus&&$('selection-details').contains?.(marketFocus))marketFocus.focus();
+  if(barnFocus){const input=$(barnFocus.id);if(input&&$('selection-details').contains?.(input)){input.value=barnFocus.value;input.focus();}}
 }
 const buildingCategories=[
   ['Housing & storage',['home','storehouse']],
@@ -3565,7 +3568,6 @@ function drawBarnFence(section){
 // Animals roam nearby open tiles; their motion is purely visual.
 function barnAnimalSprites(buildings,time,landscape={}){
   const sprites=[],size=landscape.map_size || 120;
-  const duration=typeof world==='undefined'?300:world.progression?.animal_growth_seconds || 300;
   const scope=typeof world==='undefined'?'':`${world.world_id}/${world.shared_map?'shared':viewed}`;
   const growthStates=barnAnimalSprites.growthStates || new Map(),nextGrowthStates=new Map();
   const key=p=>`${p.x},${p.y}`;
@@ -3600,6 +3602,7 @@ function barnAnimalSprites(buildings,time,landscape={}){
     const stock=[];
     for(const species of (barn.village?['chicken','sheep','pig','cow','horse']:barn.kind==='stable'?['horse']:['chicken','sheep','pig','cow']))
       for(let i=0;i<(barn.animals?.[species] || 0);i++){
+        const duration=typeof world==='undefined'?300:world.progression?.animals?.[species]?.growth_seconds || world.progression?.animal_growth_seconds || 300;
         const target=Math.max(0,Math.min(1,(barn.animal_growth?.[species]?.[i] ?? duration)/duration));
         const id=`${scope}/${barn.townId || ''}/${barn.kind}/${barn.x},${barn.y}/${species}/${i}`;
         let state=growthStates.get(id);

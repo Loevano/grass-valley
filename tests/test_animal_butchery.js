@@ -7,7 +7,7 @@ const commands=[];
 const create=new Function('world','document','viewed','identity','goodName','jobRequirement','act',
   source.slice(source.indexOf('function animalAges('),source.indexOf('function renderProfession('))+
   'return {animalAges,renderAnimalButchery};');
-const town={buildings:[{kind:'barn',x:3,y:6,animals:{pig:2,chicken:1},animal_growth:{pig:[0,300],chicken:[100]}},{kind:'butcher'}],
+const town={buildings:[{kind:'barn',x:3,y:6,animals:{pig:2,chicken:1},animal_growth:{pig:[0,300],chicken:[10]}},{kind:'butcher'}],
   villagers:[{job:'butchery',building_index:1,husbandry:2}]};
 function panel(owner=true){
   const ui=create({progression},document,owner?'own':'visitor',{town_id:'own'},key=>key,
@@ -41,7 +41,7 @@ const previous=commands.length;p.button.onclick();assert.equal(commands.length,p
 town.buildings[1].butchering.remaining=0;assert(panel().status.textContent.includes('Waiting for buffer space'));
 delete town.buildings[1].butchering;
 town.villagers[0].husbandry=0;assert(panel().button.disabled);
-town.villagers[0].husbandry=2;town.buildings[0].animal_growth.pig=[0,299];assert(panel().button.disabled);
+town.villagers[0].husbandry=2;town.buildings[0].animal_growth.pig=[0,119];assert(panel().button.disabled);
 assert(!panel(false).button,'Visitors cannot select animals');
-assert.deepStrictEqual(p.ui.animalAges({animals:{cow:2}},'cow'),[300,300],'Old saves keep adults');
+assert.deepStrictEqual(p.ui.animalAges({animals:{cow:2}},'cow'),[180,180],'Old saves keep adults');
 console.log('Animal butchery controls passed');

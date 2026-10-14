@@ -118,55 +118,34 @@ class BarnFeedingWorkers(unittest.TestCase):
     def tick(self):
         server.tick({'towns': {'a': self.town}})
 
-    def test_all_keepers_feed_and_train_without_multiplying_herd_production(self):
-        positions = [set() for _ in self.town['villagers']]
-        for _ in range(8):
-            self.tick()
-            for worker, visited in zip(self.town['villagers'], positions):
-                self.assertEqual(worker['production_status'], 'Working')
-                state = worker['work_animation']
-                visited.add((state['x'], state['y']))
-        self.assertTrue(all(len(visited) > 1 for visited in positions),
-                        'Each keeper must follow its own feeding round')
-        self.assertEqual(self.barn['animal_growth']['chicken'], [24, 24])
-        self.assertAlmostEqual(self.barn['input_buffer']['fodder'], 20 - 8 * .3)
-        self.assertAlmostEqual(self.town['produced']['eggs'], 4)
-        self.assertAlmostEqual(self.town['produced']['manure'], 1.6)
+    def test_all_keepers_speed_growth_and_train_without_consuming_feed(self):
+        self.barn.update(animals={'chicken': 1}, animal_growth={'chicken': [0]})
+        self.tick()
+        self.assertEqual(self.barn['animal_growth']['chicken'], [15])
+        self.assertEqual(self.barn['input_buffer']['fodder'], 20)
+        self.assertAlmostEqual(self.town['produced']['eggs'], 12.5, msg='Output advances once at the shared speed')
+        self.assertAlmostEqual(self.town['produced']['manure'], .5)
         for worker in self.town['villagers']:
-            self.assertAlmostEqual(worker['husbandry'], .32)
+            self.assertEqual(worker['production_status'], 'Working')
+            self.assertAlmostEqual(worker['husbandry'], .04)
+            self.assertEqual(worker['work_animation']['task'][0], 'husbandry')
 
-    def test_last_ration_and_maturity_still_credit_every_keeper(self):
-        for age in (0, 299):
-            with self.subTest(age=age):
-                self.setUp()
-                self.barn['animal_growth']['chicken'] = [age, age]
-                self.barn['input_buffer'] = {'fodder': .3}
-                self.tick()
-                self.assertEqual(self.barn['animal_growth']['chicken'], [min(300, age + 3)] * 2)
-                self.assertAlmostEqual(self.barn['input_buffer']['fodder'], 0)
-                for worker in self.town['villagers']:
-                    self.assertEqual(worker['production_status'], 'Working')
-                    self.assertAlmostEqual(worker['husbandry'], .04)
+    def test_missing_feed_and_blocked_outputs_do_not_pause_or_duplicate_growth(self):
+        self.barn['input_buffer'] = {}
+        self.town['rules'] = {'production_caps': {'eggs': 0, 'meat': 0, 'manure': 0}}
+        for _ in range(3):
+            self.tick()
+        self.assertEqual(self.barn['animal_growth']['chicken'], [15, 15])
+        self.assertFalse(self.barn.get('output_buffer'))
+        self.assertEqual(self.barn['input_buffer'], {})
 
-    def test_blocked_feeding_never_trains_extra_keepers(self):
-        for reason in ('feed', 'cap', 'storage', 'adults'):
-            with self.subTest(reason=reason):
-                self.setUp()
-                if reason == 'feed':
-                    self.barn['input_buffer'] = {}
-                elif reason == 'cap':
-                    self.town['rules'] = {'production_caps': {'eggs': 0}}
-                elif reason == 'storage':
-                    self.barn['output_buffer'] = {'eggs': 50}
-                else:
-                    self.barn['animal_growth']['chicken'] = [300, 300]
-                before = copy.deepcopy(self.barn)
-                self.tick()
-                self.assertEqual(self.barn['animal_growth'], before['animal_growth'])
-                self.assertEqual(self.barn['input_buffer'], before['input_buffer'])
-                for worker in self.town['villagers']:
-                    self.assertNotEqual(worker['production_status'], 'Working')
-                    self.assertEqual(worker['husbandry'], 0)
+    def test_only_assigned_keepers_up_to_capacity_speed_growth(self):
+        self.barn['settler_level'] = 1  # Two worker spaces.
+        self.tick()
+        self.assertEqual(self.barn['animal_growth']['chicken'], [9, 9])
+        self.town['villagers'][0]['job'] = 'idle'
+        self.tick()
+        self.assertEqual(self.barn['animal_growth']['chicken'], [15, 15])
 
 
 if __name__ == '__main__':
