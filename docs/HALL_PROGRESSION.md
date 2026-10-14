@@ -18,6 +18,9 @@ are spent when construction starts; coins are awarded once when it finishes.
 | 8 → 9 | Craft 2 saddles | 110 wood + 40 planks + 10 iron + 5 leather | 240 seconds | Steelworks, steel pickaxes |
 | 9 → 10 | Produce 15 steel and complete one town trade or sell 10 goods at a market | 120 wood + 45 planks + 10 steel | 270 seconds | Trade house |
 
+For level 2, existing cottages, farms, and fishing huts still count while being
+upgraded. New buildings must finish their initial construction first.
+
 Processed food includes every bakery and butcher recipe plus smoked fish of any
 species. Flour, raw fish, and raw meat do not qualify. Tools and food are both
 required, so either the grain, fishing, or livestock branch can complement the

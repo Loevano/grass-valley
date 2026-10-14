@@ -150,7 +150,9 @@ The [hall upgrade path](HALL_PROGRESSION.md) now requires output from the previo
 level's production unlocks, with tools and processed food at level 5 and saddle
 production at level 9. The level 2 milestone accepts natural water or a completed
 well within 10 tile steps of a completed farm or fishing hut; the hall requirements
-show this range and the completed-cottage and food requirements.
+show this range and the completed-cottage and food requirements. Existing cottages,
+farms, and fishing huts retain milestone eligibility while upgrades are in progress;
+new buildings still need to finish their initial construction.
 Play experience should also assess these batch sizes and
 material investments alongside the remaining fishing balance work.
 Advanced woodcraft and metal sale values now cover ingredients, including fuel;

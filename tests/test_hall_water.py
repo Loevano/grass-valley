@@ -36,6 +36,19 @@ class HallWaterRequirement(unittest.TestCase):
         del self.town['buildings'][-1]['construction']
         self.assertTrue(economy.milestone(self.town, 2))
 
+    def test_existing_buildings_still_count_during_upgrades(self):
+        self.town['buildings'].append({'kind': 'well', 'x': 26, 'y': 24})
+        for kind in ('farm', 'fishing_hut'):
+            for upgrade in ({'level': 2}, {'settler_level': 2}):
+                with self.subTest(kind=kind, upgrade=upgrade):
+                    town = copy.deepcopy(self.town)
+                    town['buildings'][1]['kind'] = kind
+                    for building in town['buildings'][:2]:
+                        building['construction'] = {
+                            'progress': 0, 'total': 30, 'upgrade': upgrade,
+                        }
+                    self.assertTrue(economy.milestone(town, 2))
+
     def test_housing_finished_workplace_and_food_are_still_required(self):
         self.town['map_resources'] = [{'kind': 'water', 'x': 26, 'y': 24}]
         for index in (0, 1):

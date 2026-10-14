@@ -525,7 +525,8 @@ the Python host, refresh both browsers, and create a new world to use the shared
   villagers (0.6/minute). Idle residents helping construction pay the worker rate.
 - Hall upgrades also require a builder at the hall. The first requires a completed
   cottage, a completed farm or fishing hut within 10 tile steps of natural water
-  or a completed well, and at least 20 food. It costs 40 wood and
+  or a completed well, and at least 20 food. Existing cottages, farms, and fishing
+  huts still count while being upgraded. It costs 40 wood and
   takes 30 seconds of construction after arrival; the hall
   panel shows remaining time. Closing the host pauses the upgrade.
 - Completed workplaces hold storage: **50 material units** in ordinary workplaces,

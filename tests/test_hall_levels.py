@@ -63,6 +63,16 @@ class HallLevels(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, 'fully upgraded'):
             command(self.town, {'action': 'upgrade'})
 
+    def test_farm_upgrade_does_not_block_level_two_hall_upgrade(self):
+        self.qualify(2)
+        farm_index = next(i for i, b in enumerate(self.town['buildings']) if b['kind'] == 'farm')
+        command(self.town, {'action': 'upgrade_building', 'index': farm_index})
+        self.assertIn('upgrade', self.town['buildings'][farm_index]['construction'])
+        wood = self.town['wood']
+        command(self.town, {'action': 'upgrade'})
+        self.assertEqual(self.town['upgrade_remaining'], 30)
+        self.assertEqual(self.town['wood'], wood - 40)
+
     def test_missing_milestones_do_not_spend_and_wood_alone_is_insufficient(self):
         for level in range(2, 11):
             self.setUp()
