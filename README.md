@@ -324,7 +324,9 @@ the Python host, refresh both browsers, and create a new world to use the shared
   In the farm's **Production** section, use **Crop for all acres** to change every
   linked acre to one unlocked crop, including acres still under construction.
   The selector shows **Mixed crops** when the acres grow different types.
-  Individual acres can still have their crop changed separately.
+  The farm's **Acres** section holds individual crop selection, acre upgrades,
+  and worker assignment. Clicking an acre shows its state and owning farm;
+  **Destroy** is its only action.
 - Click a building, moving villager, or resource to open its information panel.
   Click the town hall for milestone progress and its upgrade. Close panels with
   Escape. On small screens, panels appear as a bottom drawer.

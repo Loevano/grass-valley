@@ -1559,10 +1559,10 @@ function renderProfession(town,item,index,target,upgrades,details,boats,unlocked
   renderRecipes(town,item,index,target);
   if(['hall','farm','mill','bakery'].includes(item.kind))renderGrainFlow(town,item,index,target);
   if(item.kind==='butcher')renderAnimalButchery(town,item,index,target);
-  if(item.kind==='acre'||item.kind==='farm'){
-    const acres=item.kind==='acre'?[item]:town.buildings.filter(a=>a.kind==='acre'&&a.farm_index===index);
+  if(item.kind==='farm'){
+    const acres=town.buildings.filter(a=>a.kind==='acre'&&a.farm_index===index);
     const crops=new Set(acres.map(a=>a.crop || 'vegetables'));
-    const chooser=document.createElement('select');chooser.setAttribute('aria-label',item.kind==='farm'?'Crop for all acres':'Crop');
+    const chooser=document.createElement('select');chooser.setAttribute('aria-label','Crop for all acres');
     if(crops.size!==1){
       const option=document.createElement('option');option.value='';option.textContent=acres.length?'Mixed crops':'No acres yet';option.disabled=true;chooser.append(option);
     }
@@ -1572,18 +1572,8 @@ function renderProfession(town,item,index,target,upgrades,details,boats,unlocked
     }
     chooser.value=crops.size===1?[...crops][0]:'';chooser.disabled=!owner||!acres.length;
     chooser.onchange=()=>{if(!chooser.disabled&&chooser.value)act({action:'set_crop',index,crop:chooser.value});};
-    if(item.kind==='farm'){
-      const label=document.createElement('label');label.textContent='Crop for all acres';label.append(chooser);target.append(label);
-    }else target.append(chooser);
+    const label=document.createElement('label');label.textContent='Crop for all acres';label.append(chooser);target.append(label);
     target.append(fact(`${catalog.farming_harvest_yield ?? 10} crops`,'Base harvest per acre · Skills, tools and upgrades apply'));
-    if(item.kind==='acre'){
-      const field=item.field || {stage:'unplowed',elapsed:0};
-      const labels={unplowed:'Unplowed soil',plowed:'Plowed · Waiting for seeding',sprouting:'Sprouting',
-        thirsty:'Needs water',growing:'Growing',ripe:'Ready to harvest'};
-      const remaining=['sprouting','growing'].includes(field.stage)?` · ${Math.ceil((catalog.farming_growth_seconds || 15)-field.elapsed)}s remaining`:'';
-      target.append(fact((labels[field.stage] || field.stage)+remaining,'Field stage'));
-      if(field.crop&&field.crop!==(item.crop || 'vegetables'))target.append(fact(goodName(field.crop),'Current crop · Selection applies next seeding'));
-    }
   }
   if(['barn','stable'].includes(item.kind)){
     target.append(fact(`${Object.values(item.animals || {}).reduce((a,n)=>a+n,0)} / ${4*buildingLevel(item)}`,'Animal capacity'));
@@ -1818,6 +1808,21 @@ function renderSelection(town){
     $('selection-details').append(p);
   }else{
     $('selection-title').textContent=buildingName(item);
+    if(item.kind==='acre'){
+      const field=item.field || {stage:'unplowed',elapsed:0},farm=town.buildings[item.farm_index];
+      const stages={unplowed:'Unplowed soil',plowed:'Plowed · Waiting for seeding',sprouting:'Sprouting',thirsty:'Needs water',growing:'Growing',ripe:'Ready to harvest'};
+      const remaining=['sprouting','growing'].includes(field.stage)?` · ${Math.max(0,Math.ceil((world.progression?.farming_growth_seconds || 15)-(field.elapsed || 0)))}s remaining`:'';
+      $('selection-art').append(illustration('acre'));
+      $('selection-details').append(fact((stages[field.stage] || field.stage)+remaining,'Current state'),
+        fact(goodName(field.crop || item.crop || 'vegetables'),'Current crop'),
+        fact(farm?`${buildingName(farm)} · ${farm.x}, ${farm.y}`:'No linked farm','Owning farm'),
+        fact(`Level ${buildingLevel(item)}`,'Field level'));
+      if(item.construction)$('selection-details').append(fact(`${Math.ceil(item.construction.total-item.construction.progress)}s work remaining`,'Under construction'));
+      $('selection-level').hidden=true;$('selection-move').hidden=true;
+      $('selection-destroy').hidden=viewed!==identity?.town_id;
+      $('selection-destroy').textContent='Destroy · No refund';
+      return;
+    }
     const foldKey=`${world.world_id}/${viewed}/${selection.index}/${item.kind}/${item.x},${item.y}`;
     if(buildingFolds.key!==foldKey)buildingFolds={key:foldKey,open:{}};
     $('selection-art').append(illustration(item.kind));
@@ -1895,6 +1900,25 @@ function renderSelection(town){
       const capacityUpgrade=upgradeActions.children[0];
       upgradeActions.replaceChildren();upgradeActions.append(upgradeCard(button,upgradePreview({action:'upgrade_building',index},town,item),{title:level>=maxLevel?`Level ${level}`:`Level ${level} → ${level+1}`,status:level>=maxLevel?'Maxed':'',benefits:level>=maxLevel?[]:undefined}));
       if(capacityUpgrade)upgradeActions.append(capacityUpgrade);
+    }
+    if(item.kind==='farm'){
+      const fields=buildingSection('Acres');
+      town.buildings.forEach((acre,index)=>{
+        if(acre.kind!=='acre'||acre.farm_index!==selection.index)return;
+        const row=document.createElement('div');row.append(fact(`${acre.x}, ${acre.y} · Level ${buildingLevel(acre)}`,acre.field?.stage || 'unplowed'));
+        const crop=document.createElement('select');crop.setAttribute('aria-label',`Crop for acre ${acre.x}, ${acre.y}`);
+        for(const [key,level] of Object.entries(world.progression?.crops || {}))if(town.level>=level){const option=document.createElement('option');option.value=key;option.textContent=goodName(key);crop.append(option);}
+        crop.value=acre.crop || 'vegetables';crop.disabled=viewed!==identity?.town_id;
+        crop.onchange=()=>act({action:'set_crop',index,crop:crop.value});row.append(crop);
+        if(viewed===identity?.town_id){
+          const upgrade=document.createElement('button');upgrade.textContent=buildingLevel(acre)>=3?'Acre fully upgraded':`Upgrade acre · Level ${buildingLevel(acre)} → ${buildingLevel(acre)+1}`;
+          upgrade.disabled=!!acre.construction||buildingLevel(acre)>=3;
+          upgrade.onclick=()=>showUpgrade({action:'upgrade_building',index});row.append(upgrade);
+        }
+        if(!acre.construction)renderSettlers(town,acre,index,row,row,row);
+        fields.append(row);
+      });
+      $('selection-details').append(fields);
     }
     if(item.kind==='farm'&&!item.construction&&viewed===identity?.town_id){
       const button=document.createElement('button');button.textContent=`Build acre · ${town.sandbox?'Free':'5 wood'}`;button.disabled=!town.sandbox&&town.wood<costs.acre;

@@ -2,7 +2,7 @@
 const source=typeof readFile==='function'?readFile('web/app.js'):require('fs').readFileSync('web/app.js','utf8');
 const elements=new Map();
 function element(){
-  return {children:[],style:{},classList:{toggle(){}},append(child){this.children.push(child);},
+  return {children:[],style:{},classList:{toggle(){}},append(...children){this.children.push(...children);},
     replaceChildren(){this.children=[];},setAttribute(){},addEventListener(){},showModal(){},close(){}};
 }
 const context=new Proxy({}, {get:()=>()=>{}});
@@ -40,6 +40,11 @@ const run=new Function('document','window','localStorage','setTimeout','clearTim
     check(town.wood===60&&tool==='acre','Build spends wood and allows more acres');
     $('cancel').onclick();inspect('building',2);
     check($('selection-title').textContent==='Acre','Crop field can be inspected');
+    check($('selection-move').hidden&&!$('selection-destroy').hidden,'Destroy is the only acre action');
+    check(!panelNodes().some(b=>b.onchange||b.onclick),'Acre details have no management controls');
+    check(panelNodes().some(b=>b.textContent==='Owning farm'),'Acre identifies its farm');
+    inspect('building',1);
+    check(panelNodes().some(b=>b.textContent?.startsWith('Upgrade acre')),'Farm holds individual acre upgrades');
     town.wood=0;inspect('building',1);
     check(panelNodes().find(b=>b.textContent==='Build acre · 5 wood').disabled,'Acre button requires wood');
     viewed='friend';inspect('building',1);

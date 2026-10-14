@@ -8,7 +8,6 @@ and cache rules are in [Backend](BACKEND.md#cached-zoomed-out-map).
 | 1     | Cached zoomed-out town overview    | Implemented              | Show the landscape and city sizes without refreshing animated scene detail.                                      |
 | 2     | Production line balancing          | Wood and grain implemented; fishing remains | Develop clear fishing chains with capped staffing and simple upgrades. |
 | 3     | Scalable villager pathfinding       | Foundations implemented; host scheduling and shared navigation remain | Keep movement responsive as villager counts and towns grow, with bounded routing work. |
-| 4     | Simplify acre interaction           | Planned                  | Show only current acre state and a Destroy action; manage everything else through the owning farm. |
 | 5     | Watering and plowing animation positions | Planned             | Apply the seeding animation's worker-position recalculation fix to watering and plowing. |
 | 6     | Remove village grain flow summary  | Planned                  | Remove the detailed village grain flow summary from building Production panels. |
 | 7     | Building range indicators in build mode | Planned             | Show building ranges on the map to help choose placement positions. |
@@ -197,21 +196,6 @@ Completion criteria:
 
 Host work budgets, urgency rules, crowd spacing, and the villager counts that
 justify flow fields or hierarchical routing remain open implementation decisions.
-
-## Simplify acre interaction
-
-**Status:** planned.
-
-- Clicking an acre shows only information about its current state and the farm
-  it belongs to.
-- Destroy is the only action available on the acre itself.
-- All other acre management belongs in the owning farm's panel; remove those
-  controls from the acre panel.
-
-Completion criteria:
-
-- The acre panel displays current state information and only a Destroy action.
-- The owning farm provides all other controls needed to manage its acres.
 
 ## Watering and plowing animation positions
 
