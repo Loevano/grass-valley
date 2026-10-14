@@ -159,6 +159,9 @@ are collected in [Pathing decisions](PATHING.md).
 - Gameplay movement remains authoritative on the host. Browser playback follows
   confirmed movement and reconnects missed updates at walking speed, with field
   changes aligned to completed farmer actions.
+  Reloaded workers start at their active saved work, delivery, or construction
+  position, including fishers offshore and between tiles; older task positions
+  do not restart their approach from elsewhere.
   Farmers leave their work position directly along neighboring rows and columns,
   without walking back across the completed acre; diagonal departures retain
   their tile-center waypoint.

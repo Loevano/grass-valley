@@ -2437,7 +2437,9 @@ function animatedVillagers(town, seconds, townId=viewed, frameLayout=null){
           ClientScene.queue.cancel('advance/'+workerKey);
           const previous=state;
           const home=town.buildings.find(b=>b.kind==='hall') || {x:5,y:5};
-          const position=villager.work_animation || villager.logistics_position || villager.construction_position || {x:home.x-2+index%5,y:home.y+3+Math.floor(index/5)};
+          const position=(villager.construction_target?villager.construction_position:
+            villager.logistics_target?villager.logistics_position:villager.work_animation)
+            || villager.logistics_position || villager.construction_position || {x:home.x-2+index%5,y:home.y+3+Math.floor(index/5)};
           state={...(state || {x:position.x,y:position.y,path:[],clock:0,phase:'waiting',facing:1}),path:[],pendingPlan:version,pendingAdvance:false};
           workers.set(workerKey,state);
           ClientScene.queue.schedule('plan/'+workerKey,version,WorkerAnimation.planSteps(region.routing,villager,index,previous),planned=>{

@@ -146,6 +146,24 @@ assert.deepStrictEqual(offshore.path[0],{x:5,y:4},'Retargeting continues to the 
 const resumed=animation.plan(sailingTown,{job:'fishing',building_index:0,work_target:sailingTown.map_resources.at(-1),
   logistics_position:{x:5,y:3}},0);
 assert.deepStrictEqual([resumed.x,resumed.y],[5,3],'A saved offshore position resumes on water');
+const savedFisher={job:'fishing',building_index:0,work_target:sailingTown.map_resources.at(-1),
+  logistics_position:{x:2,y:3},construction_position:{x:1,y:8},
+  work_animation:{x:5,y:3.25,phase:'walking',path:[{x:5,y:3},{x:5,y:2}],elapsed:0}};
+const savedSnapshot=JSON.stringify(savedFisher);
+const restored=animation.plan(sailingTown,savedFisher,0);
+assert.deepStrictEqual([restored.x,restored.y],[5,3.25],'Reload starts at the latest work position, including between water tiles');
+assert(restored.path.every(p=>sea.has(p.x+','+p.y)),'Reloaded fishers stay offshore rather than walking from an old delivery position');
+assert.strictEqual(JSON.stringify(savedFisher),savedSnapshot,'Restoring a fisher never changes the saved host state');
+const confirmed=animation.plan(sailingTown,{...savedFisher,work_animation:{...savedFisher.work_animation,
+  playback:[{time:0,x:5,y:3.5},{time:3,x:5,y:3.25}]}},0);
+assert.deepStrictEqual([confirmed.x,confirmed.y],[5,3.25],'Confirmed playback starts at the latest fractional host position');
+assert.strictEqual(confirmed.path.length,0,'Confirmed playback does not add a route back to the tile center');
+const delivering=animation.plan(sailingTown,{...savedFisher,
+  logistics_target:{kind:'delivery',x:1,y:3},logistics_trip:{path:[[2,3],[1,3]],step:0}},0);
+assert.deepStrictEqual([delivering.x,delivering.y],[2,3],'An active delivery takes precedence over old work animation');
+const building=animation.plan(sailingTown,{...savedFisher,
+  construction_target:{kind:'home',x:1,y:7}},0);
+assert.deepStrictEqual([building.x,building.y],[1,8],'Active construction uses its saved construction position');
 const lake={map_size:24,buildings:[],map_resources:[]};
 for(let x=3;x<18;x++)for(let y=1;y<16;y++)lake.map_resources.push({kind:'water',x,y});
 const depths=animation.waterDepths(lake.map_resources);

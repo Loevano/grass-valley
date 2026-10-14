@@ -29,6 +29,47 @@ h.run(`
 `);
 console.log('Confirmed villager playback and stable roster checks passed');
 const sceneClient=client();
+// A fresh browser has no visible route to preserve. Planning must not overwrite
+// its saved offshore position with a stale delivery or construction position.
+for(const confirmed of [false,true]){
+  const reloadClient=client();
+  reloadClient.run(`
+    const finish=steps=>{let r;do{r=steps.next();}while(!r.done);return r.value;};
+    const water=[[3,2],[3,3],[3,4],[4,4],[5,4],[5,3],[5,2]].map(([x,y])=>({kind:'water',x,y}));
+    const worker={name:'Ada',job:'fishing',building_index:1,work_target:water.at(-1),
+      production_status:'Sailing',logistics_position:{x:2,y:3},construction_position:{x:1,y:8},
+      work_animation:{task:['fishing'],version:1,x:5,y:3.25,phase:'returning',elapsed:0,facing:1,
+        path:[{x:5,y:4},{x:4,y:4},{x:3,y:4},{x:3,y:3}],
+        playback:${confirmed}?[{time:0,x:5,y:3.5,phase:'returning',elapsed:0},
+          {time:3,x:5,y:3.25,phase:'returning',elapsed:0}]:[]}};
+    const town={map_size:16,terrain:Array(16).fill('g'.repeat(16)),map_resources:water,npcs:[],
+      buildings:[{kind:'hall',x:1,y:6},{kind:'fishing_hut',x:2,y:2,profession_upgrades:['boat']}],villagers:[worker]};
+    world={world_id:'reload',towns:{own:town}};viewed='own';
+    ClientScene.commit(finish(ClientScene.prepare(world,null)));
+    const saved=JSON.stringify(worker);
+    const check=()=>{const state=workers.get(0);
+      if(state.x!==5||state.y!==3.25)throw Error('Reloaded fisher walked from an old task position');};
+    animatedVillagers(town,0);check();
+    ClientScene.queue.run();check();
+    animatedVillagers(town,0);check();
+    if(workers.get(0).phase!=='returning')throw Error('Reloaded fisher lost the host work phase');
+    if(JSON.stringify(worker)!==saved)throw Error('Reload changed authoritative worker state');
+
+    for(const job of ['delivery','construction']){
+      workers.clear();ClientScene.queue.clear();
+      delete worker.logistics_target;delete worker.logistics_trip;delete worker.construction_target;
+      if(job==='delivery'){
+        worker.logistics_target={kind:'delivery',x:1,y:3};
+        worker.logistics_trip={path:[[2,3],[1,3]],step:0};
+      }else worker.construction_target={kind:'home',x:1,y:7};
+      animatedVillagers(town,0);
+      const expected=job==='delivery'?worker.logistics_position:worker.construction_position;
+      const checkTask=()=>{const state=workers.get(0);
+        if(state.x!==expected.x||state.y!==expected.y)throw Error('Reload ignored active '+job+' position');};
+      checkTask();ClientScene.queue.run();checkTask();
+    }
+  `);
+}
 sceneClient.run(`
   const finish=steps=>{let r;do{r=steps.next();}while(!r.done);return r.value;};
   const sample=(time,x,y)=>({time,x,y,phase:'walking',elapsed:0,facing:1});

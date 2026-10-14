@@ -186,7 +186,15 @@ const WorkerAnimation = (() => {
     const center=town.town_origin || hall || preferred;
     const bounds=town.navigation?.bounds || (town.chunked?{minX:Math.max(0,center.x-60),maxX:Math.min(size-1,center.x+60),
       minY:Math.max(0,center.y-60),maxY:Math.min(size-1,center.y+60)}:null);
-    const current=state?(!state.needsPlan&&state.path[0] || {x:Math.round(state.x),y:Math.round(state.y)}):villager.logistics_position || villager.construction_position || preferred;
+    const hostWork=!villager.construction_target&&!villager.logistics_target?villager.work_animation:null;
+    const workPosition=hostWork&&(Number.isFinite(hostWork.x)&&Number.isFinite(hostWork.y)?hostWork:hostWork.playback?.at(-1));
+    const savedPosition=(villager.construction_target?villager.construction_position:
+      villager.logistics_target?villager.logistics_position:workPosition)
+      || villager.logistics_position || villager.construction_position || preferred;
+    // A reload starts at the active host position, not a previous transport trip.
+    // Existing sprites keep their visible position when a snapshot changes.
+    const current=state?(!state.needsPlan&&state.path[0] || {x:Math.round(state.x),y:Math.round(state.y)}):
+      workPosition?{x:Math.round(workPosition.x),y:Math.round(workPosition.y)}:savedPosition;
     const minX=bounds?.minX || 0,maxX=bounds?.maxX ?? size-1,minY=bounds?.minY || 0,maxY=bounds?.maxY ?? size-1;
     const currentBiome=town.terrain?.[current.y]?.[current.x];
     const currentOpen=Number.isInteger(current.x)&&Number.isInteger(current.y)
@@ -205,7 +213,7 @@ const WorkerAnimation = (() => {
         if(delta<best){start={x,y};best=delta;}
       }
     }
-    let position=state?{x:state.x,y:state.y}:start;
+    let position=state?{x:state.x,y:state.y}:workPosition?{x:workPosition.x,y:workPosition.y}:start;
     let approach=distance(position,start)>1e-9?[start]:[];
     if(villager.logistics_target&&!villager.construction_target){
       const target=villager.logistics_target,trip=villager.logistics_trip;
@@ -282,13 +290,13 @@ const WorkerAnimation = (() => {
     if((boating||pier.length)&&!blocked.has(key(current))&&Number.isInteger(current.x)&&Number.isInteger(current.y)
       &&current.x>=minX&&current.x<=maxX&&current.y>=minY&&current.y<=maxY){
       start=current;
-      if(!state)position=start;
+      if(!state&&!workPosition)position=start;
       approach=distance(position,start)>1e-9?[start]:[];
     }
     const routing={blocked,size,bounds,sailing,source,roads,roadMode};
     const confirmed=!!villager.work_animation?.playback?.length&&!villager.construction_target&&!villager.logistics_target;
     let path=confirmed?[]:source?(yield* travelSteps(start,workSpot || source,routing,!workSpot)):home?(yield* routeSteps(start,home,blocked,size,true,bounds,roads,'smooth',true)):[];
-    if(path!==null)path=[...approach,...path];
+    if(path!==null&&!confirmed)path=[...approach,...path];
     let castTarget=villager.job==='fishing'?source:null;
     if(villager.job==='fishing'&&source){
       const water=new Set(town.map_resources.filter(r=>r.kind==='water').map(key));
