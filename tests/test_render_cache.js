@@ -113,6 +113,19 @@ const run=new Function('document','window','localStorage','setTimeout','clearTim
   previous=surface.paints;resize();draw();assert(surface.paints>previous,'Window resizing repaints ground');
   panel='build';fills.length=0;draw();assert(fills.includes('#e4c98022'),'Build range remains above cached terrain');
   panel=null;fills.length=0;draw();assert(!fills.includes('#e4c98022'),'Closing Build clears overlays without leaving marks');
+  panel='selection';selection={type:'building',index:0};fills.length=0;draw();
+  assert(fills.includes('#e4c98022'),'Selected hall retains its building range');
+  for(const kind of ['farm','woodcutter','fishing_hut','mine','home']){
+    world.towns.own.buildings.push({kind,x:32,y:30});
+    selection={type:'building',index:world.towns.own.buildings.length-1};fills.length=0;draw();
+    assert.equal(fills.includes('#82b9ae18'),kind!=='home','Selected '+kind+' shows only its gameplay range');
+    assert(!fills.includes('#e4c98022'),'Selecting a workplace hides the hall range');
+    world.towns.own.buildings.pop();
+  }
+  selection={type:'resource',index:0};fills.length=0;draw();
+  assert(!fills.includes('#82b9ae18'),'Selecting a resource clears the building range');
+  panel=null;selection=null;fills.length=0;draw();
+  assert(!fills.includes('#82b9ae18'),'Closing selection clears the building range');
   world=JSON.parse(JSON.stringify(world));world.towns.own.terrain[30]='b'.repeat(120);draw();
   assert.equal(groundSurfaces().length,2,'Terrain changes discard stale ground');
   world.towns.friend={...world.towns.own,terrain:Array(120).fill('s'.repeat(120)),map_resources:[]};

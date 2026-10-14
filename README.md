@@ -847,3 +847,4 @@ Build mode shows existing farm, woodcutter, fishing-hut, and mine ranges, alongs
 the hall's building area. The selected building's range and full footprint follow
 the placement preview. Farms show their square 7×7 field area; other ranges use
 horizontal and vertical tile steps, including fishing boat and hut upgrades.
+Clicking a building also shows its range while its information panel is open.

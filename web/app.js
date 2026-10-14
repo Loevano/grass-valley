@@ -3553,7 +3553,8 @@ function draw(seconds=0){
   const showBuildingRange=town && (panel==='build' || (selection?.type==='building' && town.buildings[selection.index]?.kind==='hall'));
   const preview=hoverTile || keyboardTile;
   const previewKind=tool in costs?tool:tool==='move'&&moveIndex!==null?town?.buildings[moveIndex]?.kind:null;
-  const rangeBuildings=panel==='build'?(world.shared_map?Object.values(world.towns):[town]).flatMap(t=>t.buildings.filter(b=>gameplayRange(b,t)).map(b=>({building:b,town:t}))):[];
+  const selected=selection?.type==='building'?town?.buildings[selection.index]:selection?.type==='road'?town?.roads?.[selection.index]:selection?.type==='resource'?resources[selection.index]:null;
+  const rangeBuildings=panel==='build'?(world.shared_map?Object.values(world.towns):[town]).flatMap(t=>t.buildings.filter(b=>gameplayRange(b,t)).map(b=>({building:b,town:t}))):selection?.type==='building'&&selected?[{building:selected,town}]:[];
   const rangePreview=previewKind&&preview?{...(tool==='move'&&moveIndex!==null?town.buildings[moveIndex]:{}),...placementBuilding(preview,previewKind)}:null;
   const sourceKind=previewKind==='woodcutter'?'tree':(previewKind==='farm'||previewKind==='fishing_hut')?'water':null;
   const previewReach=resourceReach(tool==='move'&&moveIndex!==null?town.buildings[moveIndex]:{kind:previewKind});
@@ -3584,7 +3585,6 @@ function draw(seconds=0){
       if(rangePreview&&occupies(rangePreview,x,y)&&town){const valid=placementValid(town,preview,previewKind)&&buildingUsable(town,{...preview,kind:previewKind});ctx.save();ctx.lineWidth=2;polygon(diamond,valid?'#d6d8a366':'#c76d6455',valid?'#eee5ab':'#f3a295');ctx.restore();}
     }
   }
-  const selected=selection?.type==='building'?town?.buildings[selection.index]:selection?.type==='road'?town?.roads?.[selection.index]:selection?.type==='resource'?resources[selection.index]:null;
   const highlights=[...(selected?footprintTiles(selected):[]),!previewKind?keyboardTile:null].filter(Boolean);
   for(let i=0;i<highlights.length;i++){
     const {x,y}=highlights[i];
