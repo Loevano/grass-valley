@@ -1,4 +1,4 @@
-from fixtures import flat_town
+from fixtures import flat_town, start_woodcutting
 import copy
 import json
 import unittest
@@ -36,9 +36,11 @@ class ResourceLogistics(unittest.TestCase):
         b = self.add('woodcutter')
         self.town['map_resources'] = [{'kind': 'tree', 'x': 3, 'y': 1}]
         v = self.assign(0, b)
+        start_woodcutting(self.town)
         self.ticks()
         self.assertEqual(b['pending_output']['wood'], .75)
         self.assertEqual(self.town['wood'], 65)
+        logistics.drop_off(self.town, b, v)
         b.setdefault('output_buffer', {})['wood'] = 50
         self.town['buildings'][0]['stored_goods']['wood'] = 100
         self.town['wood'] = 150
@@ -53,8 +55,9 @@ class ResourceLogistics(unittest.TestCase):
         self.town['wood'] = 0
         self.town['map_resources'] = [{'kind': 'tree', 'x': 3, 'y': 1}]
         self.assign(0, camp)
+        start_woodcutting(self.town)
         self.ticks()
-        # 19.25 available plus the new 0.75 gathered per tick pays 20 only
+        # 19.25 available plus 0.75 gathered in a productive tick pays 20 only
         # after the pending delivery is credited.
         logistics.record_output(self.town, camp, 'wood', 19.25)
         with self.assertRaisesRegex(ValueError, 'Missing building materials'):
@@ -620,9 +623,11 @@ class ResourceLogistics(unittest.TestCase):
         hauler = self.assign(1, store)
         self.assertEqual(hauler['job'], 'hauling')
         self.ticks(6)
-        self.assertEqual(producer['woodcutting'], .24)
+        self.assertGreater(producer['woodcutting'], 0)
+        self.assertLess(producer['woodcutting'], .24, 'Travel and unloading do not train the producer')
         self.assertGreater(self.town['wood'], 65)
-        self.assertAlmostEqual(self.town['wood'] - 65 + sum(b.get('pending_output', {}).values()), 4.5)
+        self.assertAlmostEqual(self.town['wood'] - 65 + sum(b.get('pending_output', {}).values()),
+                               self.town['produced']['wood'])
         self.assertGreater(store['stored_goods']['wood'], 0)
 
     def test_farmer_delivers_through_surrounding_completed_acres(self):

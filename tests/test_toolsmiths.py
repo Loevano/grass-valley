@@ -2,6 +2,7 @@ import copy
 import json
 import unittest
 
+from fixtures import start_woodcutting
 from npcs import NEW_LOCALS, ROSTER_VERSION, WORKER_TOOLS, ensure_npcs, local_key
 from server import command, new_town, prepare_landscapes, tick
 from shared_world import bind_map, export_world, new_world
@@ -74,6 +75,8 @@ class Toolsmiths(unittest.TestCase):
                         town['buildings'][1]['field'] = {'stage': 'ripe', 'crop': 'vegetables',
                                                         'elapsed': 0, 'progress': 0, 'cycle': 0}
                         town['villagers'][0]['construction_position'] = {'x': 6, 'y': 3}
+                    else:
+                        start_woodcutting(town)
                     tick({'towns': {'own': town}})
                     output, rate = ('vegetables', 6) if job == 'farming' else ('wood', .75)
                     bonus = tool['bonus'] if tool['job'] == job else 0

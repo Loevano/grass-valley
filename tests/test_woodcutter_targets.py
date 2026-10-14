@@ -4,6 +4,7 @@ import unittest
 
 from fixtures import flat_town
 import logistics
+import progression as economy
 import server
 import work_cycles
 from spatial import SpatialIndex
@@ -29,6 +30,129 @@ class WoodcutterTargets(unittest.TestCase):
 
     def source(self, index):
         return server.work_source(self.town, 'woodcutting', index)
+
+    def block_tree(self, tree):
+        for dx, dy in ((1, 0), (0, 1), (-1, 0), (0, -1)):
+            x, y = tree['x'] + dx, tree['y'] + dy
+            if not any(b['x'] == x and b['y'] == y for b in self.town['buildings']):
+                self.town['map_resources'].append({'kind': 'rock', 'x': x, 'y': y})
+
+    def test_skips_boxed_in_nearest_tree(self):
+        self.block_tree(self.trees[0])
+        before = copy.deepcopy(self.town)
+        self.assertEqual(self.source(0), self.trees[1])
+        self.assertEqual(self.town, before)
+
+    def test_skips_tree_on_other_side_of_impassable_terrain(self):
+        self.town['terrain'] = ['g' * 16 if y != 3 else 'v' * 16 for y in range(16)]
+        self.trees.append({'kind': 'tree', 'x': 8, 'y': 6})
+        self.town['map_resources'] = self.trees.copy()
+        self.assertEqual(self.source(0), self.trees[-1])
+
+    def test_waiting_worker_replaces_newly_unreachable_tree(self):
+        self.claim(0, self.trees[0], 'waiting')
+        self.block_tree(self.trees[0])
+        self.assertEqual(self.source(0), self.trees[1])
+
+    def test_tree_selection_honors_other_towns_buildings(self):
+        other = flat_town('Neighbor')
+        other['buildings'] = [{'kind': 'home', 'x': x, 'y': y}
+                              for x, y in ((4, 2), (5, 1), (6, 2))]
+        shared = {key: self.town[key] for key in ('terrain', 'map_size', 'map_resources', 'npcs')}
+        world = {'towns': {'owner': self.town, 'neighbor': other}, 'shared_map': shared}
+        server.bind_map(world)
+        walking = server.walking_map(world, self.town)
+        assignment = server.work_assignment(self.town, 'woodcutting', 0, walking=walking)
+        self.assertEqual(assignment[1], self.trees[1])
+
+    def test_inaccessible_trees_do_not_produce_or_train_and_resume_when_opened(self):
+        self.town['villagers'][1]['job'] = 'idle'
+        self.town['map_resources'] = self.trees[:1]
+        self.block_tree(self.trees[0])
+        worker = self.town['villagers'][0]
+        worker['construction_position'] = {'x': 8, 'y': 8}
+        world = {'towns': {'owner': self.town}}
+        skill, harvested = worker['woodcutting'], self.town['harvested']
+        for _ in range(3):
+            server.tick(world)
+        self.assertIsNone(worker['work_target'])
+        self.assertEqual(worker['production_status'], 'Waiting for an available tree')
+        self.assertNotIn('pending_output', worker)
+        self.assertEqual((worker['woodcutting'], self.town['harvested']), (skill, harvested))
+        self.town['map_resources'] = [r for r in self.town['map_resources']
+                                      if (r['x'], r['y']) != (6, 2)]
+        for _ in range(5):
+            server.tick(world)
+            if worker.get('pending_output'):
+                break
+        self.assertEqual(worker['work_target'], self.trees[0])
+        self.assertGreater(worker['pending_output']['wood'], 0)
+
+    def test_travel_does_not_produce_or_train(self):
+        self.town['villagers'][1]['job'] = 'idle'
+        tree = {'kind': 'tree', 'x': 5, 'y': 12}
+        self.town['map_resources'] = [tree]
+        worker = self.town['villagers'][0]
+        worker['construction_position'] = {'x': 5, 'y': 0}
+        skill, harvested = worker['woodcutting'], self.town['harvested']
+        server.tick({'towns': {'owner': self.town}})
+        self.assertEqual(worker['work_animation']['phase'], 'walking')
+        self.assertNotIn('pending_output', worker)
+        self.assertEqual((worker['woodcutting'], self.town['harvested']), (skill, harvested))
+
+    def test_partial_productive_tick_scales_wood_and_practice(self):
+        self.town['villagers'][1]['job'] = 'idle'
+        worker = self.town['villagers'][0]
+        worker.update(woodcutting=0, construction_position={'x': 5, 'y': 0})
+        server.tick({'towns': {'owner': self.town}})
+        seconds = server.TICK_SECONDS - 1 / 1.8
+        self.assertAlmostEqual(worker['pending_output']['wood'], economy.WOOD_PER_CYCLE * seconds / 3)
+        self.assertEqual(worker['woodcutting'], round(.04 * seconds / 3, 3))
+
+    def test_return_and_unloading_time_do_not_earn_wood_or_practice(self):
+        self.town['villagers'][1]['job'] = 'idle'
+        self.claim(0, self.trees[0], 'working')
+        worker = self.town['villagers'][0]
+        worker.update(woodcutting=0)
+        worker['work_animation'].update(x=5, y=1, elapsed=3, path=[])
+        server.tick({'towns': {'owner': self.town}})
+        # Chopping finishes after .2s; delivery and the next approach fill the rest.
+        phases = {sample['phase'] for sample in worker['work_animation']['playback']}
+        self.assertTrue({'returning', 'depositing', 'walking'} <= phases)
+        self.assertAlmostEqual(worker['pending_output']['wood'], economy.WOOD_PER_CYCLE * .2 / 3)
+        self.assertEqual(worker['woodcutting'], round(.04 * .2 / 3, 3))
+
+    def test_saved_waiting_cargo_returns_before_retrying_unreachable_tree(self):
+        for removed in (False, True):
+            with self.subTest(tree_removed=removed):
+                self.setUp()
+                self.town['villagers'][1]['job'] = 'idle'
+                self.claim(0, self.trees[0], 'waiting')
+                worker = self.town['villagers'][0]
+                worker['work_animation'].update(x=8, y=8, path=[])
+                logistics.record_output(self.town, self.camp, 'wood', 29, worker)
+                if removed:
+                    self.town['map_resources'].remove(self.trees[0])
+                else:
+                    self.block_tree(self.trees[0])
+                self.town = json.loads(json.dumps(self.town))
+                worker = self.town['villagers'][0]
+                before, harvested = self.town['wood'], self.town['harvested']
+                skill = worker['woodcutting']
+                world = {'towns': {'owner': self.town}}
+                server.tick(world)
+                self.assertEqual(worker['work_animation']['phase'], 'returning')
+                self.assertEqual(worker['pending_output'], {'wood': 29})
+                self.assertEqual((worker['woodcutting'], self.town['harvested']), (skill, harvested))
+                for _ in range(10):
+                    if not worker.get('pending_output'):
+                        break
+                    server.tick(world)
+                self.assertNotIn('pending_output', worker)
+                self.assertEqual(self.town['wood'], before + 29)
+                self.assertEqual(self.town['buildings'][1]['output_buffer']['wood'], 29)
+                server.tick(world)
+                self.assertEqual((worker['work_target']['x'], worker['work_target']['y']), (7, 2))
 
     def test_tick_assigns_separate_trees_with_shared_camp(self):
         server.tick({'towns': {'owner': self.town}})

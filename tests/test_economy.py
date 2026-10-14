@@ -2,6 +2,7 @@ import copy
 import unittest
 from unittest.mock import patch
 
+from fixtures import start_woodcutting
 from server import construct, command, new_town, tick
 
 
@@ -20,10 +21,11 @@ class EconomyRules(unittest.TestCase):
             construct(self.town, self.town)
         self.fail('Construction did not finish')
 
-    def test_woodcutting_produces_three_quarters_per_tick(self):
+    def test_woodcutting_produces_three_quarters_per_productive_tick(self):
         command(self.town, {'action': 'build', 'kind': 'woodcutter', 'x': 2, 'y': 2})
         self.finish_construction()
         command(self.town, {'action': 'job', 'index': 0, 'job': 'woodcutting'})
+        start_woodcutting(self.town)
         wood = self.town['wood']
         tick(self.world)
         self.assertEqual(self.town['wood'], wood)

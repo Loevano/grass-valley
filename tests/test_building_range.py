@@ -1,6 +1,7 @@
 import copy
 import unittest
 
+from fixtures import start_woodcutting
 from server import building_range, command, new_town, tick
 
 
@@ -66,6 +67,7 @@ class BuildingRange(unittest.TestCase):
         self.town['buildings'].append({'kind': 'woodcutter', 'x': 40, 'y': 40})
         self.town['map_resources'].append({'kind': 'tree', 'x': 40, 'y': 41})
         command(self.town, {'action': 'job', 'index': 0, 'job': 'woodcutting'})
+        start_woodcutting(self.town)
         wood = self.town['wood']
         tick({'towns': {'owner': self.town}})
         self.assertEqual(self.town['wood'], wood)

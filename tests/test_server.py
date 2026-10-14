@@ -2,6 +2,7 @@ import copy
 import unittest
 from unittest.mock import patch
 
+from fixtures import start_woodcutting
 from server import construct, capacity, command, ensure_resources, new_town, tick, settler_building, work_assignment
 
 
@@ -64,7 +65,9 @@ class VillageRules(unittest.TestCase):
         command(self.town, {'action': 'build', 'kind': 'woodcutter', 'x': 2, 'y': 2})
         self.finish_construction()
         command(self.town, {'action': 'job', 'index': 0, 'job': 'woodcutting'})
-        wood, skill = self.town['wood'], self.town['villagers'][0]['woodcutting']
+        # This checks a full productive cycle after the approach has finished.
+        worker = start_woodcutting(self.town)
+        wood, skill = self.town['wood'], worker['woodcutting']
         tick({'towns': {'absent-owner': self.town}})
         self.assertEqual(self.town['wood'], wood)
         self.assertGreater(self.town['buildings'][1]['pending_output']['wood'], 0)
@@ -195,6 +198,11 @@ class VillageRules(unittest.TestCase):
         self.assertEqual(self.town['villagers'][0]['production_status'], 'Waiting for trees within 10 tiles')
         command(self.town, {'action': 'move', 'index': 1, 'x': 2, 'y': 2})
         tick({'towns': {'a': self.town}})
+        self.assertEqual(self.town['villagers'][0]['work_target']['kind'], 'tree')
+        for _ in range(10):
+            if self.town['villagers'][0].get('pending_output'):
+                break
+            tick({'towns': {'a': self.town}})
         self.assertEqual(self.town['wood'], before[0])
         self.assertGreater(self.town['buildings'][1]['pending_output']['wood'], 0)
         self.assertEqual(self.town['villagers'][0]['work_target']['kind'], 'tree')

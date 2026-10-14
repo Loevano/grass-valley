@@ -3,6 +3,7 @@ import json
 import unittest
 from unittest.mock import patch
 
+from fixtures import start_woodcutting
 import progression as economy
 
 from npcs import advance_trades, ensure_npcs, local_key
@@ -260,10 +261,14 @@ class LocalOffers(unittest.TestCase):
                 town['buildings'].append({'kind': kind, 'x': 6, 'y': 2})
                 worker = town['villagers'][0]
                 worker.update(job=job, worker_tool=item)
+                if job == 'woodcutting':
+                    start_woodcutting(town)
                 with patch('server.secrets.randbelow', return_value=1):
                     tick({'towns': {'own': town}})
                 self.assertAlmostEqual(town['buildings'][1]['pending_output'][output], rate * 1.25)
                 worker['worker_tool'] = 'fine_axe' if job == 'fishing' else 'fine_fishing_rod'
+                if job == 'woodcutting':
+                    start_woodcutting(town)
                 with patch('server.secrets.randbelow', return_value=1):
                     tick({'towns': {'own': town}})
                 self.assertAlmostEqual(town['buildings'][1]['pending_output'][output], rate * 2.25)

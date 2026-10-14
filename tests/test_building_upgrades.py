@@ -3,6 +3,7 @@ import json
 import unittest
 from unittest.mock import patch
 
+from fixtures import start_woodcutting
 from server import BUILD_SECONDS, capacity, command, construct, new_town, tick
 
 
@@ -209,6 +210,8 @@ class BuildingUpgrades(unittest.TestCase):
             with self.subTest(kind=kind):
                 self.setUp()
                 self.town['map_resources'] = [{'kind': 'tree' if resource == 'wood' else 'water', 'x': 7, 'y': 2}]
+                if job == 'woodcutting':
+                    self.town['map_resources'].append({'kind': 'tree', 'x': 8, 'y': 2})
                 first = self.add(kind)
                 self.upgrade(first)
                 second = self.add(kind)
@@ -220,6 +223,8 @@ class BuildingUpgrades(unittest.TestCase):
                         building['field'] = {'stage': 'ripe', 'elapsed': 0, 'progress': 0, 'cycle': 0,
                                              'crop': 'vegetables'}
                         self.town['villagers'][i]['construction_position'] = {'x': building['x'] + 1, 'y': building['y']}
+                    elif job == 'woodcutting':
+                        start_woodcutting(self.town, i)
                 self.town['wood'] = self.town['food'] = 30
                 tick({'towns': {'a': self.town}})
                 upkeep = 5 * .03 + 2 * .045 if resource == 'food' else 0

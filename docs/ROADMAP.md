@@ -208,6 +208,9 @@ are collected in [Pathing decisions](PATHING.md).
   acres and woodcutters retain separate tree targets through their work trips,
   waiting when nearby trees are all claimed. Villagers do not block one another's
   movement.
+  Woodcutters skip unreachable trees and retry blocked targets after navigation
+  changes. Only productive chopping time earns wood and practice; saved waiting
+  workers deliver carried wood before selecting another tree.
 
 ### Remaining work
 

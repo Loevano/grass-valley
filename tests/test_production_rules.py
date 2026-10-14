@@ -90,15 +90,16 @@ class ProductionRules(unittest.TestCase):
     def test_workers_share_cap_and_partial_harvest_fits(self):
         self.town.update(terrain=['g' * 120] * 120, npcs=[], level=5,
                          forage_version=1, forage_halls=[[5, 5]],
-                         map_resources=[{'kind': 'tree', 'x': 3, 'y': 1}])
+                         map_resources=[{'kind': 'tree', 'x': 3, 'y': 1},
+                                        {'kind': 'tree', 'x': 4, 'y': 1}])
         for i in range(2):
             building = {'kind': 'woodcutter', 'x': 3 + i, 'y': 2}
             self.town['buildings'].append(building)
             self.town['villagers'][i]['talents'] = {}
+            self.town['villagers'][i]['construction_position'] = {'x': 3 + i, 'y': 0}
             server.assign_settler(self.town, i, len(self.town['buildings']) - 1)
         self.rule('wood', self.town['wood'] + .25)
-        with patch('work_cycles.advance', return_value=False), patch('logistics.worker', return_value=False):
-            server.tick({'towns': {'a': self.town}})
+        server.tick({'towns': {'a': self.town}})
         self.assertEqual(self.town['buildings'][1]['pending_output']['wood'], .25)
         self.assertEqual(self.town['villagers'][1]['production_status'], 'Production cap reached')
 

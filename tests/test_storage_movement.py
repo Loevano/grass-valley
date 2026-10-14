@@ -25,6 +25,7 @@ class StorageMovement(unittest.TestCase):
         self.world = {'towns': {'own': self.town}}
 
     def test_full_central_storage_allows_production_into_local_buffer(self):
+        self.worker['construction_position'] = {'x': 3, 'y': 0}
         self.camp['output_buffer'] = {'wood': 30}
         self.town['wood'] += 30
         server.tick(self.world)
@@ -66,6 +67,7 @@ class StorageMovement(unittest.TestCase):
         self.assertLess(self.camp['output_buffer']['wood'], 50)
 
     def test_pending_goods_finish_delivery_with_central_storage_full(self):
+        self.worker['construction_position'] = {'x': 3, 'y': 0}
         self.camp['output_buffer'] = {'wood': 49.5}
         self.town['wood'] += 49.5
         server.tick(self.world)
@@ -127,6 +129,7 @@ class AllWorkplaceStorage(unittest.TestCase):
         worker.update(economy.JOB_REQUIREMENTS.get(job, {}))
         if kind == 'woodcutter':
             town['map_resources'].append({'kind': 'tree', 'x': 3, 'y': 1})
+            worker['construction_position'] = {'x': 3, 'y': 0}
         elif kind == 'fishing_hut':
             town['map_resources'].append({'kind': 'water', 'x': 3, 'y': 1})
         elif kind in ('farm', 'acre'):
@@ -201,7 +204,7 @@ class AllWorkplaceStorage(unittest.TestCase):
                     self.assertAlmostEqual(town['produced'][output], logistics.production_stock(building, output)
                                            + building.get('pending_output', {}).get(output, 0) - limit / 2)
                 else:
-                    self.assertEqual(worker['production_status'], 'Working')
+                    self.assertEqual(worker['production_status'], 'Unloading wood' if kind == 'woodcutter' else 'Working')
                     self.assertGreater(worker.get('pending_output', {}).get(output, 0), 0)
                 self.assertGreater(worker.get(worker['job'], 0), practice)
 

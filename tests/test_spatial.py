@@ -85,7 +85,9 @@ class WorkerSpatialLookups(unittest.TestCase):
     def test_tick_cache_is_not_saved_and_refreshes_after_resource_replacement(self):
         self.town['buildings'].append({'kind': 'woodcutter', 'x': 7, 'y': 7})
         worker = self.town['villagers'][0]
-        worker.update(job='woodcutting', building_index=1)
+        # Replace the source while still approaching, before there is cargo
+        # that must finish delivery to the original workplace.
+        worker.update(job='woodcutting', building_index=1, construction_position={'x': 1, 'y': 1})
         self.town['map_resources'] = [{'kind': 'tree', 'x': 8, 'y': 7}]
         world = {'towns': {'own': self.town}}
         server.tick(world)

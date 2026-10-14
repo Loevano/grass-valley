@@ -1,4 +1,4 @@
-from fixtures import flat_town
+from fixtures import flat_town, start_woodcutting
 import copy
 import json
 import unittest
@@ -171,6 +171,7 @@ class Progression(unittest.TestCase):
         self.town['buildings'].append({'kind':'woodcutter','x':7,'y':7})
         for v in self.town['villagers']:
             v['job']='woodcutting';v['woodcutting']=0
+        start_woodcutting(self.town)
         self.town['wood']=0
         tick(self.world)
         self.assertEqual(self.town['wood'],0)

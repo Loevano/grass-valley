@@ -89,6 +89,32 @@ def route(start, target, blocked, size, terrain, adjacent=True, bounds=None, roa
     return routes.route(start, target, blocked, size, terrain, adjacent, bounds, roads, diagonal=diagonal)
 
 
+def walking_bounds(town, landscape):
+    if not landscape.get('chunked'):
+        return None
+    size = landscape.get('map_size', 120)
+    center = town.get('town_origin') or next(b for b in town['buildings'] if b['kind'] == 'hall')
+    return (max(0, center['x'] - 60), min(size - 1, center['x'] + 60),
+            max(0, center['y'] - 60), min(size - 1, center['y'] + 60))
+
+
+def starting_position(town, landscape, villager, index, blocked):
+    """Use the same safe saved position for target selection and animation."""
+    hall = next(b for b in town['buildings'] if b['kind'] == 'hall')
+    position = (villager.get('work_animation') or villager.get('logistics_position')
+                or villager.get('construction_position')
+                or {'x': hall['x'] - 2 + index % 5, 'y': hall['y'] + 3 + index // 5})
+    x, y = round(position['x']), round(position['y'])
+    size, terrain = landscape.get('map_size', 120), landscape.get('terrain', [])
+    if (x, y) in blocked or not (0 <= x < size and 0 <= y < size) or (terrain and terrain[y][x] == 'v'):
+        candidates = ((cx, cy) for cx in range(max(0, x - 60), min(size, x + 61))
+                      for cy in range(max(0, y - 60), min(size, y + 61)))
+        spot = min((p for p in candidates if p not in blocked and (not terrain or terrain[p[1]][p[0]] != 'v')),
+                   key=lambda p: abs(p[0] - x) + abs(p[1] - y), default=None)
+        return {'x': spot[0], 'y': spot[1]} if spot is not None else None
+    return {'x': position['x'], 'y': position['y']}
+
+
 def advance(town, landscape, villager, building, source, index, seconds):
     """Record a compact, confirmed movement timeline for delayed browser playback."""
     if villager['job'] == 'fishing':
@@ -192,10 +218,7 @@ def _advance(town, landscape, villager, building, source, index, seconds, stop_a
                   max(0, building['y'] - 3), min(size - 1, building['y'] + 3)) if barn_keeper else None
     roads = {(r['x'], r['y']) for r in landscape.get('roads', []) if 'construction' not in r}
     blocked = occupied_tiles(landscape['buildings'] + landscape['map_resources'] + landscape.get('npcs', []))
-    hall = next(b for b in town['buildings'] if b['kind'] == 'hall')
-    center = town.get('town_origin', hall)
-    bounds = (max(0, center['x'] - 60), min(size - 1, center['x'] + 60),
-              max(0, center['y'] - 60), min(size - 1, center['y'] + 60)) if landscape.get('chunked') else None
+    bounds = walking_bounds(town, landscape)
     if farming_job:
         blocked.difference_update((b['x'], b['y']) for b in landscape['buildings'] if b['kind'] == 'acre' and 'construction' not in b)
     work_spot = source if farming_job and source['kind'] == 'acre' else None
@@ -267,25 +290,21 @@ def _advance(town, landscape, villager, building, source, index, seconds, stop_a
     if (not state or state['task'] != spec or state['phase'] in ('waiting', 'waiting_storage')
             or (farming_job and state['phase'] == 'waiting_field' and not farming.claimed(town, source, index))):
         resume_phase = state.get('resume_phase') if state and state['task'] == spec else None
-        position = (state or villager.get('logistics_position') or villager.get('construction_position')
-                    or {'x': hall['x'] - 2 + index % 5, 'y': hall['y'] + 3 + index // 5})
+        if villager['job'] == 'woodcutting' and villager.get('pending_output'):
+            # Older saves can be waiting on an unreachable or vanished tree
+            # with gathered wood. Deliver that cargo before trying more work.
+            resume_phase = 'returning'
+        position = starting_position(town, landscape, villager, index, blocked)
+        if position is None:
+            return False, 0
         x, y = round(position['x']), round(position['y'])
-        if (x, y) in blocked or not (0 <= x < size and 0 <= y < size) or (terrain and terrain[y][x] == 'v'):
-            candidates = ((cx, cy) for cx in range(max(0, x - 60), min(size, x + 61))
-                          for cy in range(max(0, y - 60), min(size, y + 61)))
-            spot = min((p for p in candidates if p not in blocked and (not terrain or terrain[p[1]][p[0]] != 'v')),
-                       key=lambda p: abs(p[0] - x) + abs(p[1] - y), default=None)
-            if spot is None:
-                return False, 0
-            x, y = spot
-        preserved = (x, y) == (round(position['x']), round(position['y']))
         water_ready = bool(state and state['task'] == spec and state.get('waterReady'))
         if farming_job:
             # A filled can covers this farmer's entire farm pass, including
             # field changes and intervening logistics trips.
             water_ready = villager.get('watering_round') == water_round
-        state = {'task': spec, 'x': position['x'] if preserved else x,
-                 'y': position['y'] if preserved else y, 'elapsed': 0, 'waterReady': water_ready,
+        state = {'task': spec, 'x': position['x'],
+                 'y': position['y'], 'elapsed': 0, 'waterReady': water_ready,
                  'version': (state or {}).get('version', 0), 'facing': 1}
         if resume_phase:
             target = building if resume_phase == 'returning' else work_spot or source
