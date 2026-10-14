@@ -463,7 +463,13 @@ function buildingHeight(building,town){
   return ({hall:42,woodcutter:23,mine:27,smelter:36,steelworks:38,stable:32,tannery:28,saddler:27,tradehouse:35,barn:34,mill:40,smokehouse:32,workshop:25,sawpit:16,market:17,fish_pond:18,orchard:20,bakery:30,butcher:25}[building.kind] || 27)+4*(buildingVisualLevel(building,town)-1);
 }
 const storehouseCapacities=[50,75,100,150,200,250,300,350];
-function buildingStorageSize(building){return ['home','market','well',...decorationKinds].includes(building.kind)?0:building.kind==='hall'?200:building.kind==='storehouse'?storehouseCapacities[buildingLevel(building)-1]:50*storageMultiplier(building);}
+function farmStorageCapacity(building){
+  const level=Math.min(3,Math.max(1,buildingLevel(building)));
+  return (building.kind==='farm'?48:1)*(world.progression?.farming_harvest_yield || 10)*(1+.5*(level-1))**2;
+}
+function buildingStorageSize(building){
+  if(['farm','acre'].includes(building.kind))return Object.values(roomAllocations(building)).reduce((sum,n)=>sum+n,0);
+  return ['home','market','well',...decorationKinds].includes(building.kind)?0:building.kind==='hall'?200:building.kind==='storehouse'?storehouseCapacities[buildingLevel(building)-1]:50*storageMultiplier(building);}
 function storageCapacity(town){return town.buildings.filter(b=>!b.construction).reduce((sum,b)=>sum+buildingStorageSize(b),0);}
 
 const storageKeys=['wood','food','planks','wheat','fodder','flour','wool','tools','manure','herbs'];
@@ -501,7 +507,10 @@ function roomAllocations(building){
     const capacity=allocations.food;delete allocations.food;
     for(const key of buildingStorageGoods(building))if(key==='food'||key in foodGoods())allocations[key]=capacity;
   }
-  return Object.fromEntries(Object.entries(allocations).filter(([key])=>buildingStorageKeys(building).includes(key)).map(([key,amount])=>[key,amount*storageMultiplier(building)]));
+  if(['farm','acre'].includes(building.kind)){
+    for(const key of Object.keys(allocations))allocations[key]=['food','vegetables','wheat','carrots','fodder'].includes(key)?farmStorageCapacity(building):allocations[key]*buildingLevel(building);
+  }else for(const key of Object.keys(allocations))allocations[key]*=storageMultiplier(building);
+  return Object.fromEntries(Object.entries(allocations).filter(([key])=>buildingStorageKeys(building).includes(key)));
 }
 function resourceStorage(town,key){
   const scene=typeof ClientScene!=='undefined'&&ClientScene.current?.world===world?ClientScene.current:null;
@@ -591,6 +600,7 @@ function upgradeBenefit(kind,level,item){
     const building={...item,kind,level};
     return `${buildingStorageSize(building)} storage spaces\n${Object.entries(roomAllocations(building)).map(([key,amount])=>`${goodName(key)}: ${amount}`).join(', ')}\nWorker capacity upgraded separately`;
   }
+  if(['farm','acre'].includes(kind))return `+${25*(level-1)}% crops / worker\n${farmStorageCapacity({kind,level})} capacity per crop`;
   if(kind==='home'&&item?.profession_upgrades?.includes('timber_frame'))level++;
   if(kind==='fishing_hut')return `+${25*(level-1)}% food / catch / worker\n${resourceReach({...item,kind,level})} tile reach`;
   return kind==='barn'?`${4*level} animal spaces`:['sawpit','mill','smokehouse','workshop','fish_pond','orchard','market','bakery','butcher'].includes(kind)?'Separate worker capacity':kind==='home'?`${2*level} spaces\n-${25*(level-1)}% departure`:kind==='storehouse'?`${buildingStorageSize({kind,level})} capacity per resource${level>=5?'\nWarehouse':''}`:`+${25*(level-1)}% ${kind==='woodcutter'?'wood':kind==='fishing_hut'?'food / catch':kind==='acre'?'field food':'food'} / worker`;
@@ -2552,7 +2562,7 @@ function drawVillager(b){
   const stride=walking?Math.sin(s.clock*13):0;
   const chopping=working&&b.villager.job==='woodcutting';
   const fishing=s.phase==='working'&&!walking&&b.villager.job==='fishing';
-  const farming=s.phase==='working'&&!walking&&b.villager.job==='farming';
+  const farming=s.phase==='working'&&!walking&&b.villager.job==='farming'&&(!s.fieldCycle||!!s.farmAction);
   const constructing=working&&!!b.villager.construction_target;
   const farmStage=s.farmAction?['plowing','sowing','watering','harvesting'].indexOf(s.farmAction):Math.min(3,Math.floor((s.elapsed || 0)/2));
   const farmSwing=(Math.sin((s.elapsed || 0)*Math.PI*3)+1)/2;
@@ -2565,7 +2575,7 @@ function drawVillager(b){
   const swing=working?(Math.sin((s.elapsed || 0)*(chopping?5:7))+1)/2:0;
   ctx.save();ctx.translate(px+(b.index%3-1)*3,py+tileH*.65+Math.floor(b.index/3));ctx.scale(tileW/46,tileW/46);
   if(!b.aboard){ctx.fillStyle='#223b2966';ctx.beginPath();ctx.ellipse(0,2,7,3,0,0,Math.PI*2);ctx.fill();}
-  const facingTarget=s.phase==='collecting_water'?s.waterSource:fishing?(s.castTarget || s.source):s.source;
+  const facingTarget=s.phase==='collecting_water'?s.waterSource:farming?(s.farmField || s.workSpot || s.source):fishing?(s.castTarget || s.source):s.source;
   const towardSource=facingTarget?(facingTarget.x-s.x)-(facingTarget.y-s.y):0;
   const facing=(working||fishing||farming)&&towardSource!==0?Math.sign(towardSource):s.facing;
   ctx.scale(facing,1);

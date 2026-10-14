@@ -424,6 +424,8 @@ def building_storage_keys(building):
 
 
 def storage_size(building):
+    if building['kind'] in ('farm', 'acre'):
+        return sum(storage_allocations(building).values())
     return 0 if building['kind'] in {'home', 'market', 'well', *DECORATIONS} else 200 if building['kind'] == 'hall' else STOREHOUSE_CAPACITIES[building.get('level', 1) - 1] if building['kind'] == 'storehouse' else 50 * storage_multiplier(building)
 
 
@@ -516,6 +518,10 @@ def local_room(building, key):
 
 
 def storage_allocations(building):
+    if building['kind'] in ('farm', 'acre'):
+        return {key: farming.storage_capacity(building) if key in CROPS or key == 'food'
+                else amount * building.get('level', 1)
+                for key, amount in FIXED_STORAGE[building['kind']].items()}
     if building['kind'] != 'storehouse':
         return {key: amount * storage_multiplier(building)
                 for key, amount in FIXED_STORAGE.get(building['kind'], {}).items()}

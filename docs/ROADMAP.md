@@ -92,12 +92,16 @@ even when the host has already assigned the farmer another acre.
 Farmers put away their carried sickles while plowing and sowing.
 Sowing and watering use a walking destination beside the crop before work starts,
 including buffered actions; particles land on crop anchors with three water droplets.
+Storage pauses clear stale work poses and resume saved field progress when room opens.
+Farm crop allowances are 480/1,080/1,920 items at levels 1/2/3; the maximum covers
+two full 48-acre harvests with matching building bonuses, excluding skill, tool,
+and manure bonuses. Acre allowances scale to 10/22.5/40 items per crop.
 Missed updates and resumed tasks reconnect playback at walking speed; trimming
 old buffered animations also preserves that speed and delays field changes.
 Oldest cycles finish before any acre repeats, preventing untouched tiles from
 being skipped. The base harvest is now 10 crops per acre for the two 15-second
 growth periods; existing bonuses apply. Remaining farming work is downstream
-ingredient demand and storage balancing below.
+ingredient demand and downstream storage balancing below.
 
 - Farmers supply crops to the mill, which supplies ingredients to the bakery.
   Full ingredient storage now allows processors to keep working while their
@@ -130,7 +134,8 @@ checkbox toggles all resources on or off. Legacy food filters expand without los
 Producers haul when an allowance fills;
 existing excess stock is preserved. Workplace storage totals appear beside the
 Storage heading. Wood-building upgrades increase these allowances by 25% per
-level; storage scaling for farming and fishing remains planned.
+level; farm and acre crop storage now scales with their building levels. Fishing
+storage scaling remains planned.
 
 Worker drop-offs now preserve the rest of the simulation tick for the next trip,
 removing the extra pause after unloading. Delivery accounting remains on the host;

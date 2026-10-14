@@ -49,7 +49,11 @@ class ProducerDeliveryResume(unittest.TestCase):
     def test_cancelled_delivery_does_not_resume_production(self):
         bram = self.town['villagers'][3]
         server.assign_settler(self.town, 3, 1)
-        # Fill fixed field stores so this delivery must travel to the hall.
+        # Fill the farm and field stores so this delivery must travel to the hall.
+        farm = self.town['buildings'][1]
+        extra = economy.storage_allocations(farm)['vegetables'] - farm['output_buffer']['vegetables']
+        farm['output_buffer']['vegetables'] += extra
+        economy.add_stock(self.town, 'vegetables', extra)
         for acre in self.town['buildings'][2:]:
             acre['stored_goods'] = {'vegetables': 20}
         self.town['food'] += 60

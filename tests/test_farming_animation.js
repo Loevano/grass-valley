@@ -64,6 +64,9 @@ for(const tileWidth of [46,92]){
     }
   }
 }
+const waiting={x:6,y:3,path:[],phase:'working',clock:0,elapsed:7,facing:1,fieldCycle:true};
+assert(!render(waiting,'farming',false).some(mark=>stages.some(([,color])=>mark.color===color)),
+  'A host-owned field without confirmed work cannot display a stale harvesting pose');
 for(const farmAction of ['sowing','watering']){
   const state={x:6,y:3,path:[],phase:'working',clock:0,facing:1,
     elapsed:0,farmAction,source:{x:6,y:3}};

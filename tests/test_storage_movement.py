@@ -174,7 +174,7 @@ class AllWorkplaceStorage(unittest.TestCase):
                     self.assertEqual(worker['production_status'], 'Working')
                     self.assertGreater(worker.get('pending_output', {}).get(output, 0), 0)
                 self.assertGreater(worker.get(worker['job'], 0), 0)
-                self.assertLessEqual(logistics.buffered(building), 50)
+                self.assertLessEqual(logistics.buffered(building), economy.storage_size(building))
                 self.assertLessEqual(logistics.production_stock(building, output)
                                      + building.get('pending_output', {}).get(output, 0), limit + 1e-9)
 
@@ -191,7 +191,7 @@ class AllWorkplaceStorage(unittest.TestCase):
                 self.assertNotIn('pending_output', worker)
                 self.assertEqual(worker.get(worker['job'], 0), practice)
                 self.assertEqual(building.get('input_buffer', {}), inputs)
-                self.assertLessEqual(logistics.buffered(building), 50)
+                self.assertLessEqual(logistics.buffered(building), economy.storage_size(building))
                 economy.withdraw(town, output, limit / 2, source=building)
                 economy.add_stock(town, output, -limit / 2)
                 for _ in range(economy.production_seconds(building) // 3):
@@ -206,10 +206,10 @@ class AllWorkplaceStorage(unittest.TestCase):
                 self.assertGreater(worker.get(worker['job'], 0), practice)
 
     def test_gathering_uses_only_remaining_resource_allowance(self):
-        world, town, building, worker = self.workplace('farm', 'wheat', 9.75)
+        world, town, building, worker = self.workplace('farm', 'wheat', economy.storage_allocations({'kind': 'farm'})['wheat'] - .25)
         server.tick(world)
         self.assertEqual(town['produced']['wheat'], .25)
-        self.assertEqual(building['output_buffer']['wheat'], 10)
+        self.assertEqual(building['output_buffer']['wheat'], economy.storage_allocations(building)['wheat'])
         practice = worker['farming']
         # Harvest cargo is returned even when it fills the buffer; then hauling pauses work.
         for _ in range(10):
@@ -220,7 +220,7 @@ class AllWorkplaceStorage(unittest.TestCase):
         self.assertIn('Workplace buffer full', worker['production_status'])
         self.assertEqual(worker['farming'], practice)
         self.assertEqual(logistics.production_stock(building, 'wheat')
-                         + building.get('pending_output', {}).get('wheat', 0), 10)
+                         + building.get('pending_output', {}).get('wheat', 0), economy.storage_allocations(building)['wheat'])
 
 
 if __name__ == '__main__':

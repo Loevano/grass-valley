@@ -4,8 +4,18 @@ GROWTH_SECONDS = 15
 WORK_SECONDS = 2
 # Two growth periods replace ten of the old three-second production cycles.
 HARVEST_YIELD = 2 * GROWTH_SECONDS / 3
+MAX_ACRES = 48
 ACTIONS = {'unplowed': 'plowing', 'plowed': 'sowing',
            'thirsty': 'watering', 'ripe': 'harvesting'}
+
+
+def storage_capacity(building):
+    # A full 7x7 farm, with matching farm/acre upgrades: 1, 1.5, 2 harvests.
+    level = min(3, max(1, building.get('level', 1)))
+    fields = MAX_ACRES if building['kind'] == 'farm' else 1
+    harvests = 1 + .5 * (level - 1)
+    building_yield = HARVEST_YIELD * (1 + .5 * (level - 1))
+    return fields * building_yield * harvests
 
 
 def field_state(field):

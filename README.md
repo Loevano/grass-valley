@@ -459,7 +459,11 @@ the Python host, refresh both browsers, and create a new world to use the shared
   of a row and choosing separate rows when possible. Finishing an action immediately
   starts the next available task using the time left in the host tick. Each farmer
   harvests available ripe acres before returning to the farm, returning early when
-  the farm's crop storage allowance fills. Carried crops reserve that space and
+  the farm's crop storage allowance fills. Each crop holds **480 / 1,080 / 1,920**
+  items at farm levels 1 / 2 / 3: one / one and a half / two full 48-acre harvests
+  with matching farm and acre building bonuses. These fixed limits exclude skill,
+  tool, and manure bonuses. Acre crop storage grows to **10 / 22.5 / 40** items.
+  Carried crops reserve that space and
   respect production caps. All acres finish their oldest
   crop cycle before harvested acres start another, so distant tiles are not skipped.
   Each harvest yields **10 crops per acre** before skill, tool, upgrade, and manure
@@ -469,7 +473,8 @@ the Python host, refresh both browsers, and create a new world to use the shared
   Field visuals follow the farmer's confirmed animation: furrows, seedlings,
   watering changes, and cleared crops appear when the corresponding action finishes.
   Missed updates and resumed work reconnect at walking speed rather than making
-  the farmer rush to catch up.
+  the farmer rush to catch up. Storage pauses clear stale work poses and resume
+  the walk and saved field progress when room opens.
 - Build a fishing hut within three tile steps of water and assign Fishing to
   produce food and learn fishing skill. Fishers cast into the water, wait by a
   rippling float, reel in a fish, and carry their catch back to the hut.

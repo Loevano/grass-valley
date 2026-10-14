@@ -624,7 +624,7 @@ class ResourceLogistics(unittest.TestCase):
         self.assertGreater(store['stored_goods']['wood'], 0)
 
     def test_farmer_delivers_through_surrounding_completed_acres(self):
-        farm = self.add('farm', x=8, y=8, output_buffer={'vegetables': 50})
+        farm = self.add('farm', x=8, y=8, output_buffer={'vegetables': economy.storage_allocations({'kind': 'farm'})['vegetables']})
         self.town['map_resources'] = [{'kind': 'water', 'x': 8, 'y': 9}]
         for x, y in [(7, 8), (9, 8), (8, 7)]:
             self.add('acre', x=x, y=y, farm_index=self.town['buildings'].index(farm))
@@ -632,11 +632,11 @@ class ResourceLogistics(unittest.TestCase):
         self.town['food'] = 0
         self.ticks(10)
         self.assertGreater(self.town['food'], 0)
-        self.assertLess(logistics.buffered(farm), 50)
+        self.assertLess(logistics.buffered(farm), economy.storage_allocations(farm)['vegetables'])
         self.assertGreater(farmer['farming'], 0)
 
     def test_unfinished_acres_still_block_deliveries(self):
-        farm = self.add('farm', x=8, y=8, output_buffer={'vegetables': 50})
+        farm = self.add('farm', x=8, y=8, output_buffer={'vegetables': economy.storage_allocations({'kind': 'farm'})['vegetables']})
         self.town['map_resources'] = [{'kind': 'water', 'x': 8, 'y': 9}]
         for x, y in [(7, 8), (9, 8), (8, 7)]:
             self.add('acre', x=x, y=y, construction={'total': 30, 'progress': 0})

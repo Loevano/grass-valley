@@ -124,7 +124,8 @@ class SettlerProfessions(unittest.TestCase):
         self.worker['construction_position'] = {'x': 5, 'y': 6}
         server.tick({'towns': {'a': self.town}})
         self.assertEqual(self.town['produced']['vegetables'] + farm['field'].get('yield_remaining', 0), 25)
-        self.assertEqual(self.worker['farming'], 20.033)
+        # The larger farm buffer lets this worker use the remaining time to plow.
+        self.assertEqual(self.worker['farming'], 20.039)
         # A second tender can start the next cycle in the remaining time, but
         # cannot repeat the completed harvest action or increase its yield.
         samples = self.town['villagers'][1]['work_animation']['playback']

@@ -87,6 +87,17 @@ class BuildingUpgrades(unittest.TestCase):
             self.upgrade(index)
         self.assertEqual(self.town, before)
 
+    def test_farming_storage_scales_to_two_complete_harvests(self):
+        import progression as economy
+        for kind, capacities in [('farm', (480, 1080, 1920)), ('acre', (10, 22.5, 40))]:
+            for level, capacity in enumerate(capacities, 1):
+                building = {'kind': kind, 'level': level}
+                for crop in economy.CROPS:
+                    self.assertEqual(economy.storage_allocations(building)[crop], capacity)
+                    self.assertEqual(economy.local_room(building, crop), capacity)
+                self.assertEqual(economy.storage_allocations(building)['manure'], 10 * level)
+                self.assertEqual(economy.storage_size(building), 4 * capacity + 10 * level)
+
     def test_farm_workers_upgrade_and_resume_without_reassignment(self):
         farm = self.add('farm')
         self.town['map_resources'] = [{'kind': 'water', 'x': 7, 'y': 2}]

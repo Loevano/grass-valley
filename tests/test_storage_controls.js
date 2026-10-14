@@ -15,6 +15,13 @@ const run=new Function('document','window','localStorage','setTimeout','clearTim
  buildings:[{kind:'hall',x:5,y:5},{kind:'storehouse',x:2,y:2,level:4,storage_allocations:{wood:100,food:100,wool:50},stored_goods:{wood:20,fish:10,smoked_fish:4,wool:5}}],
  villagers:[{name:'Ada',job:'idle',woodcutting:0,farming:0,fishing:0}],map_resources:[]};
  world={world_id:'test',towns:{own:town,friend:town}};identity={town_id:'own'};viewed='own';draw=()=>{};
+ for(const [kind,capacities] of [['farm',[480,1080,1920]],['acre',[10,22.5,40]]]){
+   for(const [index,capacity] of capacities.entries()){
+     const building={kind,level:index+1};
+     for(const crop of ['vegetables','wheat','carrots','fodder'])check(roomAllocations(building)[crop]===capacity,'Farm crop capacity follows building level');
+     check(buildingStorageSize(building)===4*capacity+10*(index+1),'Farm storage total matches item allowances');
+   }
+ }
  const commands=[];act=data=>commands.push(data);
  inspect('building',1);
  const fields=()=>panelNodes().filter(c=>c.tag==='input'&&c.type==='checkbox');

@@ -893,6 +893,11 @@ def advance_farmer(town, walking, villager, building, source, index, seconds, re
                 villager['production_status'] = 'Workplace buffer full'
                 break
             if logistics.worker(town, walking, villager, building, logistics_route, remaining):
+                if not villager.get('logistics_trip'):
+                    work_cycles.pause_farming(villager, source, remaining)
+                    paused = villager.get('work_animation', {}).get('playback', [])
+                    timeline.extend(dict(sample, time=sample['time'] + seconds - remaining)
+                                    for sample in paused)
                 break
         if villager.get('logistics_trip'):
             villager.pop('work_animation', None)

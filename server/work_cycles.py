@@ -144,6 +144,15 @@ def field_work_spot(source):
     return {'x': source['x'] + .45, 'y': source['y'] + .1}
 
 
+def pause_farming(villager, source, seconds):
+    """Publish a resting pose when storage prevents work from advancing."""
+    state = villager.get('work_animation')
+    if state:
+        state.update(phase='waiting_storage', path=[], elapsed=0, farmAction=None)
+        state['version'] += 1
+        state['playback'] = [_sample(state, 0, source), _sample(state, seconds, source)]
+
+
 def finish_harvest(state, source):
     """Place the emptied field at the confirmed end of the sickle animation."""
     for sample in state.get('playback', []):
@@ -249,7 +258,7 @@ def _advance(town, landscape, villager, building, source, index, seconds, stop_a
                 path.pop()
             path.append(destination)
         return path
-    if (not state or state['task'] != spec or state['phase'] == 'waiting'
+    if (not state or state['task'] != spec or state['phase'] in ('waiting', 'waiting_storage')
             or (farming_job and state['phase'] == 'waiting_field' and not farming.claimed(town, source, index))):
         resume_phase = state.get('resume_phase') if state and state['task'] == spec else None
         position = (state or villager.get('logistics_position') or villager.get('construction_position')
@@ -282,7 +291,7 @@ def _advance(town, landscape, villager, building, source, index, seconds, stop_a
             villager['work_animation'] = state
         elif farming_job and villager.get('pending_output') and farming.harvest_room(town, building, source) <= 1e-9:
             # Finish pre-existing harvest cargo, including saves from the old cycle.
-            state['phase'] = 'harvest_ready'
+            state.update(phase='harvest_ready', farmAction=None)
             state['path'] = []
             villager['work_animation'] = state
         elif farming_job and farming.claimed(town, source, index):
@@ -388,7 +397,7 @@ def _advance(town, landscape, villager, building, source, index, seconds, stop_a
                 state['playback'].append(_sample(state, seconds - remaining, source))
                 last_phase, last_action = state['phase'], state.get('farmAction')
             if field['stage'] == 'ripe' and field['progress'] >= farming.WORK_SECONDS:
-                state['phase'] = 'harvest_ready'
+                state.update(phase='harvest_ready', farmAction=None)
                 state['playback'].append(_sample(state, seconds - remaining, source))
                 return finished, remaining
             phase = state['phase']
@@ -425,7 +434,7 @@ def _advance(town, landscape, villager, building, source, index, seconds, stop_a
                 villager['watering_round'] = water_round
         elif farming_job:
             if field['stage'] == 'ripe':
-                state['phase'] = 'harvest_ready'
+                state.update(phase='harvest_ready', farmAction=None)
             else:
                 farming.complete_action(source)
                 state.update(elapsed=0, farmAction=None,
