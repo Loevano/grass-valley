@@ -397,6 +397,46 @@ def fill_cottages(town):
             assign_settler(town, worker_index, building_index)
 
 
+def woodcutting_source(town, building, trees, worker_index):
+    """Keep one tree per woodcutter until its work and delivery trip finishes."""
+    worker = town['villagers'][worker_index]
+    task = worker.get('work_animation', {}).get('task', [])
+    workplace = ['woodcutting', building['kind'], building['x'], building['y']]
+    previous = tuple(task[4:7]) if len(task) >= 7 and task[:4] == workplace else None
+    claimed = set()
+    for index, other in enumerate(town['villagers']):
+        if (index == worker_index or other['job'] != 'woodcutting'
+                or other.get('construction_target') or other.get('logistics_trip')):
+            continue
+        animation = other.get('work_animation', {})
+        other_task = animation.get('task', [])
+        if len(other_task) < 7 or other_task[0] != 'woodcutting':
+            continue
+        owner = settler_building(town, index)
+        if owner is None:
+            continue
+        camp = town['buildings'][owner]
+        if not completed(camp) or other_task[:4] != ['woodcutting', camp['kind'], camp['x'], camp['y']]:
+            continue
+        if animation.get('phase') not in ('walking', 'working', 'returning', 'depositing') and not other.get('pending_output'):
+            continue
+        target = tuple(other_task[4:7])
+        # Older saves can contain duplicate targets; the first worker keeps it.
+        if target != previous or index < worker_index:
+            claimed.add(target)
+    available = [tree for tree in trees if tree.get('supply', 1) > 0
+                 and (tree['kind'], tree['x'], tree['y']) not in claimed]
+    retained = next((tree for tree in available
+                     if (tree['kind'], tree['x'], tree['y']) == previous), None)
+    if retained is not None:
+        return retained
+    if previous is not None and worker.get('pending_output'):
+        # The normal delivery fallback finishes carried wood before retargeting.
+        return None
+    return min(available, key=lambda tree: abs(tree['x'] - building['x']) + abs(tree['y'] - building['y']),
+               default=None)
+
+
 def work_assignment(town, job, worker_index, spatial=None, reservations=None):
     if job == 'hauling':
         index = town['villagers'][worker_index].get('building_index')
@@ -455,9 +495,11 @@ def work_assignment(town, job, worker_index, spatial=None, reservations=None):
                         return None
                     acres = [assigned_acre]
                 nearby = [farming.choose_field(town, b, acres or [b], worker_index, reservations)]
-            workplaces.append((b, min(nearby, key=lambda r:
-                                      (r.get('supply', 1) <= 0, -depths.get((r['x'], r['y']), 1) if boating else 0,
-                                       (-1 if boating else 1) * (abs(r['x'] - b['x']) + abs(r['y'] - b['y']))))))
+            target = (woodcutting_source(town, b, nearby, worker_index) if job == 'woodcutting' else
+                      min(nearby, key=lambda r:
+                          (r.get('supply', 1) <= 0, -depths.get((r['x'], r['y']), 1) if boating else 0,
+                           (-1 if boating else 1) * (abs(r['x'] - b['x']) + abs(r['y'] - b['y'])))))
+            workplaces.append((b, target))
     if not workplaces:
         return None
     assignment = workplaces[worker_index % len(workplaces)]
@@ -466,7 +508,7 @@ def work_assignment(town, job, worker_index, spatial=None, reservations=None):
     assigned = assigned_settlers(town, slot_index)
     if worker_index in assigned and assigned.index(worker_index) >= settler_capacity(assigned_acre or assignment[0]):
         return None
-    return assignment
+    return assignment if assignment[1] is not None else None
 
 
 def work_source(town, job, worker_index, reservations=None):
@@ -932,6 +974,8 @@ def tick(world):
                                 regrowing = any(nearby(r) for r in landscape.get('tree_stumps', []))
                                 villager['production_status'] = ('Waiting for trees to regrow' if regrowing
                                                                  else 'Waiting for trees within 10 tiles')
+                            else:
+                                villager['production_status'] = 'Waiting for an available tree'
                 continue
             building = assignment[0]
             if job == 'hauling':
