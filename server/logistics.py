@@ -180,7 +180,7 @@ def requirements(building, villager):
         speed = economy.processing_efficiency(villager, building)
         return economy.production_costs(building, speed, building.get('input_buffer', {}))
     if kind in {'barn', 'stable'}:
-        feed = sum(economy.ANIMALS[a]['feed'] * n for a, n in building.get('animals', {}).items())
+        feed = economy.animal_feed(building)
         if not feed:
             return {}
         inputs = building.get('input_buffer', {})

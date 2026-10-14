@@ -137,6 +137,11 @@ material investments alongside the remaining fishing balance work.
 Advanced woodcraft and metal sale values now cover ingredients, including fuel;
 higher workshop recipe tiers preserve or improve profit per active work second.
 
+Barns now use free young animals, fixed products during fed growth, and automatic
+young replacements when adults are sent to the butcher. Farm-animal breeding is
+removed. Play experience should assess the five-minute cycle and fixed 25 eggs,
+wool, or milk per animal alongside feed supply, hauling, and manual butcher pacing.
+
 ## Scalable villager pathfinding
 
 **Status:** partially implemented. Prioritize a host pathfinding queue before

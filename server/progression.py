@@ -31,13 +31,14 @@ BUILDINGS = {
 }
 CROPS = {'vegetables': 1, 'wheat': 2, 'carrots': 3, 'fodder': 3}
 ANIMALS = {
-    'chicken': {'level': 2, 'coins': 3, 'output': 'eggs', 'feed': .15},
+    'chicken': {'level': 2, 'coins': 0, 'output': 'eggs', 'feed': .15},
     'sheep': {'level': 3, 'coins': 0, 'output': 'wool', 'feed': .25},
     'pig': {'level': 4, 'coins': 0, 'output': 'meat', 'feed': .4},
     'cow': {'level': 5, 'coins': 0, 'output': 'milk', 'feed': .5},
 }
 ANIMALS['horse'] = {'level': 8, 'coins': 0, 'output': 'horse', 'feed': .5}
 ANIMAL_GROWTH_SECONDS = 300
+ANIMAL_PRODUCTS = {'chicken': 25, 'sheep': 25, 'cow': 25}
 TREE_REGROWTH_RATE = .9
 WOOD_PER_CYCLE = .75
 # Meals are charged once per three-second host tick.
@@ -78,6 +79,14 @@ def animal_growth(building, animal):
 
 def mature_animals(building, animal):
     return sum(age >= ANIMAL_GROWTH_SECONDS for age in animal_growth(building, animal))
+
+
+def animal_feed(building):
+    """Barn adults have finished their cycle; stable horses still need feeding."""
+    return sum(ANIMALS[animal]['feed'] * (
+        count if building['kind'] == 'stable' else
+        sum(age < ANIMAL_GROWTH_SECONDS for age in animal_growth(building, animal)))
+        for animal, count in building.get('animals', {}).items())
 
 
 def grow_animals(building, seconds):
@@ -894,14 +903,18 @@ def extra_worker(town, villager, building, capacity):
     elif kind in {'barn', 'stable'}:
         animals = building.get('animals', {})
         output_amounts = {}
-        for animal in animals:
-            adults = mature_animals(building, animal)
-            if adults and animal not in {'pig', 'horse'}:
-                key = ANIMALS[animal]['output']; output_amounts[key] = output_amounts.get(key, 0) + adults * .25 * speed
+        for animal, amount in ANIMAL_PRODUCTS.items():
+            growth = sum(min(3, max(0, ANIMAL_GROWTH_SECONDS - age))
+                         for age in animal_growth(building, animal))
+            if growth:
+                key = ANIMALS[animal]['output']
+                output_amounts[key] = amount * growth / ANIMAL_GROWTH_SECONDS
         if not sum(animals.values()):
-            return 'Capture horses first' if kind == 'stable' else 'Buy animals first'
+            return 'Capture horses first' if kind == 'stable' else 'Choose free young animals first'
         # One barn cycle per tick regardless of the number of assigned workers.
-        feed = sum(ANIMALS[a]['feed'] * n for a, n in animals.items())
+        feed = animal_feed(building)
+        if not feed:
+            return 'Fully grown animals ready for the butcher'
         if quantity(town, 'fodder') < feed:
             feed_cost = {'vegetables': feed}  # Chickens before fodder unlocks.
         else:
@@ -913,7 +926,9 @@ def extra_worker(town, villager, building, capacity):
         spend(town, feed_cost)
         for key, amount in output_amounts.items():
             deliver(town, key, amount, capacity)
-        deliver(town, 'manure', .1 * sum(animals.values()), capacity)
+        tended = sum(animals.values()) if kind == 'stable' else sum(
+            age < ANIMAL_GROWTH_SECONDS for animal in animals for age in animal_growth(building, animal))
+        deliver(town, 'manure', .1 * tended, capacity)
     else:
         return 'Resting'
     practice(villager, villager['job'], production_seconds(building))
@@ -925,7 +940,7 @@ def public_catalog():
             'farming_growth_seconds': farming.GROWTH_SECONDS,
             'farming_harvest_yield': farming.HARVEST_YIELD,
             'animal_growth_seconds': ANIMAL_GROWTH_SECONDS, 'butcher_seconds': BUTCHER_SECONDS,
-            'animal_meat': ANIMAL_MEAT, 'tradable_goods': TRADABLE_GOODS,
+            'animal_meat': ANIMAL_MEAT, 'animal_products': ANIMAL_PRODUCTS, 'tradable_goods': TRADABLE_GOODS,
             'job_requirements': JOB_REQUIREMENTS, 'talent_roots': TALENT_ROOTS,
             'profession_recipes': PROFESSION_RECIPES, 'storage_keys': STORAGE_KEYS,
             'production_seconds': PRODUCTION_SECONDS, 'sale_prices': SALE_PRICES, 'sellable_goods': SELLABLE_GOODS,

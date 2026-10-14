@@ -13,7 +13,7 @@ const run=new Function('document','window','localStorage','setTimeout','clearTim
  const town={name:'Town',wood:100,food:40,coins:20,level:1,goods:{herbs:2,fodder:6},player:{x:5,y:7,facing:1,fishing:21},
  buildings:[{kind:'hall',x:5,y:5},{kind:'barn',x:3,y:5,animals:{chicken:2}},{kind:'farm',x:3,y:7},{kind:'acre',x:4,y:7,farm_index:2}],
  villagers:[{name:'Ada',job:'idle',woodcutting:10}],map_resources:[{kind:'tree',x:6,y:7,supply:4,supply_max:8,regeneration:.5}]};
- world={world_id:'test',towns:{own:town,friend:town},progression:{buildings:{barn:{level:2,wood:25,job:'husbandry'},sawpit:{level:3,wood:25,job:'woodworking'}},crops:{vegetables:1,wheat:2,fodder:3},animals:{chicken:{level:2,coins:3,output:'eggs'},sheep:{level:3,coins:6,output:'wool'}},upgrades:{axe:{label:'Improved axe',building:'woodcutter',level:2,skill:'woodcutting',xp:10,wood:10,coins:5}},recipes:{}}};
+ world={world_id:'test',towns:{own:town,friend:town},progression:{buildings:{barn:{level:2,wood:25,job:'husbandry'},sawpit:{level:3,wood:25,job:'woodworking'}},crops:{vegetables:1,wheat:2,fodder:3},animals:{chicken:{level:2,coins:0,output:'eggs'},sheep:{level:3,coins:0,output:'wool'}},animal_products:{chicken:25,sheep:25},upgrades:{axe:{label:'Improved axe',building:'woodcutter',level:2,skill:'woodcutting',xp:10,wood:10,coins:5}},recipes:{}}};
  identity={town_id:'own'};viewed='own';draw=()=>{};
  const commands=[];act=data=>commands.push(data);
  render();
@@ -37,13 +37,19 @@ const run=new Function('document','window','localStorage','setTimeout','clearTim
  town.wood=0;render();check(!barnButton.hidden&&barnButton.disabled,'Unlocked buildings remain visible when unaffordable');town.wood=100;
  inspect('building',1);
  const buy=label=>panelNodes().find(b=>b.tag==='button'&&(b.attributes['aria-label'] || b.textContent).startsWith(label));
- check(!buy('Buy chicken').disabled&&!buy('Buy sheep'),'Locked animals are omitted');
- buy('Buy chicken').onclick();check(commands.at(-1).action==='buy_animal'&&commands.at(-1).index===1,'Animal purchase targets the selected barn');
+ check(!buy('Add young chicken').disabled&&!buy('Add young sheep'),'Locked animals are omitted');
+ buy('Add young chicken').onclick();check(commands.at(-1).action==='buy_animal'&&commands.at(-1).index===1,'Free animal selection targets the selected barn');
+ town.coins=0;render();check(!buy('Add young chicken').disabled,'Young animals are free with no coins');town.coins=20;
+ check(!buy('Breed chicken'),'Farm animal breeding is removed');
+ check(panelNodes().some(c=>c.textContent?.includes('25 eggs per growth cycle')),'Fixed lifetime output is visible');
+ town.buildings[1].animals.chicken=4;render();check(buy('Add young chicken').disabled,'Barn capacity still limits free animals');
+ const beforeFull=commands.length;buy('Add young chicken').onclick();check(commands.length===beforeFull,'Full barns send no add command');
+ town.buildings[1].animals.chicken=2;
  inspect('building',2);
  const crops=panelNodes().find(b=>b.tag==='select'&&b.attributes['aria-label']==='Crop for all acres');
  check(!crops.children.some(b=>b.value==='fodder'),'Locked crops are omitted');
  crops.value='wheat';crops.onchange();check(commands.at(-1).crop==='wheat'&&commands.at(-1).index===2,'Crop selector targets the farm and all linked acres');
- town.level=3;inspect('building',1);check(!!buy('Buy sheep'),'Animals appear when unlocked');
+ town.level=3;inspect('building',1);check(!!buy('Add young sheep'),'Animals appear when unlocked');
  inspect('building',2);check(panelNodes().find(b=>b.attributes['aria-label']==='Crop for all acres').children.some(b=>b.value==='fodder'),'Crops appear when unlocked');
  check(jobs().includes('woodworking'),'Later professions appear when unlocked');
  town.buildings.push({kind:'woodcutter',x:6,y:6});
@@ -101,7 +107,7 @@ const run=new Function('document','window','localStorage','setTimeout','clearTim
  town.player.boat_level=3;render();check(!buy('Upgrade to'),'Fully upgraded character boat hides further purchases');
  town.buildings.push({kind:'home',x:2,y:5,profession_upgrades:['timber_frame']});inspect('building',4);
  check(panelNodes().some(c=>c.textContent==='4 spaces\\n-25% departure'),'Timber framing increases displayed housing');
- viewed='friend';inspect('building',1);check(!buy('Buy chicken'),'Visitors cannot purchase animals');
+ viewed='friend';inspect('building',1);check(!buy('Add young chicken'),'Visitors cannot add animals');
  `);
 run(document,{devicePixelRatio:1,addEventListener(k,v){listeners[k]=v;}},{getItem:()=>null},()=>0,()=>{},animation);
 console.log('Progression controls passed');

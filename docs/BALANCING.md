@@ -281,6 +281,11 @@ Growing vegetables or fodder costs eight active field worker-seconds per harvest
 of 10 feed, plus passive growth, water collection, travel, and delivery as described
 above. Feeding produces 0.1 manure per animal per
 cycle, so each example retains 10 manure. No extra adult tending is included.
+Each chicken also yields 25 eggs, each sheep 25 wool, and each cow 25 milk during
+growth, in addition to the meat-chain rewards below. These product totals are
+fixed regardless of worker skill or talent. Barn animals are free; sending an
+adult to the butcher immediately replaces it with a young animal of the same
+species, without using another capacity slot. Farm-animal breeding is removed.
 
 | Full chain | Work breakdown | Total production time cost | Total reward |
 | --- | --- | --- | --- |
@@ -292,9 +297,9 @@ cycle, so each example retains 10 manure. No extra adult tending is included.
 A barn tends all its animals in one shared cycle. For a same-age herd tended by
 one worker, count the 300 seconds of tending and its 4 husbandry practice once
 for the group; sum feed production,
-manual butchery, meat preparation, and byproducts per animal. Mature animals held
-longer require more feed and may provide eggs, wool, milk, or meat. Those extra
-cycles and rewards must be counted together.
+manual butchery, meat preparation, and byproducts per animal. Mature barn animals
+held longer consume no feed and produce no goods or practice. A replacement must
+complete its own fed growth cycle before it can be butchered again.
 
 ### Training time and manual butcher rewards
 

@@ -1469,7 +1469,7 @@ function productionDescription(item){
   const spec=selectedProfessionRecipe(item);
   const recipe=spec?[spec.inputs,spec.output,spec.amount]:world.progression.recipes[item.kind];
   if(recipe){const seconds=world.progression.production_seconds?.[recipe[1]] || 3;return `${costText(recipe[0])} → ${recipe[2]} ${goodName(recipe[1]).toLowerCase()} / ${seconds}s batch${item.kind==='smokehouse'?'\nEach raw fish becomes its own smoked species\n+0.5 food and +1 coin per fish\nAccepts fish, trout, salmon, and sturgeon':''}\n${(0.04*seconds/3).toFixed(2)} practice / batch (neutral talent)\nSkill: larger batches + more ingredients\nRequires qualified workers${spec?` · Recipe level ${spec.level}`:''}`;}
-  return {barn:'Adult output: eggs, wool, milk\nFeed: fodder / vegetables\nGrowth: 5 minutes of full feeding\nPigs provide meat at the butcher\n4 animals / level',orchard:'Output: fruit\nRequires workers',stable:'Capture wild horses and bring them here\nFeed: fodder / vegetables\nSettling and growth: 5 minutes of full feeding\nBreed two adults; saddle one to ride\n4 horses / level',market:'Sell goods for coins\nOffer goods to another town\nBoth owners need a completed market'}[item.kind] || 'Requires workers';
+  return {barn:'Choose free young animals\nFixed eggs, wool, or milk while growing\nFeed: fodder / vegetables\nGrowth: 5 minutes of full feeding\nAdults stop producing and need no feed\nButcher adults to receive free young replacements\n4 animals / level',orchard:'Output: fruit\nRequires workers',stable:'Capture wild horses and bring them here\nFeed: fodder / vegetables\nSettling and growth: 5 minutes of full feeding\nBreed two adults; saddle one to ride\n4 horses / level',market:'Sell goods for coins\nOffer goods to another town\nBoth owners need a completed market'}[item.kind] || 'Requires workers';
 }
 function animalAges(barn,animal){
   const duration=world.progression?.animal_growth_seconds || 300;
@@ -1479,14 +1479,14 @@ function renderAnimalButchery(town,item,index,target){
   const catalog=world.progression,owner=viewed===identity?.town_id;
   const note=document.createElement('p');
   const task=item.butchering;
-  note.textContent=task?`Butchering ${goodName(task.animal).toLowerCase()} → ${task.amount} meat · ${Math.ceil(task.remaining)}s of work remaining${task.remaining===0?' · Waiting for buffer space or production cap':''}`:`Uses 1 adult animal permanently · ${catalog.butcher_seconds || 60}s of work.`;
+  note.textContent=task?`Butchering ${goodName(task.animal).toLowerCase()} → ${task.amount} meat · ${Math.ceil(task.remaining)}s of work remaining${task.remaining===0?' · Waiting for buffer space or production cap':''}`:`Uses 1 adult animal · A free young animal of the same species replaces it immediately · ${catalog.butcher_seconds || 60}s of work.`;
   target.append(note);
   if(!owner)return;
   const chooser=document.createElement('select');chooser.setAttribute('aria-label','Animal to butcher');
   const choices=[];
   town.buildings.forEach((barn,barnIndex)=>{
     if(barn.kind!=='barn'||barn.construction&&!barn.construction.upgrade)return;
-    for(const animal of Object.keys(catalog.animals)){
+    for(const animal of Object.keys(catalog.animal_meat || {}).filter(animal=>animal!=='horse')){
       const adults=animalAges(barn,animal).filter(age=>age>=(catalog.animal_growth_seconds || 300)).length;
       if(!adults)continue;
       choices.push({barn,barnIndex,animal});
@@ -1538,12 +1538,17 @@ function renderProfession(town,item,index,target,upgrades,details,boats,unlocked
       if(town.level<spec.level || (animal==='horse')!==(item.kind==='stable'))continue;
       const ages=animalAges(item,animal),duration=catalog.animal_growth_seconds || 300;
       const adults=ages.filter(age=>age>=duration).length;
-      target.append(fact(`${adults} adult · ${ages.length-adults} growing`,`${goodName(animal)} → ${animal==='horse'?'Riding / breeding':animal==='pig'?'Meat and hides at butcher':goodName(spec.output)}`));
+      const products=catalog.animal_products?.[animal] ?? 25;
+      target.append(fact(`${adults} ${animal==='horse'?'adult':'ready for butcher'} · ${ages.length-adults} growing`,`${goodName(animal)} → ${animal==='horse'?'Riding / breeding':animal==='pig'?'Meat and hides at butcher':`${products} ${goodName(spec.output).toLowerCase()} per growth cycle`}`));
       ages.forEach(age=>{if(age<duration){const growth=document.createElement('small');growth.style.display='block';growth.textContent=`${Math.floor(age/duration*100)}%`;target.append(growth);}});
       if(owner){
-        const buy=document.createElement('button');buy.textContent=`Buy ${animal} · ${spec.coins} coins${town.level<spec.level?` · Hall ${spec.level}`:''}`;
-        buy.hidden=animal==='horse';buy.disabled=town.level<spec.level || town.coins<spec.coins || Object.values(item.animals || {}).reduce((a,n)=>a+n,0)>=4*buildingLevel(item);buy.onclick=()=>act({action:'buy_animal',index,animal});target.append(buy);
-        const breed=document.createElement('button');breed.textContent=`Breed ${animal} · 3 fodder + 1 herb`;breed.disabled=adults<2 || !canAfford(town,{fodder:3,herbs:1}) || Object.values(item.animals || {}).reduce((a,n)=>a+n,0)>=4*buildingLevel(item);breed.onclick=()=>act({action:'breed_animal',index,animal});target.append(breed);
+        const full=Object.values(item.animals || {}).reduce((a,n)=>a+n,0)>=4*buildingLevel(item);
+        if(animal==='horse'){
+          const breed=document.createElement('button');breed.textContent=`Breed ${animal} · 3 fodder + 1 herb`;breed.disabled=adults<2 || !canAfford(town,{fodder:3,herbs:1}) || full;breed.onclick=()=>{if(!breed.disabled)act({action:'breed_animal',index,animal});};target.append(breed);
+        }else{
+          const add=document.createElement('button');add.textContent=`Add young ${animal} · Free`;
+          add.disabled=full;add.onclick=()=>{if(!add.disabled)act({action:'buy_animal',index,animal});};target.append(add);
+        }
       }
     }
   }

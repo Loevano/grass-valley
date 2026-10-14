@@ -66,7 +66,7 @@ class ProductionRules(unittest.TestCase):
 
     def test_barn_waits_for_all_outputs_including_manure(self):
         barn = {'kind': 'barn', 'x': 3, 'y': 3, 'animals': {'chicken': 1},
-                'input_buffer': {'vegetables': 10}}
+                'animal_growth': {'chicken': [0]}, 'input_buffer': {'vegetables': 10}}
         self.town['buildings'].append(barn)
         worker = {'job': 'husbandry', 'husbandry': 0, 'farming': 10, 'talents': {}}
         self.rule('manure', 0)

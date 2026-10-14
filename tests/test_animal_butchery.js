@@ -18,7 +18,7 @@ function panel(owner=true){
 let p=panel();
 assert.equal(p.chooser.children.length,1,'Only mature animals appear');
 assert.equal(p.chooser.children[0].textContent,'pig → 8 meat');
-assert(p.note.textContent.includes('permanently'),'Keep the animal consumption warning visible');
+assert(p.note.textContent.includes('free young animal')&&p.note.textContent.includes('immediately'),'Explain automatic replacement');
 p.chooser.value=p.chooser.children[0].value;p.button.onclick();
 assert.deepStrictEqual(commands.at(-1),{action:'butcher_animal',index:1,barn_index:0,animal:'pig'});
 town.buildings.push({kind:'barn',x:9,y:4,animals:{pig:1,cow:1}});

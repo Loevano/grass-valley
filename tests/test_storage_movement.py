@@ -152,7 +152,7 @@ class AllWorkplaceStorage(unittest.TestCase):
                                         for key, amount in economy.RECIPES[kind][0].items()}
         elif kind == 'barn':
             animal = next(key for key, spec in economy.ANIMALS.items() if spec['output'] == output)
-            building.update(animals={animal: 1}, input_buffer={'fodder': 5})
+            building.update(animals={animal: 1}, animal_growth={animal: [0]}, input_buffer={'fodder': 5})
         return {'towns': {'own': town}}, town, building, worker
 
     @patch('server.secrets.randbelow', return_value=1)

@@ -634,25 +634,31 @@ the Python host, refresh both browsers, and create a new world to use the shared
   level 5 needs tools plus processed food, and level 9 needs two locally crafted
   saddles. Capturing and riding horses is optional. Lifetime production still
   counts after goods are consumed or sold; imported goods only help pay costs.
-- Barns show each purchased or bred chicken, sheep, pig, and cow with walking,
+- Barns show each chicken, sheep, pig, and cow with walking,
   pecking, and grazing animations. They roam up to two open tiles from their barn
   and return, avoiding buildings, resources, and impassable ground.
   A decorative wooden fence surrounds each completed barn, extending three tiles
   in every direction to match the farm's 7×7 range.
-- Bought and bred animals start young and grow visibly over five minutes of full
+- Choose free young barn animals within the existing hall unlocks and capacity.
+  They grow visibly over five minutes of full
   feeding by barn workers, with smooth size changes between growth updates.
-  Growth pauses without a full ration of fodder or
-  vegetables. Only adults produce eggs, wool, or milk and can breed. Existing
-  animals from older saves remain adults. Pigs no longer produce recurring meat.
+  Each chicken produces a fixed 25 eggs, each sheep 25 wool, and each cow 25 milk
+  across that growth cycle, independently of worker skill and talent. Pigs yield
+  meat only at the butcher. Growth and output pause without a full ration of
+  fodder or vegetables, or when output storage or production caps block work.
+  Adults stop producing and consume no more feed. Existing saved growth is kept;
+  animals from older saves without growth data remain adults ready for butchery.
+  Farm animals no longer breed; horse capture, feeding, and breeding are unchanged.
   At a butcher shop, select an adult from a barn and choose **Use animal for meat**.
-  This permanently consumes one animal; a qualified butcher needs one minute of
+  A free young animal of the same species immediately takes its place in the barn,
+  including when the barn is full. A qualified butcher needs one minute of
   work at the shop to produce 2/4/8/10 raw meat for a chicken/sheep/pig/cow.
   Each completed animal grants 1 butchery practice, adjusted by talent, crediting
   the full minute of manually assigned work.
   Extra workers cannot duplicate or accelerate the batch. Processing pauses
   without a worker, and completed meat waits for buffer space or a production cap
   to allow it. Existing meat recipes resume afterward; hauling works as usual.
-- Select an acre to choose its crop, a barn to buy/breed animals, or a workplace
+- Select an acre to choose its crop, a barn to add free young animals, or a workplace
   to unlock profession improvements. Assign settlers to new production buildings.
   Sawpits use wood; mills use wheat; smokehouses use any mix of fish, trout, salmon,
   or sturgeon plus wood (1 raw fish and 0.25 wood per three-second base batch).
