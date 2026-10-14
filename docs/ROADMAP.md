@@ -182,6 +182,8 @@ are collected in [Pathing decisions](PATHING.md).
   stay out of view until an adjacent tile becomes available.
   Barn animals roam throughout their fenced 7×7 range. Construction and moves
   keep other buildings out of the pen; selection and build tools show its range.
+  Barn workers now follow host-confirmed feeding rounds through the pen, returning
+  beside the barn to unload; their routes and round progress persist in saves.
 - Browser planning is resumable and runs through a queue with an approximately
   2 ms frame budget. The host still performs route searches synchronously.
 - Gameplay movement remains authoritative on the host. Browser playback follows

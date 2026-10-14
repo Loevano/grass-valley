@@ -168,6 +168,7 @@ def _advance(town, landscape, villager, building, source, index, seconds, stop_a
         spec.extend([building.get('level', 1), economy.fishing_boat_level(building), boating, 'boat_cargo_cycle'])
     state = villager.get('work_animation')
     farming_job = villager['job'] == 'farming'
+    barn_keeper = villager['job'] == 'husbandry' and building['kind'] == 'barn'
     water_round = None
     if farming_job:
         field = farming.field_state(source)
@@ -187,6 +188,8 @@ def _advance(town, landscape, villager, building, source, index, seconds, stop_a
                         for b in landscape['buildings'])):
         state.update(path=[], phase='waiting_water', elapsed=0)
     size, terrain = landscape.get('map_size', 120), landscape.get('terrain', [])
+    pen_bounds = (max(0, building['x'] - 3), min(size - 1, building['x'] + 3),
+                  max(0, building['y'] - 3), min(size - 1, building['y'] + 3)) if barn_keeper else None
     roads = {(r['x'], r['y']) for r in landscape.get('roads', []) if 'construction' not in r}
     blocked = occupied_tiles(landscape['buildings'] + landscape['map_resources'] + landscape.get('npcs', []))
     hall = next(b for b in town['buildings'] if b['kind'] == 'hall')
@@ -249,7 +252,10 @@ def _advance(town, landscape, villager, building, source, index, seconds, stop_a
                 approach = route(start, berth, sea_blocked, size, terrain, False, sea_bounds, diagonal=False) if afloat else []
                 sailing = [] if afloat else route(start, berth, land_blocked, size, terrain, False, bounds, roads)
             return None if approach is None or sailing is None else approach + sailing
-        path = route(start, target, blocked, size, terrain, adjacent, bounds, roads)
+        local_bounds = pen_bounds if barn_keeper and (
+            pen_bounds[0] <= start['x'] <= pen_bounds[1]
+            and pen_bounds[2] <= start['y'] <= pen_bounds[3]) else bounds
+        path = route(start, target, blocked, size, terrain, adjacent, local_bounds, roads)
         if path is not None and farming_job and target is work_spot:
             destination = field_work_spot(source)
             if (start['x'], start['y']) == (destination['x'], destination['y']):
@@ -430,6 +436,19 @@ def _advance(town, landscape, villager, building, source, index, seconds, stop_a
                 state.update(phase='idle', elapsed=0, farmAction=None)
                 return True, remaining
             path = travel(state, work_spot or source, not work_spot)
+            if barn_keeper and any(building.get('animals', {}).values()):
+                # Alternate short feeding rounds with unloading beside the barn.
+                spots = [(2, 0), (0, 2), (-2, 0), (0, -2)]
+                cursor = state.get('barn_round', index)
+                for step in range(len(spots)):
+                    dx, dy = spots[(cursor + step) % len(spots)]
+                    target = {'x': building['x'] + dx, 'y': building['y'] + dy}
+                    round_path = route(state, target, blocked, size, terrain, False,
+                                       pen_bounds, roads)
+                    if round_path:
+                        path = round_path
+                        state['barn_round'] = (cursor + step + 1) % len(spots)
+                        break
             state.update(path=path or [], phase='waiting' if path is None else 'walking' if path else 'working', elapsed=0, waterReady=False)
             # Report the delivery to the caller without discarding the rest of
             # this tick. Otherwise playback inserts up to three seconds of
@@ -462,6 +481,6 @@ def _advance(town, landscape, villager, building, source, index, seconds, stop_a
             elif villager['job'] == 'fishing' and not any(villager.get('pending_output', {}).values()):
                 state['elapsed'] = 0
                 continue
-            path = [] if source is building else travel(state, building)
+            path = [] if source is building and not barn_keeper else travel(state, building)
             state.update(path=path or [], phase='waiting' if path is None else 'returning' if path else 'depositing', elapsed=0)
     return finished, 0
