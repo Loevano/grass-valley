@@ -195,6 +195,8 @@ are collected in [Pathing decisions](PATHING.md).
   keep other buildings out of the pen; selection and build tools show its range.
   Barn workers now follow host-confirmed feeding rounds through the pen, returning
   beside the barn to unload; their routes and round progress persist in saves.
+  All assigned keepers participate and train during successful feeding rounds;
+  shared feed use, growth, and output remain counted once per barn.
 - Idle town villagers take short strolls with staggered pauses near their hall,
   avoiding occupied and impassable tiles. These ambient browser routes leave
   authoritative state untouched and stop when work or construction is assigned.

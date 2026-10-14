@@ -1062,7 +1062,7 @@ def tick(world):
         farming.grow(town, TICK_SECONDS)
         landscape = world.get('shared_map', town)
         economy.player_tick(town, landscape, capacity(town))
-        barn_cycles = set()
+        barn_cycles = {}
         butcher_cycles = set()
         farm_assignments, farm_reservations = {}, {}
         # Reserve every farmer's first task before anyone chains a second one.
@@ -1162,6 +1162,13 @@ def tick(world):
             if finishing_output:
                 villager['production_status'] = 'Returning gathered goods'
                 continue
+            if (building['kind'] == 'barn' and barn_cycles.get(id(building)) == 'Working'
+                    and not villager.get('logistics_trip')):
+                # Every keeper joins the feeding round, even if the shared
+                # ration was just consumed or the animals just reached maturity.
+                villager['production_status'] = 'Working'
+                economy.practice(villager, job, TICK_SECONDS)
+                continue
             if job != 'farming' and (not boating or villager.get('logistics_trip') or not work_cycles.boat_load(town, building)):
                 if logistics.worker(town, walking, villager, building, logistics_route, TICK_SECONDS):
                     continue
@@ -1197,12 +1204,16 @@ def tick(world):
                 if building['kind'] in {'barn', 'stable'}:
                     marker = id(building)
                     if marker in barn_cycles:
-                        villager['production_status'] = 'Barn already tended this cycle'
+                        villager['production_status'] = (barn_cycles[marker] if building['kind'] == 'barn'
+                                                         else 'Barn already tended this cycle')
+                        if building['kind'] == 'barn' and villager['production_status'] == 'Working':
+                            economy.practice(villager, job, TICK_SECONDS)
                         continue
-                    barn_cycles.add(marker)
                 villager['production_status'] = logistics.produce(town, building, villager, TICK_SECONDS)
-                if building['kind'] in {'barn', 'stable'} and villager['production_status'] == 'Working':
-                    economy.grow_animals(building, TICK_SECONDS)
+                if building['kind'] in {'barn', 'stable'}:
+                    barn_cycles[marker] = villager['production_status']
+                    if villager['production_status'] == 'Working':
+                        economy.grow_animals(building, TICK_SECONDS)
                 continue
             output = 'wood' if job == 'woodcutting' else 'fish' if job == 'fishing' else source.get('crop', 'vegetables')
             if job == 'fishing':

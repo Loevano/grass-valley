@@ -6,6 +6,7 @@ import unittest
 from fixtures import flat_town
 from chunk_world import CHUNK_SIZE, ChunkTerrain
 from spatial import occupied_tiles
+import server
 import work_cycles
 
 
@@ -99,6 +100,73 @@ class BarnWorkers(unittest.TestCase):
                     state = self.worker['work_animation']
                     self.assertEqual((state['x'], state['y']), (11, 12))
                     self.assertFalse(state['path'])
+
+
+class BarnFeedingWorkers(unittest.TestCase):
+    def setUp(self):
+        self.town = flat_town(size=24)
+        self.town.update(level=5, arrival_delay_seconds=60)
+        self.barn = {'kind': 'barn', 'x': 12, 'y': 12, 'settler_level': 2,
+                     'animals': {'chicken': 2}, 'animal_growth': {'chicken': [0, 0]},
+                     'input_buffer': {'fodder': 20}}
+        self.town['buildings'].append(self.barn)
+        template = self.town['villagers'][0]
+        self.town['villagers'] = [dict(copy.deepcopy(template), job='husbandry',
+                                       building_index=1, husbandry=0, talents={},
+                                       logistics_position={'x': 11, 'y': 12}) for _ in range(4)]
+
+    def tick(self):
+        server.tick({'towns': {'a': self.town}})
+
+    def test_all_keepers_feed_and_train_without_multiplying_herd_production(self):
+        positions = [set() for _ in self.town['villagers']]
+        for _ in range(8):
+            self.tick()
+            for worker, visited in zip(self.town['villagers'], positions):
+                self.assertEqual(worker['production_status'], 'Working')
+                state = worker['work_animation']
+                visited.add((state['x'], state['y']))
+        self.assertTrue(all(len(visited) > 1 for visited in positions),
+                        'Each keeper must follow its own feeding round')
+        self.assertEqual(self.barn['animal_growth']['chicken'], [24, 24])
+        self.assertAlmostEqual(self.barn['input_buffer']['fodder'], 20 - 8 * .3)
+        self.assertAlmostEqual(self.town['produced']['eggs'], 4)
+        self.assertAlmostEqual(self.town['produced']['manure'], 1.6)
+        for worker in self.town['villagers']:
+            self.assertAlmostEqual(worker['husbandry'], .32)
+
+    def test_last_ration_and_maturity_still_credit_every_keeper(self):
+        for age in (0, 299):
+            with self.subTest(age=age):
+                self.setUp()
+                self.barn['animal_growth']['chicken'] = [age, age]
+                self.barn['input_buffer'] = {'fodder': .3}
+                self.tick()
+                self.assertEqual(self.barn['animal_growth']['chicken'], [min(300, age + 3)] * 2)
+                self.assertAlmostEqual(self.barn['input_buffer']['fodder'], 0)
+                for worker in self.town['villagers']:
+                    self.assertEqual(worker['production_status'], 'Working')
+                    self.assertAlmostEqual(worker['husbandry'], .04)
+
+    def test_blocked_feeding_never_trains_extra_keepers(self):
+        for reason in ('feed', 'cap', 'storage', 'adults'):
+            with self.subTest(reason=reason):
+                self.setUp()
+                if reason == 'feed':
+                    self.barn['input_buffer'] = {}
+                elif reason == 'cap':
+                    self.town['rules'] = {'production_caps': {'eggs': 0}}
+                elif reason == 'storage':
+                    self.barn['output_buffer'] = {'eggs': 50}
+                else:
+                    self.barn['animal_growth']['chicken'] = [300, 300]
+                before = copy.deepcopy(self.barn)
+                self.tick()
+                self.assertEqual(self.barn['animal_growth'], before['animal_growth'])
+                self.assertEqual(self.barn['input_buffer'], before['input_buffer'])
+                for worker in self.town['villagers']:
+                    self.assertNotEqual(worker['production_status'], 'Working')
+                    self.assertEqual(worker['husbandry'], 0)
 
 
 if __name__ == '__main__':

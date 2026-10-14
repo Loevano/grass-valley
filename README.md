@@ -656,6 +656,8 @@ the Python host, refresh both browsers, and create a new world to use the shared
   Barn workers make short rounds inside the pen, pause to tend the animals, and
   return beside the barn to unload. Rounds avoid buildings, resources, and
   impassable ground, and resume from their saved position after a reload.
+  All assigned keepers feed together and gain husbandry practice when feeding
+  succeeds. Feed use, animal growth, and herd output are counted once per barn.
 - Choose free young barn animals within the existing hall unlocks and capacity.
   The barn's Animals panel shows each species, growing animals' progress, fixed
   cycle yields, remaining herd output, and adults ready for the butcher. Open the
