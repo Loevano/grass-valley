@@ -41,12 +41,12 @@ class AnimalGrowth(unittest.TestCase):
         second.update(job='husbandry', building_index=1)
         self.tick()
         self.assertEqual(self.barn['animal_growth']['pig'], [3])
-        self.assertAlmostEqual(self.barn['input_buffer']['fodder'], 39.6)
-        self.barn['input_buffer'] = {'fodder': .39}
+        self.assertAlmostEqual(self.barn['input_buffer']['fodder'], 39.9)
+        self.barn['input_buffer'] = {'fodder': .09}
         self.tick()
         self.assertEqual(self.barn['animal_growth']['pig'], [3])
-        self.assertAlmostEqual(self.barn['input_buffer']['fodder'], .39)
-        self.barn['input_buffer'] = {'vegetables': .4}
+        self.assertAlmostEqual(self.barn['input_buffer']['fodder'], .09)
+        self.barn['input_buffer'] = {'vegetables': .1}
         self.tick()
         self.assertEqual(self.barn['animal_growth']['pig'], [6])
         self.assertEqual(self.barn['input_buffer']['vegetables'], 0)

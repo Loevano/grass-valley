@@ -136,11 +136,11 @@ class SettlerProfessions(unittest.TestCase):
     def test_new_foods_can_be_sold_without_double_counting_the_pantry(self):
         self.workplace('market')
         for output in ('bread', 'prepared_meat'):
-            self.town.update(goods={output: 2}, food=3, coins=0)
+            self.town.update(goods={output: 2}, food=2 * economy.EDIBLE[output], coins=0)
             server.command(self.town, {'action': 'sell_goods', 'resource': output, 'amount': 1})
             self.assertEqual(self.town['goods'][output], 1)
-            self.assertEqual(self.town['food'], 1.5)
-            self.assertEqual(self.town['coins'], 1)
+            self.assertEqual(self.town['food'], economy.EDIBLE[output])
+            self.assertEqual(self.town['coins'], economy.sale_price(output))
 
     def test_new_workplaces_charge_materials_and_start_construction(self):
         for kind, wood in [('bakery', 30), ('butcher', 25)]:

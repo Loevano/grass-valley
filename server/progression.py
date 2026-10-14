@@ -33,7 +33,7 @@ CROPS = {'vegetables': 1, 'wheat': 2, 'carrots': 3, 'fodder': 3}
 ANIMALS = {
     'chicken': {'level': 2, 'coins': 0, 'output': 'eggs', 'feed': .15},
     'sheep': {'level': 3, 'coins': 0, 'output': 'wool', 'feed': .25},
-    'pig': {'level': 4, 'coins': 0, 'output': 'meat', 'feed': .4},
+    'pig': {'level': 4, 'coins': 0, 'output': 'meat', 'feed': .1},
     'cow': {'level': 5, 'coins': 0, 'output': 'milk', 'feed': .5},
 }
 ANIMALS['horse'] = {'level': 8, 'coins': 0, 'output': 'horse', 'feed': .5}
@@ -162,7 +162,7 @@ FISH = {
 SMOKED_FISH = {f'smoked_{key}': {'food': spec['food'] + .5, 'coins': spec['coins'] + 1}
                for key, spec in FISH.items()}
 EDIBLE = {'vegetables': 1, 'carrots': 1, 'fish': 1, 'berries': 1, 'eggs': 1,
-          'meat': 1, 'milk': 1, 'fruit': 1, 'smoked_fish': 1.5, 'bread': 1.5, 'prepared_meat': 1.5,
+          'meat': 1, 'milk': 1, 'fruit': 1, 'smoked_fish': 1.5, 'bread': 1.5, 'prepared_meat': 4,
           **{key: spec['food'] for key, spec in {**FISH, **SMOKED_FISH}.items()}}
 
 
@@ -216,7 +216,8 @@ PROFESSION_RECIPES = {
 CRAFTED_GOODS = tuple(r['output'] for r in PROFESSION_RECIPES['workshop'][1:])
 EDIBLE.update({r['output']: 1.5 + .25 * (r['level'] - 1)
                for kind in ('bakery', 'butcher') for r in PROFESSION_RECIPES[kind][1:]})
-EDIBLE.update({'fruit_pies': 3.5, 'cakes': 4.5, 'meat_pies': 4})
+EDIBLE.update({'fruit_pies': 3.5, 'cakes': 4.5,
+               'herbed_meat': 5, 'smoked_meat': 6, 'sausages': 6, 'meat_pies': 7})
 PRODUCTION_SECONDS = {
     'leather': 9, 'iron_ore': 9, 'iron': 12, 'saddles': 15, 'steel': 15, 'trade_crates': 18,
     'flour': 3, 'planks': 6, **{key: 3 for key in SMOKED_FISH}, 'fish': 3,
@@ -230,6 +231,8 @@ PRODUCTION_SECONDS = {
 SALE_PRICES = {r['output']: ceil(EDIBLE.get(r['output'], 1)) if r['level'] > 1 else 1
                for recipes in PROFESSION_RECIPES.values() for r in recipes}
 SALE_PRICES['tools'] = 3
+# Meat is a valuable luxury; processing pays for ingredients as well as food.
+SALE_PRICES.update(meat=2, prepared_meat=4)
 SALE_PRICES.update({key: spec['coins'] for key, spec in SMOKED_FISH.items()})
 # Woodcraft prices cover ingredients and reward higher tiers per active work second.
 SALE_PRICES.update(wooden_bowls=2, crates=6, furniture=10, carved_furniture=15,
@@ -520,12 +523,18 @@ def relocate_market_stock(town):
 
 def ensure_inventory(town):
     """Locate old shared stock at the hall and count old workplace outputs once."""
-    if town.get('food_balance_version') != 1:
+    if town.get('food_balance_version', 0) < 1:
         # Revalue available stock once; reserved inputs and pending outputs are not pantry food.
         town['food'] = town.get('food', 0) + sum(
-            quantity(town, key) * (EDIBLE[key] - old)
-            for key, old in {'fruit_pies': 2.25, 'cakes': 2.5, 'meat_pies': 2.5}.items())
+            quantity(town, key) * gain
+            for key, gain in {'fruit_pies': 1.25, 'cakes': 2, 'meat_pies': 1.5}.items())
         town['food_balance_version'] = 1
+    if town.get('food_balance_version') == 1:
+        town['food'] = town.get('food', 0) + sum(
+            quantity(town, key) * (EDIBLE[key] - old)
+            for key, old in {'prepared_meat': 1.5, 'herbed_meat': 1.75,
+                             'smoked_meat': 2, 'sausages': 2.25, 'meat_pies': 4}.items())
+        town['food_balance_version'] = 2
     if town.get('inventory_version') == 1:
         relocate_market_stock(town)
         return

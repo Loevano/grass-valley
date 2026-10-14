@@ -371,8 +371,12 @@ the Python host, refresh both browsers, and create a new world to use the shared
 - Hall level 4 unlocks bakeries (30 wood + 5 planks) and butcher shops
   (25 wood + 5 planks). Bakeries have one worker space; butcher shops start with two. Bakeries use
   2 flour + 0.5 wood to make 2 bread; butcher shops use 2 meat from barns
-  to make 2 prepared meat. Both foods supply 1.5 pantry food per unit and can
-  be sold at a market. Processing skill increases batch size and ingredient use
+  to make 2 prepared meat. Bread supplies 1.5 pantry food per unit; prepared
+  meat supplies 4 and sells for 4 coins. A pig needs 10 feed over its five-minute
+  growth cycle and yields 8 raw meat, worth 32 food when prepared. Grain remains
+  the more efficient staple; meat rewards the extra tending and butchery work.
+  Herbed meat, smoked meat, sausages, and meat pies supply 5/6/6/7 food per unit
+  and sell for 5/6/6/7 coins. Processing skill increases batch size and ingredient use
   together. Farmers' skill improves field yields; animals still limit barn output,
   and only one keeper tends a barn each cycle.
 - Workshops offer seven recipes; bakeries and butcher shops offer five, selected in the

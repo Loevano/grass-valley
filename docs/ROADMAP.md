@@ -127,6 +127,11 @@ For fishing, downstream storage sizes, skill thresholds, catch
 probabilities, fish values, and smoke-station staffing remain open before
 implementation. Their production rates also need review against the implemented
 worker limits documented in README.md.
+The [luxury meat balance](BALANCING.md#grain-staple-and-luxury-meat) is implemented:
+pigs use 10 feed and yield 32 food as prepared meat, with profitable advanced
+recipes. Base bread is about 24% more efficient per active worker-second than
+a full pig barn before travel and byproducts. Delivered livestock pacing and
+its interaction with grain equipment still need play experience.
 The wood and grain rates still need play experience across town layouts to assess
 delivered supply and pacing, including continuous forestry supply for the grain
 chain. The grain chain has compact host fixtures for base rates and 200 residents.

@@ -102,7 +102,8 @@ class RecipeBalance(unittest.TestCase):
             recipe = next(r for r in recipes if r['output'] == key)
             food = recipe['amount'] * economy.EDIBLE[key]
             # Compare with processing flour into bread and meat into prepared meat.
-            alternative = sum(amount * (1.5 if ingredient in ('flour', 'meat')
+            alternative = sum(amount * (economy.EDIBLE['bread'] if ingredient == 'flour'
+                                        else economy.EDIBLE['prepared_meat'] if ingredient == 'meat'
                                         else economy.EDIBLE.get(ingredient, 0))
                               for ingredient, amount in recipe['inputs'].items())
             self.assertGreater(food, alternative)
@@ -129,9 +130,9 @@ class RecipeBalance(unittest.TestCase):
         self.building['input_buffer']['cakes'] = 20
         self.building['pending_output'] = {'cakes': 10}
         economy.ensure_inventory(self.town)
-        self.assertEqual(self.town['food'], 34.5)
+        self.assertEqual(self.town['food'], 37.5)
         economy.ensure_inventory(self.town)
-        self.assertEqual(self.town['food'], 34.5)
+        self.assertEqual(self.town['food'], 37.5)
 
     def test_fractional_meal_does_not_withdraw_negative_food(self):
         hall = self.town['buildings'][0]

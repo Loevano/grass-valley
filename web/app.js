@@ -503,7 +503,7 @@ const storageGoods={
   smokehouse:['fish','trout','salmon','sturgeon','wood','smoked_fish','smoked_trout','smoked_salmon','smoked_sturgeon'],workshop:['planks','wood','tools'],fish_pond:['fodder','fish']
 };
 function buildingStorageGoods(building){return (world.progression?.storage_goods || storageGoods)[building.kind] || [];}
-function foodGoods(){return world.progression?.edible || {vegetables:1,carrots:1,fish:1,trout:1.5,salmon:2,sturgeon:3,berries:1,eggs:1,meat:1,milk:1,fruit:1,smoked_fish:1.5,smoked_trout:2,smoked_salmon:2.5,smoked_sturgeon:3.5,bread:1.5,prepared_meat:1.5};}
+function foodGoods(){return world.progression?.edible || {vegetables:1,carrots:1,fish:1,trout:1.5,salmon:2,sturgeon:3,berries:1,eggs:1,meat:1,milk:1,fruit:1,smoked_fish:1.5,smoked_trout:2,smoked_salmon:2.5,smoked_sturgeon:3.5,bread:1.5,prepared_meat:4};}
 function buildingStorageKeys(building){
   const goods=new Set(buildingStorageGoods(building));
   return [...new Set([...(world.progression?.storage_keys || storageKeys),...Object.keys(foodGoods())])].filter(key=>goods.has(key));

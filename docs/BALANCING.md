@@ -276,7 +276,7 @@ minutes of flour production, with wheat already supplied.
 These examples start with one newly acquired young animal, alone in a barn,
 and end after all its raw meat becomes basic prepared meat. Each animal needs
 100 successful three-second tending cycles to reach 300 fed seconds. Feed per
-cycle is 0.15 for chickens, 0.25 for sheep, 0.4 for pigs, and 0.5 for cows.
+cycle is 0.15 for chickens, 0.25 for sheep, 0.1 for pigs, and 0.5 for cows.
 Growing vegetables or fodder costs eight active field worker-seconds per harvest
 of 10 feed, plus passive growth, water collection, travel, and delivery as described
 above. Feeding produces 0.1 manure per animal per
@@ -289,10 +289,10 @@ species, without using another capacity slot. Farm-animal breeding is removed.
 
 | Full chain | Work breakdown | Total production time cost | Total reward |
 | --- | --- | --- | --- |
-| Feed → young chicken → meat → prepared meat | Harvest 20 feed: 16s; tend animal: 300s; butcher: 60s; prepare: 6s | 382 worker-seconds + water collection/travel | 2 prepared meat (3 food value) + 10 manure + 5 spare feed; approximately 5.313 practice (0.213 farming + 4 husbandry + 1.1 butchery) |
-| Feed → young sheep → meat → prepared meat | Harvest 30 feed: 24s; tend animal: 300s; butcher: 60s; prepare: 12s | 396 worker-seconds + water collection/travel | 4 prepared meat (6 food value) + 1 hide + 10 manure + 5 spare feed; approximately 5.52 practice (0.32 farming + 4 husbandry + 1.2 butchery) |
-| Feed → young pig → meat → prepared meat | Harvest 40 feed: 32s; tend animal: 300s; butcher: 60s; prepare: 24s | 416 worker-seconds + water collection/travel | 8 prepared meat (12 food value) + 2 hides + 10 manure; approximately 5.827 practice (0.427 farming + 4 husbandry + 1.4 butchery) |
-| Feed → young cow → meat → prepared meat | Harvest 50 feed: 40s; tend animal: 300s; butcher: 60s; prepare: 30s | 430 worker-seconds + water collection/travel | 10 prepared meat (15 food value) + 3 hides + 10 manure; approximately 6.033 practice (0.533 farming + 4 husbandry + 1.5 butchery) |
+| Feed → young chicken → meat → prepared meat | Harvest 20 feed: 16s; tend animal: 300s; butcher: 60s; prepare: 6s | 382 worker-seconds + water collection/travel | 2 prepared meat (8 food value) + 10 manure + 5 spare feed; approximately 5.313 practice (0.213 farming + 4 husbandry + 1.1 butchery) |
+| Feed → young sheep → meat → prepared meat | Harvest 30 feed: 24s; tend animal: 300s; butcher: 60s; prepare: 12s | 396 worker-seconds + water collection/travel | 4 prepared meat (16 food value) + 1 hide + 10 manure + 5 spare feed; approximately 5.52 practice (0.32 farming + 4 husbandry + 1.2 butchery) |
+| Feed → young pig → meat → prepared meat | Harvest 10 feed: 8s; tend animal: 300s; butcher: 60s; prepare: 24s | 392 worker-seconds + water collection/travel | 8 prepared meat (32 food value, 32 coins) + 2 hides + 10 manure; approximately 5.507 practice (0.107 farming + 4 husbandry + 1.4 butchery) |
+| Feed → young cow → meat → prepared meat | Harvest 50 feed: 40s; tend animal: 300s; butcher: 60s; prepare: 30s | 430 worker-seconds + water collection/travel | 10 prepared meat (40 food value) + 3 hides + 10 manure; approximately 6.033 practice (0.533 farming + 4 husbandry + 1.5 butchery) |
 
 A barn tends all its animals in one shared cycle. For a same-age herd tended by
 one worker, count the 300 seconds of tending and its 4 husbandry practice once
@@ -300,6 +300,42 @@ for the group; sum feed production,
 manual butchery, meat preparation, and byproducts per animal. Mature barn animals
 held longer consume no feed and produce no goods or practice. A replacement must
 complete its own fed growth cycle before it can be butchered again.
+
+### Grain staple and luxury meat
+
+Pigs are the dedicated meat animal. Five minutes of growth now uses **10 feed**;
+8 raw meat becomes **8 prepared meat worth 32 food**, so using vegetables as
+feed no longer destroys most of the edible value. Prepared meat provides 4 food
+and sells for 4 coins per item; raw meat still provides 1 food and sells for 2.
+Growth, manual slaughter, recipe times, animal yields, and practice rewards are
+unchanged by this balance adjustment. Hides and manure are additional rewards.
+
+Compare base active work with a full four-pig barn, sharing its keeper's work:
+
+| Final food | Active work per batch | Food per worker-minute |
+| --- | --- | --- |
+| 2 bread (3 food) | 1.6s wheat farming + 3s milling + 2s fuel gathering + 6s baking = 12.6s | 14.29 |
+| 8 prepared meat (32 food) | 8s feed farming + 75s shared tending + 60s butchery + 24s preparation = 167s | 11.50 |
+
+Bread is approximately **24% more efficient** in this comparison, with continuous
+production and equipment upgrades for large towns. Meat is a valuable, slower
+luxury. A lone pig is less efficient because it bears all 300 tending seconds.
+These ideal totals prorate harvests and exclude water trips, travel, hauling,
+animal acquisition, and byproduct value; delivered balance still needs playtesting.
+
+| Butcher recipe | Food per item | Coins per item | Food per base batch |
+| --- | --- | --- | --- |
+| Prepared meat | 4 | 4 | 8 |
+| Herbed meat | 5 | 5 | 10 |
+| Smoked meat | 6 | 6 | 12 |
+| Sausages | 6 | 6 | 18 |
+| Meat pies | 7 | 7 | 14 |
+
+Each advanced recipe adds food compared with preparing its meat, baking its flour
+as bread, and eating its other edible ingredients separately. Sale proceeds also
+exceed all ingredient prices, including fuel. Existing available meat goods gain
+their new food value once on load; untyped provisions, reserved inputs, pending
+outputs, quantities, skills, and unfinished work are preserved.
 
 ### Training time and manual butcher rewards
 
