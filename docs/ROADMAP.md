@@ -13,6 +13,7 @@ and cache rules are in [Backend](BACKEND.md#cached-zoomed-out-map).
 | 6     | Remove village grain flow summary  | Planned                  | Remove the detailed village grain flow summary from building Production panels. |
 | 7     | Building range indicators in build mode | Planned             | Show building ranges on the map to help choose placement positions. |
 | 8     | Larger production buildings and town hall | Planned           | Give mills, sawpits, and forgeries larger footprints with workplace and stock areas; make town halls occupy four tiles. |
+| 9     | Fix harvesting tool visuals        | Planned                  | Remove the duplicate sickle and the extra attribute shown during harvesting. |
 
 ## Cached zoomed-out town overview
 
@@ -266,3 +267,15 @@ Completion criteria:
   and stock areas.
 - Town halls occupy four tiles.
 - Placement, collision, and worker access respect the complete building footprints.
+
+## Fix harvesting tool visuals
+
+**Status:** planned.
+
+During harvesting, the sickle appears twice and an additional unintended attribute
+is also visible. Fix the harvesting animation to display only the intended tool.
+
+Completion criteria:
+
+- The sickle appears only once during harvesting.
+- The extra unintended attribute no longer appears.
