@@ -430,13 +430,15 @@ const woodWorkerCapacities={woodcutter:[1,2,3],sawpit:[1,2],workshop:[1]};
 const workerCapacities={...woodWorkerCapacities,farm:[1,2,4],mill:[1,2],bakery:[1],mine:[1,2,4,8],smelter:[1,2,3],steelworks:[1]};
 const decorationKinds=['wooden_bench','wooden_statue'];
 function woodCapacities(){return world.progression?.wood_worker_capacities || woodWorkerCapacities;}
+function storageUpgradeKinds(){return world.progression?.storage_upgrade_kinds || [...Object.keys(woodCapacities()),'mill','bakery'];}
+function workplaceStorageSize(building){return (world.progression?.workplace_storage_sizes || {mill:160,bakery:100})[building.kind] || 50;}
 function capacityTiers(){return world.progression?.worker_capacities || workerCapacities;}
 function settlerCapacity(building){
   const level=building.settler_level || 1,tiers=capacityTiers()[building.kind];
   return tiers?tiers[Math.min(level,tiers.length)-1]:settlerSpaces[building.kind]*level;
 }
 function capacityMaxLevel(building){return capacityTiers()[building.kind]?.length || 3;}
-function storageMultiplier(building){return building.kind in woodCapacities()?1+.25*(buildingLevel(building)-1):1;}
+function storageMultiplier(building){return storageUpgradeKinds().includes(building.kind)?1+.25*(buildingLevel(building)-1):1;}
 function housingCapacity(town){
   return 5+town.buildings.filter(b=>b.kind==='home'&&!b.construction).reduce((sum,b)=>sum+Math.max(2*(buildingLevel(b)+(b.profession_upgrades?.includes('timber_frame')?1:0)),town.sandbox?settlerSpaces.home*(b.settler_level || 1):0),0);
 }
@@ -469,7 +471,7 @@ function farmStorageCapacity(building){
 }
 function buildingStorageSize(building){
   if(['farm','acre'].includes(building.kind))return Object.values(roomAllocations(building)).reduce((sum,n)=>sum+n,0);
-  return ['home','market','well',...decorationKinds].includes(building.kind)?0:building.kind==='hall'?200:building.kind==='storehouse'?storehouseCapacities[buildingLevel(building)-1]:50*storageMultiplier(building);}
+  return ['home','market','well',...decorationKinds].includes(building.kind)?0:building.kind==='hall'?200:building.kind==='storehouse'?storehouseCapacities[buildingLevel(building)-1]:workplaceStorageSize(building)*storageMultiplier(building);}
 function storageCapacity(town){return town.buildings.filter(b=>!b.construction).reduce((sum,b)=>sum+buildingStorageSize(b),0);}
 
 const storageKeys=['wood','food','planks','wheat','fodder','flour','wool','tools','manure','herbs'];
@@ -498,7 +500,7 @@ function roomAllocations(building){
     hall:{wood:100,food:100},home:{},woodcutter:{wood:50},fishing_hut:{food:50},
     farm:{food:20,wheat:10,fodder:10,manure:10},acre:{food:20,wheat:10,fodder:10,manure:10},
     barn:{food:20,fodder:15,wool:10,manure:5},orchard:{food:50},
-    bakery:{flour:20,wood:5,food:25},butcher:{food:50},sawpit:{wood:30,planks:20},mill:{wheat:30,flour:20},
+    bakery:{flour:40,wood:10,herbs:20,food:40},butcher:{food:50},sawpit:{wood:30,planks:20},mill:{wheat:80,flour:80},
     smokehouse:{food:45,wood:5},workshop:{planks:25,wood:15,tools:10},fish_pond:{fodder:15,food:35},
     market:{}
   };
@@ -549,9 +551,9 @@ function renderStorage(town,item,index,target=$('selection-details')){
   else{
     const heading=target.children[0];heading.className='storage-heading';heading.append(summary);
   }
-  if(item.kind in woodCapacities()){
+  if(storageUpgradeKinds().includes(item.kind)){
     const note=document.createElement('p');note.className='storage-note';
-    note.textContent=`Production buffer: ${capacity} spaces${['sawpit','workshop'].includes(item.kind)?` · Separate input buffer: ${Number(Object.values(item.input_buffer || {}).reduce((sum,n)=>sum+n,0).toFixed(2))} / ${capacity}`:''}. Storage levels increase these limits; worker capacity is separate.`;
+    note.textContent=`Production buffer: ${capacity} spaces${['sawpit','workshop','mill','bakery'].includes(item.kind)?` · Separate input buffer: ${Number(Object.values(item.input_buffer || {}).reduce((sum,n)=>sum+n,0).toFixed(2))} / ${capacity}`:''}. Storage levels increase these limits; worker capacity is separate.`;
     target.append(note);
   }
   if(item.kind==='storehouse'){
@@ -596,7 +598,7 @@ function renderStorage(town,item,index,target=$('selection-details')){
 }
 
 function upgradeBenefit(kind,level,item){
-  if(kind in woodCapacities()){
+  if(storageUpgradeKinds().includes(kind)){
     const building={...item,kind,level};
     return `${buildingStorageSize(building)} storage spaces\n${Object.entries(roomAllocations(building)).map(([key,amount])=>`${goodName(key)}: ${amount}`).join(', ')}\nWorker capacity upgraded separately`;
   }

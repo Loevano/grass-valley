@@ -367,7 +367,7 @@ the Python host, refresh both browsers, and create a new world to use the shared
   Existing settlers gain saved talents when loading; unqualified advanced workers
   pause until trained in the prerequisite job.
 - Hall level 4 unlocks bakeries (30 wood + 5 planks) and butcher shops
-  (25 wood + 5 planks), each with two initial worker spaces. Bakeries use
+  (25 wood + 5 planks). Bakeries have one worker space; butcher shops start with two. Bakeries use
   2 flour + 0.5 wood to make 2 bread; butcher shops use 2 meat from barns
   to make 2 prepared meat. Both foods supply 1.5 pantry food per unit and can
   be sold at a market. Processing skill increases batch size and ingredient use
@@ -420,6 +420,16 @@ the Python host, refresh both browsers, and create a new world to use the shared
   changing assignment or recipe discards unfinished work without ingredient loss.
   Successful batches award 0.04 practice per 3 seconds, adjusted by talent
   (a neutral baker gains 0.08 per bread batch). Blocked work earns no practice.
+- The base grain chain is **2 farms → 1 miller → 2 bakeries**, with one farmer
+  and at least two wheat acres per farm, nearby water, and short delivery paths.
+  One miller makes 40 flour per active minute; two bread bakers use it to make
+  40 bread, consuming 10 wood. Allow for hauling and provide room for finished food.
+  Mills hold 80 wheat and 80 flour; bakeries hold 40 flour, 10 wood, 20 herbs,
+  and 40 of each baked good, milk, eggs, or fruit. Separate reserved-input buffers
+  hold 160 items at a mill and 100 at a bakery. Building storage upgrades increase
+  these limits by 25%/50%, costing 30/60 wood and 30/60 seconds of builder work.
+  Worker spaces upgrade separately; storage levels do not increase processing output.
+  See [grain-chain balance](docs/BALANCING.md#grains) for rates and limitations.
 - Open **Villagers** for a screen-wide roster with every resident’s details and job
   controls visible together. The roster scrolls when needed and stacks on smaller
   screens. You can also select one villager on the map to assign a job.

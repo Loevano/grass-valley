@@ -40,6 +40,9 @@ ANIMAL_GROWTH_SECONDS = 300
 TREE_REGROWTH_RATE = .9
 WOOD_PER_CYCLE = .75
 WOOD_WORKER_CAPACITIES = {'woodcutter': (1, 2, 3), 'sawpit': (1, 2), 'workshop': (1,)}
+STORAGE_UPGRADE_KINDS = (*WOOD_WORKER_CAPACITIES, 'mill', 'bakery')
+# Grain processors buffer two minutes of base production, independently of staffing.
+WORKPLACE_STORAGE_SIZES = {'mill': 160, 'bakery': 100}
 WORKER_CAPACITIES = {
     **WOOD_WORKER_CAPACITIES,
     'farm': (1, 2, 4), 'mill': (1, 2), 'bakery': (1,),
@@ -253,7 +256,7 @@ def processing_efficiency(villager, building):
 
 
 def storage_multiplier(building):
-    return 1 + .25 * (building.get('level', 1) - 1) if building['kind'] in WOOD_WORKER_CAPACITIES else 1
+    return 1 + .25 * (building.get('level', 1) - 1) if building['kind'] in STORAGE_UPGRADE_KINDS else 1
 
 
 SUPPLIES = {'tree': (8, .5), 'water': (12, 3.2), 'berry_bush': (6, .3), 'herb_patch': (4, .2), 'rock': (60, .15)}
@@ -397,10 +400,10 @@ FIXED_STORAGE = {
     'acre': {'food': 20, 'wheat': 10, 'fodder': 10, 'manure': 10},
     'barn': {'food': 20, 'fodder': 15, 'wool': 10, 'manure': 5},
     'orchard': {'food': 50},
-    'bakery': {'flour': 15, 'wood': 5, 'herbs': 5, 'food': 25},
+    'bakery': {'flour': 40, 'wood': 10, 'herbs': 20, 'food': 40},
     'butcher': {'hides': 10, 'food': 20, 'flour': 10, 'herbs': 5, 'wood': 5},
     'sawpit': {'wood': 30, 'planks': 20},
-    'mill': {'wheat': 30, 'flour': 20},
+    'mill': {'wheat': 80, 'flour': 80},
     'smokehouse': {'food': 45, 'wood': 5},
     'workshop': {'planks': 15, 'wood': 5, 'tools': 5, 'wool': 5, **{key: 5 for key in CRAFTED_GOODS}},
     'fish_pond': {'fodder': 15, 'food': 35},
@@ -426,7 +429,7 @@ def building_storage_keys(building):
 def storage_size(building):
     if building['kind'] in ('farm', 'acre'):
         return sum(storage_allocations(building).values())
-    return 0 if building['kind'] in {'home', 'market', 'well', *DECORATIONS} else 200 if building['kind'] == 'hall' else STOREHOUSE_CAPACITIES[building.get('level', 1) - 1] if building['kind'] == 'storehouse' else 50 * storage_multiplier(building)
+    return 0 if building['kind'] in {'home', 'market', 'well', *DECORATIONS} else 200 if building['kind'] == 'hall' else STOREHOUSE_CAPACITIES[building.get('level', 1) - 1] if building['kind'] == 'storehouse' else WORKPLACE_STORAGE_SIZES.get(building['kind'], 50) * storage_multiplier(building)
 
 
 def inventory(building):
@@ -881,5 +884,7 @@ def public_catalog():
             'boats': PLAYER_BOATS, 'fish': FISH, 'upgrades': PROFESSION_UPGRADES, 'recipes': RECIPES, 'edible': EDIBLE,
             'storage_goods': STORAGE_GOODS, 'fixed_storage': FIXED_STORAGE,
             'wood_worker_capacities': WOOD_WORKER_CAPACITIES,
+            'storage_upgrade_kinds': STORAGE_UPGRADE_KINDS,
+            'workplace_storage_sizes': WORKPLACE_STORAGE_SIZES,
             'worker_capacities': WORKER_CAPACITIES, 'decorations': DECORATIONS,
             'crafted_worker_tools': CRAFTED_WORKER_TOOLS, 'wood_per_cycle': WOOD_PER_CYCLE}

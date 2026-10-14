@@ -6,7 +6,7 @@ and cache rules are in [Backend](BACKEND.md#cached-zoomed-out-map).
 | Order | Improvement                        | Status                   | Goal                                                                                                             |
 | ----- | ---------------------------------- | ------------------------ | ---------------------------------------------------------------------------------------------------------------- |
 | 1     | Cached zoomed-out town overview    | Implemented              | Show the landscape and city sizes without refreshing animated scene detail.                                      |
-| 2     | Production line balancing          | Wood and field cycle implemented; farming and fishing chain balance remains | Develop clear farming and fishing chains with capped staffing and simple upgrades. |
+| 2     | Production line balancing          | Wood and farming implemented; fishing remains | Develop clear fishing chains with capped staffing and simple upgrades. |
 | 3     | Scalable villager pathfinding       | Foundations implemented; host scheduling and shared navigation remain | Keep movement responsive as villager counts and towns grow, with bounded routing work. |
 
 ## Cached zoomed-out town overview
@@ -49,65 +49,20 @@ mechanism remains future work; this feature does not reduce snapshot traffic.
 
 ## Production line balancing
 
-**Status:** wood chain implemented. Farming and fishing remain.
-Implemented wood capacities, storage upgrades, crafted worker tools, decorations,
-and base rates are documented in [Balancing](BALANCING.md#wood).
+**Status:** wood and farming chains implemented. Fishing remains.
+Implemented capacities, storage upgrades, tools, decorations, and base rates are
+documented in [wood balance](BALANCING.md#wood) and
+[grain balance](BALANCING.md#grains). The grain chain uses two farms, one miller,
+and two bakeries, with downstream storage sized for harvest and hauling gaps.
 
 Sandbox worlds are available for supply chain experiments: all buildings are
 unlocked, construction and upgrades are free and instant, cottages add residents
 automatically, and villagers need no training and never depart. Production inputs,
 hauling, storage, food consumption, and normal output rates still apply. The
-farming and fishing changes below remain planned.
+fishing changes below remain planned.
 Hosts can also regenerate sandbox worlds from the Worlds menu to try the latest
 terrain layout; confirmation resets only the selected sandbox's towns and progress.
 Registered players retain their names and PINs and reconnect to fresh villages.
-
-### Farming
-
-Farm acre placement and work reach now cover a 7×7 square aligned with map tiles,
-including its corners. Farms can change the crop of all their linked acres in one
-action; individual acre crop selection remains available. Moving or destroying a
-farm now includes its linked acres; moves preserve their layout and require all
-destination tiles to be valid. Farming chain balancing below remains planned.
-
-Completed wells now provide water for crop watering alongside natural water
-sources. Farmers fetch from the nearest reachable source; wells need no staff.
-The field cycle is implemented: acres start unplowed, seeding waits until every
-linked acre is plowed, and each seeded acre sprouts for 15 seconds. One tender
-fetches water once per farm watering round, uses that fill for all acres it tends
-in the round, waters each acre once, and it grows for another 15
-seconds before harvest and delivery. Field progress is saved, growth needs no
-worker, and farmers finish plowing, seeding, watering, and harvesting in rows.
-Completed actions hand off to the next available task within the same host tick.
-Farmers reserve their initial acres before others take another task, and each
-farmer harvests available ripe acres before returning, with an early return when
-the existing crop storage allowance fills. Carried batches remain reserved until
-delivery and respect production caps, including after save/reload.
-Farmers pause to haul when their current crop's storage allowance fills; full
-stock of an unrelated crop does not stop other farmers or field passes. Each crop
-now has an independent item allowance in every building, so other foods cannot
-fill its storage.
-Field visuals follow confirmed worker playback, changing after each action finishes
-even when the host has already assigned the farmer another acre.
-Farmers put away their carried sickles while plowing and sowing.
-Sowing and watering use a walking destination beside the crop before work starts,
-including buffered actions; particles land on crop anchors with three water droplets.
-Storage pauses clear stale work poses and resume saved field progress when room opens.
-Farm crop allowances are 480/1,080/1,920 items at levels 1/2/3; the maximum covers
-two full 48-acre harvests with matching building bonuses, excluding skill, tool,
-and manure bonuses. Acre allowances scale to 10/22.5/40 items per crop.
-Missed updates and resumed tasks reconnect playback at walking speed; trimming
-old buffered animations also preserves that speed and delays field changes.
-Oldest cycles finish before any acre repeats, preventing untouched tiles from
-being skipped. The base harvest is now 10 crops per acre for the two 15-second
-growth periods; existing bonuses apply. Remaining farming work is downstream
-ingredient demand and downstream storage balancing below.
-
-- Farmers supply crops to the mill, which supplies ingredients to the bakery.
-  Full ingredient storage now allows processors to keep working while their
-  output has room, so wheat storage cannot stall milling and starve the bakery.
-- Balance the chains around their worker limits, ingredient demand, and delivered
-  supply, including materials needed elsewhere in the village.
 
 ### Fishing and smoking
 
@@ -123,8 +78,8 @@ ingredient demand and downstream storage balancing below.
 The upgrade panel now uses compact rows with a short benefit, cost and work time,
 and an Upgrade action. Completed upgrades show a status without a disabled button;
 the purchase popup retains full benefits and requirements. The compact rows retain
-the implemented worker limits and wood storage upgrades. Farming and fishing
-balancing and downstream storage scaling below remain planned.
+the implemented worker limits and wood, mill, and bakery storage upgrades.
+Fishing balancing and storage scaling below remain planned.
 
 Production now respects each resource's existing storage allowance, including
 pending deliveries. Each edible good and fish species now has an independent
@@ -133,13 +88,13 @@ lists are organized by production trade; Option/Alt-clicking a storage resource
 checkbox toggles all resources on or off. Legacy food filters expand without losing stock.
 Producers haul when an allowance fills;
 existing excess stock is preserved. Workplace storage totals appear beside the
-Storage heading. Wood-building upgrades increase these allowances by 25% per
-level; farm and acre crop storage now scales with their building levels. Fishing
+Storage heading. Wood, mill, and bakery upgrades increase these allowances by 25% per
+level; farm and acre crop storage scales with their building levels. Fishing
 storage scaling remains planned.
 
 Worker drop-offs now preserve the rest of the simulation tick for the next trip,
 removing the extra pause after unloading. Delivery accounting remains on the host;
-production balancing and storage upgrades below remain planned.
+fishing production balancing and storage upgrades below remain planned.
 
 - Production building upgrades increase internal storage or worker capacity.
 - Items and worker skill levels improve conversion rates and unlock available
@@ -154,11 +109,12 @@ Completion criteria:
 - Storage and worker upgrades have clear effects; items and skills govern
   production improvements and options.
 
-For farming and fishing, downstream storage sizes, skill thresholds, catch
+For fishing, downstream storage sizes, skill thresholds, catch
 probabilities, fish values, and smoke-station staffing remain open before
 implementation. Their production rates also need review against the implemented
 worker limits documented in README.md.
-The wood rates still need play experience to assess delivered supply and pacing.
+The wood and grain rates still need play experience across town layouts to assess
+delivered supply and pacing; the grain chain has a compact host-simulation fixture.
 
 ## Scalable villager pathfinding
 

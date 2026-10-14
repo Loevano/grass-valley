@@ -145,8 +145,75 @@ inventory, without stacking duplicate bonuses. New sawpits start with one space.
 
 | Activity                         | Base work                                             | Output or practice                          | Ideal rate                                              |
 | -------------------------------- | ----------------------------------------------------- | ------------------------------------------- | ------------------------------------------------------- |
+| Two base farms, one farmer and two wheat acres each | Four two-second actions per acre; two 15-second growth periods; one water fill per worker/round | 10 wheat per acre | Target at least 40 wheat/minute delivered together; placement and hauling matter |
 | One mill worker                  | Three-second completed batch                          | 2 wheat → 2 flour; 0.04 practice            | Uses 40 wheat/minute; makes 40 flour/minute             |
 | One baker, basic bread           | Six-second completed batch                            | 2 flour + 0.5 wood → 2 bread; 0.08 practice | Uses 20 flour + 5 wood/minute; makes 20 bread/minute    |
+
+### Two farms → one miller → two bakeries
+
+The base chain uses two farms with **one farmer and at least two wheat acres per
+farm**, one miller, and two bakeries with one bread baker each. A nearby reachable
+well, short delivery paths, fuel, and room for finished bread are required.
+One acre per farm is too little to support the mill continuously through passive
+growth. Add acres or improve delivery when the mill waits for wheat.
+
+```mermaid
+flowchart LR
+    A[Farm 1: one farmer, at least two wheat acres] --> Wheat[40+ wheat/min delivered together]
+    B[Farm 2: one farmer, at least two wheat acres] --> Wheat
+    Wheat --> Mill[One miller: 40 flour/min]
+    Mill --> Baker1[Bakery 1: 20 bread/min]
+    Mill --> Baker2[Bakery 2: 20 bread/min]
+    Wood[10 wood/min for baking] --> Baker1
+    Wood --> Baker2
+```
+
+The mill and bread recipes already match this staffing ratio; their work times,
+ingredients, output, and practice rates stay the same. Together the bakers can
+make 40 bread/minute, worth 60 pantry food before settler consumption. One base
+woodcutter supplies 15 wood/minute, leaving 5 for other uses before travel and
+hauling. Construction, workshops, and other fuel consumers need additional supply.
+
+The deterministic compact host fixture in
+[test_grain_chain.py](../tests/test_grain_chain.py) exercises growth, water trips,
+harvest delivery, ingredient collection, and output hauling. With neutral,
+low-practice farmers and two acres each, the isolated farms supply 50 wheat/minute
+over five minutes after a one-minute startup. The connected chain checks at least
+80% of the ideal processing rate with fuel and spare bread storage supplied.
+This is a placement-specific gameplay check, not a universal delivered rate;
+distant water, blocked paths, storage, talents, and other consumers change it.
+
+### Downstream storage and upgrades
+
+| Building | Level 1 | Level 2 | Level 3 |
+| --- | --- | --- | --- |
+| Mill available wheat / flour, each | 80 | 100 | 120 |
+| Mill separate reserved-input buffer / total material storage, each | 160 | 200 | 240 |
+| Bakery available flour / each baked good, each | 40 | 50 | 60 |
+| Bakery available wood | 10 | 12.5 | 15 |
+| Bakery available herbs | 20 | 25 | 30 |
+| Bakery separate reserved-input buffer / total material storage, each | 100 | 125 | 150 |
+
+Base wheat and flour allowances at the mill cover two active minutes for one
+miller. Each bakery's base flour, wood, and bread allowances cover two active
+minutes of basic bread. Every baked good keeps an independent item allowance;
+milk, eggs, and fruit each use the same 40/50/60 allowance. Reserved ingredients
+have their own buffer and are already withdrawn from available town stock.
+Pending output reserves the finished-product allowance until delivery. Full
+ingredient storage does not block processing when the output batch fits.
+
+Mill and bakery building upgrades grow storage allocations and both buffers by
+25%/50%, with no production bonus. They cost 30/60 wood and take 30/60 seconds
+of builder work, following the existing building-upgrade rules. Worker upgrades
+remain separate: farms have 1/2/4 spaces, mills 1/2, and bakeries one. The second
+miller can supply four base bread bakeries if farms and fuel can support them.
+Better skills and talents increase real ingredient demand along with output.
+Advanced bakery recipes also need their listed milk, herbs, fruit, or eggs;
+the base grain ratio does not promise those supplies.
+
+Existing inventories, assignments, partial batches, and crop bonuses are preserved.
+Existing mill and bakery levels gain the new allowances automatically; excess
+saved stock stays available and production resumes once a complete batch fits.
 
 ### Total production time cost vs total reward
 

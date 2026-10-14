@@ -93,10 +93,22 @@ const run=new Function('document','window','localStorage','setTimeout','clearTim
  town.buildings.push({kind:'mill',x:1,y:3});inspect('building',5);
  check(meters().length===2,'Mill offers wheat and flour storage');
  check(!button('Allocate')&&!fields().length,'Mill capacity cannot be edited');
- check(roomAllocations(town.buildings[5]).wheat===30&&roomAllocations(town.buildings[5]).flour===20,'Mill has fixed input and output capacities');
+ check(roomAllocations(town.buildings[5]).wheat===80&&roomAllocations(town.buildings[5]).flour===80,'Mill buffers two minutes of base wheat and flour');
+ for(const [kind,base] of [['mill',160],['bakery',100]]){
+   for(let level=1;level<=3;level++){
+     const building={kind,level},scale=1+.25*(level-1);
+     check(buildingStorageSize(building)===base*scale,'Grain storage scales independently of workers');
+     check(roomAllocations(building).flour===(kind==='mill'?80:40)*scale,'Flour allowances scale with storage levels');
+     check(upgradeBenefit(kind,level,building).includes('storage spaces')&&!upgradeBenefit(kind,level,building).includes('crops / worker'),'Grain upgrades explain storage benefits');
+   }
+ }
+ town.buildings[5].level=2;inspect('building',5);
+ check(panelNodes().some(c=>c.className==='storage-note'&&c.textContent.includes('Separate input buffer: 0 / 200')),'Mill panel explains its upgraded input buffer');
+ town.buildings[5].level=1;
  inspect('building',0);check(!button('Allocate'),'Hall capacity cannot be edited');
- world.progression={fixed_storage:{mill:{wheat:35,flour:15}}};
+ world.progression={fixed_storage:{mill:{wheat:35,flour:15}},workplace_storage_sizes:{mill:90},storage_upgrade_kinds:['mill']};
  check(roomAllocations(town.buildings[5]).wheat===35,'Client uses host fixed capacities');
+ check(buildingStorageSize({...town.buildings[5],level:2})===112.5,'Client uses host buffer sizes and upgrade kinds');
  delete world.progression;
  const catalogFoods={...foodGoods(),bread_rolls:1.75};
  world.progression={edible:catalogFoods,storage_keys:[...storageKeys,'bread_rolls'],

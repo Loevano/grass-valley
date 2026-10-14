@@ -569,7 +569,7 @@ def resource_reach(building):
 
 
 def production_bonus(building):
-    if building['kind'] in economy.WOOD_WORKER_CAPACITIES:
+    if building['kind'] in economy.STORAGE_UPGRADE_KINDS:
         return 0
     return .25 * (building_level(building) - 1)
 

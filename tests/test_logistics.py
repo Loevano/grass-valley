@@ -166,7 +166,7 @@ class ResourceLogistics(unittest.TestCase):
                     server.command(self.town, {'action': 'configure_storage', 'index': index, 'enabled': {}})
                 self.town['buildings'].pop()
                 self.assertEqual(self.town, before)
-        self.assertEqual(economy.storage_allocations({'kind': 'mill'}), {'wheat': 30, 'flour': 20})
+        self.assertEqual(economy.storage_allocations({'kind': 'mill'}), {'wheat': 80, 'flour': 80})
         self.assertEqual(economy.public_catalog()['fixed_storage'], economy.FIXED_STORAGE)
 
     def test_processor_and_farming_storage_accepts_inputs_and_outputs(self):
@@ -509,8 +509,8 @@ class ResourceLogistics(unittest.TestCase):
 
     def test_full_processor_ingredient_storage_does_not_block_production(self):
         for kind, ingredient, stored, inputs, output, amount in [
-            ('mill', 'wheat', 30, {'wheat': 30}, 'flour', 2),
-            ('bakery', 'flour', 15, {'flour': 10, 'wood': 5}, 'bread', 2),
+            ('mill', 'wheat', 80, {'wheat': 30}, 'flour', 2),
+            ('bakery', 'flour', 40, {'flour': 10, 'wood': 5}, 'bread', 2),
             ('sawpit', 'wood', 30, {'wood': 10}, 'planks', 1),
         ]:
             with self.subTest(kind=kind):
@@ -533,7 +533,7 @@ class ResourceLogistics(unittest.TestCase):
     def test_full_wheat_storage_still_supplies_flour_to_bakery(self):
         store = self.add('storehouse', x=1, storage_enabled={'wheat': True},
                          stored_goods={'wheat': 100})
-        mill = self.add('mill', stored_goods={'wheat': 30}, input_buffer={'wheat': 30})
+        mill = self.add('mill', stored_goods={'wheat': 80}, input_buffer={'wheat': 30})
         bakery = self.add('bakery', x=5, input_buffer={'wood': 5})
         self.assign(0, mill)
         self.assign(1, bakery)

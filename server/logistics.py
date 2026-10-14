@@ -73,7 +73,7 @@ def buffered(building):
 
 
 def buffer_size(building):
-    return BUFFER_SIZE * economy.storage_multiplier(building)
+    return economy.WORKPLACE_STORAGE_SIZES.get(building['kind'], BUFFER_SIZE) * economy.storage_multiplier(building)
 
 
 def production_stock(building, key):
