@@ -12,6 +12,7 @@ and cache rules are in [Backend](BACKEND.md#cached-zoomed-out-map).
 | 5     | Watering and plowing animation positions | Planned             | Apply the seeding animation's worker-position recalculation fix to watering and plowing. |
 | 6     | Remove village grain flow summary  | Planned                  | Remove the detailed village grain flow summary from building Production panels. |
 | 7     | Building range indicators in build mode | Planned             | Show building ranges on the map to help choose placement positions. |
+| 8     | Larger production buildings and town hall | Planned           | Give mills, sawpits, and forgeries larger footprints with workplace and stock areas; make town halls occupy four tiles. |
 
 ## Cached zoomed-out town overview
 
@@ -248,3 +249,20 @@ Completion criteria:
 - Building ranges are visible on the map while in build mode.
 - The building placement preview's range indicator follows its proposed position.
 - Indicators reflect the actual gameplay range of each building.
+
+## Larger production buildings and town hall
+
+**Status:** planned.
+
+- Give the Mill, Sawpit, and Forgery larger tile footprints to reflect their
+  production scale, with a workplace and a stock area for each building.
+- Make the Town hall occupy four tiles.
+- Exact tile counts and layouts for the three production buildings remain to be
+  decided.
+
+Completion criteria:
+
+- Mills, sawpits, and forgeries occupy more tiles and include visible workplace
+  and stock areas.
+- Town halls occupy four tiles.
+- Placement, collision, and worker access respect the complete building footprints.
