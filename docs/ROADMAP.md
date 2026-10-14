@@ -89,6 +89,11 @@ fetches water once per farm watering round, uses that fill for all acres it tend
 in the round, waters each acre once, and it grows for another 15
 seconds before harvest and delivery. Field progress is saved, growth needs no
 worker, and farmers finish plowing, seeding, watering, and harvesting in rows.
+Completed actions hand off to the next available task within the same host tick.
+Farmers reserve their initial acres before others take another task, and each
+farmer harvests available ripe acres before returning, with an early return when
+the existing crop storage allowance fills. Carried batches remain reserved until
+delivery and respect production caps, including after save/reload.
 Farmers pause to haul when their current crop's storage allowance fills; full
 stock of an unrelated crop does not stop other farmers or field passes. Crops
 that share food storage still respect that shared allowance.

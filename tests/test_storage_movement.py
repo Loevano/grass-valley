@@ -162,8 +162,14 @@ class AllWorkplaceStorage(unittest.TestCase):
                     self.assertEqual(economy.local_room(storage, output), 0)
                 for _ in range(economy.production_seconds(building) // 3):
                     server.tick(world)
-                self.assertEqual(worker['production_status'], 'Working')
-                self.assertGreater(worker.get('pending_output', {}).get(output, 0), 0)
+                if kind in ('farm', 'acre'):
+                    # A nearby farm can receive the harvest in the same tick.
+                    self.assertGreater(town['produced'].get(output, 0), 0)
+                    self.assertAlmostEqual(town['produced'][output], logistics.production_stock(building, output)
+                                           + building.get('pending_output', {}).get(output, 0) - limit / 2)
+                else:
+                    self.assertEqual(worker['production_status'], 'Working')
+                    self.assertGreater(worker.get('pending_output', {}).get(output, 0), 0)
                 self.assertGreater(worker.get(worker['job'], 0), 0)
                 self.assertLessEqual(logistics.buffered(building), 50)
                 self.assertLessEqual(logistics.production_stock(building, output)
@@ -187,14 +193,20 @@ class AllWorkplaceStorage(unittest.TestCase):
                 economy.add_stock(town, output, -limit / 2)
                 for _ in range(economy.production_seconds(building) // 3):
                     server.tick(world)
-                self.assertEqual(worker['production_status'], 'Working')
-                self.assertGreater(worker.get('pending_output', {}).get(output, 0), 0)
+                if kind in ('farm', 'acre'):
+                    self.assertGreater(town['produced'].get(output, 0), 0)
+                    self.assertAlmostEqual(town['produced'][output], logistics.production_stock(building, output)
+                                           + building.get('pending_output', {}).get(output, 0) - limit / 2)
+                else:
+                    self.assertEqual(worker['production_status'], 'Working')
+                    self.assertGreater(worker.get('pending_output', {}).get(output, 0), 0)
                 self.assertGreater(worker.get(worker['job'], 0), practice)
 
     def test_gathering_uses_only_remaining_resource_allowance(self):
         world, town, building, worker = self.workplace('farm', 'wheat', 9.75)
         server.tick(world)
-        self.assertEqual(worker['pending_output'], {'wheat': .25})
+        self.assertEqual(town['produced']['wheat'], .25)
+        self.assertEqual(building['output_buffer']['wheat'], 10)
         practice = worker['farming']
         # Harvest cargo is returned even when it fills the buffer; then hauling pauses work.
         for _ in range(10):

@@ -474,7 +474,12 @@ const WorkerAnimation = (() => {
     // Keep each acre at its earliest unplayed state, even after the host has
     // assigned the farmer another acre. Finished playback uses live growth.
     for(const chunk of state.playbackQueue || []){
-      const sample=chunk.samples[chunk.index],view=sample.farmField;
+      let sample;
+      for(let i=chunk.index;i<chunk.samples.length;i++){
+        const candidate=chunk.samples[i];
+        if(candidate.farmField?.x===field.x&&candidate.farmField?.y===field.y){sample=candidate;break;}
+      }
+      const view=sample?.farmField;
       if(view?.x===field.x&&view?.y===field.y){
         // The crop clears when the sickle action finishes, not before arrival.
         return {...view,progress:sample.phase==='working'&&sample.farmAction==='harvesting'?0:view.progress};

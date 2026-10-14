@@ -146,6 +146,14 @@ rest of the simulation tick. The caller credits the completed delivery once;
 the confirmed playback timeline retains the actual phase transition and waypoints
 instead of inserting a stationary wait until the next tick.
 
+Farmers also hand off completed field actions within the remaining tick time.
+Initial acres are reserved for all farmers before any worker chooses a second task.
+Each farmer gathers available ripe acres into one carried batch before returning;
+the farm's existing crop allowance and town production caps can require an early
+return. Pending output reserves that space until delivery. Multiple acres' actions
+share one confirmed playback timeline, including their individual field changes.
+The host tick, snapshot polling, and save cadence remain unchanged.
+
 | Request/work | Current trigger or cadence | Proposed response priority | Important constraint |
 | --- | --- | --- | --- |
 | Founder movement command | Pending steps are submitted from `playerSprite()`; at most one walking request in flight. | 1 | Local prediction gives immediate response; the host validates the movement. |

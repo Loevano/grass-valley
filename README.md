@@ -452,7 +452,11 @@ the Python host, refresh both browsers, and create a new world to use the shared
   farmer collects their own water; the next crop round needs a fresh fill. The crop then
   grows for another **15 seconds** before harvest. Each field action takes two
   seconds; travel adds time. Farmers finish each pass in rows, turning at the end
-  of a row and choosing separate rows when possible. All acres finish their oldest
+  of a row and choosing separate rows when possible. Finishing an action immediately
+  starts the next available task using the time left in the host tick. Each farmer
+  harvests available ripe acres before returning to the farm, returning early when
+  the farm's crop storage allowance fills. Carried crops reserve that space and
+  respect production caps. All acres finish their oldest
   crop cycle before harvested acres start another, so distant tiles are not skipped.
   Each harvest yields **10 crops per acre** before skill, tool, upgrade, and manure
   bonuses. Only one worker tends an acre at a time. Growth continues without workers or storage room;

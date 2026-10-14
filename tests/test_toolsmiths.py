@@ -77,8 +77,10 @@ class Toolsmiths(unittest.TestCase):
                     tick({'towns': {'own': town}})
                     output, rate = ('vegetables', 10) if job == 'farming' else ('wood', .75)
                     bonus = tool['bonus'] if tool['job'] == job else 0
-                    self.assertAlmostEqual(town['buildings'][1]['pending_output'][output],
-                                           rate * (1 + bonus))
+                    building = town['buildings'][1]
+                    self.assertAlmostEqual(building.get('pending_output', {}).get(output, 0)
+                                           + building.get('output_buffer', {}).get(output, 0), rate * (1 + bonus))
+                    self.assertAlmostEqual(town['produced'][output], rate * (1 + bonus))
 
     def test_existing_save_adds_locals_without_moving_old_npcs_or_resetting_visits(self):
         town = new_town('Legacy')

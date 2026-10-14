@@ -397,7 +397,7 @@ def fill_cottages(town):
             assign_settler(town, worker_index, building_index)
 
 
-def work_assignment(town, job, worker_index, spatial=None):
+def work_assignment(town, job, worker_index, spatial=None, reservations=None):
     if job == 'hauling':
         index = town['villagers'][worker_index].get('building_index')
         if type(index) is int and 0 <= index < len(town['buildings']):
@@ -454,7 +454,7 @@ def work_assignment(town, job, worker_index, spatial=None):
                     if assigned_acre not in acres:
                         return None
                     acres = [assigned_acre]
-                nearby = [farming.choose_field(town, b, acres or [b], worker_index)]
+                nearby = [farming.choose_field(town, b, acres or [b], worker_index, reservations)]
             workplaces.append((b, min(nearby, key=lambda r:
                                       (r.get('supply', 1) <= 0, -depths.get((r['x'], r['y']), 1) if boating else 0,
                                        (-1 if boating else 1) * (abs(r['x'] - b['x']) + abs(r['y'] - b['y']))))))
@@ -469,8 +469,8 @@ def work_assignment(town, job, worker_index, spatial=None):
     return assignment
 
 
-def work_source(town, job, worker_index):
-    assignment = work_assignment(town, job, worker_index)
+def work_source(town, job, worker_index, reservations=None):
+    assignment = work_assignment(town, job, worker_index, reservations=reservations)
     return assignment[1] if assignment else None
 
 
@@ -768,6 +768,85 @@ def prepare_landscapes(world, regenerate=False):
         bind_map(world)
 
 
+def harvest_crop(town, villager, building, source):
+    """Reserve gathered crops once; they become available after the farm drop-off."""
+    output = farming.field_state(source).get('crop', source.get('crop', 'vegetables'))
+    room = farming.harvest_room(town, building, source)
+    if room <= 1e-9:
+        villager['production_status'] = ('Production cap reached' if economy.production_room(town, output) <= 0
+                                         else 'Workplace buffer full')
+        return False
+    bonus = production_bonus(building) + npcs.tool_bonus(villager, 'farming')
+    if source['kind'] == 'acre':
+        bonus += production_bonus(source)
+    field = farming.field_state(source)
+    if 'yield_remaining' not in field:
+        field['yield_remaining'] = farming.HARVEST_YIELD * (1 + bonus) * economy.efficiency(villager, 'farming')
+        if economy.quantity(town, 'manure') >= .1:
+            economy.spend(town, {'manure': .1})
+            field['yield_remaining'] *= 1.25
+    amount = min(room, field['yield_remaining'])
+    field['yield_remaining'] -= amount
+    if field['yield_remaining'] <= 1e-9:
+        source['field'] = {'stage': 'unplowed', 'elapsed': 0, 'progress': 0,
+                           'cycle': field['cycle'] + 1}
+        work_cycles.finish_harvest(villager['work_animation'], source)
+    logistics.record_output(town, building, output, amount, villager)
+    villager['production_status'] = 'Working'
+    return True
+
+
+def advance_farmer(town, walking, villager, building, source, index, seconds, reservations=None):
+    """Chain field actions within the tick and retain one continuous playback."""
+    remaining, timeline = seconds, []
+    while remaining > 1e-9:
+        villager['work_target'] = source
+        animation = villager.get('work_animation', {})
+        watering = farming.field_state(source)['stage'] == 'thirsty' and (
+            villager.get('watering_round') == farming.watering_round(building, source)
+            or animation.get('waterReady') or animation.get('phase') in
+            ('fetching_water', 'collecting_water', 'returning_water'))
+        if not villager.get('pending_output') and not watering:
+            crop = farming.field_state(source).get('crop', source.get('crop', 'vegetables'))
+            if timeline and economy.local_room(building, crop) <= 1e-9:
+                # Transport playback is separate from field playback. Begin
+                # hauling on the next tick after this confirmed farm drop-off.
+                villager['production_status'] = 'Workplace buffer full'
+                break
+            if logistics.worker(town, walking, villager, building, logistics_route, remaining):
+                break
+        if villager.get('logistics_trip'):
+            villager.pop('work_animation', None)
+            break
+        delivered, unused = work_cycles.advance_farming(town, walking, villager, building, source, index, remaining)
+        animation = villager.get('work_animation')
+        if not animation:
+            break
+        if delivered:
+            logistics.drop_off(town, building, villager)
+            villager['logistics_position'] = {key: animation[key] for key in ('x', 'y')}
+        if animation['phase'] == 'harvest_ready' and farming.field_state(source)['stage'] == 'ripe':
+            harvested = harvest_crop(town, villager, building, source)
+        else:
+            harvested = False
+            villager['production_status'] = farming.status(source, animation)
+        timeline.extend(dict(sample, time=sample['time'] + seconds - remaining)
+                        for sample in animation['playback'])
+        if unused <= 1e-9 or (animation['phase'] == 'harvest_ready' and not harvested):
+            break
+        remaining = unused
+        # The completed action has released its acre. Select the next eligible
+        # field immediately, including another harvest while there is room.
+        source = work_source(town, 'farming', index, reservations)
+        if source is None:
+            break
+    animation = villager.get('work_animation')
+    if timeline and animation and not villager.get('logistics_trip'):
+        if timeline[-1]['time'] < seconds:
+            timeline.append(dict(timeline[-1], time=seconds))
+        animation['playback'] = timeline
+
+
 def tick(world):
     prepare_landscapes(world, regenerate=True)
     towns = list(world['towns'].values())
@@ -802,6 +881,16 @@ def tick(world):
         economy.player_tick(town, landscape, capacity(town))
         barn_cycles = set()
         butcher_cycles = set()
+        farm_assignments, farm_reservations = {}, {}
+        # Reserve every farmer's first task before anyone chains a second one.
+        # Otherwise an early worker could claim an acre before its tender has
+        # received any of this tick's time.
+        for index, villager in enumerate(town['villagers']):
+            if villager['job'] == 'farming' and not villager.get('construction_target'):
+                assignment = work_assignment(town, 'farming', index, town_spatial, farm_reservations)
+                farm_assignments[index] = assignment
+                if assignment and not farming.claimed(town, assignment[1], index, farm_reservations):
+                    farm_reservations[index] = assignment[1]
         # Haulers supply workplaces before this cycle's production consumes inputs.
         for index in sorted(range(len(town['villagers'])), key=lambda i: town['villagers'][i]['job'] != 'hauling'):
             villager = town['villagers'][index]
@@ -810,7 +899,8 @@ def tick(world):
                 villager['work_target'] = None
                 villager['production_status'] = 'Helping with construction'
                 continue
-            assignment = work_assignment(town, job, index, town_spatial) if job != 'idle' else None
+            assignment = (farm_assignments.get(index) if job == 'farming' else
+                          work_assignment(town, job, index, town_spatial) if job != 'idle' else None)
             finishing_output = False
             if not assignment and villager.get('pending_output') and villager.get('work_animation', {}).get('task', [None])[0] == job:
                 spec = villager['pending_workplace']
@@ -850,6 +940,10 @@ def tick(world):
             if job == 'trading':
                 logistics.merchant(town, walking, villager, building, logistics_route, TICK_SECONDS)
                 continue
+            if job == 'farming':
+                advance_farmer(town, walking, villager, building, source, index, TICK_SECONDS, farm_reservations)
+                farm_reservations.pop(index, None)
+                continue
             boating = job == 'fishing' and work_cycles.fishing_boating(town, building, index)
             if boating:
                 crew = work_cycles.fishing_crew(town, building)
@@ -869,14 +963,6 @@ def tick(world):
                     or economy.production_room(town, boat_output) <= 0))
             else:
                 villager.pop('boat_return_requested', None)
-            animation = villager.get('work_animation', {})
-            watering = job == 'farming' and farming.field_state(source)['stage'] == 'thirsty' and (
-                villager.get('watering_round') == farming.watering_round(building, source)
-                or animation.get('waterReady') or animation.get('phase') in
-                ('fetching_water', 'collecting_water', 'returning_water'))
-            if job == 'farming' and not villager.get('pending_output') and not watering:
-                if logistics.worker(town, walking, villager, building, logistics_route, TICK_SECONDS):
-                    continue
             if villager.get('logistics_trip'):
                 villager.pop('work_animation', None)
             elif work_cycles.advance(town, walking, villager, building, source, index, TICK_SECONDS):
@@ -918,14 +1004,7 @@ def tick(world):
                 if building['kind'] in {'barn', 'stable'} and villager['production_status'] == 'Working':
                     economy.grow_animals(building, TICK_SECONDS)
                 continue
-            if job == 'farming':
-                animation = villager.get('work_animation', {})
-                if animation.get('phase') != 'harvest_ready':
-                    villager['production_status'] = farming.status(source, animation)
-                    continue
             output = 'wood' if job == 'woodcutting' else 'fish' if job == 'fishing' else source.get('crop', 'vegetables')
-            if job == 'farming':
-                output = farming.field_state(source).get('crop', output)
             if job == 'fishing':
                 depth = town_spatial.water_depths().get((source['x'], source['y']), 1)
                 output = economy.fishing_catch(building, depth) if work_cycles.fishing_boating(town, building, index) else 'fish'
@@ -955,21 +1034,7 @@ def tick(world):
             if job == 'fishing' and work_cycles.fishing_boating(town, building, index):
                 bonus += .25 * max(0, economy.fishing_boat_level(building) - 1)
             amount = min(room, rate * (1 + bonus) * economy.efficiency(villager, job))
-            if job == 'farming':
-                field = farming.field_state(source)
-                if 'yield_remaining' not in field:
-                    field['yield_remaining'] = farming.HARVEST_YIELD * (1 + bonus) * economy.efficiency(villager, job)
-                    if economy.quantity(town, 'manure') >= .1:
-                        economy.spend(town, {'manure': .1})
-                        field['yield_remaining'] *= 1.25
-                amount = min(room, field['yield_remaining'])
-                field['yield_remaining'] -= amount
-                if field['yield_remaining'] <= 1e-9:
-                    source['field'] = {'stage': 'unplowed', 'elapsed': 0, 'progress': 0,
-                                       'cycle': field['cycle'] + 1}
-                    work_cycles.finish_harvest(animation, source)
-            else:
-                amount = economy.take_supply(landscape, source, amount)
+            amount = economy.take_supply(landscape, source, amount)
             if amount <= 0:
                 villager['production_status'] = 'Waiting for supply to regenerate'
                 continue

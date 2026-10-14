@@ -92,6 +92,25 @@ assert.equal(Animation.fieldPresentation(farmerState,acre).stage,'ripe','Ripe cr
 Animation.playback(farmerState,harvest,.2);
 assert.equal(Animation.fieldPresentation(farmerState,acre).stage,'unplowed','Harvest completion clears the crop');
 
+// One simulation tick can contain actions on multiple acres.
+const batchState={x:acre.x,y:acre.y,clock:0};
+Animation.playback(batchState,sowing(1,acre),0);
+const batch={...host(2,[fieldSample(0,acre,'ripe','working','harvesting'),
+  fieldSample(1,acre,'unplowed','harvest_ready',null),
+  {...fieldSample(1,secondAcre,'ripe','walking',null),x:acre.x},
+  fieldSample(2,secondAcre,'ripe','working','harvesting'),
+  fieldSample(3,secondAcre,'unplowed','harvest_ready',null)]),task:firstSowing.task};
+const batchSnapshot=JSON.stringify(batch);
+Animation.playback(batchState,batch,.5);
+assert.equal(Animation.fieldPresentation(batchState,acre).stage,'ripe');
+assert.equal(Animation.fieldPresentation(batchState,secondAcre).stage,'ripe','Future acres in the same tick retain their crops');
+Animation.playback(batchState,batch,2);
+assert.equal(Animation.fieldPresentation(batchState,acre),undefined,'Finished acres release their presentation');
+assert.equal(Animation.fieldPresentation(batchState,secondAcre).stage,'ripe');
+Animation.playback(batchState,batch,.5);
+assert.equal(Animation.fieldPresentation(batchState,secondAcre),undefined);
+assert.equal(JSON.stringify(batch),batchSnapshot,'Batch presentation preserves authoritative snapshots');
+
 // A missing update must not compress several tiles into the next short step.
 const delayed={x:0,y:0,clock:0};
 Animation.playback(delayed,host(1,[sample(0,0,0),sample(3,0,0)]),0);

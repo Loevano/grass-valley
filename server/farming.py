@@ -51,8 +51,10 @@ def grow(town, seconds):
                              elapsed=0, progress=0)
 
 
-def claimed(town, field, index):
+def claimed(town, field, index, reservations=None):
     """An acre has one active tender, even with upgraded worker capacity."""
+    if any(owner != index and target is field for owner, target in (reservations or {}).items()):
+        return True
     field_index = next((i for i, b in enumerate(town['buildings']) if b is field), None)
     for other_index, worker in enumerate(town['villagers']):
         if other_index == index or worker['job'] != 'farming' or worker.get('construction_target'):
@@ -73,15 +75,16 @@ def claimed(town, field, index):
     return False
 
 
-def choose_field(town, farm, fields, index):
+def choose_field(town, farm, fields, index, reservations=None):
     worker = town['villagers'][index]
     animation = worker.get('work_animation', {})
     task = animation.get('task', [])
     previous = next((a for a in fields if len(task) >= 7
                      and task[:4] == ['farming', farm['kind'], farm['x'], farm['y']]
                      and task[4:7] == [a['kind'], a['x'], a['y']]), None)
-    # Harvest cargo must return to its farm before this worker changes fields.
-    if worker.get('pending_output') and previous is not None:
+    # Finish a return trip before accepting any newly available acres.
+    returning = animation.get('phase') in ('returning', 'depositing') or animation.get('resume_phase') == 'returning'
+    if worker.get('pending_output') and previous is not None and returning:
         return previous
     if previous is not None and field_state(previous)['stage'] == 'thirsty' and (
             animation.get('waterReady') or animation.get('phase') in
@@ -90,7 +93,8 @@ def choose_field(town, farm, fields, index):
     cycle, stage = work_pass(town, farm)
     ready = [a for a in fields if field_state(a)['cycle'] == cycle and field_state(a)['stage'] == stage
              and (stage != 'plowed' or can_sow(town, farm, cycle))
-             and not claimed(town, a, index)]
+             and not claimed(town, a, index, reservations)
+             and (not worker.get('pending_output') or harvest_room(town, farm, a) > 1e-9)]
     if previous in ready and (animation.get('phase') in ('walking', 'working', 'fetching_water',
                                                         'collecting_water', 'returning_water', 'harvest_ready')
                               or (field_state(previous)['stage'] == 'thirsty' and animation.get('waterReady'))):
@@ -105,12 +109,24 @@ def choose_field(town, farm, fields, index):
                          if i != index and v['job'] == 'farming' and v.get('building_index') == worker.get('building_index')
                          and len(v.get('work_animation', {}).get('task', [])) >= 7
                          and v['work_animation']['task'][:4] == ['farming', farm['kind'], farm['x'], farm['y']]}
+        occupied_rows.update(target['y'] for owner, target in (reservations or {}).items()
+                             if owner != index and town['villagers'][owner].get('building_index') == worker.get('building_index'))
         available_rows = [y for y in rows if y not in occupied_rows] or list(rows)
         row = previous['y'] if previous is not None and previous['y'] in available_rows else min(
             available_rows, key=lambda y: (abs(y - position['y']), y))
         ends = [min(rows[row], key=lambda a: a['x']), max(rows[row], key=lambda a: a['x'])]
         return min(ends, key=lambda a: (abs(a['x'] - position['x']), a['x']))
     return previous if previous is not None else fields[index % len(fields)]
+
+
+def harvest_room(town, farm, field):
+    # Progression also uses field state, so import after module initialization.
+    import progression as economy
+    state = field_state(field)
+    if state['stage'] != 'ripe':
+        return 0
+    crop = state.get('crop', field.get('crop', 'vegetables'))
+    return min(economy.local_room(farm, crop), economy.production_room(town, crop))
 
 
 def complete_action(field):

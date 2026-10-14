@@ -100,11 +100,21 @@ def advance(town, landscape, villager, building, source, index, seconds):
                 villager['work_animation'] = copy.deepcopy(captain)
                 return False
     previous = villager.get('work_animation', {}).get('playback')
-    finished = _advance(town, landscape, villager, building, source, index, seconds)
+    finished, _ = _advance(town, landscape, villager, building, source, index, seconds)
     state = villager.get('work_animation')
     if state and state.get('playback') is not previous:
         state['playback'].append(_sample(state, seconds, source))
     return finished
+
+
+def advance_farming(town, landscape, villager, building, source, index, seconds):
+    """Stop at an action or delivery so the caller can use the remaining time."""
+    finished, remaining = _advance(town, landscape, villager, building, source, index,
+                                   seconds, stop_at_delivery=True)
+    state = villager.get('work_animation')
+    if state:
+        state['playback'].append(_sample(state, seconds - remaining, source))
+    return finished, remaining
 
 
 def _sample(state, time, source):
@@ -130,7 +140,7 @@ def finish_harvest(state, source):
             sample['farmField'] = _field_view(source)
 
 
-def _advance(town, landscape, villager, building, source, index, seconds):
+def _advance(town, landscape, villager, building, source, index, seconds, stop_at_delivery=False):
     """Return True only when the worker finishes unloading at its workplace."""
     boating = villager['job'] == 'fishing' and fishing_boating(town, building, index)
     spec = [villager['job'], building['kind'], building['x'], building['y'], source['kind'], source['x'], source['y']]
@@ -232,7 +242,7 @@ def _advance(town, landscape, villager, building, source, index, seconds):
             spot = min((p for p in candidates if p not in blocked and (not terrain or terrain[p[1]][p[0]] != 'v')),
                        key=lambda p: abs(p[0] - x) + abs(p[1] - y), default=None)
             if spot is None:
-                return False
+                return False, 0
             x, y = spot
         preserved = (x, y) == (round(position['x']), round(position['y']))
         water_ready = bool(state and state['task'] == spec and state.get('waterReady'))
@@ -251,7 +261,7 @@ def _advance(town, landscape, villager, building, source, index, seconds):
             if path is None:
                 state['resume_phase'] = resume_phase
             villager['work_animation'] = state
-        elif farming_job and villager.get('pending_output'):
+        elif farming_job and villager.get('pending_output') and farming.harvest_room(town, building, source) <= 1e-9:
             # Finish pre-existing harvest cargo, including saves from the old cycle.
             state['phase'] = 'harvest_ready'
             state['path'] = []
@@ -283,7 +293,7 @@ def _advance(town, landscape, villager, building, source, index, seconds):
                     or (terrain and (terrain[target['y']][target['x']] == 'v'
                                      or (bounds and not terrain[target['y']][target['x']])))):
                 state.update(path=[], resume_phase=state['phase'], phase='waiting', elapsed=0)
-                return finished
+                return finished, 0
             dx, dy = target['x'] - state['x'], target['y'] - state['y']
             distance = math.hypot(dx, dy)
             speed = 1.8 * (1.5 if (math.floor(state['x'] + .5), math.floor(state['y'] + .5)) in roads else 1)
@@ -308,27 +318,28 @@ def _advance(town, landscape, villager, building, source, index, seconds):
             continue
         phase = state['phase']
         if farming_job and phase not in ('depositing', 'returning', 'collecting_water'):
-            # Completed cargo is credited by the caller after this tick. It
-            # must not send the farmer back to unload a second time meanwhile.
-            if villager.get('pending_output') and not finished:
+            # Keep harvesting while another ripe acre fits the reserved farm
+            # allowance. Once returning, finish the trip before accepting work.
+            if (villager.get('pending_output') and not finished
+                    and farming.harvest_room(town, building, source) <= 1e-9):
                 path = [] if source is building else travel(state, building)
                 state.update(path=path or [], phase='waiting' if path is None else 'returning' if path else 'depositing',
                              elapsed=0, farmAction=None)
                 continue
             if farming.claimed(town, source, index):
                 state.update(phase='waiting_field', farmAction=None)
-                return finished
+                return finished, 0
             if field['stage'] in ('sprouting', 'growing'):
                 state.update(phase='growing', elapsed=0, farmAction=None)
-                return finished
+                return finished, 0
             if field['stage'] == 'plowed' and not farming.can_sow(town, building, field['cycle']):
                 state.update(phase='waiting_plowing', elapsed=0, farmAction=None)
-                return finished
+                return finished, 0
             cycle, stage = farming.work_pass(town, building)
             carrying_water = field['stage'] == 'thirsty' and state['waterReady']
             if not carrying_water and (field['cycle'] != cycle or field['stage'] != stage):
                 state.update(phase='waiting_pass', elapsed=0, farmAction=None)
-                return finished
+                return finished, 0
             if field['stage'] == 'thirsty' and not state['waterReady']:
                 banks = {}
                 for water in economy.water_sources(landscape):
@@ -339,7 +350,7 @@ def _advance(town, landscape, villager, building, source, index, seconds):
                 path = travel(state, set(banks), False) if banks else None
                 if path is None:
                     state.update(phase='waiting_water', farmAction=None)
-                    return finished
+                    return finished, 0
                 bank = path[-1] if path else state
                 water = banks[(round(bank['x']), round(bank['y']))]
                 state.update(path=path, waterSource=water, phase='fetching_water' if path else 'collecting_water',
@@ -352,13 +363,13 @@ def _advance(town, landscape, villager, building, source, index, seconds):
             if field['stage'] == 'ripe' and field['progress'] >= farming.WORK_SECONDS:
                 state['phase'] = 'harvest_ready'
                 state['playback'].append(_sample(state, seconds - remaining, source))
-                return finished
+                return finished, remaining
             phase = state['phase']
         if phase in ('waiting', 'waiting_water'):
-            return finished
+            return finished, 0
         if phase == 'working' and building.get('butchering'):
             # The animal's shared processing timer keeps the butcher at the shop.
-            return finished
+            return finished, 0
         duration = .65 if phase in ('depositing', 'collecting_water') else farming.WORK_SECONDS if farming_job else 3.2
         take = min(remaining, max(0, duration - state['elapsed']))
         state['elapsed'] += take
@@ -369,6 +380,9 @@ def _advance(town, landscape, villager, building, source, index, seconds):
         if state['elapsed'] + 1e-9 < duration:
             break
         if phase == 'depositing':
+            if stop_at_delivery:
+                state.update(phase='idle', elapsed=0, farmAction=None)
+                return True, remaining
             path = travel(state, work_spot or source, not work_spot)
             state.update(path=path or [], phase='waiting' if path is None else 'walking' if path else 'working', elapsed=0, waterReady=False)
             # Report the delivery to the caller without discarding the rest of
@@ -391,7 +405,7 @@ def _advance(town, landscape, villager, building, source, index, seconds):
                              phase='growing' if field['stage'] in ('sprouting', 'growing') else
                              'idle' if farming.can_sow(town, building, field['cycle']) else 'waiting_plowing')
             state['playback'].append(_sample(state, seconds - remaining, source))
-            return finished
+            return finished, remaining
         else:
             if boating:
                 load = boat_load(town, building)
@@ -404,4 +418,4 @@ def _advance(town, landscape, villager, building, source, index, seconds):
                 continue
             path = [] if source is building else travel(state, building)
             state.update(path=path or [], phase='waiting' if path is None else 'returning' if path else 'depositing', elapsed=0)
-    return finished
+    return finished, 0

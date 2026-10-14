@@ -122,9 +122,14 @@ class SettlerProfessions(unittest.TestCase):
         farm['field'] = {'stage': 'ripe', 'crop': 'vegetables', 'elapsed': 0, 'progress': 0, 'cycle': 0}
         self.worker['construction_position'] = {'x': 5, 'y': 6}
         server.tick({'towns': {'a': self.town}})
-        self.assertEqual(self.town['produced']['vegetables'] + farm['field']['yield_remaining'], 25)
+        self.assertEqual(self.town['produced']['vegetables'] + farm['field'].get('yield_remaining', 0), 25)
         self.assertEqual(self.worker['farming'], 20.033)
-        self.assertEqual(self.town['villagers'][1]['farming'], 0)
+        # A second tender can start the next cycle in the remaining time, but
+        # cannot repeat the completed harvest action or increase its yield.
+        samples = self.town['villagers'][1]['work_animation']['playback']
+        self.assertEqual(sum(b['time'] - a['time'] for a, b in zip(samples, samples[1:])
+                             if a['phase'] == 'working' and a.get('farmAction') == 'harvesting'), 0)
+        self.assertEqual(farm['field']['cycle'], 1)
 
     def test_new_foods_can_be_sold_without_double_counting_the_pantry(self):
         self.workplace('market')
