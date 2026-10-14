@@ -113,9 +113,9 @@ It uses **four acres and two farmers** in a specific layout.
 Scaling that result gives these planning estimates:
 
 | Food/worker/min | Wheat/min needed | Illustrative acres | Illustrative farmers |
-| --- | --- | --- | --- |
-| 6 (previous) | 800 | 64 | 32 |
-| 1.5 (current) | 200 | 16 | 8 |
+| --------------- | ---------------- | ------------------ | -------------------- |
+| 6 (previous)     | 800              | 64                 | 32                   |
+| 1.5 (current)   | 200              | 16                 | 8                    |
 
 - At the current meal rate, this suggests **eight base farms** with 16 acres.
 - Each base farm has one farmer and two wheat acres in that estimate.
