@@ -10,6 +10,7 @@ and cache rules are in [Backend](BACKEND.md#cached-zoomed-out-map).
 | 3     | Scalable villager pathfinding       | Foundations implemented; host scheduling and shared navigation remain | Keep movement responsive as villager counts and towns grow, with bounded routing work. |
 | 4     | Simplify acre interaction           | Planned                  | Show only current acre state and a Destroy action; manage everything else through the owning farm. |
 | 5     | Watering and plowing animation positions | Planned             | Apply the seeding animation's worker-position recalculation fix to watering and plowing. |
+| 6     | Remove village grain flow summary  | Planned                  | Remove the detailed village grain flow summary from building Production panels. |
 
 ## Cached zoomed-out town overview
 
@@ -220,3 +221,16 @@ Completion criteria:
 
 - Watering and plowing recalculate the worker's position using the same correction
   as seeding, keeping the worker correctly positioned during both animations.
+
+## Remove village grain flow summary
+
+**Status:** planned.
+
+Remove the "Village grain flow" summary from hall, farm, mill, and bakery
+Production panels, including its village demand, wheat acreage, delivery rates,
+mill and bakery capacities, ingredient demand, and advice.
+
+Completion criteria:
+
+- Building Production panels no longer show the village grain flow summary.
+- Building-specific production information remains available.
