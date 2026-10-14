@@ -507,6 +507,42 @@ class ResourceLogistics(unittest.TestCase):
         self.assertEqual(trip['storage'], {k: store[k] for k in ('kind', 'x', 'y')})
         self.assertEqual(trip['cargo'], {'planks': 20})
 
+    def test_full_processor_ingredient_storage_does_not_block_production(self):
+        for kind, ingredient, stored, inputs, output, amount in [
+            ('mill', 'wheat', 30, {'wheat': 30}, 'flour', 2),
+            ('bakery', 'flour', 15, {'flour': 10, 'wood': 5}, 'bread', 2),
+            ('sawpit', 'wood', 30, {'wood': 10}, 'planks', 1),
+        ]:
+            with self.subTest(kind=kind):
+                self.setUp()
+                building = self.add(kind, stored_goods={ingredient: stored}, input_buffer=inputs)
+                worker = self.assign(0, building)
+                economy.ensure_inventory(self.town)
+                self.assertEqual(economy.local_room(building, ingredient), 0)
+                before = copy.deepcopy(self.town)
+                self.assertFalse(logistics.worker(self.town, self.town, worker, building,
+                                                  server.construction_route, 0))
+                self.assertEqual(self.town, before)
+                self.assertEqual(logistics.produce(self.town, building, worker,
+                                                   economy.production_seconds(building)), 'Working')
+                self.assertEqual(worker['pending_output'], {output: amount})
+                self.assertEqual(building['stored_goods'][ingredient], stored)
+                for key, cost in economy.production_recipe(building)[0].items():
+                    self.assertEqual(building['input_buffer'][key], inputs[key] - cost)
+
+    def test_full_wheat_storage_still_supplies_flour_to_bakery(self):
+        store = self.add('storehouse', x=1, storage_enabled={'wheat': True},
+                         stored_goods={'wheat': 100})
+        mill = self.add('mill', stored_goods={'wheat': 30}, input_buffer={'wheat': 30})
+        bakery = self.add('bakery', x=5, input_buffer={'wood': 5})
+        self.assign(0, mill)
+        self.assign(1, bakery)
+        economy.ensure_inventory(self.town)
+        self.assertEqual(economy.local_room(store, 'wheat'), 0)
+        self.ticks(20)
+        self.assertGreater(self.town.get('produced', {}).get('flour', 0), 0)
+        self.assertGreater(self.town.get('produced', {}).get('bread', 0), 0)
+
     def test_output_batches_share_food_and_total_space_without_mutating_stock(self):
         cases = [
             ({'kind': 'barn', 'output_buffer': {'milk': 19}}, {'milk': .75, 'eggs': .75}),

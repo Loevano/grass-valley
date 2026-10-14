@@ -109,6 +109,8 @@ growth periods; existing bonuses apply. Remaining farming work is downstream
 ingredient demand, worker limits, and storage balancing below.
 
 - Farmers supply crops to the mill, which supplies ingredients to the bakery.
+  Full ingredient storage now allows processors to keep working while their
+  output has room, so wheat storage cannot stall milling and starve the bakery.
 - Balance the chains around their worker limits, ingredient demand, and delivered
   supply, including materials needed elsewhere in the village.
 
