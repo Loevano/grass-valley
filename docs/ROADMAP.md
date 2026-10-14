@@ -97,7 +97,10 @@ Production now respects each resource's existing storage allowance, including
 pending deliveries. Each edible good and fish species now has an independent
 item capacity in halls, storehouses, and workplaces. Storage filters and market
 lists are organized by production trade; Option/Alt-clicking a storage resource
-checkbox toggles all resources on or off. Legacy food filters expand without losing stock.
+checkbox toggles all shown resources on or off. Legacy food filters expand without losing stock.
+Storage rows now follow hall, assigned-worker recipe, and owned fishing-boat
+unlocks while retaining goods already in stock. Hidden acceptance settings and
+capacities are preserved; Option/Alt-click toggles only the shown resources.
 Producers haul when an allowance fills;
 existing excess stock is preserved. Workplace storage totals appear beside the
 Storage heading. Wood, mill, and bakery upgrades increase these allowances by 25% per

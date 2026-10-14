@@ -554,11 +554,37 @@ function roomEnabled(building){
   const enabled=building.storage_enabled || Object.fromEntries(Object.entries(building.storage_allocations || {}).map(([key,n])=>[key,n>0]));
   return Object.fromEntries(buildingStorageKeys(building).map(key=>[key,!!(enabled[key] ?? (key in foodGoods()?enabled.food:false))]));
 }
+function storageGoodUnlocked(town,key){
+  const catalog=world.progression;
+  if(town.sandbox||!catalog?.buildings)return true;
+  const hallUnlocked=kind=>town.level>=(catalog.buildings[kind]?.level || 1);
+  if(key in (catalog.crops || {}))return town.level>=catalog.crops[key];
+  const animals=Object.values(catalog.animals || {}).filter(spec=>spec.output===key);
+  if(animals.length)return animals.some(spec=>town.level>=spec.level);
+  if(key==='manure')return hallUnlocked('barn');
+  if(key==='hides')return hallUnlocked('butcher');
+  if(key==='fruit')return hallUnlocked('orchard');
+  const fish=catalog.fish?.[key] || catalog.fish?.[key.replace(/^smoked_/, '')];
+  if(fish){
+    const tier=Math.max(0,...town.buildings.filter(b=>b.kind==='fishing_hut'&&!b.construction).map(fishingBoatLevel));
+    return tier>=fish.boat&&(!key.startsWith('smoked_')||hallUnlocked('smokehouse'));
+  }
+  for(const [kind,recipes] of Object.entries(catalog.profession_recipes || {})){
+    const spec=recipes.find(recipe=>recipe.output===key);
+    if(!spec)continue;
+    const job=catalog.buildings[kind]?.job;
+    return hallUnlocked(kind)&&(spec.level===1||town.villagers.some(v=>
+      v.job===job&&town.buildings[v.building_index]?.kind===kind&&!jobRequirement(v,job)&&(v[job] || 0)>=spec.level));
+  }
+  const producers=Object.entries(catalog.recipes || {}).filter(([,recipe])=>recipe[1]===key);
+  return !producers.length||producers.some(([kind])=>hallUnlocked(kind));
+}
 function renderStorage(town,item,index,target=$('selection-details')){
-  const keys=buildingStorageKeys(item),capacity=buildingStorageSize(item),allocations=roomAllocations(item);
+  const capacity=buildingStorageSize(item),allocations=roomAllocations(item);
   const owner=viewed===identity?.town_id,canConfigure=owner&&item.kind==='storehouse';
   const enabled=roomEnabled(item),edible=foodGoods(),stored={...item.stored_goods},toggles=[];
   for(const [key,n] of Object.entries(item.output_buffer || {}))stored[key]=(stored[key] || 0)+n;
+  const keys=buildingStorageKeys(item).filter(key=>storageGoodUnlocked(town,key)||stored[key]>0||item.input_buffer?.[key]>0||amountOf(town,key)>0);
   const stock=stored;
   const displayCapacity=Object.entries(allocations).reduce((sum,[key,n])=>sum+(key==='food'||key in edible?n:0),0)
     +Math.min(capacity,Object.entries(allocations).reduce((sum,[key,n])=>sum+(key!=='food'&&!(key in edible)?n:0),0));
@@ -575,7 +601,7 @@ function renderStorage(town,item,index,target=$('selection-details')){
   }
   if(item.kind==='storehouse'){
     const note=document.createElement('p');note.className='storage-note';
-    note.textContent='Each resource has its own capacity. Disabled goods remain available to use.'+(canConfigure?' Option/Alt-click any resource checkbox to toggle all resources on or off.':'');target.append(note);
+    note.textContent='Each resource has its own capacity. Disabled goods remain available to use.'+(canConfigure?' Option/Alt-click any resource checkbox to toggle all shown resources on or off.':'');target.append(note);
   }
   for(const [title,members] of resourceCategories(keys)){
     const group=resourceGroup(title);target.append(group);
@@ -587,7 +613,7 @@ function renderStorage(town,item,index,target=$('selection-details')){
       if(canConfigure){
         const toggle=document.createElement('input');toggle.type='checkbox';toggle.checked=enabled[key];
         toggle.setAttribute('aria-label',`Accept ${label}`);
-        toggle.title='Option/Alt-click to toggle all resources on or off';
+        toggle.title='Option/Alt-click to toggle all shown resources on or off';
         let toggleAll=false;
         toggle.onclick=event=>{toggleAll=!!event.altKey;};
         toggle.onchange=()=>{
