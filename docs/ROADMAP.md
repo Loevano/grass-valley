@@ -128,6 +128,8 @@ worker limits documented in README.md.
 The wood and grain rates still need play experience across town layouts to assess
 delivered supply and pacing, including continuous forestry supply for the grain
 chain. The grain chain has compact host fixtures for base rates and 200 residents.
+Advanced woodcraft and metal sale values now cover ingredients, including fuel;
+higher workshop recipe tiers preserve or improve profit per active work second.
 
 ## Scalable villager pathfinding
 

@@ -209,7 +209,11 @@ PRODUCTION_SECONDS = {
 SALE_PRICES = {r['output']: ceil(EDIBLE.get(r['output'], 1)) if r['level'] > 1 else 1
                for recipes in PROFESSION_RECIPES.values() for r in recipes}
 SALE_PRICES['tools'] = 3
-SALE_PRICES.update(hides=2, leather=4, iron_ore=2, iron=6, saddles=25, steel=12, trade_crates=40)
+# Woodcraft prices cover ingredients and reward higher tiers per active work second.
+SALE_PRICES.update(wooden_bowls=2, crates=6, furniture=10, carved_furniture=15,
+                   crafted_axe=8, crafted_saw=12)
+# Include fuel value in metal margins and carry the higher input prices downstream.
+SALE_PRICES.update(hides=2, leather=4, iron_ore=2, iron=10, saddles=35, steel=26, trade_crates=45)
 LATE_GOODS = ('hides', 'leather', 'iron_ore', 'iron', 'saddles', 'steel', 'trade_crates')
 SELLABLE_GOODS = tuple(dict.fromkeys((*LATE_GOODS, *FISH, 'planks', 'wool', 'flour',
                                     'smoked_fish', 'tools', 'herbs', 'fruit', 'milk',

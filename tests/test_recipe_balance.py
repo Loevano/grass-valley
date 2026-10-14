@@ -7,6 +7,31 @@ import progression as economy
 import server
 
 
+class CraftingSaleBalance(unittest.TestCase):
+    def test_advanced_recipes_sell_for_more_than_all_inputs_including_fuel(self):
+        recipes = [(r['inputs'], r['output'], r['amount'])
+                   for rs in economy.PROFESSION_RECIPES.values() for r in rs
+                   if r['level'] > 1]
+        recipes.extend(economy.RECIPES[kind] for kind in
+                       ('tannery', 'smelter', 'saddler', 'steelworks', 'tradehouse'))
+        for inputs, output, amount in recipes:
+            with self.subTest(output=output):
+                ingredient_value = sum(count * economy.sale_price(key)
+                                       for key, count in inputs.items())
+                self.assertGreater(amount * economy.sale_price(output), ingredient_value)
+
+    def test_higher_workshop_tiers_preserve_or_improve_profit_per_work_second(self):
+        previous_profit = 0
+        for recipe in economy.PROFESSION_RECIPES['workshop'][:5]:
+            with self.subTest(output=recipe['output']):
+                ingredient_value = sum(count * economy.sale_price(key)
+                                       for key, count in recipe['inputs'].items())
+                profit = (recipe['amount'] * economy.sale_price(recipe['output'])
+                          - ingredient_value) / economy.PRODUCTION_SECONDS[recipe['output']]
+                self.assertGreaterEqual(profit, previous_profit)
+                previous_profit = profit
+
+
 class RecipeBalance(unittest.TestCase):
     def setUp(self):
         self.town = server.new_town('Balance')

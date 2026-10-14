@@ -409,9 +409,12 @@ the Python host, refresh both browsers, and create a new world to use the shared
   foods supply 1.75–4.5 pantry food per unit at recipe levels 2–5. Fruit pies,
   cakes, and meat pies supply 7, 9, and 8 food per basic batch respectively.
   Advanced foods sell for their per-unit food value rounded up in coins;
-  basic bread and prepared meat remain 1 coin each. Storehouse
-  switches include the new crafted goods. Switching recipes releases unused
-  reserved ingredients for collection without losing them.
+  basic bread and prepared meat remain 1 coin each. Wooden bowls sell for 2 coins
+  each, crates for 6, furniture for 10, and carved furniture for 15. Crafted axes
+  sell for 8 coins and crafted saws for 12. Advanced woodcraft covers ingredient
+  value, with higher recipe tiers earning at least as much profit per active work
+  second. Storehouse switches include the new crafted goods. Switching recipes
+  releases unused reserved ingredients for collection without losing them.
 - Mills turn 2 wheat into 2 flour in 3 seconds. Bread, rolls, and herb bread
   take 6 seconds per batch; fruit pies take 9 seconds and cakes take 12.
   Prepared and herbed meat take 6 seconds, smoked meat and sausages 9,
@@ -815,7 +818,9 @@ Check upgraded building artwork and selection with `node tests/test_building_vis
   into steel. Steel pickaxes improve mine output by 25%.
 - **10 — Advanced trade:** produce 15 steel and either complete a town trade or
   sell 10 goods at a market. Trade houses pack planks, leather, and steel into trade
-  crates worth 40 coins each. Hall level 10 reaches 75 tile steps of building range.
+  crates worth 45 coins each. Iron sells for 10 coins, steel for 26, and saddles
+  for 35; these prices cover ingredients, including fuel, with a crafting margin.
+  Hall level 10 reaches 75 tile steps of building range.
 
 New professions use the existing delivery, production cap, worker practice, and
 storehouse systems. Enable hides, leather, ore, iron, saddles, steel, and trade crates
