@@ -143,7 +143,7 @@ class Horses(IndustryFixture):
         self.assertTrue(self.town['player']['mounted'])
         self.assertEqual(self.stable['animal_growth']['horse'], [300, 0])
         self.assertEqual(economy.quantity(self.town, 'saddles'), 0)
-        self.assertTrue(economy.milestone(self.town, 9))
+        self.assertFalse(economy.milestone(self.town, 9), 'Riding with an imported saddle is not local saddle production')
         self.act('toggle_mount')
         self.assertFalse(self.town['player']['mounted'])
         self.act('return_horse')

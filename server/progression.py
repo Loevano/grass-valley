@@ -124,14 +124,24 @@ def player_boat_level(player):
 
 HALL_UPGRADES = [
     {'level': 2, 'wood': 40, 'seconds': 30, 'coins': 30, 'milestone': 'Housing and reliable food'},
-    {'level': 3, 'wood': 60, 'seconds': 60, 'coins': 40, 'milestone': 'Develop two professions (10 practice each)'},
-    {'level': 4, 'wood': 80, 'planks': 10, 'seconds': 90, 'coins': 50, 'milestone': 'Produce 10 planks'},
-    {'level': 5, 'wood': 80, 'planks': 15, 'seconds': 120, 'coins': 60, 'milestone': 'Produce flour, smoked fish, or crafted tools'},
-    {'level': 6, 'wood': 90, 'planks': 20, 'leather': 5, 'seconds': 150, 'coins': 70, 'milestone': 'Produce 5 leather'},
-    {'level': 7, 'wood': 100, 'planks': 25, 'iron_ore': 10, 'seconds': 180, 'coins': 80, 'milestone': 'Mine 10 iron ore'},
-    {'level': 8, 'wood': 100, 'planks': 25, 'iron': 10, 'seconds': 210, 'coins': 90, 'milestone': 'Smelt 10 iron'},
-    {'level': 9, 'wood': 100, 'planks': 30, 'iron': 15, 'leather': 10, 'seconds': 240, 'coins': 100, 'milestone': 'Saddle a settled horse from your stable'},
-    {'level': 10, 'wood': 100, 'planks': 40, 'steel': 15, 'seconds': 270, 'coins': 120, 'milestone': 'Produce 15 steel and complete a town trade or sell 10 goods at your market'},
+    {'level': 3, 'wood': 50, 'seconds': 60, 'coins': 40, 'production': {'wheat': 20, 'eggs': 6},
+     'milestone': 'Harvest 20 wheat and produce 6 eggs from your barn'},
+    {'level': 4, 'wood': 60, 'planks': 15, 'seconds': 90, 'coins': 50, 'production': {'planks': 20},
+     'milestone': 'Produce 20 planks at your sawpit'},
+    {'level': 5, 'wood': 70, 'planks': 20, 'tools': 5, 'seconds': 120, 'coins': 60,
+     'production': {'tools': 5}, 'processed_food': 10,
+     'milestone': 'Craft 5 tools and produce 10 baked goods, smoked fish, or prepared meat (any mix)'},
+    {'level': 6, 'wood': 80, 'planks': 25, 'leather': 4, 'seconds': 150, 'coins': 70,
+     'production': {'leather': 6}, 'milestone': 'Produce 6 leather at your tannery'},
+    {'level': 7, 'wood': 90, 'planks': 30, 'tools': 5, 'seconds': 180, 'coins': 80,
+     'production': {'iron_ore': 20}, 'milestone': 'Mine 20 iron ore'},
+    {'level': 8, 'wood': 100, 'planks': 35, 'iron': 10, 'seconds': 210, 'coins': 90,
+     'production': {'iron': 10}, 'milestone': 'Smelt 10 iron'},
+    {'level': 9, 'wood': 110, 'planks': 40, 'iron': 10, 'leather': 5, 'seconds': 240, 'coins': 100,
+     'production': {'saddles': 2}, 'milestone': 'Craft 2 saddles at your saddler (horse riding is optional)'},
+    {'level': 10, 'wood': 120, 'planks': 45, 'steel': 10, 'seconds': 270, 'coins': 120,
+     'production': {'steel': 15},
+     'milestone': 'Produce 15 steel and complete a town trade or sell 10 goods at your market'},
 ]
 # Food is the aggregate pantry, including these goods and legacy untyped provisions.
 FISH = {
@@ -654,21 +664,21 @@ def milestone(town, level):
                    and any(r['kind'] == 'water' and distance(b, r) <= 3 for r in town['map_resources'])
                    for b in town['buildings'])
         return housing and food and town['food'] >= 20
-    if level == 3:
-        return sum(skill(town, j) >= 10 for j in ('woodcutting', 'farming', 'fishing', 'husbandry', 'gathering')) >= 2
-    if level == 4:
-        return town.get('produced', {}).get('planks', 0) >= 10
-    if level == 5:
-        return any(town.get('produced', {}).get(k, 0) >= 1 for k in ('flour', *SMOKED_FISH, 'tools'))
+    upgrade = next((u for u in HALL_UPGRADES if u['level'] == level), None)
+    if upgrade is None:
+        return False
+    # Lifetime local output proves a working chain even after goods are eaten,
+    # sold, or used. Imported stock can pay costs but cannot satisfy milestones.
     produced = town.get('produced', {})
-    if level in {6, 7, 8}:
-        key, count = {6: ('leather', 5), 7: ('iron_ore', 10), 8: ('iron', 10)}[level]
-        return produced.get(key, 0) >= count
-    if level == 9:
-        return bool(town.get('horse_ridden'))
+    if any(produced.get(key, 0) < count for key, count in upgrade['production'].items()):
+        return False
+    if level == 5:
+        foods = (*(f'smoked_{key}' for key in FISH),
+                 *(r['output'] for kind in ('bakery', 'butcher') for r in PROFESSION_RECIPES[kind]))
+        return sum(produced.get(key, 0) for key in foods) >= upgrade['processed_food']
     if level == 10:
-        return produced.get('steel', 0) >= 15 and (town.get('completed_trades', 0) >= 1 or town.get('market_sales', 0) >= 10)
-    return False
+        return town.get('completed_trades', 0) >= 1 or town.get('market_sales', 0) >= 10
+    return True
 
 
 def distance(a, b):

@@ -629,6 +629,11 @@ the Python host, refresh both browsers, and create a new world to use the shared
   level 5 adds fish breeding ponds, orchards, cows, timber framing,
   and market stalls. Each upgrade has a development milestone and material cost
   shown in the hall panel. Levels 6–10 add mining, metalworking, horses, and advanced trade.
+  The [hall progression table](docs/HALL_PROGRESSION.md) lists all requirements,
+  investments, and unlocks. Upgrades prove production from the previous hall level;
+  level 5 needs tools plus processed food, and level 9 needs two locally crafted
+  saddles. Capturing and riding horses is optional. Lifetime production still
+  counts after goods are consumed or sold; imported goods only help pay costs.
 - Barns show each purchased or bred chicken, sheep, pig, and cow with walking,
   pecking, and grazing animations. They roam up to two open tiles from their barn
   and return, avoiding buildings, resources, and impassable ground.

@@ -212,7 +212,7 @@ class Progression(unittest.TestCase):
         self.assertEqual(workshop['pending_output']['tools'],1)
         self.assertEqual(mill['input_buffer']['wheat'],0)
         self.assertEqual(workshop['input_buffer']['planks'],2)
-        self.assertTrue(economy.milestone(self.town,5))
+        self.assertFalse(economy.milestone(self.town,5), 'One flour/tool batch cannot complete the hall milestone')
 
     def test_animals_feed_breed_and_obey_capacity_without_worker_multiplier(self):
         self.town['buildings'].append({'kind': 'storehouse', 'x': 10, 'y': 10,

@@ -46,6 +46,14 @@ const run=new Function('document','window','localStorage','setTimeout','clearTim
  world.hall_ready.own=false;renderUpgradeDialog();check($('confirm-upgrade').disabled,'Hall milestone is rechecked');
  world.hall_ready.own=true;$('confirm-upgrade').onclick();
  check(commands[2].action==='upgrade'&&!('index' in commands[2]),'Hall keeps the server command contract');
+ world.hall_upgrades.push({level:5,wood:70,planks:20,tools:5,seconds:120,coins:60,milestone:'Craft 5 tools and produce 10 processed food'});
+ town.level=4;town.goods={planks:20,tools:5};showUpgrade({action:'upgrade'});
+ check($('upgrade-cost').textContent.includes('5 tools'),'Hall preview includes the tool investment');
+ check(!$('confirm-upgrade').disabled,'All hall materials allow confirmation');
+ town.goods.tools=4;renderUpgradeDialog();
+ check($('confirm-upgrade').disabled,'Missing tools disable hall confirmation');
+ $('confirm-upgrade').onclick();check(commands.length===3,'Missing hall tools send no upgrade command');
+ $('cancel-upgrade').onclick();town.level=2;town.goods={};
  town.buildings.push({kind:'storehouse',x:8,y:5});
  const capacities=[50,75,100,150,200,250,300,350];
  for(let level=1;level<8;level++){

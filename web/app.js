@@ -652,7 +652,7 @@ function buildingUpgradePreview(command,town,item){
       const names=Object.entries(entries || {}).filter(([,value])=>(typeof value==='number'?value:value.level)===spec.level).map(([key,value])=>value.label || labels[key] || goodName(key));
       if(names.length)benefits.push(`${category}: ${names.join(', ')}`);
     }
-    return {title:`Town hall · Level ${spec.level}`,benefits,cost:Object.fromEntries(['wood','planks','leather','iron_ore','iron','steel'].filter(k=>k in spec).map(k=>[k,spec[k]])),seconds:spec.seconds,requirements:spec.milestone,ready:!!world.hall_ready?.[viewed]&&!town.upgrade_remaining};
+    return {title:`Town hall · Level ${spec.level}`,benefits,cost:Object.fromEntries(['wood','planks','tools','leather','iron_ore','iron','steel'].filter(k=>k in spec).map(k=>[k,spec[k]])),seconds:spec.seconds,requirements:spec.milestone,ready:!!world.hall_ready?.[viewed]&&!town.upgrade_remaining};
   }
   if(command.action==='profession_upgrade'){
     const spec=world.progression?.upgrades?.[command.upgrade];
