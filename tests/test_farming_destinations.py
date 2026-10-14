@@ -1,6 +1,7 @@
 """Field approaches are authoritative walking, followed by stationary work."""
 import math
 import unittest
+from unittest.mock import patch
 
 from fixtures import flat_town
 import farming
@@ -62,6 +63,60 @@ class FarmingDestinations(unittest.TestCase):
             spot = work_cycles.field_work_spot(field)
             self.assertEqual((round(spot['x']), round(spot['y'])), (x, y))
             self.assertTrue(0 <= spot['x'] < 16 and 0 <= spot['y'] < 16)
+
+    def advance_unreachable(self):
+        route = work_cycles.route
+        attempts = 0
+
+        def bounded_route(*args, **kwargs):
+            nonlocal attempts
+            attempts += 1
+            # Fail promptly if the host retries without consuming tick time.
+            self.assertLessEqual(attempts, 2, 'Unreachable routes must wait for the next tick')
+            return route(*args, **kwargs)
+
+        with patch.object(work_cycles, 'route', side_effect=bounded_route):
+            return self.advance(3)
+
+    def test_unreachable_acre_waits_and_resumes_when_access_is_restored(self):
+        self.worker['construction_position'] = {'x': 3, 'y': 6}
+        self.town['map_resources'] = [{'kind': 'rock', 'x': x, 'y': y}
+                                      for x, y in ((2, 4), (4, 4), (3, 5))]
+        for stage in ('unplowed', 'plowed', 'thirsty', 'ripe'):
+            with self.subTest(stage=stage):
+                self.worker.pop('work_animation', None)
+                field = farming.field_state(self.field)
+                field.update(stage=stage, progress=0)
+                self.worker['watering_round'] = farming.watering_round(self.farm, self.field)
+                state = self.advance_unreachable()
+                self.assertEqual(state['phase'], 'waiting')
+                self.assertEqual((state['x'], state['y']), (3, 6))
+                self.assertEqual(field['progress'], 0)
+                self.assertEqual(field['stage'], stage)
+
+        self.town['map_resources'].clear()
+        state = self.advance(3)
+        self.assertEqual(state['phase'], 'working')
+        self.assertGreater(self.field['field']['progress'], 0)
+
+    def test_unreachable_farm_keeps_harvest_cargo_until_access_is_restored(self):
+        self.farm.update(x=8, y=8)
+        self.worker['construction_position'] = {'x': 3, 'y': 6}
+        self.worker['pending_output'] = {'vegetables': 1}
+        farming.field_state(self.field).update(stage='ripe')
+        self.farm['output_buffer'] = {'vegetables': farming.storage_capacity(self.farm)}
+        self.town['map_resources'] = [{'kind': 'rock', 'x': x, 'y': y}
+                                      for x, y in ((7, 8), (9, 8), (8, 7), (8, 9))]
+        state = self.advance_unreachable()
+        self.assertEqual(state['phase'], 'waiting')
+        self.assertEqual(self.worker['pending_output'], {'vegetables': 1})
+        self.assertEqual(self.field['field']['stage'], 'ripe')
+
+        self.town['map_resources'].clear()
+        state = self.advance(1)
+        self.assertEqual(state['phase'], 'returning')
+        self.assertGreater(math.hypot(state['x'] - 3, state['y'] - 6), 0)
+        self.assertEqual(self.worker['pending_output'], {'vegetables': 1})
 
 
 if __name__ == '__main__':

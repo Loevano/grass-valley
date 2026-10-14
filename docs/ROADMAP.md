@@ -126,6 +126,8 @@ adding shared destination routing or navigation between regions.
 - Workers retain valid work, delivery, and construction paths until their task
   changes or a next step becomes blocked. Builders keep their claimed site and
   saved route across ticks and reloads; fishers reuse valid pier paths.
+  Unreachable farmer routes wait until the next simulation tick before retrying,
+  retaining harvest cargo and resuming when access is restored.
 - Browser geometry updates refresh collision data without discarding valid paths.
   Roads change walking speed immediately and influence the next planned leg.
   Confirmed host playback does not perform a duplicate browser work-route search.

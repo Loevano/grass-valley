@@ -346,6 +346,10 @@ def _advance(town, landscape, villager, building, source, index, seconds, stop_a
                     state['elapsed'] = field['progress'] if farming_job else 0
             continue
         phase = state['phase']
+        if phase == 'waiting':
+            # Retry a blocked route on the next tick, rather than looping with
+            # unchanged remaining time while the host holds the world lock.
+            return finished, 0
         if farming_job and phase not in ('depositing', 'returning', 'collecting_water'):
             # Keep harvesting while another ripe acre fits the reserved farm
             # allowance. Once returning, finish the trip before accepting work.
@@ -401,7 +405,7 @@ def _advance(town, landscape, villager, building, source, index, seconds, stop_a
                 state['playback'].append(_sample(state, seconds - remaining, source))
                 return finished, remaining
             phase = state['phase']
-        if phase in ('waiting', 'waiting_water'):
+        if phase == 'waiting_water':
             return finished, 0
         if phase == 'working' and building.get('butchering'):
             # The animal's shared processing timer keeps the butcher at the shop.
