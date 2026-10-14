@@ -115,6 +115,8 @@ fishing production balancing and storage upgrades below remain planned.
 Farmers carrying crops continue harvesting available ripe acres on their own farm
 before unloading, even across different field cycles or unfinished farm passes.
 Storage allowances, production caps, and other farmers' acre claims still apply.
+Vegetable harvests now yield 6 per acre, a 40% reduction; other crops yield 10.
+Play experience should assess vegetable supply alongside the remaining chain balancing.
 
 - Production building upgrades increase internal storage or worker capacity.
 - Items and worker skill levels improve conversion rates and unlock available

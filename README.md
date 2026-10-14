@@ -500,7 +500,7 @@ the Python host, refresh both browsers, and create a new world to use the shared
   Carried crops reserve that space and
   respect production caps. All acres finish their oldest
   crop cycle before harvested acres start another, so distant tiles are not skipped.
-  Each harvest yields **10 crops per acre** before skill, tool, upgrade, and manure
+  Each harvest yields **6 vegetables or 10 other crops per acre** before skill, tool, upgrade, and manure
   bonuses. Only one worker tends an acre at a time. Growth continues without workers or storage room;
   crops become available after harvesting and delivery. Field progress survives
   saving and moving. Changing the crop selection applies at the next seeding.

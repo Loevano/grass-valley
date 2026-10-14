@@ -75,7 +75,7 @@ class Toolsmiths(unittest.TestCase):
                                                         'elapsed': 0, 'progress': 0, 'cycle': 0}
                         town['villagers'][0]['construction_position'] = {'x': 6, 'y': 3}
                     tick({'towns': {'own': town}})
-                    output, rate = ('vegetables', 10) if job == 'farming' else ('wood', .75)
+                    output, rate = ('vegetables', 6) if job == 'farming' else ('wood', .75)
                     bonus = tool['bonus'] if tool['job'] == job else 0
                     building = town['buildings'][1]
                     self.assertAlmostEqual(building.get('pending_output', {}).get(output, 0)

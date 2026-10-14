@@ -123,7 +123,7 @@ class SettlerProfessions(unittest.TestCase):
         farm['field'] = {'stage': 'ripe', 'crop': 'vegetables', 'elapsed': 0, 'progress': 0, 'cycle': 0}
         self.worker['construction_position'] = {'x': 3, 'y': 6}
         server.tick({'towns': {'a': self.town}})
-        self.assertEqual(self.town['produced']['vegetables'] + farm['field'].get('yield_remaining', 0), 25)
+        self.assertEqual(self.town['produced']['vegetables'] + farm['field'].get('yield_remaining', 0), 15)
         # The larger farm buffer lets this worker use the remaining time to plow.
         self.assertEqual(self.worker['farming'], 20.039)
         # A second tender can start the next cycle in the remaining time, but

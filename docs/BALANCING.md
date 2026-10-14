@@ -239,8 +239,9 @@ saved stock stays available and production resumes once a complete batch fits.
 | Wheat → 2 flour | Harvest 10 wheat: 8s; mill 2 wheat: 3s | 11 worker-seconds + water collection/travel | 2 flour + 8 spare wheat; approximately 0.147 practice (0.107 farming + 0.04 milling) |
 | Wheat + wood → flour → 2 bread | Harvest 10 wheat: 8s; mill 2 wheat: 3s; gather 0.5 wood: 2s; bake: 6s | 19 worker-seconds + water collection/travel | 2 bread (3 food value) + 8 spare wheat; approximately 0.253 practice (0.107 farming + 0.04 milling + 0.027 woodcutting + 0.08 baking) |
 
-The base farming reference is 10 crops per acre per completed harvest, matching
-the old one-crop-per-three-seconds rate to 30 seconds of passive growth. Plowing,
+The base farming yield is 6 vegetables or 10 wheat, carrots, or fodder per acre
+per completed harvest. Vegetable output is reduced by 40%; other crops retain
+the old one-crop-per-three-seconds rate over 30 seconds of passive growth. Plowing,
 seeding, watering, and harvesting each take two worker-seconds. Seeding waits for
 all acres of that farm in the current cycle to be plowed. Workers follow rows
 through each pass and finish the oldest cycle before repeating harvested acres.
@@ -277,8 +278,9 @@ These examples start with one newly acquired young animal, alone in a barn,
 and end after all its raw meat becomes basic prepared meat. Each animal needs
 100 successful three-second tending cycles to reach 300 fed seconds. Feed per
 cycle is 0.15 for chickens, 0.25 for sheep, 0.1 for pigs, and 0.5 for cows.
-Growing vegetables or fodder costs eight active field worker-seconds per harvest
-of 10 feed, plus passive growth, water collection, travel, and delivery as described
+Growing fodder costs eight active field worker-seconds per harvest of 10 feed;
+vegetables take the same work but yield 6 feed. The examples below use fodder.
+Both add passive growth, water collection, travel, and delivery as described
 above. Feeding produces 0.1 manure per animal per
 cycle, so each example retains 10 manure. No extra adult tending is included.
 Each chicken also yields 25 eggs, each sheep 25 wool, and each cow 25 milk during
@@ -320,7 +322,7 @@ Compare base active work with a full four-pig barn, sharing its keeper's work:
 Bread is approximately **24% more efficient** in this comparison, with continuous
 production and equipment upgrades for large towns. Meat is a valuable, slower
 luxury. A lone pig is less efficient because it bears all 300 tending seconds.
-These ideal totals prorate harvests and exclude water trips, travel, hauling,
+These ideal totals use fodder, prorate harvests, and exclude water trips, travel, hauling,
 animal acquisition, and byproduct value; delivered balance still needs playtesting.
 
 | Butcher recipe | Food per item | Coins per item | Food per base batch |

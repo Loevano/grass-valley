@@ -4,6 +4,8 @@ GROWTH_SECONDS = 15
 WORK_SECONDS = 2
 # Two growth periods replace ten of the old three-second production cycles.
 HARVEST_YIELD = 2 * GROWTH_SECONDS / 3
+HARVEST_YIELDS = {'vegetables': HARVEST_YIELD * .6, 'wheat': HARVEST_YIELD,
+                  'carrots': HARVEST_YIELD, 'fodder': HARVEST_YIELD}
 MAX_ACRES = 48
 ACTIONS = {'unplowed': 'plowing', 'plowed': 'sowing',
            'thirsty': 'watering', 'ripe': 'harvesting'}

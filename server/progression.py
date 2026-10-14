@@ -948,6 +948,7 @@ def public_catalog():
     return {'buildings': BUILDINGS, 'building_footprints': BUILDING_FOOTPRINTS, 'crops': CROPS, 'animals': ANIMALS,
             'farming_growth_seconds': farming.GROWTH_SECONDS,
             'farming_harvest_yield': farming.HARVEST_YIELD,
+            'farming_harvest_yields': farming.HARVEST_YIELDS,
             'animal_growth_seconds': ANIMAL_GROWTH_SECONDS, 'butcher_seconds': BUTCHER_SECONDS,
             'animal_meat': ANIMAL_MEAT, 'animal_products': ANIMAL_PRODUCTS, 'tradable_goods': TRADABLE_GOODS,
             'job_requirements': JOB_REQUIREMENTS, 'talent_roots': TALENT_ROOTS,

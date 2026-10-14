@@ -946,7 +946,7 @@ def harvest_crop(town, villager, building, source):
         bonus += production_bonus(source)
     field = farming.field_state(source)
     if 'yield_remaining' not in field:
-        field['yield_remaining'] = farming.HARVEST_YIELD * (1 + bonus) * economy.efficiency(villager, 'farming')
+        field['yield_remaining'] = farming.HARVEST_YIELDS.get(output, farming.HARVEST_YIELD) * (1 + bonus) * economy.efficiency(villager, 'farming')
         if economy.quantity(town, 'manure') >= .1:
             economy.spend(town, {'manure': .1})
             field['yield_remaining'] *= 1.25

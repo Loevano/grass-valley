@@ -152,8 +152,8 @@ class FarmingCycle(unittest.TestCase):
         fields = self.harvest_fields()
         server.advance_farmer(self.town, self.town, self.worker, self.farm, fields[0], 0, 5)
         self.assertTrue(all(field['field']['cycle'] == 1 for field in fields))
-        self.assertEqual(self.worker['pending_output'], {'vegetables': 20})
-        self.assertEqual(self.farm['pending_output'], {'vegetables': 20})
+        self.assertEqual(self.worker['pending_output'], {'vegetables': 12})
+        self.assertEqual(self.farm['pending_output'], {'vegetables': 12})
         self.assertEqual(self.town.get('goods', {}).get('vegetables', 0), 0)
         animation = self.worker['work_animation']
         self.assertEqual(animation['phase'], 'returning')
@@ -164,10 +164,10 @@ class FarmingCycle(unittest.TestCase):
 
     def test_harvest_batch_returns_early_at_existing_storage_allowance(self):
         fields = self.harvest_fields(('vegetables',) * 3)
-        self.farm['stored_goods'] = {'vegetables': farming.storage_capacity(self.farm) - 20}
+        self.farm['stored_goods'] = {'vegetables': farming.storage_capacity(self.farm) - 12}
         server.advance_farmer(self.town, self.town, self.worker, self.farm, fields[0], 0, 5)
         self.assertEqual([field['field']['stage'] for field in fields], ['unplowed', 'unplowed', 'ripe'])
-        self.assertEqual(self.worker['pending_output'], {'vegetables': 20})
+        self.assertEqual(self.worker['pending_output'], {'vegetables': 12})
         self.assertEqual(self.worker['work_animation']['phase'], 'returning')
         self.assertEqual(economy.local_room(self.farm, 'vegetables'), 0)
 
@@ -178,7 +178,7 @@ class FarmingCycle(unittest.TestCase):
                 fields = self.harvest_fields()
                 # End exactly at the first harvest, before choosing the next acre.
                 server.advance_farmer(self.town, self.town, self.worker, self.farm, fields[0], 0, 2)
-                self.assertEqual(self.worker['pending_output'], {'vegetables': 10})
+                self.assertEqual(self.worker['pending_output'], {'vegetables': 6})
                 fields[1]['field']['cycle'] = 2
                 blocker = {'kind': 'acre', 'x': 5, 'y': 5, 'farm_index': 1}
                 farming.field_state(blocker).update(stage=stage)
@@ -188,7 +188,7 @@ class FarmingCycle(unittest.TestCase):
                 self.assertIs(source, fields[1])
                 server.advance_farmer(self.town, self.town, self.worker, self.farm, source, 0, 3)
                 self.assertEqual(fields[1]['field']['stage'], 'unplowed')
-                self.assertEqual(self.worker['pending_output'], {'vegetables': 20})
+                self.assertEqual(self.worker['pending_output'], {'vegetables': 12})
                 self.assertFalse(any(s['phase'] in ('returning', 'depositing')
                                      for s in self.worker['work_animation']['playback']
                                      if s['time'] < 2 + 1 / 1.8 - 1e-9))
@@ -202,7 +202,7 @@ class FarmingCycle(unittest.TestCase):
         self.town['buildings'].extend([other_farm, other_acre])
 
         server.advance_farmer(self.town, self.town, self.worker, self.farm, fields[0], 0, 3)
-        self.assertEqual(self.worker['pending_output'], {'vegetables': 10})
+        self.assertEqual(self.worker['pending_output'], {'vegetables': 6})
         self.assertIn(self.worker['work_animation']['phase'], ('returning', 'depositing'))
         self.assertEqual(other_acre['field']['stage'], 'ripe')
 
@@ -210,7 +210,7 @@ class FarmingCycle(unittest.TestCase):
         fields = self.harvest_fields(('wheat', 'vegetables', 'fodder'))
         server.advance_farmer(self.town, self.town, self.worker, self.farm, fields[0], 0, 8)
         self.assertTrue(all(field['field']['cycle'] == 1 for field in fields))
-        self.assertEqual(self.worker['pending_output'], {'wheat': 10, 'vegetables': 10, 'fodder': 10})
+        self.assertEqual(self.worker['pending_output'], {'wheat': 10, 'vegetables': 6, 'fodder': 10})
         self.assertEqual(self.worker['work_animation']['phase'], 'returning')
         self.assertGreater(economy.local_room(self.farm, 'vegetables'), 0)
 
@@ -219,14 +219,14 @@ class FarmingCycle(unittest.TestCase):
         server.advance_farmer(self.town, self.town, self.worker, self.farm, fields[0], 0, 5)
         server.logistics.cancel_output(self.town, self.worker)
         self.assertNotIn('pending_output', self.worker)
-        self.assertEqual(self.farm['orphaned_output'], {'vegetables': 20})
-        self.assertEqual(self.farm['pending_output'], {'vegetables': 20})
+        self.assertEqual(self.farm['orphaned_output'], {'vegetables': 12})
+        self.assertEqual(self.farm['pending_output'], {'vegetables': 12})
         self.assertEqual(self.town.get('goods', {}).get('vegetables', 0), 0)
 
     def test_harvest_batch_survives_reload_and_is_delivered_once(self):
         fields = self.harvest_fields()
         server.tick(self.world)
-        self.assertEqual(self.worker['pending_output'], {'vegetables': 10})
+        self.assertEqual(self.worker['pending_output'], {'vegetables': 6})
         self.assertEqual(self.worker['work_animation']['task'][5:7], [4, 5])
         restored = json.loads(json.dumps(self.world))
         town = restored['towns']['fields']
@@ -236,26 +236,26 @@ class FarmingCycle(unittest.TestCase):
             if not worker.get('pending_output'):
                 break
         self.assertNotIn('pending_output', worker)
-        self.assertEqual(town['produced']['vegetables'], 20)
-        self.assertEqual(town['goods']['vegetables'], 20)
-        self.assertEqual(town['buildings'][1]['output_buffer']['vegetables'], 20)
+        self.assertEqual(town['produced']['vegetables'], 12)
+        self.assertEqual(town['goods']['vegetables'], 12)
+        self.assertEqual(town['buildings'][1]['output_buffer']['vegetables'], 12)
 
     def test_harvest_batch_respects_production_cap_with_multiple_farmers(self):
         self.farm['settler_level'] = 2
         self.harvest_fields()
-        self.town.setdefault('rules', {}).setdefault('production_caps', {})['vegetables'] = 15
+        self.town.setdefault('rules', {}).setdefault('production_caps', {})['vegetables'] = 9
         other = self.town['villagers'][1]
         other.update(job='farming', building_index=1, talents={},
                      construction_position={'x': 4, 'y': 5})
         server.tick(self.world)
-        self.assertEqual(self.town['produced']['vegetables'], 15)
+        self.assertEqual(self.town['produced']['vegetables'], 9)
         self.assertEqual(economy.production_room(self.town, 'vegetables'), 0)
         self.assertEqual(sum(farming.field_state(field).get('yield_remaining', 0)
-                             for field in farming.acres(self.town, self.farm)), 5)
+                             for field in farming.acres(self.town, self.farm)), 3)
 
     def test_returning_harvest_does_not_change_destination_when_room_opens(self):
         fields = self.harvest_fields(('vegetables',) * 3)
-        self.farm['stored_goods'] = {'vegetables': farming.storage_capacity(self.farm) - 20}
+        self.farm['stored_goods'] = {'vegetables': farming.storage_capacity(self.farm) - 12}
         server.advance_farmer(self.town, self.town, self.worker, self.farm, fields[0], 0, 5)
         # A newly available crop allowance must not interrupt unloading.
         fields[2]['crop'] = fields[2]['field']['crop'] = 'wheat'
@@ -429,6 +429,35 @@ class FarmingCycle(unittest.TestCase):
         self.assertEqual(field['yield_remaining'], farming.HARVEST_YIELD - .25)
         self.assertEqual(field['stage'], 'ripe')
         self.assertEqual(field['cycle'], 0)
+
+    def test_crop_specific_base_harvests_for_acres_and_legacy_farms(self):
+        for kind in ('acre', 'farm'):
+            for crop, expected in (('vegetables', 6), ('wheat', 10), ('carrots', 10), ('fodder', 10)):
+                with self.subTest(kind=kind, crop=crop):
+                    self.setUp()
+                    source = self.acre if kind == 'acre' else self.farm
+                    farming.field_state(source).update(stage='ripe', crop=crop)
+                    self.worker['work_animation'] = {}
+                    self.assertTrue(server.harvest_crop(self.town, self.worker, self.farm, source))
+                    self.assertEqual(self.worker['pending_output'], {crop: expected})
+                    self.assertEqual(source['field']['cycle'], 1)
+
+    def test_saved_partial_vegetable_harvest_keeps_its_remaining_yield(self):
+        farming.field_state(self.acre).update(stage='ripe', crop='vegetables', yield_remaining=4)
+        self.worker['work_animation'] = {}
+        restored = json.loads(json.dumps(self.world))
+        town = restored['towns']['fields']
+        self.assertTrue(server.harvest_crop(town, town['villagers'][0], town['buildings'][1], town['buildings'][2]))
+        self.assertEqual(town['villagers'][0]['pending_output'], {'vegetables': 4})
+        self.assertEqual(town['buildings'][2]['field']['cycle'], 1)
+
+    def test_vegetable_harvest_reduction_keeps_manure_bonus(self):
+        farming.field_state(self.acre).update(stage='ripe', crop='vegetables')
+        self.town.setdefault('goods', {})['manure'] = .1
+        self.worker['work_animation'] = {}
+        self.assertTrue(server.harvest_crop(self.town, self.worker, self.farm, self.acre))
+        self.assertEqual(self.worker['pending_output'], {'vegetables': 7.5})
+        self.assertEqual(economy.quantity(self.town, 'manure'), 0)
 
     def test_all_four_actions_follow_rows_with_shorter_actual_routes(self):
         for stage in farming.ACTIONS:

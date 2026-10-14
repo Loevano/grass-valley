@@ -1624,7 +1624,7 @@ function renderProfession(town,item,index,target,upgrades,details,boats,unlocked
     chooser.value=crops.size===1?[...crops][0]:'';chooser.disabled=!owner||!acres.length;
     chooser.onchange=()=>{if(!chooser.disabled&&chooser.value)act({action:'set_crop',index,crop:chooser.value});};
     const label=document.createElement('label');label.textContent='Crop for all acres';label.append(chooser);target.append(label);
-    target.append(fact(`${catalog.farming_harvest_yield ?? 10} crops`,'Base harvest per acre · Skills, tools and upgrades apply'));
+    target.append(fact(`${catalog.farming_harvest_yields?.vegetables ?? catalog.farming_harvest_yield ?? 10} vegetables · ${catalog.farming_harvest_yield ?? 10} other crops`,'Base harvest per acre · Skills, tools and upgrades apply'));
   }
   if(item.kind==='barn')renderBarnAnimals(town,item,index,target);
   if(item.kind==='stable'){
