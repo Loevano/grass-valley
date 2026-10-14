@@ -32,7 +32,7 @@ function render(state,job='farming',active=true,index=0,drawWorker=draw){
   drawWorker({kind:'villager',index,x:state.x,y:state.y,state,active,villager:{job}});
   return marks.slice();
 }
-const stages=[['plowing','#aab9b4'],['sowing','#efd59a'],['watering','#9fd8e5'],['harvesting','#e5c77f']];
+const stages=[['plowing','#aab9b4'],['sowing','#efd59a'],['watering','#9fd8e5'],['harvesting','#dce5df']];
 // Follow particles to the ground through the same canvas transforms as the worker.
 for(const tileWidth of [46,92]){
   const drawWorker=new Function('ctx','polygon','point','tileW','tileH','npcColors',

@@ -3,7 +3,7 @@ const assert=require('assert'),fs=require('fs');
 const source=fs.readFileSync('web/app.js','utf8');
 const WorkerAnimation=require('../web/animations.js');
 const colors=[];
-const ctx=new Proxy({fillRect(){colors.push(this.fillStyle);}}, {get:(target,key)=>key in target?target[key]:()=>{}});
+const ctx=new Proxy({fillRect(){colors.push(this.fillStyle);},stroke(){colors.push(this.strokeStyle);}}, {get:(target,key)=>key in target?target[key]:()=>{}});
 const harness=new Function('WorkerAnimation','ctx','polygon','point','tileW','tileH','npcColors',`
   let world,viewed='own',workerTown=null;
   const workers=new Map();
@@ -49,7 +49,7 @@ for(let frame=0;frame<900;frame++){
   }
 }
 assert.deepStrictEqual([...stages].sort(),[0,1,2,3],'Browser update loop triggers all four farming stages');
-for(const color of ['#aab9b4','#efd59a','#9fd8e5','#e5c77f']){
+for(const color of ['#aab9b4','#efd59a','#9fd8e5','#dce5df']){
   assert(farmingColors.has(color),'Every farming action is actually rendered');
 }
 assert(fishingPhases.has('working')&&fishingPhases.has('depositing'),'Fisher fishes and delivers after reaching the pier');

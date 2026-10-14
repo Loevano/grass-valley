@@ -2700,7 +2700,7 @@ function drawVillager(b){
     ctx.strokeStyle='#a78454';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(-6,0);ctx.lineTo(-8,-10);ctx.stroke();
     polygon([[-8,-11],[-13,-12],[-14,-7],[-7,-7]],'#e4ece7','#6b7d79');
   }
-  if(accessories.sickle&&!(farming&&(farmStage===0||farmStage===1))){
+  if(accessories.sickle&&!farming){
     ctx.strokeStyle='#a78454';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(6,0);ctx.lineTo(7,-6);ctx.stroke();
     ctx.strokeStyle='#dce5df';ctx.lineWidth=1.8;ctx.beginPath();ctx.arc(7,-9,4,-Math.PI/2,Math.PI/2);ctx.stroke();
   }
@@ -2815,10 +2815,7 @@ function drawVillager(b){
         ctx.fillRect(spoutX+(x-spoutX)*fall-.75,spoutY+(y-spoutY)*fall*fall-1.5,1.5,3);
       }
     }else{
-      // Sweep a curved sickle through a small stand of ripe grain.
-      ctx.strokeStyle='#d6b765';ctx.lineWidth=1.5;ctx.beginPath();
-      for(let i=0;i<4;i++){ctx.moveTo(13+i*3,4);ctx.lineTo(12+i*3,-5+farmSwing*2);}ctx.stroke();
-      ctx.fillStyle='#e5c77f';for(let i=0;i<4;i++)ctx.fillRect(10+i*3,-7+farmSwing*2,3,4);
+      // The acre supplies the crop artwork; this action draws only the held sickle.
       ctx.save();ctx.translate(farmHandX,farmHandY);ctx.rotate(-.8+farmSwing*1.6);
       ctx.strokeStyle='#a78454';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(0,3);ctx.lineTo(0,-5);ctx.stroke();
       ctx.strokeStyle='#dce5df';ctx.lineWidth=2;ctx.beginPath();ctx.arc(1,-8,5,-Math.PI/2,Math.PI/2);ctx.stroke();ctx.restore();

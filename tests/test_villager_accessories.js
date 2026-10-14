@@ -44,7 +44,12 @@ for(const skills of [{farming:5},{worker_tool:'fine_sickle'},{worker_tool:'steel
       const farmer=sprite(skills,'farming','villager','working');
       Object.assign(farmer.state,confirmed?{fieldCycle:true,farmAction,elapsed:.5}:{elapsed:stage*2+.5});
       const output=rendered(farmer);
-      assert.strictEqual(has(output,'#dce5df'),stage>=2,`${farmAction} shows a sickle only for watering or harvesting`);
+      assert.strictEqual(has(output,'#dce5df'),stage===3,`${farmAction} shows a sickle only for harvesting`);
+      if(stage===3){
+        assert.strictEqual(output.filter(mark=>mark.color==='#dce5df'&&mark.args[2]===5).length,1,'Harvesting holds one sickle');
+        assert(!output.some(mark=>mark.color==='#dce5df'&&mark.args[2]===4),'No spare sickle hangs at the waist');
+        assert(!output.some(mark=>mark.color==='#e5c77f'),'No floating stand of grain is added beside the tool');
+      }
       if(stage===0)assert(has(output,'#aab9b4'),'Plowing retains the hoe');
       if(stage===1)assert(has(output,'#efd59a'),'Sowing retains the seeds');
     }

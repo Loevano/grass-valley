@@ -8,7 +8,6 @@ and cache rules are in [Backend](BACKEND.md#cached-zoomed-out-map).
 | 1     | Cached zoomed-out town overview    | Implemented              | Show the landscape and city sizes without refreshing animated scene detail.                                      |
 | 2     | Production line balancing          | Wood and grain implemented; fishing remains | Develop clear fishing chains with capped staffing and simple upgrades. |
 | 3     | Scalable villager pathfinding       | Foundations implemented; host scheduling and shared navigation remain | Keep movement responsive as villager counts and towns grow, with bounded routing work. |
-| 9     | Fix harvesting tool visuals        | Planned                  | Remove the duplicate sickle and the extra attribute shown during harvesting. |
 
 ## Cached zoomed-out town overview
 
@@ -190,15 +189,3 @@ Completion criteria:
 
 Host work budgets, urgency rules, crowd spacing, and the villager counts that
 justify flow fields or hierarchical routing remain open implementation decisions.
-
-## Fix harvesting tool visuals
-
-**Status:** planned.
-
-During harvesting, the sickle appears twice and an additional unintended attribute
-is also visible. Fix the harvesting animation to display only the intended tool.
-
-Completion criteria:
-
-- The sickle appears only once during harvesting.
-- The extra unintended attribute no longer appears.
