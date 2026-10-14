@@ -27,7 +27,8 @@ and cache rules are in [Backend](BACKEND.md#cached-zoomed-out-map).
 - An unchanged overview does not rebuild its layers or redraw for animation.
 - Camera input responds promptly and reuses cached artwork.
 - Building changes update the affected town outline, including changes by friends.
-- New terrain loads as needed; switching worlds displays the correct map and towns.
+- New terrain loads as needed; creating and switching worlds displays the correct
+  map and towns, including after waiting in the Worlds menu.
 - Returning to detailed zoom shows the current game state.
 
 The overview starts below a 32-pixel tile width. Town outlines are convex hulls

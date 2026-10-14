@@ -3131,9 +3131,9 @@ function drawGround(rect,dpr,landscape,water,bounds,forest=null){
     // snapshot arrives, keeping fingerprint scans out of scrolling frames.
     const changed=groundCache&&(groundCache.world.world_id!==world.world_id
       ||(groundCache.detailed===(tileW>=32)
-        &&!(groundCache.landscape.terrain===landscape?.terrain&&groundCache.water===water&&groundCache.forest===forest
-          &&groundCache.landscape.map_size===landscape?.map_size&&groundCache.landscape.terrain_seed===landscape?.terrain_seed
-          &&!!groundCache.landscape.chunked===!!landscape?.chunked)
+        &&!(groundCache.landscape?.terrain===landscape?.terrain&&groundCache.water===water&&groundCache.forest===forest
+          &&groundCache.landscape?.map_size===landscape?.map_size&&groundCache.landscape?.terrain_seed===landscape?.terrain_seed
+          &&!!groundCache.landscape?.chunked===!!landscape?.chunked)
         &&!groundMatchesCache(landscape,water,groundCache.bounds,forest,groundCache)));
     if(changed)groundCache=null;
     if(groundCache)Object.assign(groundCache,{world,landscape,water,forest});
