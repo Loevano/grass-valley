@@ -32,12 +32,24 @@ for(const kind of ['player','npc']){
   assert.deepStrictEqual(earned(sprite(skilled,'farming',kind)),none);
   assert.strictEqual(result.outfit,null,'Other characters keep their own appearance');
 }
-function rendered(b){marks.length=0;draw(b);return marks.slice();}
+function rendered(b){marks.length=0;ctx.strokeStyle=undefined;ctx.fillStyle=undefined;draw(b);return marks.slice();}
 const has=(output,color)=>output.some(mark=>mark.color===color);
 assert(!has(rendered(sprite({farming:0},'farming')),'#ccb779'));
 assert(!has(rendered(sprite({farming:9},'farming')),'#ccb779'));
 assert(has(rendered(sprite({farming:10},'farming')),'#ccb779'));
 assert(rendered(sprite({farming:5},'farming')).some(mark=>mark.color==='#dce5df'&&mark.args[2]===4),'Farmer carries a curved sickle');
+for(const skills of [{farming:5},{worker_tool:'fine_sickle'},{worker_tool:'steel_sickle'},{worker_tool:'masterwork_sickle'}]){
+  for(const [stage,farmAction] of ['plowing','sowing','watering','harvesting'].entries()){
+    for(const confirmed of [false,true]){
+      const farmer=sprite(skills,'farming','villager','working');
+      Object.assign(farmer.state,confirmed?{fieldCycle:true,farmAction,elapsed:.5}:{elapsed:stage*2+.5});
+      const output=rendered(farmer);
+      assert.strictEqual(has(output,'#dce5df'),stage>=2,`${farmAction} shows a sickle only for watering or harvesting`);
+      if(stage===0)assert(has(output,'#aab9b4'),'Plowing retains the hoe');
+      if(stage===1)assert(has(output,'#efd59a'),'Sowing retains the seeds');
+    }
+  }
+}
 assert(!has(rendered(sprite({woodcutting:9},'woodcutting')),'#b8c6ad'));
 assert(has(rendered(sprite({woodcutting:10},'woodcutting')),'#b8c6ad'));
 assert(has(rendered(sprite({woodcutting:5},'woodcutting')),'#e4ece7'));

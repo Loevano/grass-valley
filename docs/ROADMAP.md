@@ -100,6 +100,7 @@ now has an independent item allowance in every building, so other foods cannot
 fill its storage.
 Field visuals follow confirmed worker playback, changing after each action finishes
 even when the host has already assigned the farmer another acre.
+Farmers put away their carried sickles while plowing and sowing.
 Seed and water particles land on crop positions in the acre being worked, including
 buffered actions on a previous acre, at either facing and detailed zoom level.
 Missed updates and resumed tasks reconnect playback at walking speed; trimming
