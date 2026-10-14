@@ -545,7 +545,7 @@ function renderStorage(town,item,index,target=$('selection-details')){
   }
   if(item.kind==='storehouse'){
     const note=document.createElement('p');note.className='storage-note';
-    note.textContent='Each resource has its own capacity. Disabled goods remain available to use.'+(canConfigure?' Option/Alt-click any resource checkbox to enable all resources.':'');target.append(note);
+    note.textContent='Each resource has its own capacity. Disabled goods remain available to use.'+(canConfigure?' Option/Alt-click any resource checkbox to toggle all resources on or off.':'');target.append(note);
   }
   for(const [title,members] of resourceCategories(keys)){
     const group=resourceGroup(title);target.append(group);
@@ -557,16 +557,17 @@ function renderStorage(town,item,index,target=$('selection-details')){
       if(canConfigure){
         const toggle=document.createElement('input');toggle.type='checkbox';toggle.checked=enabled[key];
         toggle.setAttribute('aria-label',`Accept ${label}`);
-        toggle.title='Option/Alt-click to enable all resources';
-        let enableAll=false;
-        toggle.onclick=event=>{enableAll=!!event.altKey;};
+        toggle.title='Option/Alt-click to toggle all resources on or off';
+        let toggleAll=false;
+        toggle.onclick=event=>{toggleAll=!!event.altKey;};
         toggle.onchange=()=>{
           if(viewed!==identity?.town_id)return;
-          if(enableAll){
-            for(const resource of keys)enabled[resource]=true;
-            for(const input of toggles)input.checked=true;
+          if(toggleAll){
+            const acceptAll=!keys.every(resource=>enabled[resource]);
+            for(const resource of keys)enabled[resource]=acceptAll;
+            for(const input of toggles)input.checked=acceptAll;
           }else enabled[key]=toggle.checked;
-          enableAll=false;
+          toggleAll=false;
           act({action:'configure_storage',index,enabled:{...enabled}});
         };
         toggles.push(toggle);

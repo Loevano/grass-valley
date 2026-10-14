@@ -42,7 +42,11 @@ const run=new Function('document','window','localStorage','setTimeout','clearTim
  toggle('Wood').onclick({altKey:true});toggle('Wood').checked=true;toggle('Wood').onchange();
  check(commands.length===beforeAll+1&&Object.values(commands.at(-1).enabled).every(Boolean)&&fields().every(c=>c.checked),'Option-click enables all with one command');
  toggle('Wood').onclick({altKey:true});toggle('Wood').checked=false;toggle('Wood').onchange();
- check(Object.values(commands.at(-1).enabled).every(Boolean),'Option-click on an enabled switch still enables all');
+ check(commands.length===beforeAll+2&&Object.values(commands.at(-1).enabled).every(enabled=>!enabled)&&fields().every(c=>!c.checked),'Repeated Option-click disables all with one command');
+ town.buildings[1].storage_enabled=commands.at(-1).enabled;render();
+ check(fields().every(c=>!c.checked),'Host-confirmed switches remain disabled');
+ toggle('Planks').onclick({altKey:true});toggle('Planks').checked=true;toggle('Planks').onchange();
+ check(commands.length===beforeAll+3&&Object.values(commands.at(-1).enabled).every(Boolean)&&fields().every(c=>c.checked),'Option-click on another switch enables all again');
  toggle('Wood').onclick({altKey:false});toggle('Wood').checked=false;toggle('Wood').onchange();
  check(!commands.at(-1).enabled.wood&&commands.at(-1).enabled.bread,'Normal click after Option-click only changes one resource');
  town.buildings[1].storage_enabled=commands.at(-1).enabled;render();
