@@ -9,6 +9,7 @@ and cache rules are in [Backend](BACKEND.md#cached-zoomed-out-map).
 | 2     | Production line balancing          | Wood and grain implemented; fishing remains | Develop clear fishing chains with capped staffing and simple upgrades. |
 | 3     | Scalable villager pathfinding       | Foundations implemented; host scheduling and shared navigation remain | Keep movement responsive as villager counts and towns grow, with bounded routing work. |
 | 4     | Simplify acre interaction           | Planned                  | Show only current acre state and a Destroy action; manage everything else through the owning farm. |
+| 5     | Watering and plowing animation positions | Planned             | Apply the seeding animation's worker-position recalculation fix to watering and plowing. |
 
 ## Cached zoomed-out town overview
 
@@ -207,3 +208,15 @@ Completion criteria:
 
 - The acre panel displays current state information and only a Destroy action.
 - The owning farm provides all other controls needed to manage its acres.
+
+## Watering and plowing animation positions
+
+**Status:** planned.
+
+Apply the existing seeding animation bugfix that recalculates the worker's
+position to the watering and plowing animations as well.
+
+Completion criteria:
+
+- Watering and plowing recalculate the worker's position using the same correction
+  as seeding, keeping the worker correctly positioned during both animations.
