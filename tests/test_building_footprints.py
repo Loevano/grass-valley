@@ -7,6 +7,7 @@ from fixtures import flat_town
 from navigation import RouteCache
 from spatial import footprint_tiles, occupied_tiles, perimeter, SpatialIndex
 from server import command, construction_route, migrate_footprints, walkable
+from shared_world import bind_map, export_world
 import work_cycles
 import horses
 import npcs
@@ -35,6 +36,64 @@ class BuildingFootprints(unittest.TestCase):
                     command(self.town, {'action': 'build_road', 'x': x, 'y': y})
             self.town['buildings'].pop()
         self.assertEqual(len(footprint_tiles(self.town['buildings'][0])), 4)
+
+    def test_placement_clears_only_bushes_inside_the_full_footprint(self):
+        for kind in ('home', 'mill'):
+            with self.subTest(kind=kind):
+                town = copy.deepcopy(self.town)
+                bushes = [{'kind': 'berry_bush', 'x': x, 'y': y}
+                          for x, y in ((10, 10), (11, 11), (12, 10))]
+                town['map_resources'] = bushes.copy()
+                command(town, dict(action='build', kind=kind, x=10, y=10))
+                covered = footprint_tiles(town['buildings'][-1])
+                self.assertEqual(town['map_resources'],
+                                 [b for b in bushes if (b['x'], b['y']) not in covered])
+                command(town, dict(action='destroy', index=1))
+                self.assertNotIn(bushes[0], town['map_resources'])
+
+    def test_failed_build_keeps_bushes_and_materials(self):
+        self.town['map_resources'] = [{'kind': 'berry_bush', 'x': 10, 'y': 10}]
+        for obstacle in ('rock', 'tree', 'water', 'herb_patch', 'chest', 'wild_horse', 'materials'):
+            with self.subTest(obstacle=obstacle):
+                town = copy.deepcopy(self.town)
+                if obstacle == 'materials':
+                    town.update(sandbox=False, wood=0)
+                else:
+                    town['map_resources'].append({'kind': obstacle, 'x': 11, 'y': 11})
+                before = copy.deepcopy(town)
+                with self.assertRaises(ValueError):
+                    command(town, dict(action='build', kind='mill', x=10, y=10))
+                self.assertEqual(town, before)
+
+    def test_shared_map_move_removes_bushes_for_every_town_and_save(self):
+        self.build()
+        friend = flat_town('Friend', size=32)
+        friend['buildings'] = []
+        landscape = {key: self.town[key] for key in ('map_size', 'terrain', 'npcs')}
+        landscape['map_resources'] = [{'kind': 'berry_bush', 'x': 13, 'y': 12},
+                                      {'kind': 'berry_bush', 'x': 14, 'y': 13},
+                                      {'kind': 'berry_bush', 'x': 15, 'y': 13}]
+        world = dict(shared_map=landscape, towns={'own': self.town, 'friend': friend})
+        bind_map(world)
+        command(self.town, dict(action='move', index=1, x=13, y=12), world)
+        self.assertIs(self.town['map_resources'], landscape['map_resources'])
+        self.assertIs(friend['map_resources'], landscape['map_resources'])
+        self.assertEqual(landscape['map_resources'], [{'kind': 'berry_bush', 'x': 15, 'y': 13}])
+        self.assertEqual(export_world(world)['shared_map']['map_resources'], landscape['map_resources'])
+
+    def test_linked_farm_move_clears_bushes_only_after_all_destinations_pass(self):
+        farm = self.build('farm')
+        command(self.town, dict(action='build', kind='acre', farm_index=1, x=11, y=10))
+        self.town['map_resources'] = [{'kind': 'berry_bush', 'x': 12, 'y': 10},
+                                      {'kind': 'rock', 'x': 13, 'y': 10}]
+        before = copy.deepcopy(self.town)
+        with self.assertRaises(ValueError):
+            command(self.town, dict(action='move', index=1, x=12, y=10))
+        self.assertEqual(self.town, before)
+        self.town['map_resources'][1]['kind'] = 'berry_bush'
+        command(self.town, dict(action='move', index=1, x=12, y=10))
+        self.assertEqual((farm['x'], farm['y']), (12, 10))
+        self.assertEqual(self.town['map_resources'], [])
 
     def test_barn_range_rejects_builds_and_moves_without_changing_state(self):
         barn = self.build('barn', 16, 16)

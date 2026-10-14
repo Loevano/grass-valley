@@ -14,6 +14,15 @@ assert.equal(app.run(`placementValid(town,{x:13,y:13},'sawpit')`),true);
 assert.equal(app.run(`placementValid(town,{x:31,y:13},'mill')`),false,'Entire footprint stays within the map');
 app.run(`town.map_resources.push({kind:'rock',x:14,y:14});`);
 assert.equal(app.run(`placementValid(town,{x:13,y:13},'mill')`),false,'Stock yard cannot overlap resources');
+app.run(`town.map_resources=[{kind:'berry_bush',x:13,y:13},{kind:'berry_bush',x:14,y:14}];`);
+for(const kind of ['home','mill','road']){
+  assert.equal(app.run(`placementValid(town,{x:13,y:13},'${kind}')`),true,kind+' preview permits bushes');
+}
+assert.equal(app.run(`town.map_resources.length`),2,'Placement previews preserve authoritative bushes');
+app.run(`tool='move';moveIndex=1;`);
+assert.equal(app.run(`placementValid(town,{x:13,y:13},'mill')`),true,'Move preview permits bushes across the footprint');
+app.run(`town.map_resources.push({kind:'tree',x:14,y:14});`);
+assert.equal(app.run(`placementValid(town,{x:13,y:13},'mill')`),false,'Bushes do not mask other obstacles');
 app.run(`town.map_resources=[];tool='move';moveIndex=1;`);
 assert.equal(app.run(`placementValid(town,{x:11,y:10},'mill')`),true,'Move preview can reuse the original footprint');
 assert.equal(app.run(`placementValid(town,{x:10,y:10},'mill')`),false,'Unchanged moves remain invalid');

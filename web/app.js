@@ -3933,7 +3933,7 @@ function placementValid(town,tile,kind,moving=null){
     && !buildings.some(b=>!moving?.includes(b)&&occupies(b,p.x,p.y))
     && !obstacles.some(b=>b.kind==='barn'&&rangeContains(b,p,town))
     && !(town.npcs || []).some(n=>n.x===p.x&&n.y===p.y)
-    && !town.map_resources.some(r=>r.x===p.x&&r.y===p.y)
+    && !town.map_resources.some(r=>r.kind!=='berry_bush'&&r.x===p.x&&r.y===p.y)
     && (tiles.length===1||!mapRoads(town).some(r=>r.x===p.x&&r.y===p.y))
     && !(world.shared_map?Object.values(world.towns):[town]).some(t=>t.player&&Math.abs(t.player.x-p.x)<.68&&Math.abs(t.player.y-p.y)<.68))
     && (kind!=='barn'||!obstacles.some(b=>footprintTiles(b).some(p=>rangeContains(proposed,p,town))))

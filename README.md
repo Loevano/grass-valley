@@ -890,6 +890,8 @@ cut timber stacks replace separate tiled pads. The hall is wider while its doors
 windows, and lanterns stay at the same scale as other buildings.
 Placement and moves validate every tile, including resources, players, other towns,
 and the hall's building range. Workers approach any reachable outside edge.
+Buildings, moves, acres, and roads can cover berry bushes, which disappear from
+the covered tiles as soon as placement succeeds. Other resources still block placement.
 Older buildings expand when their saved site is clear. Crowded older sites retain
 one tile until moved to a clear site with room for the new footprint.
 
