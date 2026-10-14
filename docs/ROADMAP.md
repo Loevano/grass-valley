@@ -56,7 +56,7 @@ documented in [wood balance](BALANCING.md#wood) and
 [grain balance](BALANCING.md#grains). The grain chain uses two farms, one miller,
 and two bakeries, with downstream storage sized for harvest and hauling gaps.
 
-The proposed [grain flow](grainflow.md) keeps one worker per mill and bakery,
+The proposed [grain flow](GRAINFLOW.md) keeps one worker per mill and bakery,
 using equipment throughput upgrades so one of each can feed an initial target
 of 200 working villagers. Additional bakeries provide variety. Remaining work
 includes lower food-consumption tuning, equipment tiers and costs, existing-mill
