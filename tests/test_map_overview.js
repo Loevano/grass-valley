@@ -3,6 +3,7 @@ const client=require('./client_harness')();
 client.run(`
   const terrain=Array(120).fill('g'.repeat(120));
   const town=(name,x)=>({name,level:1,map_size:120,terrain,map_resources:[],npcs:[],roads:[],
+    player:{x:x+2,y:33,facing:1,equipment:{}},
     buildings:[{kind:'hall',x,y:30},{kind:'home',x:x+4,y:30}],villagers:[{name:'Ada',job:'idle'}]});
   world={world_id:'overview',shared_map:{map_size:120,terrain,map_resources:[{kind:'water',x:28,y:28}],npcs:[]},
     towns:{own:town('Home',30),friend:town('Neighbor',45)}};
@@ -19,7 +20,8 @@ client.run(`
   townOutline=(...args)=>{outlines++;return oldOutline(...args);};
 `);
 client.frame(0);
-assert.equal(client.run('hitTargets.length'),2,'Only hall markers are selectable in the overview');
+assert.equal(client.run('hitTargets.filter(h=>h.type==="building").length'),2,'Hall markers remain selectable in the overview');
+assert.equal(client.run('hitTargets.filter(h=>h.type==="player").map(h=>h.townId).sort().join(",")'),'friend,own','All main characters have selectable overview markers');
 assert.equal(client.run('overviewCache.water.has("28,28")'),true,'Water survives simplified terrain rendering');
 assert.equal(client.run('workerUpdates+resourceDraws+buildingDraws'),0,'Overview never prepares or draws animated detail');
 assert.equal(client.run('ClientScene.queue.jobs.size'),0,'Entering overview cancels suspended animation preparation');
@@ -114,4 +116,41 @@ assert.equal(client.paints,beforeResize+1,'Resizing redraws the overview at the 
 client.frame(528);
 assert.equal(client.paints,beforeResize+1,'The resized overview returns to idle cache reuse');
 assert.equal(client.run('JSON.stringify(townOutline([{x:1,y:1}]))'), '[[1,1],[2,1],[2,2],[1,2]]','A hall-only town encloses the whole tile');
+client.run(`
+  world={world_id:'founders',shared_map:{map_size:120,terrain,map_resources:[],npcs:[]},
+    towns:{own:town('Home',30),friend:town('Neighbor',45),traveler:town('Traveler',35)}};
+  world.towns.traveler.buildings=[];
+  cameraTown='founders/shared';camera={x:30,y:30,zoom:.35};viewed='own';selection=null;
+`);
+client.frame(544);
+assert.equal(client.run('hitTargets.filter(h=>h.type==="player").length'),3,'Founders without a town hall also appear');
+const beforeMovement=client.paints;
+client.run(`
+  const founderGround=groundCache.surface,founderOutline=overviewCache.towns.get('friend').outline;
+  const oldFriendLeft=hitTargets.find(h=>h.type==='player'&&h.townId==='friend').left;
+  updateRemotePlayers({world_id:world.world_id,sampled_at:1,players:{friend:{...world.towns.friend.player,x:51}}});
+`);
+client.frame(560);
+assert.equal(client.paints,beforeMovement+1,'Remote founder movement redraws the overview');
+assert.equal(client.run('hitTargets.find(h=>h.type==="player"&&h.townId==="friend").left>oldFriendLeft'),true,'Remote markers track updated positions');
+assert.equal(client.run('groundCache.surface===founderGround&&overviewCache.towns.get("friend").outline===founderOutline'),true,'Founder movement reuses cached ground and town geometry');
+client.run(`
+  const hit=hitTargets.find(h=>h.type==='player'&&h.townId==='friend');
+  canvas.onclick({clientX:(hit.left+hit.right)/2,clientY:(hit.top+hit.bottom)/2,button:0});
+`);
+assert.equal(client.run('selection.type'), 'player','Overview founder markers open character inspection');
+assert.equal(client.run('viewed'), 'friend');
+client.frame(576);
+const beforeOwnMovement=client.paints;
+client.run(`
+  const oldOwnLeft=hitTargets.find(h=>h.type==='player'&&h.townId==='own').left;
+  playerView.following=false;
+  playerView.target={...playerView.target,x:playerView.x+1};
+`);
+client.frame(592);
+assert.equal(client.paints,beforeOwnMovement+1,'Local founder movement redraws the overview');
+assert.equal(client.run('hitTargets.find(h=>h.type==="player"&&h.townId==="own").left>oldOwnLeft'),true,'Your marker follows your displayed position while viewing another town');
+client.run(`world={...world,towns:{own:world.towns.own,friend:world.towns.friend}};`);
+client.frame(608);
+assert.equal(client.run('hitTargets.some(h=>h.type==="player"&&h.townId==="traveler")'),false,'Removed founders leave no stale overview markers');
 console.log('Cached map overview checks passed');

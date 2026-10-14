@@ -214,7 +214,8 @@ detailed presentation work. The final overview zoom threshold is still open.
 | Terrain | Simple biome/ground blocks, including water | Load missing chunks and cache their overview artwork; reuse loaded unchanged terrain. | 4 for terrain updates, including missing visible chunks; optional offscreen preparation can wait. |
 | Town halls | One static marker per town, with its name | Cache position, label, and marker artwork; update when those inputs change. | 3 for background town changes; 2 after your own relevant command. |
 | Town extent | A restrained outline showing the current building edge | Cache the outline geometry; rebuild only when relevant building positions or membership change. | 3 for background changes; 2 after your own build, move, or removal. |
-| Individual buildings, workers, animals, and player animations | Omit from overview drawing; the hall and outline summarize the city | No overview animation jobs or individual-object artwork preparation. | No visual work needed in this mode. |
+| Main characters | Named, selectable founder markers, including founders without a hall | Update displayed positions through the existing local movement and remote-player snapshots; redraw on position changes while reusing cached terrain and town geometry. | 1 for your founder; 2 for other founders. |
+| Individual buildings, workers, animals, and detailed player animations | Omit from overview drawing; the hall and outline summarize the city | No overview animation jobs or individual-object artwork preparation. | No visual work needed in this mode. |
 | Camera, zoom, hover, and town selection | Immediate view transforms and lightweight interaction feedback | Transform/composite cached layers; reuse geometry and artwork. | 1 for input response. |
 
 ### What causes a refresh?
@@ -227,6 +228,7 @@ only a changed layer.
 | Trigger | Expected overview behavior |
 | --- | --- |
 | Nothing changes | Keep the cached overview; no repeated preparation or animation redraws. |
+| Founder moves, joins, or leaves | Redraw named founder markers at their displayed positions; reuse terrain and town geometry. |
 | Pan, zoom, resize, or select a town | Redraw/transform cached layers promptly; adapt coverage or resolution only when needed. |
 | Camera reaches unloaded terrain | Request missing chunks and prepare their block artwork; retain reusable loaded chunks. |
 | Building added, moved, or removed | Refresh the affected town's summary and outline; reuse terrain and other towns. |

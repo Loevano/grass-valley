@@ -257,7 +257,7 @@ const run=new Function('document','window','localStorage','setTimeout','clearTim
   viewed='friend';identity=null;tool=null;cameraTown='labels/shared';camera={x:30,y:30,zoom:.35};
   playerSprite=()=>null;drawVillager=()=>{};remotePlayerSprite=(id,t)=>({...t.player,kind:'player',townId:id});
   texts.length=0;draw();
-  assert.equal(texts.filter(text=>text==='Neighbor').length,1,'Overview labels the hall once and hides the founder');
+  assert.equal(texts.filter(text=>text==='Neighbor').length,2,'Overview labels both the hall and the founder');
   selection={type:'player',townId:'friend',index:0};texts.length=0;draw();
   assert(texts.includes('Neighbor'),'Overview retains the town marker when founder selection changes');
   selection={type:'building',index:0};texts.length=0;draw();

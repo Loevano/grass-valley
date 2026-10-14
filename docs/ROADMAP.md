@@ -16,7 +16,8 @@ and cache rules are in [Backend](BACKEND.md#cached-zoomed-out-map).
 | Terrain | Display simple terrain blocks, loading missing chunks and caching unchanged artwork. |
 | Town markers | Render only town halls as static markers, with town names. |
 | City size | Outline the current building extent of each town. |
-| Animated detail | Omit individual buildings, workers, animals, and player animations from the overview. |
+| Main characters | Show every founder as a named, selectable marker that follows their movement, including founders without a town hall. |
+| Animated detail | Omit individual buildings, workers, animals, and detailed player animations from the overview. |
 | Refresh | Reuse cached layers while unchanged; update affected data when towns change or new terrain is needed. |
 | Interaction | Keep panning, zooming, and town selection responsive using cached layers. |
 | Simulation | Keep gameplay and saved state authoritative on the host while viewing the overview. |
@@ -40,8 +41,10 @@ Terrain uses the bounded chunk cache and padded ground canvas. Each town reuses
 its summary and outline until its name, hall, level, or building positions change.
 Idle overview frames do not clear or redraw the map, prepare worker animation
 jobs, or draw individual objects. Pan, zoom, resize, hover, selection, visible
-terrain changes, and changed town summaries trigger a redraw. Detailed playback
-restarts from current state on leaving the overview.
+terrain changes, founder movement, and changed town summaries trigger a redraw.
+Named founder markers stay readable at every overview scale and reuse cached
+terrain and town geometry when moving. Detailed playback restarts from current
+state on leaving the overview.
 
 The existing world API still refreshes host state and interface data, including
 collision indexes used by founder movement. A lightweight overview request/change

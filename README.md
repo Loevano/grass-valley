@@ -226,7 +226,8 @@ the Python host, refresh both browsers, and create a new world to use the shared
   Zooming out switches to a cached overview with simple terrain blocks, named
   town-hall markers, and outlines of each town's buildings, acres, and construction
   sites. Click a hall marker to inspect its town. Roads do not extend the outline.
-  The overview hides individual buildings and characters; zoom in to see them.
+  All main characters remain visible as named, selectable markers that follow
+  their movement. Zoom in to see individual buildings, workers, and animals.
   Build and move tools keep their detailed map interactions at any zoom level.
   Buildings, trees, water, and rocks block movement. Your position is saved per
   world. Movement pauses while typing, placing buildings, or using world menus.
