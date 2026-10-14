@@ -135,7 +135,7 @@ def _field_view(source):
 
 def field_work_spot(source):
     """A tool-length approach inside the acre's walkable tile."""
-    if farming.field_state(source)['stage'] not in ('plowed', 'thirsty'):
+    if farming.field_state(source)['stage'] not in ('unplowed', 'plowed', 'thirsty'):
         return {'x': source['x'], 'y': source['y']}
     if source['x'] > 0:
         return {'x': source['x'] - .45, 'y': source['y'] + .1}

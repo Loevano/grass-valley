@@ -48,18 +48,18 @@ class FarmingDestinations(unittest.TestCase):
         self.assertEqual(self.field['field']['stage'], 'growing')
         self.assertEqual((state['x'], state['y']), (2.55, 4.1))
 
-    def test_plowing_to_sowing_walks_instead_of_sliding(self):
-        self.advance(2)
-        state = self.advance(.1)
-        self.assertEqual(state['phase'], 'walking')
-        self.assertIsNone(state.get('farmAction'))
-        self.assertEqual(self.field['field']['progress'], 0)
+    def test_plowing_walks_to_the_same_tool_length_destination(self):
         state = self.advance(3)
-        self.assert_approach(state['playback'], 'sowing')
+        self.assert_approach(state['playback'], 'plowing')
+        self.assertEqual(self.field['field']['stage'], 'plowed')
+        self.assertEqual((state['x'], state['y']), (2.55, 4.1))
+        state = self.advance(.1)
+        self.assertEqual((state['x'], state['y']), (2.55, 4.1))
+        self.assertEqual(state['farmAction'], 'sowing')
 
     def test_border_destinations_stay_in_the_field_tile(self):
         for x, y in ((0, 0), (0, 15), (15, 0), (15, 15)):
-            field = {'x': x, 'y': y, 'field': {'stage': 'plowed'}}
+            field = {'x': x, 'y': y, 'field': {'stage': 'unplowed'}}
             spot = work_cycles.field_work_spot(field)
             self.assertEqual((round(spot['x']), round(spot['y'])), (x, y))
             self.assertTrue(0 <= spot['x'] < 16 and 0 <= spot['y'] < 16)

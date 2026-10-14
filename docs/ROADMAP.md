@@ -8,7 +8,6 @@ and cache rules are in [Backend](BACKEND.md#cached-zoomed-out-map).
 | 1     | Cached zoomed-out town overview    | Implemented              | Show the landscape and city sizes without refreshing animated scene detail.                                      |
 | 2     | Production line balancing          | Wood and grain implemented; fishing remains | Develop clear fishing chains with capped staffing and simple upgrades. |
 | 3     | Scalable villager pathfinding       | Foundations implemented; host scheduling and shared navigation remain | Keep movement responsive as villager counts and towns grow, with bounded routing work. |
-| 5     | Watering and plowing animation positions | Planned             | Apply the seeding animation's worker-position recalculation fix to watering and plowing. |
 | 6     | Remove village grain flow summary  | Planned                  | Remove the detailed village grain flow summary from building Production panels. |
 | 7     | Building range indicators in build mode | Planned             | Show building ranges on the map to help choose placement positions. |
 | 8     | Larger production buildings and town hall | Planned           | Give mills, sawpits, and forgeries larger footprints with workplace and stock areas; make town halls occupy four tiles. |
@@ -196,18 +195,6 @@ Completion criteria:
 
 Host work budgets, urgency rules, crowd spacing, and the villager counts that
 justify flow fields or hierarchical routing remain open implementation decisions.
-
-## Watering and plowing animation positions
-
-**Status:** planned.
-
-Apply the existing seeding animation bugfix that recalculates the worker's
-position to the watering and plowing animations as well.
-
-Completion criteria:
-
-- Watering and plowing recalculate the worker's position using the same correction
-  as seeding, keeping the worker correctly positioned during both animations.
 
 ## Remove village grain flow summary
 

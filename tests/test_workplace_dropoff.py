@@ -144,7 +144,8 @@ class WorkplaceDropoff(unittest.TestCase):
                 state.update(x=3, y=2, path=[], phase='depositing', elapsed=.6)
                 before = self.town['food']
                 self.assertTrue(work_cycles.advance(self.town, self.town, self.worker, self.building, self.source, 0, 3))
-                self.assertEqual((state['x'], state['y']), (self.source['x'], self.source['y']))
+                destination = work_cycles.field_work_spot(self.source)
+                self.assertEqual((state['x'], state['y']), (destination['x'], destination['y']))
                 self.assertEqual(self.source['field']['stage'], expected)
                 self.assertNotIn(state['phase'], ('returning', 'depositing'))
                 logistics.drop_off(self.town, self.building, self.worker)

@@ -25,7 +25,7 @@ class FarmingCycle(unittest.TestCase):
                            construction_position={'x': 3, 'y': 4})
         self.world = {'towns': {'fields': self.town}}
 
-    def advance(self, seconds=2):
+    def advance(self, seconds=3):
         return work_cycles.advance(self.town, self.town, self.worker, self.farm, self.acre, 0, seconds)
 
     def test_new_placement_and_old_fields_start_unplowed(self):
@@ -39,7 +39,7 @@ class FarmingCycle(unittest.TestCase):
         samples = self.worker['work_animation']['playback']
         self.assertEqual(samples[0]['farmField']['stage'], 'plowed')
         completed = next(s for s in samples if s['farmField']['stage'] == 'sprouting')
-        self.assertAlmostEqual(completed['time'], farming.WORK_SECONDS + math.hypot(.45, .1) / 1.8)
+        self.assertAlmostEqual(completed['time'], farming.WORK_SECONDS)
         farming.grow(self.town, 5)
         self.assertEqual(completed['farmField']['elapsed'], 0)
         self.assertEqual(self.acre['field']['elapsed'], 5)
@@ -83,11 +83,13 @@ class FarmingCycle(unittest.TestCase):
         self.town['buildings'].append(second)
         server.tick(self.world)
         self.assertEqual(self.acre['field']['stage'], 'plowed')
-        self.assertAlmostEqual(second['field']['progress'], 1 - 1 / 1.8)
+        approach = math.hypot(.45, .1) / 1.8
+        next_approach = (math.hypot(.45, .1) + math.hypot(.55, .1)) / 1.8
+        self.assertAlmostEqual(second['field']['progress'], 1 - approach - next_approach)
         samples = self.worker['work_animation']['playback']
         self.assertEqual(samples[-1]['time'], server.TICK_SECONDS)
-        walking = next(s for s in samples if s['phase'] == 'walking')
-        self.assertEqual(walking['time'], farming.WORK_SECONDS)
+        walking = next(s for s in samples if s['phase'] == 'walking' and s['farmField']['x'] == second['x'])
+        self.assertAlmostEqual(walking['time'], farming.WORK_SECONDS + math.hypot(.45, .1) / 1.8)
         self.assertEqual(walking['farmField']['x'], second['x'])
 
     def test_last_plowing_starts_sowing_without_waiting_for_a_tick(self):
