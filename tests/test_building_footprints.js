@@ -18,6 +18,9 @@ app.run(`town.map_resources=[];tool='move';moveIndex=1;`);
 assert.equal(app.run(`placementValid(town,{x:11,y:10},'mill')`),true,'Move preview can reuse the original footprint');
 assert.equal(app.run(`placementValid(town,{x:10,y:10},'mill')`),false,'Unchanged moves remain invalid');
 app.run(`tool='mill';moveIndex=null;`);
+assert.equal(app.run(`rangeContains({kind:'farm',x:10,y:10},{x:13,y:13},town)`),true,'Farm reach includes square corners');
+assert.equal(app.run(`rangeContains({kind:'woodcutter',x:10,y:10},{x:16,y:15},town)`),false,'Woodcutter uses ten tile steps');
+assert.equal(app.run(`rangeContains({kind:'fishing_hut',x:10,y:10,level:3,profession_upgrades:['master_boat']},{x:22,y:10},town)`),true,'Fishing preview includes boat reach');
 app.run(`
   const sceneSteps=ClientScene.prepare(world);let prepared;
   do{prepared=sceneSteps.next();}while(!prepared.done);
@@ -36,4 +39,4 @@ assert.equal(app.run(`JSON.stringify(path.at(-1))`),'{"x":11,"y":12}','Browser r
 assert.equal(app.run(`JSON.stringify(townOutline([town.buildings[1]]))`),'[[10,10],[12,10],[12,12],[10,12]]','Overview outlines the full footprint');
 app.run(`tool=null;selectTile(11,11);`);
 assert.equal(app.run(`selection.index`),1,'Stock tile selects its owning building');
-console.log('Full building placement, scene collision, edge access and selection passed');
+console.log('Full building placement, scene collision, ranges, edge access and selection passed');

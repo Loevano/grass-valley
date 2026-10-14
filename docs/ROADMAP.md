@@ -8,7 +8,6 @@ and cache rules are in [Backend](BACKEND.md#cached-zoomed-out-map).
 | 1     | Cached zoomed-out town overview    | Implemented              | Show the landscape and city sizes without refreshing animated scene detail.                                      |
 | 2     | Production line balancing          | Wood and grain implemented; fishing remains | Develop clear fishing chains with capped staffing and simple upgrades. |
 | 3     | Scalable villager pathfinding       | Foundations implemented; host scheduling and shared navigation remain | Keep movement responsive as villager counts and towns grow, with bounded routing work. |
-| 7     | Building range indicators in build mode | Planned             | Show building ranges on the map to help choose placement positions. |
 | 9     | Fix harvesting tool visuals        | Planned                  | Remove the duplicate sickle and the extra attribute shown during harvesting. |
 
 ## Cached zoomed-out town overview
@@ -191,19 +190,6 @@ Completion criteria:
 
 Host work budgets, urgency rules, crowd spacing, and the villager counts that
 justify flow fields or hierarchical routing remain open implementation decisions.
-
-## Building range indicators in build mode
-
-**Status:** planned.
-
-Show range indicators for buildings with a defined gameplay range while in
-build mode, so players can see the area covered before placing a building.
-
-Completion criteria:
-
-- Building ranges are visible on the map while in build mode.
-- The building placement preview's range indicator follows its proposed position.
-- Indicators reflect the actual gameplay range of each building.
 
 ## Fix harvesting tool visuals
 

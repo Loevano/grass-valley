@@ -3574,6 +3574,7 @@ function draw(seconds=0){
   const showBuildingRange=town && (panel==='build' || (selection?.type==='building' && town.buildings[selection.index]?.kind==='hall'));
   const preview=hoverTile || keyboardTile;
   const previewKind=tool in costs?tool:tool==='move'&&moveIndex!==null?town?.buildings[moveIndex]?.kind:null;
+  const rangeBuildings=panel==='build'?(world.shared_map?Object.values(world.towns):[town]).flatMap(t=>t.buildings.filter(b=>gameplayRange(b,t)).map(b=>({building:b,town:t}))):[];
   const rangePreview=previewKind&&preview?{...(tool==='move'&&moveIndex!==null?town.buildings[moveIndex]:{}),...placementBuilding(preview,previewKind)}:null;
   const sourceKind=previewKind==='woodcutter'?'tree':(previewKind==='farm'||previewKind==='fishing_hut')?'water':null;
   const previewReach=resourceReach(tool==='move'&&moveIndex!==null?town.buildings[moveIndex]:{kind:previewKind});
@@ -3590,7 +3591,7 @@ function draw(seconds=0){
     drawRoad(road);
   }
   // Selection and construction overlays remain live above the cached ground.
-  if(tool || showBuildingRange || reachable.size){
+  if(tool || showBuildingRange || reachable.size || rangeBuildings.length){
     for(let x=minX;x<=maxX;x++)for(let y=minY;y<=maxY;y++){
       const [px,py]=point(x,y);
       if(px+tileW/2<0 || px-tileW/2>rect.width || py+tileH+12<0 || py>rect.height)continue;
@@ -3598,6 +3599,8 @@ function draw(seconds=0){
       const diamond=[[px,py],[px+tileW/2,py+tileH/2],[px,py+tileH],[px-tileW/2,py+tileH/2]];
       if(tool)polygon(diamond,'#00000000','#91a37455');
       if(showBuildingRange && insideBuildingRange(town,{x,y}))polygon(diamond,'#e4c98022','#e4c98088');
+      if(rangeBuildings.some(({building,town})=>building.kind!=='hall'&&rangeContains(building,{x,y},town)))polygon(diamond,'#82b9ae18','#82b9ae55');
+      if(rangePreview&&rangeContains(rangePreview,{x,y},town))polygon(diamond,'#b8dcad33','#c6dfaa88');
       if(reachable.has(`${x},${y}`))polygon(diamond,'#b8dcad44','#c6dfaa');
       if(rangePreview&&occupies(rangePreview,x,y)&&town){const valid=placementValid(town,preview,previewKind)&&buildingUsable(town,{...preview,kind:previewKind});ctx.save();ctx.lineWidth=2;polygon(diamond,valid?'#d6d8a366':'#c76d6455',valid?'#eee5ab':'#f3a295');ctx.restore();}
     }
@@ -3767,6 +3770,18 @@ function footprintTiles(building){
 }
 function occupies(building,x,y){return footprintTiles(building).some(p=>p.x===x&&p.y===y);}
 function placementBuilding(tile,kind){return {...tile,kind,footprint:(world.progression?.building_footprints || buildingFootprints)[kind] || [1,1]};}
+function gameplayRange(building,town){
+  if(building.kind==='hall')return {reach:buildingRange(town),square:false};
+  if(building.kind==='farm')return {reach:3,square:true};
+  if(['woodcutter','fishing_hut','mine'].includes(building.kind))return {reach:resourceReach(building),square:false};
+  return null;
+}
+function rangeContains(building,tile,town){
+  const range=gameplayRange(building,town);if(!range)return false;
+  const dx=Math.abs(tile.x-building.x),dy=Math.abs(tile.y-building.y);
+  return (range.square?Math.max(dx,dy):dx+dy)<=range.reach
+    && (building.kind!=='hall'||!town.town_origin||Math.abs(tile.x-town.town_origin.x)+Math.abs(tile.y-town.town_origin.y)<=Math.max(15,range.reach));
+}
 function buildingRange(town){return 30+5*(town.level-1);}
 function insideBuildingRange(town,tile){
   const hall=town.buildings.find(b=>b.kind==='hall');
