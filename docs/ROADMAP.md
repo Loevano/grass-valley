@@ -184,6 +184,9 @@ are collected in [Pathing decisions](PATHING.md).
   keep other buildings out of the pen; selection and build tools show its range.
   Barn workers now follow host-confirmed feeding rounds through the pen, returning
   beside the barn to unload; their routes and round progress persist in saves.
+- Idle town villagers take short strolls with staggered pauses near their hall,
+  avoiding occupied and impassable tiles. These ambient browser routes leave
+  authoritative state untouched and stop when work or construction is assigned.
 - Browser planning is resumable and runs through a queue with an approximately
   2 ms frame budget. The host still performs route searches synchronously.
 - Gameplay movement remains authoritative on the host. Browser playback follows

@@ -100,7 +100,8 @@ const run=new Function('document','window','localStorage','setTimeout','clearTim
     const assigned={...town.villagers[1],work_target:{kind:'water',x:9,y:2}};
     check(WorkerAnimation.plan(town,assigned,1).home===town.buildings[1],'Animation uses explicitly selected workplace');
     assigned.job='idle';assigned.building_index=2;assigned.work_target=null;
-    check(WorkerAnimation.plan(town,assigned,1).home===town.buildings[2],'Resting settlers return to their assigned cottage');
+    const resting=WorkerAnimation.plan(town,assigned,1);
+    check(resting.home===town.buildings[0]&&resting.roaming,'Resting settlers roam near the hall even when assigned to a cottage');
     world.progression.crops={vegetables:1};
     const paths={farm:[1,2,4],mill:[1],bakery:[1],woodcutter:[1,2,3],sawpit:[1,2],workshop:[1],mine:[1,2,4,8],smelter:[1,2,3],steelworks:[1]};
     for(const [kind,tiers] of Object.entries(paths)){

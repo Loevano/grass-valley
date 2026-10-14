@@ -232,7 +232,8 @@ const WorkerAnimation = (() => {
       r.kind===(kind==='woodcutter'?'tree':'water')&&distance(b,r)<=(kind==='woodcutter'?10:kind==='fishing_hut'?fishingReach(b):3))));
     const assigned=Number.isInteger(villager.building_index)?town.buildings[villager.building_index]:null;
     const workplace=(assigned?.kind==='acre'?town.buildings[assigned.farm_index]:assigned) || (source?.kind==='acre'?town.buildings[source.farm_index]:workplaces[index%workplaces.length]);
-    const home=villager.construction_target || workplace || town.buildings.find(b=>b.kind==='hall');
+    const roaming=villager.job==='idle'&&!villager.construction_target&&!!hall;
+    const home=villager.construction_target || (roaming?hall:workplace || hall);
     let pier=[],workSpot=null,sailing=null;
     if(!villager.construction_target&&villager.job==='farming'&&source?.kind==='acre'){
       // Farmers tend the field itself rather than working outside its boundary.
@@ -317,15 +318,30 @@ const WorkerAnimation = (() => {
       fieldCycle:villager.job==='farming'&&!!source?.field,
       water:[...town.map_resources.filter(r=>r.kind==='water'),...(town.obstacles || town.buildings).filter(b=>b.kind==='well'&&!b.construction).map(b=>({kind:'well',x:b.x,y:b.y}))],waterReady:false,
       stationary:!!source&&source.kind===workplace?.kind&&distance(source,workplace)===0&&!villager.construction_target,
+      roaming,roamSeed:state?.roamSeed ?? index+1,roamWait:1.5+index%5*.6,
       construction:!!villager.construction_target,terrain:town.terrain,elapsed:0,clock:state?.clock || index*.37,facing:state?.facing || 1};
   }
-  function pathBlocked(state) {
-    const next=state.path[0];
+  function pathBlocked(state, next=state.path[0]) {
     if(!next)return false;
     const biome=state.terrain?.[next.y]?.[next.x];
     return state.blocked?.has(key(next)) || next.x<0 || next.y<0 || next.x>=state.size || next.y>=state.size
       || biome==='v' || (state.bounds&&(!biome || next.x<state.bounds.minX || next.x>state.bounds.maxX
         || next.y<state.bounds.minY || next.y>state.bounds.maxY));
+  }
+  function roam(state) {
+    // Short ambient strolls need only adjacent collision checks, never a map search.
+    const random=()=>state.roamSeed=(Math.imul(state.roamSeed,1664525)+1013904223)>>>0;
+    const hall=state.home,[width,depth]=hall.footprint || [1,1];
+    let position={x:Math.round(state.x),y:Math.round(state.y)};
+    const visited=new Set([key(position)]),steps=2+random()%3;
+    for(let i=0;i<steps;i++){
+      const choices=neighbors(position).filter(p=>p.x>=hall.x-4&&p.x<=hall.x+width+3
+        &&p.y>=hall.y-4&&p.y<=hall.y+depth+3&&!visited.has(key(p))&&!pathBlocked(state,p));
+      if(!choices.length)break;
+      position=choices[random()%choices.length];visited.add(key(position));state.path.push(position);
+    }
+    state.phase=state.path.length?'walking':'idle';
+    state.roamWait=2+random()%300/100;
   }
   function refreshNavigation(state, town, villager) {
     // Geometry updates refresh collision data without changing an ongoing route.
@@ -405,6 +421,11 @@ const WorkerAnimation = (() => {
     }
     if(state.transport){state.phase='waiting';return;}
     if(state.construction){state.elapsed+=seconds;return;}
+    if(state.roaming){
+      state.roamWait-=seconds;
+      if(state.roamWait<=0&&seconds>0)roam(state);
+      return;
+    }
     // Field actions and growth are confirmed by the host, never predicted here.
     if(state.fieldCycle)return;
     if(!active || !state.source || state.phase==='waiting')return;
