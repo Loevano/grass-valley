@@ -5,6 +5,7 @@ Movement and routing decisions for Lantern Vale.
 - **Current:** implemented behavior checked against the code.
 - **Planned:** work listed in [ROADMAP.md](ROADMAP.md#scalable-villager-pathfinding).
 - **Open:** a choice still needs to be made.
+- Each topic separates **Host** authority from **Browser** presentation and ends with code references.
 - Explanations describe the current rules; they do not introduce new requirements.
 - Code remains the source of truth. Update this reference when movement,
   destination selection, route validity, or scheduling changes.
@@ -14,10 +15,10 @@ Movement and routing decisions for Lantern Vale.
 
 **Current:**
 
-- **Host owns:**
+- **Host:** owns authoritative gameplay and saved state.
   - Gameplay movement and work completion.
   - Cargo transfers and saved worker state.
-- **Browser owns:**
+- **Browser:** owns derived presentation data.
   - Derived navigation indexes, collision overlays, and route caches.
   - Animation jobs and playback history.
   - Presentation must not mutate authoritative snapshots or award production or skills.
@@ -25,34 +26,54 @@ Movement and routing decisions for Lantern Vale.
 ### Movement by actor
 
 - **Founder (player):**
-  - Direct WASD movement with continuous collision checks, local prediction, and host acknowledgement.
+  - **Host:** validates direct WASD commands, checks collisions, and returns the authoritative position.
+  - **Browser:** predicts movement immediately, follows buffered inputs, and reconciles host replies.
   - No destination route search.
-  - See `walkable` and `move_player` in [server/server.py](../server/server.py),
-    and `predictPlayerStep` and `playerSprite` in [web/app.js](../web/app.js).
+  - **References:**
+    - **Host:** `walkable`, `move_player` in [server/server.py](../server/server.py).
+    - **Browser:** `predictPlayerStep`, `playerSprite` in [web/app.js](../web/app.js).
 - **Workplace workers:**
-  - Host owns routes and work phases; browser follows confirmed timelines when available.
-  - See [server/work_cycles.py](../server/work_cycles.py) and
-    [web/animations.js](../web/animations.js).
+  - **Host:** owns routes, work phases, and confirmed movement timelines.
+  - **Browser:** follows confirmed timelines when available; otherwise prepares visual routes and phases.
+  - **References:**
+    - **Host:** `advance`, `_advance` in [server/work_cycles.py](../server/work_cycles.py).
+    - **Browser:** `planSteps`, `playback` in [web/animations.js](../web/animations.js).
 - **Builders:**
-  - Host retains a claimed site and waypoint route; browser animates the assignment.
-  - See `construct` and `construction_route` in [server/server.py](../server/server.py).
+  - **Host:** retains a claimed site and waypoint route, advances walking, and applies construction progress.
+  - **Browser:** animates the host's assignment; visual progress does not complete construction.
+  - **References:**
+    - **Host:** `construct`, `construction_route` in [server/server.py](../server/server.py).
+    - **Browser:** `animatedVillagers` in [web/app.js](../web/app.js),
+      `planSteps`, `advanceSteps` in [web/animations.js](../web/animations.js).
 - **Haulers, merchants, and producers fetching or delivering goods:**
-  - Host plans and advances trips, validating pickup and delivery.
-  - See [server/logistics.py](../server/logistics.py) and `logistics_route` in
-    [server/server.py](../server/server.py).
+  - **Host:** selects and advances trips, validates pickup and delivery, and transfers cargo.
+  - **Browser:** animates the host's trip and cargo; may plan an approach to its remaining path.
+  - **References:**
+    - **Host:** `start_trip`, `advance_trip`, `transfer` in [server/logistics.py](../server/logistics.py),
+      `logistics_route` in [server/server.py](../server/server.py).
+    - **Browser:** `planSteps`, `advanceSteps` in [web/animations.js](../web/animations.js).
 - **Wilderness residents:**
-  - Separate host-owned local cardinal routes for ambient routines.
-  - Browser extrapolates the published route.
-  - See [server/village_life.py](../server/village_life.py) and `npcSprites` in
-    [web/app.js](../web/app.js).
+  - **Host:** owns local cardinal routes and ambient routine state.
+  - **Browser:** extrapolates the published route for display.
+  - **References:**
+    - **Host:** `route`, `advance` in [server/village_life.py](../server/village_life.py).
+    - **Browser:** `npcSprites` in [web/app.js](../web/app.js).
 - **Barn animals:**
-  - Browser prepares short roaming routes for display; animal state stays host-owned.
-  - See `animalRoutes` in [web/scene.js](../web/scene.js)
-    and `barnAnimalSprites` in [web/app.js](../web/app.js).
+  - **Host:** owns animal counts and growth state.
+  - **Browser:** prepares short roaming routes and displays the animals along them.
+  - **References:**
+    - **Host:** `animal_growth`, `grow_animals` in [server/progression.py](../server/progression.py).
+    - **Browser:** `animalRoutes` in [web/scene.js](../web/scene.js),
+      `barnAnimalSprites` in [web/app.js](../web/app.js).
 
 ## Ground, obstacles, and access
 
 **Current:**
+
+- **Host:** supplies authoritative terrain and shared-town obstacles; enforces actor access rules.
+- **Browser:** derives collision indexes and task overlays from snapshots for prediction and visual planning.
+
+### Common rules
 
 - Worker searches use tile coordinates.
 - Buildings, map resources, and NPC locations form the default static obstacle set.
@@ -62,8 +83,6 @@ Movement and routing decisions for Lantern Vale.
   - Other towns' structures obstruct routes.
   - Their completed roads can help them.
 - Access exceptions belong to the actor or task and do not change the shared obstacle map.
-
-Source: `walking_map` in [server/shared_world.py](../server/shared_world.py).
 
 ### Access rules
 
@@ -101,11 +120,25 @@ Source: `walking_map` in [server/shared_world.py](../server/shared_world.py).
   planning or continuing.
   - Recovery does not permit travel through blocked tiles.
 
-Clothing source: [server/equipment.py](../server/equipment.py).
+**References:**
+
+- **Host:** `walking_map` in [server/shared_world.py](../server/shared_world.py);
+  `walkable`, `ensure_player`, `move_player`, `construction_blocked` in [server/server.py](../server/server.py);
+  `protected` in [server/equipment.py](../server/equipment.py);
+  `_advance` in [server/work_cycles.py](../server/work_cycles.py).
+- **Browser:** `prepare`, `Overlay` in [web/scene.js](../web/scene.js);
+  `planSteps`, `refreshNavigation` in [web/animations.js](../web/animations.js);
+  `predictPlayerStep`, `biomeProtected` in [web/app.js](../web/app.js).
 
 ## Directions, arrival, and search algorithm
 
 **Current:**
+
+- **Host:** calculates routes used by gameplay movement.
+- **Browser:** implements matching search rules for visual planning and fallback routes;
+  confirmed workplace playback does not need a duplicate search.
+
+### Common rules
 
 - Land routes for workers, builders, and haulers allow **eight directions**.
   - Diagonal edges cost **`sqrt(2)` times** a straight edge.
@@ -138,12 +171,22 @@ Clothing source: [server/equipment.py](../server/equipment.py).
 - **Ambient residents:** use a separate contract.
   - An empty list can mean either no movement or a failed search.
 
-Sources: [server/navigation.py](../server/navigation.py), `routeSteps` in
-[web/animations.js](../web/animations.js).
+**References:**
+
+- **Host:** `RouteCache.route`, `RouteCache.search` in [server/navigation.py](../server/navigation.py);
+  `construction_route`, `logistics_route` in [server/server.py](../server/server.py);
+  `route` in [server/village_life.py](../server/village_life.py).
+- **Browser:** `routeSteps` in [web/animations.js](../web/animations.js).
 
 ## Road preference and movement speed
 
 **Current:**
+
+- **Host:** chooses gameplay routes by travel time and applies speed bonuses as movement advances.
+- **Browser:** uses road data for founder prediction, visual route costs, and walking animation;
+  confirmed workplace playback uses host sample timing.
+
+### Common rules
 
 - Completed roads make players and settlers **50% faster**.
   - Unfinished roads provide no speed or routing bonus.
@@ -170,9 +213,24 @@ Sources: [server/navigation.py](../server/navigation.py), `routeSteps` in
 - Road changes affect movement speed immediately but preserve valid active routes.
   - The next planned leg uses the new roads, avoiding replanning on every road edit.
 
+**References:**
+
+- **Host:** `RouteCache.search` in [server/navigation.py](../server/navigation.py);
+  `move_player`, `construct` in [server/server.py](../server/server.py);
+  `_advance` in [server/work_cycles.py](../server/work_cycles.py);
+  `travel_speed`, `advance_trip` in [server/logistics.py](../server/logistics.py).
+- **Browser:** `roadSpeed`, `playerTravelSpeed`, `playerSprite` in [web/app.js](../web/app.js);
+  `routeSteps`, `advanceSteps`, `playback` in [web/animations.js](../web/animations.js).
+
 ## Destination selection and task reservations
 
 **Current:**
+
+- **Host:** chooses work targets, reserves tasks, selects logistics trips, and validates transfers.
+- **Browser:** reads host targets and assignments to prepare visual movement;
+  fallback planning does not reserve authoritative work or transfer goods.
+
+### Common rules
 
 - Choosing a job destination and finding its best route are separate decisions.
   - Destination selection does not globally optimize travel time across every
@@ -226,13 +284,22 @@ Sources: [server/navigation.py](../server/navigation.py), `routeSteps` in
   - Sort eligible sources by Manhattan distance from the market.
   - Use the first reachable trip.
 
-Sources: `woodcutting_source` in [server/server.py](../server/server.py),
-`claimed` and `choose_field` in [server/farming.py](../server/farming.py),
-[server/logistics.py](../server/logistics.py).
+**References:**
+
+- **Host:** `woodcutting_source`, `construct` in [server/server.py](../server/server.py);
+  `claimed`, `choose_field` in [server/farming.py](../server/farming.py);
+  `_advance` in [server/work_cycles.py](../server/work_cycles.py);
+  `worker`, `haul`, `merchant`, `transfer` in [server/logistics.py](../server/logistics.py).
+- **Browser:** `planSteps`, `fetchWaterSteps` in [web/animations.js](../web/animations.js);
+  `animatedVillagers` in [web/app.js](../web/app.js).
 
 ## Fishing, residents, and local roaming
 
 **Current:**
+
+- **Host:** owns fishing access, crew movement, resident routines, and animal state.
+- **Browser:** displays confirmed fishing movement and resident routes;
+  fallback fishing preparation and barn roaming are presentation work.
 
 ### Fishing
 
@@ -258,12 +325,22 @@ Sources: `woodcutting_source` in [server/server.py](../server/server.py),
   - Use cached display routes of at most **two cardinal steps** away and back.
   - Avoid nearby obstacles, void, and missing chunk terrain.
 
-Sources: [server/work_cycles.py](../server/work_cycles.py),
-[server/village_life.py](../server/village_life.py), [web/scene.js](../web/scene.js).
+**References:**
+
+- **Host:** `fishing_water`, `fishing_pier`, `retained_pier`, `fishing_crew`, `_advance` in
+  [server/work_cycles.py](../server/work_cycles.py);
+  `route`, `blocked_tiles`, `advance` in [server/village_life.py](../server/village_life.py);
+  `animal_growth`, `grow_animals` in [server/progression.py](../server/progression.py).
+- **Browser:** `fishingPierSteps`, `travelSteps`, `planSteps`, `playback` in [web/animations.js](../web/animations.js);
+  `animalRoutes` in [web/scene.js](../web/scene.js);
+  `npcSprites`, `barnAnimalSprites` in [web/app.js](../web/app.js).
 
 ## Retaining routes and recovering from changes
 
 **Current:**
+
+- **Host:** preserves usable gameplay paths and saved claims; handles blocked work and cancelled trips.
+- **Browser:** preserves usable visual paths, refreshes derived collision data, and cancels obsolete planning jobs.
 
 ### Keep a route when it remains usable
 
@@ -285,11 +362,25 @@ Sources: [server/work_cycles.py](../server/work_cycles.py),
 - Cancel logistics trips when destinations disappear or the next edge is blocked.
   - Subsequent task selection can find another trip.
 
+**References:**
+
+- **Host:** `construct` in [server/server.py](../server/server.py);
+  `_advance`, `retained_pier` in [server/work_cycles.py](../server/work_cycles.py);
+  `advance_trip`, `cancel_trip` in [server/logistics.py](../server/logistics.py).
+- **Browser:** `refreshNavigation`, `pathBlocked`, `advanceSteps` in [web/animations.js](../web/animations.js);
+  `animatedVillagers` in [web/app.js](../web/app.js);
+  `Queue` in [web/scene.js](../web/scene.js).
+
 ## Shared route caches and invalidation
 
 **Current:**
 
-- Host and browser share cached answers between compatible worker queries.
+- **Host:** maintains a derived route cache for gameplay searches.
+- **Browser:** maintains a separate derived route cache tied to reusable collision bases.
+
+### Common rules
+
+- Each side shares its own cached answers between compatible worker queries.
   - Cache successful and failed searches.
   - Return copies so one worker cannot corrupt another worker's cached answer.
   - Return oversized answers without retaining them.
@@ -319,11 +410,17 @@ Sources: [server/work_cycles.py](../server/work_cycles.py),
 
 ### Invalidation
 
-- Reuse browser collision sets when local geometry, terrain, and bounds match.
+- **Host:** graph identity covers supplied terrain and obstacles broadly.
+  - **Planned:** finer invalidation limited to affected navigation areas.
+- **Browser:** reuse collision sets when local geometry, terrain, and bounds match.
   - Crop growth, inventories, and ordinary work progress do not change navigation occupancy.
   - Completed-road edits change routing identity while keeping the collision base reusable.
-- Host graph identity covers supplied terrain and obstacles more broadly.
-  - **Planned:** finer invalidation limited to affected navigation areas.
+
+**References:**
+
+- **Host:** `RouteCache` in [server/navigation.py](../server/navigation.py).
+- **Browser:** `cachedRoutes`, `routeSteps` in [web/animations.js](../web/animations.js);
+  `prepare`, `Overlay` in [web/scene.js](../web/scene.js).
 
 ## Chunks, scheduling, and browser playback
 
@@ -331,41 +428,47 @@ Sources: [server/work_cycles.py](../server/work_cycles.py),
 
 ### Search bounds
 
-- Chunked workplace searches and browser town navigation use a square extending
-  up to **60 tiles** from the town origin (or hall), clipped to the map.
-  - These are local planning bounds, not routing between regions.
-- Construction and logistics use supplied terrain without passing the same
-  explicit workplace bounds to the core search.
-- Boat searches use their own reach bounds.
-- Camera exploration outside a town's routing area must not reset its paths.
+- **Host:** chunked workplace searches extend up to **60 tiles** from the town origin
+  (or hall), clipped to the map.
+  - Construction and logistics use supplied terrain without the same explicit workplace bounds.
+  - Boat searches use their own reach bounds.
+- **Browser:** town navigation uses the same local square for chunked maps.
+  - Camera exploration outside the routing area must not reset town paths.
+- These are local planning bounds, not routing between regions.
 
 ### Scheduling
 
-- Host searches remain synchronous.
-- Browser prepared-scene searches use resumable generators.
+- **Host:** searches remain synchronous; a host pathfinding queue is planned.
+- **Browser:** prepared-scene searches use resumable generators.
   - Route searches yield every **128 inspected entries**.
   - Synchronous helper/fallback calls still exist.
-- **Browser queue:**
   - `ClientScene.Queue` rotates unfinished jobs with an approximately **2 ms frame budget**.
   - Each run permits at most **2,048 generator advances**.
-  - One generator advance can exceed the time budget; it is not a strict deadline.
+  - One generator advance can exceed the budget; it is not a strict deadline.
   - Replacing or cancelling a job key discards obsolete planning.
   - No urgency classes or fixed pending-job cap.
 
 ### Playback and prediction
 
-- **Workplace playback:**
-  - Avoid duplicate browser work-route searches for confirmed movement.
+- **Host:** publishes confirmed workplace movement samples and work phases.
+  - Validates founder input and replies with the authoritative position.
+- **Browser:** plays workplace samples and predicts founder movement.
+  - Avoid duplicate work-route searches for confirmed movement.
   - Play host samples behind the simulation; retain at most **three playback batches**.
   - Join missed updates at walking speed rather than compressing a large position gap.
   - Farmer field presentation follows completed actions, including after switching acres.
-- **Founder prediction:**
-  - Follow each buffered input step so turns do not cut across obstacles.
-  - Host replies reconcile founder position and pending inputs.
+  - Follow each buffered founder input step so turns do not cut across obstacles.
+  - Reconcile founder position and pending inputs from host replies.
 
-Sources: [server/chunk_world.py](../server/chunk_world.py),
-[web/scene.js](../web/scene.js), [web/animations.js](../web/animations.js),
-[web/app.js](../web/app.js).
+**References:**
+
+- **Host:** Terrain loading in [server/chunk_world.py](../server/chunk_world.py);
+  `RouteCache.search` in [server/navigation.py](../server/navigation.py);
+  `_advance`, `_sample` in [server/work_cycles.py](../server/work_cycles.py);
+  `move_player` in [server/server.py](../server/server.py).
+- **Browser:** `prepare`, `Queue` in [web/scene.js](../web/scene.js);
+  `routeSteps`, `playback`, `joinPlayback`, `fieldPresentation` in [web/animations.js](../web/animations.js);
+  `animatedVillagers`, `predictPlayerStep`, `playerSprite` in [web/app.js](../web/app.js).
 
 ## Planned work and open decisions
 
