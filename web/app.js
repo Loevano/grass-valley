@@ -3675,7 +3675,7 @@ function draw(seconds=0){
     const groundPoints=type==='building'&&footprintTiles(b).length>1?footprintTiles(b).map(p=>point(p.x,p.y)):[];
     hitTargets.push({type,index,townId:b.townId || viewed,
       left:Math.min(centerX-halfWidth,...groundPoints.map(p=>p[0]-tileW/2)),right:Math.max(centerX+halfWidth,...groundPoints.map(p=>p[0]+tileW/2)),
-      top:baseY-height*scale,bottom:Math.max(baseY+(character?5*scale:tileH/2),...groundPoints.map(p=>p[1]+tileH))});
+      top:baseY-height*scale,bottom:Math.max(baseY+(character?5*scale:b.kind==='sawpit'?22*scale:tileH/2),...groundPoints.map(p=>p[1]+tileH))});
     if(character&&selection?.type===type&&selection.index===b.index&&(!world.shared_map||b.townId===viewed||type==='npc')){
       ctx.fillStyle='#fff0b144';ctx.strokeStyle='#fff0b1';ctx.lineWidth=2;ctx.beginPath();ctx.ellipse(centerX,baseY,12*scale,6*scale,0,0,Math.PI*2);ctx.fill();ctx.stroke();
     }
@@ -3926,7 +3926,15 @@ function paintBuildingGround(b,target,paintPolygon){
     const [x,y]=point(tile.x,tile.y);
     if(b.kind==='hall'||b.construction||tile.y===b.y)continue;
     const base=y+tileH/2;
-    if(b.kind==='mill'){
+    if(b.kind==='sawpit'&&tile.x===b.x+1)continue; // Leave the cutting area clear.
+    if(b.kind==='sawpit'&&tile.x>b.x){
+      // Finished boards have square ends, distinct from the incoming round logs.
+      for(let i=0;i<4;i++){
+        const py=base-i*3*s;
+        paintPolygon([[x-13*s,py-5*s],[x+7*s,py+5*s],[x+14*s,py+2*s],[x-6*s,py-8*s]],'#c4a477','#735439');
+        paintPolygon([[x+7*s,py+5*s],[x+14*s,py+2*s],[x+14*s,py+4*s],[x+7*s,py+7*s]],'#e0bd84','#735439');
+      }
+    }else if(b.kind==='mill'){
       // Flour sacks and grain bins distinguish the mill yard from the wood trades.
       if(tile.x===b.x){
         paintPolygon([[x-12*s,base],[x,base+6*s],[x+12*s,base],[x,base-6*s]],'#ac895d','#68563e');
@@ -3937,7 +3945,7 @@ function paintBuildingGround(b,target,paintPolygon){
         target.fillStyle='#d3bc83';target.beginPath();target.ellipse(px,py,5*s,7*s,0,0,Math.PI*2);target.fill();
         target.strokeStyle='#9b7a4b';target.lineWidth=s;target.beginPath();target.moveTo(px-3*s,py-5*s);target.lineTo(px+3*s,py-5*s);target.stroke();
       }
-    }else if(tile.x===b.x){
+    }else if(tile.x===b.x&&b.kind!=='sawpit'){
       // A perspective workbench, vise, and loose boards form a usable workspace.
       for(const [px,py] of [[x-12*s,base],[x+10*s,base+4*s]]){target.fillStyle='#735439';target.fillRect(px,py-6*s,3*s,12*s);}
       paintPolygon([[x-15*s,base-7*s],[x+7*s,base+4*s],[x+16*s,base],[x-6*s,base-11*s]],'#c4a477','#735439');
@@ -3963,33 +3971,42 @@ function paintBuildingGround(b,target,paintPolygon){
 function paintSawpit(b,town,target,paintPolygon,usable){
   const large=footprintTiles(b).length>1,[x,top]=point(b.x+(large?.5:0),b.y),y=top+tileH/2,s=tileW/46;
   const w=(large?30:17)*s,d=w/2,h=buildingHeight(b,town)*s;
-  // A roof over exposed trestles and a cutting pit keeps the original palette
-  // and roof shape while making this an open timber workplace.
-  paintPolygon([[x-w,y],[x,y+d],[x+w,y],[x,y-d]],'#735d43','#b69a70');
-  paintPolygon([[x-w+4*s,y],[x,y+d-2*s],[x+w-4*s,y],[x,y-d+2*s]],'#493f32','#c4a477');
-  for(const [px,py] of [[x,y-d],[x-w,y],[x+w,y],[x,y+d]]){
+  // Move the open recess into view, with an exposed front wall and timber rim.
+  const pitY=y+8*s,pitW=w*.9,pitD=d*.8;
+  paintPolygon([[x-pitW,pitY],[x,pitY+pitD],[x+pitW,pitY],[x,pitY-pitD]],'#b48a56','#735439');
+  paintPolygon([[x-pitW+3*s,pitY],[x,pitY+pitD-2*s],[x+pitW-3*s,pitY],[x,pitY-pitD+2*s]],'#302b25','#735439');
+  paintPolygon([[x-pitW,pitY],[x,pitY+pitD],[x,pitY+pitD+5*s],[x-pitW,pitY+5*s]],'#806044','#c4a477');
+  paintPolygon([[x,pitY+pitD],[x+pitW,pitY],[x+pitW,pitY+5*s],[x,pitY+pitD+5*s]],'#604b37','#a47c4e');
+  // Rear and side posts support the canopy without hiding the cutting station.
+  for(const [px,py] of [[x,y-d],[x-w,y],[x+w,y]]){
     target.fillStyle='#735439';target.fillRect(px-2*s,py-h,4*s,h);
     target.fillStyle='#c4a477';target.fillRect(px-s,py-h,s,h);
   }
   for(const px of [x-w*.6,x+w*.5]){
-    target.fillStyle='#735439';target.fillRect(px,y+2*s,3*s,10*s);
-    target.fillStyle='#b48a56';target.fillRect(px-4*s,y,11*s,3*s);
+    target.fillStyle='#735439';target.fillRect(px,y+7*s,3*s,10*s);
+    target.fillStyle='#b48a56';target.fillRect(px-4*s,y+5*s,11*s,3*s);
   }
-  paintPolygon([[x-w*.8,y-3*s],[x+w*.65,y+10*s],[x+w*.8,y+6*s],[x-w*.65,y-7*s]],'#a47c4e','#735439');
-  target.fillStyle='#dbb580';target.beginPath();target.ellipse(x+w*.73,y+8*s,4*s,3*s,-.45,0,Math.PI*2);target.fill();
-  target.strokeStyle='#9c784b';target.lineWidth=s;target.beginPath();target.ellipse(x+w*.73,y+8*s,2*s,1.5*s,-.45,0,Math.PI*2);target.stroke();
+  paintPolygon([[x-w*.8,y+2*s],[x+w*.65,y+15*s],[x+w*.8,y+11*s],[x-w*.65,y-2*s]],'#a47c4e','#735439');
+  target.fillStyle='#dbb580';target.beginPath();target.ellipse(x+w*.73,y+13*s,4*s,3*s,-.45,0,Math.PI*2);target.fill();
+  target.strokeStyle='#9c784b';target.lineWidth=s;target.beginPath();target.ellipse(x+w*.73,y+13*s,2*s,1.5*s,-.45,0,Math.PI*2);target.stroke();
   target.strokeStyle='#c4a477';target.lineWidth=2*s;
   for(const direction of [-1,1]){target.beginPath();target.moveTo(x+direction*w,y-h+10*s);target.lineTo(x+direction*(w-9*s),y-h+4*s);target.stroke();}
   paintPolygon([[x-w-3*s,y-h],[x,y-h-15*s],[x+w+3*s,y-h],[x,y-h+d+s]],usable?'#8e7752':'#a34f49','#735439');
   target.strokeStyle='#c9a579';target.lineWidth=2*s;target.beginPath();target.moveTo(x-w-3*s,y-h);target.lineTo(x,y-h+d+s);target.lineTo(x+w+3*s,y-h);target.stroke();
   const improved=(b.profession_upgrades || []).includes('saw');
-  paintPolygon([[x+2*s,y-17*s],[x+5*s,y-17*s],[x+5*s,y+6*s],[x+2*s,y+4*s]],improved?'#dce8df':'#98aaa7','#68563e');
-  target.fillStyle='#c4a477';target.fillRect(x-2*s,y-19*s,11*s,3*s);
+  const bladeBottom=large?19:15,toothStep=(bladeBottom+9)/7;
+  const blade=[[x+s,y-9*s],[x+6*s,y-9*s]];
+  for(let i=0;i<7;i++){const toothY=-9+i*toothStep;blade.push([x+8*s,y+(toothY+toothStep/2)*s],[x+6*s,y+(toothY+toothStep)*s]);}
+  blade.push([x+s,y+bladeBottom*s]);
+  paintPolygon(blade,improved?'#e8efdf':'#c4d2ce','#68563e');
+  target.strokeStyle='#84958e';target.lineWidth=s;target.beginPath();target.moveTo(x+3*s,y-7*s);target.lineTo(x+3*s,y+(bladeBottom-2)*s);target.stroke();
+  target.fillStyle='#c4a477';target.fillRect(x-3*s,y-12*s,13*s,3*s);target.fillRect(x-3*s,y+bladeBottom*s,13*s,3*s);
   if(buildingLevel(b)>=2){target.strokeStyle='#dce8df';target.lineWidth=s;target.beginPath();target.moveTo(x-w+5*s,y-h+3*s);target.lineTo(x-w+5*s,y-h+11*s);target.stroke();}
   target.fillStyle='#344b42';target.fillRect(x+w-7*s,y-h+4*s,10*s,7*s);
   target.fillStyle='#fff0b1';target.font=`bold ${5*s}px sans-serif`;target.textAlign='center';target.fillText(String(buildingLevel(b)),x+w-2*s,y-h+10*s);
   if((b.settler_level || 1)>1){target.fillStyle='#6baeb5';target.fillRect(x-w,y-h+5*s,3*s*(b.settler_level || 1),3*s);}
   target.save();target.shadowColor='#f1c779';target.shadowBlur=7*s;target.fillStyle='#edc77d';target.fillRect(x-w+3*s,y-h+5*s,3*s,4*s);target.restore();
+  target.fillStyle='#fff0b1';target.font=`${10*s}px sans-serif`;target.textAlign='center';target.fillText(labels.sawpit,x,y-h-20*s);
 }
 function paintBuilding(b,town,farmState=null,target=ctx,usable=buildingUsable(town,b)){
   const ctx=target;

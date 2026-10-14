@@ -114,6 +114,10 @@ const run=new Function('document','window','localStorage','setTimeout','clearTim
   town.buildings[0].construction={progress:0,total:30,upgrade:{profession_upgrades:['boat','improved_boat']}};
   assert.strictEqual(fishingBoatSprites([['own',town]],town.map_resources)[0].level,1,'Owned boat stays visible at its current tier during upgrades');
   assert.strictEqual(fishingBoatSprites([['own',{...town,buildings:[{kind:'fishing_hut',x:4,y:5}]}]],town.map_resources).length,0,'Unpurchased huts have no boat');
+  const compactSawpit={kind:'sawpit',x:4,y:5,footprint:[1,1]};
+  const compactBottom=Math.max(...JSON.parse(appearance(compactSawpit)).filter(mark=>mark[0]==='fillRect').map(mark=>mark[2]+mark[4]));
+  world={world_id:'sawpit-selection',towns:{own:{...town,buildings:[compactSawpit]}}};draw();
+  assert(hitTargets.find(hit=>hit.type==='building'&&hit.index===0).bottom>=compactBottom,'Legacy sawpit selection includes the lower saw handle and pit rim');
   const visitor={...town,level:5,buildings:[hall],map_resources:[]};
   town.buildings=[{kind:'home',x:4,y:5,level:3}];
   world={world_id:'test',shared_map:town,town_sites:[{x:5,y:5}],towns:{own:town,visitor}};

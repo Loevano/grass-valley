@@ -837,8 +837,10 @@ Save files and terrain chunks stay at the root, outside version control.
 Town halls and mills occupy 2×2 tiles; sawpits occupy 3×2 and woodworker's workshops (forgeries) 2×2.
 Production buildings include a covered workplace, outdoor workbench, and stock yard.
 Their artwork retains the original angled style: the sawpit is an open timber
-shelter with a cutting pit, the workshop has a sheltered bench and hanging tools,
-and the mill yard holds grain bins and flour sacks. Connected yard surfaces and
+shelter with a visible dark cutting pit, a toothed saw with two handles, and
+separate stacks of incoming logs and finished boards. The workshop has a sheltered
+bench and hanging tools, and the mill yard holds grain bins and flour sacks.
+Connected yard surfaces and
 cut timber stacks replace separate tiled pads. The hall is wider while its doors,
 windows, and lanterns stay at the same scale as other buildings.
 Placement and moves validate every tile, including resources, players, other towns,
