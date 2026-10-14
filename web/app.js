@@ -2178,7 +2178,7 @@ function render(){
     $('goods-list').replaceChildren();
     for(const [key,value] of Object.entries(own.goods || {}))if(value>0)$('goods-list').append(fact(`${Math.floor(value)} / ${Math.floor(resourceStorage(own,key))}`,goodName(key)));
   }
-  if(buildTile && (!town || !insideBuildingRange(town,buildTile) || town.buildings.some(b=>b.x===buildTile.x&&b.y===buildTile.y) || town.map_resources.some(r=>r.x===buildTile.x&&r.y===buildTile.y)))buildTile=null;
+  if(buildTile && (!town || !insideBuildingRange(town,buildTile) || town.buildings.some(b=>b.x===buildTile.x&&b.y===buildTile.y) || town.map_resources.some(r=>r.kind!=='berry_bush'&&r.x===buildTile.x&&r.y===buildTile.y)))buildTile=null;
   if(typeof ClientScene==='undefined'||panel==='build')for(const group of $('buildings').children){
     for(const button of group.children){
       if(!button.buildingKind)continue;
@@ -4555,7 +4555,7 @@ async function selectTile(x,y){
   }
   if(viewed!==identity?.town_id)return;
   if(npc>=0){notice('A local is standing here. Choose another tile.');return;}
-  if(resource>=0){notice('Choose open grass, away from resources.');return;}
+  if(resource>=0&&town.map_resources[resource].kind!=='berry_bush'){notice('Choose open grass, away from resources.');return;}
   if(tool==='move'){
     if(moveIndex===null){if(index<0){notice('Click the tile beneath a building.');return;}moveIndex=index;render();}
     else{
