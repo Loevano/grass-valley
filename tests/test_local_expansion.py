@@ -75,16 +75,19 @@ class MoreLocals(unittest.TestCase):
                 advance_trades(self.town, 300)
                 command(self.town, {'action': 'trade_local', 'npc_index': index})
 
-    def test_bread_requires_full_weighted_storage_before_spending_wood(self):
+    def test_bread_requires_its_own_storage_before_spending_wood(self):
         index = self.visit('Pip')
-        self.town['buildings'][0]['stored_goods'] = {'wood': 65, 'food': 93}
-        self.town['food'] = 93
+        economy.ensure_inventory(self.town)
+        self.town['buildings'][0]['stored_goods'] = {'wood': 65, 'food': 93, 'bread': 96}
+        self.town.setdefault('goods', {})['bread'] = 96
+        self.town['food'] = 237
         self.reject({'action': 'trade_local', 'npc_index': index})
-        self.town['buildings'][0]['stored_goods']['food'] = 92.5
-        self.town['food'] = 92.5
+        self.town['buildings'][0]['stored_goods']['bread'] = 95
+        self.town['goods']['bread'] = 95
+        self.town['food'] = 235.5
         command(self.town, {'action': 'trade_local', 'npc_index': index})
-        self.assertEqual(self.town['food'], 100)
-        self.assertEqual(economy.quantity(self.town, 'bread'), 5)
+        self.assertEqual(self.town['food'], 243)
+        self.assertEqual(economy.quantity(self.town, 'bread'), 100)
 
     def test_fishing_rod_shop_charges_coins_and_tools_boost_real_catches(self):
         for key in TOOL_SHOPS['Nell']:

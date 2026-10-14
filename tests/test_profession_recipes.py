@@ -137,7 +137,7 @@ class ProfessionRecipes(unittest.TestCase):
         self.assertIn('eggs', logistics.produce(self.town, building, self.worker, elapsed=economy.production_seconds(building)))
         self.assertEqual(self.town, before)
         building['input_buffer']['eggs'] = 1
-        building['output_buffer'] = {'prepared_meat': 50}
+        building['output_buffer'] = {'prepared_meat': 50, 'meat_pies': 20}
         self.assertEqual(logistics.produce(self.town, building, self.worker, elapsed=economy.production_seconds(building)), 'Workplace buffer full')
         self.assertEqual(building['input_buffer']['eggs'], 1)
         self.assertNotIn('pending_output', self.worker)

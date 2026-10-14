@@ -134,9 +134,9 @@ const run=new Function('document','window','localStorage','setTimeout','clearTim
     await barter.onclick();check(storyCommand.action==='trade_local'&&storyCommand.npc_index===selection.index,'Barter sends selected trader');
     town.local_visits[localVisitKey(town.npcs.at(-1))]={trade_remaining:300};render();
     check($('selection-details').children.find(child=>child.textContent?.startsWith('Restocking')).disabled,'New trader obeys saved restocking');
-    town.inventory_version=1;town.buildings[0].stored_goods={food:93};
-    check(localTradeFoodRoom(town,'bread')<5,'Bread checks its weighted food capacity');
-    town.buildings[0].stored_goods={food:92.5};
+    town.inventory_version=1;town.buildings[0].stored_goods={bread:96,fish:100};
+    check(localTradeFoodRoom(town,'bread')<5,'Bread checks its own capacity even when fish storage is full');
+    town.buildings[0].stored_goods={bread:95,fish:100};
     check(localTradeFoodRoom(town,'bread')===5,'Exact bread capacity can accept a trade');
     delete town.inventory_version;delete town.buildings[0].stored_goods;
     town.player.worker_tools={masterwork_sickle:1};selection={type:'player'};render();

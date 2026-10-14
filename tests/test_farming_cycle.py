@@ -426,17 +426,20 @@ class FarmingCycle(unittest.TestCase):
         self.assertNotIn('pending_output', worker)
         self.assertEqual(town['goods']['wheat'], farming.HARVEST_YIELD)
 
-    def test_current_crop_uses_shared_food_space_and_waits_when_full(self):
+    def test_current_crop_uses_its_own_storage_and_waits_when_full(self):
+        self.farm['crop'] = 'carrots'
         self.acre['crop'] = 'carrots'
         farming.field_state(self.acre).update(stage='ripe', crop='carrots')
-        self.farm['stored_goods'] = {'vegetables': 20}
-        self.acre['stored_goods'] = {'vegetables': 20}
+        self.farm['stored_goods'] = {'vegetables': 20, 'carrots': 20}
+        self.acre['stored_goods'] = {'vegetables': 20, 'carrots': 20}
         economy.ensure_inventory(self.town)
-        self.town['buildings'][0]['stored_goods']['food'] = 100
+        self.town['buildings'][0]['stored_goods']['carrots'] = 100
         server.tick(self.world)
         self.assertIn('Workplace buffer full', self.worker['production_status'])
         self.assertNotIn('pending_output', self.worker)
-        self.assertEqual(self.acre['field']['progress'], 0)
+        self.assertEqual(self.acre['field']['stage'], 'ripe')
+        self.assertEqual(self.town.get('produced', {}).get('carrots', 0), 0)
+        self.assertEqual(economy.local_room(self.farm, 'carrots'), 0)
 
     def test_full_current_crop_still_hauls_before_resuming(self):
         self.farm['output_buffer'] = {'wheat': 10}

@@ -211,7 +211,7 @@ class Boats(unittest.TestCase):
         economy.ensure_inventory(self.town)
         self.town['buildings'].append({'kind': 'market', 'x': 2, 'y': 2})
         hut = {'kind': 'fishing_hut', 'x': 6, 'y': 2, 'stored_goods': {'sturgeon': 16}}
-        self.assertAlmostEqual(economy.local_room(hut, 'sturgeon'), 2 / 3)
+        self.assertAlmostEqual(economy.local_room(hut, 'sturgeon'), 34)
         for key, spec in economy.FISH.items():
             with self.subTest(species=key):
                 economy.add_stock(self.town, key, 1)

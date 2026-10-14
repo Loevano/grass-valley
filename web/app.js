@@ -478,8 +478,8 @@ const storageGoods={
 function buildingStorageGoods(building){return (world.progression?.storage_goods || storageGoods)[building.kind] || [];}
 function foodGoods(){return world.progression?.edible || {vegetables:1,carrots:1,fish:1,trout:1.5,salmon:2,sturgeon:3,berries:1,eggs:1,meat:1,milk:1,fruit:1,smoked_fish:1.5,bread:1.5,prepared_meat:1.5};}
 function buildingStorageKeys(building){
-  const edible=foodGoods(),groups=new Set(buildingStorageGoods(building).map(key=>key in edible?'food':key));
-  return (world.progression?.storage_keys || storageKeys).filter(key=>groups.has(key));
+  const goods=new Set(buildingStorageGoods(building));
+  return [...new Set([...(world.progression?.storage_keys || storageKeys),...Object.keys(foodGoods())])].filter(key=>goods.has(key));
 }
 function roomAllocations(building){
   if(building.kind==='storehouse'){
@@ -494,7 +494,11 @@ function roomAllocations(building){
     smokehouse:{food:45,wood:5},workshop:{planks:25,wood:15,tools:10},fish_pond:{fodder:15,food:35},
     market:{}
   };
-  const allocations=fixed[building.kind] || {};
+  const allocations={...(fixed[building.kind] || {})};
+  if(!world.progression?.fixed_storage&&'food' in allocations){
+    const capacity=allocations.food;delete allocations.food;
+    for(const key of buildingStorageGoods(building))if(key==='food'||key in foodGoods())allocations[key]=capacity;
+  }
   return Object.fromEntries(Object.entries(allocations).filter(([key])=>buildingStorageKeys(building).includes(key)).map(([key,amount])=>[key,amount*storageMultiplier(building)]));
 }
 function resourceStorage(town,key){
@@ -502,36 +506,34 @@ function resourceStorage(town,key){
   let cached=scene?.capacities.get(town);
   if(scene&&!cached){cached=new Map();scene.capacities.set(town,cached);}
   if(cached?.has(key))return cached.get(key);
-  const group=key in foodGoods()?'food':key;
-  const capacity=town.buildings.filter(b=>!b.construction&&(key==='food'?buildingStorageKeys(b).includes('food'):buildingStorageGoods(b).includes(key))).reduce((sum,b)=>sum+(roomAllocations(b)[group] || 0),0);
+  const edible=foodGoods();
+  const capacity=town.buildings.filter(b=>!b.construction).reduce((sum,b)=>sum+(key==='food'
+    ?Object.entries(roomAllocations(b)).reduce((total,[resource,n])=>total+(resource==='food'||resource in edible?n*(edible[resource] || 1):0),0)
+    :buildingStorageGoods(b).includes(key)?roomAllocations(b)[key] || 0:0),0);
   cached?.set(key,capacity);return capacity;
 }
 function localTradeFoodRoom(town,key='vegetables'){
-  const value=foodGoods()[key] || 1;
-  if(town.inventory_version!==1)return Math.max(0,resourceStorage(town,key)-amountOf(town,'food'))/value;
-  const edible=foodGoods();
+  if(town.inventory_version!==1)return Math.max(0,resourceStorage(town,key)-amountOf(town,key));
   return town.buildings.filter(b=>!b.construction&&buildingStorageGoods(b).includes(key)).reduce((sum,b)=>{
     const stock={...b.stored_goods};
     for(const [key,n] of Object.entries(b.output_buffer || {}))stock[key]=(stock[key] || 0)+n;
-    const used=Object.entries(stock).reduce((n,[key,count])=>n+(key==='food'||key in edible?count*(edible[key] || 1):0),0);
-    const room=Math.max(0,(roomAllocations(b).food || 0)-used);
-    return sum+(b.kind==='storehouse'?room/value:Math.min(room/value,Math.max(0,buildingStorageSize(b)-Object.values(stock).reduce((n,count)=>n+count,0))));
+    return sum+Math.max(0,(roomAllocations(b)[key] || 0)-(stock[key] || 0));
   },0);
 }
 function roomEnabled(building){
-  return Object.fromEntries(buildingStorageKeys(building).map(key=>[key,building.storage_enabled?!!building.storage_enabled[key]:((building.storage_allocations?.[key] || 0)>0)]));
+  const enabled=building.storage_enabled || Object.fromEntries(Object.entries(building.storage_allocations || {}).map(([key,n])=>[key,n>0]));
+  return Object.fromEntries(buildingStorageKeys(building).map(key=>[key,!!(enabled[key] ?? (key in foodGoods()?enabled.food:false))]));
 }
 function renderStorage(town,item,index,target=$('selection-details')){
   const keys=buildingStorageKeys(item),capacity=buildingStorageSize(item),allocations=roomAllocations(item);
   const owner=viewed===identity?.town_id,canConfigure=owner&&item.kind==='storehouse';
-  const enabled=roomEnabled(item),edible=foodGoods(),stock={},stored={...item.stored_goods};
+  const enabled=roomEnabled(item),edible=foodGoods(),stored={...item.stored_goods},toggles=[];
   for(const [key,n] of Object.entries(item.output_buffer || {}))stored[key]=(stored[key] || 0)+n;
-  for(const [key,n] of Object.entries(stored)){
-    const category=key in edible?'food':key;
-    stock[category]=(stock[category] || 0)+n*(edible[key] || 1);
-  }
+  const stock=stored;
+  const displayCapacity=Object.entries(allocations).reduce((sum,[key,n])=>sum+(key==='food'||key in edible?n:0),0)
+    +Math.min(capacity,Object.entries(allocations).reduce((sum,[key,n])=>sum+(key!=='food'&&!(key in edible)?n:0),0));
   const summary=document.createElement(item.kind==='storehouse'?'p':'span');summary.className='storage-summary';
-  summary.textContent=item.kind==='storehouse'?`${capacity} capacity per enabled resource`:`${Math.floor(Object.values(stock).reduce((sum,n)=>sum+n,0))} / ${capacity}`;
+  summary.textContent=item.kind==='storehouse'?`${capacity} capacity per enabled resource`:`${Math.floor(Object.values(stock).reduce((sum,n)=>sum+n,0))} / ${displayCapacity}`;
   if(item.kind==='storehouse')target.append(summary);
   else{
     const heading=target.children[0];heading.className='storage-heading';heading.append(summary);
@@ -543,27 +545,39 @@ function renderStorage(town,item,index,target=$('selection-details')){
   }
   if(item.kind==='storehouse'){
     const note=document.createElement('p');note.className='storage-note';
-    note.textContent='Enable resources for incoming deliveries. Disabled goods remain available to use. Food shares one capacity for edible goods.';target.append(note);
+    note.textContent='Each resource has its own capacity. Disabled goods remain available to use.'+(canConfigure?' Option/Alt-click any resource checkbox to enable all resources.':'');target.append(note);
   }
-  for(const key of keys){
-    const row=document.createElement('div');row.className='storage-row';
-    const caption=document.createElement('label');caption.className='storage-caption';
-    const name=document.createElement('span');name.textContent=goodName(key);caption.append(name);
-    if(canConfigure){
-      const toggle=document.createElement('input');toggle.type='checkbox';toggle.checked=enabled[key];
-      toggle.setAttribute('aria-label',`Accept ${goodName(key)}`);
-      toggle.onchange=()=>{
-        if(viewed!==identity?.town_id)return;
-        enabled[key]=toggle.checked;
-        act({action:'configure_storage',index,enabled:{...enabled}});
-      };
-      caption.append(toggle);
+  for(const [title,members] of resourceCategories(keys)){
+    const group=resourceGroup(title);target.append(group);
+    for(const key of members){
+      const label=key==='food'?'Provisions':goodName(key);
+      const row=document.createElement('div');row.className='storage-row';
+      const caption=document.createElement('label');caption.className='storage-caption';
+      const name=document.createElement('span');name.textContent=label;caption.append(name);
+      if(canConfigure){
+        const toggle=document.createElement('input');toggle.type='checkbox';toggle.checked=enabled[key];
+        toggle.setAttribute('aria-label',`Accept ${label}`);
+        toggle.title='Option/Alt-click to enable all resources';
+        let enableAll=false;
+        toggle.onclick=event=>{enableAll=!!event.altKey;};
+        toggle.onchange=()=>{
+          if(viewed!==identity?.town_id)return;
+          if(enableAll){
+            for(const resource of keys)enabled[resource]=true;
+            for(const input of toggles)input.checked=true;
+          }else enabled[key]=toggle.checked;
+          enableAll=false;
+          act({action:'configure_storage',index,enabled:{...enabled}});
+        };
+        toggles.push(toggle);
+        caption.append(toggle);
+      }
+      const amount=stock[key] || 0,limit=allocations[key] || 0,displayLimit=Number(limit.toFixed(2));
+      const count=document.createElement('span');count.className='storage-count';
+      count.textContent=item.kind==='storehouse'&&!enabled[key]?`${Math.floor(amount)} · Disabled`:`${Math.floor(amount)} / ${displayLimit}`;caption.append(count);row.append(caption);
+      const meter=document.createElement('meter');meter.min=0;meter.max=Math.max(1,limit,amount);meter.value=amount;
+      meter.setAttribute('aria-label',`${label} stored`);meter.setAttribute('aria-valuetext',`${Math.floor(amount)} stored, ${displayLimit} capacity`);row.append(meter);group.append(row);
     }
-    const amount=stock[key] || 0,limit=allocations[key] || 0,displayLimit=Number(limit.toFixed(2));
-    const count=document.createElement('span');count.className='storage-count';
-    count.textContent=item.kind==='storehouse'&&!enabled[key]?`${Math.floor(amount)} · Disabled`:`${Math.floor(amount)} / ${displayLimit}`;caption.append(count);row.append(caption);
-    const meter=document.createElement('meter');meter.min=0;meter.max=Math.max(1,limit,amount);meter.value=amount;
-    meter.setAttribute('aria-label',`${goodName(key)} stored`);meter.setAttribute('aria-valuetext',`${Math.floor(amount)} stored, ${displayLimit} capacity`);row.append(meter);target.append(row);
   }
   for(const [key,n] of Object.entries(stored))if(n>0&&!buildingStorageGoods(item).includes(key))target.append(fact(String(Math.floor(n)),`${goodName(key)} from previous storage · available to use or haul away`));
   for(const [key,n] of Object.entries(item.input_buffer || {}))if(n>0)target.append(fact(String(Math.floor(n)),`${goodName(key)} reserved for production`));
@@ -703,22 +717,45 @@ Object.assign(costs,{tannery:30,mine:40,smelter:40,stable:40,saddler:30,steelwor
 Object.assign(colors,{tannery:'#ad8a67',mine:'#7f8c8c',smelter:'#a08875',stable:'#bda077',saddler:'#b89268',steelworks:'#758792',tradehouse:'#a1ab7e'});
 const professionJobs={trading:'Merchant',mining:'Mining',smelting:'Smelting',tanning:'Leatherworking',horsekeeping:'Horsekeeping',saddlery:'Saddlery',steelmaking:'Steelmaking',packing:'Trade packing',husbandry:'Husbandry',woodworking:'Woodworking',milling:'Milling',preserving:'Preserving',crafting:'Crafting',breeding:'Fish breeding',orcharding:'Orcharding',baking:'Baking',butchery:'Butchery'};
 const goodName=key=>key.replaceAll('_',' ').replace(/^./,c=>c.toUpperCase());
+function resourceCategories(keys){
+  const remaining=new Set(keys),catalog=world.progression || {};
+  const products=kind=>(catalog.profession_recipes?.[kind] || []).map(recipe=>recipe.output);
+  const categories=[
+    ['Overview',['food','coins']],
+    ['Baking',['wheat','flour','bread','bread_rolls','herb_bread','fruit_pies','cakes',...products('bakery')]],
+    ['Fishing',['fish','trout','salmon','sturgeon',...Object.keys(catalog.fish || {}),'smoked_fish']],
+    ['Timber',['wood','planks','tools','wooden_bowls','crates','furniture','carved_furniture','crafted_axe','crafted_saw',...products('workshop')]],
+    ['Farming',['vegetables','carrots','fodder','manure','herbs']],
+    ['Orcharding and gathering',['fruit','berries']],
+    ['Livestock',['eggs','milk','wool']],
+    ['Butchery',['meat','prepared_meat','herbed_meat','smoked_meat','sausages','meat_pies',...products('butcher')]],
+    ['Leatherworking',['hides','leather','saddles']],
+    ['Metalworking',['iron_ore','iron','steel']],
+    ['Trading',['trade_crates']],
+  ];
+  const groups=[];
+  for(const [title,members] of categories){
+    const included=[...new Set(members)].filter(key=>remaining.has(key));
+    if(!included.length)continue;
+    included.forEach(key=>remaining.delete(key));groups.push([title,included]);
+  }
+  if(remaining.size)groups.push(['Other resources',[...remaining]]);
+  return groups;
+}
+function resourceGroup(title){
+  const group=document.createElement('div');group.className='resource-group';
+  const heading=document.createElement('h3');heading.textContent=title;group.append(heading);
+  return group;
+}
 function amountOf(town,key){return ['wood','food','coins'].includes(key)?town[key] || 0:town.goods?.[key] || 0;}
 function renderResourceList(town){
   $('resources-list').replaceChildren();
   if(!town)return;
   const edible=foodGoods();
   const keys=new Set([...(world.progression?.storage_keys || storageKeys),'coins',...Object.keys(edible),...Object.keys(town.goods || {})]);
-  const groups=[['Overview',['food','coins']],['Materials',['wood','planks','wool','tools']],
-    ['Farming supplies',['wheat','fodder','flour','manure','herbs']],['Food types',Object.keys(edible)]];
-  groups.push(['Other resources',[...keys].filter(key=>!groups.some(([,members])=>members.includes(key)))]);
-  for(const [title,members] of groups){
-    const remaining=members.filter(key=>keys.has(key));
-    if(!remaining.length)continue;
-    const group=document.createElement('div');group.className='resource-group';
-    const heading=document.createElement('h3');heading.textContent=title;group.append(heading);
-    for(const key of remaining){
-      keys.delete(key);
+  for(const [title,members] of resourceCategories(keys)){
+    const group=resourceGroup(title);
+    for(const key of members){
       const amount=String(Math.floor(amountOf(town,key)));
       group.append(fact(key==='coins'?amount:`${amount} / ${Math.floor(resourceStorage(town,key))}`,goodName(key)));
     }
@@ -1285,17 +1322,21 @@ function renderStable(town,item,index,target){
 function renderTownTrades(town,target){
   const heading=document.createElement('h3');heading.textContent='Trade with another town';target.append(heading);
   const note=document.createElement('small');note.textContent='Offers use available stock when accepted. Both owners need a finished market. Incoming goods require enabled storage. Each offer can be accepted once.';target.append(note);
-  const select=(label,entries)=>{
+  const select=(label,entries,categorized=false)=>{
     const input=document.createElement('select');input.setAttribute('aria-label',label);
-    for(const [value,text] of entries){const option=document.createElement('option');option.value=value;option.textContent=text;input.append(option);}
+    for(const [title,keys] of categorized?resourceCategories(entries.map(([key])=>key)):[['',entries.map(([key])=>key)]]){
+      const group=categorized?document.createElement('optgroup'):input;
+      if(categorized){group.label=title;input.append(group);}
+      for(const value of keys){const option=document.createElement('option');option.value=value;option.textContent=entries.find(([key])=>key===value)[1];group.append(option);}
+    }
     target.append(input);return input;
   };
   const towns=Object.entries(world.towns).filter(([id,t])=>id!==identity.town_id&&t.level>=5&&t.buildings.some(b=>b.kind==='market'&&!b.construction));
   if(towns.length){
     const receiver=select('Trading town',towns.map(([id,t])=>[id,t.name]));
     const goods=world.progression.tradable_goods || ['coins','wood','planks'];
-    const give=select('Goods to offer',goods.map(key=>[key,`Offer ${goodName(key)}`]));
-    const want=select('Goods to receive',goods.map(key=>[key,`Receive ${goodName(key)}`]));
+    const give=select('Goods to offer',goods.map(key=>[key,`Offer ${goodName(key)}`]),true);
+    const want=select('Goods to receive',goods.map(key=>[key,`Receive ${goodName(key)}`]),true);
     give.value='planks';want.value='coins';
     const quantity=label=>{const input=document.createElement('input');input.type='number';input.min='1';input.max='100';input.step='1';input.value='1';input.setAttribute('aria-label',label);target.append(input);return input;};
     const giveAmount=quantity('Quantity to offer'),wantAmount=quantity('Quantity to receive');
@@ -1319,32 +1360,35 @@ function renderMarketSales(town,target){
     const editor=document.createElement('div');
     const title=document.createElement('h3');title.textContent='Automatic sales';editor.append(title);
     const note=document.createElement('p');note.className='storage-note';note.textContent='Enable a product and set its sale cap. When town stock reaches the cap, the merchant collects goods from other buildings and returns to sell them. Changes save automatically.';editor.append(note);
-    for(const key of keys){
-      const rule=town.rules?.market_sales?.[key];
-      const row=document.createElement('form');row.className='storage-row market-sale-rule';
-      const caption=document.createElement('label');caption.className='storage-caption';
-      const name=document.createElement('span');name.textContent=goodName(key);caption.append(name);
-      const toggle=document.createElement('input');toggle.id='sale-enabled-'+key;toggle.type='checkbox';toggle.checked=!!rule&&(rule.enabled ?? true);
-      toggle.setAttribute('aria-label',`Sell ${goodName(key)} automatically`);caption.append(toggle);
-      const status=document.createElement('span');status.className='storage-count';status.textContent=toggle.checked?'Enabled':'Disabled';caption.append(status);row.append(caption);
-      const label=document.createElement('label');label.className='market-sale-cap';label.textContent='Sale cap';
-      const cap=document.createElement('input');cap.id='sale-cap-'+key;cap.type='range';cap.min='1';cap.step='any';
-      cap.max=String(Math.max(200,Math.ceil(resourceStorage(town,key)),Math.ceil(rule?.cap ?? 10)));
-      cap.value=rule?.cap ?? 10;
-      cap.setAttribute('aria-label',`${goodName(key)} sale cap`);
-      const capValue=document.createElement('output');capValue.setAttribute('for',cap.id);
-      const showCap=()=>{capValue.textContent=String(cap.value);cap.setAttribute('aria-valuetext',`${cap.value} goods`);};
-      showCap();label.append(capValue,cap);row.append(label);
-      const save=()=>{
-        if(viewed!==identity?.town_id||!row.reportValidity())return;
-        const value=Number(cap.value),savedCap=Number.isFinite(value)&&value>=1?value:(rule?.cap ?? 10);
-        act({action:'configure_market_sale',resource:key,enabled:toggle.checked,cap:savedCap});
-      };
-      toggle.onchange=()=>{status.textContent=toggle.checked?'Enabled':'Disabled';save();};
-      cap.oninput=()=>{cap.value=Math.round(Number(cap.value));showCap();};
-      cap.onchange=save;
-      row.onsubmit=event=>{event.preventDefault();save();};
-      editor.append(row);
+    for(const [title,members] of resourceCategories(keys)){
+      const group=resourceGroup(title);editor.append(group);
+      for(const key of members){
+        const rule=town.rules?.market_sales?.[key];
+        const row=document.createElement('form');row.className='storage-row market-sale-rule';
+        const caption=document.createElement('label');caption.className='storage-caption';
+        const name=document.createElement('span');name.textContent=goodName(key);caption.append(name);
+        const toggle=document.createElement('input');toggle.id='sale-enabled-'+key;toggle.type='checkbox';toggle.checked=!!rule&&(rule.enabled ?? true);
+        toggle.setAttribute('aria-label',`Sell ${goodName(key)} automatically`);caption.append(toggle);
+        const status=document.createElement('span');status.className='storage-count';status.textContent=toggle.checked?'Enabled':'Disabled';caption.append(status);row.append(caption);
+        const label=document.createElement('label');label.className='market-sale-cap';label.textContent='Sale cap';
+        const cap=document.createElement('input');cap.id='sale-cap-'+key;cap.type='range';cap.min='1';cap.step='any';
+        cap.max=String(Math.max(200,Math.ceil(resourceStorage(town,key)),Math.ceil(rule?.cap ?? 10)));
+        cap.value=rule?.cap ?? 10;
+        cap.setAttribute('aria-label',`${goodName(key)} sale cap`);
+        const capValue=document.createElement('output');capValue.setAttribute('for',cap.id);
+        const showCap=()=>{capValue.textContent=String(cap.value);cap.setAttribute('aria-valuetext',`${cap.value} goods`);};
+        showCap();label.append(capValue,cap);row.append(label);
+        const save=()=>{
+          if(viewed!==identity?.town_id||!row.reportValidity())return;
+          const value=Number(cap.value),savedCap=Number.isFinite(value)&&value>=1?value:(rule?.cap ?? 10);
+          act({action:'configure_market_sale',resource:key,enabled:toggle.checked,cap:savedCap});
+        };
+        toggle.onchange=()=>{status.textContent=toggle.checked?'Enabled':'Disabled';save();};
+        cap.oninput=()=>{cap.value=Math.round(Number(cap.value));showCap();};
+        cap.onchange=save;
+        row.onsubmit=event=>{event.preventDefault();save();};
+        group.append(row);
+      }
     }
     renderMarketSales.signature=signature;renderMarketSales.editor=editor;
   }
@@ -1481,9 +1525,15 @@ function renderProfession(town,item,index,target,upgrades,details,boats,unlocked
     button.disabled=!owner || unlocked;button.onclick=()=>{if(!button.disabled)showUpgrade({action:'profession_upgrade',index,upgrade:key});};
     (unlocked?unlockedUpgrades:fishingBoat?boats:upgrades).append(upgradeCard(button,upgradePreview({action:'profession_upgrade',index,upgrade:key},town,item),{status:unlocked?'Unlocked':''}));
   }
-  if(item.kind==='market'&&owner)for(const key of marketSaleGoods(catalog)){
-    const price=catalog.fish?.[key]?.coins ?? catalog.sale_prices?.[key] ?? ({trout:2,salmon:3,sturgeon:5}[key] || (key==='tools'?3:1));
-    const button=document.createElement('button');button.textContent=`Sell 1 ${goodName(key).toLowerCase()} · ${price} coin${price===1?'':'s'}`;button.disabled=amountOf(town,key)<1;button.onclick=()=>act({action:'sell_goods',resource:key,amount:1});target.append(button);
+  if(item.kind==='market'&&owner){
+    const heading=document.createElement('h3');heading.textContent='Sell goods';target.append(heading);
+    for(const [title,members] of resourceCategories(marketSaleGoods(catalog))){
+      const group=resourceGroup(title);target.append(group);
+      for(const key of members){
+        const price=catalog.fish?.[key]?.coins ?? catalog.sale_prices?.[key] ?? ({trout:2,salmon:3,sturgeon:5}[key] || (key==='tools'?3:1));
+        const button=document.createElement('button');button.textContent=`Sell 1 ${goodName(key).toLowerCase()} · ${price} coin${price===1?'':'s'}`;button.disabled=amountOf(town,key)<1;button.onclick=()=>act({action:'sell_goods',resource:key,amount:1});group.append(button);
+      }
+    }
   }
   if(['woodcutter','fishing_hut'].includes(item.kind)){
     const reach=resourceReach(item);

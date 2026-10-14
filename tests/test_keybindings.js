@@ -178,7 +178,7 @@ function session(saved=null){
   windows.key('4');
   check(windows.state.panel==='resources'&&!windows.document.getElementById('resources-panel').hidden,'4 opens Resources');
   const resourceGroups=windows.document.getElementById('resources-list').children;
-  check(resourceGroups.map(group=>group.children[0].textContent).join(',')==='Overview,Materials,Farming supplies,Food types','Resources have clear category headings');
+  check(resourceGroups.map(group=>group.children[0].textContent).join(',')==='Overview,Baking,Fishing,Timber,Farming,Orcharding and gathering,Livestock,Butchery','Resources have clear category headings');
   const resources=resourceGroups.flatMap(group=>group.children.slice(1));
   const resource=label=>resources.find(row=>row.children[1].textContent===label)?.children[0].textContent;
   check(resource('Wood')==='50 / 0'&&resource('Food')==='30 / 0','Resources show stored amounts and allocated capacity');

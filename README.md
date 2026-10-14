@@ -482,8 +482,9 @@ the Python host, refresh both browsers, and create a new world to use the shared
 - Hall upgrades also require a builder at the hall. The first requires housing and reliable food, costs 40 wood, and
   takes 30 seconds of construction after arrival; the hall
   panel shows remaining time. Closing the host pauses the upgrade.
-- Completed workplaces hold storage: **50 units** in ordinary workplaces,
-  200 in the hall, and 50–350 per enabled resource across eight storehouse levels.
+- Completed workplaces hold storage: **50 material units** in ordinary workplaces,
+  100 per food type and 100 wood in the hall, and 50–350 per enabled
+  resource across eight storehouse levels.
   Its **Storage** section shows goods held there. Wood and other products become available for construction,
   meals, and sales when a villager finishes returning and unloading at their workplace.
   Goods still being gathered or carried are not available to spend. The host tracks
@@ -496,21 +497,30 @@ the Python host, refresh both browsers, and create a new world to use the shared
 - Each storehouse has an **enable/disable switch for each resource** in its
   Storage section. Capacity per resource at levels 1–8 is **50/75/100/150/200/250/300/350**.
   Level 5 becomes a Warehouse. Upgrades increase every resource's capacity
-  automatically; resources do not compete for shared space. Food groups edible
-  goods in one capacity, weighted by pantry value. New storehouses start with all
-  resources disabled. Disabling a resource stops incoming deliveries and keeps
+  automatically; resources do not compete for shared space. Each edible good has
+  its own switch and capacity measured in items, including each fish species.
+  Option/Alt-click any resource checkbox to enable every resource in that storehouse.
+  New storehouses start with all resources disabled. Disabling a resource stops
+  incoming deliveries and keeps
   existing goods available for processing, construction, meals, and sales.
-  Old positive allocations become enabled resources; saved stock remains intact.
+  Old positive allocations become enabled resources; a legacy Food switch enables
+  each food type. Saved stock remains intact, including excess stock. Untyped food
+  from older saves appears as Provisions with its own capacity. The town Food total
+  still measures meal value. Resources, storage, market sales, and trade selectors
+  group goods by Baking, Fishing, Timber, and the other production trades.
 - Open **Rules** (8) to set production caps per resource for your own town.
   Blank means unlimited; 0 pauses that resource. Workers and player gathering stop
   at the target and resume as stock is used. Stored goods, reserved inputs, and
   undelivered output count once. Recipe and animal batches wait until the full
   batch fits; hauling, purchases, and existing stock are preserved. Rules are saved
   with the town and do not affect other towns.
-- Workplaces keep fixed storage for their relevant inputs and outputs within a
-  50-space budget. The hall has 100 wood and 100 food spaces; homes have none.
+- Workplaces keep fixed storage for their relevant inputs and outputs within their
+  resource allowances. Each food type uses the former food allowance independently
+  (for example, 50 of each raw fish in a fishing hut and 25 of each baked good in a
+  bakery). Non-food workplace goods retain their existing buffer limit. Homes have none.
   Production respects each resource's displayed limit, including goods still
-  returning to the workplace and the shared food allowance. A sawpit holds at
+  returning to the workplace. Other foods cannot fill that resource's allowance.
+  A sawpit holds at
   most 20 planks at level 1 (25 at level 2, 30 at level 3); its wood spaces cannot
   be used for extra planks. Existing excess stock stays available to spend or haul,
   and production waits for room.

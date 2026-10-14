@@ -81,7 +81,7 @@ def production_stock(building, key):
 
 
 def output_fits(building, outputs):
-    """Check a whole batch, including shared food space and returning output."""
+    """Check each resource's whole batch, including returning output."""
     target = {**building, 'pending_output': dict(building.get('pending_output', {}))}
     for key, amount in outputs.items():
         if amount > economy.local_room(target, key) + 1e-9:
@@ -239,9 +239,7 @@ def produce(town, building, villager, elapsed=3):
              'goods': {k: n for k, n in inputs.items() if k != 'wood'}, 'harvested': 0,
              '_local_production': True}
     worker = dict(villager)
-    # Raw fish can exceed 50 food value; output space is checked separately below.
-    capacity = buffer_size(building) + local['food'] if building['kind'] == 'smokehouse' else buffer_size(building)
-    status = economy.extra_worker(local, worker, building, capacity)
+    status = economy.extra_worker(local, worker, building, buffer_size(building))
     produced = local.get('produced', {})
     if not output_fits(building, produced):
         building['buffer_full'] = True

@@ -63,9 +63,9 @@ const run=new Function('document','window','localStorage','setTimeout','clearTim
     assert.deepStrictEqual(sent.pop(),{action:'trade_local',npc_index:0});
     town.local_visits['Tobin:5:8']={trade_remaining:297};renderSelection(town);
     assert($('selection-details').children.some(c=>c.textContent==='Restocking · 5 min remaining'&&c.disabled));
-    town.local_visits['Tobin:5:8'].trade_remaining=0;town.buildings[0].stored_goods.food=100;renderSelection(town);
+    town.local_visits['Tobin:5:8'].trade_remaining=0;town.buildings[0].stored_goods.vegetables=100;renderSelection(town);
     assert($('selection-details').children.some(c=>c.textContent==='Trade 10 wood for 8 food'&&c.disabled),'Full storage blocks barter');
-    town.buildings[0].stored_goods.food=40;town.player.x=20;renderSelection(town);
+    town.buildings[0].stored_goods.vegetables=40;town.player.x=20;renderSelection(town);
     assert($('selection-details').children.some(c=>c.textContent==='Trade 10 wood for 8 food'&&c.disabled),'Distant barter disabled');
     town.player.worker_tools={fine_axe:1};const worker={},target=document.createElement('div');
     renderWorkerTools(town,worker,2,target);const give=target.children[0];

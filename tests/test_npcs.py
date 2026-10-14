@@ -227,10 +227,10 @@ class LocalOffers(unittest.TestCase):
         self.town['wood'] = 65
         economy.ensure_inventory(self.town)
         hall = self.town['buildings'][0]
-        hall['stored_goods']['food'] = 100
+        hall['stored_goods']['vegetables'] = 100
         self.town['food'] = 100
         self.reject('trade_local', npc_index=2)
-        hall['stored_goods']['food'] = 40
+        hall['stored_goods'].pop('vegetables')
         self.town['food'] = 40
         other = copy.deepcopy(self.town)
         self.action('trade_local', npc_index=2)

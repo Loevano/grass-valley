@@ -154,7 +154,7 @@ class ResourceLogistics(unittest.TestCase):
                                                 'crates': 5, 'furniture': 5, 'carved_furniture': 5}
                     self.assertEqual(economy.local_room(building, 'crafted_axe'), 0)
                     self.assertEqual(economy.local_room(building, 'crafted_saw'), 0)
-                else:
+                elif not any(key in economy.EDIBLE for key in limits):
                     self.assertEqual(sum(limits.values()), economy.storage_size(building))
                 self.assertLessEqual(set(limits), set(economy.building_storage_keys(building)))
                 if kind != 'hall':
@@ -543,10 +543,10 @@ class ResourceLogistics(unittest.TestCase):
         self.assertGreater(self.town.get('produced', {}).get('flour', 0), 0)
         self.assertGreater(self.town.get('produced', {}).get('bread', 0), 0)
 
-    def test_output_batches_share_food_and_total_space_without_mutating_stock(self):
+    def test_output_batches_use_separate_food_limits_and_preserve_stock(self):
         cases = [
-            ({'kind': 'barn', 'output_buffer': {'milk': 19}}, {'milk': .75, 'eggs': .75}),
-            ({'kind': 'smokehouse', 'stored_goods': {'sturgeon': 14}}, {'smoked_fish': 3}),
+            ({'kind': 'barn', 'output_buffer': {'milk': 19.5}}, {'milk': .75, 'eggs': .75}),
+            ({'kind': 'smokehouse', 'stored_goods': {'smoked_fish': 43}}, {'smoked_fish': 3}),
             ({'kind': 'sawpit', 'stored_goods': {'wood': 30, 'planks': 19},
               'pending_output': {'planks': .5}}, {'planks': 1}),
         ]
@@ -557,6 +557,45 @@ class ResourceLogistics(unittest.TestCase):
                 self.assertEqual(building, before)
         self.assertTrue(logistics.output_fits({'kind': 'sawpit', 'stored_goods': {'planks': 19}},
                                              {'planks': 1}))
+        self.assertTrue(logistics.output_fits({'kind': 'barn', 'output_buffer': {'milk': 19}},
+                                             {'milk': .75, 'eggs': .75}))
+        self.assertTrue(logistics.output_fits({'kind': 'smokehouse', 'stored_goods': {'sturgeon': 45}},
+                                             {'smoked_fish': 3}))
+
+    def test_food_storage_limits_are_independent_item_counts_in_every_building(self):
+        for kind in economy.STORAGE_GOODS:
+            foods = [key for key in economy.STORAGE_GOODS[kind] if key in economy.EDIBLE]
+            if not foods:
+                continue
+            building = {'kind': kind, 'storage_enabled': {key: True for key in foods}}
+            limits = economy.storage_allocations(building)
+            building['stored_goods'] = {key: limits[key] for key in foods[:-1]}
+            last = foods[-1]
+            with self.subTest(kind=kind):
+                self.assertEqual(economy.local_room(building, last), limits[last])
+                building['pending_output'] = {last: 2}
+                self.assertEqual(economy.local_room(building, last), limits[last] - 2)
+                building['stored_goods'][last] = limits[last]
+                self.assertEqual(economy.local_room(building, last), 0)
+
+    def test_old_food_filters_expand_and_explicit_food_switches_survive_reload(self):
+        store = self.add('storehouse', storage_allocations={'food': 50},
+                         stored_goods={'bread': 80, 'fish': 50, 'food': 3})
+        index = self.town['buildings'].index(store)
+        original = copy.deepcopy(store['stored_goods'])
+        self.assertTrue(all(economy.storage_enabled(store)[key] for key in economy.EDIBLE))
+        self.assertEqual(economy.local_room(store, 'bread'), 0)
+        self.assertEqual(economy.local_room(store, 'smoked_fish'), 50)
+        enabled = economy.storage_enabled(store)
+        enabled['bread'] = False
+        server.command(self.town, {'action': 'configure_storage', 'index': index, 'enabled': enabled})
+        restored = json.loads(json.dumps(self.town))
+        economy.ensure_inventory(restored)
+        saved = restored['buildings'][index]
+        self.assertFalse(economy.storage_enabled(saved)['bread'])
+        self.assertTrue(economy.storage_enabled(saved)['fish'])
+        self.assertEqual(saved['stored_goods'], original)
+        self.assertEqual(economy.local_room(saved, 'smoked_fish'), 50)
 
     def test_producer_delivers_and_returns_without_counting_output_twice(self):
         b = self.add('woodcutter', output_buffer={'wood': 50})
@@ -794,14 +833,20 @@ class ResourceLogistics(unittest.TestCase):
         self.assertEqual(self.town['goods']['planks'], 19.5 + sum(economy.inventory(saw).values()))
         self.assertNotIn('buffer_full', saw)
 
-    def test_food_uses_one_shared_allocation_and_preserves_undelivered_goods(self):
+    def test_hall_food_types_have_separate_capacity_and_preserve_undelivered_goods(self):
         self.town['food'] = 99
         barn = self.add('barn', output_buffer={'bread': 2, 'eggs': 4})
         logistics.transfer(self.town, barn, self.town['buildings'][0], 'collect', self.town['villagers'][0])
         self.assertEqual(self.town['food'], 106)
         self.assertEqual(self.town['buildings'][0]['stored_goods']['food'], 99)
-        self.assertAlmostEqual(barn['output_buffer']['bread'], 2 - 1 / 1.5)
-        self.assertEqual(barn['output_buffer']['eggs'], 4)
+        self.assertEqual(barn['output_buffer']['bread'], 0)
+        self.assertEqual(barn['output_buffer']['eggs'], 0)
+        self.assertEqual(self.town['buildings'][0]['stored_goods']['bread'], 2)
+        self.assertEqual(self.town['buildings'][0]['stored_goods']['eggs'], 4)
+        self.town['buildings'][0]['stored_goods']['bread'] = 100
+        barn['output_buffer']['bread'] = 3
+        logistics.transfer(self.town, barn, self.town['buildings'][0], 'collect', self.town['villagers'][0])
+        self.assertEqual(barn['output_buffer']['bread'], 3)
 
 
 if __name__ == '__main__':

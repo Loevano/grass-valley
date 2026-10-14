@@ -113,13 +113,13 @@ class HaulingSkill(unittest.TestCase):
         self.assertEqual(self.town, before)
         self.assertEqual(logistics.transfer(self.town, self.source, self.store, 'collect', self.worker), cargo)
 
-    def test_mixed_cargo_shares_capacity_and_storage_food_space(self):
+    def test_mixed_cargo_shares_carry_capacity_with_separate_food_storage(self):
         self.source['output_buffer'] = {'bread': 2, 'eggs': 4, 'wood': 40}
         self.source['stored_goods'] = {}
         self.store['storage_enabled'] = {'food': True, 'wood': True}
         self.store['stored_goods'] = {'eggs': 97}
         cargo = logistics.planned_cargo(self.town, self.source, self.store, 'collect', self.worker)
-        self.assertEqual(cargo, {'bread': 2, 'wood': 40})
+        self.assertEqual(cargo, {'bread': 2, 'eggs': 3, 'wood': 40})
         self.assertEqual(logistics.transfer(self.town, self.source, self.store, 'collect', self.worker), cargo)
 
     def test_supply_manifest_contains_each_recipe_ingredient(self):

@@ -108,6 +108,9 @@ class AllWorkplaceStorage(unittest.TestCase):
         economy.ensure_inventory(town)
         town['buildings'][0]['stored_goods'] = {'wood': 100, 'food': 100}
         town.update(wood=100, food=100)
+        for key in economy.EDIBLE:
+            town['buildings'][0]['stored_goods'][key] = 100
+            economy.add_stock(town, key, 100)
         store = {'kind': 'storehouse', 'x': 8, 'y': 3,
                  'storage_enabled': {key: True for key in economy.STORAGE_KEYS},
                  'stored_goods': {key: 50 for key in economy.STORAGE_KEYS}}
@@ -131,7 +134,7 @@ class AllWorkplaceStorage(unittest.TestCase):
             if kind == 'acre':
                 town['buildings'].append({'kind': 'acre', 'x': 4, 'y': 3,
                                           'farm_index': 2, 'crop': output,
-                                          'stored_goods': {'vegetables': 20, 'wheat': 10,
+                                          'stored_goods': {'vegetables': 20, 'carrots': 20, 'wheat': 10,
                                                            'fodder': 10, 'manure': 10}})
                 for key, amount in town['buildings'][-1]['stored_goods'].items():
                     economy.add_stock(town, key, amount)

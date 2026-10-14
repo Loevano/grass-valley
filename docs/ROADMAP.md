@@ -95,8 +95,9 @@ farmer harvests available ripe acres before returning, with an early return when
 the existing crop storage allowance fills. Carried batches remain reserved until
 delivery and respect production caps, including after save/reload.
 Farmers pause to haul when their current crop's storage allowance fills; full
-stock of an unrelated crop does not stop other farmers or field passes. Crops
-that share food storage still respect that shared allowance.
+stock of an unrelated crop does not stop other farmers or field passes. Each crop
+now has an independent item allowance in every building, so other foods cannot
+fill its storage.
 Field visuals follow confirmed worker playback, changing after each action finishes
 even when the host has already assigned the farmer another acre.
 Seed and water particles land on crop positions in the acre being worked, including
@@ -132,7 +133,11 @@ the implemented wood worker limits and storage upgrades. Farming and fishing
 balancing, storage scaling, and worker limits below remain planned.
 
 Production now respects each resource's existing storage allowance, including
-pending deliveries and shared food space. Producers haul when an allowance fills;
+pending deliveries. Each edible good and fish species now has an independent
+item capacity in halls, storehouses, and workplaces. Storage filters and market
+lists are organized by production trade; Option/Alt-clicking a storage resource
+checkbox enables all resources. Legacy food filters expand without losing stock.
+Producers haul when an allowance fills;
 existing excess stock is preserved. Workplace storage totals appear beside the
 Storage heading. Wood-building upgrades increase these allowances by 25% per
 level; storage scaling for farming and fishing remains planned.

@@ -10,6 +10,7 @@ const commands=[];
 const amountOf=(town,key)=>town[key] ?? town.goods?.[key] ?? 0;
 const canAfford=(town,cost)=>Object.entries(cost).every(([key,amount])=>amountOf(town,key)>=amount);
 const create=new Function('document','world','identity','buildingLevel','amountOf','canAfford','goodName','act',
+  source.slice(source.indexOf('function resourceCategories('),source.indexOf('function amountOf('))+
   source.slice(source.indexOf('function renderStable('),source.indexOf('function renderRecipes('))+
   source.slice(source.indexOf('function animalAges('),source.indexOf('function renderAnimalButchery('))+
   'return {renderStable,renderTownTrades};');

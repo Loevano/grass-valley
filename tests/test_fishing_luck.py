@@ -1,7 +1,8 @@
 import unittest
 from unittest.mock import patch
 
-from server import WORKER_FOOD, capacity, new_town, tick
+import progression as economy
+from server import WORKER_FOOD, new_town, tick
 
 
 class FishingLuck(unittest.TestCase):
@@ -46,7 +47,9 @@ class FishingLuck(unittest.TestCase):
 
     def test_full_storage_and_missing_workplace_do_not_roll(self):
         with patch('server.secrets.randbelow') as roll:
-            self.town['food'] = capacity(self.town)
+            economy.ensure_inventory(self.town)
+            self.town['buildings'][0]['stored_goods']['fish'] = 100
+            economy.add_stock(self.town, 'fish', 100)
             self.town['buildings'][1]['output_buffer'] = {'fish': 50}
             tick(self.world)
             roll.assert_not_called()

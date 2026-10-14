@@ -361,9 +361,9 @@ def costs_of(spec):
 
 
 STOREHOUSE_CAPACITIES = (50, 75, 100, 150, 200, 250, 300, 350)
-STORAGE_KEYS = ('wood', 'food', 'planks', 'wheat', 'fodder', 'flour', 'wool', 'tools', 'manure', 'herbs', *CRAFTED_GOODS, *LATE_GOODS)
+STORAGE_KEYS = ('wood', 'food', 'planks', 'wheat', 'fodder', 'flour', 'wool', 'tools', 'manure', 'herbs', *CRAFTED_GOODS, *LATE_GOODS, *EDIBLE)
 STORAGE_GOODS = {
-    **{kind: (*STORAGE_KEYS, *EDIBLE) for kind in ('hall', 'storehouse')},
+    **{kind: STORAGE_KEYS for kind in ('hall', 'storehouse')},
     'market': (),
     'stable': ('fodder', 'vegetables', 'manure'),
     'home': (),
@@ -401,6 +401,13 @@ FIXED_STORAGE = {
     'fish_pond': {'fodder': 15, 'food': 35},
     'market': {},
 }
+# Each food keeps the former pantry allowance, measured in individual items.
+# Untyped provisions from older saves retain their own allowance at the hall.
+for kind, allocations in FIXED_STORAGE.items():
+    if 'food' in allocations:
+        capacity = allocations.pop('food')
+        allocations.update({key: capacity for key in STORAGE_GOODS[kind]
+                            if key == 'food' or key in EDIBLE})
 
 
 def accepts_storage(building, key):
@@ -408,8 +415,7 @@ def accepts_storage(building, key):
 
 
 def building_storage_keys(building):
-    groups = {'food' if k in EDIBLE else k for k in STORAGE_GOODS.get(building['kind'], ())}
-    return tuple(k for k in STORAGE_KEYS if k in groups)
+    return tuple(k for k in STORAGE_KEYS if accepts_storage(building, k))
 
 
 def storage_size(building):
@@ -497,12 +503,11 @@ def local_room(building, key):
     stock = inventory(building)
     for pending_key, pending_amount in building.get('pending_output', {}).items():
         stock[pending_key] = stock.get(pending_key, 0) + pending_amount
-    group = 'food' if key in EDIBLE else key
-    used = sum(n * EDIBLE.get(k, 1) for k, n in stock.items() if k == group or (group == 'food' and k in EDIBLE))
-    allocated = max(0, storage_allocations(building).get(group, 0) - used) / EDIBLE.get(key, 1)
-    if building['kind'] == 'storehouse':
+    allocated = max(0, storage_allocations(building).get(key, 0) - stock.get(key, 0))
+    if building['kind'] == 'storehouse' or key == 'food' or key in EDIBLE:
         return allocated
-    return min(allocated, max(0, storage_size(building) - sum(stock.values())))
+    materials = sum(n for k, n in stock.items() if k != 'food' and k not in EDIBLE)
+    return min(allocated, max(0, storage_size(building) - materials))
 
 
 def storage_allocations(building):
@@ -514,26 +519,26 @@ def storage_allocations(building):
 
 
 def storage_enabled(building):
-    """Old positive allocations become switches without changing saved inventory."""
+    """Expand legacy Food switches without changing saved inventory or explicit filters."""
     enabled = building.get('storage_enabled')
     if enabled is None:
         enabled = {k: n > 0 for k, n in building.get('storage_allocations', {}).items()}
-    return {k: enabled.get(k, False) for k in building_storage_keys(building)}
+    return {k: enabled.get(k, enabled.get('food', False) if k in EDIBLE else False)
+            for k in building_storage_keys(building)}
 
 
 def storage_limit(town, key):
-    group = 'food' if key in EDIBLE else key
-    return sum(storage_allocations(b).get(group, 0) for b in town['buildings']
-               if 'construction' not in b and (accepts_storage(b, key)
-                   or (key == 'food' and 'food' in building_storage_keys(b))))
+    if key == 'food':
+        return sum(n * EDIBLE.get(k, 1) for b in town['buildings'] if 'construction' not in b
+                   for k, n in storage_allocations(b).items() if k == 'food' or k in EDIBLE)
+    return sum(storage_allocations(b).get(key, 0) for b in town['buildings']
+               if 'construction' not in b and accepts_storage(b, key))
 
 
 def storage_room(town, key):
     if town.get('inventory_version') == 1:
         return sum(local_room(b, key) for b in town['buildings'] if 'construction' not in b)
-    group = 'food' if key in EDIBLE else key
-    room = storage_limit(town, key) - quantity(town, group)
-    return max(0, room / EDIBLE.get(key, 1))
+    return max(0, storage_limit(town, key) - quantity(town, key))
 
 
 def deliver(town, key, amount, capacity, record=True):
@@ -557,8 +562,6 @@ def deliver(town, key, amount, capacity, record=True):
         return amount
     room = (storage_room(town, key) if not town.get('_local_production')
             else capacity - quantity(town, key))
-    if key in EDIBLE and town.get('inventory_version') != 1:
-        room = min(room, (capacity - town['food']) / EDIBLE[key])
     amount = max(0, min(amount, room))
     if key == 'wood':
         town['wood'] += amount
@@ -784,8 +787,6 @@ def player_tick(town, landscape, capacity):
     if cap_room <= 0:
         player['activity_status'] = 'Production cap reached'; return
     room = min(storage_room(town, key), cap_room)
-    if key in EDIBLE:
-        room = min(room, (capacity - town['food']) / EDIBLE[key])
     if room <= 0:
         player['activity_status'] = 'Storage full'; return
     if source.get('supply', 0) <= 0:
@@ -821,7 +822,7 @@ def extra_worker(town, villager, building, capacity):
         costs = production_costs(building, speed, {key: quantity(town, key) for key in FISH})
         if not afford(town, costs):
             return 'Waiting for ' + ', '.join(inputs)
-        if quantity(town, output) + amount > capacity or (output in EDIBLE and town['food'] - sum(v*EDIBLE.get(k,0) for k,v in costs.items()) + amount*EDIBLE[output] > capacity):
+        if quantity(town, output) + amount > capacity:
             return 'Storage full'
         spend(town, costs)
         deliver(town, output, amount, capacity)
@@ -845,7 +846,7 @@ def extra_worker(town, villager, building, capacity):
             feed_cost = {'fodder': feed}
         if not afford(town, feed_cost):
             return 'Waiting for animal feed'
-        if any(quantity(town, k) + v > capacity for k, v in output_amounts.items()) or town['food'] - sum(v*EDIBLE.get(k,0) for k,v in feed_cost.items()) + sum(v*EDIBLE.get(k,0) for k,v in output_amounts.items()) > capacity:
+        if any(quantity(town, k) + v > capacity for k, v in output_amounts.items()):
             return 'Storage full'
         spend(town, feed_cost)
         for key, amount in output_amounts.items():
