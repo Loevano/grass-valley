@@ -280,7 +280,6 @@ Meals cost 1.5 food/minute per working resident and 0.6 per idle resident.
 One top-tier mill and bread bakery target 200 working villagers with enough
 wheat, fuel, and hauling. The compact host test uses 12 farms, 24 acres, and four
 haulers with supplied fuel. Extra bakeries make different recipes.
-Capacity figures and recent deliveries appear in the village grain-flow overview.
 Base milling supplies 40 flour per active
 minute to two bakers consuming 40 flour and 10 wood. Delivered rates depend on
 field layout, water, hauling, and room for finished goods. Current capacities and

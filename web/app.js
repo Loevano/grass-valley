@@ -446,7 +446,6 @@ function grainEquipmentMultiplier(building){
 }
 function storageMultiplier(building){return storageUpgradeKinds().includes(building.kind)?(1+.25*(buildingLevel(building)-1))*grainEquipmentMultiplier(building):1;}
 function foodRates(){return world.progression?.food_per_minute || {idle:.6,working:1.5};}
-function villageFoodDemand(town){return (town.villagers || []).reduce((sum,v)=>sum+foodRates()[v.job!=='idle'||v.construction_target?'working':'idle'],0);}
 function grainProduction(building,worker=null){
   const catalog=world.progression,recipe=selectedProfessionRecipe(building);
   const base=recipe?[recipe.inputs,recipe.output,recipe.amount]:catalog?.recipes?.[building.kind];
@@ -454,24 +453,6 @@ function grainProduction(building,worker=null){
   const factor=60/(catalog.production_seconds?.[base[1]] || 3)*grainEquipmentMultiplier(building)*(worker?workerEfficiency(worker,catalog.buildings[building.kind].job):1);
   const amount=base[2]*factor,food=amount*(foodGoods()[base[1]] || (base[1]==='flour'?foodGoods().bread || 1.5:0));
   return {inputs:Object.fromEntries(Object.entries(base[0]).map(([key,n])=>[key,n*factor])),output:base[1],amount,food,feeds:food/foodRates().working};
-}
-function grainWorker(town,item,index){
-  const job=world.progression?.buildings?.[item.kind]?.job,recipe=selectedProfessionRecipe(item);
-  return town.villagers.find(v=>v.building_index===index&&v.job===job&&!jobRequirement(v,job)
-    &&(town.sandbox||!recipe||recipe.level===1||(v[job] || 0)>=recipe.level));
-}
-function renderGrainFlow(town,item,index,target){
-  const number=n=>Number(n.toFixed(1)),mill=item.kind==='mill';
-  if(['mill','bakery'].includes(item.kind)){
-    const worker=grainWorker(town,item,index),rate=grainProduction(item,worker);
-    if(rate){
-      target.append(fact(`Feeds ${number(rate.feeds)} working villagers`,mill?'Flour capacity as basic bread · Needs enough bakery capacity':'Recipe capacity with continuous inputs'));
-      target.append(fact(`${number(rate.amount)} ${goodName(rate.output).toLowerCase()}/min`,worker?'Capacity with assigned worker · Before travel and hauling':'Equipment capacity with one neutral worker · Assign a qualified worker'));
-      target.append(fact(costText(rate.inputs)+'/min','Ingredient demand at capacity'));
-      const delivered=item.grain_flow?.rates || {},food=Object.entries(delivered).reduce((sum,[key,n])=>sum+n*(foodGoods()[key] || 0),0);
-      target.append(fact(mill?`${number(delivered.flour || 0)} flour/min`:`Feeds ${number(food/foodRates().working)} working villagers`,'Recent delivered supply · Smoothed over about 2 minutes'));
-    }
-  }
 }
 
 function housingCapacity(town){
@@ -1534,7 +1515,6 @@ function renderProfession(town,item,index,target,upgrades,details,boats,unlocked
     boats.append(note);
   }
   renderRecipes(town,item,index,target);
-  if(['hall','farm','mill','bakery'].includes(item.kind))renderGrainFlow(town,item,index,target);
   if(item.kind==='butcher')renderAnimalButchery(town,item,index,target);
   if(item.kind==='farm'){
     const acres=town.buildings.filter(a=>a.kind==='acre'&&a.farm_index===index);

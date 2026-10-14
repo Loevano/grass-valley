@@ -134,7 +134,7 @@ The host test sustains 200 working residents with:
 
 The test runs real crop growth, water trips, production, and worker hauling.
 After five minutes of startup, it checks five more minutes of food supply.
-The pantry does not shrink and recent bread deliveries cover 300 food/minute.
+The pantry does not shrink while residents consume 300 food/minute.
 
 - Fuel production is outside this test. Provide forestry for a running village.
 - At minimum demand, 50 wood/minute needs at least four base woodcutters.
@@ -165,30 +165,15 @@ Top-tier storage at building level 1:
 - Full output storage still pauses production.
 - A central storehouse can combine small farm harvests into larger supply loads.
 
-## Feeding-capacity displays
+## Production panels
 
-Mill and bakery Production panels show only their own production information.
-The village-wide grain summary has been removed from building panels.
-
-Their panels show:
-
-- **“Feeds X working villagers”** for the selected recipe.
-- Ingredient demand per minute.
-- Capacity with the assigned worker, or a neutral worker if unstaffed.
-- Recent delivered supply, shown separately from capacity.
+Mill and bakery panels show recipe details and equipment upgrades.
+Grain-flow summaries are removed from all building panels, including capacity,
+ingredient-demand, and recent-delivery summaries. The host no longer records
+smoothed grain delivery rates; obsolete summary data is removed from existing saves.
 
 Upgrade previews show production, feeding capacity, and ingredient demand
 before and after. They use neutral talent and low practice for comparison.
-
-### Recent delivered supply
-
-- The host counts output when it first becomes available after unloading.
-- Pending production does not count as delivered food.
-- Hauling available stock again does not count it twice.
-- Startup uses the average since the first delivery.
-- After two minutes, rates use a bounded smoothed average.
-- Rates fall during blocked work. They describe recent supply, not guaranteed output.
-- Browser displays do not change gameplay or saved stock.
 
 ## Existing saves
 

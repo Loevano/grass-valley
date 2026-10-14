@@ -146,7 +146,7 @@ one mill and one bakery, each with one worker and equipment throughput upgrades,
 support an initial target of 200 working villagers with sufficient supply and
 hauling. Meals cost 1.5 food/minute per working villager and 0.6 per idle resident.
 Additional bakeries provide recipe variety. Equipment tiers, scaled storage and
-producer carrying capacity, and feeding-capacity displays are implemented.
+producer carrying capacity are implemented.
 The base rates below exclude equipment. Larger layouts still need playtesting.
 
 ### Current base rates

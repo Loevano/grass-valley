@@ -60,8 +60,8 @@ Equipment upgrades scale throughput, storage, and producer carrying capacity.
 Meals cost 1.5 food/minute per working resident and 0.6 per idle resident.
 The compact host test sustains 200 working residents with one top-tier mill,
 one bread bakery, 12 farms, 24 acres, and four haulers; fuel is supplied.
-Additional bakeries provide variety. Feeding-capacity displays distinguish
-continuous-input capacity from recent deliveries. Existing extra processor slots
+Additional bakeries provide variety. Building panels show recipes and upgrade
+options without grain-flow summaries. Existing extra processor slots
 become equipment upgrades while preserving goods, residents, and partial work.
 
 Sandbox worlds are available for supply chain experiments: all buildings are
@@ -103,7 +103,7 @@ no upgrades and retain a fixed crop allowance. Fishing
 storage scaling remains planned.
 
 Worker drop-offs now preserve the rest of the simulation tick for the next trip,
-removing the extra pause after unloading. Delivery accounting remains on the host;
+removing the extra pause after unloading. Stock accounting remains on the host;
 fishing production balancing and storage upgrades below remain planned.
 
 - Production building upgrades increase internal storage or worker capacity.

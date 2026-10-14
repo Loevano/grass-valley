@@ -199,22 +199,28 @@ class GrainChain(unittest.TestCase):
         self.assertEqual(logistics.produce(self.town, mill, first, 1), 'Working')
         self.assertEqual(mill['grain_work_queue'], [])
 
-    def test_recent_supply_counts_dropoffs_once_and_decays_while_blocked(self):
+    def test_dropoffs_make_bread_available_once_without_flow_summaries(self):
         bakery, _ = self.add('bakery')
         worker = dict(job='baking')
         logistics.record_output(self.town, bakery, 'bread', 4, worker)
-        logistics.update_grain_deliveries(self.town, 3)
+        before = economy.quantity(self.town, 'bread')
+        logistics.drop_off(self.town, bakery, worker)
+        self.assertEqual(economy.quantity(self.town, 'bread'), before + 4)
+        logistics.drop_off(self.town, bakery, worker)
+        self.assertEqual(economy.quantity(self.town, 'bread'), before + 4)
         self.assertNotIn('grain_flow', bakery)
-        logistics.drop_off(self.town, bakery, worker)
-        logistics.update_grain_deliveries(self.town, 3)
-        self.assertEqual(bakery['grain_flow']['rates']['bread'], 80)
-        logistics.drop_off(self.town, bakery, worker)
-        logistics.update_grain_deliveries(self.town, 3)
-        self.assertEqual(bakery['grain_flow']['rates']['bread'], 40)
-        for _ in range(100):
-            logistics.update_grain_deliveries(self.town, 3)
-        self.assertLess(bakery['grain_flow']['rates']['bread'], 1)
-        self.assertEqual(bakery['grain_flow']['seconds'], 120)
+        self.assertNotIn('grain_delivery_pending', bakery)
+
+    def test_old_flow_summaries_are_removed_without_changing_stock(self):
+        bakery, _ = self.add('bakery', grain_flow={'seconds': 120, 'rates': {'bread': 80}},
+                             grain_delivery_pending={'bread': 4}, stored_goods={'bread': 10})
+        server.ensure_resources(self.town)
+        self.assertNotIn('grain_flow', bakery)
+        self.assertNotIn('grain_delivery_pending', bakery)
+        self.assertEqual(bakery['stored_goods'], {'bread': 10})
+        before = copy.deepcopy(self.town)
+        server.ensure_resources(self.town)
+        self.assertEqual(self.town, before)
 
     def test_200_working_residents_eat_300_food_per_minute(self):
         self.town['villagers'] = [dict(name=str(i), job='building') for i in range(200)]
@@ -305,7 +311,6 @@ class GrainChain(unittest.TestCase):
         self.assertEqual(self.town['food_shortage_seconds'], 0)
         bakeries = [b for b in self.town['buildings'] if b['kind'] == 'bakery']
         self.assertEqual(len(bakeries), 1)
-        self.assertGreaterEqual(bakeries[0]['grain_flow']['rates']['bread'] * 1.5, 300)
 
 
 if __name__ == '__main__':

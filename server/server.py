@@ -245,6 +245,9 @@ def map_resources(buildings):
 
 
 def ensure_resources(town):
+    for building in town['buildings']:
+        building.pop('grain_flow', None)
+        building.pop('grain_delivery_pending', None)
     # Older saves could assign residents to the founder's town hall.
     for villager in town['villagers']:
         index = villager.get('building_index')
@@ -1212,7 +1215,6 @@ def tick(world):
             if job != 'farming':
                 economy.practice(villager, job)
             villager['production_status'] = 'Working' if caught else 'No catch — trying again'
-        logistics.update_grain_deliveries(town, TICK_SECONDS)
         feed_settlers(town)
         if (not town.get('sandbox') and len(town['villagers']) < housing_capacity(town) and town['food'] >= 20
                 and not town.get('arrival_delay_seconds')):

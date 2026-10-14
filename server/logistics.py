@@ -127,28 +127,7 @@ def drop_off(town, building, villager):
         buffer = building.setdefault('output_buffer', {})
         buffer[key] = buffer.get(key, 0) + amount
         economy.add_stock(town, key, amount)
-        record_grain_delivery(building, key, amount)
     villager.pop('pending_workplace', None)
-
-
-def record_grain_delivery(building, key, amount):
-    """Count completed goods only when they first become available, never on rehauls."""
-    if amount > 0 and key in {'wheat', 'flour', *(r['output'] for r in economy.PROFESSION_RECIPES['bakery'])}:
-        pending = building.setdefault('grain_delivery_pending', {})
-        pending[key] = pending.get(key, 0) + amount
-
-
-def update_grain_deliveries(town, seconds):
-    """Bounded recent rates: average startup, then smooth over about two minutes."""
-    for building in town['buildings']:
-        pending = building.pop('grain_delivery_pending', {})
-        if not pending and 'grain_flow' not in building:
-            continue
-        flow = building.setdefault('grain_flow', {'seconds': 0, 'rates': {}})
-        flow['seconds'] = min(120, flow['seconds'] + seconds)
-        weight = seconds / flow['seconds']
-        flow['rates'] = {key: flow['rates'].get(key, 0) * (1 - weight) + pending.get(key, 0) * 60 / seconds * weight
-                         for key in flow['rates'].keys() | pending.keys()}
 
 
 def cancel_output(town, villager):
@@ -510,7 +489,6 @@ def transfer(town, building, storage, operation, villager, planned=None):
                     if field == 'orphaned_output':
                         building['pending_output'][key] -= moved
                         economy.add_stock(town, key, moved)
-                        record_grain_delivery(building, key, moved)
                     remaining -= moved
                     total_moved += moved
                     cargo[key] = cargo.get(key, 0) + moved
