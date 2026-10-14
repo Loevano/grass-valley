@@ -98,7 +98,8 @@ checkbox toggles all resources on or off. Legacy food filters expand without los
 Producers haul when an allowance fills;
 existing excess stock is preserved. Workplace storage totals appear beside the
 Storage heading. Wood, mill, and bakery upgrades increase these allowances by 25% per
-level; farm and acre crop storage scales with their building levels. Fishing
+level; farm crop storage scales with its building level. Individual acres have
+no upgrades and retain a fixed crop allowance. Fishing
 storage scaling remains planned.
 
 Worker drop-offs now preserve the rest of the simulation tick for the next trip,

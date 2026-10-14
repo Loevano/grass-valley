@@ -50,7 +50,7 @@ STORAGE_UPGRADE_KINDS = (*WOOD_WORKER_CAPACITIES, 'mill', 'bakery')
 WORKPLACE_STORAGE_SIZES = {'mill': 160, 'bakery': 100}
 WORKER_CAPACITIES = {
     **WOOD_WORKER_CAPACITIES,
-    'farm': (1, 2, 4), 'mill': (1,), 'bakery': (1,),
+    'farm': (1, 2, 4), 'acre': (1,), 'mill': (1,), 'bakery': (1,),
     'mine': (1, 2, 4, 8), 'smelter': (1, 2, 3), 'steelworks': (1,),
 }
 DECORATIONS = ('wooden_bench', 'wooden_statue')
@@ -551,7 +551,7 @@ def local_room(building, key):
 def storage_allocations(building):
     if building['kind'] in ('farm', 'acre'):
         return {key: farming.storage_capacity(building) if key in CROPS or key == 'food'
-                else amount * building.get('level', 1)
+                else amount * (1 if building['kind'] == 'acre' else building.get('level', 1))
                 for key, amount in FIXED_STORAGE[building['kind']].items()}
     if building['kind'] != 'storehouse':
         return {key: amount * storage_multiplier(building)

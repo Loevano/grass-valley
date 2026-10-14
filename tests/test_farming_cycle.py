@@ -126,8 +126,8 @@ class FarmingCycle(unittest.TestCase):
             server.advance_farmer(self.town, self.town, self.worker, self.farm, source, 0, 180)
             self.assertTrue(all(field['field']['cycle'] == cycle + 1 for field in fields))
             self.assertNotIn('pending_output', self.worker)
-            self.assertEqual(self.farm['output_buffer']['wheat'], 960 * (cycle + 1))
-        self.assertEqual(economy.local_room(self.farm, 'wheat'), 0)
+            self.assertEqual(self.farm['output_buffer']['wheat'], 720 * (cycle + 1))
+        self.assertEqual(economy.local_room(self.farm, 'wheat'), 480)
 
     def test_blocked_storage_clears_the_previous_harvest_pose(self):
         farming.field_state(self.acre).update(stage='ripe', crop='wheat')

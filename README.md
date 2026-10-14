@@ -324,7 +324,7 @@ the Python host, refresh both browsers, and create a new world to use the shared
   In the farm's **Production** section, use **Crop for all acres** to change every
   linked acre to one unlocked crop, including acres still under construction.
   The selector shows **Mixed crops** when the acres grow different types.
-  The farm's **Acres** section holds individual crop selection, acre upgrades,
+  The farm's **Acres** section holds individual crop selection
   and worker assignment. Clicking an acre shows its state and owning farm;
   **Destroy** is its only action.
 - Click a building, moving villager, or resource to open its information panel.
@@ -332,7 +332,8 @@ the Python host, refresh both browsers, and create a new world to use the shared
   Escape. On small screens, panels appear as a bottom drawer.
 - Every finished building except the town hall has an **Add settler** control,
   an assigned roster, and removal controls. Woodcutters, fishing huts, storehouses,
-  and acres start with 1 space, cottages with 2. Most buildings upgrade settler capacity twice
+  and acres start with 1 space, cottages with 2. Acres always have one worker
+  and have no building or capacity upgrades. Most other buildings upgrade settler capacity twice
   for 20 then 40 wood to reach twice then three times the initial spaces. Capacity
   upgrades take 30 then 60 seconds of builder work and do not increase housing
   or storage.
@@ -486,9 +487,8 @@ the Python host, refresh both browsers, and create a new world to use the shared
   starts the next available task using the time left in the host tick. Each farmer
   harvests available ripe acres before returning to the farm, returning early when
   the farm's crop storage allowance fills. Each crop holds **480 / 1,080 / 1,920**
-  items at farm levels 1 / 2 / 3: one / one and a half / two full 48-acre harvests
-  with matching farm and acre building bonuses. These fixed limits exclude skill,
-  tool, and manure bonuses. Acre crop storage grows to **10 / 22.5 / 40** items.
+  items at farm levels 1 / 2 / 3. These fixed limits exclude skill, tool, and manure
+  bonuses. Individual acres hold **10** items per crop and have no upgrades.
   Carried crops reserve that space and
   respect production caps. All acres finish their oldest
   crop cycle before harvested acres start another, so distant tiles are not skipped.
@@ -597,11 +597,14 @@ the Python host, refresh both browsers, and create a new world to use the shared
   hold 50/75/100/150/200/250/300/350 of each enabled resource. Level 5 becomes a Warehouse.
   Woodcutters, sawpits, and woodworker's workshops increase storage and production
   buffers from 50 to 62.5 to 75 spaces at levels 1/2/3; input buffers and resource
-  allocations scale too. These levels provide no output bonus. Farms, fishing huts,
-  and acres gain 25% production per worker at level 2 and 50% at level 3.
-  Farm and acre bonuses add together on that field. Fishing bonuses increase food
+  allocations scale too. These levels provide no output bonus. Farms and fishing huts
+  gain 25% production per worker at level 2 and 50% at level 3.
+  The farm's bonus applies to its linked acres. Fishing bonuses increase food
   from successful catches; the 90% catch chance stays the same. Workers still need
   nearby resources. Upgrades survive saving and moving the building.
+  Older acre levels no longer provide bonuses or extra storage; saved crops and
+  stock remain intact. Pending acre upgrades are cancelled and their wood refunded
+  once; excess acre workers rest with their skills and tools preserved.
   Completed building upgrades change the artwork; settler-capacity upgrades add
   separate blue markers:
   level 2 adds timber framing and roof trim; level 3 adds stonework and a dormer.

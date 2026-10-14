@@ -18,7 +18,7 @@ const run=new Function('document','window','localStorage','setTimeout','clearTim
     marks.length=0;ctx.fillStyle='';ctx.strokeStyle='';ctx.lineWidth=1;
     drawBuilding(building,owner);return JSON.stringify(marks);
   }
-  for(const kind of ['home','storehouse','woodcutter','farm','fishing_hut','acre','barn','sawpit','mill','smokehouse','workshop','fish_pond','orchard','market','bakery','butcher','tannery','mine','smelter','stable','saddler','steelworks','tradehouse']){
+  for(const kind of ['home','storehouse','woodcutter','farm','fishing_hut','barn','sawpit','mill','smokehouse','workshop','fish_pond','orchard','market','bakery','butcher','tannery','mine','smelter','stable','saddler','steelworks','tradehouse']){
     const building={kind,x:5,y:5},original=JSON.stringify(building);
     const base=appearance(building),second=appearance({...building,level:2}),third=appearance({...building,level:3});
     assert.notStrictEqual(base,second,kind+' changes at level 2');
@@ -29,6 +29,8 @@ const run=new Function('document','window','localStorage','setTimeout','clearTim
     assert.strictEqual(appearance(site),appearance({...site,construction:{...site.construction,upgrade:{level:3}}}),'Pending target levels do not render as completed');
     assert.notStrictEqual(appearance(site),second,'Completion replaces scaffolding with upgraded artwork');
   }
+  const acre={kind:'acre',x:5,y:5};
+  assert.strictEqual(appearance(acre),appearance({...acre,level:3,settler_level:3}),'Old acre upgrades have no visual effect');
   const herd=barnAnimalSprites([{kind:'stable',x:5,y:5,animals:{horse:2},animal_growth:{horse:[0,300]}}],0,town);
   assert.equal(herd.length,2,'Stable horses appear beside their workplace');
   assert(herd[0].size<herd[1].size,'A growing foal is smaller than an adult');

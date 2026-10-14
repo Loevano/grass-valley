@@ -425,9 +425,9 @@ function remotePlayerSprite(townId,town,seconds){
   return {kind:'player',townId,x:state.x,y:state.y,index:1,villager:{job:activity?.job || 'idle'},active,state,equipment:town.player.equipment,mounted:!!town.player.mounted,leadingHorse:!!town.player.leading_horse};
 }
 const labels = {road:'Dirt road',hall:'Town hall',home:'Cottage',woodcutter:'Woodcutter',farm:'Farm',storehouse:'Storehouse',fishing_hut:'Fishing hut',acre:'Acre',well:'Well'};
-function buildingLevel(building){return building.level || 1;}
+function buildingLevel(building){return building.kind==='acre'?1:building.level || 1;}
 const woodWorkerCapacities={woodcutter:[1,2,3],sawpit:[1,2],workshop:[1]};
-const workerCapacities={...woodWorkerCapacities,farm:[1,2,4],mill:[1],bakery:[1],mine:[1,2,4,8],smelter:[1,2,3],steelworks:[1]};
+const workerCapacities={...woodWorkerCapacities,farm:[1,2,4],acre:[1],mill:[1],bakery:[1],mine:[1,2,4,8],smelter:[1,2,3],steelworks:[1]};
 const decorationKinds=['wooden_bench','wooden_statue'];
 function woodCapacities(){return world.progression?.wood_worker_capacities || woodWorkerCapacities;}
 function storageUpgradeKinds(){return world.progression?.storage_upgrade_kinds || [...Object.keys(woodCapacities()),'mill','bakery'];}
@@ -501,6 +501,7 @@ function buildingHeight(building,town){
 }
 const storehouseCapacities=[50,75,100,150,200,250,300,350];
 function farmStorageCapacity(building){
+  if(building.kind==='acre')return world.progression?.farming_harvest_yield || 10;
   const level=Math.min(3,Math.max(1,buildingLevel(building)));
   return (building.kind==='farm'?48:1)*(world.progression?.farming_harvest_yield || 10)*(1+.5*(level-1))**2;
 }
@@ -637,7 +638,7 @@ function upgradeBenefit(kind,level,item){
     const building={...item,kind,level};
     return `${buildingStorageSize(building)} storage spaces\n${Object.entries(roomAllocations(building)).map(([key,amount])=>`${goodName(key)}: ${amount}`).join(', ')}\n${['mill','bakery'].includes(kind)?'One worker · Equipment increases production':'Worker capacity upgraded separately'}`;
   }
-  if(['farm','acre'].includes(kind))return `+${25*(level-1)}% crops / worker\n${farmStorageCapacity({kind,level})} capacity per crop`;
+  if(kind==='farm')return `+${25*(level-1)}% crops / worker\n${farmStorageCapacity({kind,level})} capacity per crop`;
   if(kind==='home'&&item?.profession_upgrades?.includes('timber_frame'))level++;
   if(kind==='fishing_hut')return `+${25*(level-1)}% food / catch / worker\n${resourceReach({...item,kind,level})} tile reach`;
   return kind==='barn'?`${4*level} animal spaces`:['sawpit','mill','smokehouse','workshop','fish_pond','orchard','market','bakery','butcher'].includes(kind)?'Separate worker capacity':kind==='home'?`${2*level} spaces\n-${25*(level-1)}% departure`:kind==='storehouse'?`${buildingStorageSize({kind,level})} capacity per resource${level>=5?'\nWarehouse':''}`:`+${25*(level-1)}% ${kind==='woodcutter'?'wood':kind==='fishing_hut'?'food / catch':kind==='acre'?'field food':'food'} / worker`;
@@ -656,6 +657,7 @@ const professionBenefits={
   timber_frame:'+2 spaces'
 };
 function upgradePreview(command,town,item){
+  if(item?.kind==='acre'&&['upgrade_building','upgrade_capacity'].includes(command.action))return null;
   const preview=buildingUpgradePreview(command,town,item);
   return preview&&town.sandbox?{...preview,cost:{},seconds:0}:preview;
 }
@@ -1355,7 +1357,7 @@ function renderSettlers(town,item,buildingIndex,target=$('selection-details'),up
   add.onclick=()=>{if(!add.disabled)act({action:'assign_settler',index:Number(chooser.value),building_index:buildingIndex});};
   const assignment=document.createElement('div');assignment.className='worker-assignment';
   assignment.append(chooser);assignment.append(add);target.append(assignment);
-  if(['mill','bakery'].includes(item.kind))return;
+  if(['mill','bakery','acre'].includes(item.kind))return;
   const upgrade=document.createElement('button');upgrade.className='upgrade-button';upgrade.textContent='Upgrade';
   upgrade.title=level>=maxLevel?'Settler capacity fully upgraded':`Upgrade to ${settlerCapacity({...item,settler_level:level+1})} spaces · ${town.sandbox?'Free · Instant':`${20*level} wood · ${30*level} seconds`}`;
   upgrade.setAttribute('aria-label',`Upgrade ${item.kind==='home'?'settler':'worker'} capacity: ${upgrade.title}`);
@@ -1790,8 +1792,7 @@ function renderSelection(town){
       $('selection-art').append(illustration('acre'));
       $('selection-details').append(fact((stages[field.stage] || field.stage)+remaining,'Current state'),
         fact(goodName(field.crop || item.crop || 'vegetables'),'Current crop'),
-        fact(farm?`${buildingName(farm)} · ${farm.x}, ${farm.y}`:'No linked farm','Owning farm'),
-        fact(`Level ${buildingLevel(item)}`,'Field level'));
+        fact(farm?`${buildingName(farm)} · ${farm.x}, ${farm.y}`:'No linked farm','Owning farm'));
       if(item.construction)$('selection-details').append(fact(`${Math.ceil(item.construction.total-item.construction.progress)}s work remaining`,'Under construction'));
       $('selection-level').hidden=true;$('selection-move').hidden=true;
       $('selection-destroy').hidden=viewed!==identity?.town_id;
@@ -1860,8 +1861,8 @@ function renderSelection(town){
         const benefits=document.createElement('p');benefits.className='info-copy';
         benefits.textContent=upgradeBenefit(item.kind,level,item);production.append(benefits);
       }
-      if(item.kind==='farm'||item.kind==='acre'){
-        const note=document.createElement('p');note.textContent='Field bonus = farm + acre';details.append(note);
+      if(item.kind==='farm'){
+        const note=document.createElement('p');note.textContent='Farm upgrades apply to every linked acre.';details.append(note);
       }
       const button=document.createElement('button');
       button.className='upgrade-button';
@@ -1880,16 +1881,11 @@ function renderSelection(town){
       const fields=buildingSection('Acres');
       town.buildings.forEach((acre,index)=>{
         if(acre.kind!=='acre'||acre.farm_index!==selection.index)return;
-        const row=document.createElement('div');row.append(fact(`${acre.x}, ${acre.y} · Level ${buildingLevel(acre)}`,acre.field?.stage || 'unplowed'));
+        const row=document.createElement('div');row.append(fact(`${acre.x}, ${acre.y}`,acre.field?.stage || 'unplowed'));
         const crop=document.createElement('select');crop.setAttribute('aria-label',`Crop for acre ${acre.x}, ${acre.y}`);
         for(const [key,level] of Object.entries(world.progression?.crops || {}))if(town.level>=level){const option=document.createElement('option');option.value=key;option.textContent=goodName(key);crop.append(option);}
         crop.value=acre.crop || 'vegetables';crop.disabled=viewed!==identity?.town_id;
         crop.onchange=()=>act({action:'set_crop',index,crop:crop.value});row.append(crop);
-        if(viewed===identity?.town_id){
-          const upgrade=document.createElement('button');upgrade.textContent=buildingLevel(acre)>=3?'Acre fully upgraded':`Upgrade acre · Level ${buildingLevel(acre)} → ${buildingLevel(acre)+1}`;
-          upgrade.disabled=!!acre.construction||buildingLevel(acre)>=3;
-          upgrade.onclick=()=>showUpgrade({action:'upgrade_building',index});row.append(upgrade);
-        }
         if(!acre.construction)renderSettlers(town,acre,index,row,row,row);
         fields.append(row);
       });
@@ -3733,7 +3729,7 @@ function draw(seconds=0){
     const [px,py]=point(hoverBuilding.x,hoverBuilding.y),scale=tileW/46;
     const level=hoverBuilding.kind==='hall'?hoverTown.level:buildingLevel(hoverBuilding);
     const upgrades=(hoverBuilding.profession_upgrades || []).map(key=>world.progression?.upgrades?.[key]?.label || goodName(key));
-    const lines=[`${labels[hoverBuilding.kind]} · Level ${level} · Capacity tier ${hoverBuilding.settler_level || 1}`,upgrades.join(' · ')].filter(Boolean);
+    const lines=[hoverBuilding.kind==='acre'?`${labels.acre} · ${hoverBuilding.field?.stage || 'unplowed'}`:`${labels[hoverBuilding.kind]} · Level ${level} · Capacity tier ${hoverBuilding.settler_level || 1}`,upgrades.join(' · ')].filter(Boolean);
     if(hoverBuilding.construction)lines.push('Under construction');
     ctx.save();ctx.font=`bold ${11*scale}px sans-serif`;ctx.textAlign='center';ctx.fillStyle='#fff0b1';
     lines.forEach((line,i)=>{ctx.strokeStyle='#233b30';ctx.lineWidth=3*scale;const y=py-(buildingHeight(hoverBuilding,hoverTown)+45+i*14)*scale;ctx.strokeText(line,px,y);ctx.fillText(line,px,y);});ctx.restore();

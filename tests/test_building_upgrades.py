@@ -89,14 +89,14 @@ class BuildingUpgrades(unittest.TestCase):
 
     def test_farming_storage_scales_to_two_complete_harvests(self):
         import progression as economy
-        for kind, capacities in [('farm', (480, 1080, 1920)), ('acre', (10, 22.5, 40))]:
+        for kind, capacities in [('farm', (480, 1080, 1920)), ('acre', (10, 10, 10))]:
             for level, capacity in enumerate(capacities, 1):
                 building = {'kind': kind, 'level': level}
                 for crop in economy.CROPS:
                     self.assertEqual(economy.storage_allocations(building)[crop], capacity)
                     self.assertEqual(economy.local_room(building, crop), capacity)
-                self.assertEqual(economy.storage_allocations(building)['manure'], 10 * level)
-                self.assertEqual(economy.storage_size(building), 4 * capacity + 10 * level)
+                self.assertEqual(economy.storage_allocations(building)['manure'], 10 * (1 if kind == 'acre' else level))
+                self.assertEqual(economy.storage_size(building), 4 * capacity + 10 * (1 if kind == 'acre' else level))
 
     def test_farm_workers_upgrade_and_resume_without_reassignment(self):
         farm = self.add('farm')
@@ -116,21 +116,23 @@ class BuildingUpgrades(unittest.TestCase):
             self.assertEqual(villager['building_index'], farm)
             self.assertNotIn('construction_target', villager)
 
-    def test_acre_worker_helps_parent_farm_and_own_capacity_upgrade(self):
+    def test_acre_worker_helps_parent_farm_but_acres_cannot_upgrade(self):
         farm = self.add('farm')
         acre = self.add('acre', farm_index=farm)
         self.town['buildings'][acre]['y'] = 3
         for villager in self.town['villagers']:
             villager['job'] = 'fishing'
         self.town['villagers'][0].update(job='farming', building_index=acre)
-        for action, site in [('upgrade_building', farm), ('upgrade_capacity', acre)]:
-            command(self.town, {'action': action, 'index': site})
-            self.assertEqual(self.town['villagers'][0]['construction_target']['kind'],
-                             self.town['buildings'][site]['kind'])
-            for _ in range(30):
-                construct(self.town, self.town)
-            self.assertNotIn('construction', self.town['buildings'][site])
-        self.assertEqual(self.town['buildings'][acre]['settler_level'], 2)
+        for action in ('upgrade_building', 'upgrade_capacity'):
+            before = copy.deepcopy(self.town)
+            with self.assertRaisesRegex(ValueError, 'Acres have no upgrades'):
+                command(self.town, {'action': action, 'index': acre})
+            self.assertEqual(self.town, before)
+        command(self.town, {'action': 'upgrade_building', 'index': farm})
+        self.assertEqual(self.town['villagers'][0]['construction_target']['kind'], 'farm')
+        for _ in range(30):
+            construct(self.town, self.town)
+        self.assertNotIn('construction', self.town['buildings'][farm])
         self.assertEqual(self.town['villagers'][0]['building_index'], acre)
 
     def test_helpers_only_upgrade_their_workplace_and_builders_keep_priority(self):
@@ -238,12 +240,12 @@ class BuildingUpgrades(unittest.TestCase):
             tick({'towns': {'a': self.town}})
             self.assertAlmostEqual(self.town['food'], food - .195)
 
-    def test_farm_and_acre_bonuses_add_at_harvest_only(self):
+    def test_only_farm_bonus_applies_at_harvest(self):
         farm = self.add('farm')
         self.upgrade(farm)
         acre = self.add('acre', farm_index=farm)
         self.town['buildings'][acre]['y'] = 3
-        self.upgrade(acre)
+        self.town['buildings'][acre]['level'] = 3  # Legacy levels provide no bonus.
         self.town['map_resources'] = [{'kind': 'water', 'x': 7, 'y': 2}]
         command(self.town, {'action': 'job', 'index': 0, 'job': 'farming'})
         self.town['buildings'][acre]['field'] = {'stage': 'ripe', 'elapsed': 0, 'progress': 0,
@@ -251,13 +253,13 @@ class BuildingUpgrades(unittest.TestCase):
         self.town['villagers'][0]['construction_position'] = {'x': 6, 'y': 3}
         self.town['food'] = 30
         tick({'towns': {'a': self.town}})
-        self.assertAlmostEqual(self.town['food'], 30 + 15 - .195)
+        self.assertAlmostEqual(self.town['food'], 30 + 12.5 - .195)
         self.assertEqual(self.town['buildings'][farm]['pending_output']['vegetables'], 0)
         self.town['food'] = 99.9
         tick({'towns': {'a': self.town}})
         self.assertAlmostEqual(self.town['food'], 99.9 - .195)
         self.assertEqual(self.town['buildings'][farm]['pending_output']['vegetables'], 0)
-        self.assertEqual(self.town['produced']['vegetables'], 15)
+        self.assertEqual(self.town['produced']['vegetables'], 12.5)
         self.town['map_resources'] = []
         tick({'towns': {'a': self.town}})
         self.assertIs(self.town['villagers'][0]['work_target'], self.town['buildings'][acre])

@@ -98,5 +98,5 @@ class WorkerCapacity(unittest.TestCase):
         for building in town['buildings'][1:]:
             expected = {'farm': 4, 'mill': 1, 'mine': 2, 'smelter': 2}.get(building['kind'], 1)
             self.assertEqual(server.settler_capacity(building), expected)
-        self.assertEqual(economy.public_catalog()['worker_capacities'], CAPACITIES)
+        self.assertEqual(economy.public_catalog()['worker_capacities'], {**CAPACITIES, 'acre': (1,)})
         self.assertEqual(economy.public_catalog()['buildings']['smelter']['label'], 'Forgery')

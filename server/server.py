@@ -261,6 +261,7 @@ def ensure_resources(town):
     if 'town_origin' in town:
         migrate_wood_chain(town)
         migrate_grain_chain(town)
+        migrate_acre_upgrades(town)
         migrate_worker_capacities(town)
         return
     if 'map_resources' not in town:
@@ -276,7 +277,40 @@ def ensure_resources(town):
     ensure_npcs(town)
     migrate_wood_chain(town)
     migrate_grain_chain(town)
+    migrate_acre_upgrades(town)
     migrate_worker_capacities(town)
+
+
+def migrate_acre_upgrades(town):
+    """Keep fields and stock, refund queued upgrades, and retire extra acre slots."""
+    if town.get('acre_upgrade_version') == 1:
+        return
+    for index, building in enumerate(town['buildings']):
+        if building['kind'] != 'acre':
+            continue
+        construction = building.get('construction', {})
+        pending = construction.get('upgrade')
+        if pending:
+            if not town.get('sandbox'):
+                cost = (20 * building.get('settler_level', 1) if 'settler_level' in pending
+                        else COSTS['acre'] * building.get('level', 1))
+                economy.ensure_inventory(town)
+                hall = next(b for b in town['buildings'] if b['kind'] == 'hall')
+                stock = hall.setdefault('stored_goods', {})
+                stock['wood'] = stock.get('wood', 0) + cost
+                economy.add_stock(town, 'wood', cost)
+            building.pop('construction')
+        building.pop('level', None)
+        building.pop('settler_level', None)
+        assigned = assigned_settlers(town, index)
+        for worker_index in assigned[1:]:
+            villager = town['villagers'][worker_index]
+            logistics.cancel_output(town, villager)
+            logistics.cancel_trip(town, villager)
+            villager['job'] = 'idle'
+            for key in ('building_index', 'work_target', 'watering_round', 'work_animation'):
+                villager.pop(key, None)
+    town['acre_upgrade_version'] = 1
 
 
 def migrate_grain_chain(town):
@@ -370,7 +404,7 @@ def migrate_worker_capacities(town):
     if town.get('worker_capacity_version') == 1:
         return
     legacy_tiers = {'woodcutter': (1, 2, 4), 'sawpit': (1, 2), 'workshop': (1,)}
-    legacy_spaces = {'farm': 4, 'mill': 2, 'bakery': 2, 'mine': 2,
+    legacy_spaces = {'acre': 1, 'farm': 4, 'mill': 2, 'bakery': 2, 'mine': 2,
                      'smelter': 2, 'steelworks': 2}
     for index, building in enumerate(town['buildings']):
         kind = building['kind']
@@ -597,7 +631,7 @@ def work_source(town, job, worker_index, reservations=None):
 
 
 def building_level(building):
-    return building.get('level', 1)
+    return 1 if building['kind'] == 'acre' else building.get('level', 1)
 
 
 def resource_reach(building):
@@ -612,7 +646,7 @@ def resource_reach(building):
 
 
 def production_bonus(building):
-    if building['kind'] in economy.STORAGE_UPGRADE_KINDS:
+    if building['kind'] == 'acre' or building['kind'] in economy.STORAGE_UPGRADE_KINDS:
         return 0
     return .25 * (building_level(building) - 1)
 
@@ -620,7 +654,7 @@ def production_bonus(building):
 
 def new_town(name, world=None):
     town = {'map_size': MAP_SIZE, 'name': name, 'wood': 65, 'food': 40, 'coins': 20, 'level': 1,
-            'wood_chain_version': 1, 'worker_capacity_version': 1, 'grain_chain_version': 1,
+            'wood_chain_version': 1, 'worker_capacity_version': 1, 'grain_chain_version': 1, 'acre_upgrade_version': 1,
             'harvested': 0, 'achievements': [],
             'player': {'x': 5., 'y': 7., 'facing': 1},
             'map_resources': map_resources([{'x': 5, 'y': 5}]),
@@ -1544,6 +1578,8 @@ def command(town, data, world=None):
         if type(index) is not int or not 0 <= index < len(town['buildings']):
             raise ValueError('Choose a building first.')
         building = town['buildings'][index]
+        if building['kind'] == 'acre':
+            raise ValueError('Acres have no upgrades. Upgrade their farm instead.')
         if building['kind'] == 'well':
             raise ValueError('Wells supply water automatically and need no assigned workers.')
         if building['kind'] == 'hall':
@@ -1584,6 +1620,8 @@ def command(town, data, world=None):
         if type(index) is not int or not 0 <= index < len(town['buildings']):
             raise ValueError('Choose a building first.')
         building = town['buildings'][index]
+        if building['kind'] == 'acre':
+            raise ValueError('Acres have no upgrades. Upgrade their farm instead.')
         if building['kind'] == 'well':
             raise ValueError('Wells already supply all the water workers need.')
         if building['kind'] not in COSTS:

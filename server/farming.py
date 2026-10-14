@@ -10,7 +10,9 @@ ACTIONS = {'unplowed': 'plowing', 'plowed': 'sowing',
 
 
 def storage_capacity(building):
-    # A full 7x7 farm, with matching farm/acre upgrades: 1, 1.5, 2 harvests.
+    if building['kind'] == 'acre':
+        return HARVEST_YIELD
+    # Farm upgrades increase its buffer; individual acres have no upgrades.
     level = min(3, max(1, building.get('level', 1)))
     fields = MAX_ACRES if building['kind'] == 'farm' else 1
     harvests = 1 + .5 * (level - 1)

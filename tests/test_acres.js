@@ -44,7 +44,11 @@ const run=new Function('document','window','localStorage','setTimeout','clearTim
     check(!panelNodes().some(b=>b.onchange||b.onclick),'Acre details have no management controls');
     check(panelNodes().some(b=>b.textContent==='Owning farm'),'Acre identifies its farm');
     inspect('building',1);
-    check(panelNodes().some(b=>b.textContent?.startsWith('Upgrade acre')),'Farm holds individual acre upgrades');
+    check(!panelNodes().some(b=>b.textContent?.includes('Upgrade acre')||b.textContent?.includes('Acre fully upgraded')),'Farm has no acre upgrades');
+    check(upgradePreview({action:'upgrade_building',index:2},town,town.buildings[2])===null,'Acre upgrades have no purchase preview');
+    check(upgradePreview({action:'upgrade_capacity',index:2},town,town.buildings[2])===null,'Acre capacity upgrades have no purchase preview');
+    check(settlerCapacity({...town.buildings[2],settler_level:3})===1,'An acre always has one worker');
+    check(farmStorageCapacity({...town.buildings[2],level:3})===10,'Old acre levels cannot increase crop storage');
     town.wood=0;inspect('building',1);
     check(panelNodes().find(b=>b.textContent==='Build acre · 5 wood').disabled,'Acre button requires wood');
     viewed='friend';inspect('building',1);
