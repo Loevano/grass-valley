@@ -4,6 +4,9 @@ These references organize what we want to improve in Lantern Vale. Each referenc
 starts with the current implementation, then records proposals and open questions.
 Tables and drawings are working references that we can expand as decisions are made.
 
+Use the [Markdown writing guide](MARKDOWN.md) for short sentences, bullet points,
+headings, and formatting examples based on [Pathing decisions](PATHING.md).
+
 | Area | Goal | Reference |
 | --- | --- | --- |
 | Backend | Understand request flow, calculation ownership, and animation response priorities separately from smooth playback. | [Backend](BACKEND.md) |
