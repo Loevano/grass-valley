@@ -216,6 +216,8 @@ are collected in [Pathing decisions](PATHING.md).
   Reloaded workers start at their active saved work, delivery, or construction
   position, including fishers offshore and between tiles; older task positions
   do not restart their approach from elsewhere.
+  Reassigning a worker to construction preserves the visible position and follows
+  the new route, releasing the previous job's playback path and phase.
   Farmers leave their work position directly along neighboring rows and columns,
   without walking back across the completed acre; diagonal departures retain
   their tile-center waypoint.

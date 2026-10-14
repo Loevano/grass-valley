@@ -2518,6 +2518,8 @@ function animatedVillagers(town, seconds, townId=viewed, frameLayout=null){
     // Polling advances the host's step; keep the visible trip running continuously.
     const signature=prepared?.signature ?? JSON.stringify([task,trip?[trip.id,trip.operation,trip.workplace,trip.storage,trip.path]:villager.logistics_target]);
     const workerKey=world.shared_map?`${townId}/${index}`:index;
+    const hostWork=villager.work_animation;
+    const workPlayback=hostWork?.playback?.length&&!villager.logistics_target&&!villager.construction_target;
     let state=workers.get(workerKey);
     let finishingDelivery=state?.transport&&state.path.length&&state.task===task;
     if(state&&!state.pendingPlan&&!state.pendingAdvance&&state.layout!==layout
@@ -2542,12 +2544,12 @@ function animatedVillagers(town, seconds, townId=viewed, frameLayout=null){
           workers.set(workerKey,state);
           ClientScene.queue.schedule('plan/'+workerKey,version,WorkerAnimation.planSteps(region.routing,villager,index,previous),planned=>{
             if(workers.get(workerKey)!==state)return;
-            const visible=state.playbackQueue?{x:state.x,y:state.y,path:state.path,phase:state.phase,elapsed:state.elapsed,clock:state.clock}:{};
+            const visible=workPlayback&&state.playbackQueue?{x:state.x,y:state.y,path:state.path,phase:state.phase,elapsed:state.elapsed,clock:state.clock}:{};
             Object.assign(state,planned,visible,{signature,layout,task,pendingPlan:null,needsPlan:false,transport:!!planned.transport});
           });
         }
       }else{
-        const visible=state?.playbackQueue?{x:state.x,y:state.y,path:state.path,phase:state.phase,elapsed:state.elapsed,clock:state.clock,
+        const visible=workPlayback&&state?.playbackQueue?{x:state.x,y:state.y,path:state.path,phase:state.phase,elapsed:state.elapsed,clock:state.clock,
           playbackQueue:state.playbackQueue,hostVersion:state.hostVersion,hostTask:state.hostTask,
           farmAction:state.farmAction,farmField:state.farmField}:{};
         state=Object.assign(WorkerAnimation.plan(world.shared_map?{...town,roads:mapRoads(town),obstacles:Object.values(world.towns).flatMap(t=>t.buildings),home_hall:town.buildings.find(b=>b.kind==='hall')}:town,villager,index,state),visible,{signature,layout,task,needsPlan:false});workers.set(workerKey,state);
@@ -2556,8 +2558,7 @@ function animatedVillagers(town, seconds, townId=viewed, frameLayout=null){
     state.roads=roads;
     if(state.transport&&trip?.cargo&&state.signature===signature)state.transportCargo=trip.cargo;
     state.storagePaused=!!villager.production_status?.startsWith('Waiting for storage space');
-    const hostWork=villager.work_animation;
-    const confirmedPlayback=hostWork?.playback?.length&&!state.transport&&!villager.logistics_target&&!villager.construction_target;
+    const confirmedPlayback=workPlayback&&!state.transport;
     if(!confirmedPlayback&&state.playbackQueue){
       state.playbackQueue=[];state.hostVersion=undefined;state.hostTask=null;state.hostWork=false;
     }
