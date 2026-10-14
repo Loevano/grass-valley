@@ -40,10 +40,12 @@ const run=new Function('document','window','localStorage','setTimeout','clearTim
     check(town.wood===60&&tool==='acre','Build spends wood and allows more acres');
     $('cancel').onclick();inspect('building',2);
     check($('selection-title').textContent==='Acre','Crop field can be inspected');
-    check($('selection-move').hidden&&!$('selection-destroy').hidden,'Destroy is the only acre action');
+    check($('selection-level').hidden&&$('selection-move').hidden&&$('selection-destroy').hidden,'Acre inspection is read-only');
     check(!panelNodes().some(b=>b.onchange||b.onclick),'Acre details have no management controls');
     check(panelNodes().some(b=>b.textContent==='Owning farm'),'Acre identifies its farm');
     inspect('building',1);
+    check(!panelNodes().some(b=>b.textContent==='Acres'),'Farm has no independent acre controls');
+    check(panelNodes().filter(b=>b.textContent==='Add worker').length===1,'Workers are assigned only to the farm');
     check(!panelNodes().some(b=>b.textContent?.includes('Upgrade acre')||b.textContent?.includes('Acre fully upgraded')),'Farm has no acre upgrades');
     check(upgradePreview({action:'upgrade_building',index:2},town,town.buildings[2])===null,'Acre upgrades have no purchase preview');
     check(upgradePreview({action:'upgrade_capacity',index:2},town,town.buildings[2])===null,'Acre capacity upgrades have no purchase preview');

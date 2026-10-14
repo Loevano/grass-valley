@@ -40,11 +40,11 @@ const run=new Function('document','window','localStorage','setTimeout','clearTim
  check(!buy('Buy chicken').disabled&&!buy('Buy sheep'),'Locked animals are omitted');
  buy('Buy chicken').onclick();check(commands.at(-1).action==='buy_animal'&&commands.at(-1).index===1,'Animal purchase targets the selected barn');
  inspect('building',2);
- const crops=panelNodes().find(b=>b.tag==='select'&&b.attributes['aria-label']==='Crop for acre 4, 7');
+ const crops=panelNodes().find(b=>b.tag==='select'&&b.attributes['aria-label']==='Crop for all acres');
  check(!crops.children.some(b=>b.value==='fodder'),'Locked crops are omitted');
- crops.value='wheat';crops.onchange();check(commands.at(-1).crop==='wheat'&&commands.at(-1).index===3,'Crop selector sends the selected acre');
+ crops.value='wheat';crops.onchange();check(commands.at(-1).crop==='wheat'&&commands.at(-1).index===2,'Crop selector targets the farm and all linked acres');
  town.level=3;inspect('building',1);check(!!buy('Buy sheep'),'Animals appear when unlocked');
- inspect('building',2);check(panelNodes().find(b=>b.attributes['aria-label']==='Crop for acre 4, 7').children.some(b=>b.value==='fodder'),'Crops appear when unlocked');
+ inspect('building',2);check(panelNodes().find(b=>b.attributes['aria-label']==='Crop for all acres').children.some(b=>b.value==='fodder'),'Crops appear when unlocked');
  check(jobs().includes('woodworking'),'Later professions appear when unlocked');
  town.buildings.push({kind:'woodcutter',x:6,y:6});
  const axe=()=>buy('Upgrade Improved axe');

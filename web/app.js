@@ -1795,8 +1795,7 @@ function renderSelection(town){
         fact(farm?`${buildingName(farm)} · ${farm.x}, ${farm.y}`:'No linked farm','Owning farm'));
       if(item.construction)$('selection-details').append(fact(`${Math.ceil(item.construction.total-item.construction.progress)}s work remaining`,'Under construction'));
       $('selection-level').hidden=true;$('selection-move').hidden=true;
-      $('selection-destroy').hidden=viewed!==identity?.town_id;
-      $('selection-destroy').textContent='Destroy · No refund';
+      $('selection-destroy').hidden=true;
       return;
     }
     const foldKey=`${world.world_id}/${viewed}/${selection.index}/${item.kind}/${item.x},${item.y}`;
@@ -1876,20 +1875,6 @@ function renderSelection(town){
       const capacityUpgrade=upgradeActions.children[0];
       upgradeActions.replaceChildren();upgradeActions.append(upgradeCard(button,upgradePreview({action:'upgrade_building',index},town,item),{title:level>=maxLevel?`Level ${level}`:`Level ${level} → ${level+1}`,status:level>=maxLevel?'Maxed':'',benefits:level>=maxLevel?[]:undefined}));
       if(capacityUpgrade)upgradeActions.append(capacityUpgrade);
-    }
-    if(item.kind==='farm'){
-      const fields=buildingSection('Acres');
-      town.buildings.forEach((acre,index)=>{
-        if(acre.kind!=='acre'||acre.farm_index!==selection.index)return;
-        const row=document.createElement('div');row.append(fact(`${acre.x}, ${acre.y}`,acre.field?.stage || 'unplowed'));
-        const crop=document.createElement('select');crop.setAttribute('aria-label',`Crop for acre ${acre.x}, ${acre.y}`);
-        for(const [key,level] of Object.entries(world.progression?.crops || {}))if(town.level>=level){const option=document.createElement('option');option.value=key;option.textContent=goodName(key);crop.append(option);}
-        crop.value=acre.crop || 'vegetables';crop.disabled=viewed!==identity?.town_id;
-        crop.onchange=()=>act({action:'set_crop',index,crop:crop.value});row.append(crop);
-        if(!acre.construction)renderSettlers(town,acre,index,row,row,row);
-        fields.append(row);
-      });
-      $('selection-details').append(fields);
     }
     if(item.kind==='farm'&&!item.construction&&viewed===identity?.town_id){
       const button=document.createElement('button');button.textContent=`Build acre · ${town.sandbox?'Free':'5 wood'}`;button.disabled=!town.sandbox&&town.wood<costs.acre;

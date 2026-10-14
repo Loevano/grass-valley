@@ -324,16 +324,15 @@ the Python host, refresh both browsers, and create a new world to use the shared
   In the farm's **Production** section, use **Crop for all acres** to change every
   linked acre to one unlocked crop, including acres still under construction.
   The selector shows **Mixed crops** when the acres grow different types.
-  The farm's **Acres** section holds individual crop selection
-  and worker assignment. Clicking an acre shows its state and owning farm;
-  **Destroy** is its only action.
+  Assign farmers at the farm. Clicking an acre shows its state and owning farm;
+  acres have no independent controls.
 - Click a building, moving villager, or resource to open its information panel.
   Click the town hall for milestone progress and its upgrade. Close panels with
   Escape. On small screens, panels appear as a bottom drawer.
-- Every finished building except the town hall has an **Add settler** control,
-  an assigned roster, and removal controls. Woodcutters, fishing huts, storehouses,
-  and acres start with 1 space, cottages with 2. Acres always have one worker
-  and have no building or capacity upgrades. Most other buildings upgrade settler capacity twice
+- Every finished building except the town hall and acres has an **Add settler** control,
+  an assigned roster, and removal controls. Woodcutters, fishing huts, and storehouses
+  start with 1 space, cottages with 2. Acres have no independent worker assignments
+  or upgrades in their panels. Most other buildings upgrade settler capacity twice
   for 20 then 40 wood to reach twice then three times the initial spaces. Capacity
   upgrades take 30 then 60 seconds of builder work and do not increase housing
   or storage.
