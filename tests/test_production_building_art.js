@@ -4,13 +4,14 @@ const results=JSON.parse(app.run(`
   const artTown={level:5,map_size:32,terrain:Array(32).fill('g'.repeat(32)),buildings:[],map_resources:[],villagers:[]};
   world={world_id:'production-art',towns:{own:artTown}};viewed='own';
   const cases=[];
-  for(const kind of ['butcher','bakery','smokehouse','tannery','woodcutter','workshop','farm','home','hall','barn','sawpit','fishing_hut','fish_pond','mine','smelter','steelworks'])
+  for(const kind of ['butcher','bakery','smokehouse','tannery','woodcutter','workshop','farm','home','hall','barn','sawpit','fishing_hut','fish_pond','mine','smelter','steelworks','storehouse','mill','market','orchard','stable','saddler','tradehouse','well','orchard_tree','wooden_bench','wooden_statue'])
   for(const zoom of [.7,1,2])
-  for(const footprint of (['woodcutter','farm','home','barn','fishing_hut','fish_pond','mine','smelter','steelworks'].includes(kind)?[[1,1]]:kind==='sawpit'?[[3,2],[1,1]]:[[2,2],[1,1]]))
+  for(const footprint of (['woodcutter','farm','home','barn','fishing_hut','fish_pond','mine','smelter','steelworks','storehouse','market','orchard','stable','saddler','tradehouse','well','orchard_tree','wooden_bench','wooden_statue'].includes(kind)?[[1,1]]:kind==='sawpit'?[[3,2],[1,1]]:[[2,2],[1,1]]))
   for(const profession_upgrades of [[],...({home:[['timber_frame']],woodcutter:[['axe','tools']],bakery:[['larger_oven','double_hearth_oven','masterwork_oven']],sawpit:[['saw']],mine:[['steel_pickaxe']],fishing_hut:[['nets'],['wool_nets'],['boat'],['boat','improved_boat'],['nets','boat','improved_boat','master_boat']]}[kind] || [])])
-  for(const level of (kind==='hall'?[1,2,3,4,5,10]:kind==='home'?[1,2,3,4]:[1,2,3])){
+  for(const stage of kind==='orchard_tree'?['sapling','blossom','fruit','ripe','harvested']:[null])
+  for(const level of (kind==='storehouse'?[1,2,3,4,5,6,7,8]:['well','orchard_tree','wooden_bench','wooden_statue'].includes(kind)?[1]:kind==='hall'?[1,2,3,4,5,10]:kind==='home'?[1,2,3,4]:[1,2,3])){
     artTown.level=kind==='hall'?level:5;
-    const building={kind,x:5,y:5,footprint,level,settler_level:3,profession_upgrades};
+    const building={kind,x:5,y:5,footprint,level,settler_level:3,profession_upgrades,...(stage?{tree:{stage,fruit:8}}:{})};
     const snapshot=JSON.stringify(building);
     artTown.buildings=[building];cameraTown='production-art/own';camera={x:5,y:5,zoom:46/54*zoom};animationFrameRunning=true;
     const steps=ClientScene.prepare(world);let prepared;do{prepared=steps.next();}while(!prepared.done);ClientScene.commit(prepared.value);
@@ -81,3 +82,30 @@ app.run(`
   Object.assign(ctx,original);
 `);
 console.log('Live smoke stays aligned with upgraded and compact chimney caps');
+
+// The rotor is live artwork; its centre must stay on the cached tower axle.
+app.run(`
+  const rotorOriginal={};
+  for(const key of ['save','restore','translate','scale','beginPath','moveTo','lineTo','closePath','fill','stroke','fillRect','ellipse','arc','fillText'])rotorOriginal[key]=ctx[key];
+  for(const footprint of [[2,2],[1,1]])for(const level of [1,2,3])for(const zoom of [.7,1,2]){
+    tileW=46*zoom;tileH=23*zoom;
+    let m=[1,0,0,1,0,0],stack=[],start=null,ellipse=null;const hubs=[],arms=[];
+    const screen=(x,y)=>[m[0]*x+m[2]*y+m[4],m[1]*x+m[3]*y+m[5]];
+    Object.assign(ctx,{
+      save(){stack.push([...m]);},restore(){m=stack.pop();},
+      translate(x,y){m[4]+=m[0]*x+m[2]*y;m[5]+=m[1]*x+m[3]*y;},
+      scale(x,y){m[0]*=x;m[1]*=x;m[2]*=y;m[3]*=y;},
+      beginPath(){start=null;ellipse=null;},moveTo(x,y){start ||= screen(x,y);},lineTo(){},closePath(){},
+      fill(){if(this.fillStyle==='#655b41'&&ellipse)hubs.push(ellipse);},
+      stroke(){if(this.strokeStyle==='#c5ad79')arms.push(start);},
+      ellipse(x,y){ellipse=screen(x,y);},arc(){},fillRect(){},fillText(){}
+    });
+    const mill={kind:'mill',x:5,y:5,footprint,level};
+    paintBuilding(mill,artTown);drawBuildingAnimation(mill,artTown,1);
+    if(hubs.length!==1||arms.length!==4)throw Error('Mill must paint an axle and four live sail arms');
+    for(const arm of arms)if(Math.hypot(arm[0]-hubs[0][0],arm[1]-hubs[0][1])>1e-6)throw Error('Mill sails must rotate on the painted axle');
+    if(stack.length)throw Error('Mill animation must restore canvas state');
+  }
+  Object.assign(ctx,rotorOriginal);
+`);
+console.log('Live mill sails stay attached to the tower axle at full and compact sizes');

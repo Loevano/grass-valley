@@ -79,11 +79,17 @@ const {chromium}=require('playwright');
         [px,py]=point(5,5);await click(px,py-25*scale);
         check(viewed==='friend'&&selection?.type==='building'&&selection.index===0,'Visible shared-map building selects the correct owner and index');
         check(JSON.stringify(world)===snapshot,'Pointer picking preserves authoritative world state');
-        const specialtyTown={...town,level:10,buildings:[],map_resources:[],roads:[],npcs:[]};
-        world={world_id:'fishing-mining-art',towns:{own:specialtyTown}};viewed='own';
-        for(const kind of ['fishing_hut','fish_pond','mine','smelter','steelworks']){
-          specialtyTown.buildings=[{kind,x:5,y:5,footprint:[1,1],level:3,settler_level:3,
-            profession_upgrades:kind==='fishing_hut'?['nets','wool_nets']:kind==='mine'?['steel_pickaxe']:[]}];
+        const specialtyTown={...town,level:10,player:{x:3,y:3,facing:1},buildings:[],map_resources:[],roads:[],npcs:[]};
+        world={world_id:'building-art',progression:{buildings:{},recipes:{},upgrades:{},animals:{},crops:{},edible:{}},towns:{own:specialtyTown}};viewed='own';
+        const specialtyBuildings=['fishing_hut','fish_pond','mine','smelter','steelworks','storehouse','mill','market',
+          'orchard','stable','saddler','tradehouse','well','orchard_tree','wooden_bench','wooden_statue'].map(kind=>({
+            kind,x:5,y:5,footprint:[1,1],level:kind==='storehouse'?8:kind==='well'?1:3,settler_level:3,
+            ...(kind==='orchard_tree'?{tree:{stage:'ripe',fruit:8}}:{}),
+            profession_upgrades:kind==='fishing_hut'?['nets','wool_nets']:kind==='mine'?['steel_pickaxe']:[]}));
+        specialtyBuildings.push({kind:'mill',x:5,y:5,footprint:[2,2],level:3},
+          ...[0,12,24].map(progress=>({kind:'workshop',x:5,y:5,footprint:[2,2],construction:{progress,total:30}})));
+        for(const building of specialtyBuildings){
+          const kind=building.kind;specialtyTown.buildings=[building];
           const saved=JSON.stringify(world);render();
           const hit=hitTargets.find(target=>target.type==='building'&&target.index===0);
           const [x,y]=point(5,5);let visible=null;

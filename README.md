@@ -991,6 +991,11 @@ this style: fishing huts have fish counters and upgraded nets, ponds have open
 water basins and feed racks, mines have timbered rock entrances and ore carts,
 Forgery has an anvil and furnace, and steelworks has a larger furnace and twin
 stacks. Boat tiers and steel pickaxe upgrades remain visible.
+The [remaining buildings and scenery](docs/svgs/remaining-building-style.svg)
+also use this style: storage and warehouse tiers, the mill and live sails, market,
+orchard, stable, saddler, trade house, and well. Fruit-tree stages use shaded
+faceted canopies; benches, statues, and construction scaffolding share the same
+broad shapes. Host-owned footprints, production, and progress remain unchanged.
 Production buildings include a covered workplace, outdoor workbench, and stock yard.
 Their artwork retains the original angled style: the sawpit is an open timber
 shed with a pitched roof, half walls, a tool rack, and a lantern. Its sawing bench

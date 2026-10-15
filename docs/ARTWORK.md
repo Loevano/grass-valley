@@ -12,7 +12,7 @@ in [DESIGN.md](DESIGN.md).
 | Area | Current foundation | Improvement direction | Status |
 | --- | --- | --- | --- |
 | World view | Canvas drawing, angled tile grid, depth-ordered objects | Cohesive scale, silhouettes, lighting, and readable overlaps | Proposed |
-| Buildings | Generated geometric shapes, workplace features, and visible upgrades | Make each profession and upgrade recognizable by shape and detail | Proposed |
+| Buildings | Distinct geometric workplaces, broad shading, readable props, and visible upgrades | Maintain recognizable professions and consistent scale at every zoom | Implemented |
 | Landscape | Biome terrain, trees, water, rocks, crops, and villages | Consistent palettes and a distinct mood for each place | Proposed |
 | Characters | Founder marker, workers, locals, outfits, and work animation | Stronger identity through clothing, pose, tools, and expressions | Proposed |
 | Interface | Dark green panels, warm gold highlights, SVG icons | Keep information readable and visually connected to the world | Proposed |
@@ -70,6 +70,24 @@ head after its upgrade. Forgery has a sheltered anvil and furnace; steelworks
 has a larger furnace and twin stacks. Footprints and production remain unchanged.
 
 ![Fishing and mining buildings with their structural tiers.](fishing-mining-building-style.png)
+
+The remaining [building and scenery sheet](svgs/remaining-building-style.svg)
+completes the same treatment for storehouses and warehouses, mills, markets,
+orchards, stables, saddlers, trade houses, and wells. Storage doors and loading
+crates, an animated mill tower, open market counters, fruit-packing benches,
+stable bays, a saddle stand, and parcel counters distinguish their professions.
+Warehouse levels 5–8 retain the larger storage silhouette and visible stock.
+Mill sails rotate around the painted axle at full and compact sizes; stable
+horses remain separate live actors.
+
+Fruit trees now have faceted shaded canopies with distinct sapling, blossom,
+fruit, ripe, and harvested stages. Benches and carved statues use isometric
+bases and broad material faces. Construction sites centre on their saved lot,
+progressing from foundations through chunky scaffolding to two shaded roof
+slopes. Acres remain flat soil during construction. These changes preserve
+footprints, storage, production, residents, growth, and construction progress.
+
+![The remaining buildings, fruit trees, decorations, and construction stages.](remaining-building-style.png)
 
 Roofs and masonry use plain shaded faces. Structural levels retain their bracing,
 stone bases, dormers, belfry, banners, and stock changes. Profession equipment and

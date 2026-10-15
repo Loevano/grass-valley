@@ -7,11 +7,13 @@ const results=JSON.parse(app.run(`
     woodcutter:['#8e8860','#706f4f'],workshop:['#7f9990','#5d7c74'],
     farm:['#b49b60','#958049'],fishing_hut:['#78968d','#526f6c'],
     fish_pond:['#78968d','#526f6c'],smelter:['#a28c60','#7e7452'],
-    steelworks:['#718a86','#4d6c6b'],barn:['#6b8076','#52685f']};
+    steelworks:['#718a86','#4d6c6b'],storehouse:['#738e7c','#506c60'],mill:['#99a081','#707f69'],
+    market:['#97a57b','#64816a'],orchard:['#8d9e68','#637d52'],stable:['#8c9b79','#637c62'],
+    saddler:['#ae8c70','#806b58'],tradehouse:['#7b9590','#536f70'],well:['#a78c61','#7d7454'],barn:['#6b8076','#52685f']};
   const roofs=[];
   for(const kind of [...Object.keys(palettes),'home','hall'])
-  for(const level of kind==='hall'?[1,2,3,4,5]:kind==='home'?[1,2,3,4]:[1,2,3])
-  for(const footprint of kind==='hall'?[[3,3],[2,2],[1,1]]:['workshop','butcher','bakery','smokehouse','tannery'].includes(kind)?[[2,2],[1,1]]:[[1,1]]){
+  for(const level of kind==='hall'?[1,2,3,4,5]:kind==='home'?[1,2,3,4]:kind==='storehouse'?[1,2,3,4,5,6,7,8]:kind==='well'?[1]:[1,2,3])
+  for(const footprint of kind==='hall'?[[3,3],[2,2],[1,1]]:['workshop','butcher','bakery','smokehouse','tannery','mill'].includes(kind)?[[2,2],[1,1]]:[[1,1]]){
     roofTown.level=level;
     const colors=kind==='home'?(level<3?['#aa7b62','#855c4d']:['#986d58','#795849']):
       kind==='hall'?[['#7f9795','#5a747b'],['#748e91','#52767b'],['#6c8990','#476975'],['#637c8b','#405c70'],['#596f83','#374e65']][level-1]:palettes[kind];
