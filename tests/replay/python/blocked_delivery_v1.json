@@ -1,0 +1,1555 @@
+{
+  "format_version": 1,
+  "id": "blocked_delivery_v1",
+  "provenance": {
+    "kind": "recorded_python",
+    "python_revision": "9637eb5bf982fa2342556feaa4059fcb3f0d4b17"
+  },
+  "initial": {
+    "recipe": "blocked_delivery_v1",
+    "parameters": {
+      "seed": 42,
+      "setup_draws": [],
+      "initial_state": {
+        "towns": {
+          "a": {
+            "owner": "a",
+            "wood": 68,
+            "food": 40.0,
+            "coins": 20,
+            "goods": {},
+            "produced": {},
+            "player": {
+              "x": 5.0,
+              "y": 8.0,
+              "facing": 1
+            },
+            "buildings": [
+              {
+                "kind": "hall",
+                "x": 5,
+                "y": 5,
+                "footprint": [
+                  3,
+                  3
+                ],
+                "stored_goods": {
+                  "wood": 65,
+                  "food": 40.0
+                }
+              },
+              {
+                "kind": "woodcutter",
+                "x": 10,
+                "y": 3,
+                "output_buffer": {
+                  "wood": 3
+                }
+              },
+              {
+                "kind": "storehouse",
+                "x": 2,
+                "y": 2
+              },
+              {
+                "kind": "woodcutter",
+                "x": 7,
+                "y": 10
+              }
+            ],
+            "workers": [
+              {
+                "name": "Ada",
+                "job": "hauling",
+                "building_index": 2,
+                "logistics_position": {
+                  "x": 10,
+                  "y": 2
+                },
+                "logistics_trip": {
+                  "id": 1,
+                  "operation": "collect",
+                  "workplace": {
+                    "kind": "woodcutter",
+                    "x": 10,
+                    "y": 3
+                  },
+                  "storage": {
+                    "kind": "storehouse",
+                    "x": 2,
+                    "y": 2
+                  },
+                  "path": [
+                    [
+                      10,
+                      2
+                    ],
+                    [
+                      9,
+                      2
+                    ],
+                    [
+                      8,
+                      2
+                    ],
+                    [
+                      7,
+                      2
+                    ],
+                    [
+                      6,
+                      2
+                    ],
+                    [
+                      5,
+                      2
+                    ],
+                    [
+                      4,
+                      2
+                    ],
+                    [
+                      3,
+                      2
+                    ]
+                  ],
+                  "turn_step": 0,
+                  "pickup_step": 0,
+                  "cargo": {
+                    "wood": 3
+                  },
+                  "delivery_step": 7,
+                  "delivered": false
+                },
+                "woodcutting": 0
+              },
+              {
+                "name": "Rowan",
+                "job": "idle",
+                "woodcutting": 1
+              },
+              {
+                "name": "Wren",
+                "job": "idle",
+                "woodcutting": 2
+              },
+              {
+                "name": "Bram",
+                "job": "idle",
+                "woodcutting": 0
+              },
+              {
+                "name": "Hazel",
+                "job": "idle",
+                "woodcutting": 1
+              }
+            ],
+            "wood_ledger": {
+              "stored": 68,
+              "carried": 0
+            }
+          }
+        }
+      }
+    },
+    "terrain": "synthetic_flat"
+  },
+  "steps": [
+    {
+      "operation": {
+        "kind": "advance",
+        "clock": "movement",
+        "seconds": 3
+      },
+      "random_draws": [],
+      "expected": {
+        "public": {
+          "result": null
+        },
+        "state": {
+          "towns": {
+            "a": {
+              "owner": "a",
+              "wood": 65,
+              "food": 40.0,
+              "coins": 20,
+              "goods": {},
+              "produced": {},
+              "player": {
+                "x": 5.0,
+                "y": 8.0,
+                "facing": 1
+              },
+              "buildings": [
+                {
+                  "kind": "hall",
+                  "x": 5,
+                  "y": 5,
+                  "footprint": [
+                    3,
+                    3
+                  ],
+                  "stored_goods": {
+                    "wood": 65,
+                    "food": 40.0
+                  }
+                },
+                {
+                  "kind": "woodcutter",
+                  "x": 10,
+                  "y": 3,
+                  "output_buffer": {
+                    "wood": 0
+                  }
+                },
+                {
+                  "kind": "storehouse",
+                  "x": 2,
+                  "y": 2
+                },
+                {
+                  "kind": "woodcutter",
+                  "x": 7,
+                  "y": 10
+                }
+              ],
+              "workers": [
+                {
+                  "name": "Ada",
+                  "job": "hauling",
+                  "building_index": 2,
+                  "logistics_position": {
+                    "x": 8,
+                    "y": 2
+                  },
+                  "logistics_trip": {
+                    "id": 1,
+                    "operation": "collect",
+                    "workplace": {
+                      "kind": "woodcutter",
+                      "x": 10,
+                      "y": 3
+                    },
+                    "storage": {
+                      "kind": "storehouse",
+                      "x": 2,
+                      "y": 2
+                    },
+                    "path": [
+                      [
+                        10,
+                        2
+                      ],
+                      [
+                        9,
+                        2
+                      ],
+                      [
+                        8,
+                        2
+                      ],
+                      [
+                        7,
+                        2
+                      ],
+                      [
+                        6,
+                        2
+                      ],
+                      [
+                        5,
+                        2
+                      ],
+                      [
+                        4,
+                        2
+                      ],
+                      [
+                        3,
+                        2
+                      ]
+                    ],
+                    "turn_step": 0,
+                    "pickup_step": 0,
+                    "cargo": {
+                      "wood": 3
+                    },
+                    "delivery_step": 7,
+                    "delivered": false,
+                    "picked_up": true,
+                    "step": 2,
+                    "travel_seconds": 0
+                  },
+                  "production_status": "Delivery blocked; finding another route",
+                  "woodcutting": 0
+                },
+                {
+                  "name": "Rowan",
+                  "job": "idle",
+                  "woodcutting": 1
+                },
+                {
+                  "name": "Wren",
+                  "job": "idle",
+                  "woodcutting": 2
+                },
+                {
+                  "name": "Bram",
+                  "job": "idle",
+                  "woodcutting": 0
+                },
+                {
+                  "name": "Hazel",
+                  "job": "idle",
+                  "woodcutting": 1
+                }
+              ],
+              "wood_ledger": {
+                "stored": 65,
+                "carried": 3
+              }
+            }
+          }
+        }
+      },
+      "numeric_fields": [],
+      "invariants": [
+        {
+          "name": "carried wood survives unreachable route",
+          "kind": "equals",
+          "paths": [
+            [
+              "state",
+              "towns",
+              "a",
+              "workers",
+              0,
+              "logistics_trip",
+              "cargo",
+              "wood"
+            ]
+          ],
+          "value": 3
+        },
+        {
+          "name": "not delivered while blocked",
+          "kind": "equals",
+          "paths": [
+            [
+              "state",
+              "towns",
+              "a",
+              "workers",
+              0,
+              "logistics_trip",
+              "delivered"
+            ]
+          ],
+          "value": false
+        },
+        {
+          "name": "physical wood conserved",
+          "kind": "sum",
+          "paths": [
+            [
+              "state",
+              "towns",
+              "a",
+              "wood_ledger",
+              "stored"
+            ],
+            [
+              "state",
+              "towns",
+              "a",
+              "wood_ledger",
+              "carried"
+            ]
+          ],
+          "value": 68
+        }
+      ]
+    },
+    {
+      "operation": {
+        "kind": "advance",
+        "clock": "movement",
+        "seconds": 3
+      },
+      "random_draws": [],
+      "expected": {
+        "public": {
+          "result": null
+        },
+        "state": {
+          "towns": {
+            "a": {
+              "owner": "a",
+              "wood": 65,
+              "food": 40.0,
+              "coins": 20,
+              "goods": {},
+              "produced": {},
+              "player": {
+                "x": 5.0,
+                "y": 8.0,
+                "facing": 1
+              },
+              "buildings": [
+                {
+                  "kind": "hall",
+                  "x": 5,
+                  "y": 5,
+                  "footprint": [
+                    3,
+                    3
+                  ],
+                  "stored_goods": {
+                    "wood": 65,
+                    "food": 40.0
+                  }
+                },
+                {
+                  "kind": "woodcutter",
+                  "x": 10,
+                  "y": 3,
+                  "output_buffer": {
+                    "wood": 0
+                  }
+                },
+                {
+                  "kind": "storehouse",
+                  "x": 2,
+                  "y": 2
+                },
+                {
+                  "kind": "woodcutter",
+                  "x": 7,
+                  "y": 10
+                }
+              ],
+              "workers": [
+                {
+                  "name": "Ada",
+                  "job": "hauling",
+                  "building_index": 2,
+                  "logistics_position": {
+                    "x": 8,
+                    "y": 2
+                  },
+                  "logistics_trip": {
+                    "id": 1,
+                    "operation": "collect",
+                    "workplace": {
+                      "kind": "woodcutter",
+                      "x": 10,
+                      "y": 3
+                    },
+                    "storage": {
+                      "kind": "storehouse",
+                      "x": 2,
+                      "y": 2
+                    },
+                    "path": [
+                      [
+                        10,
+                        2
+                      ],
+                      [
+                        9,
+                        2
+                      ],
+                      [
+                        8,
+                        2
+                      ],
+                      [
+                        7,
+                        2
+                      ],
+                      [
+                        6,
+                        2
+                      ],
+                      [
+                        5,
+                        2
+                      ],
+                      [
+                        4,
+                        2
+                      ],
+                      [
+                        3,
+                        2
+                      ]
+                    ],
+                    "turn_step": 0,
+                    "pickup_step": 0,
+                    "cargo": {
+                      "wood": 3
+                    },
+                    "delivery_step": 7,
+                    "delivered": false,
+                    "picked_up": true,
+                    "step": 2,
+                    "travel_seconds": 0
+                  },
+                  "production_status": "Delivery blocked; finding another route",
+                  "woodcutting": 0
+                },
+                {
+                  "name": "Rowan",
+                  "job": "idle",
+                  "woodcutting": 1
+                },
+                {
+                  "name": "Wren",
+                  "job": "idle",
+                  "woodcutting": 2
+                },
+                {
+                  "name": "Bram",
+                  "job": "idle",
+                  "woodcutting": 0
+                },
+                {
+                  "name": "Hazel",
+                  "job": "idle",
+                  "woodcutting": 1
+                }
+              ],
+              "wood_ledger": {
+                "stored": 65,
+                "carried": 3
+              }
+            }
+          }
+        }
+      },
+      "numeric_fields": [],
+      "invariants": [
+        {
+          "name": "carried wood survives unreachable route",
+          "kind": "equals",
+          "paths": [
+            [
+              "state",
+              "towns",
+              "a",
+              "workers",
+              0,
+              "logistics_trip",
+              "cargo",
+              "wood"
+            ]
+          ],
+          "value": 3
+        },
+        {
+          "name": "not delivered while blocked",
+          "kind": "equals",
+          "paths": [
+            [
+              "state",
+              "towns",
+              "a",
+              "workers",
+              0,
+              "logistics_trip",
+              "delivered"
+            ]
+          ],
+          "value": false
+        },
+        {
+          "name": "physical wood conserved",
+          "kind": "sum",
+          "paths": [
+            [
+              "state",
+              "towns",
+              "a",
+              "wood_ledger",
+              "stored"
+            ],
+            [
+              "state",
+              "towns",
+              "a",
+              "wood_ledger",
+              "carried"
+            ]
+          ],
+          "value": 68
+        }
+      ]
+    },
+    {
+      "operation": {
+        "kind": "reload"
+      },
+      "random_draws": [],
+      "expected": {
+        "public": {
+          "result": null
+        },
+        "state": {
+          "towns": {
+            "a": {
+              "owner": "a",
+              "wood": 65,
+              "food": 40.0,
+              "coins": 20,
+              "goods": {},
+              "produced": {},
+              "player": {
+                "x": 5.0,
+                "y": 8.0,
+                "facing": 1
+              },
+              "buildings": [
+                {
+                  "kind": "hall",
+                  "x": 5,
+                  "y": 5,
+                  "footprint": [
+                    3,
+                    3
+                  ],
+                  "stored_goods": {
+                    "wood": 65,
+                    "food": 40.0
+                  }
+                },
+                {
+                  "kind": "woodcutter",
+                  "x": 10,
+                  "y": 3,
+                  "output_buffer": {
+                    "wood": 0
+                  }
+                },
+                {
+                  "kind": "storehouse",
+                  "x": 2,
+                  "y": 2
+                },
+                {
+                  "kind": "woodcutter",
+                  "x": 7,
+                  "y": 10
+                }
+              ],
+              "workers": [
+                {
+                  "name": "Ada",
+                  "job": "hauling",
+                  "building_index": 2,
+                  "logistics_position": {
+                    "x": 8,
+                    "y": 2
+                  },
+                  "logistics_trip": {
+                    "id": 1,
+                    "operation": "collect",
+                    "workplace": {
+                      "kind": "woodcutter",
+                      "x": 10,
+                      "y": 3
+                    },
+                    "storage": {
+                      "kind": "storehouse",
+                      "x": 2,
+                      "y": 2
+                    },
+                    "path": [
+                      [
+                        10,
+                        2
+                      ],
+                      [
+                        9,
+                        2
+                      ],
+                      [
+                        8,
+                        2
+                      ],
+                      [
+                        7,
+                        2
+                      ],
+                      [
+                        6,
+                        2
+                      ],
+                      [
+                        5,
+                        2
+                      ],
+                      [
+                        4,
+                        2
+                      ],
+                      [
+                        3,
+                        2
+                      ]
+                    ],
+                    "turn_step": 0,
+                    "pickup_step": 0,
+                    "cargo": {
+                      "wood": 3
+                    },
+                    "delivery_step": 7,
+                    "delivered": false,
+                    "picked_up": true,
+                    "step": 2,
+                    "travel_seconds": 0
+                  },
+                  "production_status": "Delivery blocked; finding another route",
+                  "woodcutting": 0
+                },
+                {
+                  "name": "Rowan",
+                  "job": "idle",
+                  "woodcutting": 1
+                },
+                {
+                  "name": "Wren",
+                  "job": "idle",
+                  "woodcutting": 2
+                },
+                {
+                  "name": "Bram",
+                  "job": "idle",
+                  "woodcutting": 0
+                },
+                {
+                  "name": "Hazel",
+                  "job": "idle",
+                  "woodcutting": 1
+                }
+              ],
+              "wood_ledger": {
+                "stored": 65,
+                "carried": 3
+              }
+            }
+          }
+        }
+      },
+      "numeric_fields": [],
+      "invariants": [
+        {
+          "name": "carried wood survives unreachable route",
+          "kind": "equals",
+          "paths": [
+            [
+              "state",
+              "towns",
+              "a",
+              "workers",
+              0,
+              "logistics_trip",
+              "cargo",
+              "wood"
+            ]
+          ],
+          "value": 3
+        },
+        {
+          "name": "not delivered while blocked",
+          "kind": "equals",
+          "paths": [
+            [
+              "state",
+              "towns",
+              "a",
+              "workers",
+              0,
+              "logistics_trip",
+              "delivered"
+            ]
+          ],
+          "value": false
+        },
+        {
+          "name": "physical wood conserved",
+          "kind": "sum",
+          "paths": [
+            [
+              "state",
+              "towns",
+              "a",
+              "wood_ledger",
+              "stored"
+            ],
+            [
+              "state",
+              "towns",
+              "a",
+              "wood_ledger",
+              "carried"
+            ]
+          ],
+          "value": 68
+        }
+      ]
+    },
+    {
+      "operation": {
+        "kind": "command",
+        "town": "a",
+        "data": {
+          "action": "destroy",
+          "index": 3
+        }
+      },
+      "random_draws": [],
+      "expected": {
+        "public": {
+          "result": null
+        },
+        "state": {
+          "towns": {
+            "a": {
+              "owner": "a",
+              "wood": 65,
+              "food": 40.0,
+              "coins": 20,
+              "goods": {},
+              "produced": {},
+              "player": {
+                "x": 5.0,
+                "y": 8.0,
+                "facing": 1
+              },
+              "buildings": [
+                {
+                  "kind": "hall",
+                  "x": 5,
+                  "y": 5,
+                  "footprint": [
+                    3,
+                    3
+                  ],
+                  "stored_goods": {
+                    "wood": 65,
+                    "food": 40.0
+                  }
+                },
+                {
+                  "kind": "woodcutter",
+                  "x": 10,
+                  "y": 3,
+                  "output_buffer": {
+                    "wood": 0
+                  }
+                },
+                {
+                  "kind": "storehouse",
+                  "x": 2,
+                  "y": 2
+                }
+              ],
+              "workers": [
+                {
+                  "name": "Ada",
+                  "job": "hauling",
+                  "building_index": 2,
+                  "logistics_position": {
+                    "x": 8,
+                    "y": 2
+                  },
+                  "logistics_trip": {
+                    "id": 1,
+                    "operation": "collect",
+                    "workplace": {
+                      "kind": "woodcutter",
+                      "x": 10,
+                      "y": 3
+                    },
+                    "storage": {
+                      "kind": "storehouse",
+                      "x": 2,
+                      "y": 2
+                    },
+                    "path": [
+                      [
+                        10,
+                        2
+                      ],
+                      [
+                        9,
+                        2
+                      ],
+                      [
+                        8,
+                        2
+                      ],
+                      [
+                        7,
+                        2
+                      ],
+                      [
+                        6,
+                        2
+                      ],
+                      [
+                        5,
+                        2
+                      ],
+                      [
+                        4,
+                        2
+                      ],
+                      [
+                        3,
+                        2
+                      ]
+                    ],
+                    "turn_step": 0,
+                    "pickup_step": 0,
+                    "cargo": {
+                      "wood": 3
+                    },
+                    "delivery_step": 7,
+                    "delivered": false,
+                    "picked_up": true,
+                    "step": 2,
+                    "travel_seconds": 0
+                  },
+                  "production_status": "Delivery blocked; finding another route",
+                  "woodcutting": 0
+                },
+                {
+                  "name": "Rowan",
+                  "job": "idle",
+                  "woodcutting": 1
+                },
+                {
+                  "name": "Wren",
+                  "job": "idle",
+                  "woodcutting": 2
+                },
+                {
+                  "name": "Bram",
+                  "job": "idle",
+                  "woodcutting": 0
+                },
+                {
+                  "name": "Hazel",
+                  "job": "idle",
+                  "woodcutting": 1
+                }
+              ],
+              "wood_ledger": {
+                "stored": 65,
+                "carried": 3
+              }
+            }
+          }
+        }
+      },
+      "numeric_fields": [],
+      "invariants": [
+        {
+          "name": "physical wood conserved",
+          "kind": "sum",
+          "paths": [
+            [
+              "state",
+              "towns",
+              "a",
+              "wood_ledger",
+              "stored"
+            ],
+            [
+              "state",
+              "towns",
+              "a",
+              "wood_ledger",
+              "carried"
+            ]
+          ],
+          "value": 68
+        }
+      ]
+    },
+    {
+      "operation": {
+        "kind": "advance",
+        "clock": "movement",
+        "seconds": 0
+      },
+      "random_draws": [],
+      "expected": {
+        "public": {
+          "result": null
+        },
+        "state": {
+          "towns": {
+            "a": {
+              "owner": "a",
+              "wood": 65,
+              "food": 40.0,
+              "coins": 20,
+              "goods": {},
+              "produced": {},
+              "player": {
+                "x": 5.0,
+                "y": 8.0,
+                "facing": 1
+              },
+              "buildings": [
+                {
+                  "kind": "hall",
+                  "x": 5,
+                  "y": 5,
+                  "footprint": [
+                    3,
+                    3
+                  ],
+                  "stored_goods": {
+                    "wood": 65,
+                    "food": 40.0
+                  }
+                },
+                {
+                  "kind": "woodcutter",
+                  "x": 10,
+                  "y": 3,
+                  "output_buffer": {
+                    "wood": 0
+                  }
+                },
+                {
+                  "kind": "storehouse",
+                  "x": 2,
+                  "y": 2
+                }
+              ],
+              "workers": [
+                {
+                  "name": "Ada",
+                  "job": "hauling",
+                  "building_index": 2,
+                  "logistics_position": {
+                    "x": 8,
+                    "y": 2
+                  },
+                  "logistics_trip": {
+                    "id": 1,
+                    "operation": "collect",
+                    "workplace": {
+                      "kind": "woodcutter",
+                      "x": 10,
+                      "y": 3
+                    },
+                    "storage": {
+                      "kind": "storehouse",
+                      "x": 2,
+                      "y": 2
+                    },
+                    "path": [
+                      [
+                        8,
+                        2
+                      ],
+                      [
+                        8,
+                        3
+                      ],
+                      [
+                        8,
+                        4
+                      ],
+                      [
+                        8,
+                        5
+                      ],
+                      [
+                        8,
+                        6
+                      ],
+                      [
+                        8,
+                        7
+                      ],
+                      [
+                        8,
+                        8
+                      ],
+                      [
+                        8,
+                        9
+                      ],
+                      [
+                        8,
+                        10
+                      ],
+                      [
+                        7,
+                        10
+                      ],
+                      [
+                        6,
+                        10
+                      ],
+                      [
+                        5,
+                        9
+                      ],
+                      [
+                        4,
+                        8
+                      ],
+                      [
+                        4,
+                        7
+                      ],
+                      [
+                        4,
+                        6
+                      ],
+                      [
+                        4,
+                        5
+                      ],
+                      [
+                        3,
+                        4
+                      ],
+                      [
+                        2,
+                        3
+                      ]
+                    ],
+                    "turn_step": 0,
+                    "pickup_step": 0,
+                    "cargo": {
+                      "wood": 3
+                    },
+                    "delivery_step": 17,
+                    "delivered": false,
+                    "picked_up": true,
+                    "step": 0,
+                    "travel_seconds": 0
+                  },
+                  "production_status": "Delivery blocked; finding another route",
+                  "woodcutting": 0
+                },
+                {
+                  "name": "Rowan",
+                  "job": "idle",
+                  "woodcutting": 1
+                },
+                {
+                  "name": "Wren",
+                  "job": "idle",
+                  "woodcutting": 2
+                },
+                {
+                  "name": "Bram",
+                  "job": "idle",
+                  "woodcutting": 0
+                },
+                {
+                  "name": "Hazel",
+                  "job": "idle",
+                  "woodcutting": 1
+                }
+              ],
+              "wood_ledger": {
+                "stored": 65,
+                "carried": 3
+              }
+            }
+          }
+        }
+      },
+      "numeric_fields": [],
+      "invariants": [
+        {
+          "name": "physical wood conserved",
+          "kind": "sum",
+          "paths": [
+            [
+              "state",
+              "towns",
+              "a",
+              "wood_ledger",
+              "stored"
+            ],
+            [
+              "state",
+              "towns",
+              "a",
+              "wood_ledger",
+              "carried"
+            ]
+          ],
+          "value": 68
+        }
+      ]
+    },
+    {
+      "operation": {
+        "kind": "advance",
+        "clock": "movement",
+        "seconds": 10
+      },
+      "random_draws": [],
+      "expected": {
+        "public": {
+          "result": null
+        },
+        "state": {
+          "towns": {
+            "a": {
+              "owner": "a",
+              "wood": 65,
+              "food": 40.0,
+              "coins": 20,
+              "goods": {},
+              "produced": {},
+              "player": {
+                "x": 5.0,
+                "y": 8.0,
+                "facing": 1
+              },
+              "buildings": [
+                {
+                  "kind": "hall",
+                  "x": 5,
+                  "y": 5,
+                  "footprint": [
+                    3,
+                    3
+                  ],
+                  "stored_goods": {
+                    "wood": 65,
+                    "food": 40.0
+                  }
+                },
+                {
+                  "kind": "woodcutter",
+                  "x": 10,
+                  "y": 3,
+                  "output_buffer": {
+                    "wood": 0
+                  }
+                },
+                {
+                  "kind": "storehouse",
+                  "x": 2,
+                  "y": 2
+                }
+              ],
+              "workers": [
+                {
+                  "name": "Ada",
+                  "job": "hauling",
+                  "building_index": 2,
+                  "logistics_position": {
+                    "x": 3,
+                    "y": 4
+                  },
+                  "logistics_trip": {
+                    "id": 1,
+                    "operation": "collect",
+                    "workplace": {
+                      "kind": "woodcutter",
+                      "x": 10,
+                      "y": 3
+                    },
+                    "storage": {
+                      "kind": "storehouse",
+                      "x": 2,
+                      "y": 2
+                    },
+                    "path": [
+                      [
+                        8,
+                        2
+                      ],
+                      [
+                        8,
+                        3
+                      ],
+                      [
+                        8,
+                        4
+                      ],
+                      [
+                        8,
+                        5
+                      ],
+                      [
+                        8,
+                        6
+                      ],
+                      [
+                        8,
+                        7
+                      ],
+                      [
+                        8,
+                        8
+                      ],
+                      [
+                        8,
+                        9
+                      ],
+                      [
+                        8,
+                        10
+                      ],
+                      [
+                        7,
+                        10
+                      ],
+                      [
+                        6,
+                        10
+                      ],
+                      [
+                        5,
+                        9
+                      ],
+                      [
+                        4,
+                        8
+                      ],
+                      [
+                        4,
+                        7
+                      ],
+                      [
+                        4,
+                        6
+                      ],
+                      [
+                        4,
+                        5
+                      ],
+                      [
+                        3,
+                        4
+                      ],
+                      [
+                        2,
+                        3
+                      ]
+                    ],
+                    "turn_step": 0,
+                    "pickup_step": 0,
+                    "cargo": {
+                      "wood": 3
+                    },
+                    "delivery_step": 17,
+                    "delivered": false,
+                    "picked_up": true,
+                    "step": 16,
+                    "travel_seconds": 0.4207551738226214
+                  },
+                  "production_status": "Hauling outputs",
+                  "woodcutting": 0
+                },
+                {
+                  "name": "Rowan",
+                  "job": "idle",
+                  "woodcutting": 1
+                },
+                {
+                  "name": "Wren",
+                  "job": "idle",
+                  "woodcutting": 2
+                },
+                {
+                  "name": "Bram",
+                  "job": "idle",
+                  "woodcutting": 0
+                },
+                {
+                  "name": "Hazel",
+                  "job": "idle",
+                  "woodcutting": 1
+                }
+              ],
+              "wood_ledger": {
+                "stored": 65,
+                "carried": 3
+              }
+            }
+          }
+        }
+      },
+      "numeric_fields": [],
+      "invariants": [
+        {
+          "name": "physical wood conserved",
+          "kind": "sum",
+          "paths": [
+            [
+              "state",
+              "towns",
+              "a",
+              "wood_ledger",
+              "stored"
+            ],
+            [
+              "state",
+              "towns",
+              "a",
+              "wood_ledger",
+              "carried"
+            ]
+          ],
+          "value": 68
+        }
+      ]
+    },
+    {
+      "operation": {
+        "kind": "advance",
+        "clock": "movement",
+        "seconds": 10
+      },
+      "random_draws": [],
+      "expected": {
+        "public": {
+          "result": null
+        },
+        "state": {
+          "towns": {
+            "a": {
+              "owner": "a",
+              "wood": 68,
+              "food": 40.0,
+              "coins": 20,
+              "goods": {},
+              "produced": {},
+              "player": {
+                "x": 5.0,
+                "y": 8.0,
+                "facing": 1
+              },
+              "buildings": [
+                {
+                  "kind": "hall",
+                  "x": 5,
+                  "y": 5,
+                  "footprint": [
+                    3,
+                    3
+                  ],
+                  "stored_goods": {
+                    "wood": 65,
+                    "food": 40.0
+                  }
+                },
+                {
+                  "kind": "woodcutter",
+                  "x": 10,
+                  "y": 3,
+                  "output_buffer": {
+                    "wood": 0
+                  }
+                },
+                {
+                  "kind": "storehouse",
+                  "x": 2,
+                  "y": 2,
+                  "stored_goods": {
+                    "wood": 3
+                  }
+                }
+              ],
+              "workers": [
+                {
+                  "name": "Ada",
+                  "job": "hauling",
+                  "building_index": 2,
+                  "logistics_position": {
+                    "x": 2,
+                    "y": 3
+                  },
+                  "production_status": "Hauling outputs",
+                  "woodcutting": 0,
+                  "hauling": 0.08
+                },
+                {
+                  "name": "Rowan",
+                  "job": "idle",
+                  "woodcutting": 1
+                },
+                {
+                  "name": "Wren",
+                  "job": "idle",
+                  "woodcutting": 2
+                },
+                {
+                  "name": "Bram",
+                  "job": "idle",
+                  "woodcutting": 0
+                },
+                {
+                  "name": "Hazel",
+                  "job": "idle",
+                  "woodcutting": 1
+                }
+              ],
+              "wood_ledger": {
+                "stored": 68,
+                "carried": 0
+              }
+            }
+          }
+        }
+      },
+      "numeric_fields": [],
+      "invariants": [
+        {
+          "name": "delivery credited once",
+          "kind": "equals",
+          "paths": [
+            [
+              "state",
+              "towns",
+              "a",
+              "buildings",
+              2,
+              "stored_goods",
+              "wood"
+            ]
+          ],
+          "value": 3
+        },
+        {
+          "name": "physical wood conserved",
+          "kind": "sum",
+          "paths": [
+            [
+              "state",
+              "towns",
+              "a",
+              "wood_ledger",
+              "stored"
+            ],
+            [
+              "state",
+              "towns",
+              "a",
+              "wood_ledger",
+              "carried"
+            ]
+          ],
+          "value": 68
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,535 @@
+{
+  "format_version": 1,
+  "id": "meals_v1",
+  "provenance": {
+    "kind": "recorded_python",
+    "python_revision": "9637eb5bf982fa2342556feaa4059fcb3f0d4b17"
+  },
+  "initial": {
+    "recipe": "meals_v1",
+    "parameters": {
+      "seed": 42,
+      "setup_draws": [],
+      "initial_state": {
+        "towns": {
+          "a": {
+            "owner": "a",
+            "wood": 65,
+            "food": 40.0,
+            "coins": 20,
+            "goods": {},
+            "produced": {},
+            "player": {
+              "x": 5.0,
+              "y": 8.0,
+              "facing": 1
+            },
+            "buildings": [
+              {
+                "kind": "hall",
+                "x": 5,
+                "y": 5,
+                "footprint": [
+                  3,
+                  3
+                ],
+                "stored_goods": {
+                  "wood": 65,
+                  "food": 40.0
+                }
+              }
+            ],
+            "workers": [
+              {
+                "name": "Ada",
+                "job": "idle",
+                "woodcutting": 0
+              },
+              {
+                "name": "Rowan",
+                "job": "idle",
+                "woodcutting": 1
+              },
+              {
+                "name": "Wren",
+                "job": "idle",
+                "woodcutting": 2
+              },
+              {
+                "name": "Bram",
+                "job": "idle",
+                "woodcutting": 0
+              },
+              {
+                "name": "Hazel",
+                "job": "idle",
+                "woodcutting": 1
+              }
+            ],
+            "wood_ledger": {
+              "stored": 65,
+              "carried": 0
+            }
+          }
+        }
+      }
+    },
+    "terrain": "synthetic_flat"
+  },
+  "steps": [
+    {
+      "operation": {
+        "kind": "advance",
+        "clock": "economy",
+        "seconds": 3
+      },
+      "random_draws": [],
+      "expected": {
+        "public": {
+          "result": null
+        },
+        "state": {
+          "towns": {
+            "a": {
+              "owner": "a",
+              "wood": 65,
+              "food": 39.85,
+              "coins": 20,
+              "goods": {},
+              "produced": {},
+              "player": {
+                "x": 5.0,
+                "y": 8.0,
+                "facing": 1
+              },
+              "buildings": [
+                {
+                  "kind": "hall",
+                  "x": 5,
+                  "y": 5,
+                  "footprint": [
+                    3,
+                    3
+                  ],
+                  "stored_goods": {
+                    "wood": 65,
+                    "food": 39.85
+                  }
+                }
+              ],
+              "workers": [
+                {
+                  "name": "Ada",
+                  "job": "idle",
+                  "woodcutting": 0
+                },
+                {
+                  "name": "Rowan",
+                  "job": "idle",
+                  "woodcutting": 1
+                },
+                {
+                  "name": "Wren",
+                  "job": "idle",
+                  "woodcutting": 2
+                },
+                {
+                  "name": "Bram",
+                  "job": "idle",
+                  "woodcutting": 0
+                },
+                {
+                  "name": "Hazel",
+                  "job": "idle",
+                  "woodcutting": 1
+                }
+              ],
+              "wood_ledger": {
+                "stored": 65,
+                "carried": 0
+              }
+            }
+          }
+        }
+      },
+      "numeric_fields": [
+        {
+          "path": [
+            "state",
+            "towns",
+            "a",
+            "food"
+          ],
+          "kind": "fraction"
+        }
+      ],
+      "invariants": [
+        {
+          "name": "wood untouched by meals",
+          "kind": "equals",
+          "paths": [
+            [
+              "state",
+              "towns",
+              "a",
+              "wood"
+            ]
+          ],
+          "value": 65
+        },
+        {
+          "name": "food nonnegative",
+          "kind": "nonnegative",
+          "paths": [
+            [
+              "state",
+              "towns",
+              "a",
+              "food"
+            ]
+          ]
+        }
+      ]
+    },
+    {
+      "operation": {
+        "kind": "advance",
+        "clock": "economy",
+        "seconds": 3
+      },
+      "random_draws": [],
+      "expected": {
+        "public": {
+          "result": null
+        },
+        "state": {
+          "towns": {
+            "a": {
+              "owner": "a",
+              "wood": 65,
+              "food": 39.7,
+              "coins": 20,
+              "goods": {},
+              "produced": {},
+              "player": {
+                "x": 5.0,
+                "y": 8.0,
+                "facing": 1
+              },
+              "buildings": [
+                {
+                  "kind": "hall",
+                  "x": 5,
+                  "y": 5,
+                  "footprint": [
+                    3,
+                    3
+                  ],
+                  "stored_goods": {
+                    "wood": 65,
+                    "food": 39.7
+                  }
+                }
+              ],
+              "workers": [
+                {
+                  "name": "Ada",
+                  "job": "idle",
+                  "woodcutting": 0
+                },
+                {
+                  "name": "Rowan",
+                  "job": "idle",
+                  "woodcutting": 1
+                },
+                {
+                  "name": "Wren",
+                  "job": "idle",
+                  "woodcutting": 2
+                },
+                {
+                  "name": "Bram",
+                  "job": "idle",
+                  "woodcutting": 0
+                },
+                {
+                  "name": "Hazel",
+                  "job": "idle",
+                  "woodcutting": 1
+                }
+              ],
+              "wood_ledger": {
+                "stored": 65,
+                "carried": 0
+              }
+            }
+          }
+        }
+      },
+      "numeric_fields": [
+        {
+          "path": [
+            "state",
+            "towns",
+            "a",
+            "food"
+          ],
+          "kind": "fraction"
+        }
+      ],
+      "invariants": [
+        {
+          "name": "wood untouched by meals",
+          "kind": "equals",
+          "paths": [
+            [
+              "state",
+              "towns",
+              "a",
+              "wood"
+            ]
+          ],
+          "value": 65
+        },
+        {
+          "name": "food nonnegative",
+          "kind": "nonnegative",
+          "paths": [
+            [
+              "state",
+              "towns",
+              "a",
+              "food"
+            ]
+          ]
+        }
+      ]
+    },
+    {
+      "operation": {
+        "kind": "reload"
+      },
+      "random_draws": [],
+      "expected": {
+        "public": {
+          "result": null
+        },
+        "state": {
+          "towns": {
+            "a": {
+              "owner": "a",
+              "wood": 65,
+              "food": 39.7,
+              "coins": 20,
+              "goods": {},
+              "produced": {},
+              "player": {
+                "x": 5.0,
+                "y": 8.0,
+                "facing": 1
+              },
+              "buildings": [
+                {
+                  "kind": "hall",
+                  "x": 5,
+                  "y": 5,
+                  "footprint": [
+                    3,
+                    3
+                  ],
+                  "stored_goods": {
+                    "wood": 65,
+                    "food": 39.7
+                  }
+                }
+              ],
+              "workers": [
+                {
+                  "name": "Ada",
+                  "job": "idle",
+                  "woodcutting": 0
+                },
+                {
+                  "name": "Rowan",
+                  "job": "idle",
+                  "woodcutting": 1
+                },
+                {
+                  "name": "Wren",
+                  "job": "idle",
+                  "woodcutting": 2
+                },
+                {
+                  "name": "Bram",
+                  "job": "idle",
+                  "woodcutting": 0
+                },
+                {
+                  "name": "Hazel",
+                  "job": "idle",
+                  "woodcutting": 1
+                }
+              ],
+              "wood_ledger": {
+                "stored": 65,
+                "carried": 0
+              }
+            }
+          }
+        }
+      },
+      "numeric_fields": [
+        {
+          "path": [
+            "state",
+            "towns",
+            "a",
+            "food"
+          ],
+          "kind": "fraction"
+        }
+      ],
+      "invariants": [
+        {
+          "name": "wood untouched by meals",
+          "kind": "equals",
+          "paths": [
+            [
+              "state",
+              "towns",
+              "a",
+              "wood"
+            ]
+          ],
+          "value": 65
+        },
+        {
+          "name": "food nonnegative",
+          "kind": "nonnegative",
+          "paths": [
+            [
+              "state",
+              "towns",
+              "a",
+              "food"
+            ]
+          ]
+        }
+      ]
+    },
+    {
+      "operation": {
+        "kind": "advance",
+        "clock": "economy",
+        "seconds": 3
+      },
+      "random_draws": [],
+      "expected": {
+        "public": {
+          "result": null
+        },
+        "state": {
+          "towns": {
+            "a": {
+              "owner": "a",
+              "wood": 65,
+              "food": 39.550000000000004,
+              "coins": 20,
+              "goods": {},
+              "produced": {},
+              "player": {
+                "x": 5.0,
+                "y": 8.0,
+                "facing": 1
+              },
+              "buildings": [
+                {
+                  "kind": "hall",
+                  "x": 5,
+                  "y": 5,
+                  "footprint": [
+                    3,
+                    3
+                  ],
+                  "stored_goods": {
+                    "wood": 65,
+                    "food": 39.550000000000004
+                  }
+                }
+              ],
+              "workers": [
+                {
+                  "name": "Ada",
+                  "job": "idle",
+                  "woodcutting": 0
+                },
+                {
+                  "name": "Rowan",
+                  "job": "idle",
+                  "woodcutting": 1
+                },
+                {
+                  "name": "Wren",
+                  "job": "idle",
+                  "woodcutting": 2
+                },
+                {
+                  "name": "Bram",
+                  "job": "idle",
+                  "woodcutting": 0
+                },
+                {
+                  "name": "Hazel",
+                  "job": "idle",
+                  "woodcutting": 1
+                }
+              ],
+              "wood_ledger": {
+                "stored": 65,
+                "carried": 0
+              }
+            }
+          }
+        }
+      },
+      "numeric_fields": [
+        {
+          "path": [
+            "state",
+            "towns",
+            "a",
+            "food"
+          ],
+          "kind": "fraction"
+        }
+      ],
+      "invariants": [
+        {
+          "name": "wood untouched by meals",
+          "kind": "equals",
+          "paths": [
+            [
+              "state",
+              "towns",
+              "a",
+              "wood"
+            ]
+          ],
+          "value": 65
+        },
+        {
+          "name": "food nonnegative",
+          "kind": "nonnegative",
+          "paths": [
+            [
+              "state",
+              "towns",
+              "a",
+              "food"
+            ]
+          ]
+        }
+      ]
+    }
+  ]
+}

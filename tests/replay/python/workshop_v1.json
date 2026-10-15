@@ -1,0 +1,2371 @@
+{
+  "format_version": 1,
+  "id": "workshop_v1",
+  "provenance": {
+    "kind": "recorded_python",
+    "python_revision": "9637eb5bf982fa2342556feaa4059fcb3f0d4b17"
+  },
+  "initial": {
+    "recipe": "workshop_v1",
+    "parameters": {
+      "seed": 42,
+      "setup_draws": [],
+      "initial_state": {
+        "towns": {
+          "a": {
+            "owner": "a",
+            "wood": 65,
+            "food": 40.0,
+            "coins": 20,
+            "goods": {},
+            "produced": {},
+            "player": {
+              "x": 5.0,
+              "y": 8.0,
+              "facing": 1
+            },
+            "buildings": [
+              {
+                "kind": "hall",
+                "x": 5,
+                "y": 5,
+                "footprint": [
+                  3,
+                  3
+                ],
+                "stored_goods": {
+                  "wood": 65,
+                  "food": 40.0
+                }
+              },
+              {
+                "kind": "workshop",
+                "x": 9,
+                "y": 9,
+                "footprint": [
+                  2,
+                  2
+                ],
+                "input_buffer": {
+                  "planks": 4,
+                  "wood": 2
+                }
+              }
+            ],
+            "workers": [
+              {
+                "name": "Ada",
+                "job": "crafting",
+                "building_index": 1,
+                "woodcutting": 0,
+                "crafting": 0
+              },
+              {
+                "name": "Rowan",
+                "job": "idle",
+                "woodcutting": 1
+              },
+              {
+                "name": "Wren",
+                "job": "idle",
+                "woodcutting": 2
+              },
+              {
+                "name": "Bram",
+                "job": "idle",
+                "woodcutting": 0
+              },
+              {
+                "name": "Hazel",
+                "job": "idle",
+                "woodcutting": 1
+              }
+            ],
+            "wood_ledger": {
+              "stored": 67,
+              "carried": 0
+            }
+          }
+        }
+      }
+    },
+    "terrain": "synthetic_flat"
+  },
+  "steps": [
+    {
+      "operation": {
+        "kind": "command",
+        "town": "a",
+        "data": {
+          "action": "queue_workshop",
+          "index": 1,
+          "recipe": "tools",
+          "amount": 2
+        }
+      },
+      "random_draws": [
+        {
+          "site": "server.command:1945",
+          "method": "token_hex",
+          "args": [
+            8
+          ],
+          "value": "1c80317fa3b1799d"
+        }
+      ],
+      "expected": {
+        "public": {
+          "result": null
+        },
+        "state": {
+          "towns": {
+            "a": {
+              "owner": "a",
+              "wood": 65,
+              "food": 40.0,
+              "coins": 20,
+              "goods": {},
+              "produced": {},
+              "player": {
+                "x": 5.0,
+                "y": 8.0,
+                "facing": 1
+              },
+              "buildings": [
+                {
+                  "kind": "hall",
+                  "x": 5,
+                  "y": 5,
+                  "footprint": [
+                    3,
+                    3
+                  ],
+                  "stored_goods": {
+                    "wood": 65,
+                    "food": 40.0
+                  }
+                },
+                {
+                  "kind": "workshop",
+                  "x": 9,
+                  "y": 9,
+                  "footprint": [
+                    2,
+                    2
+                  ],
+                  "input_buffer": {
+                    "planks": 4,
+                    "wood": 2
+                  },
+                  "craft_queue": [
+                    {
+                      "id": "1c80317fa3b1799d",
+                      "recipe": "tools",
+                      "amount": 2,
+                      "remaining": 2
+                    }
+                  ]
+                }
+              ],
+              "workers": [
+                {
+                  "name": "Ada",
+                  "job": "crafting",
+                  "building_index": 1,
+                  "woodcutting": 0,
+                  "crafting": 0
+                },
+                {
+                  "name": "Rowan",
+                  "job": "idle",
+                  "woodcutting": 1
+                },
+                {
+                  "name": "Wren",
+                  "job": "idle",
+                  "woodcutting": 2
+                },
+                {
+                  "name": "Bram",
+                  "job": "idle",
+                  "woodcutting": 0
+                },
+                {
+                  "name": "Hazel",
+                  "job": "idle",
+                  "woodcutting": 1
+                }
+              ],
+              "wood_ledger": {
+                "stored": 67,
+                "carried": 0
+              }
+            }
+          }
+        }
+      },
+      "numeric_fields": [],
+      "invariants": []
+    },
+    {
+      "operation": {
+        "kind": "command",
+        "town": "a",
+        "data": {
+          "action": "queue_workshop",
+          "index": 1,
+          "recipe": "tools",
+          "amount": 1
+        }
+      },
+      "random_draws": [
+        {
+          "site": "server.command:1945",
+          "method": "token_hex",
+          "args": [
+            8
+          ],
+          "value": "bdd640fb06671ad1"
+        }
+      ],
+      "expected": {
+        "public": {
+          "result": null
+        },
+        "state": {
+          "towns": {
+            "a": {
+              "owner": "a",
+              "wood": 65,
+              "food": 40.0,
+              "coins": 20,
+              "goods": {},
+              "produced": {},
+              "player": {
+                "x": 5.0,
+                "y": 8.0,
+                "facing": 1
+              },
+              "buildings": [
+                {
+                  "kind": "hall",
+                  "x": 5,
+                  "y": 5,
+                  "footprint": [
+                    3,
+                    3
+                  ],
+                  "stored_goods": {
+                    "wood": 65,
+                    "food": 40.0
+                  }
+                },
+                {
+                  "kind": "workshop",
+                  "x": 9,
+                  "y": 9,
+                  "footprint": [
+                    2,
+                    2
+                  ],
+                  "input_buffer": {
+                    "planks": 4,
+                    "wood": 2
+                  },
+                  "craft_queue": [
+                    {
+                      "id": "1c80317fa3b1799d",
+                      "recipe": "tools",
+                      "amount": 2,
+                      "remaining": 2
+                    },
+                    {
+                      "id": "bdd640fb06671ad1",
+                      "recipe": "tools",
+                      "amount": 1,
+                      "remaining": 1
+                    }
+                  ]
+                }
+              ],
+              "workers": [
+                {
+                  "name": "Ada",
+                  "job": "crafting",
+                  "building_index": 1,
+                  "woodcutting": 0,
+                  "crafting": 0
+                },
+                {
+                  "name": "Rowan",
+                  "job": "idle",
+                  "woodcutting": 1
+                },
+                {
+                  "name": "Wren",
+                  "job": "idle",
+                  "woodcutting": 2
+                },
+                {
+                  "name": "Bram",
+                  "job": "idle",
+                  "woodcutting": 0
+                },
+                {
+                  "name": "Hazel",
+                  "job": "idle",
+                  "woodcutting": 1
+                }
+              ],
+              "wood_ledger": {
+                "stored": 67,
+                "carried": 0
+              }
+            }
+          }
+        }
+      },
+      "numeric_fields": [],
+      "invariants": []
+    },
+    {
+      "operation": {
+        "kind": "command",
+        "town": "a",
+        "data": {
+          "action": "queue_workshop",
+          "index": 1,
+          "recipe": "tools",
+          "amount": 0
+        }
+      },
+      "random_draws": [],
+      "expected": {
+        "public": {
+          "error": {
+            "type": "ValueError",
+            "message": "Request between 1 and 999 items."
+          }
+        },
+        "state": {
+          "towns": {
+            "a": {
+              "owner": "a",
+              "wood": 65,
+              "food": 40.0,
+              "coins": 20,
+              "goods": {},
+              "produced": {},
+              "player": {
+                "x": 5.0,
+                "y": 8.0,
+                "facing": 1
+              },
+              "buildings": [
+                {
+                  "kind": "hall",
+                  "x": 5,
+                  "y": 5,
+                  "footprint": [
+                    3,
+                    3
+                  ],
+                  "stored_goods": {
+                    "wood": 65,
+                    "food": 40.0
+                  }
+                },
+                {
+                  "kind": "workshop",
+                  "x": 9,
+                  "y": 9,
+                  "footprint": [
+                    2,
+                    2
+                  ],
+                  "input_buffer": {
+                    "planks": 4,
+                    "wood": 2
+                  },
+                  "craft_queue": [
+                    {
+                      "id": "1c80317fa3b1799d",
+                      "recipe": "tools",
+                      "amount": 2,
+                      "remaining": 2
+                    },
+                    {
+                      "id": "bdd640fb06671ad1",
+                      "recipe": "tools",
+                      "amount": 1,
+                      "remaining": 1
+                    }
+                  ]
+                }
+              ],
+              "workers": [
+                {
+                  "name": "Ada",
+                  "job": "crafting",
+                  "building_index": 1,
+                  "woodcutting": 0,
+                  "crafting": 0
+                },
+                {
+                  "name": "Rowan",
+                  "job": "idle",
+                  "woodcutting": 1
+                },
+                {
+                  "name": "Wren",
+                  "job": "idle",
+                  "woodcutting": 2
+                },
+                {
+                  "name": "Bram",
+                  "job": "idle",
+                  "woodcutting": 0
+                },
+                {
+                  "name": "Hazel",
+                  "job": "idle",
+                  "woodcutting": 1
+                }
+              ],
+              "wood_ledger": {
+                "stored": 67,
+                "carried": 0
+              }
+            }
+          }
+        }
+      },
+      "numeric_fields": [],
+      "invariants": []
+    },
+    {
+      "operation": {
+        "kind": "advance",
+        "clock": "economy",
+        "seconds": 3
+      },
+      "random_draws": [],
+      "expected": {
+        "public": {
+          "result": null
+        },
+        "state": {
+          "towns": {
+            "a": {
+              "owner": "a",
+              "wood": 65,
+              "food": 39.805,
+              "coins": 20,
+              "goods": {},
+              "produced": {},
+              "player": {
+                "x": 5.0,
+                "y": 8.0,
+                "facing": 1
+              },
+              "buildings": [
+                {
+                  "kind": "hall",
+                  "x": 5,
+                  "y": 5,
+                  "footprint": [
+                    3,
+                    3
+                  ],
+                  "stored_goods": {
+                    "wood": 65,
+                    "food": 39.805
+                  }
+                },
+                {
+                  "kind": "workshop",
+                  "x": 9,
+                  "y": 9,
+                  "footprint": [
+                    2,
+                    2
+                  ],
+                  "input_buffer": {
+                    "planks": 4,
+                    "wood": 2
+                  },
+                  "craft_queue": [
+                    {
+                      "id": "1c80317fa3b1799d",
+                      "recipe": "tools",
+                      "amount": 2,
+                      "remaining": 2
+                    },
+                    {
+                      "id": "bdd640fb06671ad1",
+                      "recipe": "tools",
+                      "amount": 1,
+                      "remaining": 1
+                    }
+                  ]
+                }
+              ],
+              "workers": [
+                {
+                  "name": "Ada",
+                  "job": "crafting",
+                  "building_index": 1,
+                  "production_work": {
+                    "task": [
+                      "crafting",
+                      "workshop",
+                      9,
+                      9,
+                      "tools"
+                    ],
+                    "elapsed": 3
+                  },
+                  "production_status": "Producing tools \u00b7 6s remaining",
+                  "woodcutting": 0,
+                  "crafting": 0,
+                  "work_animation": {
+                    "x": 9,
+                    "y": 8,
+                    "phase": "working",
+                    "task": [
+                      "crafting",
+                      "workshop",
+                      9,
+                      9,
+                      "workshop",
+                      9,
+                      9
+                    ],
+                    "elapsed": 3,
+                    "path": []
+                  }
+                },
+                {
+                  "name": "Rowan",
+                  "job": "idle",
+                  "woodcutting": 1
+                },
+                {
+                  "name": "Wren",
+                  "job": "idle",
+                  "woodcutting": 2
+                },
+                {
+                  "name": "Bram",
+                  "job": "idle",
+                  "woodcutting": 0
+                },
+                {
+                  "name": "Hazel",
+                  "job": "idle",
+                  "woodcutting": 1
+                }
+              ],
+              "wood_ledger": {
+                "stored": 67,
+                "carried": 0
+              }
+            }
+          }
+        }
+      },
+      "numeric_fields": [],
+      "invariants": []
+    },
+    {
+      "operation": {
+        "kind": "reload"
+      },
+      "random_draws": [],
+      "expected": {
+        "public": {
+          "result": null
+        },
+        "state": {
+          "towns": {
+            "a": {
+              "owner": "a",
+              "wood": 65,
+              "food": 39.805,
+              "coins": 20,
+              "goods": {},
+              "produced": {},
+              "player": {
+                "x": 5.0,
+                "y": 8.0,
+                "facing": 1
+              },
+              "buildings": [
+                {
+                  "kind": "hall",
+                  "x": 5,
+                  "y": 5,
+                  "footprint": [
+                    3,
+                    3
+                  ],
+                  "stored_goods": {
+                    "wood": 65,
+                    "food": 39.805
+                  }
+                },
+                {
+                  "kind": "workshop",
+                  "x": 9,
+                  "y": 9,
+                  "footprint": [
+                    2,
+                    2
+                  ],
+                  "input_buffer": {
+                    "planks": 4,
+                    "wood": 2
+                  },
+                  "craft_queue": [
+                    {
+                      "id": "1c80317fa3b1799d",
+                      "recipe": "tools",
+                      "amount": 2,
+                      "remaining": 2
+                    },
+                    {
+                      "id": "bdd640fb06671ad1",
+                      "recipe": "tools",
+                      "amount": 1,
+                      "remaining": 1
+                    }
+                  ]
+                }
+              ],
+              "workers": [
+                {
+                  "name": "Ada",
+                  "job": "crafting",
+                  "building_index": 1,
+                  "production_work": {
+                    "task": [
+                      "crafting",
+                      "workshop",
+                      9,
+                      9,
+                      "tools"
+                    ],
+                    "elapsed": 3
+                  },
+                  "production_status": "Producing tools \u00b7 6s remaining",
+                  "woodcutting": 0,
+                  "crafting": 0,
+                  "work_animation": {
+                    "x": 9,
+                    "y": 8,
+                    "phase": "working",
+                    "task": [
+                      "crafting",
+                      "workshop",
+                      9,
+                      9,
+                      "workshop",
+                      9,
+                      9
+                    ],
+                    "elapsed": 3,
+                    "path": []
+                  }
+                },
+                {
+                  "name": "Rowan",
+                  "job": "idle",
+                  "woodcutting": 1
+                },
+                {
+                  "name": "Wren",
+                  "job": "idle",
+                  "woodcutting": 2
+                },
+                {
+                  "name": "Bram",
+                  "job": "idle",
+                  "woodcutting": 0
+                },
+                {
+                  "name": "Hazel",
+                  "job": "idle",
+                  "woodcutting": 1
+                }
+              ],
+              "wood_ledger": {
+                "stored": 67,
+                "carried": 0
+              }
+            }
+          }
+        }
+      },
+      "numeric_fields": [],
+      "invariants": []
+    },
+    {
+      "operation": {
+        "kind": "advance",
+        "clock": "economy",
+        "seconds": 3
+      },
+      "random_draws": [],
+      "expected": {
+        "public": {
+          "result": null
+        },
+        "state": {
+          "towns": {
+            "a": {
+              "owner": "a",
+              "wood": 65,
+              "food": 39.61,
+              "coins": 20,
+              "goods": {},
+              "produced": {},
+              "player": {
+                "x": 5.0,
+                "y": 8.0,
+                "facing": 1
+              },
+              "buildings": [
+                {
+                  "kind": "hall",
+                  "x": 5,
+                  "y": 5,
+                  "footprint": [
+                    3,
+                    3
+                  ],
+                  "stored_goods": {
+                    "wood": 65,
+                    "food": 39.61
+                  }
+                },
+                {
+                  "kind": "workshop",
+                  "x": 9,
+                  "y": 9,
+                  "footprint": [
+                    2,
+                    2
+                  ],
+                  "input_buffer": {
+                    "planks": 4,
+                    "wood": 2
+                  },
+                  "craft_queue": [
+                    {
+                      "id": "1c80317fa3b1799d",
+                      "recipe": "tools",
+                      "amount": 2,
+                      "remaining": 2
+                    },
+                    {
+                      "id": "bdd640fb06671ad1",
+                      "recipe": "tools",
+                      "amount": 1,
+                      "remaining": 1
+                    }
+                  ]
+                }
+              ],
+              "workers": [
+                {
+                  "name": "Ada",
+                  "job": "crafting",
+                  "building_index": 1,
+                  "production_work": {
+                    "task": [
+                      "crafting",
+                      "workshop",
+                      9,
+                      9,
+                      "tools"
+                    ],
+                    "elapsed": 6
+                  },
+                  "production_status": "Producing tools \u00b7 3s remaining",
+                  "woodcutting": 0,
+                  "crafting": 0,
+                  "work_animation": {
+                    "x": 9,
+                    "y": 8,
+                    "phase": "working",
+                    "task": [
+                      "crafting",
+                      "workshop",
+                      9,
+                      9,
+                      "workshop",
+                      9,
+                      9
+                    ],
+                    "elapsed": 2.15,
+                    "path": []
+                  }
+                },
+                {
+                  "name": "Rowan",
+                  "job": "idle",
+                  "woodcutting": 1
+                },
+                {
+                  "name": "Wren",
+                  "job": "idle",
+                  "woodcutting": 2
+                },
+                {
+                  "name": "Bram",
+                  "job": "idle",
+                  "woodcutting": 0
+                },
+                {
+                  "name": "Hazel",
+                  "job": "idle",
+                  "woodcutting": 1
+                }
+              ],
+              "wood_ledger": {
+                "stored": 67,
+                "carried": 0
+              }
+            }
+          }
+        }
+      },
+      "numeric_fields": [],
+      "invariants": []
+    },
+    {
+      "operation": {
+        "kind": "advance",
+        "clock": "economy",
+        "seconds": 3
+      },
+      "random_draws": [],
+      "expected": {
+        "public": {
+          "result": null
+        },
+        "state": {
+          "towns": {
+            "a": {
+              "owner": "a",
+              "wood": 65,
+              "food": 39.415,
+              "coins": 20,
+              "goods": {},
+              "produced": {
+                "tools": 1.0
+              },
+              "player": {
+                "x": 5.0,
+                "y": 8.0,
+                "facing": 1
+              },
+              "buildings": [
+                {
+                  "kind": "hall",
+                  "x": 5,
+                  "y": 5,
+                  "footprint": [
+                    3,
+                    3
+                  ],
+                  "stored_goods": {
+                    "wood": 65,
+                    "food": 39.415
+                  }
+                },
+                {
+                  "kind": "workshop",
+                  "x": 9,
+                  "y": 9,
+                  "footprint": [
+                    2,
+                    2
+                  ],
+                  "input_buffer": {
+                    "planks": 2.0,
+                    "wood": 1.0
+                  },
+                  "pending_output": {
+                    "tools": 1.0
+                  },
+                  "craft_queue": [
+                    {
+                      "id": "1c80317fa3b1799d",
+                      "recipe": "tools",
+                      "amount": 2,
+                      "remaining": 1.0
+                    },
+                    {
+                      "id": "bdd640fb06671ad1",
+                      "recipe": "tools",
+                      "amount": 1,
+                      "remaining": 1
+                    }
+                  ]
+                }
+              ],
+              "workers": [
+                {
+                  "name": "Ada",
+                  "job": "crafting",
+                  "building_index": 1,
+                  "pending_output": {
+                    "tools": 1.0
+                  },
+                  "pending_workplace": {
+                    "kind": "workshop",
+                    "x": 9,
+                    "y": 9
+                  },
+                  "production_status": "Working",
+                  "woodcutting": 0,
+                  "crafting": 0.24,
+                  "work_animation": {
+                    "x": 9,
+                    "y": 8,
+                    "phase": "working",
+                    "task": [
+                      "crafting",
+                      "workshop",
+                      9,
+                      9,
+                      "workshop",
+                      9,
+                      9
+                    ],
+                    "elapsed": 1.2999999999999998,
+                    "path": []
+                  }
+                },
+                {
+                  "name": "Rowan",
+                  "job": "idle",
+                  "woodcutting": 1
+                },
+                {
+                  "name": "Wren",
+                  "job": "idle",
+                  "woodcutting": 2
+                },
+                {
+                  "name": "Bram",
+                  "job": "idle",
+                  "woodcutting": 0
+                },
+                {
+                  "name": "Hazel",
+                  "job": "idle",
+                  "woodcutting": 1
+                }
+              ],
+              "wood_ledger": {
+                "stored": 66.0,
+                "carried": 0
+              }
+            }
+          }
+        }
+      },
+      "numeric_fields": [],
+      "invariants": []
+    },
+    {
+      "operation": {
+        "kind": "advance",
+        "clock": "economy",
+        "seconds": 3
+      },
+      "random_draws": [],
+      "expected": {
+        "public": {
+          "result": null
+        },
+        "state": {
+          "towns": {
+            "a": {
+              "owner": "a",
+              "wood": 65,
+              "food": 39.22,
+              "coins": 20,
+              "goods": {
+                "tools": 1.0
+              },
+              "produced": {
+                "tools": 1.0
+              },
+              "player": {
+                "x": 5.0,
+                "y": 8.0,
+                "facing": 1
+              },
+              "buildings": [
+                {
+                  "kind": "hall",
+                  "x": 5,
+                  "y": 5,
+                  "footprint": [
+                    3,
+                    3
+                  ],
+                  "stored_goods": {
+                    "wood": 65,
+                    "food": 39.22
+                  }
+                },
+                {
+                  "kind": "workshop",
+                  "x": 9,
+                  "y": 9,
+                  "footprint": [
+                    2,
+                    2
+                  ],
+                  "input_buffer": {
+                    "planks": 2.0,
+                    "wood": 1.0
+                  },
+                  "output_buffer": {
+                    "tools": 1.0
+                  },
+                  "pending_output": {
+                    "tools": 0.0
+                  },
+                  "craft_queue": [
+                    {
+                      "id": "1c80317fa3b1799d",
+                      "recipe": "tools",
+                      "amount": 2,
+                      "remaining": 1.0
+                    },
+                    {
+                      "id": "bdd640fb06671ad1",
+                      "recipe": "tools",
+                      "amount": 1,
+                      "remaining": 1
+                    }
+                  ]
+                }
+              ],
+              "workers": [
+                {
+                  "name": "Ada",
+                  "job": "crafting",
+                  "building_index": 1,
+                  "production_work": {
+                    "task": [
+                      "crafting",
+                      "workshop",
+                      9,
+                      9,
+                      "tools"
+                    ],
+                    "elapsed": 3
+                  },
+                  "production_status": "Producing tools \u00b7 6s remaining",
+                  "woodcutting": 0,
+                  "crafting": 0.24,
+                  "work_animation": {
+                    "x": 9,
+                    "y": 8,
+                    "phase": "working",
+                    "task": [
+                      "crafting",
+                      "workshop",
+                      9,
+                      9,
+                      "workshop",
+                      9,
+                      9
+                    ],
+                    "elapsed": 0.4499999999999996,
+                    "path": []
+                  }
+                },
+                {
+                  "name": "Rowan",
+                  "job": "idle",
+                  "woodcutting": 1
+                },
+                {
+                  "name": "Wren",
+                  "job": "idle",
+                  "woodcutting": 2
+                },
+                {
+                  "name": "Bram",
+                  "job": "idle",
+                  "woodcutting": 0
+                },
+                {
+                  "name": "Hazel",
+                  "job": "idle",
+                  "woodcutting": 1
+                }
+              ],
+              "wood_ledger": {
+                "stored": 66.0,
+                "carried": 0
+              }
+            }
+          }
+        }
+      },
+      "numeric_fields": [],
+      "invariants": []
+    },
+    {
+      "operation": {
+        "kind": "advance",
+        "clock": "economy",
+        "seconds": 3
+      },
+      "random_draws": [],
+      "expected": {
+        "public": {
+          "result": null
+        },
+        "state": {
+          "towns": {
+            "a": {
+              "owner": "a",
+              "wood": 65,
+              "food": 39.025,
+              "coins": 20,
+              "goods": {
+                "tools": 1.0
+              },
+              "produced": {
+                "tools": 1.0
+              },
+              "player": {
+                "x": 5.0,
+                "y": 8.0,
+                "facing": 1
+              },
+              "buildings": [
+                {
+                  "kind": "hall",
+                  "x": 5,
+                  "y": 5,
+                  "footprint": [
+                    3,
+                    3
+                  ],
+                  "stored_goods": {
+                    "wood": 65,
+                    "food": 39.025
+                  }
+                },
+                {
+                  "kind": "workshop",
+                  "x": 9,
+                  "y": 9,
+                  "footprint": [
+                    2,
+                    2
+                  ],
+                  "input_buffer": {
+                    "planks": 2.0,
+                    "wood": 1.0
+                  },
+                  "output_buffer": {
+                    "tools": 1.0
+                  },
+                  "pending_output": {
+                    "tools": 0.0
+                  },
+                  "craft_queue": [
+                    {
+                      "id": "1c80317fa3b1799d",
+                      "recipe": "tools",
+                      "amount": 2,
+                      "remaining": 1.0
+                    },
+                    {
+                      "id": "bdd640fb06671ad1",
+                      "recipe": "tools",
+                      "amount": 1,
+                      "remaining": 1
+                    }
+                  ]
+                }
+              ],
+              "workers": [
+                {
+                  "name": "Ada",
+                  "job": "crafting",
+                  "building_index": 1,
+                  "production_work": {
+                    "task": [
+                      "crafting",
+                      "workshop",
+                      9,
+                      9,
+                      "tools"
+                    ],
+                    "elapsed": 6
+                  },
+                  "production_status": "Producing tools \u00b7 3s remaining",
+                  "woodcutting": 0,
+                  "crafting": 0.24,
+                  "work_animation": {
+                    "x": 9,
+                    "y": 8,
+                    "phase": "depositing",
+                    "task": [
+                      "crafting",
+                      "workshop",
+                      9,
+                      9,
+                      "workshop",
+                      9,
+                      9
+                    ],
+                    "elapsed": 0.24999999999999956,
+                    "path": []
+                  }
+                },
+                {
+                  "name": "Rowan",
+                  "job": "idle",
+                  "woodcutting": 1
+                },
+                {
+                  "name": "Wren",
+                  "job": "idle",
+                  "woodcutting": 2
+                },
+                {
+                  "name": "Bram",
+                  "job": "idle",
+                  "woodcutting": 0
+                },
+                {
+                  "name": "Hazel",
+                  "job": "idle",
+                  "woodcutting": 1
+                }
+              ],
+              "wood_ledger": {
+                "stored": 66.0,
+                "carried": 0
+              }
+            }
+          }
+        }
+      },
+      "numeric_fields": [],
+      "invariants": []
+    },
+    {
+      "operation": {
+        "kind": "advance",
+        "clock": "economy",
+        "seconds": 3
+      },
+      "random_draws": [],
+      "expected": {
+        "public": {
+          "result": null
+        },
+        "state": {
+          "towns": {
+            "a": {
+              "owner": "a",
+              "wood": 65,
+              "food": 38.83,
+              "coins": 20,
+              "goods": {
+                "tools": 1.0
+              },
+              "produced": {
+                "tools": 2.0
+              },
+              "player": {
+                "x": 5.0,
+                "y": 8.0,
+                "facing": 1
+              },
+              "buildings": [
+                {
+                  "kind": "hall",
+                  "x": 5,
+                  "y": 5,
+                  "footprint": [
+                    3,
+                    3
+                  ],
+                  "stored_goods": {
+                    "wood": 65,
+                    "food": 38.83
+                  }
+                },
+                {
+                  "kind": "workshop",
+                  "x": 9,
+                  "y": 9,
+                  "footprint": [
+                    2,
+                    2
+                  ],
+                  "input_buffer": {
+                    "planks": 0,
+                    "wood": 0
+                  },
+                  "output_buffer": {
+                    "tools": 1.0
+                  },
+                  "pending_output": {
+                    "tools": 1.0
+                  },
+                  "craft_queue": [
+                    {
+                      "id": "bdd640fb06671ad1",
+                      "recipe": "tools",
+                      "amount": 1,
+                      "remaining": 1
+                    }
+                  ]
+                }
+              ],
+              "workers": [
+                {
+                  "name": "Ada",
+                  "job": "crafting",
+                  "building_index": 1,
+                  "pending_output": {
+                    "tools": 1.0
+                  },
+                  "pending_workplace": {
+                    "kind": "workshop",
+                    "x": 9,
+                    "y": 9
+                  },
+                  "production_status": "Working",
+                  "woodcutting": 0,
+                  "crafting": 0.48,
+                  "work_animation": {
+                    "x": 9,
+                    "y": 8,
+                    "phase": "working",
+                    "task": [
+                      "crafting",
+                      "workshop",
+                      9,
+                      9,
+                      "workshop",
+                      9,
+                      9
+                    ],
+                    "elapsed": 2.5999999999999996,
+                    "path": []
+                  }
+                },
+                {
+                  "name": "Rowan",
+                  "job": "idle",
+                  "woodcutting": 1
+                },
+                {
+                  "name": "Wren",
+                  "job": "idle",
+                  "woodcutting": 2
+                },
+                {
+                  "name": "Bram",
+                  "job": "idle",
+                  "woodcutting": 0
+                },
+                {
+                  "name": "Hazel",
+                  "job": "idle",
+                  "woodcutting": 1
+                }
+              ],
+              "wood_ledger": {
+                "stored": 65,
+                "carried": 0
+              }
+            }
+          }
+        }
+      },
+      "numeric_fields": [],
+      "invariants": []
+    },
+    {
+      "operation": {
+        "kind": "advance",
+        "clock": "economy",
+        "seconds": 3
+      },
+      "random_draws": [],
+      "expected": {
+        "public": {
+          "result": null
+        },
+        "state": {
+          "towns": {
+            "a": {
+              "owner": "a",
+              "wood": 64.0,
+              "food": 38.635,
+              "coins": 20,
+              "goods": {
+                "tools": 2.0
+              },
+              "produced": {
+                "tools": 2.0
+              },
+              "player": {
+                "x": 5.0,
+                "y": 8.0,
+                "facing": 1
+              },
+              "buildings": [
+                {
+                  "kind": "hall",
+                  "x": 5,
+                  "y": 5,
+                  "footprint": [
+                    3,
+                    3
+                  ],
+                  "stored_goods": {
+                    "wood": 64.0,
+                    "food": 38.635
+                  }
+                },
+                {
+                  "kind": "workshop",
+                  "x": 9,
+                  "y": 9,
+                  "footprint": [
+                    2,
+                    2
+                  ],
+                  "input_buffer": {
+                    "planks": 0,
+                    "wood": 1.0
+                  },
+                  "output_buffer": {
+                    "tools": 2.0
+                  },
+                  "pending_output": {
+                    "tools": 0.0
+                  },
+                  "craft_queue": [
+                    {
+                      "id": "bdd640fb06671ad1",
+                      "recipe": "tools",
+                      "amount": 1,
+                      "remaining": 1
+                    }
+                  ]
+                }
+              ],
+              "workers": [
+                {
+                  "name": "Ada",
+                  "job": "crafting",
+                  "building_index": 1,
+                  "logistics_position": {
+                    "x": 9,
+                    "y": 8
+                  },
+                  "production_status": "Waiting for delivery: planks",
+                  "woodcutting": 0,
+                  "crafting": 0.48,
+                  "hauling": 0.08,
+                  "work_animation": {
+                    "x": 9,
+                    "y": 8,
+                    "phase": "working",
+                    "task": [
+                      "crafting",
+                      "workshop",
+                      9,
+                      9,
+                      "workshop",
+                      9,
+                      9
+                    ],
+                    "elapsed": 1.7499999999999996,
+                    "path": []
+                  }
+                },
+                {
+                  "name": "Rowan",
+                  "job": "idle",
+                  "woodcutting": 1
+                },
+                {
+                  "name": "Wren",
+                  "job": "idle",
+                  "woodcutting": 2
+                },
+                {
+                  "name": "Bram",
+                  "job": "idle",
+                  "woodcutting": 0
+                },
+                {
+                  "name": "Hazel",
+                  "job": "idle",
+                  "woodcutting": 1
+                }
+              ],
+              "wood_ledger": {
+                "stored": 65.0,
+                "carried": 0
+              }
+            }
+          }
+        }
+      },
+      "numeric_fields": [],
+      "invariants": []
+    },
+    {
+      "operation": {
+        "kind": "advance",
+        "clock": "economy",
+        "seconds": 3
+      },
+      "random_draws": [],
+      "expected": {
+        "public": {
+          "result": null
+        },
+        "state": {
+          "towns": {
+            "a": {
+              "owner": "a",
+              "wood": 64.0,
+              "food": 38.44,
+              "coins": 20,
+              "goods": {
+                "tools": 2.0
+              },
+              "produced": {
+                "tools": 2.0
+              },
+              "player": {
+                "x": 5.0,
+                "y": 8.0,
+                "facing": 1
+              },
+              "buildings": [
+                {
+                  "kind": "hall",
+                  "x": 5,
+                  "y": 5,
+                  "footprint": [
+                    3,
+                    3
+                  ],
+                  "stored_goods": {
+                    "wood": 64.0,
+                    "food": 38.44
+                  }
+                },
+                {
+                  "kind": "workshop",
+                  "x": 9,
+                  "y": 9,
+                  "footprint": [
+                    2,
+                    2
+                  ],
+                  "input_buffer": {
+                    "planks": 0,
+                    "wood": 1.0
+                  },
+                  "output_buffer": {
+                    "tools": 2.0
+                  },
+                  "pending_output": {
+                    "tools": 0.0
+                  },
+                  "craft_queue": [
+                    {
+                      "id": "bdd640fb06671ad1",
+                      "recipe": "tools",
+                      "amount": 1,
+                      "remaining": 1
+                    }
+                  ]
+                }
+              ],
+              "workers": [
+                {
+                  "name": "Ada",
+                  "job": "crafting",
+                  "building_index": 1,
+                  "logistics_position": {
+                    "x": 9,
+                    "y": 8
+                  },
+                  "production_status": "Waiting for delivery: planks",
+                  "woodcutting": 0,
+                  "crafting": 0.48,
+                  "hauling": 0.08,
+                  "work_animation": {
+                    "x": 9,
+                    "y": 8,
+                    "phase": "working",
+                    "task": [
+                      "crafting",
+                      "workshop",
+                      9,
+                      9,
+                      "workshop",
+                      9,
+                      9
+                    ],
+                    "elapsed": 0.8999999999999994,
+                    "path": []
+                  }
+                },
+                {
+                  "name": "Rowan",
+                  "job": "idle",
+                  "woodcutting": 1
+                },
+                {
+                  "name": "Wren",
+                  "job": "idle",
+                  "woodcutting": 2
+                },
+                {
+                  "name": "Bram",
+                  "job": "idle",
+                  "woodcutting": 0
+                },
+                {
+                  "name": "Hazel",
+                  "job": "idle",
+                  "woodcutting": 1
+                }
+              ],
+              "wood_ledger": {
+                "stored": 65.0,
+                "carried": 0
+              }
+            }
+          }
+        }
+      },
+      "numeric_fields": [],
+      "invariants": []
+    },
+    {
+      "operation": {
+        "kind": "advance",
+        "clock": "economy",
+        "seconds": 3
+      },
+      "random_draws": [],
+      "expected": {
+        "public": {
+          "result": null
+        },
+        "state": {
+          "towns": {
+            "a": {
+              "owner": "a",
+              "wood": 64.0,
+              "food": 38.245,
+              "coins": 20,
+              "goods": {
+                "tools": 2.0
+              },
+              "produced": {
+                "tools": 2.0
+              },
+              "player": {
+                "x": 5.0,
+                "y": 8.0,
+                "facing": 1
+              },
+              "buildings": [
+                {
+                  "kind": "hall",
+                  "x": 5,
+                  "y": 5,
+                  "footprint": [
+                    3,
+                    3
+                  ],
+                  "stored_goods": {
+                    "wood": 64.0,
+                    "food": 38.245
+                  }
+                },
+                {
+                  "kind": "workshop",
+                  "x": 9,
+                  "y": 9,
+                  "footprint": [
+                    2,
+                    2
+                  ],
+                  "input_buffer": {
+                    "planks": 0,
+                    "wood": 1.0
+                  },
+                  "output_buffer": {
+                    "tools": 2.0
+                  },
+                  "pending_output": {
+                    "tools": 0.0
+                  },
+                  "craft_queue": [
+                    {
+                      "id": "bdd640fb06671ad1",
+                      "recipe": "tools",
+                      "amount": 1,
+                      "remaining": 1
+                    }
+                  ]
+                }
+              ],
+              "workers": [
+                {
+                  "name": "Ada",
+                  "job": "crafting",
+                  "building_index": 1,
+                  "logistics_position": {
+                    "x": 9,
+                    "y": 8
+                  },
+                  "production_status": "Waiting for delivery: planks",
+                  "woodcutting": 0,
+                  "crafting": 0.48,
+                  "hauling": 0.08,
+                  "work_animation": {
+                    "x": 9,
+                    "y": 8,
+                    "phase": "working",
+                    "task": [
+                      "crafting",
+                      "workshop",
+                      9,
+                      9,
+                      "workshop",
+                      9,
+                      9
+                    ],
+                    "elapsed": 0.04999999999999927,
+                    "path": []
+                  }
+                },
+                {
+                  "name": "Rowan",
+                  "job": "idle",
+                  "woodcutting": 1
+                },
+                {
+                  "name": "Wren",
+                  "job": "idle",
+                  "woodcutting": 2
+                },
+                {
+                  "name": "Bram",
+                  "job": "idle",
+                  "woodcutting": 0
+                },
+                {
+                  "name": "Hazel",
+                  "job": "idle",
+                  "woodcutting": 1
+                }
+              ],
+              "wood_ledger": {
+                "stored": 65.0,
+                "carried": 0
+              }
+            }
+          }
+        }
+      },
+      "numeric_fields": [],
+      "invariants": []
+    },
+    {
+      "operation": {
+        "kind": "advance",
+        "clock": "economy",
+        "seconds": 3
+      },
+      "random_draws": [],
+      "expected": {
+        "public": {
+          "result": null
+        },
+        "state": {
+          "towns": {
+            "a": {
+              "owner": "a",
+              "wood": 64.0,
+              "food": 38.05,
+              "coins": 20,
+              "goods": {
+                "tools": 2.0
+              },
+              "produced": {
+                "tools": 2.0
+              },
+              "player": {
+                "x": 5.0,
+                "y": 8.0,
+                "facing": 1
+              },
+              "buildings": [
+                {
+                  "kind": "hall",
+                  "x": 5,
+                  "y": 5,
+                  "footprint": [
+                    3,
+                    3
+                  ],
+                  "stored_goods": {
+                    "wood": 64.0,
+                    "food": 38.05
+                  }
+                },
+                {
+                  "kind": "workshop",
+                  "x": 9,
+                  "y": 9,
+                  "footprint": [
+                    2,
+                    2
+                  ],
+                  "input_buffer": {
+                    "planks": 0,
+                    "wood": 1.0
+                  },
+                  "output_buffer": {
+                    "tools": 2.0
+                  },
+                  "pending_output": {
+                    "tools": 0.0
+                  },
+                  "craft_queue": [
+                    {
+                      "id": "bdd640fb06671ad1",
+                      "recipe": "tools",
+                      "amount": 1,
+                      "remaining": 1
+                    }
+                  ]
+                }
+              ],
+              "workers": [
+                {
+                  "name": "Ada",
+                  "job": "crafting",
+                  "building_index": 1,
+                  "logistics_position": {
+                    "x": 9,
+                    "y": 8
+                  },
+                  "production_status": "Waiting for delivery: planks",
+                  "woodcutting": 0,
+                  "crafting": 0.48,
+                  "hauling": 0.08,
+                  "work_animation": {
+                    "x": 9,
+                    "y": 8,
+                    "phase": "working",
+                    "task": [
+                      "crafting",
+                      "workshop",
+                      9,
+                      9,
+                      "workshop",
+                      9,
+                      9
+                    ],
+                    "elapsed": 3.0499999999999994,
+                    "path": []
+                  }
+                },
+                {
+                  "name": "Rowan",
+                  "job": "idle",
+                  "woodcutting": 1
+                },
+                {
+                  "name": "Wren",
+                  "job": "idle",
+                  "woodcutting": 2
+                },
+                {
+                  "name": "Bram",
+                  "job": "idle",
+                  "woodcutting": 0
+                },
+                {
+                  "name": "Hazel",
+                  "job": "idle",
+                  "woodcutting": 1
+                }
+              ],
+              "wood_ledger": {
+                "stored": 65.0,
+                "carried": 0
+              }
+            }
+          }
+        }
+      },
+      "numeric_fields": [],
+      "invariants": []
+    },
+    {
+      "operation": {
+        "kind": "advance",
+        "clock": "economy",
+        "seconds": 3
+      },
+      "random_draws": [],
+      "expected": {
+        "public": {
+          "result": null
+        },
+        "state": {
+          "towns": {
+            "a": {
+              "owner": "a",
+              "wood": 64.0,
+              "food": 37.855,
+              "coins": 20,
+              "goods": {
+                "tools": 2.0
+              },
+              "produced": {
+                "tools": 2.0
+              },
+              "player": {
+                "x": 5.0,
+                "y": 8.0,
+                "facing": 1
+              },
+              "buildings": [
+                {
+                  "kind": "hall",
+                  "x": 5,
+                  "y": 5,
+                  "footprint": [
+                    3,
+                    3
+                  ],
+                  "stored_goods": {
+                    "wood": 64.0,
+                    "food": 37.855
+                  }
+                },
+                {
+                  "kind": "workshop",
+                  "x": 9,
+                  "y": 9,
+                  "footprint": [
+                    2,
+                    2
+                  ],
+                  "input_buffer": {
+                    "planks": 0,
+                    "wood": 1.0
+                  },
+                  "output_buffer": {
+                    "tools": 2.0
+                  },
+                  "pending_output": {
+                    "tools": 0.0
+                  },
+                  "craft_queue": [
+                    {
+                      "id": "bdd640fb06671ad1",
+                      "recipe": "tools",
+                      "amount": 1,
+                      "remaining": 1
+                    }
+                  ]
+                }
+              ],
+              "workers": [
+                {
+                  "name": "Ada",
+                  "job": "crafting",
+                  "building_index": 1,
+                  "logistics_position": {
+                    "x": 9,
+                    "y": 8
+                  },
+                  "production_status": "Waiting for delivery: planks",
+                  "woodcutting": 0,
+                  "crafting": 0.48,
+                  "hauling": 0.08,
+                  "work_animation": {
+                    "x": 9,
+                    "y": 8,
+                    "phase": "working",
+                    "task": [
+                      "crafting",
+                      "workshop",
+                      9,
+                      9,
+                      "workshop",
+                      9,
+                      9
+                    ],
+                    "elapsed": 2.1999999999999993,
+                    "path": []
+                  }
+                },
+                {
+                  "name": "Rowan",
+                  "job": "idle",
+                  "woodcutting": 1
+                },
+                {
+                  "name": "Wren",
+                  "job": "idle",
+                  "woodcutting": 2
+                },
+                {
+                  "name": "Bram",
+                  "job": "idle",
+                  "woodcutting": 0
+                },
+                {
+                  "name": "Hazel",
+                  "job": "idle",
+                  "woodcutting": 1
+                }
+              ],
+              "wood_ledger": {
+                "stored": 65.0,
+                "carried": 0
+              }
+            }
+          }
+        }
+      },
+      "numeric_fields": [],
+      "invariants": []
+    },
+    {
+      "operation": {
+        "kind": "advance",
+        "clock": "economy",
+        "seconds": 3
+      },
+      "random_draws": [],
+      "expected": {
+        "public": {
+          "result": null
+        },
+        "state": {
+          "towns": {
+            "a": {
+              "owner": "a",
+              "wood": 64.0,
+              "food": 37.66,
+              "coins": 20,
+              "goods": {
+                "tools": 2.0
+              },
+              "produced": {
+                "tools": 2.0
+              },
+              "player": {
+                "x": 5.0,
+                "y": 8.0,
+                "facing": 1
+              },
+              "buildings": [
+                {
+                  "kind": "hall",
+                  "x": 5,
+                  "y": 5,
+                  "footprint": [
+                    3,
+                    3
+                  ],
+                  "stored_goods": {
+                    "wood": 64.0,
+                    "food": 37.66
+                  }
+                },
+                {
+                  "kind": "workshop",
+                  "x": 9,
+                  "y": 9,
+                  "footprint": [
+                    2,
+                    2
+                  ],
+                  "input_buffer": {
+                    "planks": 0,
+                    "wood": 1.0
+                  },
+                  "output_buffer": {
+                    "tools": 2.0
+                  },
+                  "pending_output": {
+                    "tools": 0.0
+                  },
+                  "craft_queue": [
+                    {
+                      "id": "bdd640fb06671ad1",
+                      "recipe": "tools",
+                      "amount": 1,
+                      "remaining": 1
+                    }
+                  ]
+                }
+              ],
+              "workers": [
+                {
+                  "name": "Ada",
+                  "job": "crafting",
+                  "building_index": 1,
+                  "logistics_position": {
+                    "x": 9,
+                    "y": 8
+                  },
+                  "production_status": "Waiting for delivery: planks",
+                  "woodcutting": 0,
+                  "crafting": 0.48,
+                  "hauling": 0.08,
+                  "work_animation": {
+                    "x": 9,
+                    "y": 8,
+                    "phase": "working",
+                    "task": [
+                      "crafting",
+                      "workshop",
+                      9,
+                      9,
+                      "workshop",
+                      9,
+                      9
+                    ],
+                    "elapsed": 1.3499999999999992,
+                    "path": []
+                  }
+                },
+                {
+                  "name": "Rowan",
+                  "job": "idle",
+                  "woodcutting": 1
+                },
+                {
+                  "name": "Wren",
+                  "job": "idle",
+                  "woodcutting": 2
+                },
+                {
+                  "name": "Bram",
+                  "job": "idle",
+                  "woodcutting": 0
+                },
+                {
+                  "name": "Hazel",
+                  "job": "idle",
+                  "woodcutting": 1
+                }
+              ],
+              "wood_ledger": {
+                "stored": 65.0,
+                "carried": 0
+              }
+            }
+          }
+        }
+      },
+      "numeric_fields": [],
+      "invariants": []
+    },
+    {
+      "operation": {
+        "kind": "advance",
+        "clock": "economy",
+        "seconds": 3
+      },
+      "random_draws": [],
+      "expected": {
+        "public": {
+          "result": null
+        },
+        "state": {
+          "towns": {
+            "a": {
+              "owner": "a",
+              "wood": 64.0,
+              "food": 37.464999999999996,
+              "coins": 20,
+              "goods": {
+                "tools": 2.0
+              },
+              "produced": {
+                "tools": 2.0
+              },
+              "player": {
+                "x": 5.0,
+                "y": 8.0,
+                "facing": 1
+              },
+              "buildings": [
+                {
+                  "kind": "hall",
+                  "x": 5,
+                  "y": 5,
+                  "footprint": [
+                    3,
+                    3
+                  ],
+                  "stored_goods": {
+                    "wood": 64.0,
+                    "food": 37.464999999999996
+                  }
+                },
+                {
+                  "kind": "workshop",
+                  "x": 9,
+                  "y": 9,
+                  "footprint": [
+                    2,
+                    2
+                  ],
+                  "input_buffer": {
+                    "planks": 0,
+                    "wood": 1.0
+                  },
+                  "output_buffer": {
+                    "tools": 2.0
+                  },
+                  "pending_output": {
+                    "tools": 0.0
+                  },
+                  "craft_queue": [
+                    {
+                      "id": "bdd640fb06671ad1",
+                      "recipe": "tools",
+                      "amount": 1,
+                      "remaining": 1
+                    }
+                  ]
+                }
+              ],
+              "workers": [
+                {
+                  "name": "Ada",
+                  "job": "crafting",
+                  "building_index": 1,
+                  "logistics_position": {
+                    "x": 9,
+                    "y": 8
+                  },
+                  "production_status": "Waiting for delivery: planks",
+                  "woodcutting": 0,
+                  "crafting": 0.48,
+                  "hauling": 0.08,
+                  "work_animation": {
+                    "x": 9,
+                    "y": 8,
+                    "phase": "working",
+                    "task": [
+                      "crafting",
+                      "workshop",
+                      9,
+                      9,
+                      "workshop",
+                      9,
+                      9
+                    ],
+                    "elapsed": 0.499999999999999,
+                    "path": []
+                  }
+                },
+                {
+                  "name": "Rowan",
+                  "job": "idle",
+                  "woodcutting": 1
+                },
+                {
+                  "name": "Wren",
+                  "job": "idle",
+                  "woodcutting": 2
+                },
+                {
+                  "name": "Bram",
+                  "job": "idle",
+                  "woodcutting": 0
+                },
+                {
+                  "name": "Hazel",
+                  "job": "idle",
+                  "woodcutting": 1
+                }
+              ],
+              "wood_ledger": {
+                "stored": 65.0,
+                "carried": 0
+              }
+            }
+          }
+        }
+      },
+      "numeric_fields": [],
+      "invariants": [
+        {
+          "name": "only funded order produced",
+          "kind": "equals",
+          "paths": [
+            [
+              "state",
+              "towns",
+              "a",
+              "produced",
+              "tools"
+            ]
+          ],
+          "value": 2.0
+        },
+        {
+          "name": "waiting order remains",
+          "kind": "equals",
+          "paths": [
+            [
+              "state",
+              "towns",
+              "a",
+              "buildings",
+              1,
+              "craft_queue",
+              0,
+              "remaining"
+            ]
+          ],
+          "value": 1
+        }
+      ]
+    }
+  ]
+}

@@ -1,15 +1,16 @@
-# Replay contract v1 (R03 slice 1)
+# Replay contract v1 (R03 slices 1–2)
 
-This is a disposable-fixture format and comparison contract, not a working game
-replay runner. `tools/replay_contract.py` validates the format and compares supplied
-observations without importing the game. `tests/replay/contract_v1.json` is a
+This defines the disposable-fixture format and comparison contract. Slice 2 adds
+a [Python-only recorder/replayer](PYTHON_REPLAYS.md); the backend-neutral replay
+interface remains slice 3. `tools/replay_contract.py` validates the format and
+compares supplied observations without importing the game. `tests/replay/contract_v1.json` is a
 fabricated **contract example**, not a recorded Python baseline. Its revision
 identifies the Python source inspected when designing the format; no gameplay
-result in that example is claimed as measured evidence. R03 slices 2 and 3 remain.
+result in that example is claimed as measured evidence. R03 slice 3 remains.
 
 Run `python3 tools/replay_contract.py tests/replay/contract_v1.json` for format
-validation. The command explicitly reports that Python replay/recording is pending,
-Rust adapters and Rust-host benchmarks do not exist, and `tools/server_perf.py`
+validation. The command points to `tools/python_replay.py` for Python execution
+and reports that Rust adapters and Rust-host benchmarks do not exist; `tools/server_perf.py`
 measures Python only. Validation is not replay, parity, or performance evidence.
 
 ## Trace envelope
@@ -27,10 +28,10 @@ Only JSON values are allowed; nonfinite numbers are errors. Version 1 requires:
 | `initial.terrain` | `synthetic_flat` for isolated rules or `real_generator` for terrain/world coverage |
 | `steps` | Ordered, nonempty list of operations, each with draws and observations |
 
-Recipe names/parameters are currently descriptive. Slice 2 must implement their
-allowlist and validate each recipe's parameter schema; arbitrary names do not imply
-executable support. Recipes must construct independent fresh worlds from public
-code, never read local saves, registries, provisioning, credentials, or environment
+The format validator treats recipe parameters as JSON. The Python runner accepts
+only its five versioned recipes and validates their exact parameter schema; see
+[Python replay recipes](PYTHON_REPLAYS.md). Arbitrary names have no executable
+support. Recipes must construct independent fresh worlds from public code, never read local saves, registries, provisioning, credentials, or environment
 secrets. Use temporary data roots for any reload and discard them after each run.
 Never invoke the normal `server.load`/`save` entry points against their default root.
 The schema accepts no initial save path. Recursive validation rejects common private
@@ -57,9 +58,9 @@ and `invariants`. Operations have one of these shapes:
 
 These are ordered clock/service invocations, not implicit host sleeps. Movement
 means host movement/courier service; economy means one three-second economic tick;
-adventure means adventure service. Slice 2 must freeze the exact Python calls and
-clock origins per recipe, validate supported quanta (the format only requires
-nonnegative finite seconds), and avoid double-advancing subsystems. Inspect
+adventure means adventure service. The Python recipes freeze exact calls and a
+zero clock origin, validate supported quanta (the format only requires nonnegative finite seconds), and avoid
+double-advancing subsystems; see [time semantics](PYTHON_REPLAYS.md). Inspect
 `server.tick`, the fast loop and economic loop, and adventure updates rather than
 assuming that ticking once advances all clocks equivalently. Command steps do not
 implicitly advance time. Reload serializes and reconstructs the independent world
@@ -69,21 +70,19 @@ rebuilds derived routes. It must not accrue wall-clock offline production.
 `random_draws` is an ordered list of `{site, method, args, value}`. `site` is a
 stable subsystem/call-site label, `method` identifies the operation (e.g. `choice`),
 `args` records its inputs, and `value` records the return. An empty list explicitly
-means no gameplay draws. Slice 2 must intercept every covered gameplay draw and
-fail on missing, extra, reordered, wrong-site, wrong-method or wrong-argument draws;
+means no gameplay draws. The Python runner intercepts covered gameplay draws and fails on missing, extra, reordered, wrong-site, wrong-method or wrong-argument draws;
 a shared seed alone is insufficient. Constructor randomness and random origins
 must be controlled too. Reload retains the trace cursor. Real terrain generation
 uses the legacy Python-compatible generator and explicit seed/version rather than
 substituting gameplay draws. Secure credential/ID entropy is excluded: use synthetic
-stable identities without generating real accounts. Nothing in slice 1 intercepts
-randomness or wall clocks yet.
+stable identities without generating real accounts. The format validator itself does not execute random draws or clocks.
 
 ## Observation and comparison
 
 `expected` has exactly `public` and `state`. Public observations hold selected
 command results/errors or public snapshots; state holds selected authoritative
-fields. Slice 2 defines each recipe's explicit projections; compare every field
-inside them, and document omitted fields. Projection must expose ownership, cargo,
+fields. The Python recipe projection is explicit; every field inside it compares, with
+omissions documented in [Python replays](PYTHON_REPLAYS.md). Projection must expose ownership, cargo,
 position, phase, rewards, and relevant accounting; do not omit inconvenient values.
 Errors should retain their public type/status/message rather than exception stacks.
 Paths are arrays of string object keys and integer array indexes rooted at this
@@ -92,8 +91,8 @@ observation, e.g. `["state","position","x"]`. No wildcards or implicit ID remapp
 `compare_observation(expected, actual, numeric_fields, invariants)` returns useful
 field paths and invariant names on failure. It has no Python dependencies or
 snapshot-building logic, so its checks are independent of gameplay implementation.
-The later backend interface supplies observations to it; no backend protocol,
-Python adapter, or Rust implementation is introduced in this slice.
+The Python runner supplies observations to it. The later backend interface
+remains unfinished; no Rust implementation is available.
 
 Normalization only canonicalizes object-key order and JSON whitespace. Arrays,
 IDs, integer quantities, ownership, rewards, null versus missing, phases, timers,
@@ -121,8 +120,8 @@ Invariants use `{name, kind, paths, value}` (`nonnegative` omits `value`):
 Invariants check **both reference and candidate**. A known cargo duplication bug
 cannot pass just because both backends reproduce it. Per-step constants can express
 conservation after specified production, consumption, or rewards and preservation
-across reloads. Slice 2 must derive those constants from independently stated rules,
-not copy them from Python output. Declare the physical inventory ledger carefully:
+across reloads. The Python recipe constants derive from independently stated rules, with
+additional rate/continuity checks in `tests/test_python_replay.py`. Declare the physical inventory ledger carefully:
 logical town stock, reserved buffers, and carried output can overlap and must not
 be blindly added together. Snapshot parity alone does not prove correctness.
 
@@ -133,11 +132,10 @@ phase, timers and schema metadata; they exercise numeric limits, private fields,
 nonfinite values and shared reference/candidate bugs. These are contract tests only.
 No private save data was accessed. No game/runtime files changed.
 
-Slice 2 must record and repeatedly replay Python traces for relocation,
+Slice 2 records and repeatedly replays five Python traces covering relocation,
 blocked/unreachable travel and recovery, reload mid-trip, exact-once cargo transfer,
-workshop queues, food/stock accounting, multiple towns and an adventure, preserving
-real terrain in terrain scenarios. Each baseline records its producing revision;
-inspect discrepancies as potential Python bugs before blessing them. Capture any
-required environment/hardware evidence under the migration contracts without
-claiming Rust measurements. Slice 3 implements the backend-neutral replay adapter
-interface and paired reporting, with Rust explicitly unavailable until implemented.
+workshop queues, food/stock accounting, multiple towns and a quarry adventure on
+real generated terrain. [Python replay evidence](PYTHON_REPLAYS.md) records the
+producing revision, limitations and environment. Slice 3 still implements the
+backend-neutral replay interface and paired reporting, with Rust explicitly
+unavailable until implemented. These fixtures do not fill every R01 audit gap.

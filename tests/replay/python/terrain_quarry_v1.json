@@ -1,0 +1,5838 @@
+{
+  "format_version": 1,
+  "id": "terrain_quarry_v1",
+  "provenance": {
+    "kind": "recorded_python",
+    "python_revision": "9637eb5bf982fa2342556feaa4059fcb3f0d4b17"
+  },
+  "initial": {
+    "recipe": "terrain_quarry_v1",
+    "parameters": {
+      "seed": 42,
+      "setup_draws": [],
+      "initial_state": {
+        "towns": {
+          "a": {
+            "owner": "a",
+            "wood": 65,
+            "food": 40,
+            "coins": 20,
+            "goods": {},
+            "produced": {},
+            "player": {
+              "x": 90.0,
+              "y": 32.0,
+              "facing": 1
+            },
+            "buildings": [
+              {
+                "kind": "hall",
+                "x": 90,
+                "y": 29,
+                "footprint": [
+                  3,
+                  3
+                ]
+              }
+            ],
+            "workers": [
+              {
+                "name": "Ada",
+                "job": "idle",
+                "woodcutting": 0
+              },
+              {
+                "name": "Rowan",
+                "job": "idle",
+                "woodcutting": 1
+              },
+              {
+                "name": "Wren",
+                "job": "idle",
+                "woodcutting": 2
+              },
+              {
+                "name": "Bram",
+                "job": "idle",
+                "woodcutting": 0
+              },
+              {
+                "name": "Hazel",
+                "job": "idle",
+                "woodcutting": 1
+              }
+            ],
+            "wood_ledger": {
+              "stored": 0,
+              "carried": 0
+            }
+          },
+          "b": {
+            "owner": "b",
+            "wood": 65,
+            "food": 40,
+            "coins": 20,
+            "goods": {},
+            "produced": {},
+            "player": {
+              "x": 29.0,
+              "y": 89.0,
+              "facing": 1
+            },
+            "buildings": [
+              {
+                "kind": "hall",
+                "x": 29,
+                "y": 86,
+                "footprint": [
+                  3,
+                  3
+                ]
+              }
+            ],
+            "workers": [
+              {
+                "name": "Ada",
+                "job": "idle",
+                "woodcutting": 0
+              },
+              {
+                "name": "Rowan",
+                "job": "idle",
+                "woodcutting": 1
+              },
+              {
+                "name": "Wren",
+                "job": "idle",
+                "woodcutting": 2
+              },
+              {
+                "name": "Bram",
+                "job": "idle",
+                "woodcutting": 0
+              },
+              {
+                "name": "Hazel",
+                "job": "idle",
+                "woodcutting": 1
+              }
+            ],
+            "wood_ledger": {
+              "stored": 0,
+              "carried": 0
+            }
+          },
+          "spectator": {
+            "owner": "spectator",
+            "wood": 65,
+            "food": 40,
+            "coins": 20,
+            "goods": {},
+            "produced": {},
+            "player": {
+              "x": 25.0,
+              "y": 25.0,
+              "facing": 1
+            },
+            "buildings": [
+              {
+                "kind": "hall",
+                "x": 25,
+                "y": 22,
+                "footprint": [
+                  3,
+                  3
+                ]
+              }
+            ],
+            "workers": [
+              {
+                "name": "Ada",
+                "job": "idle",
+                "woodcutting": 0
+              },
+              {
+                "name": "Rowan",
+                "job": "idle",
+                "woodcutting": 1
+              },
+              {
+                "name": "Wren",
+                "job": "idle",
+                "woodcutting": 2
+              },
+              {
+                "name": "Bram",
+                "job": "idle",
+                "woodcutting": 0
+              },
+              {
+                "name": "Hazel",
+                "job": "idle",
+                "woodcutting": 1
+              }
+            ],
+            "wood_ledger": {
+              "stored": 0,
+              "carried": 0
+            }
+          }
+        },
+        "terrain": {
+          "seed": 42,
+          "version": 1,
+          "rows_sha256": "b2d30483c184a04880c22b33c1bbba12965ed3dd26a3aee8143ac8fb59930d74",
+          "resource_count": 5305,
+          "resources_sha256": "7f539aa65ad5d73a012f3eb493dd09199c00176adf56959ee3fd7dc881ac120b",
+          "npc_count": 22,
+          "town_sites": [
+            {
+              "x": 90,
+              "y": 29
+            },
+            {
+              "x": 29,
+              "y": 86
+            },
+            {
+              "x": 25,
+              "y": 22
+            },
+            {
+              "x": 85,
+              "y": 84
+            }
+          ],
+          "rows": [
+            "ffggsssgssssvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvfffrrvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv",
+            "fggggggggsssvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvfffffffrrrrrrvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv",
+            "gggggggggsssvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvfffffffffrrrrrrrgvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv",
+            "gggggggggsssvvvvvvvvvvvvvvvvvvvvvvvvvvvvfffffffffffrrrrrrrrggmmvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv",
+            "sggggggggsssvvvvvmssssssggggmvvvvvvvffffffffffffffrrrrrrrrrgmmfffffsvvssssssssssssgggggvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv",
+            "gggggggggsssssffffsssgggggggmmfffffffffffffffrrrrrrrrrrrrrrgmfffffffssssssssssssssggggggggggmmmmfvvvvvvvvvvvvvvvvvvvvvvv",
+            "gggggggggsgsfffffffsggggggggmmffffffffffffffrrrrrrrrrrrrrrrgmffffffffsssssssssssssssggggggggmmfffffffvvvvvvvvvvvvvvvvvvv",
+            "gggggggggsfffffffffmmgggggggmmffffffffffffffmmmrrrrrrrrrrrrgmffffffffsssssssssssssssssggggggmfffffffffffvvvvvvvvvvvvvvvv",
+            "gggggggggffffffffffmmgggggggmmffffffffffffffmmggrrrrrrrrrrrmmffffffffssssssssssssssssssssssgmfffffffffffffvvvvvvvvvvvvvv",
+            "gggggggggffffffffffmmrrrggggmmffffffffffffffmmmgrrrrrrrrrrrmmffffffffssssssssssssssssssssssssffffffffffffffvvvvvvvvvvvvv",
+            "ggggmmfffffffffffffmmrrrrgggmfffffffffffffffmmmmmrrrrrrrrrrmmffffffffssssssssssssssssssssssssmffffffffmmmmmffvvvvvvvvvvv",
+            "gggmmffffffffffffffmmrrrrgggmffffffffffffffffmmmmrrrrrrrrrrmffffffffssssssssssssssssssssssssssmffffmmmmmmmmmssvvvvvvvvvv",
+            "ggmmmfffffffffffffmmmrrrrggmmfffffffffffffffffffffrrrrrrrrrmffffffffsssssssssssssssssssssssssgmmmmmmmmmmmmmmssssvvvvvvvv",
+            "mmmmffffffffffssmmmmmrrrrgmmffffffffffffffffffffffffrrrrrrrmfffffffssssssssssssssssssssssssssgggggggggggggggsssssvvvvvvv",
+            "mmmfffffffffffssmmmmmrrrmmmfffffffffffffffffffffffffffrrrrrffffffffssssssssssssssssssssssssssggggggggggggggsssssssvvvvvv",
+            "mmfffffffffffsssgmmmmmrrmmmffffffffffffffffffffffffffffrrrfffffffffmggsssssssssssssssssssssssgggggggggggggssssssssgvvvvv",
+            "mmfffffffffffsssggmmmmmmmmffffffffffffffffffffffffffffffrffffffffffmgggsssssssssssssssssssssgggggggggggggsssssssssggvvvv",
+            "mmfffffffffffsssggffffgggggggggfffffffffffffffffffffffffrffffffffffmggggsssssssssssssssssssgggggggggggggsssssssssssggvvv",
+            "mmfffffffffffssgggffffgggggggggfffffffffffffffffffffffffffffffffffmmgggggsssssssssssssgggggggggggggggggssssssssssssggvvv",
+            "mmffffffffffsssgggfffggggggggggfffffffffffffffffffffffffffrrrrrrmmmmgggggssssssssssssgggggggggggggggggsssssssssssssgggvv",
+            "fffffffffffssssgggfffggggggggggmssffffffffffffffffffffffffrrrrrrrrrrmmggggssssssssssggggggggmmmmmmmmsssssssssssssssgmmvv",
+            "fffffmmmsssssssgggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggmffffffffssssssssssssssmmmvv",
+            "fffmmmmmsssssssgggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggffffffffffffsssssssssssmmmfv",
+            "fffmmmmmsssssssgggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggffffffffffffffffsssssssmfffv",
+            "fffmmmmggssssssgggggggggggggggggsssmffffffffffffffffffffffrrrrrrrrrrmmfffffssssssssffffgggggggggffffffffffffffsssssffffv",
+            "fffmmmmggssssssggggggggggggggggggggmffffffffffffffffffffffmmmgggggggmmfffffssssssggffffgggggggggfffffffffffffsssssmffffv",
+            "ffffmmmmmsssssgggggggggggggggggggggmmfffffffffffmfbbbbbbbbbbmmgggggmmmfffffmmggggggfffggggggggggfffffffffffssssssmmmmffv",
+            "fffffmmmmsssssgggggggggggggggggggggmmffffffffmmmbbbbbbbbbbbbbbbmgmmmmmmfffmmmmgggggfffggggggggggfffffffffmmmmmmmmmmmmmmv",
+            "fffffffmmsssssggggggggggggggggggggggmmmfffmmmbbbbbbbbbbbbbbbbbbbbbbmmmmmmmmmmmmmmmmmggggggggggggfffffffmmmmmmmmmmmmmmmmv",
+            "fffffffffffsssgggggggggggggggggggggggmmmmmmmbbbbbbbbbbbbbbbbbbbbbbbbbmmmmmmmmmmmmmmmmgggggggggggfffffffmmmmmmmgggggggggv",
+            "fffffffffffsssgggggggggggggggggggggggggggggbbbbbbbbbbbbbbbbbbbbbbbbbbbmgggmmmmmmrrrrrgggggggggggffffffmmmmmmgggggggggggv",
+            "ffffffffffffssggggggggggggggggggggggggggggbbbbbbbbbbbbbbbbbbbbbbbbbbbbbggggrrrfffffrrgggggggggggffffffmmmmmmgrrrgggggggv",
+            "ffffffffffffsmgggggggggggggggggggggggggggbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbgggrrrfffffrrgggggggggggffffffmmmmmrrrrrrrgggggv",
+            "ffffffffffffsmggggggggggggggggggggggggggbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbggrrrfffffrrgggggggggggffffffmmmmmrrrrrrrrggggv",
+            "fffffffffffsssgggggggggggggggggggggggggbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbggrrrrrrrrrrgggggggggggffffffmmmmmrrrrrrrrggggv",
+            "ffffffffffssssggggggggggggggggggggggggbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbgrrrrrrrrrrrrrrgggffffffffffmmmmmrrrrrrrrggggv",
+            "fffffmmmssssssmmmmmmmmmmmmmmmssggggggbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbgggrrrrrrrrrrrrgggfffffffffmmmmmgrrrrrrrrggggg",
+            "fffmmmmmsssssssmmmmmmmfffffmssssgggggbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbgggggggggmmmmmgggfffffffffmmmmmggrrrrrrrrgggg",
+            "ffmmmmsssssssssmmmmfffffffssssssggggbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbggggggggggmmmfgggfffffffffmmmmmggrrrrrrssrggg",
+            "mmmmmsssssssssssmfffssssssssssssggggbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbggggggggggmmffgggfffffffffmmmmmggrrrrrssssrrr",
+            "sssssssssssssssssfffsssssssssssssrrbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbggggggggggmmffgggfffffffffsmmmmgggrrrsssssrrr",
+            "fssssssssssssssssfffsssssssssssssssbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbggggggggggmmffgggfffffffffssmmmgggrrsssssssrr",
+            "ffsssssssssssssssfffsssssssssssssssbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbssssssssssmmfgggfffffffffssmmmmmgrrssssssssr",
+            "fffssssssssssssssssssssssssssssssssbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbsssssssssssssgggfffffffffffffmmmmrssssssssss",
+            "fffsssssssssssssssssssssssssssssssssbbbbbbbbbbbbbbbbbbsbbbbbbbbbbbbbbbbbbbbbsssssssssssssgggsfffffffffffffffmsssssssssss",
+            "ssssssssssssssssssssssssssssssssssssbbbbbbbbbbbbbsssssssssssbbbbbbbbbbbbbbbbsssssssssssssgggssssssfffffffffffsssssssssss",
+            "ssssssssssssssssssssssssssssssssssssbbbbbbbbbbbsssssssssssssssbbbbbbbbbbbbbbbssssssssssssgggsssssssfffffffffssssssssssss",
+            "ssssfffsssssssssssssssssssssssssssssbbbbbbbbbbsssssssssssssssssbbbbbbbbbbbbbgggggssssssssgggsssssssffffffffsssssssssssss",
+            "ssssfffsssssssssssssssssssssssssssssbbbbbbbbbsssssssssssssssssssbbbbbbbbbbbbgggggggssssssgggsssssssffffffffsssssssssssss",
+            "sssffffmsssssssssssssssssssssssssssssbbbbbbbsssssssssssssssssssssbbbbbbbbbbbggggggggsssssgggsssmmmmffffffffsssssssssssss",
+            "ssffffmmsssssssssssssssssssssssssssssbbbbbbsssssssssssssssssssssssbbbbbbbbbbmgggggggsssssgggssgggmmmffffffffssssssssssss",
+            "fffffmmssssssssssssssssssssssssssssssbbbbbssssssssssssssssssssgggssbbbbbbbbmmmggggggsssssgggssgggggmmfffffffssssssssssss",
+            "ffffmmssggmmffsssssssssssssssssssssrrrbbbbsssssssssssssssssssgggggsbbbbbbbbrrrmmmmmmsssssgggsgggggggmmmffffmssssssssssss",
+            "fffmmmssgggmfffsssssssssssssssssssrrrrbbbsssssgggssssssssssssgggggssbbbbbbrrrrrrmmmmsssssgggsggggggggmmmmmmmssssgggmssss",
+            "mmmmmgssgggmmfffssssssssssssssssssrrrrfbbssssgggggsssssssssssgggggssbbbbbrrffffffffffssssgggsggggggggggmmmggsssgggggmsss",
+            "mmmmgggggggmmfffsssssssssssssssssrrrrrffbssssgggggssssssssssssgggsssbbbbrrrfffffffffffsssgggsgggggggggggggggggggggggmfss",
+            "mmmggggggggmmffffssssssssssssssssrrrrrfffssssgggggssssssssssssssssssbbrrrrrfffffffffffsssgggsgggggggggggggggggggggggmfss",
+            "mmmmgggggggmmfffffffssssssssssssrrrrrrfffsssssgggsssssssssssssssssssbfrrrrffffffffffffsssgggsgggggggggggggggggggggggmfff",
+            "mmmmmggggggmmfffffffssssssssssmrrrrrrfffsssssssssssssssssssssssssssssffrrffffffffffffssssgggsggggggrggggggggggggggggmfff",
+            "fffmmmmgggmmmffffffffssssssssmmmmmmmfffffsssssssssssssssssssssssssssrffffffffffffffffssssgggsggggggrrgggggggggggggggmfff",
+            "fffffmmmmmmmmmfffffmmsssssssmmmffffffffffssssssssssssssssgggssssssssrrffffffffffffffmssssgggggggggrrrgmmmmggggggggggmfff",
+            "ffffffffffffrmmmmmmmmsssssssmmfffffffffffsssssssssssssssgggggsssssssrrffffffffffffffmssssgggggggggrrrmmmmmmggggggggmmfff",
+            "ffffffffffffrrrmmgggssssssssmffffffffffffsssssssssssssssgggggsssssssrrffffffffffffffmssssgggggggmmrrrrmmmmmmgggggggmmfff",
+            "ffffffffffffrrrrrggsssssssssmffffffffffffsssssssssssssssgggggsssssssrrfffffffffffffmmgsssgggggmmmmrrrrmmmmmmgggggggmmffv",
+            "ffffffffffffrrrssssssssssssssfffffffffffffsssssssssssssssgggsssssssrrrfffffffffffffmmgsssgggggmmmrrrrrmmmmmmmggggggmmffv",
+            "ffffffffffffrrrssssssssssssssfffffffffffffsssssssssssssssssssssssssrrrfffffffffffffmmgsssgggggmmmrrrrrmmmmmmmggggggmmffv",
+            "ffffffffffffrrrssssssssssssssmfffffffffffffsssssssssssssssssssssssrrrrfffffffffffffmmgsssgggggmmmrrrrrrmmmmmmggggggmmfvv",
+            "fffffffffffrrrrssssssssssssssmffffffffffffffsssssssssssssssssssssrrrrrfffffffffrmmmmggsssggggggmmrrrrrmmmmmmmgggggggmmvv",
+            "fffffrrrrrrrrrrsssssssssssssmmmmsssmfffffffffsssssssssssssssssssrrrrrrrffffrrrrrmmmggggssgggggggmmrrrrmmmmmmmggggggggmvv",
+            "rrrrrrrrrrmmmmmsssssssssssssmmmsssssmmmmmmmmffsssssssssssssssssrrrrrrrrfffrrrrggggggggggsgggsgggggmmmmmmmmmmmgggggggggvv",
+            "rrrrrgggggggmmmssssssssssssmmmgsssssgggmmmmmfffsssssssssssssssmrrrrrrrrrrmmmggggggggggsssgggssgggggmmmmmfmmmmggggggggggv",
+            "rrrrgggggggggmmssssssssssssmmgsssssssgggggmmfffffsssssssssssmmrrrrrrrrrrmmmmggggggggsssssgggsssggggmmmmmfmmmmggggggggggv",
+            "rrrggggggggggmmmssssssssssfmsssssssssgggggmmffffffffffsfffffmrrrrrrrrrrrmmmggggggggssssssgggsssggggmmmmmfmmmmrrggggggggv",
+            "rrrggggggggggmmmmmssssssssfsssssssssssggggmmffffffffffffffffrrrrrrrrrrrmmmmggggggggssssssgggsssggggmmmmfffmrrrrrrrgggggg",
+            "rrrggggggggggmmsssssffffffffsssssssssssggggmmffffffffffffffrrrrrrrrrrrrmmmmgggggggggsssssgggsssggggmmmmfffrrrrrrrrrggggg",
+            "rrrgggggggssssssssssfffffffffsssssssssssgggmmffffffffffffffrrrrrrrrrrrrgggggggggggggggsssgggsssgggmmmmfffffrrrrrrrrrgggg",
+            "rrgggggmmsssssssssssffffffffffsssssssssssgggmmmffffffffffffrrrrrrrrrrrrgggggmsmmmmmmmmsssgggssssmmmmmffffffffrrrrrrrgggg",
+            "rrggggmmmsssssssssssffffffffffffffsssssssgggggmmmmmmrffffffrrrrrrrrrrrrgggggssffffffmmmssgggssssmmmmmfffffffffffffrrmggg",
+            "rrgggmmmmssssssssssssffffffffffffffssssssgggggggggmmrrfffffrrrrrrrrrrrggggggsfffffffffmssgggssssmmmmfffffffffffffffrmggg",
+            "rrrggmmfffsssssssssssfffffffffffffffsssgggggggggggggmrfffffrrrrrrrrrrrggggggmfffffggggggggggssssmmmmffffffffffffffffmggg",
+            "rrrggmmfffsssssssssssfffffffffffffffssggggggggggggggmmfffffrrrrrrrrrrgggggggmfffffggggggggggssssmmmmffffffffffffffffmggg",
+            "rrrggmmfffsssssssssssfffffgggggggggfssggggggggggggggmmffffmmmgggggggggggggggmffffgggggggggggssssmmmmffffffffffffffffmggg",
+            "rrrggmmmffsssssssggmmfffffgggggggggfsggggggggggggggmmmmmmmmmmggggggggggggggmmffffgggggggggggssssmmmmfffffffffffffffmmggg",
+            "rrrggmmmssssssssgggmmffffggggggggggfsmgggggggmmmmmmmmmmmmmmmgggggggggggggggmmfffggggggggggggsssssgmmmffffffffffffffmmggg",
+            "rrrrggmmsssssssggggmmmfffggggggggggffmmgggmrrrmfffmmmmmggggggggggggggggggggmmfffggggggggggggsssssggmmmmfffffffffffmmmggg",
+            "rrrrggmmsssssssgggmmmrrfggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggssssggggmmmmmmmmmmmmmmmmgggg",
+            "rrrrggmmsssssssgggmmrrrrggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggsssggggggmmmmmmmmmmmmmmmgggg",
+            "rrrrgggmsssssssmmmmrrrrrggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggsssgggggggmmmmmmmmmmmmmggggg",
+            "rrrrgggmsssssssmmmmrrrrrgggggggggggfffffsssssssssssssgsssssssssssssssssssgmmffffgggggggggggsssggggggggmmmmmmmmmmmmgggggg",
+            "rrrrgggmsssssssmmmmrrrrrgggggggggggfffffssssssssssssssssssssssssssssssssggmmffffgggggggggggsssggggggggmmmmmmmmmmmmgggggg",
+            "rrrrggmmsssssssmmmmrrrrrgggggggggggfffffssssssssssssssggggssssssssssssssmmmmffffffffmmssssssssgggggggggmmmmmmmmmmmgggggg",
+            "rrrggmmmffssssmmmmmmrrrfgggggggggggfmmmmssssssssssssssmggggmssssfssssssmmmmfffffffffmmssssssssgggggggggggggggmmmmmgggggg",
+            "rrggmmffffffssmmmmmmmffffffffffffffmmmmgsssssssssssssssmmmmmmfffffffffffffffffffffffmmssssssssgggggggggggggggggmmmgggggg",
+            "ggggmffffffffmmmmmmmffffffffffffffmmmgggggssssssssssssssffffffffffffffffffffffffffffmmgssssssssggggggggggggggggmmggggggg",
+            "gggmmffffffffmmmmmmmffffffffffffmmmmgggggggmssssssssssssffffffffffffffffffffffffffffmgggssssssssmmmgggggggggggggmgggggss",
+            "gggmmfffffffffmmmmmmfffffffffffmmmmmgggggggssffffffsssssffffffffffffffffffffffffffffmgggssssssssmmmgggggggggggggmggggsss",
+            "gggmffffffffffmmmmmmfffffffffffmmmmggggggssssfffffffssssffffffffffffffffffffffffffffmggggsssssssmmmgggggggggggggmggsssss",
+            "gggmffffffffffmmmmmmfffffffffffmmmmgggggsssssffffffffssfffffffffffffffffffffffffffffmggggssssssmmmmmggggggggggggmggsssss",
+            "gggmfffffffffmmmmmmmfffffffffffmmmmmggggsssssffffffffffffffffffffffffffffffffffffffmmggggggggmmmmmmmmggggggggggmmmssssss",
+            "gggmfffffffffmmmgmmmffffffffffmmmmmmggggsssssfffffffffffffffffffffffffffffffffffffmmmgggggggmmmffffmmmgggggggmmmmmssssss",
+            "ggmmfffffffffmmgggmmffffffffffmmmmmmggggssssffffffffffffffffffffffffffffffffffmmmmmmggggggggmmffffffmmmmggmmmmmmmmssssss",
+            "ggmmfffffffffmmggggmsfffffffffmmmmmmggggssssffffffffffffffffffffffffffffffffmmmggggggggggggmmffffffffmmmmmmmmmmmmsssssss",
+            "ggmmfffffffffmgggggmsffffffffmmmmmmmmggggsssffffffffffffffffffffffffffffffffmmgggggggggggggmfffffffffffmmmmmmmmmmsssffff",
+            "ggmmfffffffffmgggggmsffffffffmmmmrmmmmmmmmsfffffffffffffffffffffmffffffffffmmggggggggggggggmfffffffffffmmmmmmssssssfffff",
+            "gmmmfffffffffmgggggmsffffffffmmmrrrmmmmmmmmffffffffffffffffffffmmmfffffffffmmgggggggggggggmmffffffffffffmmmmsssssssfffff",
+            "ggmmfffffffffmgggggmmffffffffmmmrrrrmmmmmmmffffffffffffffffffffmmmfffffffffmmggggggggggggggmffffffffffffmmsssssssssfffff",
+            "ggmmfffffffffmgggggmmffffffffmmrrrrrrmmmmmmffffffffffffffffffffmmmfffffffffmmggggggggggggggmfffffffffffmmssssssssssfffff",
+            "gggmmffffffffmmgggmmmffffffffmmrrrrrrrmffffffffffffffffffffffffmmmfffffffffmmggggggggggggggmffffffffffmmssssssssssffffff",
+            "sgggmffffffffmmmgmmmffffffffmmgrrrrrrrfffffffmmmmmmmmmmfffffffmmmffffffffffmmggggggggggggggmmffffffffmssssssssssssffffff",
+            "ssssmmffffffmmmmmmmmffffffffmmgrrrrrrfffffffmmmggggggmmmmmmmmmmmfffffffffffmmggggggggggggggmmffffffffssssssssssssffffffv",
+            "ssssssmfffffmmmmmmmfffffffffmmrrrrrrrfffffffmmggggggggggggggmmmmfffffffffffmmgggggggggggggggmffffffffsssssssssssfffffffv",
+            "sssssssmfffmmmmmmmmfffffffffmggrrrrrrfffffffmgggggggggggggggmmmmfffffffffffmmgggggggggggggggmfffffffssssssssssssffffffvv",
+            "ssssssssffmmmmmmssssssssssffmggrrrrrrfffffffmggggggggggggggggsssfffffffffffmmgggggggggggggggmfffffffmmssssssssssfffffvvv",
+            "ssssssssffmmmmmssssssssssssfmggrrrrrrfffffffmggggggggggggggggssffffffffffffmmgggggggggggggggmfffffffmmggsssssssfffffvvvv",
+            "sssssssssfmmmmmssssssssssssfmggrrrrrmfffffffmgggggggggggggggmssfffffffffffmmmgggggggggggggggmfffffffmmggggggssfffffvvvvv",
+            "sssssssssfmmmmmssssssssssssfmgggggggmfffffffmgggggggggggggggmssffffffssssmmmmggggggggggggggmmmfffffmmmgggggmmfffffvvvvvv",
+            "sssssssssfmmmmmssssssssssssfmmggggggmfffffffmgggggggggggggggmssfffffssssssmmggggggggggmmmmmmmmmmmmmmmgggggmmmffffvvvvvvv",
+            "sssssssssfmmmmmsssssssssssffmmggggggmfffffffmggggggggggggggmmsfffffssssssssgggggggggmmmmmmmmmmgggggggggggmmmffffvvvvvvvv",
+            "sssssssssfmmmmmmssssssssssffmmggggggmmffffffmgggggggggggggmmmsfffffsssssssssgggggggmmmfffffmmggggggggggmmmmffffvvvvvvvvv",
+            "sssssssssfmmmmmmssssssssssffmmggggggmmfffffmmgggggggggggggmmmsfffffsssssssssssgggggmmffffffmmggggggggggmmmmffvvvvvvvvvvv"
+          ]
+        }
+      }
+    },
+    "terrain": "real_generator"
+  },
+  "steps": [
+    {
+      "operation": {
+        "kind": "command",
+        "town": "a",
+        "data": {
+          "action": "join_quarry"
+        }
+      },
+      "random_draws": [],
+      "expected": {
+        "public": {
+          "result": {}
+        },
+        "state": {
+          "towns": {
+            "a": {
+              "owner": "a",
+              "wood": 65,
+              "food": 40,
+              "coins": 20,
+              "goods": {},
+              "produced": {},
+              "player": {
+                "x": 90.0,
+                "y": 32.0,
+                "facing": 1
+              },
+              "buildings": [
+                {
+                  "kind": "hall",
+                  "x": 90,
+                  "y": 29,
+                  "footprint": [
+                    3,
+                    3
+                  ]
+                }
+              ],
+              "workers": [
+                {
+                  "name": "Ada",
+                  "job": "idle",
+                  "woodcutting": 0
+                },
+                {
+                  "name": "Rowan",
+                  "job": "idle",
+                  "woodcutting": 1
+                },
+                {
+                  "name": "Wren",
+                  "job": "idle",
+                  "woodcutting": 2
+                },
+                {
+                  "name": "Bram",
+                  "job": "idle",
+                  "woodcutting": 0
+                },
+                {
+                  "name": "Hazel",
+                  "job": "idle",
+                  "woodcutting": 1
+                }
+              ],
+              "wood_ledger": {
+                "stored": 0,
+                "carried": 0
+              }
+            },
+            "b": {
+              "owner": "b",
+              "wood": 65,
+              "food": 40,
+              "coins": 20,
+              "goods": {},
+              "produced": {},
+              "player": {
+                "x": 29.0,
+                "y": 89.0,
+                "facing": 1
+              },
+              "buildings": [
+                {
+                  "kind": "hall",
+                  "x": 29,
+                  "y": 86,
+                  "footprint": [
+                    3,
+                    3
+                  ]
+                }
+              ],
+              "workers": [
+                {
+                  "name": "Ada",
+                  "job": "idle",
+                  "woodcutting": 0
+                },
+                {
+                  "name": "Rowan",
+                  "job": "idle",
+                  "woodcutting": 1
+                },
+                {
+                  "name": "Wren",
+                  "job": "idle",
+                  "woodcutting": 2
+                },
+                {
+                  "name": "Bram",
+                  "job": "idle",
+                  "woodcutting": 0
+                },
+                {
+                  "name": "Hazel",
+                  "job": "idle",
+                  "woodcutting": 1
+                }
+              ],
+              "wood_ledger": {
+                "stored": 0,
+                "carried": 0
+              }
+            },
+            "spectator": {
+              "owner": "spectator",
+              "wood": 65,
+              "food": 40,
+              "coins": 20,
+              "goods": {},
+              "produced": {},
+              "player": {
+                "x": 25.0,
+                "y": 25.0,
+                "facing": 1
+              },
+              "buildings": [
+                {
+                  "kind": "hall",
+                  "x": 25,
+                  "y": 22,
+                  "footprint": [
+                    3,
+                    3
+                  ]
+                }
+              ],
+              "workers": [
+                {
+                  "name": "Ada",
+                  "job": "idle",
+                  "woodcutting": 0
+                },
+                {
+                  "name": "Rowan",
+                  "job": "idle",
+                  "woodcutting": 1
+                },
+                {
+                  "name": "Wren",
+                  "job": "idle",
+                  "woodcutting": 2
+                },
+                {
+                  "name": "Bram",
+                  "job": "idle",
+                  "woodcutting": 0
+                },
+                {
+                  "name": "Hazel",
+                  "job": "idle",
+                  "woodcutting": 1
+                }
+              ],
+              "wood_ledger": {
+                "stored": 0,
+                "carried": 0
+              }
+            }
+          },
+          "quarry": {
+            "members": {
+              "a": {
+                "x": 1,
+                "y": 3,
+                "inside": true
+              }
+            },
+            "started": false,
+            "completed": false,
+            "gate_latched": false,
+            "sequence": [],
+            "runes_solved": false,
+            "message": "Gather at least two founders to begin."
+          },
+          "terrain": {
+            "seed": 42,
+            "version": 1,
+            "rows_sha256": "b2d30483c184a04880c22b33c1bbba12965ed3dd26a3aee8143ac8fb59930d74",
+            "resource_count": 5305,
+            "resources_sha256": "7f539aa65ad5d73a012f3eb493dd09199c00176adf56959ee3fd7dc881ac120b",
+            "npc_count": 22,
+            "town_sites": [
+              {
+                "x": 90,
+                "y": 29
+              },
+              {
+                "x": 29,
+                "y": 86
+              },
+              {
+                "x": 25,
+                "y": 22
+              },
+              {
+                "x": 85,
+                "y": 84
+              }
+            ]
+          }
+        }
+      },
+      "numeric_fields": [],
+      "invariants": [
+        {
+          "name": "spectator receives no reward",
+          "kind": "equals",
+          "paths": [
+            [
+              "state",
+              "towns",
+              "spectator",
+              "coins"
+            ]
+          ],
+          "value": 20
+        },
+        {
+          "name": "a exact-once reward",
+          "kind": "equals",
+          "paths": [
+            [
+              "state",
+              "towns",
+              "a",
+              "coins"
+            ]
+          ],
+          "value": 20
+        },
+        {
+          "name": "b exact-once reward",
+          "kind": "equals",
+          "paths": [
+            [
+              "state",
+              "towns",
+              "b",
+              "coins"
+            ]
+          ],
+          "value": 20
+        }
+      ]
+    },
+    {
+      "operation": {
+        "kind": "command",
+        "town": "b",
+        "data": {
+          "action": "join_quarry"
+        }
+      },
+      "random_draws": [],
+      "expected": {
+        "public": {
+          "result": {}
+        },
+        "state": {
+          "towns": {
+            "a": {
+              "owner": "a",
+              "wood": 65,
+              "food": 40,
+              "coins": 20,
+              "goods": {},
+              "produced": {},
+              "player": {
+                "x": 90.0,
+                "y": 32.0,
+                "facing": 1
+              },
+              "buildings": [
+                {
+                  "kind": "hall",
+                  "x": 90,
+                  "y": 29,
+                  "footprint": [
+                    3,
+                    3
+                  ]
+                }
+              ],
+              "workers": [
+                {
+                  "name": "Ada",
+                  "job": "idle",
+                  "woodcutting": 0
+                },
+                {
+                  "name": "Rowan",
+                  "job": "idle",
+                  "woodcutting": 1
+                },
+                {
+                  "name": "Wren",
+                  "job": "idle",
+                  "woodcutting": 2
+                },
+                {
+                  "name": "Bram",
+                  "job": "idle",
+                  "woodcutting": 0
+                },
+                {
+                  "name": "Hazel",
+                  "job": "idle",
+                  "woodcutting": 1
+                }
+              ],
+              "wood_ledger": {
+                "stored": 0,
+                "carried": 0
+              }
+            },
+            "b": {
+              "owner": "b",
+              "wood": 65,
+              "food": 40,
+              "coins": 20,
+              "goods": {},
+              "produced": {},
+              "player": {
+                "x": 29.0,
+                "y": 89.0,
+                "facing": 1
+              },
+              "buildings": [
+                {
+                  "kind": "hall",
+                  "x": 29,
+                  "y": 86,
+                  "footprint": [
+                    3,
+                    3
+                  ]
+                }
+              ],
+              "workers": [
+                {
+                  "name": "Ada",
+                  "job": "idle",
+                  "woodcutting": 0
+                },
+                {
+                  "name": "Rowan",
+                  "job": "idle",
+                  "woodcutting": 1
+                },
+                {
+                  "name": "Wren",
+                  "job": "idle",
+                  "woodcutting": 2
+                },
+                {
+                  "name": "Bram",
+                  "job": "idle",
+                  "woodcutting": 0
+                },
+                {
+                  "name": "Hazel",
+                  "job": "idle",
+                  "woodcutting": 1
+                }
+              ],
+              "wood_ledger": {
+                "stored": 0,
+                "carried": 0
+              }
+            },
+            "spectator": {
+              "owner": "spectator",
+              "wood": 65,
+              "food": 40,
+              "coins": 20,
+              "goods": {},
+              "produced": {},
+              "player": {
+                "x": 25.0,
+                "y": 25.0,
+                "facing": 1
+              },
+              "buildings": [
+                {
+                  "kind": "hall",
+                  "x": 25,
+                  "y": 22,
+                  "footprint": [
+                    3,
+                    3
+                  ]
+                }
+              ],
+              "workers": [
+                {
+                  "name": "Ada",
+                  "job": "idle",
+                  "woodcutting": 0
+                },
+                {
+                  "name": "Rowan",
+                  "job": "idle",
+                  "woodcutting": 1
+                },
+                {
+                  "name": "Wren",
+                  "job": "idle",
+                  "woodcutting": 2
+                },
+                {
+                  "name": "Bram",
+                  "job": "idle",
+                  "woodcutting": 0
+                },
+                {
+                  "name": "Hazel",
+                  "job": "idle",
+                  "woodcutting": 1
+                }
+              ],
+              "wood_ledger": {
+                "stored": 0,
+                "carried": 0
+              }
+            }
+          },
+          "quarry": {
+            "members": {
+              "a": {
+                "x": 1,
+                "y": 3,
+                "inside": true
+              },
+              "b": {
+                "x": 1,
+                "y": 3,
+                "inside": true
+              }
+            },
+            "started": true,
+            "completed": false,
+            "gate_latched": false,
+            "sequence": [],
+            "runes_solved": false,
+            "message": "The expedition begins. The floor plate is linked to the iron gate."
+          },
+          "terrain": {
+            "seed": 42,
+            "version": 1,
+            "rows_sha256": "b2d30483c184a04880c22b33c1bbba12965ed3dd26a3aee8143ac8fb59930d74",
+            "resource_count": 5305,
+            "resources_sha256": "7f539aa65ad5d73a012f3eb493dd09199c00176adf56959ee3fd7dc881ac120b",
+            "npc_count": 22,
+            "town_sites": [
+              {
+                "x": 90,
+                "y": 29
+              },
+              {
+                "x": 29,
+                "y": 86
+              },
+              {
+                "x": 25,
+                "y": 22
+              },
+              {
+                "x": 85,
+                "y": 84
+              }
+            ]
+          }
+        }
+      },
+      "numeric_fields": [],
+      "invariants": [
+        {
+          "name": "spectator receives no reward",
+          "kind": "equals",
+          "paths": [
+            [
+              "state",
+              "towns",
+              "spectator",
+              "coins"
+            ]
+          ],
+          "value": 20
+        },
+        {
+          "name": "a exact-once reward",
+          "kind": "equals",
+          "paths": [
+            [
+              "state",
+              "towns",
+              "a",
+              "coins"
+            ]
+          ],
+          "value": 20
+        },
+        {
+          "name": "b exact-once reward",
+          "kind": "equals",
+          "paths": [
+            [
+              "state",
+              "towns",
+              "b",
+              "coins"
+            ]
+          ],
+          "value": 20
+        }
+      ]
+    },
+    {
+      "operation": {
+        "kind": "command",
+        "town": "a",
+        "data": {
+          "action": "quarry_walk",
+          "dx": 1,
+          "dy": 0
+        }
+      },
+      "random_draws": [],
+      "expected": {
+        "public": {
+          "result": {}
+        },
+        "state": {
+          "towns": {
+            "a": {
+              "owner": "a",
+              "wood": 65,
+              "food": 40,
+              "coins": 20,
+              "goods": {},
+              "produced": {},
+              "player": {
+                "x": 90.0,
+                "y": 32.0,
+                "facing": 1
+              },
+              "buildings": [
+                {
+                  "kind": "hall",
+                  "x": 90,
+                  "y": 29,
+                  "footprint": [
+                    3,
+                    3
+                  ]
+                }
+              ],
+              "workers": [
+                {
+                  "name": "Ada",
+                  "job": "idle",
+                  "woodcutting": 0
+                },
+                {
+                  "name": "Rowan",
+                  "job": "idle",
+                  "woodcutting": 1
+                },
+                {
+                  "name": "Wren",
+                  "job": "idle",
+                  "woodcutting": 2
+                },
+                {
+                  "name": "Bram",
+                  "job": "idle",
+                  "woodcutting": 0
+                },
+                {
+                  "name": "Hazel",
+                  "job": "idle",
+                  "woodcutting": 1
+                }
+              ],
+              "wood_ledger": {
+                "stored": 0,
+                "carried": 0
+              }
+            },
+            "b": {
+              "owner": "b",
+              "wood": 65,
+              "food": 40,
+              "coins": 20,
+              "goods": {},
+              "produced": {},
+              "player": {
+                "x": 29.0,
+                "y": 89.0,
+                "facing": 1
+              },
+              "buildings": [
+                {
+                  "kind": "hall",
+                  "x": 29,
+                  "y": 86,
+                  "footprint": [
+                    3,
+                    3
+                  ]
+                }
+              ],
+              "workers": [
+                {
+                  "name": "Ada",
+                  "job": "idle",
+                  "woodcutting": 0
+                },
+                {
+                  "name": "Rowan",
+                  "job": "idle",
+                  "woodcutting": 1
+                },
+                {
+                  "name": "Wren",
+                  "job": "idle",
+                  "woodcutting": 2
+                },
+                {
+                  "name": "Bram",
+                  "job": "idle",
+                  "woodcutting": 0
+                },
+                {
+                  "name": "Hazel",
+                  "job": "idle",
+                  "woodcutting": 1
+                }
+              ],
+              "wood_ledger": {
+                "stored": 0,
+                "carried": 0
+              }
+            },
+            "spectator": {
+              "owner": "spectator",
+              "wood": 65,
+              "food": 40,
+              "coins": 20,
+              "goods": {},
+              "produced": {},
+              "player": {
+                "x": 25.0,
+                "y": 25.0,
+                "facing": 1
+              },
+              "buildings": [
+                {
+                  "kind": "hall",
+                  "x": 25,
+                  "y": 22,
+                  "footprint": [
+                    3,
+                    3
+                  ]
+                }
+              ],
+              "workers": [
+                {
+                  "name": "Ada",
+                  "job": "idle",
+                  "woodcutting": 0
+                },
+                {
+                  "name": "Rowan",
+                  "job": "idle",
+                  "woodcutting": 1
+                },
+                {
+                  "name": "Wren",
+                  "job": "idle",
+                  "woodcutting": 2
+                },
+                {
+                  "name": "Bram",
+                  "job": "idle",
+                  "woodcutting": 0
+                },
+                {
+                  "name": "Hazel",
+                  "job": "idle",
+                  "woodcutting": 1
+                }
+              ],
+              "wood_ledger": {
+                "stored": 0,
+                "carried": 0
+              }
+            }
+          },
+          "quarry": {
+            "members": {
+              "a": {
+                "x": 2,
+                "y": 3,
+                "inside": true
+              },
+              "b": {
+                "x": 1,
+                "y": 3,
+                "inside": true
+              }
+            },
+            "started": true,
+            "completed": false,
+            "gate_latched": false,
+            "sequence": [],
+            "runes_solved": false,
+            "message": "The expedition begins. The floor plate is linked to the iron gate."
+          },
+          "terrain": {
+            "seed": 42,
+            "version": 1,
+            "rows_sha256": "b2d30483c184a04880c22b33c1bbba12965ed3dd26a3aee8143ac8fb59930d74",
+            "resource_count": 5305,
+            "resources_sha256": "7f539aa65ad5d73a012f3eb493dd09199c00176adf56959ee3fd7dc881ac120b",
+            "npc_count": 22,
+            "town_sites": [
+              {
+                "x": 90,
+                "y": 29
+              },
+              {
+                "x": 29,
+                "y": 86
+              },
+              {
+                "x": 25,
+                "y": 22
+              },
+              {
+                "x": 85,
+                "y": 84
+              }
+            ]
+          }
+        }
+      },
+      "numeric_fields": [],
+      "invariants": [
+        {
+          "name": "spectator receives no reward",
+          "kind": "equals",
+          "paths": [
+            [
+              "state",
+              "towns",
+              "spectator",
+              "coins"
+            ]
+          ],
+          "value": 20
+        },
+        {
+          "name": "a exact-once reward",
+          "kind": "equals",
+          "paths": [
+            [
+              "state",
+              "towns",
+              "a",
+              "coins"
+            ]
+          ],
+          "value": 20
+        },
+        {
+          "name": "b exact-once reward",
+          "kind": "equals",
+          "paths": [
+            [
+              "state",
+              "towns",
+              "b",
+              "coins"
+            ]
+          ],
+          "value": 20
+        }
+      ]
+    },
+    {
+      "operation": {
+        "kind": "command",
+        "town": "a",
+        "data": {
+          "action": "quarry_walk",
+          "dx": 0,
+          "dy": -1
+        }
+      },
+      "random_draws": [],
+      "expected": {
+        "public": {
+          "result": {}
+        },
+        "state": {
+          "towns": {
+            "a": {
+              "owner": "a",
+              "wood": 65,
+              "food": 40,
+              "coins": 20,
+              "goods": {},
+              "produced": {},
+              "player": {
+                "x": 90.0,
+                "y": 32.0,
+                "facing": 1
+              },
+              "buildings": [
+                {
+                  "kind": "hall",
+                  "x": 90,
+                  "y": 29,
+                  "footprint": [
+                    3,
+                    3
+                  ]
+                }
+              ],
+              "workers": [
+                {
+                  "name": "Ada",
+                  "job": "idle",
+                  "woodcutting": 0
+                },
+                {
+                  "name": "Rowan",
+                  "job": "idle",
+                  "woodcutting": 1
+                },
+                {
+                  "name": "Wren",
+                  "job": "idle",
+                  "woodcutting": 2
+                },
+                {
+                  "name": "Bram",
+                  "job": "idle",
+                  "woodcutting": 0
+                },
+                {
+                  "name": "Hazel",
+                  "job": "idle",
+                  "woodcutting": 1
+                }
+              ],
+              "wood_ledger": {
+                "stored": 0,
+                "carried": 0
+              }
+            },
+            "b": {
+              "owner": "b",
+              "wood": 65,
+              "food": 40,
+              "coins": 20,
+              "goods": {},
+              "produced": {},
+              "player": {
+                "x": 29.0,
+                "y": 89.0,
+                "facing": 1
+              },
+              "buildings": [
+                {
+                  "kind": "hall",
+                  "x": 29,
+                  "y": 86,
+                  "footprint": [
+                    3,
+                    3
+                  ]
+                }
+              ],
+              "workers": [
+                {
+                  "name": "Ada",
+                  "job": "idle",
+                  "woodcutting": 0
+                },
+                {
+                  "name": "Rowan",
+                  "job": "idle",
+                  "woodcutting": 1
+                },
+                {
+                  "name": "Wren",
+                  "job": "idle",
+                  "woodcutting": 2
+                },
+                {
+                  "name": "Bram",
+                  "job": "idle",
+                  "woodcutting": 0
+                },
+                {
+                  "name": "Hazel",
+                  "job": "idle",
+                  "woodcutting": 1
+                }
+              ],
+              "wood_ledger": {
+                "stored": 0,
+                "carried": 0
+              }
+            },
+            "spectator": {
+              "owner": "spectator",
+              "wood": 65,
+              "food": 40,
+              "coins": 20,
+              "goods": {},
+              "produced": {},
+              "player": {
+                "x": 25.0,
+                "y": 25.0,
+                "facing": 1
+              },
+              "buildings": [
+                {
+                  "kind": "hall",
+                  "x": 25,
+                  "y": 22,
+                  "footprint": [
+                    3,
+                    3
+                  ]
+                }
+              ],
+              "workers": [
+                {
+                  "name": "Ada",
+                  "job": "idle",
+                  "woodcutting": 0
+                },
+                {
+                  "name": "Rowan",
+                  "job": "idle",
+                  "woodcutting": 1
+                },
+                {
+                  "name": "Wren",
+                  "job": "idle",
+                  "woodcutting": 2
+                },
+                {
+                  "name": "Bram",
+                  "job": "idle",
+                  "woodcutting": 0
+                },
+                {
+                  "name": "Hazel",
+                  "job": "idle",
+                  "woodcutting": 1
+                }
+              ],
+              "wood_ledger": {
+                "stored": 0,
+                "carried": 0
+              }
+            }
+          },
+          "quarry": {
+            "members": {
+              "a": {
+                "x": 2,
+                "y": 2,
+                "inside": true
+              },
+              "b": {
+                "x": 1,
+                "y": 3,
+                "inside": true
+              }
+            },
+            "started": true,
+            "completed": false,
+            "gate_latched": false,
+            "sequence": [],
+            "runes_solved": false,
+            "message": "The expedition begins. The floor plate is linked to the iron gate."
+          },
+          "terrain": {
+            "seed": 42,
+            "version": 1,
+            "rows_sha256": "b2d30483c184a04880c22b33c1bbba12965ed3dd26a3aee8143ac8fb59930d74",
+            "resource_count": 5305,
+            "resources_sha256": "7f539aa65ad5d73a012f3eb493dd09199c00176adf56959ee3fd7dc881ac120b",
+            "npc_count": 22,
+            "town_sites": [
+              {
+                "x": 90,
+                "y": 29
+              },
+              {
+                "x": 29,
+                "y": 86
+              },
+              {
+                "x": 25,
+                "y": 22
+              },
+              {
+                "x": 85,
+                "y": 84
+              }
+            ]
+          }
+        }
+      },
+      "numeric_fields": [],
+      "invariants": [
+        {
+          "name": "spectator receives no reward",
+          "kind": "equals",
+          "paths": [
+            [
+              "state",
+              "towns",
+              "spectator",
+              "coins"
+            ]
+          ],
+          "value": 20
+        },
+        {
+          "name": "a exact-once reward",
+          "kind": "equals",
+          "paths": [
+            [
+              "state",
+              "towns",
+              "a",
+              "coins"
+            ]
+          ],
+          "value": 20
+        },
+        {
+          "name": "b exact-once reward",
+          "kind": "equals",
+          "paths": [
+            [
+              "state",
+              "towns",
+              "b",
+              "coins"
+            ]
+          ],
+          "value": 20
+        }
+      ]
+    },
+    {
+      "operation": {
+        "kind": "command",
+        "town": "b",
+        "data": {
+          "action": "quarry_walk",
+          "dx": 1,
+          "dy": 0
+        }
+      },
+      "random_draws": [],
+      "expected": {
+        "public": {
+          "result": {}
+        },
+        "state": {
+          "towns": {
+            "a": {
+              "owner": "a",
+              "wood": 65,
+              "food": 40,
+              "coins": 20,
+              "goods": {},
+              "produced": {},
+              "player": {
+                "x": 90.0,
+                "y": 32.0,
+                "facing": 1
+              },
+              "buildings": [
+                {
+                  "kind": "hall",
+                  "x": 90,
+                  "y": 29,
+                  "footprint": [
+                    3,
+                    3
+                  ]
+                }
+              ],
+              "workers": [
+                {
+                  "name": "Ada",
+                  "job": "idle",
+                  "woodcutting": 0
+                },
+                {
+                  "name": "Rowan",
+                  "job": "idle",
+                  "woodcutting": 1
+                },
+                {
+                  "name": "Wren",
+                  "job": "idle",
+                  "woodcutting": 2
+                },
+                {
+                  "name": "Bram",
+                  "job": "idle",
+                  "woodcutting": 0
+                },
+                {
+                  "name": "Hazel",
+                  "job": "idle",
+                  "woodcutting": 1
+                }
+              ],
+              "wood_ledger": {
+                "stored": 0,
+                "carried": 0
+              }
+            },
+            "b": {
+              "owner": "b",
+              "wood": 65,
+              "food": 40,
+              "coins": 20,
+              "goods": {},
+              "produced": {},
+              "player": {
+                "x": 29.0,
+                "y": 89.0,
+                "facing": 1
+              },
+              "buildings": [
+                {
+                  "kind": "hall",
+                  "x": 29,
+                  "y": 86,
+                  "footprint": [
+                    3,
+                    3
+                  ]
+                }
+              ],
+              "workers": [
+                {
+                  "name": "Ada",
+                  "job": "idle",
+                  "woodcutting": 0
+                },
+                {
+                  "name": "Rowan",
+                  "job": "idle",
+                  "woodcutting": 1
+                },
+                {
+                  "name": "Wren",
+                  "job": "idle",
+                  "woodcutting": 2
+                },
+                {
+                  "name": "Bram",
+                  "job": "idle",
+                  "woodcutting": 0
+                },
+                {
+                  "name": "Hazel",
+                  "job": "idle",
+                  "woodcutting": 1
+                }
+              ],
+              "wood_ledger": {
+                "stored": 0,
+                "carried": 0
+              }
+            },
+            "spectator": {
+              "owner": "spectator",
+              "wood": 65,
+              "food": 40,
+              "coins": 20,
+              "goods": {},
+              "produced": {},
+              "player": {
+                "x": 25.0,
+                "y": 25.0,
+                "facing": 1
+              },
+              "buildings": [
+                {
+                  "kind": "hall",
+                  "x": 25,
+                  "y": 22,
+                  "footprint": [
+                    3,
+                    3
+                  ]
+                }
+              ],
+              "workers": [
+                {
+                  "name": "Ada",
+                  "job": "idle",
+                  "woodcutting": 0
+                },
+                {
+                  "name": "Rowan",
+                  "job": "idle",
+                  "woodcutting": 1
+                },
+                {
+                  "name": "Wren",
+                  "job": "idle",
+                  "woodcutting": 2
+                },
+                {
+                  "name": "Bram",
+                  "job": "idle",
+                  "woodcutting": 0
+                },
+                {
+                  "name": "Hazel",
+                  "job": "idle",
+                  "woodcutting": 1
+                }
+              ],
+              "wood_ledger": {
+                "stored": 0,
+                "carried": 0
+              }
+            }
+          },
+          "quarry": {
+            "members": {
+              "a": {
+                "x": 2,
+                "y": 2,
+                "inside": true
+              },
+              "b": {
+                "x": 2,
+                "y": 3,
+                "inside": true
+              }
+            },
+            "started": true,
+            "completed": false,
+            "gate_latched": false,
+            "sequence": [],
+            "runes_solved": false,
+            "message": "The expedition begins. The floor plate is linked to the iron gate."
+          },
+          "terrain": {
+            "seed": 42,
+            "version": 1,
+            "rows_sha256": "b2d30483c184a04880c22b33c1bbba12965ed3dd26a3aee8143ac8fb59930d74",
+            "resource_count": 5305,
+            "resources_sha256": "7f539aa65ad5d73a012f3eb493dd09199c00176adf56959ee3fd7dc881ac120b",
+            "npc_count": 22,
+            "town_sites": [
+              {
+                "x": 90,
+                "y": 29
+              },
+              {
+                "x": 29,
+                "y": 86
+              },
+              {
+                "x": 25,
+                "y": 22
+              },
+              {
+                "x": 85,
+                "y": 84
+              }
+            ]
+          }
+        }
+      },
+      "numeric_fields": [],
+      "invariants": [
+        {
+          "name": "spectator receives no reward",
+          "kind": "equals",
+          "paths": [
+            [
+              "state",
+              "towns",
+              "spectator",
+              "coins"
+            ]
+          ],
+          "value": 20
+        },
+        {
+          "name": "a exact-once reward",
+          "kind": "equals",
+          "paths": [
+            [
+              "state",
+              "towns",
+              "a",
+              "coins"
+            ]
+          ],
+          "value": 20
+        },
+        {
+          "name": "b exact-once reward",
+          "kind": "equals",
+          "paths": [
+            [
+              "state",
+              "towns",
+              "b",
+              "coins"
+            ]
+          ],
+          "value": 20
+        }
+      ]
+    },
+    {
+      "operation": {
+        "kind": "command",
+        "town": "b",
+        "data": {
+          "action": "quarry_walk",
+          "dx": 1,
+          "dy": 0
+        }
+      },
+      "random_draws": [],
+      "expected": {
+        "public": {
+          "result": {}
+        },
+        "state": {
+          "towns": {
+            "a": {
+              "owner": "a",
+              "wood": 65,
+              "food": 40,
+              "coins": 20,
+              "goods": {},
+              "produced": {},
+              "player": {
+                "x": 90.0,
+                "y": 32.0,
+                "facing": 1
+              },
+              "buildings": [
+                {
+                  "kind": "hall",
+                  "x": 90,
+                  "y": 29,
+                  "footprint": [
+                    3,
+                    3
+                  ]
+                }
+              ],
+              "workers": [
+                {
+                  "name": "Ada",
+                  "job": "idle",
+                  "woodcutting": 0
+                },
+                {
+                  "name": "Rowan",
+                  "job": "idle",
+                  "woodcutting": 1
+                },
+                {
+                  "name": "Wren",
+                  "job": "idle",
+                  "woodcutting": 2
+                },
+                {
+                  "name": "Bram",
+                  "job": "idle",
+                  "woodcutting": 0
+                },
+                {
+                  "name": "Hazel",
+                  "job": "idle",
+                  "woodcutting": 1
+                }
+              ],
+              "wood_ledger": {
+                "stored": 0,
+                "carried": 0
+              }
+            },
+            "b": {
+              "owner": "b",
+              "wood": 65,
+              "food": 40,
+              "coins": 20,
+              "goods": {},
+              "produced": {},
+              "player": {
+                "x": 29.0,
+                "y": 89.0,
+                "facing": 1
+              },
+              "buildings": [
+                {
+                  "kind": "hall",
+                  "x": 29,
+                  "y": 86,
+                  "footprint": [
+                    3,
+                    3
+                  ]
+                }
+              ],
+              "workers": [
+                {
+                  "name": "Ada",
+                  "job": "idle",
+                  "woodcutting": 0
+                },
+                {
+                  "name": "Rowan",
+                  "job": "idle",
+                  "woodcutting": 1
+                },
+                {
+                  "name": "Wren",
+                  "job": "idle",
+                  "woodcutting": 2
+                },
+                {
+                  "name": "Bram",
+                  "job": "idle",
+                  "woodcutting": 0
+                },
+                {
+                  "name": "Hazel",
+                  "job": "idle",
+                  "woodcutting": 1
+                }
+              ],
+              "wood_ledger": {
+                "stored": 0,
+                "carried": 0
+              }
+            },
+            "spectator": {
+              "owner": "spectator",
+              "wood": 65,
+              "food": 40,
+              "coins": 20,
+              "goods": {},
+              "produced": {},
+              "player": {
+                "x": 25.0,
+                "y": 25.0,
+                "facing": 1
+              },
+              "buildings": [
+                {
+                  "kind": "hall",
+                  "x": 25,
+                  "y": 22,
+                  "footprint": [
+                    3,
+                    3
+                  ]
+                }
+              ],
+              "workers": [
+                {
+                  "name": "Ada",
+                  "job": "idle",
+                  "woodcutting": 0
+                },
+                {
+                  "name": "Rowan",
+                  "job": "idle",
+                  "woodcutting": 1
+                },
+                {
+                  "name": "Wren",
+                  "job": "idle",
+                  "woodcutting": 2
+                },
+                {
+                  "name": "Bram",
+                  "job": "idle",
+                  "woodcutting": 0
+                },
+                {
+                  "name": "Hazel",
+                  "job": "idle",
+                  "woodcutting": 1
+                }
+              ],
+              "wood_ledger": {
+                "stored": 0,
+                "carried": 0
+              }
+            }
+          },
+          "quarry": {
+            "members": {
+              "a": {
+                "x": 2,
+                "y": 2,
+                "inside": true
+              },
+              "b": {
+                "x": 3,
+                "y": 3,
+                "inside": true
+              }
+            },
+            "started": true,
+            "completed": false,
+            "gate_latched": false,
+            "sequence": [],
+            "runes_solved": false,
+            "message": "The expedition begins. The floor plate is linked to the iron gate."
+          },
+          "terrain": {
+            "seed": 42,
+            "version": 1,
+            "rows_sha256": "b2d30483c184a04880c22b33c1bbba12965ed3dd26a3aee8143ac8fb59930d74",
+            "resource_count": 5305,
+            "resources_sha256": "7f539aa65ad5d73a012f3eb493dd09199c00176adf56959ee3fd7dc881ac120b",
+            "npc_count": 22,
+            "town_sites": [
+              {
+                "x": 90,
+                "y": 29
+              },
+              {
+                "x": 29,
+                "y": 86
+              },
+              {
+                "x": 25,
+                "y": 22
+              },
+              {
+                "x": 85,
+                "y": 84
+              }
+            ]
+          }
+        }
+      },
+      "numeric_fields": [],
+      "invariants": [
+        {
+          "name": "spectator receives no reward",
+          "kind": "equals",
+          "paths": [
+            [
+              "state",
+              "towns",
+              "spectator",
+              "coins"
+            ]
+          ],
+          "value": 20
+        },
+        {
+          "name": "a exact-once reward",
+          "kind": "equals",
+          "paths": [
+            [
+              "state",
+              "towns",
+              "a",
+              "coins"
+            ]
+          ],
+          "value": 20
+        },
+        {
+          "name": "b exact-once reward",
+          "kind": "equals",
+          "paths": [
+            [
+              "state",
+              "towns",
+              "b",
+              "coins"
+            ]
+          ],
+          "value": 20
+        }
+      ]
+    },
+    {
+      "operation": {
+        "kind": "command",
+        "town": "b",
+        "data": {
+          "action": "quarry_walk",
+          "dx": 1,
+          "dy": 0
+        }
+      },
+      "random_draws": [],
+      "expected": {
+        "public": {
+          "result": {}
+        },
+        "state": {
+          "towns": {
+            "a": {
+              "owner": "a",
+              "wood": 65,
+              "food": 40,
+              "coins": 20,
+              "goods": {},
+              "produced": {},
+              "player": {
+                "x": 90.0,
+                "y": 32.0,
+                "facing": 1
+              },
+              "buildings": [
+                {
+                  "kind": "hall",
+                  "x": 90,
+                  "y": 29,
+                  "footprint": [
+                    3,
+                    3
+                  ]
+                }
+              ],
+              "workers": [
+                {
+                  "name": "Ada",
+                  "job": "idle",
+                  "woodcutting": 0
+                },
+                {
+                  "name": "Rowan",
+                  "job": "idle",
+                  "woodcutting": 1
+                },
+                {
+                  "name": "Wren",
+                  "job": "idle",
+                  "woodcutting": 2
+                },
+                {
+                  "name": "Bram",
+                  "job": "idle",
+                  "woodcutting": 0
+                },
+                {
+                  "name": "Hazel",
+                  "job": "idle",
+                  "woodcutting": 1
+                }
+              ],
+              "wood_ledger": {
+                "stored": 0,
+                "carried": 0
+              }
+            },
+            "b": {
+              "owner": "b",
+              "wood": 65,
+              "food": 40,
+              "coins": 20,
+              "goods": {},
+              "produced": {},
+              "player": {
+                "x": 29.0,
+                "y": 89.0,
+                "facing": 1
+              },
+              "buildings": [
+                {
+                  "kind": "hall",
+                  "x": 29,
+                  "y": 86,
+                  "footprint": [
+                    3,
+                    3
+                  ]
+                }
+              ],
+              "workers": [
+                {
+                  "name": "Ada",
+                  "job": "idle",
+                  "woodcutting": 0
+                },
+                {
+                  "name": "Rowan",
+                  "job": "idle",
+                  "woodcutting": 1
+                },
+                {
+                  "name": "Wren",
+                  "job": "idle",
+                  "woodcutting": 2
+                },
+                {
+                  "name": "Bram",
+                  "job": "idle",
+                  "woodcutting": 0
+                },
+                {
+                  "name": "Hazel",
+                  "job": "idle",
+                  "woodcutting": 1
+                }
+              ],
+              "wood_ledger": {
+                "stored": 0,
+                "carried": 0
+              }
+            },
+            "spectator": {
+              "owner": "spectator",
+              "wood": 65,
+              "food": 40,
+              "coins": 20,
+              "goods": {},
+              "produced": {},
+              "player": {
+                "x": 25.0,
+                "y": 25.0,
+                "facing": 1
+              },
+              "buildings": [
+                {
+                  "kind": "hall",
+                  "x": 25,
+                  "y": 22,
+                  "footprint": [
+                    3,
+                    3
+                  ]
+                }
+              ],
+              "workers": [
+                {
+                  "name": "Ada",
+                  "job": "idle",
+                  "woodcutting": 0
+                },
+                {
+                  "name": "Rowan",
+                  "job": "idle",
+                  "woodcutting": 1
+                },
+                {
+                  "name": "Wren",
+                  "job": "idle",
+                  "woodcutting": 2
+                },
+                {
+                  "name": "Bram",
+                  "job": "idle",
+                  "woodcutting": 0
+                },
+                {
+                  "name": "Hazel",
+                  "job": "idle",
+                  "woodcutting": 1
+                }
+              ],
+              "wood_ledger": {
+                "stored": 0,
+                "carried": 0
+              }
+            }
+          },
+          "quarry": {
+            "members": {
+              "a": {
+                "x": 2,
+                "y": 2,
+                "inside": true
+              },
+              "b": {
+                "x": 4,
+                "y": 3,
+                "inside": true
+              }
+            },
+            "started": true,
+            "completed": false,
+            "gate_latched": false,
+            "sequence": [],
+            "runes_solved": false,
+            "message": "The expedition begins. The floor plate is linked to the iron gate."
+          },
+          "terrain": {
+            "seed": 42,
+            "version": 1,
+            "rows_sha256": "b2d30483c184a04880c22b33c1bbba12965ed3dd26a3aee8143ac8fb59930d74",
+            "resource_count": 5305,
+            "resources_sha256": "7f539aa65ad5d73a012f3eb493dd09199c00176adf56959ee3fd7dc881ac120b",
+            "npc_count": 22,
+            "town_sites": [
+              {
+                "x": 90,
+                "y": 29
+              },
+              {
+                "x": 29,
+                "y": 86
+              },
+              {
+                "x": 25,
+                "y": 22
+              },
+              {
+                "x": 85,
+                "y": 84
+              }
+            ]
+          }
+        }
+      },
+      "numeric_fields": [],
+      "invariants": [
+        {
+          "name": "spectator receives no reward",
+          "kind": "equals",
+          "paths": [
+            [
+              "state",
+              "towns",
+              "spectator",
+              "coins"
+            ]
+          ],
+          "value": 20
+        },
+        {
+          "name": "a exact-once reward",
+          "kind": "equals",
+          "paths": [
+            [
+              "state",
+              "towns",
+              "a",
+              "coins"
+            ]
+          ],
+          "value": 20
+        },
+        {
+          "name": "b exact-once reward",
+          "kind": "equals",
+          "paths": [
+            [
+              "state",
+              "towns",
+              "b",
+              "coins"
+            ]
+          ],
+          "value": 20
+        }
+      ]
+    },
+    {
+      "operation": {
+        "kind": "command",
+        "town": "b",
+        "data": {
+          "action": "quarry_walk",
+          "dx": 1,
+          "dy": 0
+        }
+      },
+      "random_draws": [],
+      "expected": {
+        "public": {
+          "result": {}
+        },
+        "state": {
+          "towns": {
+            "a": {
+              "owner": "a",
+              "wood": 65,
+              "food": 40,
+              "coins": 20,
+              "goods": {},
+              "produced": {},
+              "player": {
+                "x": 90.0,
+                "y": 32.0,
+                "facing": 1
+              },
+              "buildings": [
+                {
+                  "kind": "hall",
+                  "x": 90,
+                  "y": 29,
+                  "footprint": [
+                    3,
+                    3
+                  ]
+                }
+              ],
+              "workers": [
+                {
+                  "name": "Ada",
+                  "job": "idle",
+                  "woodcutting": 0
+                },
+                {
+                  "name": "Rowan",
+                  "job": "idle",
+                  "woodcutting": 1
+                },
+                {
+                  "name": "Wren",
+                  "job": "idle",
+                  "woodcutting": 2
+                },
+                {
+                  "name": "Bram",
+                  "job": "idle",
+                  "woodcutting": 0
+                },
+                {
+                  "name": "Hazel",
+                  "job": "idle",
+                  "woodcutting": 1
+                }
+              ],
+              "wood_ledger": {
+                "stored": 0,
+                "carried": 0
+              }
+            },
+            "b": {
+              "owner": "b",
+              "wood": 65,
+              "food": 40,
+              "coins": 20,
+              "goods": {},
+              "produced": {},
+              "player": {
+                "x": 29.0,
+                "y": 89.0,
+                "facing": 1
+              },
+              "buildings": [
+                {
+                  "kind": "hall",
+                  "x": 29,
+                  "y": 86,
+                  "footprint": [
+                    3,
+                    3
+                  ]
+                }
+              ],
+              "workers": [
+                {
+                  "name": "Ada",
+                  "job": "idle",
+                  "woodcutting": 0
+                },
+                {
+                  "name": "Rowan",
+                  "job": "idle",
+                  "woodcutting": 1
+                },
+                {
+                  "name": "Wren",
+                  "job": "idle",
+                  "woodcutting": 2
+                },
+                {
+                  "name": "Bram",
+                  "job": "idle",
+                  "woodcutting": 0
+                },
+                {
+                  "name": "Hazel",
+                  "job": "idle",
+                  "woodcutting": 1
+                }
+              ],
+              "wood_ledger": {
+                "stored": 0,
+                "carried": 0
+              }
+            },
+            "spectator": {
+              "owner": "spectator",
+              "wood": 65,
+              "food": 40,
+              "coins": 20,
+              "goods": {},
+              "produced": {},
+              "player": {
+                "x": 25.0,
+                "y": 25.0,
+                "facing": 1
+              },
+              "buildings": [
+                {
+                  "kind": "hall",
+                  "x": 25,
+                  "y": 22,
+                  "footprint": [
+                    3,
+                    3
+                  ]
+                }
+              ],
+              "workers": [
+                {
+                  "name": "Ada",
+                  "job": "idle",
+                  "woodcutting": 0
+                },
+                {
+                  "name": "Rowan",
+                  "job": "idle",
+                  "woodcutting": 1
+                },
+                {
+                  "name": "Wren",
+                  "job": "idle",
+                  "woodcutting": 2
+                },
+                {
+                  "name": "Bram",
+                  "job": "idle",
+                  "woodcutting": 0
+                },
+                {
+                  "name": "Hazel",
+                  "job": "idle",
+                  "woodcutting": 1
+                }
+              ],
+              "wood_ledger": {
+                "stored": 0,
+                "carried": 0
+              }
+            }
+          },
+          "quarry": {
+            "members": {
+              "a": {
+                "x": 2,
+                "y": 2,
+                "inside": true
+              },
+              "b": {
+                "x": 5,
+                "y": 3,
+                "inside": true
+              }
+            },
+            "started": true,
+            "completed": false,
+            "gate_latched": false,
+            "sequence": [],
+            "runes_solved": false,
+            "message": "The expedition begins. The floor plate is linked to the iron gate."
+          },
+          "terrain": {
+            "seed": 42,
+            "version": 1,
+            "rows_sha256": "b2d30483c184a04880c22b33c1bbba12965ed3dd26a3aee8143ac8fb59930d74",
+            "resource_count": 5305,
+            "resources_sha256": "7f539aa65ad5d73a012f3eb493dd09199c00176adf56959ee3fd7dc881ac120b",
+            "npc_count": 22,
+            "town_sites": [
+              {
+                "x": 90,
+                "y": 29
+              },
+              {
+                "x": 29,
+                "y": 86
+              },
+              {
+                "x": 25,
+                "y": 22
+              },
+              {
+                "x": 85,
+                "y": 84
+              }
+            ]
+          }
+        }
+      },
+      "numeric_fields": [],
+      "invariants": [
+        {
+          "name": "spectator receives no reward",
+          "kind": "equals",
+          "paths": [
+            [
+              "state",
+              "towns",
+              "spectator",
+              "coins"
+            ]
+          ],
+          "value": 20
+        },
+        {
+          "name": "a exact-once reward",
+          "kind": "equals",
+          "paths": [
+            [
+              "state",
+              "towns",
+              "a",
+              "coins"
+            ]
+          ],
+          "value": 20
+        },
+        {
+          "name": "b exact-once reward",
+          "kind": "equals",
+          "paths": [
+            [
+              "state",
+              "towns",
+              "b",
+              "coins"
+            ]
+          ],
+          "value": 20
+        }
+      ]
+    },
+    {
+      "operation": {
+        "kind": "command",
+        "town": "b",
+        "data": {
+          "action": "quarry_walk",
+          "dx": 1,
+          "dy": 0
+        }
+      },
+      "random_draws": [],
+      "expected": {
+        "public": {
+          "result": {}
+        },
+        "state": {
+          "towns": {
+            "a": {
+              "owner": "a",
+              "wood": 65,
+              "food": 40,
+              "coins": 20,
+              "goods": {},
+              "produced": {},
+              "player": {
+                "x": 90.0,
+                "y": 32.0,
+                "facing": 1
+              },
+              "buildings": [
+                {
+                  "kind": "hall",
+                  "x": 90,
+                  "y": 29,
+                  "footprint": [
+                    3,
+                    3
+                  ]
+                }
+              ],
+              "workers": [
+                {
+                  "name": "Ada",
+                  "job": "idle",
+                  "woodcutting": 0
+                },
+                {
+                  "name": "Rowan",
+                  "job": "idle",
+                  "woodcutting": 1
+                },
+                {
+                  "name": "Wren",
+                  "job": "idle",
+                  "woodcutting": 2
+                },
+                {
+                  "name": "Bram",
+                  "job": "idle",
+                  "woodcutting": 0
+                },
+                {
+                  "name": "Hazel",
+                  "job": "idle",
+                  "woodcutting": 1
+                }
+              ],
+              "wood_ledger": {
+                "stored": 0,
+                "carried": 0
+              }
+            },
+            "b": {
+              "owner": "b",
+              "wood": 65,
+              "food": 40,
+              "coins": 20,
+              "goods": {},
+              "produced": {},
+              "player": {
+                "x": 29.0,
+                "y": 89.0,
+                "facing": 1
+              },
+              "buildings": [
+                {
+                  "kind": "hall",
+                  "x": 29,
+                  "y": 86,
+                  "footprint": [
+                    3,
+                    3
+                  ]
+                }
+              ],
+              "workers": [
+                {
+                  "name": "Ada",
+                  "job": "idle",
+                  "woodcutting": 0
+                },
+                {
+                  "name": "Rowan",
+                  "job": "idle",
+                  "woodcutting": 1
+                },
+                {
+                  "name": "Wren",
+                  "job": "idle",
+                  "woodcutting": 2
+                },
+                {
+                  "name": "Bram",
+                  "job": "idle",
+                  "woodcutting": 0
+                },
+                {
+                  "name": "Hazel",
+                  "job": "idle",
+                  "woodcutting": 1
+                }
+              ],
+              "wood_ledger": {
+                "stored": 0,
+                "carried": 0
+              }
+            },
+            "spectator": {
+              "owner": "spectator",
+              "wood": 65,
+              "food": 40,
+              "coins": 20,
+              "goods": {},
+              "produced": {},
+              "player": {
+                "x": 25.0,
+                "y": 25.0,
+                "facing": 1
+              },
+              "buildings": [
+                {
+                  "kind": "hall",
+                  "x": 25,
+                  "y": 22,
+                  "footprint": [
+                    3,
+                    3
+                  ]
+                }
+              ],
+              "workers": [
+                {
+                  "name": "Ada",
+                  "job": "idle",
+                  "woodcutting": 0
+                },
+                {
+                  "name": "Rowan",
+                  "job": "idle",
+                  "woodcutting": 1
+                },
+                {
+                  "name": "Wren",
+                  "job": "idle",
+                  "woodcutting": 2
+                },
+                {
+                  "name": "Bram",
+                  "job": "idle",
+                  "woodcutting": 0
+                },
+                {
+                  "name": "Hazel",
+                  "job": "idle",
+                  "woodcutting": 1
+                }
+              ],
+              "wood_ledger": {
+                "stored": 0,
+                "carried": 0
+              }
+            }
+          },
+          "quarry": {
+            "members": {
+              "a": {
+                "x": 2,
+                "y": 2,
+                "inside": true
+              },
+              "b": {
+                "x": 6,
+                "y": 3,
+                "inside": true
+              }
+            },
+            "started": true,
+            "completed": false,
+            "gate_latched": true,
+            "sequence": [],
+            "runes_solved": false,
+            "message": "You secure the gate\u2019s catch. Both companions can now cross safely."
+          },
+          "terrain": {
+            "seed": 42,
+            "version": 1,
+            "rows_sha256": "b2d30483c184a04880c22b33c1bbba12965ed3dd26a3aee8143ac8fb59930d74",
+            "resource_count": 5305,
+            "resources_sha256": "7f539aa65ad5d73a012f3eb493dd09199c00176adf56959ee3fd7dc881ac120b",
+            "npc_count": 22,
+            "town_sites": [
+              {
+                "x": 90,
+                "y": 29
+              },
+              {
+                "x": 29,
+                "y": 86
+              },
+              {
+                "x": 25,
+                "y": 22
+              },
+              {
+                "x": 85,
+                "y": 84
+              }
+            ]
+          }
+        }
+      },
+      "numeric_fields": [],
+      "invariants": [
+        {
+          "name": "spectator receives no reward",
+          "kind": "equals",
+          "paths": [
+            [
+              "state",
+              "towns",
+              "spectator",
+              "coins"
+            ]
+          ],
+          "value": 20
+        },
+        {
+          "name": "a exact-once reward",
+          "kind": "equals",
+          "paths": [
+            [
+              "state",
+              "towns",
+              "a",
+              "coins"
+            ]
+          ],
+          "value": 20
+        },
+        {
+          "name": "b exact-once reward",
+          "kind": "equals",
+          "paths": [
+            [
+              "state",
+              "towns",
+              "b",
+              "coins"
+            ]
+          ],
+          "value": 20
+        }
+      ]
+    },
+    {
+      "operation": {
+        "kind": "reload"
+      },
+      "random_draws": [],
+      "expected": {
+        "public": {
+          "result": null
+        },
+        "state": {
+          "towns": {
+            "a": {
+              "owner": "a",
+              "wood": 65,
+              "food": 40,
+              "coins": 20,
+              "goods": {},
+              "produced": {},
+              "player": {
+                "x": 90.0,
+                "y": 32.0,
+                "facing": 1
+              },
+              "buildings": [
+                {
+                  "kind": "hall",
+                  "x": 90,
+                  "y": 29,
+                  "footprint": [
+                    3,
+                    3
+                  ]
+                }
+              ],
+              "workers": [
+                {
+                  "name": "Ada",
+                  "job": "idle",
+                  "woodcutting": 0
+                },
+                {
+                  "name": "Rowan",
+                  "job": "idle",
+                  "woodcutting": 1
+                },
+                {
+                  "name": "Wren",
+                  "job": "idle",
+                  "woodcutting": 2
+                },
+                {
+                  "name": "Bram",
+                  "job": "idle",
+                  "woodcutting": 0
+                },
+                {
+                  "name": "Hazel",
+                  "job": "idle",
+                  "woodcutting": 1
+                }
+              ],
+              "wood_ledger": {
+                "stored": 0,
+                "carried": 0
+              }
+            },
+            "b": {
+              "owner": "b",
+              "wood": 65,
+              "food": 40,
+              "coins": 20,
+              "goods": {},
+              "produced": {},
+              "player": {
+                "x": 29.0,
+                "y": 89.0,
+                "facing": 1
+              },
+              "buildings": [
+                {
+                  "kind": "hall",
+                  "x": 29,
+                  "y": 86,
+                  "footprint": [
+                    3,
+                    3
+                  ]
+                }
+              ],
+              "workers": [
+                {
+                  "name": "Ada",
+                  "job": "idle",
+                  "woodcutting": 0
+                },
+                {
+                  "name": "Rowan",
+                  "job": "idle",
+                  "woodcutting": 1
+                },
+                {
+                  "name": "Wren",
+                  "job": "idle",
+                  "woodcutting": 2
+                },
+                {
+                  "name": "Bram",
+                  "job": "idle",
+                  "woodcutting": 0
+                },
+                {
+                  "name": "Hazel",
+                  "job": "idle",
+                  "woodcutting": 1
+                }
+              ],
+              "wood_ledger": {
+                "stored": 0,
+                "carried": 0
+              }
+            },
+            "spectator": {
+              "owner": "spectator",
+              "wood": 65,
+              "food": 40,
+              "coins": 20,
+              "goods": {},
+              "produced": {},
+              "player": {
+                "x": 25.0,
+                "y": 25.0,
+                "facing": 1
+              },
+              "buildings": [
+                {
+                  "kind": "hall",
+                  "x": 25,
+                  "y": 22,
+                  "footprint": [
+                    3,
+                    3
+                  ]
+                }
+              ],
+              "workers": [
+                {
+                  "name": "Ada",
+                  "job": "idle",
+                  "woodcutting": 0
+                },
+                {
+                  "name": "Rowan",
+                  "job": "idle",
+                  "woodcutting": 1
+                },
+                {
+                  "name": "Wren",
+                  "job": "idle",
+                  "woodcutting": 2
+                },
+                {
+                  "name": "Bram",
+                  "job": "idle",
+                  "woodcutting": 0
+                },
+                {
+                  "name": "Hazel",
+                  "job": "idle",
+                  "woodcutting": 1
+                }
+              ],
+              "wood_ledger": {
+                "stored": 0,
+                "carried": 0
+              }
+            }
+          },
+          "quarry": {
+            "members": {
+              "a": {
+                "x": 2,
+                "y": 2,
+                "inside": true
+              },
+              "b": {
+                "x": 6,
+                "y": 3,
+                "inside": true
+              }
+            },
+            "started": true,
+            "completed": false,
+            "gate_latched": true,
+            "sequence": [],
+            "runes_solved": false,
+            "message": "You secure the gate\u2019s catch. Both companions can now cross safely."
+          },
+          "terrain": {
+            "seed": 42,
+            "version": 1,
+            "rows_sha256": "b2d30483c184a04880c22b33c1bbba12965ed3dd26a3aee8143ac8fb59930d74",
+            "resource_count": 5305,
+            "resources_sha256": "7f539aa65ad5d73a012f3eb493dd09199c00176adf56959ee3fd7dc881ac120b",
+            "npc_count": 22,
+            "town_sites": [
+              {
+                "x": 90,
+                "y": 29
+              },
+              {
+                "x": 29,
+                "y": 86
+              },
+              {
+                "x": 25,
+                "y": 22
+              },
+              {
+                "x": 85,
+                "y": 84
+              }
+            ]
+          }
+        }
+      },
+      "numeric_fields": [],
+      "invariants": [
+        {
+          "name": "spectator receives no reward",
+          "kind": "equals",
+          "paths": [
+            [
+              "state",
+              "towns",
+              "spectator",
+              "coins"
+            ]
+          ],
+          "value": 20
+        },
+        {
+          "name": "a exact-once reward",
+          "kind": "equals",
+          "paths": [
+            [
+              "state",
+              "towns",
+              "a",
+              "coins"
+            ]
+          ],
+          "value": 20
+        },
+        {
+          "name": "b exact-once reward",
+          "kind": "equals",
+          "paths": [
+            [
+              "state",
+              "towns",
+              "b",
+              "coins"
+            ]
+          ],
+          "value": 20
+        }
+      ]
+    },
+    {
+      "operation": {
+        "kind": "command",
+        "town": "b",
+        "data": {
+          "action": "quarry_walk",
+          "dx": 1,
+          "dy": 0
+        }
+      },
+      "random_draws": [],
+      "expected": {
+        "public": {
+          "result": {}
+        },
+        "state": {
+          "towns": {
+            "a": {
+              "owner": "a",
+              "wood": 65,
+              "food": 40,
+              "coins": 20,
+              "goods": {},
+              "produced": {},
+              "player": {
+                "x": 90.0,
+                "y": 32.0,
+                "facing": 1
+              },
+              "buildings": [
+                {
+                  "kind": "hall",
+                  "x": 90,
+                  "y": 29,
+                  "footprint": [
+                    3,
+                    3
+                  ]
+                }
+              ],
+              "workers": [
+                {
+                  "name": "Ada",
+                  "job": "idle",
+                  "woodcutting": 0
+                },
+                {
+                  "name": "Rowan",
+                  "job": "idle",
+                  "woodcutting": 1
+                },
+                {
+                  "name": "Wren",
+                  "job": "idle",
+                  "woodcutting": 2
+                },
+                {
+                  "name": "Bram",
+                  "job": "idle",
+                  "woodcutting": 0
+                },
+                {
+                  "name": "Hazel",
+                  "job": "idle",
+                  "woodcutting": 1
+                }
+              ],
+              "wood_ledger": {
+                "stored": 0,
+                "carried": 0
+              }
+            },
+            "b": {
+              "owner": "b",
+              "wood": 65,
+              "food": 40,
+              "coins": 20,
+              "goods": {},
+              "produced": {},
+              "player": {
+                "x": 29.0,
+                "y": 89.0,
+                "facing": 1
+              },
+              "buildings": [
+                {
+                  "kind": "hall",
+                  "x": 29,
+                  "y": 86,
+                  "footprint": [
+                    3,
+                    3
+                  ]
+                }
+              ],
+              "workers": [
+                {
+                  "name": "Ada",
+                  "job": "idle",
+                  "woodcutting": 0
+                },
+                {
+                  "name": "Rowan",
+                  "job": "idle",
+                  "woodcutting": 1
+                },
+                {
+                  "name": "Wren",
+                  "job": "idle",
+                  "woodcutting": 2
+                },
+                {
+                  "name": "Bram",
+                  "job": "idle",
+                  "woodcutting": 0
+                },
+                {
+                  "name": "Hazel",
+                  "job": "idle",
+                  "woodcutting": 1
+                }
+              ],
+              "wood_ledger": {
+                "stored": 0,
+                "carried": 0
+              }
+            },
+            "spectator": {
+              "owner": "spectator",
+              "wood": 65,
+              "food": 40,
+              "coins": 20,
+              "goods": {},
+              "produced": {},
+              "player": {
+                "x": 25.0,
+                "y": 25.0,
+                "facing": 1
+              },
+              "buildings": [
+                {
+                  "kind": "hall",
+                  "x": 25,
+                  "y": 22,
+                  "footprint": [
+                    3,
+                    3
+                  ]
+                }
+              ],
+              "workers": [
+                {
+                  "name": "Ada",
+                  "job": "idle",
+                  "woodcutting": 0
+                },
+                {
+                  "name": "Rowan",
+                  "job": "idle",
+                  "woodcutting": 1
+                },
+                {
+                  "name": "Wren",
+                  "job": "idle",
+                  "woodcutting": 2
+                },
+                {
+                  "name": "Bram",
+                  "job": "idle",
+                  "woodcutting": 0
+                },
+                {
+                  "name": "Hazel",
+                  "job": "idle",
+                  "woodcutting": 1
+                }
+              ],
+              "wood_ledger": {
+                "stored": 0,
+                "carried": 0
+              }
+            }
+          },
+          "quarry": {
+            "members": {
+              "a": {
+                "x": 2,
+                "y": 2,
+                "inside": true
+              },
+              "b": {
+                "x": 7,
+                "y": 3,
+                "inside": true
+              }
+            },
+            "started": true,
+            "completed": false,
+            "gate_latched": true,
+            "sequence": [],
+            "runes_solved": false,
+            "message": "You secure the gate\u2019s catch. Both companions can now cross safely."
+          },
+          "terrain": {
+            "seed": 42,
+            "version": 1,
+            "rows_sha256": "b2d30483c184a04880c22b33c1bbba12965ed3dd26a3aee8143ac8fb59930d74",
+            "resource_count": 5305,
+            "resources_sha256": "7f539aa65ad5d73a012f3eb493dd09199c00176adf56959ee3fd7dc881ac120b",
+            "npc_count": 22,
+            "town_sites": [
+              {
+                "x": 90,
+                "y": 29
+              },
+              {
+                "x": 29,
+                "y": 86
+              },
+              {
+                "x": 25,
+                "y": 22
+              },
+              {
+                "x": 85,
+                "y": 84
+              }
+            ]
+          }
+        }
+      },
+      "numeric_fields": [],
+      "invariants": [
+        {
+          "name": "spectator receives no reward",
+          "kind": "equals",
+          "paths": [
+            [
+              "state",
+              "towns",
+              "spectator",
+              "coins"
+            ]
+          ],
+          "value": 20
+        },
+        {
+          "name": "a exact-once reward",
+          "kind": "equals",
+          "paths": [
+            [
+              "state",
+              "towns",
+              "a",
+              "coins"
+            ]
+          ],
+          "value": 20
+        },
+        {
+          "name": "b exact-once reward",
+          "kind": "equals",
+          "paths": [
+            [
+              "state",
+              "towns",
+              "b",
+              "coins"
+            ]
+          ],
+          "value": 20
+        }
+      ]
+    },
+    {
+      "operation": {
+        "kind": "command",
+        "town": "b",
+        "data": {
+          "action": "quarry_walk",
+          "dx": 0,
+          "dy": -1
+        }
+      },
+      "random_draws": [],
+      "expected": {
+        "public": {
+          "result": {}
+        },
+        "state": {
+          "towns": {
+            "a": {
+              "owner": "a",
+              "wood": 65,
+              "food": 40,
+              "coins": 20,
+              "goods": {},
+              "produced": {},
+              "player": {
+                "x": 90.0,
+                "y": 32.0,
+                "facing": 1
+              },
+              "buildings": [
+                {
+                  "kind": "hall",
+                  "x": 90,
+                  "y": 29,
+                  "footprint": [
+                    3,
+                    3
+                  ]
+                }
+              ],
+              "workers": [
+                {
+                  "name": "Ada",
+                  "job": "idle",
+                  "woodcutting": 0
+                },
+                {
+                  "name": "Rowan",
+                  "job": "idle",
+                  "woodcutting": 1
+                },
+                {
+                  "name": "Wren",
+                  "job": "idle",
+                  "woodcutting": 2
+                },
+                {
+                  "name": "Bram",
+                  "job": "idle",
+                  "woodcutting": 0
+                },
+                {
+                  "name": "Hazel",
+                  "job": "idle",
+                  "woodcutting": 1
+                }
+              ],
+              "wood_ledger": {
+                "stored": 0,
+                "carried": 0
+              }
+            },
+            "b": {
+              "owner": "b",
+              "wood": 65,
+              "food": 40,
+              "coins": 20,
+              "goods": {},
+              "produced": {},
+              "player": {
+                "x": 29.0,
+                "y": 89.0,
+                "facing": 1
+              },
+              "buildings": [
+                {
+                  "kind": "hall",
+                  "x": 29,
+                  "y": 86,
+                  "footprint": [
+                    3,
+                    3
+                  ]
+                }
+              ],
+              "workers": [
+                {
+                  "name": "Ada",
+                  "job": "idle",
+                  "woodcutting": 0
+                },
+                {
+                  "name": "Rowan",
+                  "job": "idle",
+                  "woodcutting": 1
+                },
+                {
+                  "name": "Wren",
+                  "job": "idle",
+                  "woodcutting": 2
+                },
+                {
+                  "name": "Bram",
+                  "job": "idle",
+                  "woodcutting": 0
+                },
+                {
+                  "name": "Hazel",
+                  "job": "idle",
+                  "woodcutting": 1
+                }
+              ],
+              "wood_ledger": {
+                "stored": 0,
+                "carried": 0
+              }
+            },
+            "spectator": {
+              "owner": "spectator",
+              "wood": 65,
+              "food": 40,
+              "coins": 20,
+              "goods": {},
+              "produced": {},
+              "player": {
+                "x": 25.0,
+                "y": 25.0,
+                "facing": 1
+              },
+              "buildings": [
+                {
+                  "kind": "hall",
+                  "x": 25,
+                  "y": 22,
+                  "footprint": [
+                    3,
+                    3
+                  ]
+                }
+              ],
+              "workers": [
+                {
+                  "name": "Ada",
+                  "job": "idle",
+                  "woodcutting": 0
+                },
+                {
+                  "name": "Rowan",
+                  "job": "idle",
+                  "woodcutting": 1
+                },
+                {
+                  "name": "Wren",
+                  "job": "idle",
+                  "woodcutting": 2
+                },
+                {
+                  "name": "Bram",
+                  "job": "idle",
+                  "woodcutting": 0
+                },
+                {
+                  "name": "Hazel",
+                  "job": "idle",
+                  "woodcutting": 1
+                }
+              ],
+              "wood_ledger": {
+                "stored": 0,
+                "carried": 0
+              }
+            }
+          },
+          "quarry": {
+            "members": {
+              "a": {
+                "x": 2,
+                "y": 2,
+                "inside": true
+              },
+              "b": {
+                "x": 7,
+                "y": 2,
+                "inside": true
+              }
+            },
+            "started": true,
+            "completed": false,
+            "gate_latched": true,
+            "sequence": [],
+            "runes_solved": false,
+            "message": "You secure the gate\u2019s catch. Both companions can now cross safely."
+          },
+          "terrain": {
+            "seed": 42,
+            "version": 1,
+            "rows_sha256": "b2d30483c184a04880c22b33c1bbba12965ed3dd26a3aee8143ac8fb59930d74",
+            "resource_count": 5305,
+            "resources_sha256": "7f539aa65ad5d73a012f3eb493dd09199c00176adf56959ee3fd7dc881ac120b",
+            "npc_count": 22,
+            "town_sites": [
+              {
+                "x": 90,
+                "y": 29
+              },
+              {
+                "x": 29,
+                "y": 86
+              },
+              {
+                "x": 25,
+                "y": 22
+              },
+              {
+                "x": 85,
+                "y": 84
+              }
+            ]
+          }
+        }
+      },
+      "numeric_fields": [],
+      "invariants": [
+        {
+          "name": "spectator receives no reward",
+          "kind": "equals",
+          "paths": [
+            [
+              "state",
+              "towns",
+              "spectator",
+              "coins"
+            ]
+          ],
+          "value": 20
+        },
+        {
+          "name": "a exact-once reward",
+          "kind": "equals",
+          "paths": [
+            [
+              "state",
+              "towns",
+              "a",
+              "coins"
+            ]
+          ],
+          "value": 20
+        },
+        {
+          "name": "b exact-once reward",
+          "kind": "equals",
+          "paths": [
+            [
+              "state",
+              "towns",
+              "b",
+              "coins"
+            ]
+          ],
+          "value": 20
+        }
+      ]
+    },
+    {
+      "operation": {
+        "kind": "command",
+        "town": "b",
+        "data": {
+          "action": "quarry_interact",
+          "target": "sun"
+        }
+      },
+      "random_draws": [],
+      "expected": {
+        "public": {
+          "result": {}
+        },
+        "state": {
+          "towns": {
+            "a": {
+              "owner": "a",
+              "wood": 65,
+              "food": 40,
+              "coins": 20,
+              "goods": {},
+              "produced": {},
+              "player": {
+                "x": 90.0,
+                "y": 32.0,
+                "facing": 1
+              },
+              "buildings": [
+                {
+                  "kind": "hall",
+                  "x": 90,
+                  "y": 29,
+                  "footprint": [
+                    3,
+                    3
+                  ]
+                }
+              ],
+              "workers": [
+                {
+                  "name": "Ada",
+                  "job": "idle",
+                  "woodcutting": 0
+                },
+                {
+                  "name": "Rowan",
+                  "job": "idle",
+                  "woodcutting": 1
+                },
+                {
+                  "name": "Wren",
+                  "job": "idle",
+                  "woodcutting": 2
+                },
+                {
+                  "name": "Bram",
+                  "job": "idle",
+                  "woodcutting": 0
+                },
+                {
+                  "name": "Hazel",
+                  "job": "idle",
+                  "woodcutting": 1
+                }
+              ],
+              "wood_ledger": {
+                "stored": 0,
+                "carried": 0
+              }
+            },
+            "b": {
+              "owner": "b",
+              "wood": 65,
+              "food": 40,
+              "coins": 20,
+              "goods": {},
+              "produced": {},
+              "player": {
+                "x": 29.0,
+                "y": 89.0,
+                "facing": 1
+              },
+              "buildings": [
+                {
+                  "kind": "hall",
+                  "x": 29,
+                  "y": 86,
+                  "footprint": [
+                    3,
+                    3
+                  ]
+                }
+              ],
+              "workers": [
+                {
+                  "name": "Ada",
+                  "job": "idle",
+                  "woodcutting": 0
+                },
+                {
+                  "name": "Rowan",
+                  "job": "idle",
+                  "woodcutting": 1
+                },
+                {
+                  "name": "Wren",
+                  "job": "idle",
+                  "woodcutting": 2
+                },
+                {
+                  "name": "Bram",
+                  "job": "idle",
+                  "woodcutting": 0
+                },
+                {
+                  "name": "Hazel",
+                  "job": "idle",
+                  "woodcutting": 1
+                }
+              ],
+              "wood_ledger": {
+                "stored": 0,
+                "carried": 0
+              }
+            },
+            "spectator": {
+              "owner": "spectator",
+              "wood": 65,
+              "food": 40,
+              "coins": 20,
+              "goods": {},
+              "produced": {},
+              "player": {
+                "x": 25.0,
+                "y": 25.0,
+                "facing": 1
+              },
+              "buildings": [
+                {
+                  "kind": "hall",
+                  "x": 25,
+                  "y": 22,
+                  "footprint": [
+                    3,
+                    3
+                  ]
+                }
+              ],
+              "workers": [
+                {
+                  "name": "Ada",
+                  "job": "idle",
+                  "woodcutting": 0
+                },
+                {
+                  "name": "Rowan",
+                  "job": "idle",
+                  "woodcutting": 1
+                },
+                {
+                  "name": "Wren",
+                  "job": "idle",
+                  "woodcutting": 2
+                },
+                {
+                  "name": "Bram",
+                  "job": "idle",
+                  "woodcutting": 0
+                },
+                {
+                  "name": "Hazel",
+                  "job": "idle",
+                  "woodcutting": 1
+                }
+              ],
+              "wood_ledger": {
+                "stored": 0,
+                "carried": 0
+              }
+            }
+          },
+          "quarry": {
+            "members": {
+              "a": {
+                "x": 2,
+                "y": 2,
+                "inside": true
+              },
+              "b": {
+                "x": 7,
+                "y": 2,
+                "inside": true
+              }
+            },
+            "started": true,
+            "completed": false,
+            "gate_latched": true,
+            "sequence": [
+              "sun"
+            ],
+            "runes_solved": false,
+            "message": "A rune glows. The next carving waits."
+          },
+          "terrain": {
+            "seed": 42,
+            "version": 1,
+            "rows_sha256": "b2d30483c184a04880c22b33c1bbba12965ed3dd26a3aee8143ac8fb59930d74",
+            "resource_count": 5305,
+            "resources_sha256": "7f539aa65ad5d73a012f3eb493dd09199c00176adf56959ee3fd7dc881ac120b",
+            "npc_count": 22,
+            "town_sites": [
+              {
+                "x": 90,
+                "y": 29
+              },
+              {
+                "x": 29,
+                "y": 86
+              },
+              {
+                "x": 25,
+                "y": 22
+              },
+              {
+                "x": 85,
+                "y": 84
+              }
+            ]
+          }
+        }
+      },
+      "numeric_fields": [],
+      "invariants": [
+        {
+          "name": "spectator receives no reward",
+          "kind": "equals",
+          "paths": [
+            [
+              "state",
+              "towns",
+              "spectator",
+              "coins"
+            ]
+          ],
+          "value": 20
+        },
+        {
+          "name": "a exact-once reward",
+          "kind": "equals",
+          "paths": [
+            [
+              "state",
+              "towns",
+              "a",
+              "coins"
+            ]
+          ],
+          "value": 20
+        },
+        {
+          "name": "b exact-once reward",
+          "kind": "equals",
+          "paths": [
+            [
+              "state",
+              "towns",
+              "b",
+              "coins"
+            ]
+          ],
+          "value": 20
+        }
+      ]
+    },
+    {
+      "operation": {
+        "kind": "command",
+        "town": "b",
+        "data": {
+          "action": "quarry_interact",
+          "target": "leaf"
+        }
+      },
+      "random_draws": [],
+      "expected": {
+        "public": {
+          "result": {}
+        },
+        "state": {
+          "towns": {
+            "a": {
+              "owner": "a",
+              "wood": 65,
+              "food": 40,
+              "coins": 20,
+              "goods": {},
+              "produced": {},
+              "player": {
+                "x": 90.0,
+                "y": 32.0,
+                "facing": 1
+              },
+              "buildings": [
+                {
+                  "kind": "hall",
+                  "x": 90,
+                  "y": 29,
+                  "footprint": [
+                    3,
+                    3
+                  ]
+                }
+              ],
+              "workers": [
+                {
+                  "name": "Ada",
+                  "job": "idle",
+                  "woodcutting": 0
+                },
+                {
+                  "name": "Rowan",
+                  "job": "idle",
+                  "woodcutting": 1
+                },
+                {
+                  "name": "Wren",
+                  "job": "idle",
+                  "woodcutting": 2
+                },
+                {
+                  "name": "Bram",
+                  "job": "idle",
+                  "woodcutting": 0
+                },
+                {
+                  "name": "Hazel",
+                  "job": "idle",
+                  "woodcutting": 1
+                }
+              ],
+              "wood_ledger": {
+                "stored": 0,
+                "carried": 0
+              }
+            },
+            "b": {
+              "owner": "b",
+              "wood": 65,
+              "food": 40,
+              "coins": 20,
+              "goods": {},
+              "produced": {},
+              "player": {
+                "x": 29.0,
+                "y": 89.0,
+                "facing": 1
+              },
+              "buildings": [
+                {
+                  "kind": "hall",
+                  "x": 29,
+                  "y": 86,
+                  "footprint": [
+                    3,
+                    3
+                  ]
+                }
+              ],
+              "workers": [
+                {
+                  "name": "Ada",
+                  "job": "idle",
+                  "woodcutting": 0
+                },
+                {
+                  "name": "Rowan",
+                  "job": "idle",
+                  "woodcutting": 1
+                },
+                {
+                  "name": "Wren",
+                  "job": "idle",
+                  "woodcutting": 2
+                },
+                {
+                  "name": "Bram",
+                  "job": "idle",
+                  "woodcutting": 0
+                },
+                {
+                  "name": "Hazel",
+                  "job": "idle",
+                  "woodcutting": 1
+                }
+              ],
+              "wood_ledger": {
+                "stored": 0,
+                "carried": 0
+              }
+            },
+            "spectator": {
+              "owner": "spectator",
+              "wood": 65,
+              "food": 40,
+              "coins": 20,
+              "goods": {},
+              "produced": {},
+              "player": {
+                "x": 25.0,
+                "y": 25.0,
+                "facing": 1
+              },
+              "buildings": [
+                {
+                  "kind": "hall",
+                  "x": 25,
+                  "y": 22,
+                  "footprint": [
+                    3,
+                    3
+                  ]
+                }
+              ],
+              "workers": [
+                {
+                  "name": "Ada",
+                  "job": "idle",
+                  "woodcutting": 0
+                },
+                {
+                  "name": "Rowan",
+                  "job": "idle",
+                  "woodcutting": 1
+                },
+                {
+                  "name": "Wren",
+                  "job": "idle",
+                  "woodcutting": 2
+                },
+                {
+                  "name": "Bram",
+                  "job": "idle",
+                  "woodcutting": 0
+                },
+                {
+                  "name": "Hazel",
+                  "job": "idle",
+                  "woodcutting": 1
+                }
+              ],
+              "wood_ledger": {
+                "stored": 0,
+                "carried": 0
+              }
+            }
+          },
+          "quarry": {
+            "members": {
+              "a": {
+                "x": 2,
+                "y": 2,
+                "inside": true
+              },
+              "b": {
+                "x": 7,
+                "y": 2,
+                "inside": true
+              }
+            },
+            "started": true,
+            "completed": false,
+            "gate_latched": true,
+            "sequence": [
+              "sun",
+              "leaf"
+            ],
+            "runes_solved": false,
+            "message": "A rune glows. The next carving waits."
+          },
+          "terrain": {
+            "seed": 42,
+            "version": 1,
+            "rows_sha256": "b2d30483c184a04880c22b33c1bbba12965ed3dd26a3aee8143ac8fb59930d74",
+            "resource_count": 5305,
+            "resources_sha256": "7f539aa65ad5d73a012f3eb493dd09199c00176adf56959ee3fd7dc881ac120b",
+            "npc_count": 22,
+            "town_sites": [
+              {
+                "x": 90,
+                "y": 29
+              },
+              {
+                "x": 29,
+                "y": 86
+              },
+              {
+                "x": 25,
+                "y": 22
+              },
+              {
+                "x": 85,
+                "y": 84
+              }
+            ]
+          }
+        }
+      },
+      "numeric_fields": [],
+      "invariants": [
+        {
+          "name": "spectator receives no reward",
+          "kind": "equals",
+          "paths": [
+            [
+              "state",
+              "towns",
+              "spectator",
+              "coins"
+            ]
+          ],
+          "value": 20
+        },
+        {
+          "name": "a exact-once reward",
+          "kind": "equals",
+          "paths": [
+            [
+              "state",
+              "towns",
+              "a",
+              "coins"
+            ]
+          ],
+          "value": 20
+        },
+        {
+          "name": "b exact-once reward",
+          "kind": "equals",
+          "paths": [
+            [
+              "state",
+              "towns",
+              "b",
+              "coins"
+            ]
+          ],
+          "value": 20
+        }
+      ]
+    },
+    {
+      "operation": {
+        "kind": "command",
+        "town": "b",
+        "data": {
+          "action": "quarry_walk",
+          "dx": 1,
+          "dy": 0
+        }
+      },
+      "random_draws": [],
+      "expected": {
+        "public": {
+          "result": {}
+        },
+        "state": {
+          "towns": {
+            "a": {
+              "owner": "a",
+              "wood": 65,
+              "food": 40,
+              "coins": 20,
+              "goods": {},
+              "produced": {},
+              "player": {
+                "x": 90.0,
+                "y": 32.0,
+                "facing": 1
+              },
+              "buildings": [
+                {
+                  "kind": "hall",
+                  "x": 90,
+                  "y": 29,
+                  "footprint": [
+                    3,
+                    3
+                  ]
+                }
+              ],
+              "workers": [
+                {
+                  "name": "Ada",
+                  "job": "idle",
+                  "woodcutting": 0
+                },
+                {
+                  "name": "Rowan",
+                  "job": "idle",
+                  "woodcutting": 1
+                },
+                {
+                  "name": "Wren",
+                  "job": "idle",
+                  "woodcutting": 2
+                },
+                {
+                  "name": "Bram",
+                  "job": "idle",
+                  "woodcutting": 0
+                },
+                {
+                  "name": "Hazel",
+                  "job": "idle",
+                  "woodcutting": 1
+                }
+              ],
+              "wood_ledger": {
+                "stored": 0,
+                "carried": 0
+              }
+            },
+            "b": {
+              "owner": "b",
+              "wood": 65,
+              "food": 40,
+              "coins": 20,
+              "goods": {},
+              "produced": {},
+              "player": {
+                "x": 29.0,
+                "y": 89.0,
+                "facing": 1
+              },
+              "buildings": [
+                {
+                  "kind": "hall",
+                  "x": 29,
+                  "y": 86,
+                  "footprint": [
+                    3,
+                    3
+                  ]
+                }
+              ],
+              "workers": [
+                {
+                  "name": "Ada",
+                  "job": "idle",
+                  "woodcutting": 0
+                },
+                {
+                  "name": "Rowan",
+                  "job": "idle",
+                  "woodcutting": 1
+                },
+                {
+                  "name": "Wren",
+                  "job": "idle",
+                  "woodcutting": 2
+                },
+                {
+                  "name": "Bram",
+                  "job": "idle",
+                  "woodcutting": 0
+                },
+                {
+                  "name": "Hazel",
+                  "job": "idle",
+                  "woodcutting": 1
+                }
+              ],
+              "wood_ledger": {
+                "stored": 0,
+                "carried": 0
+              }
+            },
+            "spectator": {
+              "owner": "spectator",
+              "wood": 65,
+              "food": 40,
+              "coins": 20,
+              "goods": {},
+              "produced": {},
+              "player": {
+                "x": 25.0,
+                "y": 25.0,
+                "facing": 1
+              },
+              "buildings": [
+                {
+                  "kind": "hall",
+                  "x": 25,
+                  "y": 22,
+                  "footprint": [
+                    3,
+                    3
+                  ]
+                }
+              ],
+              "workers": [
+                {
+                  "name": "Ada",
+                  "job": "idle",
+                  "woodcutting": 0
+                },
+                {
+                  "name": "Rowan",
+                  "job": "idle",
+                  "woodcutting": 1
+                },
+                {
+                  "name": "Wren",
+                  "job": "idle",
+                  "woodcutting": 2
+                },
+                {
+                  "name": "Bram",
+                  "job": "idle",
+                  "woodcutting": 0
+                },
+                {
+                  "name": "Hazel",
+                  "job": "idle",
+                  "woodcutting": 1
+                }
+              ],
+              "wood_ledger": {
+                "stored": 0,
+                "carried": 0
+              }
+            }
+          },
+          "quarry": {
+            "members": {
+              "a": {
+                "x": 2,
+                "y": 2,
+                "inside": true
+              },
+              "b": {
+                "x": 8,
+                "y": 2,
+                "inside": true
+              }
+            },
+            "started": true,
+            "completed": false,
+            "gate_latched": true,
+            "sequence": [
+              "sun",
+              "leaf"
+            ],
+            "runes_solved": false,
+            "message": "A rune glows. The next carving waits."
+          },
+          "terrain": {
+            "seed": 42,
+            "version": 1,
+            "rows_sha256": "b2d30483c184a04880c22b33c1bbba12965ed3dd26a3aee8143ac8fb59930d74",
+            "resource_count": 5305,
+            "resources_sha256": "7f539aa65ad5d73a012f3eb493dd09199c00176adf56959ee3fd7dc881ac120b",
+            "npc_count": 22,
+            "town_sites": [
+              {
+                "x": 90,
+                "y": 29
+              },
+              {
+                "x": 29,
+                "y": 86
+              },
+              {
+                "x": 25,
+                "y": 22
+              },
+              {
+                "x": 85,
+                "y": 84
+              }
+            ]
+          }
+        }
+      },
+      "numeric_fields": [],
+      "invariants": [
+        {
+          "name": "spectator receives no reward",
+          "kind": "equals",
+          "paths": [
+            [
+              "state",
+              "towns",
+              "spectator",
+              "coins"
+            ]
+          ],
+          "value": 20
+        },
+        {
+          "name": "a exact-once reward",
+          "kind": "equals",
+          "paths": [
+            [
+              "state",
+              "towns",
+              "a",
+              "coins"
+            ]
+          ],
+          "value": 20
+        },
+        {
+          "name": "b exact-once reward",
+          "kind": "equals",
+          "paths": [
+            [
+              "state",
+              "towns",
+              "b",
+              "coins"
+            ]
+          ],
+          "value": 20
+        }
+      ]
+    },
+    {
+      "operation": {
+        "kind": "command",
+        "town": "b",
+        "data": {
+          "action": "quarry_interact",
+          "target": "moon"
+        }
+      },
+      "random_draws": [],
+      "expected": {
+        "public": {
+          "result": {}
+        },
+        "state": {
+          "towns": {
+            "a": {
+              "owner": "a",
+              "wood": 65,
+              "food": 40,
+              "coins": 20,
+              "goods": {},
+              "produced": {},
+              "player": {
+                "x": 90.0,
+                "y": 32.0,
+                "facing": 1
+              },
+              "buildings": [
+                {
+                  "kind": "hall",
+                  "x": 90,
+                  "y": 29,
+                  "footprint": [
+                    3,
+                    3
+                  ]
+                }
+              ],
+              "workers": [
+                {
+                  "name": "Ada",
+                  "job": "idle",
+                  "woodcutting": 0
+                },
+                {
+                  "name": "Rowan",
+                  "job": "idle",
+                  "woodcutting": 1
+                },
+                {
+                  "name": "Wren",
+                  "job": "idle",
+                  "woodcutting": 2
+                },
+                {
+                  "name": "Bram",
+                  "job": "idle",
+                  "woodcutting": 0
+                },
+                {
+                  "name": "Hazel",
+                  "job": "idle",
+                  "woodcutting": 1
+                }
+              ],
+              "wood_ledger": {
+                "stored": 0,
+                "carried": 0
+              }
+            },
+            "b": {
+              "owner": "b",
+              "wood": 65,
+              "food": 40,
+              "coins": 20,
+              "goods": {},
+              "produced": {},
+              "player": {
+                "x": 29.0,
+                "y": 89.0,
+                "facing": 1
+              },
+              "buildings": [
+                {
+                  "kind": "hall",
+                  "x": 29,
+                  "y": 86,
+                  "footprint": [
+                    3,
+                    3
+                  ]
+                }
+              ],
+              "workers": [
+                {
+                  "name": "Ada",
+                  "job": "idle",
+                  "woodcutting": 0
+                },
+                {
+                  "name": "Rowan",
+                  "job": "idle",
+                  "woodcutting": 1
+                },
+                {
+                  "name": "Wren",
+                  "job": "idle",
+                  "woodcutting": 2
+                },
+                {
+                  "name": "Bram",
+                  "job": "idle",
+                  "woodcutting": 0
+                },
+                {
+                  "name": "Hazel",
+                  "job": "idle",
+                  "woodcutting": 1
+                }
+              ],
+              "wood_ledger": {
+                "stored": 0,
+                "carried": 0
+              }
+            },
+            "spectator": {
+              "owner": "spectator",
+              "wood": 65,
+              "food": 40,
+              "coins": 20,
+              "goods": {},
+              "produced": {},
+              "player": {
+                "x": 25.0,
+                "y": 25.0,
+                "facing": 1
+              },
+              "buildings": [
+                {
+                  "kind": "hall",
+                  "x": 25,
+                  "y": 22,
+                  "footprint": [
+                    3,
+                    3
+                  ]
+                }
+              ],
+              "workers": [
+                {
+                  "name": "Ada",
+                  "job": "idle",
+                  "woodcutting": 0
+                },
+                {
+                  "name": "Rowan",
+                  "job": "idle",
+                  "woodcutting": 1
+                },
+                {
+                  "name": "Wren",
+                  "job": "idle",
+                  "woodcutting": 2
+                },
+                {
+                  "name": "Bram",
+                  "job": "idle",
+                  "woodcutting": 0
+                },
+                {
+                  "name": "Hazel",
+                  "job": "idle",
+                  "woodcutting": 1
+                }
+              ],
+              "wood_ledger": {
+                "stored": 0,
+                "carried": 0
+              }
+            }
+          },
+          "quarry": {
+            "members": {
+              "a": {
+                "x": 2,
+                "y": 2,
+                "inside": true
+              },
+              "b": {
+                "x": 8,
+                "y": 2,
+                "inside": true
+              }
+            },
+            "started": true,
+            "completed": false,
+            "gate_latched": true,
+            "sequence": [
+              "sun",
+              "leaf",
+              "moon"
+            ],
+            "runes_solved": true,
+            "message": "The rune seal opens. Recover the lantern stone from the chest."
+          },
+          "terrain": {
+            "seed": 42,
+            "version": 1,
+            "rows_sha256": "b2d30483c184a04880c22b33c1bbba12965ed3dd26a3aee8143ac8fb59930d74",
+            "resource_count": 5305,
+            "resources_sha256": "7f539aa65ad5d73a012f3eb493dd09199c00176adf56959ee3fd7dc881ac120b",
+            "npc_count": 22,
+            "town_sites": [
+              {
+                "x": 90,
+                "y": 29
+              },
+              {
+                "x": 29,
+                "y": 86
+              },
+              {
+                "x": 25,
+                "y": 22
+              },
+              {
+                "x": 85,
+                "y": 84
+              }
+            ]
+          }
+        }
+      },
+      "numeric_fields": [],
+      "invariants": [
+        {
+          "name": "spectator receives no reward",
+          "kind": "equals",
+          "paths": [
+            [
+              "state",
+              "towns",
+              "spectator",
+              "coins"
+            ]
+          ],
+          "value": 20
+        },
+        {
+          "name": "a exact-once reward",
+          "kind": "equals",
+          "paths": [
+            [
+              "state",
+              "towns",
+              "a",
+              "coins"
+            ]
+          ],
+          "value": 20
+        },
+        {
+          "name": "b exact-once reward",
+          "kind": "equals",
+          "paths": [
+            [
+              "state",
+              "towns",
+              "b",
+              "coins"
+            ]
+          ],
+          "value": 20
+        }
+      ]
+    },
+    {
+      "operation": {
+        "kind": "command",
+        "town": "b",
+        "data": {
+          "action": "quarry_walk",
+          "dx": 0,
+          "dy": 1
+        }
+      },
+      "random_draws": [],
+      "expected": {
+        "public": {
+          "result": {}
+        },
+        "state": {
+          "towns": {
+            "a": {
+              "owner": "a",
+              "wood": 65,
+              "food": 40,
+              "coins": 20,
+              "goods": {},
+              "produced": {},
+              "player": {
+                "x": 90.0,
+                "y": 32.0,
+                "facing": 1
+              },
+              "buildings": [
+                {
+                  "kind": "hall",
+                  "x": 90,
+                  "y": 29,
+                  "footprint": [
+                    3,
+                    3
+                  ]
+                }
+              ],
+              "workers": [
+                {
+                  "name": "Ada",
+                  "job": "idle",
+                  "woodcutting": 0
+                },
+                {
+                  "name": "Rowan",
+                  "job": "idle",
+                  "woodcutting": 1
+                },
+                {
+                  "name": "Wren",
+                  "job": "idle",
+                  "woodcutting": 2
+                },
+                {
+                  "name": "Bram",
+                  "job": "idle",
+                  "woodcutting": 0
+                },
+                {
+                  "name": "Hazel",
+                  "job": "idle",
+                  "woodcutting": 1
+                }
+              ],
+              "wood_ledger": {
+                "stored": 0,
+                "carried": 0
+              }
+            },
+            "b": {
+              "owner": "b",
+              "wood": 65,
+              "food": 40,
+              "coins": 20,
+              "goods": {},
+              "produced": {},
+              "player": {
+                "x": 29.0,
+                "y": 89.0,
+                "facing": 1
+              },
+              "buildings": [
+                {
+                  "kind": "hall",
+                  "x": 29,
+                  "y": 86,
+                  "footprint": [
+                    3,
+                    3
+                  ]
+                }
+              ],
+              "workers": [
+                {
+                  "name": "Ada",
+                  "job": "idle",
+                  "woodcutting": 0
+                },
+                {
+                  "name": "Rowan",
+                  "job": "idle",
+                  "woodcutting": 1
+                },
+                {
+                  "name": "Wren",
+                  "job": "idle",
+                  "woodcutting": 2
+                },
+                {
+                  "name": "Bram",
+                  "job": "idle",
+                  "woodcutting": 0
+                },
+                {
+                  "name": "Hazel",
+                  "job": "idle",
+                  "woodcutting": 1
+                }
+              ],
+              "wood_ledger": {
+                "stored": 0,
+                "carried": 0
+              }
+            },
+            "spectator": {
+              "owner": "spectator",
+              "wood": 65,
+              "food": 40,
+              "coins": 20,
+              "goods": {},
+              "produced": {},
+              "player": {
+                "x": 25.0,
+                "y": 25.0,
+                "facing": 1
+              },
+              "buildings": [
+                {
+                  "kind": "hall",
+                  "x": 25,
+                  "y": 22,
+                  "footprint": [
+                    3,
+                    3
+                  ]
+                }
+              ],
+              "workers": [
+                {
+                  "name": "Ada",
+                  "job": "idle",
+                  "woodcutting": 0
+                },
+                {
+                  "name": "Rowan",
+                  "job": "idle",
+                  "woodcutting": 1
+                },
+                {
+                  "name": "Wren",
+                  "job": "idle",
+                  "woodcutting": 2
+                },
+                {
+                  "name": "Bram",
+                  "job": "idle",
+                  "woodcutting": 0
+                },
+                {
+                  "name": "Hazel",
+                  "job": "idle",
+                  "woodcutting": 1
+                }
+              ],
+              "wood_ledger": {
+                "stored": 0,
+                "carried": 0
+              }
+            }
+          },
+          "quarry": {
+            "members": {
+              "a": {
+                "x": 2,
+                "y": 2,
+                "inside": true
+              },
+              "b": {
+                "x": 8,
+                "y": 3,
+                "inside": true
+              }
+            },
+            "started": true,
+            "completed": false,
+            "gate_latched": true,
+            "sequence": [
+              "sun",
+              "leaf",
+              "moon"
+            ],
+            "runes_solved": true,
+            "message": "The rune seal opens. Recover the lantern stone from the chest."
+          },
+          "terrain": {
+            "seed": 42,
+            "version": 1,
+            "rows_sha256": "b2d30483c184a04880c22b33c1bbba12965ed3dd26a3aee8143ac8fb59930d74",
+            "resource_count": 5305,
+            "resources_sha256": "7f539aa65ad5d73a012f3eb493dd09199c00176adf56959ee3fd7dc881ac120b",
+            "npc_count": 22,
+            "town_sites": [
+              {
+                "x": 90,
+                "y": 29
+              },
+              {
+                "x": 29,
+                "y": 86
+              },
+              {
+                "x": 25,
+                "y": 22
+              },
+              {
+                "x": 85,
+                "y": 84
+              }
+            ]
+          }
+        }
+      },
+      "numeric_fields": [],
+      "invariants": [
+        {
+          "name": "spectator receives no reward",
+          "kind": "equals",
+          "paths": [
+            [
+              "state",
+              "towns",
+              "spectator",
+              "coins"
+            ]
+          ],
+          "value": 20
+        },
+        {
+          "name": "a exact-once reward",
+          "kind": "equals",
+          "paths": [
+            [
+              "state",
+              "towns",
+              "a",
+              "coins"
+            ]
+          ],
+          "value": 20
+        },
+        {
+          "name": "b exact-once reward",
+          "kind": "equals",
+          "paths": [
+            [
+              "state",
+              "towns",
+              "b",
+              "coins"
+            ]
+          ],
+          "value": 20
+        }
+      ]
+    },
+    {
+      "operation": {
+        "kind": "command",
+        "town": "b",
+        "data": {
+          "action": "quarry_walk",
+          "dx": 0,
+          "dy": 1
+        }
+      },
+      "random_draws": [],
+      "expected": {
+        "public": {
+          "result": {}
+        },
+        "state": {
+          "towns": {
+            "a": {
+              "owner": "a",
+              "wood": 65,
+              "food": 40,
+              "coins": 20,
+              "goods": {},
+              "produced": {},
+              "player": {
+                "x": 90.0,
+                "y": 32.0,
+                "facing": 1
+              },
+              "buildings": [
+                {
+                  "kind": "hall",
+                  "x": 90,
+                  "y": 29,
+                  "footprint": [
+                    3,
+                    3
+                  ]
+                }
+              ],
+              "workers": [
+                {
+                  "name": "Ada",
+                  "job": "idle",
+                  "woodcutting": 0
+                },
+                {
+                  "name": "Rowan",
+                  "job": "idle",
+                  "woodcutting": 1
+                },
+                {
+                  "name": "Wren",
+                  "job": "idle",
+                  "woodcutting": 2
+                },
+                {
+                  "name": "Bram",
+                  "job": "idle",
+                  "woodcutting": 0
+                },
+                {
+                  "name": "Hazel",
+                  "job": "idle",
+                  "woodcutting": 1
+                }
+              ],
+              "wood_ledger": {
+                "stored": 0,
+                "carried": 0
+              }
+            },
+            "b": {
+              "owner": "b",
+              "wood": 65,
+              "food": 40,
+              "coins": 20,
+              "goods": {},
+              "produced": {},
+              "player": {
+                "x": 29.0,
+                "y": 89.0,
+                "facing": 1
+              },
+              "buildings": [
+                {
+                  "kind": "hall",
+                  "x": 29,
+                  "y": 86,
+                  "footprint": [
+                    3,
+                    3
+                  ]
+                }
+              ],
+              "workers": [
+                {
+                  "name": "Ada",
+                  "job": "idle",
+                  "woodcutting": 0
+                },
+                {
+                  "name": "Rowan",
+                  "job": "idle",
+                  "woodcutting": 1
+                },
+                {
+                  "name": "Wren",
+                  "job": "idle",
+                  "woodcutting": 2
+                },
+                {
+                  "name": "Bram",
+                  "job": "idle",
+                  "woodcutting": 0
+                },
+                {
+                  "name": "Hazel",
+                  "job": "idle",
+                  "woodcutting": 1
+                }
+              ],
+              "wood_ledger": {
+                "stored": 0,
+                "carried": 0
+              }
+            },
+            "spectator": {
+              "owner": "spectator",
+              "wood": 65,
+              "food": 40,
+              "coins": 20,
+              "goods": {},
+              "produced": {},
+              "player": {
+                "x": 25.0,
+                "y": 25.0,
+                "facing": 1
+              },
+              "buildings": [
+                {
+                  "kind": "hall",
+                  "x": 25,
+                  "y": 22,
+                  "footprint": [
+                    3,
+                    3
+                  ]
+                }
+              ],
+              "workers": [
+                {
+                  "name": "Ada",
+                  "job": "idle",
+                  "woodcutting": 0
+                },
+                {
+                  "name": "Rowan",
+                  "job": "idle",
+                  "woodcutting": 1
+                },
+                {
+                  "name": "Wren",
+                  "job": "idle",
+                  "woodcutting": 2
+                },
+                {
+                  "name": "Bram",
+                  "job": "idle",
+                  "woodcutting": 0
+                },
+                {
+                  "name": "Hazel",
+                  "job": "idle",
+                  "woodcutting": 1
+                }
+              ],
+              "wood_ledger": {
+                "stored": 0,
+                "carried": 0
+              }
+            }
+          },
+          "quarry": {
+            "members": {
+              "a": {
+                "x": 2,
+                "y": 2,
+                "inside": true
+              },
+              "b": {
+                "x": 8,
+                "y": 4,
+                "inside": true
+              }
+            },
+            "started": true,
+            "completed": false,
+            "gate_latched": true,
+            "sequence": [
+              "sun",
+              "leaf",
+              "moon"
+            ],
+            "runes_solved": true,
+            "message": "The rune seal opens. Recover the lantern stone from the chest."
+          },
+          "terrain": {
+            "seed": 42,
+            "version": 1,
+            "rows_sha256": "b2d30483c184a04880c22b33c1bbba12965ed3dd26a3aee8143ac8fb59930d74",
+            "resource_count": 5305,
+            "resources_sha256": "7f539aa65ad5d73a012f3eb493dd09199c00176adf56959ee3fd7dc881ac120b",
+            "npc_count": 22,
+            "town_sites": [
+              {
+                "x": 90,
+                "y": 29
+              },
+              {
+                "x": 29,
+                "y": 86
+              },
+              {
+                "x": 25,
+                "y": 22
+              },
+              {
+                "x": 85,
+                "y": 84
+              }
+            ]
+          }
+        }
+      },
+      "numeric_fields": [],
+      "invariants": [
+        {
+          "name": "spectator receives no reward",
+          "kind": "equals",
+          "paths": [
+            [
+              "state",
+              "towns",
+              "spectator",
+              "coins"
+            ]
+          ],
+          "value": 20
+        },
+        {
+          "name": "a exact-once reward",
+          "kind": "equals",
+          "paths": [
+            [
+              "state",
+              "towns",
+              "a",
+              "coins"
+            ]
+          ],
+          "value": 20
+        },
+        {
+          "name": "b exact-once reward",
+          "kind": "equals",
+          "paths": [
+            [
+              "state",
+              "towns",
+              "b",
+              "coins"
+            ]
+          ],
+          "value": 20
+        }
+      ]
+    },
+    {
+      "operation": {
+        "kind": "command",
+        "town": "b",
+        "data": {
+          "action": "quarry_interact",
+          "target": "treasure"
+        }
+      },
+      "random_draws": [],
+      "expected": {
+        "public": {
+          "result": {}
+        },
+        "state": {
+          "towns": {
+            "a": {
+              "owner": "a",
+              "wood": 65,
+              "food": 40,
+              "coins": 40,
+              "goods": {},
+              "produced": {},
+              "player": {
+                "x": 90.0,
+                "y": 32.0,
+                "facing": 1,
+                "keepsakes": [
+                  "Quarry lantern stone"
+                ]
+              },
+              "buildings": [
+                {
+                  "kind": "hall",
+                  "x": 90,
+                  "y": 29,
+                  "footprint": [
+                    3,
+                    3
+                  ]
+                }
+              ],
+              "workers": [
+                {
+                  "name": "Ada",
+                  "job": "idle",
+                  "woodcutting": 0
+                },
+                {
+                  "name": "Rowan",
+                  "job": "idle",
+                  "woodcutting": 1
+                },
+                {
+                  "name": "Wren",
+                  "job": "idle",
+                  "woodcutting": 2
+                },
+                {
+                  "name": "Bram",
+                  "job": "idle",
+                  "woodcutting": 0
+                },
+                {
+                  "name": "Hazel",
+                  "job": "idle",
+                  "woodcutting": 1
+                }
+              ],
+              "wood_ledger": {
+                "stored": 0,
+                "carried": 0
+              }
+            },
+            "b": {
+              "owner": "b",
+              "wood": 65,
+              "food": 40,
+              "coins": 40,
+              "goods": {},
+              "produced": {},
+              "player": {
+                "x": 29.0,
+                "y": 89.0,
+                "facing": 1,
+                "keepsakes": [
+                  "Quarry lantern stone"
+                ]
+              },
+              "buildings": [
+                {
+                  "kind": "hall",
+                  "x": 29,
+                  "y": 86,
+                  "footprint": [
+                    3,
+                    3
+                  ]
+                }
+              ],
+              "workers": [
+                {
+                  "name": "Ada",
+                  "job": "idle",
+                  "woodcutting": 0
+                },
+                {
+                  "name": "Rowan",
+                  "job": "idle",
+                  "woodcutting": 1
+                },
+                {
+                  "name": "Wren",
+                  "job": "idle",
+                  "woodcutting": 2
+                },
+                {
+                  "name": "Bram",
+                  "job": "idle",
+                  "woodcutting": 0
+                },
+                {
+                  "name": "Hazel",
+                  "job": "idle",
+                  "woodcutting": 1
+                }
+              ],
+              "wood_ledger": {
+                "stored": 0,
+                "carried": 0
+              }
+            },
+            "spectator": {
+              "owner": "spectator",
+              "wood": 65,
+              "food": 40,
+              "coins": 20,
+              "goods": {},
+              "produced": {},
+              "player": {
+                "x": 25.0,
+                "y": 25.0,
+                "facing": 1
+              },
+              "buildings": [
+                {
+                  "kind": "hall",
+                  "x": 25,
+                  "y": 22,
+                  "footprint": [
+                    3,
+                    3
+                  ]
+                }
+              ],
+              "workers": [
+                {
+                  "name": "Ada",
+                  "job": "idle",
+                  "woodcutting": 0
+                },
+                {
+                  "name": "Rowan",
+                  "job": "idle",
+                  "woodcutting": 1
+                },
+                {
+                  "name": "Wren",
+                  "job": "idle",
+                  "woodcutting": 2
+                },
+                {
+                  "name": "Bram",
+                  "job": "idle",
+                  "woodcutting": 0
+                },
+                {
+                  "name": "Hazel",
+                  "job": "idle",
+                  "woodcutting": 1
+                }
+              ],
+              "wood_ledger": {
+                "stored": 0,
+                "carried": 0
+              }
+            }
+          },
+          "quarry": {
+            "members": {
+              "a": {
+                "x": 2,
+                "y": 2,
+                "inside": true
+              },
+              "b": {
+                "x": 8,
+                "y": 4,
+                "inside": true
+              }
+            },
+            "started": true,
+            "completed": true,
+            "gate_latched": true,
+            "sequence": [
+              "sun",
+              "leaf",
+              "moon"
+            ],
+            "runes_solved": true,
+            "message": "The lantern stone glows again. Every expedition member receives their own reward."
+          },
+          "terrain": {
+            "seed": 42,
+            "version": 1,
+            "rows_sha256": "b2d30483c184a04880c22b33c1bbba12965ed3dd26a3aee8143ac8fb59930d74",
+            "resource_count": 5305,
+            "resources_sha256": "7f539aa65ad5d73a012f3eb493dd09199c00176adf56959ee3fd7dc881ac120b",
+            "npc_count": 22,
+            "town_sites": [
+              {
+                "x": 90,
+                "y": 29
+              },
+              {
+                "x": 29,
+                "y": 86
+              },
+              {
+                "x": 25,
+                "y": 22
+              },
+              {
+                "x": 85,
+                "y": 84
+              }
+            ]
+          }
+        }
+      },
+      "numeric_fields": [],
+      "invariants": [
+        {
+          "name": "spectator receives no reward",
+          "kind": "equals",
+          "paths": [
+            [
+              "state",
+              "towns",
+              "spectator",
+              "coins"
+            ]
+          ],
+          "value": 20
+        },
+        {
+          "name": "a exact-once reward",
+          "kind": "equals",
+          "paths": [
+            [
+              "state",
+              "towns",
+              "a",
+              "coins"
+            ]
+          ],
+          "value": 40
+        },
+        {
+          "name": "b exact-once reward",
+          "kind": "equals",
+          "paths": [
+            [
+              "state",
+              "towns",
+              "b",
+              "coins"
+            ]
+          ],
+          "value": 40
+        }
+      ]
+    },
+    {
+      "operation": {
+        "kind": "command",
+        "town": "b",
+        "data": {
+          "action": "quarry_interact",
+          "target": "treasure"
+        }
+      },
+      "random_draws": [],
+      "expected": {
+        "public": {
+          "error": {
+            "type": "ValueError",
+            "message": "The quarry lantern has already been recovered."
+          }
+        },
+        "state": {
+          "towns": {
+            "a": {
+              "owner": "a",
+              "wood": 65,
+              "food": 40,
+              "coins": 40,
+              "goods": {},
+              "produced": {},
+              "player": {
+                "x": 90.0,
+                "y": 32.0,
+                "facing": 1,
+                "keepsakes": [
+                  "Quarry lantern stone"
+                ]
+              },
+              "buildings": [
+                {
+                  "kind": "hall",
+                  "x": 90,
+                  "y": 29,
+                  "footprint": [
+                    3,
+                    3
+                  ]
+                }
+              ],
+              "workers": [
+                {
+                  "name": "Ada",
+                  "job": "idle",
+                  "woodcutting": 0
+                },
+                {
+                  "name": "Rowan",
+                  "job": "idle",
+                  "woodcutting": 1
+                },
+                {
+                  "name": "Wren",
+                  "job": "idle",
+                  "woodcutting": 2
+                },
+                {
+                  "name": "Bram",
+                  "job": "idle",
+                  "woodcutting": 0
+                },
+                {
+                  "name": "Hazel",
+                  "job": "idle",
+                  "woodcutting": 1
+                }
+              ],
+              "wood_ledger": {
+                "stored": 0,
+                "carried": 0
+              }
+            },
+            "b": {
+              "owner": "b",
+              "wood": 65,
+              "food": 40,
+              "coins": 40,
+              "goods": {},
+              "produced": {},
+              "player": {
+                "x": 29.0,
+                "y": 89.0,
+                "facing": 1,
+                "keepsakes": [
+                  "Quarry lantern stone"
+                ]
+              },
+              "buildings": [
+                {
+                  "kind": "hall",
+                  "x": 29,
+                  "y": 86,
+                  "footprint": [
+                    3,
+                    3
+                  ]
+                }
+              ],
+              "workers": [
+                {
+                  "name": "Ada",
+                  "job": "idle",
+                  "woodcutting": 0
+                },
+                {
+                  "name": "Rowan",
+                  "job": "idle",
+                  "woodcutting": 1
+                },
+                {
+                  "name": "Wren",
+                  "job": "idle",
+                  "woodcutting": 2
+                },
+                {
+                  "name": "Bram",
+                  "job": "idle",
+                  "woodcutting": 0
+                },
+                {
+                  "name": "Hazel",
+                  "job": "idle",
+                  "woodcutting": 1
+                }
+              ],
+              "wood_ledger": {
+                "stored": 0,
+                "carried": 0
+              }
+            },
+            "spectator": {
+              "owner": "spectator",
+              "wood": 65,
+              "food": 40,
+              "coins": 20,
+              "goods": {},
+              "produced": {},
+              "player": {
+                "x": 25.0,
+                "y": 25.0,
+                "facing": 1
+              },
+              "buildings": [
+                {
+                  "kind": "hall",
+                  "x": 25,
+                  "y": 22,
+                  "footprint": [
+                    3,
+                    3
+                  ]
+                }
+              ],
+              "workers": [
+                {
+                  "name": "Ada",
+                  "job": "idle",
+                  "woodcutting": 0
+                },
+                {
+                  "name": "Rowan",
+                  "job": "idle",
+                  "woodcutting": 1
+                },
+                {
+                  "name": "Wren",
+                  "job": "idle",
+                  "woodcutting": 2
+                },
+                {
+                  "name": "Bram",
+                  "job": "idle",
+                  "woodcutting": 0
+                },
+                {
+                  "name": "Hazel",
+                  "job": "idle",
+                  "woodcutting": 1
+                }
+              ],
+              "wood_ledger": {
+                "stored": 0,
+                "carried": 0
+              }
+            }
+          },
+          "quarry": {
+            "members": {
+              "a": {
+                "x": 2,
+                "y": 2,
+                "inside": true
+              },
+              "b": {
+                "x": 8,
+                "y": 4,
+                "inside": true
+              }
+            },
+            "started": true,
+            "completed": true,
+            "gate_latched": true,
+            "sequence": [
+              "sun",
+              "leaf",
+              "moon"
+            ],
+            "runes_solved": true,
+            "message": "The lantern stone glows again. Every expedition member receives their own reward."
+          },
+          "terrain": {
+            "seed": 42,
+            "version": 1,
+            "rows_sha256": "b2d30483c184a04880c22b33c1bbba12965ed3dd26a3aee8143ac8fb59930d74",
+            "resource_count": 5305,
+            "resources_sha256": "7f539aa65ad5d73a012f3eb493dd09199c00176adf56959ee3fd7dc881ac120b",
+            "npc_count": 22,
+            "town_sites": [
+              {
+                "x": 90,
+                "y": 29
+              },
+              {
+                "x": 29,
+                "y": 86
+              },
+              {
+                "x": 25,
+                "y": 22
+              },
+              {
+                "x": 85,
+                "y": 84
+              }
+            ]
+          }
+        }
+      },
+      "numeric_fields": [],
+      "invariants": [
+        {
+          "name": "spectator receives no reward",
+          "kind": "equals",
+          "paths": [
+            [
+              "state",
+              "towns",
+              "spectator",
+              "coins"
+            ]
+          ],
+          "value": 20
+        },
+        {
+          "name": "a exact-once reward",
+          "kind": "equals",
+          "paths": [
+            [
+              "state",
+              "towns",
+              "a",
+              "coins"
+            ]
+          ],
+          "value": 40
+        },
+        {
+          "name": "b exact-once reward",
+          "kind": "equals",
+          "paths": [
+            [
+              "state",
+              "towns",
+              "b",
+              "coins"
+            ]
+          ],
+          "value": 40
+        }
+      ]
+    }
+  ]
+}

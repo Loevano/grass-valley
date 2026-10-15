@@ -7,7 +7,7 @@ from pathlib import Path
 
 
 TOLERANCES = {'position': 1e-6, 'fraction': 1e-9}
-STATUS = ('Format validation only. Python replay adapter and recorded baselines are pending. '
+STATUS = ('Format validation only. Python recording/replay is available in tools/python_replay.py. '
           'Rust adapter and Rust-host benchmarks do not exist yet; tools/server_perf.py '
           'measures Python only.')
 PRIVATE_KEYS = {'token', 'tokens', 'pin', 'pin_hash', 'password', 'credentials',

@@ -2,7 +2,7 @@
 
 A migration that can be completed one task at a time, with a prompt for each task.
 
-**Status:** R01 and R02 complete; R03 slice 1 (trace/comparison contract) complete; Rust implementation has not started.
+**Status:** R01 and R02 complete; R03 slices 1–2 (contract and Python traces) complete; Rust implementation has not started.
 **Initial plan revision:** `445ddddd675a87eb7adb50442b2dbf3c14ea6c6f`.
 **R01 audit revision:** `935db7b95885c101c62dfd6bf9e16f39b6a7a8fe`.
 **Scope:** replace the Python host first. Keep the browser playable during that
@@ -216,7 +216,7 @@ only after work is performed. Keep unfinished stages visible in the roadmap.
 | --- | --- | --- | --- |
 | R01 | Contracts, coverage inventory, decisions | This plan | Complete; [contracts and evidence](RUST_CONTRACTS.md), audited at `935db7b`; commit: `docs: define R01 migration contracts` (this change) |
 | R02 | Fix current relocation continuity | R01 | Complete; `fix: preserve worker continuity when relocating workplaces` (this change); evidence below |
-| R03 | Replay fixtures and comparison oracle | R02 | In progress: slice 1 complete; `test: define replay trace and comparison contract` (this change); [format and remaining slices](REPLAY_CONTRACT.md). Python recordings and backend adapters remain |
+| R03 | Replay fixtures and comparison oracle | R02 | In progress: slices 1–2 complete; slice 1 `9637eb5`; slice 2 `test: record deterministic Python replay fixtures` (this change); [Python evidence](PYTHON_REPLAYS.md). Backend-neutral replay interface remains |
 | R04 | Cargo workspace and applicable checks | R03 | Not started |
 | R05 | Typed state, IDs, units, and boundary DTOs | R04 | Not started |
 | R06 | Legacy import and read-only save inspection | R05 | Not started |
@@ -368,9 +368,30 @@ Validation: `python3 tools/check.py` selects only `tests/test_replay_contract.py
 through its module/JSON dependencies; all 12 cases pass. Markdown/JSON reports:
 `performance-results/20261016-013120/report.{md,json}` (ignored local artifacts).
 Performance checks were not run: this defines new tooling contracts, with no performance
-investigation or optimization. **Remaining:** slice 2 records/replays representative
-Python scenarios with controlled clocks/draws and producing revisions; slice 3
-implements the backend-neutral replay interface/reporting. Stage R03 is unfinished.
+investigation or optimization. The slice 2 evidence below supersedes the earlier
+remaining-work status; stage R03 is still unfinished.
+
+**Slice 2 evidence:** [Python replay recipes and evidence](PYTHON_REPLAYS.md),
+`tools/python_replay.py`, five recorded JSON fixtures under `tests/replay/python/`,
+and `tests/test_python_replay.py`. Baselines were produced from clean Python game
+sources at `9637eb5bf982fa2342556feaa4059fcb3f0d4b17`. All five scenarios replay
+twice in independent fresh worlds; recording is separately reproducible. They
+cover relocation, unreachable delivery/recovery, mid-trip and partial-work reload,
+physical cargo conservation, workshop FIFO/invalid requests, food stock accounting,
+and a three-town real-terrain quarry scenario with exact-once participant rewards
+and an unrewarded spectator. Corrupted cargo/ownership/position/rewards fail with
+trace/step/field context. Missing/extra/changed random draws fail. Private saves
+were not accessed, and gameplay code is unchanged. Time, reload and projection
+limitations are explicit in the evidence. **Remaining:** slice 3 provides the
+backend-neutral replay interface and paired reporting; Rust and Rust-host
+benchmarks remain unavailable. This is not HTTP/import/performance acceptance.
+
+Slice 2 validation: `python3 tools/check.py` selected two tooling test modules; all
+25 cases pass. Reports: `performance-results/20261016-013951/report.{md,json}`
+(ignored local artifacts). Standalone CLI replayed all five traces twice, 61 steps
+per pass. Performance checks were not run because this adds semantic replay
+coverage, with no performance investigation or optimization. Environment and
+measurement limitations are recorded in the linked evidence.
 
 **Deliver:** small synthetic scenarios containing initial state, explicit time
 advances, commands, controlled random inputs, expected public results, and selected

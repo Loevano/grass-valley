@@ -1,0 +1,2198 @@
+{
+  "format_version": 1,
+  "id": "relocation_v1",
+  "provenance": {
+    "kind": "recorded_python",
+    "python_revision": "9637eb5bf982fa2342556feaa4059fcb3f0d4b17"
+  },
+  "initial": {
+    "recipe": "relocation_v1",
+    "parameters": {
+      "seed": 42,
+      "setup_draws": [],
+      "initial_state": {
+        "towns": {
+          "a": {
+            "owner": "a",
+            "wood": 65,
+            "food": 40.0,
+            "coins": 20,
+            "goods": {},
+            "produced": {
+              "wood": 2
+            },
+            "player": {
+              "x": 5.0,
+              "y": 8.0,
+              "facing": 1
+            },
+            "buildings": [
+              {
+                "kind": "hall",
+                "x": 5,
+                "y": 5,
+                "footprint": [
+                  3,
+                  3
+                ],
+                "stored_goods": {
+                  "wood": 65,
+                  "food": 40.0
+                }
+              },
+              {
+                "kind": "woodcutter",
+                "x": 9,
+                "y": 3,
+                "pending_output": {
+                  "wood": 2
+                }
+              }
+            ],
+            "workers": [
+              {
+                "name": "Ada",
+                "job": "woodcutting",
+                "building_index": 1,
+                "pending_output": {
+                  "wood": 2
+                },
+                "pending_workplace": {
+                  "kind": "woodcutter",
+                  "x": 9,
+                  "y": 3
+                },
+                "woodcutting": 0,
+                "work_animation": {
+                  "x": 11.25,
+                  "y": 2,
+                  "phase": "returning",
+                  "task": [
+                    "woodcutting",
+                    "woodcutter",
+                    9,
+                    3,
+                    "tree",
+                    12,
+                    3
+                  ],
+                  "elapsed": 0,
+                  "path": [
+                    {
+                      "x": 10,
+                      "y": 3
+                    }
+                  ]
+                }
+              },
+              {
+                "name": "Rowan",
+                "job": "idle",
+                "woodcutting": 1
+              },
+              {
+                "name": "Wren",
+                "job": "idle",
+                "woodcutting": 2
+              },
+              {
+                "name": "Bram",
+                "job": "idle",
+                "woodcutting": 0
+              },
+              {
+                "name": "Hazel",
+                "job": "idle",
+                "woodcutting": 1
+              }
+            ],
+            "wood_ledger": {
+              "stored": 65,
+              "carried": 2
+            }
+          }
+        }
+      }
+    },
+    "terrain": "synthetic_flat"
+  },
+  "steps": [
+    {
+      "operation": {
+        "kind": "advance",
+        "clock": "movement",
+        "seconds": 0
+      },
+      "random_draws": [],
+      "expected": {
+        "public": {
+          "result": null
+        },
+        "state": {
+          "towns": {
+            "a": {
+              "owner": "a",
+              "wood": 65,
+              "food": 40.0,
+              "coins": 20,
+              "goods": {},
+              "produced": {
+                "wood": 2
+              },
+              "player": {
+                "x": 5.0,
+                "y": 8.0,
+                "facing": 1
+              },
+              "buildings": [
+                {
+                  "kind": "hall",
+                  "x": 5,
+                  "y": 5,
+                  "footprint": [
+                    3,
+                    3
+                  ],
+                  "stored_goods": {
+                    "wood": 65,
+                    "food": 40.0
+                  }
+                },
+                {
+                  "kind": "woodcutter",
+                  "x": 9,
+                  "y": 3,
+                  "pending_output": {
+                    "wood": 2
+                  }
+                }
+              ],
+              "workers": [
+                {
+                  "name": "Ada",
+                  "job": "woodcutting",
+                  "building_index": 1,
+                  "pending_output": {
+                    "wood": 2
+                  },
+                  "pending_workplace": {
+                    "kind": "woodcutter",
+                    "x": 9,
+                    "y": 3
+                  },
+                  "woodcutting": 0,
+                  "work_animation": {
+                    "x": 11.25,
+                    "y": 2,
+                    "phase": "returning",
+                    "task": [
+                      "woodcutting",
+                      "woodcutter",
+                      9,
+                      3,
+                      "tree",
+                      12,
+                      3
+                    ],
+                    "elapsed": 0,
+                    "path": [
+                      {
+                        "x": 10,
+                        "y": 3
+                      }
+                    ]
+                  }
+                },
+                {
+                  "name": "Rowan",
+                  "job": "idle",
+                  "woodcutting": 1
+                },
+                {
+                  "name": "Wren",
+                  "job": "idle",
+                  "woodcutting": 2
+                },
+                {
+                  "name": "Bram",
+                  "job": "idle",
+                  "woodcutting": 0
+                },
+                {
+                  "name": "Hazel",
+                  "job": "idle",
+                  "woodcutting": 1
+                }
+              ],
+              "wood_ledger": {
+                "stored": 65,
+                "carried": 2
+              }
+            }
+          }
+        }
+      },
+      "numeric_fields": [],
+      "invariants": [
+        {
+          "name": "worker assignment retained",
+          "kind": "equals",
+          "paths": [
+            [
+              "state",
+              "towns",
+              "a",
+              "workers",
+              0,
+              "building_index"
+            ]
+          ],
+          "value": 1
+        },
+        {
+          "name": "cargo retained",
+          "kind": "equals",
+          "paths": [
+            [
+              "state",
+              "towns",
+              "a",
+              "workers",
+              0,
+              "pending_output",
+              "wood"
+            ]
+          ],
+          "value": 2
+        },
+        {
+          "name": "position retained",
+          "kind": "equals",
+          "paths": [
+            [
+              "state",
+              "towns",
+              "a",
+              "workers",
+              0,
+              "work_animation",
+              "x"
+            ]
+          ],
+          "value": 11.25
+        },
+        {
+          "name": "physical wood conserved",
+          "kind": "sum",
+          "paths": [
+            [
+              "state",
+              "towns",
+              "a",
+              "wood_ledger",
+              "stored"
+            ],
+            [
+              "state",
+              "towns",
+              "a",
+              "wood_ledger",
+              "carried"
+            ]
+          ],
+          "value": 67
+        }
+      ]
+    },
+    {
+      "operation": {
+        "kind": "command",
+        "town": "a",
+        "data": {
+          "action": "move",
+          "index": 1,
+          "x": 8,
+          "y": 4
+        }
+      },
+      "random_draws": [],
+      "expected": {
+        "public": {
+          "result": null
+        },
+        "state": {
+          "towns": {
+            "a": {
+              "owner": "a",
+              "wood": 65,
+              "food": 40.0,
+              "coins": 19,
+              "goods": {},
+              "produced": {
+                "wood": 2
+              },
+              "player": {
+                "x": 5.0,
+                "y": 8.0,
+                "facing": 1
+              },
+              "buildings": [
+                {
+                  "kind": "hall",
+                  "x": 5,
+                  "y": 5,
+                  "footprint": [
+                    3,
+                    3
+                  ],
+                  "stored_goods": {
+                    "wood": 65,
+                    "food": 40.0
+                  }
+                },
+                {
+                  "kind": "woodcutter",
+                  "x": 8,
+                  "y": 4,
+                  "pending_output": {
+                    "wood": 2
+                  }
+                }
+              ],
+              "workers": [
+                {
+                  "name": "Ada",
+                  "job": "woodcutting",
+                  "building_index": 1,
+                  "pending_output": {
+                    "wood": 2
+                  },
+                  "pending_workplace": {
+                    "kind": "woodcutter",
+                    "x": 8,
+                    "y": 4
+                  },
+                  "woodcutting": 0,
+                  "work_animation": {
+                    "x": 11.25,
+                    "y": 2,
+                    "phase": "waiting",
+                    "task": [
+                      "woodcutting",
+                      "woodcutter",
+                      8,
+                      4,
+                      "tree",
+                      12,
+                      3
+                    ],
+                    "elapsed": 0,
+                    "path": [],
+                    "resume_phase": "returning"
+                  }
+                },
+                {
+                  "name": "Rowan",
+                  "job": "idle",
+                  "woodcutting": 1
+                },
+                {
+                  "name": "Wren",
+                  "job": "idle",
+                  "woodcutting": 2
+                },
+                {
+                  "name": "Bram",
+                  "job": "idle",
+                  "woodcutting": 0
+                },
+                {
+                  "name": "Hazel",
+                  "job": "idle",
+                  "woodcutting": 1
+                }
+              ],
+              "wood_ledger": {
+                "stored": 65,
+                "carried": 2
+              }
+            }
+          }
+        }
+      },
+      "numeric_fields": [],
+      "invariants": [
+        {
+          "name": "worker assignment retained",
+          "kind": "equals",
+          "paths": [
+            [
+              "state",
+              "towns",
+              "a",
+              "workers",
+              0,
+              "building_index"
+            ]
+          ],
+          "value": 1
+        },
+        {
+          "name": "cargo retained",
+          "kind": "equals",
+          "paths": [
+            [
+              "state",
+              "towns",
+              "a",
+              "workers",
+              0,
+              "pending_output",
+              "wood"
+            ]
+          ],
+          "value": 2
+        },
+        {
+          "name": "position retained",
+          "kind": "equals",
+          "paths": [
+            [
+              "state",
+              "towns",
+              "a",
+              "workers",
+              0,
+              "work_animation",
+              "x"
+            ]
+          ],
+          "value": 11.25
+        },
+        {
+          "name": "physical wood conserved",
+          "kind": "sum",
+          "paths": [
+            [
+              "state",
+              "towns",
+              "a",
+              "wood_ledger",
+              "stored"
+            ],
+            [
+              "state",
+              "towns",
+              "a",
+              "wood_ledger",
+              "carried"
+            ]
+          ],
+          "value": 67
+        }
+      ]
+    },
+    {
+      "operation": {
+        "kind": "reload"
+      },
+      "random_draws": [],
+      "expected": {
+        "public": {
+          "result": null
+        },
+        "state": {
+          "towns": {
+            "a": {
+              "owner": "a",
+              "wood": 65,
+              "food": 40.0,
+              "coins": 19,
+              "goods": {},
+              "produced": {
+                "wood": 2
+              },
+              "player": {
+                "x": 5.0,
+                "y": 8.0,
+                "facing": 1
+              },
+              "buildings": [
+                {
+                  "kind": "hall",
+                  "x": 5,
+                  "y": 5,
+                  "footprint": [
+                    3,
+                    3
+                  ],
+                  "stored_goods": {
+                    "wood": 65,
+                    "food": 40.0
+                  }
+                },
+                {
+                  "kind": "woodcutter",
+                  "x": 8,
+                  "y": 4,
+                  "pending_output": {
+                    "wood": 2
+                  }
+                }
+              ],
+              "workers": [
+                {
+                  "name": "Ada",
+                  "job": "woodcutting",
+                  "building_index": 1,
+                  "pending_output": {
+                    "wood": 2
+                  },
+                  "pending_workplace": {
+                    "kind": "woodcutter",
+                    "x": 8,
+                    "y": 4
+                  },
+                  "woodcutting": 0,
+                  "work_animation": {
+                    "x": 11.25,
+                    "y": 2,
+                    "phase": "waiting",
+                    "task": [
+                      "woodcutting",
+                      "woodcutter",
+                      8,
+                      4,
+                      "tree",
+                      12,
+                      3
+                    ],
+                    "elapsed": 0,
+                    "path": [],
+                    "resume_phase": "returning"
+                  }
+                },
+                {
+                  "name": "Rowan",
+                  "job": "idle",
+                  "woodcutting": 1
+                },
+                {
+                  "name": "Wren",
+                  "job": "idle",
+                  "woodcutting": 2
+                },
+                {
+                  "name": "Bram",
+                  "job": "idle",
+                  "woodcutting": 0
+                },
+                {
+                  "name": "Hazel",
+                  "job": "idle",
+                  "woodcutting": 1
+                }
+              ],
+              "wood_ledger": {
+                "stored": 65,
+                "carried": 2
+              }
+            }
+          }
+        }
+      },
+      "numeric_fields": [],
+      "invariants": [
+        {
+          "name": "worker assignment retained",
+          "kind": "equals",
+          "paths": [
+            [
+              "state",
+              "towns",
+              "a",
+              "workers",
+              0,
+              "building_index"
+            ]
+          ],
+          "value": 1
+        },
+        {
+          "name": "cargo retained",
+          "kind": "equals",
+          "paths": [
+            [
+              "state",
+              "towns",
+              "a",
+              "workers",
+              0,
+              "pending_output",
+              "wood"
+            ]
+          ],
+          "value": 2
+        },
+        {
+          "name": "position retained",
+          "kind": "equals",
+          "paths": [
+            [
+              "state",
+              "towns",
+              "a",
+              "workers",
+              0,
+              "work_animation",
+              "x"
+            ]
+          ],
+          "value": 11.25
+        },
+        {
+          "name": "physical wood conserved",
+          "kind": "sum",
+          "paths": [
+            [
+              "state",
+              "towns",
+              "a",
+              "wood_ledger",
+              "stored"
+            ],
+            [
+              "state",
+              "towns",
+              "a",
+              "wood_ledger",
+              "carried"
+            ]
+          ],
+          "value": 67
+        }
+      ]
+    },
+    {
+      "operation": {
+        "kind": "advance",
+        "clock": "movement",
+        "seconds": 0.5
+      },
+      "random_draws": [],
+      "expected": {
+        "public": {
+          "result": null
+        },
+        "state": {
+          "towns": {
+            "a": {
+              "owner": "a",
+              "wood": 65,
+              "food": 40.0,
+              "coins": 19,
+              "goods": {},
+              "produced": {
+                "wood": 2
+              },
+              "player": {
+                "x": 5.0,
+                "y": 8.0,
+                "facing": 1
+              },
+              "buildings": [
+                {
+                  "kind": "hall",
+                  "x": 5,
+                  "y": 5,
+                  "footprint": [
+                    3,
+                    3
+                  ],
+                  "stored_goods": {
+                    "wood": 65,
+                    "food": 40.0
+                  }
+                },
+                {
+                  "kind": "woodcutter",
+                  "x": 8,
+                  "y": 4,
+                  "pending_output": {
+                    "wood": 2
+                  }
+                }
+              ],
+              "workers": [
+                {
+                  "name": "Ada",
+                  "job": "woodcutting",
+                  "building_index": 1,
+                  "pending_output": {
+                    "wood": 2
+                  },
+                  "pending_workplace": {
+                    "kind": "woodcutter",
+                    "x": 8,
+                    "y": 4
+                  },
+                  "woodcutting": 0,
+                  "work_animation": {
+                    "x": 10.54721807150128,
+                    "y": 2.562225542798978,
+                    "phase": "returning",
+                    "task": [
+                      "woodcutting",
+                      "woodcutter",
+                      8,
+                      4,
+                      "tree",
+                      12,
+                      3
+                    ],
+                    "elapsed": 0,
+                    "path": [
+                      {
+                        "x": 10,
+                        "y": 3
+                      },
+                      {
+                        "x": 9,
+                        "y": 4
+                      }
+                    ]
+                  }
+                },
+                {
+                  "name": "Rowan",
+                  "job": "idle",
+                  "woodcutting": 1
+                },
+                {
+                  "name": "Wren",
+                  "job": "idle",
+                  "woodcutting": 2
+                },
+                {
+                  "name": "Bram",
+                  "job": "idle",
+                  "woodcutting": 0
+                },
+                {
+                  "name": "Hazel",
+                  "job": "idle",
+                  "woodcutting": 1
+                }
+              ],
+              "wood_ledger": {
+                "stored": 65,
+                "carried": 2
+              }
+            }
+          }
+        }
+      },
+      "numeric_fields": [],
+      "invariants": [
+        {
+          "name": "worker assignment retained",
+          "kind": "equals",
+          "paths": [
+            [
+              "state",
+              "towns",
+              "a",
+              "workers",
+              0,
+              "building_index"
+            ]
+          ],
+          "value": 1
+        },
+        {
+          "name": "physical wood conserved",
+          "kind": "sum",
+          "paths": [
+            [
+              "state",
+              "towns",
+              "a",
+              "wood_ledger",
+              "stored"
+            ],
+            [
+              "state",
+              "towns",
+              "a",
+              "wood_ledger",
+              "carried"
+            ]
+          ],
+          "value": 67
+        }
+      ]
+    },
+    {
+      "operation": {
+        "kind": "advance",
+        "clock": "movement",
+        "seconds": 0.5
+      },
+      "random_draws": [],
+      "expected": {
+        "public": {
+          "result": null
+        },
+        "state": {
+          "towns": {
+            "a": {
+              "owner": "a",
+              "wood": 65,
+              "food": 40.0,
+              "coins": 19,
+              "goods": {},
+              "produced": {
+                "wood": 2
+              },
+              "player": {
+                "x": 5.0,
+                "y": 8.0,
+                "facing": 1
+              },
+              "buildings": [
+                {
+                  "kind": "hall",
+                  "x": 5,
+                  "y": 5,
+                  "footprint": [
+                    3,
+                    3
+                  ],
+                  "stored_goods": {
+                    "wood": 65,
+                    "food": 40.0
+                  }
+                },
+                {
+                  "kind": "woodcutter",
+                  "x": 8,
+                  "y": 4,
+                  "pending_output": {
+                    "wood": 2
+                  }
+                }
+              ],
+              "workers": [
+                {
+                  "name": "Ada",
+                  "job": "woodcutting",
+                  "building_index": 1,
+                  "pending_output": {
+                    "wood": 2
+                  },
+                  "pending_workplace": {
+                    "kind": "woodcutter",
+                    "x": 8,
+                    "y": 4
+                  },
+                  "woodcutting": 0,
+                  "work_animation": {
+                    "x": 9.8591309361314,
+                    "y": 3.1408690638686005,
+                    "phase": "returning",
+                    "task": [
+                      "woodcutting",
+                      "woodcutter",
+                      8,
+                      4,
+                      "tree",
+                      12,
+                      3
+                    ],
+                    "elapsed": 0,
+                    "path": [
+                      {
+                        "x": 9,
+                        "y": 4
+                      }
+                    ]
+                  }
+                },
+                {
+                  "name": "Rowan",
+                  "job": "idle",
+                  "woodcutting": 1
+                },
+                {
+                  "name": "Wren",
+                  "job": "idle",
+                  "woodcutting": 2
+                },
+                {
+                  "name": "Bram",
+                  "job": "idle",
+                  "woodcutting": 0
+                },
+                {
+                  "name": "Hazel",
+                  "job": "idle",
+                  "woodcutting": 1
+                }
+              ],
+              "wood_ledger": {
+                "stored": 65,
+                "carried": 2
+              }
+            }
+          }
+        }
+      },
+      "numeric_fields": [],
+      "invariants": [
+        {
+          "name": "worker assignment retained",
+          "kind": "equals",
+          "paths": [
+            [
+              "state",
+              "towns",
+              "a",
+              "workers",
+              0,
+              "building_index"
+            ]
+          ],
+          "value": 1
+        },
+        {
+          "name": "physical wood conserved",
+          "kind": "sum",
+          "paths": [
+            [
+              "state",
+              "towns",
+              "a",
+              "wood_ledger",
+              "stored"
+            ],
+            [
+              "state",
+              "towns",
+              "a",
+              "wood_ledger",
+              "carried"
+            ]
+          ],
+          "value": 67
+        }
+      ]
+    },
+    {
+      "operation": {
+        "kind": "advance",
+        "clock": "movement",
+        "seconds": 0.5
+      },
+      "random_draws": [],
+      "expected": {
+        "public": {
+          "result": null
+        },
+        "state": {
+          "towns": {
+            "a": {
+              "owner": "a",
+              "wood": 65,
+              "food": 40.0,
+              "coins": 19,
+              "goods": {},
+              "produced": {
+                "wood": 2
+              },
+              "player": {
+                "x": 5.0,
+                "y": 8.0,
+                "facing": 1
+              },
+              "buildings": [
+                {
+                  "kind": "hall",
+                  "x": 5,
+                  "y": 5,
+                  "footprint": [
+                    3,
+                    3
+                  ],
+                  "stored_goods": {
+                    "wood": 65,
+                    "food": 40.0
+                  }
+                },
+                {
+                  "kind": "woodcutter",
+                  "x": 8,
+                  "y": 4,
+                  "pending_output": {
+                    "wood": 2
+                  }
+                }
+              ],
+              "workers": [
+                {
+                  "name": "Ada",
+                  "job": "woodcutting",
+                  "building_index": 1,
+                  "pending_output": {
+                    "wood": 2
+                  },
+                  "pending_workplace": {
+                    "kind": "woodcutter",
+                    "x": 8,
+                    "y": 4
+                  },
+                  "woodcutting": 0,
+                  "work_animation": {
+                    "x": 9.222734833063509,
+                    "y": 3.777265166936492,
+                    "phase": "returning",
+                    "task": [
+                      "woodcutting",
+                      "woodcutter",
+                      8,
+                      4,
+                      "tree",
+                      12,
+                      3
+                    ],
+                    "elapsed": 0,
+                    "path": [
+                      {
+                        "x": 9,
+                        "y": 4
+                      }
+                    ]
+                  }
+                },
+                {
+                  "name": "Rowan",
+                  "job": "idle",
+                  "woodcutting": 1
+                },
+                {
+                  "name": "Wren",
+                  "job": "idle",
+                  "woodcutting": 2
+                },
+                {
+                  "name": "Bram",
+                  "job": "idle",
+                  "woodcutting": 0
+                },
+                {
+                  "name": "Hazel",
+                  "job": "idle",
+                  "woodcutting": 1
+                }
+              ],
+              "wood_ledger": {
+                "stored": 65,
+                "carried": 2
+              }
+            }
+          }
+        }
+      },
+      "numeric_fields": [],
+      "invariants": [
+        {
+          "name": "worker assignment retained",
+          "kind": "equals",
+          "paths": [
+            [
+              "state",
+              "towns",
+              "a",
+              "workers",
+              0,
+              "building_index"
+            ]
+          ],
+          "value": 1
+        },
+        {
+          "name": "physical wood conserved",
+          "kind": "sum",
+          "paths": [
+            [
+              "state",
+              "towns",
+              "a",
+              "wood_ledger",
+              "stored"
+            ],
+            [
+              "state",
+              "towns",
+              "a",
+              "wood_ledger",
+              "carried"
+            ]
+          ],
+          "value": 67
+        }
+      ]
+    },
+    {
+      "operation": {
+        "kind": "advance",
+        "clock": "movement",
+        "seconds": 0.5
+      },
+      "random_draws": [],
+      "expected": {
+        "public": {
+          "result": null
+        },
+        "state": {
+          "towns": {
+            "a": {
+              "owner": "a",
+              "wood": 65,
+              "food": 40.0,
+              "coins": 19,
+              "goods": {},
+              "produced": {
+                "wood": 2
+              },
+              "player": {
+                "x": 5.0,
+                "y": 8.0,
+                "facing": 1
+              },
+              "buildings": [
+                {
+                  "kind": "hall",
+                  "x": 5,
+                  "y": 5,
+                  "footprint": [
+                    3,
+                    3
+                  ],
+                  "stored_goods": {
+                    "wood": 65,
+                    "food": 40.0
+                  }
+                },
+                {
+                  "kind": "woodcutter",
+                  "x": 8,
+                  "y": 4,
+                  "pending_output": {
+                    "wood": 2
+                  }
+                }
+              ],
+              "workers": [
+                {
+                  "name": "Ada",
+                  "job": "woodcutting",
+                  "building_index": 1,
+                  "pending_output": {
+                    "wood": 2
+                  },
+                  "pending_workplace": {
+                    "kind": "woodcutter",
+                    "x": 8,
+                    "y": 4
+                  },
+                  "woodcutting": 0,
+                  "work_animation": {
+                    "x": 9,
+                    "y": 4,
+                    "phase": "depositing",
+                    "task": [
+                      "woodcutting",
+                      "woodcutter",
+                      8,
+                      4,
+                      "tree",
+                      12,
+                      3
+                    ],
+                    "elapsed": 0.3250029879270434,
+                    "path": []
+                  }
+                },
+                {
+                  "name": "Rowan",
+                  "job": "idle",
+                  "woodcutting": 1
+                },
+                {
+                  "name": "Wren",
+                  "job": "idle",
+                  "woodcutting": 2
+                },
+                {
+                  "name": "Bram",
+                  "job": "idle",
+                  "woodcutting": 0
+                },
+                {
+                  "name": "Hazel",
+                  "job": "idle",
+                  "woodcutting": 1
+                }
+              ],
+              "wood_ledger": {
+                "stored": 65,
+                "carried": 2
+              }
+            }
+          }
+        }
+      },
+      "numeric_fields": [],
+      "invariants": [
+        {
+          "name": "worker assignment retained",
+          "kind": "equals",
+          "paths": [
+            [
+              "state",
+              "towns",
+              "a",
+              "workers",
+              0,
+              "building_index"
+            ]
+          ],
+          "value": 1
+        },
+        {
+          "name": "physical wood conserved",
+          "kind": "sum",
+          "paths": [
+            [
+              "state",
+              "towns",
+              "a",
+              "wood_ledger",
+              "stored"
+            ],
+            [
+              "state",
+              "towns",
+              "a",
+              "wood_ledger",
+              "carried"
+            ]
+          ],
+          "value": 67
+        }
+      ]
+    },
+    {
+      "operation": {
+        "kind": "advance",
+        "clock": "movement",
+        "seconds": 0.5
+      },
+      "random_draws": [],
+      "expected": {
+        "public": {
+          "result": null
+        },
+        "state": {
+          "towns": {
+            "a": {
+              "owner": "a",
+              "wood": 67,
+              "food": 40.0,
+              "coins": 19,
+              "goods": {},
+              "produced": {
+                "wood": 2
+              },
+              "player": {
+                "x": 5.0,
+                "y": 8.0,
+                "facing": 1
+              },
+              "buildings": [
+                {
+                  "kind": "hall",
+                  "x": 5,
+                  "y": 5,
+                  "footprint": [
+                    3,
+                    3
+                  ],
+                  "stored_goods": {
+                    "wood": 65,
+                    "food": 40.0
+                  }
+                },
+                {
+                  "kind": "woodcutter",
+                  "x": 8,
+                  "y": 4,
+                  "output_buffer": {
+                    "wood": 2
+                  },
+                  "pending_output": {
+                    "wood": 0
+                  }
+                }
+              ],
+              "workers": [
+                {
+                  "name": "Ada",
+                  "job": "woodcutting",
+                  "building_index": 1,
+                  "woodcutting": 0,
+                  "work_animation": {
+                    "x": 9.315005378268681,
+                    "y": 4.0,
+                    "phase": "walking",
+                    "task": [
+                      "woodcutting",
+                      "woodcutter",
+                      8,
+                      4,
+                      "tree",
+                      12,
+                      3
+                    ],
+                    "elapsed": 0,
+                    "path": [
+                      {
+                        "x": 10,
+                        "y": 4
+                      },
+                      {
+                        "x": 11,
+                        "y": 3
+                      }
+                    ]
+                  }
+                },
+                {
+                  "name": "Rowan",
+                  "job": "idle",
+                  "woodcutting": 1
+                },
+                {
+                  "name": "Wren",
+                  "job": "idle",
+                  "woodcutting": 2
+                },
+                {
+                  "name": "Bram",
+                  "job": "idle",
+                  "woodcutting": 0
+                },
+                {
+                  "name": "Hazel",
+                  "job": "idle",
+                  "woodcutting": 1
+                }
+              ],
+              "wood_ledger": {
+                "stored": 67,
+                "carried": 0
+              }
+            }
+          }
+        }
+      },
+      "numeric_fields": [],
+      "invariants": [
+        {
+          "name": "worker assignment retained",
+          "kind": "equals",
+          "paths": [
+            [
+              "state",
+              "towns",
+              "a",
+              "workers",
+              0,
+              "building_index"
+            ]
+          ],
+          "value": 1
+        },
+        {
+          "name": "physical wood conserved",
+          "kind": "sum",
+          "paths": [
+            [
+              "state",
+              "towns",
+              "a",
+              "wood_ledger",
+              "stored"
+            ],
+            [
+              "state",
+              "towns",
+              "a",
+              "wood_ledger",
+              "carried"
+            ]
+          ],
+          "value": 67
+        }
+      ]
+    },
+    {
+      "operation": {
+        "kind": "advance",
+        "clock": "movement",
+        "seconds": 0.5
+      },
+      "random_draws": [],
+      "expected": {
+        "public": {
+          "result": null
+        },
+        "state": {
+          "towns": {
+            "a": {
+              "owner": "a",
+              "wood": 67,
+              "food": 40.0,
+              "coins": 19,
+              "goods": {},
+              "produced": {
+                "wood": 2
+              },
+              "player": {
+                "x": 5.0,
+                "y": 8.0,
+                "facing": 1
+              },
+              "buildings": [
+                {
+                  "kind": "hall",
+                  "x": 5,
+                  "y": 5,
+                  "footprint": [
+                    3,
+                    3
+                  ],
+                  "stored_goods": {
+                    "wood": 65,
+                    "food": 40.0
+                  }
+                },
+                {
+                  "kind": "woodcutter",
+                  "x": 8,
+                  "y": 4,
+                  "output_buffer": {
+                    "wood": 2
+                  },
+                  "pending_output": {
+                    "wood": 0
+                  }
+                }
+              ],
+              "workers": [
+                {
+                  "name": "Ada",
+                  "job": "woodcutting",
+                  "building_index": 1,
+                  "woodcutting": 0,
+                  "work_animation": {
+                    "x": 10.15203176096537,
+                    "y": 3.8479682390346306,
+                    "phase": "walking",
+                    "task": [
+                      "woodcutting",
+                      "woodcutter",
+                      8,
+                      4,
+                      "tree",
+                      12,
+                      3
+                    ],
+                    "elapsed": 0,
+                    "path": [
+                      {
+                        "x": 11,
+                        "y": 3
+                      }
+                    ]
+                  }
+                },
+                {
+                  "name": "Rowan",
+                  "job": "idle",
+                  "woodcutting": 1
+                },
+                {
+                  "name": "Wren",
+                  "job": "idle",
+                  "woodcutting": 2
+                },
+                {
+                  "name": "Bram",
+                  "job": "idle",
+                  "woodcutting": 0
+                },
+                {
+                  "name": "Hazel",
+                  "job": "idle",
+                  "woodcutting": 1
+                }
+              ],
+              "wood_ledger": {
+                "stored": 67,
+                "carried": 0
+              }
+            }
+          }
+        }
+      },
+      "numeric_fields": [],
+      "invariants": [
+        {
+          "name": "worker assignment retained",
+          "kind": "equals",
+          "paths": [
+            [
+              "state",
+              "towns",
+              "a",
+              "workers",
+              0,
+              "building_index"
+            ]
+          ],
+          "value": 1
+        },
+        {
+          "name": "physical wood conserved",
+          "kind": "sum",
+          "paths": [
+            [
+              "state",
+              "towns",
+              "a",
+              "wood_ledger",
+              "stored"
+            ],
+            [
+              "state",
+              "towns",
+              "a",
+              "wood_ledger",
+              "carried"
+            ]
+          ],
+          "value": 67
+        }
+      ]
+    },
+    {
+      "operation": {
+        "kind": "advance",
+        "clock": "movement",
+        "seconds": 0.5
+      },
+      "random_draws": [],
+      "expected": {
+        "public": {
+          "result": null
+        },
+        "state": {
+          "towns": {
+            "a": {
+              "owner": "a",
+              "wood": 67,
+              "food": 40.0,
+              "coins": 19,
+              "goods": {},
+              "produced": {
+                "wood": 2
+              },
+              "player": {
+                "x": 5.0,
+                "y": 8.0,
+                "facing": 1
+              },
+              "buildings": [
+                {
+                  "kind": "hall",
+                  "x": 5,
+                  "y": 5,
+                  "footprint": [
+                    3,
+                    3
+                  ],
+                  "stored_goods": {
+                    "wood": 65,
+                    "food": 40.0
+                  }
+                },
+                {
+                  "kind": "woodcutter",
+                  "x": 8,
+                  "y": 4,
+                  "output_buffer": {
+                    "wood": 2
+                  },
+                  "pending_output": {
+                    "wood": 0
+                  }
+                }
+              ],
+              "workers": [
+                {
+                  "name": "Ada",
+                  "job": "woodcutting",
+                  "building_index": 1,
+                  "woodcutting": 0,
+                  "work_animation": {
+                    "x": 10.788427864033261,
+                    "y": 3.211572135966739,
+                    "phase": "walking",
+                    "task": [
+                      "woodcutting",
+                      "woodcutter",
+                      8,
+                      4,
+                      "tree",
+                      12,
+                      3
+                    ],
+                    "elapsed": 0,
+                    "path": [
+                      {
+                        "x": 11,
+                        "y": 3
+                      }
+                    ]
+                  }
+                },
+                {
+                  "name": "Rowan",
+                  "job": "idle",
+                  "woodcutting": 1
+                },
+                {
+                  "name": "Wren",
+                  "job": "idle",
+                  "woodcutting": 2
+                },
+                {
+                  "name": "Bram",
+                  "job": "idle",
+                  "woodcutting": 0
+                },
+                {
+                  "name": "Hazel",
+                  "job": "idle",
+                  "woodcutting": 1
+                }
+              ],
+              "wood_ledger": {
+                "stored": 67,
+                "carried": 0
+              }
+            }
+          }
+        }
+      },
+      "numeric_fields": [],
+      "invariants": [
+        {
+          "name": "worker assignment retained",
+          "kind": "equals",
+          "paths": [
+            [
+              "state",
+              "towns",
+              "a",
+              "workers",
+              0,
+              "building_index"
+            ]
+          ],
+          "value": 1
+        },
+        {
+          "name": "physical wood conserved",
+          "kind": "sum",
+          "paths": [
+            [
+              "state",
+              "towns",
+              "a",
+              "wood_ledger",
+              "stored"
+            ],
+            [
+              "state",
+              "towns",
+              "a",
+              "wood_ledger",
+              "carried"
+            ]
+          ],
+          "value": 67
+        }
+      ]
+    },
+    {
+      "operation": {
+        "kind": "advance",
+        "clock": "movement",
+        "seconds": 0.5
+      },
+      "random_draws": [],
+      "expected": {
+        "public": {
+          "result": null
+        },
+        "state": {
+          "towns": {
+            "a": {
+              "owner": "a",
+              "wood": 67,
+              "food": 40.0,
+              "coins": 19,
+              "goods": {},
+              "produced": {
+                "wood": 2
+              },
+              "player": {
+                "x": 5.0,
+                "y": 8.0,
+                "facing": 1
+              },
+              "buildings": [
+                {
+                  "kind": "hall",
+                  "x": 5,
+                  "y": 5,
+                  "footprint": [
+                    3,
+                    3
+                  ],
+                  "stored_goods": {
+                    "wood": 65,
+                    "food": 40.0
+                  }
+                },
+                {
+                  "kind": "woodcutter",
+                  "x": 8,
+                  "y": 4,
+                  "output_buffer": {
+                    "wood": 2
+                  },
+                  "pending_output": {
+                    "wood": 0
+                  }
+                }
+              ],
+              "workers": [
+                {
+                  "name": "Ada",
+                  "job": "woodcutting",
+                  "building_index": 1,
+                  "woodcutting": 0,
+                  "work_animation": {
+                    "x": 11,
+                    "y": 3,
+                    "phase": "working",
+                    "task": [
+                      "woodcutting",
+                      "woodcutter",
+                      8,
+                      4,
+                      "tree",
+                      12,
+                      3
+                    ],
+                    "elapsed": 0.33377323105310713,
+                    "path": []
+                  }
+                },
+                {
+                  "name": "Rowan",
+                  "job": "idle",
+                  "woodcutting": 1
+                },
+                {
+                  "name": "Wren",
+                  "job": "idle",
+                  "woodcutting": 2
+                },
+                {
+                  "name": "Bram",
+                  "job": "idle",
+                  "woodcutting": 0
+                },
+                {
+                  "name": "Hazel",
+                  "job": "idle",
+                  "woodcutting": 1
+                }
+              ],
+              "wood_ledger": {
+                "stored": 67,
+                "carried": 0
+              }
+            }
+          }
+        }
+      },
+      "numeric_fields": [],
+      "invariants": [
+        {
+          "name": "worker assignment retained",
+          "kind": "equals",
+          "paths": [
+            [
+              "state",
+              "towns",
+              "a",
+              "workers",
+              0,
+              "building_index"
+            ]
+          ],
+          "value": 1
+        },
+        {
+          "name": "physical wood conserved",
+          "kind": "sum",
+          "paths": [
+            [
+              "state",
+              "towns",
+              "a",
+              "wood_ledger",
+              "stored"
+            ],
+            [
+              "state",
+              "towns",
+              "a",
+              "wood_ledger",
+              "carried"
+            ]
+          ],
+          "value": 67
+        }
+      ]
+    },
+    {
+      "operation": {
+        "kind": "advance",
+        "clock": "movement",
+        "seconds": 0.5
+      },
+      "random_draws": [],
+      "expected": {
+        "public": {
+          "result": null
+        },
+        "state": {
+          "towns": {
+            "a": {
+              "owner": "a",
+              "wood": 67,
+              "food": 40.0,
+              "coins": 19,
+              "goods": {},
+              "produced": {
+                "wood": 2
+              },
+              "player": {
+                "x": 5.0,
+                "y": 8.0,
+                "facing": 1
+              },
+              "buildings": [
+                {
+                  "kind": "hall",
+                  "x": 5,
+                  "y": 5,
+                  "footprint": [
+                    3,
+                    3
+                  ],
+                  "stored_goods": {
+                    "wood": 65,
+                    "food": 40.0
+                  }
+                },
+                {
+                  "kind": "woodcutter",
+                  "x": 8,
+                  "y": 4,
+                  "output_buffer": {
+                    "wood": 2
+                  },
+                  "pending_output": {
+                    "wood": 0
+                  }
+                }
+              ],
+              "workers": [
+                {
+                  "name": "Ada",
+                  "job": "woodcutting",
+                  "building_index": 1,
+                  "woodcutting": 0,
+                  "work_animation": {
+                    "x": 11,
+                    "y": 3,
+                    "phase": "working",
+                    "task": [
+                      "woodcutting",
+                      "woodcutter",
+                      8,
+                      4,
+                      "tree",
+                      12,
+                      3
+                    ],
+                    "elapsed": 0.8337732310531072,
+                    "path": []
+                  }
+                },
+                {
+                  "name": "Rowan",
+                  "job": "idle",
+                  "woodcutting": 1
+                },
+                {
+                  "name": "Wren",
+                  "job": "idle",
+                  "woodcutting": 2
+                },
+                {
+                  "name": "Bram",
+                  "job": "idle",
+                  "woodcutting": 0
+                },
+                {
+                  "name": "Hazel",
+                  "job": "idle",
+                  "woodcutting": 1
+                }
+              ],
+              "wood_ledger": {
+                "stored": 67,
+                "carried": 0
+              }
+            }
+          }
+        }
+      },
+      "numeric_fields": [],
+      "invariants": [
+        {
+          "name": "worker assignment retained",
+          "kind": "equals",
+          "paths": [
+            [
+              "state",
+              "towns",
+              "a",
+              "workers",
+              0,
+              "building_index"
+            ]
+          ],
+          "value": 1
+        },
+        {
+          "name": "physical wood conserved",
+          "kind": "sum",
+          "paths": [
+            [
+              "state",
+              "towns",
+              "a",
+              "wood_ledger",
+              "stored"
+            ],
+            [
+              "state",
+              "towns",
+              "a",
+              "wood_ledger",
+              "carried"
+            ]
+          ],
+          "value": 67
+        }
+      ]
+    },
+    {
+      "operation": {
+        "kind": "advance",
+        "clock": "movement",
+        "seconds": 0.5
+      },
+      "random_draws": [],
+      "expected": {
+        "public": {
+          "result": null
+        },
+        "state": {
+          "towns": {
+            "a": {
+              "owner": "a",
+              "wood": 67,
+              "food": 40.0,
+              "coins": 19,
+              "goods": {},
+              "produced": {
+                "wood": 2
+              },
+              "player": {
+                "x": 5.0,
+                "y": 8.0,
+                "facing": 1
+              },
+              "buildings": [
+                {
+                  "kind": "hall",
+                  "x": 5,
+                  "y": 5,
+                  "footprint": [
+                    3,
+                    3
+                  ],
+                  "stored_goods": {
+                    "wood": 65,
+                    "food": 40.0
+                  }
+                },
+                {
+                  "kind": "woodcutter",
+                  "x": 8,
+                  "y": 4,
+                  "output_buffer": {
+                    "wood": 2
+                  },
+                  "pending_output": {
+                    "wood": 0
+                  }
+                }
+              ],
+              "workers": [
+                {
+                  "name": "Ada",
+                  "job": "woodcutting",
+                  "building_index": 1,
+                  "woodcutting": 0,
+                  "work_animation": {
+                    "x": 11,
+                    "y": 3,
+                    "phase": "working",
+                    "task": [
+                      "woodcutting",
+                      "woodcutter",
+                      8,
+                      4,
+                      "tree",
+                      12,
+                      3
+                    ],
+                    "elapsed": 1.3337732310531072,
+                    "path": []
+                  }
+                },
+                {
+                  "name": "Rowan",
+                  "job": "idle",
+                  "woodcutting": 1
+                },
+                {
+                  "name": "Wren",
+                  "job": "idle",
+                  "woodcutting": 2
+                },
+                {
+                  "name": "Bram",
+                  "job": "idle",
+                  "woodcutting": 0
+                },
+                {
+                  "name": "Hazel",
+                  "job": "idle",
+                  "woodcutting": 1
+                }
+              ],
+              "wood_ledger": {
+                "stored": 67,
+                "carried": 0
+              }
+            }
+          }
+        }
+      },
+      "numeric_fields": [],
+      "invariants": [
+        {
+          "name": "worker assignment retained",
+          "kind": "equals",
+          "paths": [
+            [
+              "state",
+              "towns",
+              "a",
+              "workers",
+              0,
+              "building_index"
+            ]
+          ],
+          "value": 1
+        },
+        {
+          "name": "output credited once",
+          "kind": "equals",
+          "paths": [
+            [
+              "state",
+              "towns",
+              "a",
+              "wood"
+            ]
+          ],
+          "value": 67
+        },
+        {
+          "name": "physical wood conserved",
+          "kind": "sum",
+          "paths": [
+            [
+              "state",
+              "towns",
+              "a",
+              "wood_ledger",
+              "stored"
+            ],
+            [
+              "state",
+              "towns",
+              "a",
+              "wood_ledger",
+              "carried"
+            ]
+          ],
+          "value": 67
+        }
+      ]
+    }
+  ]
+}
