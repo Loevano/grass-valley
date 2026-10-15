@@ -9,7 +9,7 @@ import server
 
 
 class LivestockBalance(unittest.TestCase):
-    def test_automatic_pig_cycle_supplies_meat_recipes_without_feed(self):
+    def test_grown_pig_is_manually_butchered_to_supply_meat_recipes_without_feed(self):
         town = flat_town('Luxury meat')
         economy.ensure_inventory(town)
         town.update(level=4, food=0, goods={})
@@ -18,11 +18,17 @@ class LivestockBalance(unittest.TestCase):
         shop = dict(kind='butcher', x=8, y=7)
         town['buildings'].extend([barn, shop])
         logistics.advance_barn(town, barn, 240)
-        self.assertEqual(barn['animal_growth']['pig'], [0])
-        self.assertEqual(economy.quantity(town, 'hides'), 2)
-        self.assertEqual(barn['output_buffer']['meat'], 8)
+        self.assertEqual(barn['animal_growth']['pig'], [240])
+        self.assertNotIn('meat', barn.get('output_buffer', {}))
         butcher = town['villagers'][0]
-        butcher.update(job='butchery', building_index=2, husbandry=2, talents={})
+        butcher.update(job='butchery', building_index=2, husbandry=2, talents={},
+                       work_animation={'phase': 'working'})
+        server.command(town, {'action': 'butcher_animal', 'index': 2,
+                              'barn_index': 1, 'animal': 'pig'})
+        self.assertEqual(barn['animal_growth']['pig'], [0])
+        self.assertEqual(logistics.butcher_animal(town, shop, butcher, 60), 'Working')
+        self.assertEqual(economy.quantity(town, 'hides'), 2)
+        logistics.drop_off(town, shop, butcher)
         economy.spend(town, {'meat': 8})
         shop['input_buffer'] = {'meat': 8}
         for _ in range(4):
@@ -30,7 +36,7 @@ class LivestockBalance(unittest.TestCase):
             logistics.drop_off(town, shop, butcher)
         self.assertEqual(economy.quantity(town, 'prepared_meat'), 8)
         self.assertEqual(town['food'], 32)
-        self.assertAlmostEqual(butcher['butchery'], .8)
+        self.assertAlmostEqual(butcher['butchery'], 2.8)
 
     def test_every_meat_recipe_adds_food_and_sale_value_over_its_inputs(self):
         for recipe in economy.PROFESSION_RECIPES['butcher']:

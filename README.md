@@ -382,8 +382,9 @@ the Python host, refresh both browsers, and create a new world to use the shared
   (25 wood + 5 planks). Bakeries have one worker space; butcher shops start with two. Bakeries use
   2 flour + 0.5 wood to make 2 bread; butcher shops use 2 meat from barns
   to make 2 prepared meat. Bread supplies 1.5 pantry food per unit; prepared
-  meat supplies 4 and sells for 4 coins. A pig automatically yields 8 raw meat
-  per two-minute base cycle, worth 32 food when prepared; keepers shorten this cycle.
+  meat supplies 4 and sells for 4 coins. A pig takes four base minutes to grow,
+  then one minute of manually ordered butchery yields 8 raw meat, worth 32 food
+  when prepared. Keepers shorten growth.
   Herbed meat, smoked meat, sausages, and meat pies supply 5/6/6/7 food per unit
   and sell for 5/6/6/7 coins. Processing skill increases batch size and ingredient use
   together. Farmers' skill improves field yields; barn animal counts and keeper
@@ -675,25 +676,24 @@ the Python host, refresh both browsers, and create a new world to use the shared
   within hall unlocks and the shared capacity of four animals per building level.
   Increasing a count adds free young animals; decreasing it removes animals while
   preserving the growth of those retained. Counts persist in saves.
-  Animals always grow without feed or workers. Base replacement cycles are
+  Animals grow without feed or workers. Base growth times are
   **60 seconds for chickens, 120 for sheep, 240 for pigs, and 360 for cows**.
   Each assigned keeper adds one base speed: one keeper gives 2× growth, two 3×,
   and so on. Workers helping construction do not add speed. New barns must finish
   construction; existing herds keep growing at base speed during upgrades.
-  Each completed cycle automatically yields 2/4/8/10 raw meat for a
-  chicken/sheep/pig/cow and immediately starts a young replacement in the same slot.
-  Sheep/pigs/cows also yield 1/2/3 hides. Each chicken, sheep, and cow produces
-  25 eggs, wool, or milk across its cycle, plus manure during growth.
-  Growth and replacement continue when output storage or production caps are full;
-  only the goods that fit are kept. Keepers and haulers can move goods as usual.
+  Each chicken, sheep, and cow produces 25 eggs, wool, or milk while growing,
+  plus manure. Fully grown animals stop producing and remain until manually
+  selected for **Butcher** at a butcher shop. Butchering removes one adult;
+  only when no animals of that species remain in the same barn does one free
+  young replacement appear immediately. Other barns and species do not affect it.
+  Setting an animal count to zero keeps that species unstocked.
+  Growth continues when output storage or production caps are full; only the
+  goods that fit are kept. Keepers and haulers can move goods as usual.
   The host controls growth and saved state; visual size changes blend confirmed
-  ages and reset for young replacements. Older saved adults complete one cycle
-  on the next host tick. Horse capture, feeding, and breeding are unchanged.
-  Butcher shops prepare the automatically collected meat. Adults from older saves
-  can still be selected for **Butcher & replace**, and existing manual jobs finish
-  normally with one minute of qualified butcher work.
-  Each completed manual butchery job grants 2 practice, adjusted by talent, crediting
-  the full minute of manually assigned work.
+  ages. Adults from older saves also wait for manual butchery.
+  Each butchery job takes one minute of qualified butcher work and yields
+  2/4/8/10 raw meat for a chicken/sheep/pig/cow, plus 1/2/3 hides for sheep/pigs/cows.
+  Each completed job grants 2 practice, adjusted by talent.
   Extra workers cannot duplicate or accelerate the batch. Processing pauses
   without a worker, and completed meat waits for buffer space or a production cap
   to allow it. Existing meat recipes resume afterward; hauling works as usual.

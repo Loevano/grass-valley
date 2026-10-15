@@ -1542,7 +1542,7 @@ function productionDescription(item){
   const spec=selectedProfessionRecipe(item);
   const recipe=spec?[spec.inputs,spec.output,spec.amount]:world.progression.recipes[item.kind];
   if(recipe){const seconds=world.progression.production_seconds?.[recipe[1]] || 3;return `${costText(recipe[0])} → ${recipe[2]} ${goodName(recipe[1]).toLowerCase()} / ${seconds}s batch${item.kind==='smokehouse'?'\nEach raw fish becomes its own smoked species\n+0.5 food and +1 coin per fish\nAccepts fish, trout, salmon, and sturgeon':''}\n${((item.kind==='butcher'?0.1:0.08)*seconds/3).toFixed(2)} practice / batch (neutral talent)\nSkill: larger batches + more ingredients\nRequires qualified workers${spec?` · Recipe level ${spec.level}`:''}`;}
-  return {barn:'Set animal counts\nAutomatic growth and replacement\nChicken: 60s · Sheep: 120s · Pig: 240s · Cow: 360s\nNo feed or workers required\nEach keeper adds 1× growth speed\n4 animals / level',orchard:'Output: fruit\nRequires workers',stable:'Capture wild horses and bring them here\nFeed: fodder / vegetables\nSettling and growth: 5 minutes of full feeding\nBreed two adults; saddle one to ride\n4 horses / level',market:'Sell goods for coins\nOffer goods to another town\nBoth owners need a completed market'}[item.kind] || 'Requires workers';
+  return {barn:'Set animal counts\nGrow animals, then butcher adults\nChicken: 60s · Sheep: 120s · Pig: 240s · Cow: 360s\nNo feed or workers required\nEach keeper adds 1× growth speed\n4 animals / level',orchard:'Output: fruit\nRequires workers',stable:'Capture wild horses and bring them here\nFeed: fodder / vegetables\nSettling and growth: 5 minutes of full feeding\nBreed two adults; saddle one to ride\n4 horses / level',market:'Sell goods for coins\nOffer goods to another town\nBoth owners need a completed market'}[item.kind] || 'Requires workers';
 }
 function animalAges(barn,animal){
   const duration=animalGrowthDuration(animal);
@@ -1555,7 +1555,8 @@ function barnGrowthSpeed(town,item,index){
   const assigned=town.villagers.filter((v,i)=>settlerBuilding(town,v,i)===index).slice(0,settlerCapacity(item));
   return 1+assigned.filter(v=>v.job==='husbandry'&&!v.construction_target).length;
 }
-function barnReplacementSeconds(age,duration,speed,now=performance.now()){
+function barnGrowthSeconds(age,duration,speed,now=performance.now()){
+  if(age>=duration)return 0;
   const clock=world.simulation_clock;
   if(!clock||worldReceivedAt===null)return Math.ceil((duration-Math.min(duration,age))/speed);
   const ticks=Math.max(1,Math.ceil((duration-Math.min(duration,age))/(speed*clock.tick_seconds)));
@@ -1570,17 +1571,23 @@ function updateBarnTimers(now=performance.now()){
   if(!item||item.kind!=='barn'||item.x!==timers.x||item.y!==timers.y)return;
   const speed=barnGrowthSpeed(town,item,timers.index);
   const count=Object.values(item.animals || {}).reduce((sum,n)=>sum+n,0);
-  const state=`${count} growing · ${speed}× speed`;
+  const growing=Object.keys(item.animals || {}).reduce((sum,animal)=>sum+animalAges(item,animal).filter(age=>age<animalGrowthDuration(animal)).length,0);
+  const state=`${growing} growing · ${count-growing} fully grown · ${speed}× speed`;
   if(timers.state.textContent!==state)timers.state.textContent=state;
-  for(const {animal,timing} of timers.cycles){
+  for(const {animal,timing,stock} of timers.cycles){
     const text=`${animalGrowthDuration(animal)}s base cycle · ${Number((animalGrowthDuration(animal)/speed).toFixed(1))}s average with current keepers`;
     if(timing.textContent!==text)timing.textContent=text;
+    const ages=animalAges(item,animal),growing=ages.filter(age=>age<animalGrowthDuration(animal)).length;
+    const stockText=ages.length?`${growing} growing · ${ages.length-growing} fully grown`:'Not stocked';
+    if(stock.textContent!==stockText)stock.textContent=stockText;
   }
-  for(const {animal,number,duration,time,percent,progress} of timers.rows){
+  for(const {animal,number,duration,time,percent,progress,label} of timers.rows){
     if(number>=(item.animals?.[animal] || 0))continue;
     const age=Math.min(duration,item.animal_growth?.[animal]?.[number] ?? duration);
-    const seconds=barnReplacementSeconds(age,duration,speed,now);
-    const text=seconds?`${Math.floor(seconds/60)}m ${seconds%60}s until replacement`:'Awaiting host update…';
+    const seconds=barnGrowthSeconds(age,duration,speed,now);
+    const text=age>=duration?'Fully grown · Ready for butchery':seconds?`${Math.floor(seconds/60)}m ${seconds%60}s until fully grown`:'Awaiting host update…';
+    const labelText=`Animal ${number+1} · ${age>=duration?'Fully grown':'Growing'}`;
+    if(label.textContent!==labelText)label.textContent=labelText;
     if(time.textContent!==text)time.textContent=text;
     const value=`${Math.floor(age/duration*100)}%`;
     if(percent.textContent!==value)percent.textContent=value;
@@ -1590,16 +1597,17 @@ function updateBarnTimers(now=performance.now()){
 function renderBarnAnimals(town,item,index,target){
   const catalog=world.progression,owner=viewed===identity?.town_id,capacity=4*buildingLevel(item);
   const count=Object.values(item.animals || {}).reduce((sum,n)=>sum+n,0);
+  const growing=Object.keys(item.animals || {}).reduce((sum,animal)=>sum+animalAges(item,animal).filter(age=>age<animalGrowthDuration(animal)).length,0);
   const speed=barnGrowthSpeed(town,item,index);
   const timers={worldId:world.world_id,townId:viewed,index,x:item.x,y:item.y,rows:[],cycles:[]};
   renderBarnAnimals.timers=timers;
   const overview=document.createElement('div');overview.className='livestock-overview';
   const spaces=document.createElement('strong');spaces.textContent=`${count} / ${capacity} animal spaces`;
-  const state=document.createElement('span');state.textContent=`${count} growing · ${speed}× speed`;timers.state=state;
+  const state=document.createElement('span');state.textContent=`${growing} growing · ${count-growing} fully grown · ${speed}× speed`;timers.state=state;
   overview.append(spaces,state);target.append(overview);
-  const cycle=document.createElement('p');cycle.className='livestock-cycle';cycle.textContent='Grow → Collect products → Young replacement';target.append(cycle);
+  const cycle=document.createElement('p');cycle.className='livestock-cycle';cycle.textContent='Grow → Fully grown → Butcher';target.append(cycle);
   const note=document.createElement('p');note.className='livestock-note';
-  note.textContent=`Animals always grow, without feed or workers. Each assigned keeper adds 1× growth speed. Products are collected automatically as storage and production caps allow; growth never pauses. Cycle times are averages; growth updates every ${world.simulation_clock?.tick_seconds || 3} seconds.`;target.append(note);
+  note.textContent=`Animals always grow, without feed or workers. Each assigned keeper adds 1× growth speed. Products are collected during growth as storage and production caps allow. Adults stop producing and stay until butchered. Only the last animal of a species in this barn gets a free young replacement. Cycle times are averages; growth updates every ${world.simulation_clock?.tick_seconds || 3} seconds.`;target.append(note);
   for(const [animal,spec] of Object.entries(catalog.animals)){
     if(animal==='horse'||town.level<spec.level)continue;
     const duration=animalGrowthDuration(animal),ages=animalAges(item,animal);
@@ -1607,29 +1615,30 @@ function renderBarnAnimals(town,item,index,target){
     const card=document.createElement('div');card.className='livestock-card';
     const heading=document.createElement('div');heading.className='livestock-heading';
     const name=document.createElement('strong');name.textContent=goodName(animal);
-    const stock=document.createElement('span');stock.className='livestock-state';stock.textContent=ages.length?`${ages.length} growing`:'Not stocked';
+    const growing=ages.filter(age=>age<duration).length;
+    const stock=document.createElement('span');stock.className='livestock-state';stock.textContent=ages.length?`${growing} growing · ${ages.length-growing} fully grown`:'Not stocked';
     heading.append(name,stock);card.append(heading);
     const timing=document.createElement('p');timing.className='livestock-note';
-    timing.textContent=`${duration}s base cycle · ${Number((duration/speed).toFixed(1))}s average with current keepers`;timers.cycles.push({animal,timing});card.append(timing);
+    timing.textContent=`${duration}s base cycle · ${Number((duration/speed).toFixed(1))}s average with current keepers`;timers.cycles.push({animal,timing,stock});card.append(timing);
     const yieldNote=document.createElement('p');yieldNote.className='livestock-yield';
     yieldNote.textContent=animal==='pig'?'Raised for meat and hides':`${products} ${goodName(spec.output).toLowerCase()} per growth cycle`;
     card.append(yieldNote);
-    const meat=document.createElement('small');meat.className='livestock-note';meat.textContent=`${catalog.animal_meat?.[animal] || 0} meat on completion + free young ${animal}`;card.append(meat);
+    const meat=document.createElement('small');meat.className='livestock-note';meat.textContent=`${catalog.animal_meat?.[animal] || 0} meat when butchered; free young ${animal} only when none remain in this barn`;card.append(meat);
     ages.forEach((age,number)=>{
       const confirmed=Math.min(duration,age);
       const row=document.createElement('div');row.className='livestock-growth';
       const caption=document.createElement('div');caption.className='livestock-growth-caption';
-      const label=document.createElement('span');label.textContent=`Animal ${number+1} · Growing`;
+      const label=document.createElement('span');label.textContent=`Animal ${number+1} · ${confirmed>=duration?'Fully grown':'Growing'}`;
       const percent=document.createElement('span');percent.textContent=`${Math.floor(confirmed/duration*100)}%`;
       caption.append(label,percent);row.append(caption);
       const progress=document.createElement('progress');progress.max=duration;progress.value=confirmed;
       progress.setAttribute('aria-label',`${goodName(animal)} ${number+1} growth`);row.append(progress);
-      const seconds=barnReplacementSeconds(confirmed,duration,speed),time=document.createElement('small');
-      time.textContent=seconds?`${Math.floor(seconds/60)}m ${seconds%60}s until replacement`:'Awaiting host update…';
-      timers.rows.push({animal,number,duration,time,percent,progress});row.append(time);card.append(row);
+      const seconds=barnGrowthSeconds(confirmed,duration,speed),time=document.createElement('small');
+      time.textContent=confirmed>=duration?'Fully grown · Ready for butchery':seconds?`${Math.floor(seconds/60)}m ${seconds%60}s until fully grown`:'Awaiting host update…';
+      timers.rows.push({animal,number,duration,time,percent,progress,label});row.append(time);card.append(row);
     });
     if(owner){
-      const label=document.createElement('label');label.textContent='Animals to keep';
+      const label=document.createElement('label');label.textContent='Animal count';
       const input=document.createElement('input');input.id=`barn-count-${viewed}-${index}-${animal}`;input.type='number';input.min=0;input.max=capacity-count+ages.length;input.step=1;input.value=ages.length;
       input.setAttribute('aria-label',`${goodName(animal)} to keep`);
       input.onchange=()=>{
@@ -1645,14 +1654,13 @@ function renderBarnAnimals(town,item,index,target){
 function renderAnimalButchery(town,item,index,target){
   const catalog=world.progression,owner=viewed===identity?.town_id;
   const card=document.createElement('div');card.className='animal-butchery';target.append(card);
-  const heading=document.createElement('h3');heading.textContent='Butcher & replace';card.append(heading);
-  const note=document.createElement('p');note.className='livestock-note';note.textContent='Barns collect raw meat automatically. Older fully grown animals can still be selected here. A free young animal of the same species replaces it immediately in its barn.';card.append(note);
+  const heading=document.createElement('h3');heading.textContent='Butcher animals';card.append(heading);
+  const note=document.createElement('p');note.className='livestock-note';note.textContent='Fully grown animals stay in the barn until selected for butchery. A free young animal is added immediately only when no others of that species remain in that barn.';card.append(note);
   const task=item.butchering,duration=catalog.butcher_seconds || 60;
   if(task){
     const status=document.createElement('p');status.className='butchery-status';
     status.textContent=`${goodName(task.animal)} → ${task.amount} meat · ${Math.ceil(task.remaining)}s of work remaining${task.remaining===0?' · Waiting for buffer space or production cap':''}`;card.append(status);
     const progress=document.createElement('progress');progress.max=duration;progress.value=duration-task.remaining;progress.setAttribute('aria-label','Animal butchery progress');card.append(progress);
-    const replaced=document.createElement('small');replaced.className='livestock-note';replaced.textContent='The young replacement is already in the barn.';card.append(replaced);
   }
   if(!owner)return;
   const chooser=document.createElement('select');chooser.setAttribute('aria-label','Animal to butcher');
@@ -1673,12 +1681,13 @@ function renderAnimalButchery(town,item,index,target){
   const label=document.createElement('label');label.hidden=!!task;label.textContent='Fully grown animal';label.append(chooser);card.append(label);
   const preview=document.createElement('p');preview.className='livestock-yield';preview.hidden=!!task;
   const updatePreview=()=>{
-    const animal=chooser.value?.split(':')[1];
-    preview.textContent=animal?`${catalog.animal_meat[animal]} meat + 1 free young ${animal} · ${duration}s butcher work`:'Barns collect raw meat automatically as their growth cycles complete.';
+    const [barnIndex,animal]=(chooser.value || '').split(':');
+    const replacement=animal&&town.buildings[Number(barnIndex)].animals[animal]===1;
+    preview.textContent=animal?`${catalog.animal_meat[animal]} meat${replacement?` + 1 free young ${animal}`:''} · ${duration}s butcher work`:'Select a fully grown barn animal for butchery.';
   };
   chooser.onchange=updatePreview;updatePreview();card.append(preview);
   const qualified=town.villagers.some(v=>v.building_index===index&&v.job==='butchery'&&!jobRequirement(v,'butchery'));
-  const button=document.createElement('button');button.className='livestock-butcher';button.textContent=task?'Butchering in progress':!choices.length?'No fully grown animals':!qualified?'Assign a qualified butcher':'Butcher & replace';
+  const button=document.createElement('button');button.className='livestock-butcher';button.textContent=task?'Butchering in progress':!choices.length?'No fully grown animals':!qualified?'Assign a qualified butcher':'Butcher';
   button.disabled=!!task||!choices.length||!qualified;chooser.disabled=button.disabled;
   button.onclick=()=>{if(button.disabled||viewed!==identity?.town_id)return;const [barnIndex,animal]=chooser.value.split(':');act({action:'butcher_animal',index,barn_index:Number(barnIndex),animal});};card.append(button);
 }

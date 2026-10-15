@@ -45,7 +45,7 @@ class AnimalGrowth(unittest.TestCase):
         self.assertEqual(self.barn['animal_growth']['pig'], [3])
         self.assertEqual(logistics.requirements(self.barn, self.worker), {})
 
-    def test_species_timers_restart_automatically_and_yield_meat(self):
+    def test_species_stop_growing_at_maturity_and_wait_for_butchery(self):
         for animal, duration in [('chicken', 60), ('sheep', 120), ('pig', 240), ('cow', 360)]:
             with self.subTest(animal=animal):
                 self.setUp()
@@ -54,11 +54,13 @@ class AnimalGrowth(unittest.TestCase):
                 self.barn['animal_growth'][animal] = [duration - 3]
                 self.worker['job'] = 'idle'
                 self.tick()
-                self.assertEqual(self.barn['animal_growth'][animal], [0])
+                self.assertEqual(self.barn['animal_growth'][animal], [duration])
                 self.assertEqual(self.barn['animals'], {animal: 1})
-                self.assertEqual(self.barn['output_buffer']['meat'], economy.ANIMAL_MEAT[animal])
+                self.assertNotIn('meat', self.barn.get('output_buffer', {}))
+                self.assertNotIn('hides', self.barn.get('output_buffer', {}))
+                before = copy.deepcopy(self.barn)
                 self.tick()
-                self.assertEqual(self.barn['animal_growth'][animal], [3])
+                self.assertEqual(self.barn, before)
 
     def test_each_assigned_keeper_adds_base_speed_without_duplicate_output(self):
         self.buy('sheep')
@@ -103,7 +105,7 @@ class AnimalGrowth(unittest.TestCase):
             server.command(
                 self.town, dict(action='set_animal_count', index=2, animal='chicken', count=1))
 
-    def test_fixed_products_and_overflow_across_multiple_cycles_survive_save(self):
+    def test_fixed_products_stop_at_maturity_and_survive_save(self):
         for animal, amount in economy.ANIMAL_PRODUCTS.items():
             with self.subTest(animal=animal):
                 self.setUp()
@@ -113,7 +115,7 @@ class AnimalGrowth(unittest.TestCase):
                     logistics.advance_barn(self.town, self.barn, 3)
                     self.barn['output_buffer'] = {}  # Hauling leaves room for the next tick.
                 self.assertAlmostEqual(self.town['produced'][economy.ANIMALS[animal]['output']], amount)
-                self.assertEqual(self.barn['animal_growth'][animal], [0])
+                self.assertEqual(self.barn['animal_growth'][animal], [duration])
                 saved = json.loads(json.dumps(self.town))
                 restored = saved['buildings'][1]
                 self.barn['output_buffer'] = {}
@@ -121,26 +123,30 @@ class AnimalGrowth(unittest.TestCase):
                 logistics.advance_barn(self.town, self.barn, duration * 2 + 5)
                 logistics.advance_barn(saved, restored, duration * 2 + 5)
                 self.assertEqual(self.barn, restored)
-                self.assertEqual(self.barn['animal_growth'][animal], [5])
-                self.assertEqual(self.barn['output_buffer']['meat'], 2 * economy.ANIMAL_MEAT[animal])
+                self.assertEqual(self.barn['animal_growth'][animal], [duration])
+                self.assertFalse(self.barn['output_buffer'])
+                self.assertAlmostEqual(self.town['produced'][economy.ANIMALS[animal]['output']], amount)
 
     def test_storage_and_caps_limit_goods_but_never_growth(self):
         self.buy('sheep')
         self.worker['job'] = 'idle'
         self.town['rules'] = {'production_caps': {'wool': 0, 'meat': 0, 'hides': 0, 'manure': 0}}
-        self.barn['animal_growth']['sheep'] = [119]
+        self.barn['animal_growth']['sheep'] = [110]
         self.tick()
-        self.assertEqual(self.barn['animal_growth']['sheep'], [2])
+        self.assertEqual(self.barn['animal_growth']['sheep'], [113])
         self.assertFalse(self.barn.get('output_buffer'))
         self.town['rules']['production_caps'].clear()
         self.barn['output_buffer'] = {'wool': 10}
         self.tick()
-        self.assertEqual(self.barn['animal_growth']['sheep'], [5])
+        self.assertEqual(self.barn['animal_growth']['sheep'], [116])
         self.assertEqual(self.barn['output_buffer']['wool'], 10)
         self.barn['output_buffer']['wool'] = 9.75
         self.tick()
         self.assertEqual(self.barn['output_buffer']['wool'], 10)
-        self.assertEqual(self.barn['animal_growth']['sheep'], [8])
+        self.assertEqual(self.barn['animal_growth']['sheep'], [119])
+        self.tick()
+        self.assertEqual(self.barn['animal_growth']['sheep'], [120])
+        self.assertNotIn('meat', self.barn['output_buffer'])
 
     def test_initial_construction_stops_growth_but_upgrading_keeps_base_growth(self):
         self.buy('pig')
@@ -151,7 +157,7 @@ class AnimalGrowth(unittest.TestCase):
         self.tick()
         self.assertEqual(self.barn['animal_growth']['pig'], [3])
 
-    def test_selection_replaces_only_one_adult_and_rejects_invalid_requests(self):
+    def test_selection_removes_only_one_adult_and_rejects_invalid_requests(self):
         self.buy()
         before = copy.deepcopy(self.town)
         with self.assertRaisesRegex(ValueError, 'fully grown'):
@@ -166,32 +172,54 @@ class AnimalGrowth(unittest.TestCase):
                 self.use(**changes)
             self.assertEqual(self.town, before)
         self.use()
-        self.assertEqual(self.barn['animals']['pig'], 2)
-        self.assertEqual(self.barn['animal_growth']['pig'], [10, 0])
+        self.assertEqual(self.barn['animals']['pig'], 1)
+        self.assertEqual(self.barn['animal_growth']['pig'], [10])
         self.assertEqual(self.shop['butchering']['remaining'], 60)
         before = copy.deepcopy(self.town)
         with self.assertRaisesRegex(ValueError, 'current animal'):
             self.use()
         self.assertEqual(self.town, before)
 
-    def test_full_barn_gets_one_young_replacement_of_the_same_species_and_resumes_growth(self):
+    def test_only_the_last_animal_in_each_barn_gets_a_young_replacement(self):
         for animal in economy.ANIMAL_MEAT:
             with self.subTest(animal=animal):
                 self.setUp()
-                self.barn['animals'] = {animal: 4}
-                self.use(animal=animal)
-                self.assertEqual(self.barn['animals'], {animal: 4})
-                self.assertEqual(self.barn['animal_growth'][animal], [0] + [economy.animal_duration(animal)] * 3)
-                saved = json.loads(json.dumps(self.town))
-                self.assertEqual(saved['buildings'][1]['animal_growth'][animal], [0] + [economy.animal_duration(animal)] * 3)
-                self.assertEqual(saved['buildings'][2]['butchering']['animal'], animal)
+                duration = economy.animal_duration(animal)
+                other = 'chicken' if animal != 'chicken' else 'sheep'
+                self.barn['animals'] = {animal: 3, other: 1}
+                self.town['buildings'].append({'kind': 'barn', 'x': 15, 'y': 6,
+                                               'animals': {animal: 1}})
+                for remaining, expected in ((2, [duration, duration]), (1, [duration]), (1, [0])):
+                    self.use(animal=animal)
+                    self.assertEqual(self.barn['animals'], {animal: remaining, other: 1})
+                    self.assertEqual(self.barn['animal_growth'][animal], expected)
+                    saved = json.loads(json.dumps(self.town))
+                    self.assertEqual(saved['buildings'][1], self.barn)
+                    self.shop.pop('butchering')
+                self.assertEqual(self.barn['animal_growth'][animal], [0])
+                self.assertEqual(self.town['buildings'][-1]['animals'], {animal: 1})
                 self.tick()
-                self.assertEqual(self.barn['animal_growth'][animal], [6] * 4)
-                if animal in economy.ANIMAL_PRODUCTS:
-                    output = economy.ANIMALS[animal]['output']
-                    self.assertGreater(self.barn['output_buffer'][output], 0)
-                else:
-                    self.assertGreater(self.barn['output_buffer']['meat'], 0)
+                self.assertEqual(self.barn['animal_growth'][animal], [6])
+                self.assertEqual(self.barn['animal_growth'][other], [economy.animal_duration(other)])
+
+    def test_oversized_growth_step_only_collects_remaining_products(self):
+        self.buy('chicken')
+        self.barn['animal_growth']['chicken'] = [59]
+        logistics.advance_barn(self.town, self.barn, 180, keepers=2)
+        self.assertEqual(self.barn['animal_growth']['chicken'], [60])
+        self.assertAlmostEqual(self.barn['output_buffer']['eggs'], 25 / 60)
+        self.assertAlmostEqual(self.barn['output_buffer']['manure'], .1 / 3)
+        before = copy.deepcopy(self.barn)
+        logistics.advance_barn(self.town, self.barn, 180, keepers=2)
+        self.assertEqual(self.barn, before)
+
+    def test_explicitly_cleared_species_stays_empty(self):
+        self.buy('pig')
+        server.command(self.town, {'action': 'set_animal_count', 'index': 1,
+                                  'animal': 'pig', 'count': 0})
+        self.tick()
+        self.assertEqual(self.barn['animals']['pig'], 0)
+        self.assertEqual(self.barn['animal_growth']['pig'], [])
 
     def test_processing_takes_one_minute_shared_by_workers_and_survives_save(self):
         self.barn['animals'] = {'pig': 1}  # Older saves retain adult animals.

@@ -274,18 +274,21 @@ minutes of flour production, with wheat already supplied.
 | -------------------------------- | ----------------------------------------------------- | ------------------------------------------- | ------------------------------------------------------- |
 | One butcher, prepared meat       | Six-second completed batch                            | 2 meat → 2 prepared meat; 0.2 practice      | Uses 20 meat/minute; makes 20 prepared meat/minute      |
 | Manually ordered animal butchery | 60 seconds at the shop, one animal per shop at a time | 2 butchery practice; meat varies by animal  | One completed animal/minute while continuously supplied |
-| Automatic animal replacement | Chicken 60s; sheep 120s; pig 240s; cow 360s | Meat and hides, then a young replacement | No feed required; speed is 1 + assigned keepers |
+| Animal growth | Chicken 60s; sheep 120s; pig 240s; cow 360s | Fixed products, then an adult awaiting manual butchery | No feed required; speed is 1 + assigned keepers |
 
 ### Total production time cost vs total reward
 
-Barns continuously grow and replace animals without feed or workers. The player
-sets a count per species, sharing four animal spaces per building level.
+Barns grow animals without feed or workers. The player sets a count per species,
+sharing four animal spaces per building level. Adults remain until manually
+butchered. Only the last animal of that species in the same barn gets one free
+young replacement; other barns and species do not affect this rule. Setting a
+count to zero leaves that species unstocked.
 Each assigned keeper adds one base growth speed: actual cycle time is the base
 cycle divided by `1 + keepers`. Routes and animation phases do not gate growth.
 Keepers helping construction do not add speed; new construction has no growth,
 while existing herds continue at base speed during an upgrade.
 
-| Animal | Base cycle | Products during growth | Automatic reward at completion | Basic prepared meat work and reward |
+| Animal | Base cycle | Products during growth | Manual butchery reward | Basic prepared meat work and reward |
 | --- | --- | --- | --- | --- |
 | Chicken | 60s | 25 eggs | 2 meat | 6 worker-seconds → 2 prepared meat (8 food) |
 | Sheep | 120s | 25 wool | 4 meat + 1 hide | 12 worker-seconds → 4 prepared meat (16 food) |
@@ -293,23 +296,25 @@ while existing herds continue at base speed during an upgrade.
 | Cow | 360s | 25 milk | 10 meat + 3 hides | 30 worker-seconds → 10 prepared meat (40 food) |
 
 Manure accrues at 0.1 per animal per three base growth seconds. Product totals
-per cycle are fixed independently of keeper skill and talent. Meat and hides
-are collected automatically, and the young replacement occupies the same slot.
-Output storage and production caps bound collected goods; excess output is not
-kept, and the growth clock still advances. Keepers and haulers transport goods
-through the normal workplace buffers. Existing saved adults finish one cycle
-on their next tick; existing manual butcher jobs can still finish normally.
+per growth cycle are fixed independently of keeper skill and talent. Adults stop
+producing products and manure. Each manually ordered butchery job takes 60 seconds
+and yields the meat and hides above at the shop. Output storage and production
+caps bound collected goods; excess growth products are not kept, and growth still
+advances to adulthood. Keepers and haulers transport goods through the normal
+workplace buffers. Adults from older saves wait for manual butchery, and existing
+butcher jobs finish normally.
 
 ### Grain staple and luxury meat
 
-A pig provides 8 raw meat per four-minute cycle without staffing, or every two minutes
-with one keeper. That meat becomes **8 prepared meat worth 32 food**. Prepared
-meat provides 4 food and sells for 4 coins per item; raw meat provides 1 food
-and sells for 2. Hides and manure are additional rewards.
+A pig reaches adulthood after four minutes without staffing, or two minutes
+with one keeper. One minute of manual butchery then supplies 8 raw meat. That meat
+becomes **8 prepared meat worth 32 food**. Prepared meat provides 4 food and sells
+for 4 coins per item; raw meat provides 1 food and sells for 2. Hides and manure
+are additional rewards. Growing multiple pigs overlaps their growth, but the herd
+shrinks with each manual selection until the last pig gets a young replacement.
 
-The previous comparison based on growing feed and manual slaughter no longer
-applies to automatic barns. Delivered balance against the grain chain needs
-playtesting, including barn capacity, hauling, output limits, and processor staffing.
+Delivered balance against the grain chain needs playtesting, including barn
+capacity, manual butchery, hauling, output limits, and processor staffing.
 
 | Butcher recipe | Food per item | Coins per item | Food per base batch |
 | --- | --- | --- | --- |
@@ -331,14 +336,14 @@ outputs, quantities, skills, and unfinished work are preserved.
 | --- | --- | --- | --- |
 | Qualify for butchery | 2 husbandry | 1.25 minutes | Requires successful animal tending. |
 | Unlock butcher recipe 2 | 2 butchery | One completed animal, or one minute of continuous prepared-meat processing | Starts after qualification; animals and ingredients must be available. |
-| Reach butcher recipe 5 | 5 butchery | Three completed animals, or 2.5 minutes of continuous processing | Automatic barn supply and hauling add elapsed time. |
+| Reach butcher recipe 5 | 5 butchery | Three completed animals, or 2.5 minutes of continuous processing | Animal growth, manual butchery, and hauling add elapsed time. |
 | First butchery efficiency step | 20 butchery | Ten completed animals, or ten minutes of continuous processing | The output multiplier changes at 20; recipe unlocks provide earlier milestones. |
 
 Animal butchery currently gives 25% more practice per credited work second than
 standard work: 2 practice per animal before talents (1.5 with a weakness; 2.5
 with a strength). The player selects the animal; the worker completes the timed task.
 Basic raw meat yields are chicken 2, sheep 4, pig 8, and cow 10. Growth can happen
-in parallel, so do not add five growth minutes to every animal when estimating a herd.
+in parallel, so do not add the full growth duration to every animal when estimating a herd.
 
 | Manual-work question | Starting proposal | Status |
 | --- | --- | --- |

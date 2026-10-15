@@ -153,8 +153,9 @@ implementation. Their production rates also need review against the implemented
 worker limits documented in README.md.
 The [luxury meat balance](BALANCING.md#grain-staple-and-luxury-meat) gives
 8 raw pig meat a value of 32 food when prepared, with profitable advanced recipes.
-Barns now grow and replace animals automatically without feed, with additional
-keepers shortening cycles. Delivered livestock pacing and its interaction with
+Barns grow animals without feed, with additional keepers shortening growth.
+Adults wait for manual butchery; only the last animal of a species in a barn
+gets a free young replacement. Delivered livestock pacing and its interaction with
 grain equipment still need play experience.
 Settler and player skill gains are doubled, including butchery. Existing practice
 and unlock thresholds are preserved; delivered training pace still needs playtesting.
@@ -175,19 +176,22 @@ material investments alongside the remaining fishing balance work.
 Advanced woodcraft and metal sale values now cover ingredients, including fuel;
 higher workshop recipe tiers preserve or improve profit per active work second.
 
-Barn animal counts are configurable per species within shared capacity. Automatic
-replacement cycles run without feed or workers at 60/120/240/360 seconds for
-chickens/sheep/pigs/cows; each assigned keeper adds one base growth speed.
+Barn animal counts are configurable per species within shared capacity.
+Base growth takes 60/120/240/360 seconds for chickens/sheep/pigs/cows without
+feed or workers; each assigned keeper adds one base growth speed.
 Growth is independent of animation, routes, output storage, and production caps.
-The inspector shows growth, current cycle times, and automatic collection of
-products, meat, and hides. Existing manual butcher jobs remain supported.
-Replacement countdowns follow the host update schedule and tick between snapshots,
-including while dropdowns are open. Cycle times are labeled as averages; overdue
-countdowns wait for host confirmation without advancing saved growth.
+Fully grown animals stop producing and stay until manually butchered. Selecting
+an adult removes it; one young replacement appears only if no animals of that
+species remain in that barn. Explicitly clearing a species leaves it unstocked.
+The inspector shows growth countdowns, fully grown animals, and manual butcher
+rewards, with replacement previews only for the last animal of that species.
+Countdowns follow the host update schedule, including while dropdowns are open;
+overdue countdowns wait for host confirmation without advancing saved growth.
 Animal drawings use species proportions, with larger cows and smaller chickens;
 young animals stay visible and herd size no longer shrinks individual animals.
-Play experience should assess delivered output, hauling, and the new cycle pacing
-alongside the fixed 25 eggs, wool, or milk per animal. Delivered pacing remains unmeasured.
+Play experience should assess delivered output, hauling, manual butchery pacing,
+and herd depletion alongside the fixed 25 eggs, wool, or milk per growing animal.
+Delivered pacing remains unmeasured.
 
 ## Scalable villager pathfinding
 

@@ -1760,7 +1760,10 @@ def command(town, data, world=None):
             if not any(v.get('building_index') == index and v['job'] == 'butchery'
                        and not economy.qualification(v, 'butchery') for v in town['villagers']):
                 raise ValueError('Assign a qualified butcher first.')
-            ages[adult] = 0
+            del ages[adult]
+            if not ages:
+                ages = [0]
+            barn['animals'][animal] = len(ages)
             barn.setdefault('animal_growth', {})[animal] = ages
             building['butchering'] = {'animal': animal, 'amount': economy.ANIMAL_MEAT[animal],
                                       'remaining': economy.BUTCHER_SECONDS}
@@ -1800,7 +1803,7 @@ def command(town, data, world=None):
         elif action in {'buy_animal', 'breed_animal'}:
             animal = data.get('animal')
             if action == 'breed_animal' and animal != 'horse':
-                raise ValueError('Barn animals are free and replaced automatically after selection for butchery.')
+                raise ValueError('Barn animals are free; only the last of a species in a barn is replaced after selection for butchery.')
             spec = economy.ANIMALS.get(animal)
             if (spec is None or town['level'] < spec['level']
                     or building['kind'] != ('stable' if animal == 'horse' else 'barn')
