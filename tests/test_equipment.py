@@ -83,6 +83,7 @@ class Equipment(unittest.TestCase):
         self.assertFalse(walkable(self.town, 6, 5))
 
     def test_sand_and_lighter_swamp_are_safe_without_gear(self):
+        self.town['buildings'][0]['y'] = 3
         for biome, x in [('s', 4), ('b', 6), ('b', 7)]:
             with self.subTest(biome=biome, x=x):
                 self.town['terrain'][7] = 'g' * x + biome + 'g' * (119 - x)

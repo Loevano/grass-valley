@@ -46,7 +46,7 @@ const run=new Function('document','window','localStorage','setTimeout','clearTim
   const hall={kind:'hall',x:5,y:5};
   const halls=[1,2,3,4,5].map(level=>appearance(hall,{...town,level}));
   assert.strictEqual(new Set(halls).size,5,'Each completed hall level has distinct artwork');
-  const finalHall=level=>JSON.parse(appearance({...hall,footprint:[2,2]},{...town,level}));
+  const finalHall=level=>JSON.parse(appearance({...hall,footprint:[3,3]},{...town,level}));
   assert.deepStrictEqual(finalHall(5).filter(mark=>mark[0]!=='fillText'),finalHall(10).filter(mark=>mark[0]!=='fillText'),'Hall levels 5–10 share the final structural artwork');
   assert.notDeepStrictEqual(finalHall(5),finalHall(10),'The hall plaque still reports its actual level');
   assert.strictEqual(appearance(hall,{...town,level:1,upgrade_remaining:10}),halls[0],'Hall keeps its completed level while upgrading');
@@ -57,6 +57,13 @@ const run=new Function('document','window','localStorage','setTimeout','clearTim
     assert.notStrictEqual(appearance(expanded),appearance({...expanded,footprint:[1,1]}),kind+' uses its enlarged lot for its workplace');
     assert.strictEqual(JSON.stringify(expanded),saved,'Workplace artwork preserves the authoritative footprint');
   }
+  const expandedHall={...hall,footprint:[3,3]},hallSaved=JSON.stringify(expandedHall);
+  const [hallX,hallTop]=point(6,6),hallScale=tileW/46;
+  const hallMarks=JSON.parse(appearance(expandedHall));
+  assert(hallMarks.some(mark=>mark[0]==='translate'&&mark[1]===hallX&&mark[2]===hallTop+tileH/2),'Hall artwork centers on its three-tile footprint');
+  assert(hallMarks.some(mark=>mark[0]==='scale'&&Math.abs(mark[1]-.69*hallScale)<1e-9),'Hall artwork scales with the enlarged footprint');
+  assert.notStrictEqual(appearance(expandedHall),appearance({...hall,footprint:[2,2]}),'Three-tile halls render larger than legacy two-tile halls');
+  assert.strictEqual(JSON.stringify(expandedHall),hallSaved,'Hall rendering preserves the host footprint');
   const warmWindows=building=>{
     let path=[];const windows=[];
     for(const mark of JSON.parse(appearance(building))){

@@ -11,6 +11,8 @@ from server import command, construct, new_town, prepare_landscapes, tick
 class Progression(unittest.TestCase):
     def setUp(self):
         self.town = flat_town('Progression', size=120)
+        self.town['buildings'][0]['y'] = 3
+        self.town['player']['y'] = 7.
         # These tests isolate base rates; talent effects have dedicated coverage.
         for villager in self.town['villagers']:
             villager['talents'] = {}

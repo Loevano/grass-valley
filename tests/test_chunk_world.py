@@ -284,11 +284,11 @@ class ExplorableMap(unittest.TestCase):
     def test_construction_and_relocation_work_at_new_town_coordinates(self):
         origin = self.town['town_origin']
         server.command(self.town, {'action': 'build', 'kind': 'home',
-                                   'x': origin['x'] + 2, 'y': origin['y']}, self.world)
+                                   'x': origin['x'] + 3, 'y': origin['y']}, self.world)
         self.assertEqual(len(self.town['buildings']), 2)
         server.command(self.town, {'action': 'move', 'index': 1,
-                                   'x': origin['x'] + 3, 'y': origin['y']}, self.world)
-        self.assertEqual(self.town['buildings'][1]['x'], origin['x'] + 3)
+                                   'x': origin['x'] + 4, 'y': origin['y']}, self.world)
+        self.assertEqual(self.town['buildings'][1]['x'], origin['x'] + 4)
         for _ in range(12):
             server.tick(self.world)
         self.assertNotIn('construction', self.town['buildings'][1])

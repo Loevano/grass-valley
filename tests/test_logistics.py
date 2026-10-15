@@ -852,7 +852,7 @@ class ResourceLogistics(unittest.TestCase):
     def test_trip_survives_save_and_cancels_safely_when_building_moves(self):
         b = self.add('woodcutter', x=20, y=20, output_buffer={'wood': 50})
         self.town['map_resources'] = [{'kind': 'tree', 'x': 20, 'y': 19}]
-        store = self.add('storehouse', storage_enabled={'wood': True})
+        store = self.add('storehouse', x=9, storage_enabled={'wood': True})
         v = self.assign(0, store)
         self.town['wood'] = 0
         self.ticks()

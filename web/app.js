@@ -4737,7 +4737,7 @@ function acrePlacementValid(town,tile,index){
   const farm=town.buildings[index];
   return farm?.kind==='farm'&&!farm.construction&&Math.max(Math.abs(tile.x-farm.x),Math.abs(tile.y-farm.y))<=3;
 }
-const buildingFootprints={hall:[2,2],mill:[2,2],sawpit:[3,2],workshop:[2,2],butcher:[2,2],bakery:[2,2],smokehouse:[2,2],tannery:[2,2]};
+const buildingFootprints={hall:[3,3],mill:[2,2],sawpit:[3,2],workshop:[2,2],butcher:[2,2],bakery:[2,2],smokehouse:[2,2],tannery:[2,2]};
 function footprintTiles(building){
   const [width,depth]=building.footprint || [1,1],tiles=[];
   for(let dx=0;dx<width;dx++)for(let dy=0;dy<depth;dy++)tiles.push({x:building.x+dx,y:building.y+dy});

@@ -80,6 +80,8 @@ class Wilderness(unittest.TestCase):
 
     def test_boat_requires_level_materials_and_preserves_collision(self):
         town = new_town('Sailor')
+        town['buildings'][0]['y'] = 3
+        town['player']['y'] = 7.
         town.update(npcs=[], map_resources=[{'kind': 'water', 'x': 6, 'y': 7}], terrain=['g' * 120] * 120)
         for level, planks in [(2, 10), (3, 9)]:
             town.update(level=level, goods={'planks': planks})
@@ -143,6 +145,8 @@ class Wilderness(unittest.TestCase):
     def test_players_and_settlers_both_fell_trees(self):
         for worker in (False, True):
             town = new_town('Woodland')
+            town['buildings'][0]['y'] = 3
+            town['player']['y'] = 7.
             tree = {'kind': 'tree', 'x': 6, 'y': 7}
             town.update(map_resources=[tree], terrain=['f' * 120] * 120,
                         npcs=[], forage_version=1, forage_halls=[[5, 5]])

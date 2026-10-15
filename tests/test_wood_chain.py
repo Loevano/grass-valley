@@ -18,7 +18,7 @@ class WoodChain(unittest.TestCase):
             worker['talents'] = {}
 
     def add(self, kind, **extra):
-        building = dict(kind=kind, x=7, y=5, **extra)
+        building = dict(kind=kind, x=8, y=5, **extra)
         self.town['buildings'].append(building)
         return building, len(self.town['buildings']) - 1
 
@@ -121,10 +121,10 @@ class WoodChain(unittest.TestCase):
                 self.setUp()
                 before = copy.deepcopy(self.town)
                 with self.assertRaises(ValueError):
-                    server.command(self.town, dict(action='build', kind=kind, x=7, y=5))
+                    server.command(self.town, dict(action='build', kind=kind, x=8, y=5))
                 self.assertEqual(self.town, before)
                 self.town['goods'] = {good: 1}
-                server.command(self.town, dict(action='build', kind=kind, x=7, y=5))
+                server.command(self.town, dict(action='build', kind=kind, x=8, y=5))
                 building = self.town['buildings'][-1]
                 self.assertNotIn('construction', building)
                 self.assertEqual(economy.quantity(self.town, good), 0)
@@ -134,9 +134,9 @@ class WoodChain(unittest.TestCase):
                     with self.assertRaises(ValueError):
                         server.command(self.town, dict(action=action, index=1))
                 with self.assertRaises(ValueError):
-                    server.command(self.town, dict(action='build', kind='home', x=7, y=5))
-                server.command(self.town, dict(action='move', index=1, x=8, y=5))
-                self.assertEqual(building['x'], 8)
+                    server.command(self.town, dict(action='build', kind='home', x=8, y=5))
+                server.command(self.town, dict(action='move', index=1, x=9, y=5))
+                self.assertEqual(building['x'], 9)
                 server.command(self.town, dict(action='destroy', index=1))
                 self.assertEqual(economy.quantity(self.town, good), 0)
 

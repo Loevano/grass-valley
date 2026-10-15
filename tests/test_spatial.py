@@ -41,16 +41,16 @@ class WorkerSpatialLookups(unittest.TestCase):
                          server.work_assignment(self.town, 'woodcutting', 0))
 
     def test_felled_tree_releases_route_and_is_not_selected_again(self):
-        tree = {'kind': 'tree', 'x': 7, 'y': 7, 'supply': .5}
+        tree = {'kind': 'tree', 'x': 7, 'y': 8, 'supply': .5}
         self.town['map_resources'] = [tree]
         index = SpatialIndex(self.town['map_resources'])
         walking = dict(self.town, _spatial_index=index)
-        self.assertIn((7, 7), index.blocked(walking))
+        self.assertIn((7, 8), index.blocked(walking))
         server.economy.take_supply(self.town, tree, .5)
         self.assertEqual(index.nearby('tree', 7, 7, 10), [])
-        self.assertNotIn((7, 7), index.blocked(walking))
-        self.assertEqual(server.construction_route(walking, (6, 7), {'x': 8, 'y': 7}),
-                         [(6, 7), (7, 7)])
+        self.assertNotIn((7, 8), index.blocked(walking))
+        self.assertEqual(server.construction_route(walking, (6, 8), {'x': 8, 'y': 8}),
+                         [(6, 8), (7, 8)])
 
     def test_routes_share_obstacles_and_preserve_npc_and_building_collisions(self):
         self.town['npcs'] = [{'x': 6, 'y': 7}]

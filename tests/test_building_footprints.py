@@ -6,7 +6,7 @@ from unittest.mock import patch
 from fixtures import flat_town
 from navigation import RouteCache
 from spatial import footprint_tiles, occupied_tiles, perimeter, SpatialIndex
-from server import command, construction_route, migrate_footprints, walkable
+from server import command, construction_route, migrate_footprints, new_town, walkable
 from shared_world import bind_map, export_world
 import work_cycles
 import horses
@@ -36,7 +36,47 @@ class BuildingFootprints(unittest.TestCase):
                 with self.assertRaisesRegex(ValueError, 'open ground'):
                     command(self.town, {'action': 'build_road', 'x': x, 'y': y})
             self.town['buildings'].pop()
-        self.assertEqual(len(footprint_tiles(self.town['buildings'][0])), 4)
+        self.assertEqual(len(footprint_tiles(self.town['buildings'][0])), 9)
+
+    def test_new_hall_and_spawn_use_three_by_three_footprint(self):
+        for world in (None, {'shared_map': {'map_size': 32, 'terrain': ['g' * 32] * 32,
+                                           'map_resources': [], 'npcs': []},
+                             'town_sites': [{'x': 12, 'y': 14}], 'towns': {}}):
+            town = new_town('Hall', world)
+            hall = town['buildings'][0]
+            self.assertEqual(hall['footprint'], [3, 3])
+            self.assertEqual(len(footprint_tiles(hall)), 9)
+            player = town['player']
+            self.assertNotIn((player['x'], player['y']), footprint_tiles(hall))
+            self.assertEqual(player['y'], hall['y'] + 3)
+
+    def test_saved_halls_expand_only_when_the_added_tiles_are_clear(self):
+        for obstacle in (None, 'building', 'road', 'resource', 'player', 'boundary'):
+            with self.subTest(obstacle=obstacle):
+                town = copy.deepcopy(self.town)
+                hall = town['buildings'][0]
+                hall['footprint'] = [2, 2]
+                if obstacle == 'building':
+                    town['buildings'].append({'kind': 'home', 'x': 7, 'y': 7})
+                elif obstacle == 'road':
+                    town['roads'] = [{'x': 7, 'y': 7}]
+                elif obstacle == 'resource':
+                    town['map_resources'] = [{'kind': 'tree', 'x': 7, 'y': 7}]
+                elif obstacle == 'player':
+                    town['player'].update(x=5., y=7.)
+                elif obstacle == 'boundary':
+                    town['terrain'][7] = 'g' * 7 + 'v' + 'g' * 24
+                world = {'towns': {'own': town}}
+                migrate_footprints(world)
+                self.assertEqual(hall['footprint'], [2, 2] if obstacle else [3, 3])
+                before = copy.deepcopy(world)
+                migrate_footprints(world)
+                self.assertEqual(world, before)
+                if obstacle:
+                    command(town, dict(action='move', index=0, x=12, y=12))
+                    self.assertEqual(hall['footprint'], [3, 3])
+                    for x, y in footprint_tiles(hall):
+                        self.assertFalse(walkable(town, x, y))
 
     def test_placement_clears_only_forage_inside_the_full_footprint(self):
         for kind, resource in ((k, r) for k in ('home', 'mill', 'acre')

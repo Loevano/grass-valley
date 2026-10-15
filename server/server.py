@@ -738,9 +738,9 @@ def new_town(name, world=None):
     town = {'map_size': MAP_SIZE, 'name': name, 'wood': 65, 'food': 40, 'coins': 20, 'level': 1,
             'wood_chain_version': 1, 'worker_capacity_version': 1, 'grain_chain_version': 1, 'acre_upgrade_version': 1,
             'harvested': 0, 'achievements': [],
-            'player': {'x': 5., 'y': 7., 'facing': 1},
+            'player': {'x': 5., 'y': 8., 'facing': 1},
             'map_resources': map_resources([{'x': 5, 'y': 5}]),
-            'buildings': [{'kind': 'hall', 'x': 5, 'y': 5, 'footprint': [2, 2]}],
+            'buildings': [{'kind': 'hall', 'x': 5, 'y': 5, 'footprint': list(BUILDING_FOOTPRINTS['hall'])}],
             'villagers': [{'name': n, 'job': 'idle', 'woodcutting': i % 3,
                            'farming': (i + 1) % 3, 'fishing': 0} for i, n in enumerate(
                                VILLAGER_NAMES[:5])]}
@@ -748,8 +748,8 @@ def new_town(name, world=None):
         site = dict(world['town_sites'][len(world['towns'])])
         town.update(world['shared_map'])
         town['town_origin'] = site
-        town['buildings'] = [{'kind': 'hall', **site, 'footprint': [2, 2]}]
-        town['player'] = {'x': float(site['x']), 'y': float(site['y'] + 2), 'facing': 1}
+        town['buildings'] = [{'kind': 'hall', **site, 'footprint': list(BUILDING_FOOTPRINTS['hall'])}]
+        town['player'] = {'x': float(site['x']), 'y': float(site['y'] + BUILDING_FOOTPRINTS['hall'][1]), 'facing': 1}
     else:
         ensure_terrain(town, new=True)
         ensure_npcs(town)
@@ -1473,12 +1473,15 @@ def clear_building_forage(town, buildings):
 
 
 def migrate_footprints(world):
-    """Expand clear saved sites once, preserving crowded legacy sites until moved."""
+    """Expand clear saved sites, preserving crowded legacy sites until moved."""
     towns = list(world['towns'].values())
     for town in towns:
         landscape = world.get('shared_map', town)
         for building in town.get('buildings', []):
-            if building['kind'] not in BUILDING_FOOTPRINTS or 'footprint' in building:
+            if building['kind'] not in BUILDING_FOOTPRINTS:
+                continue
+            if 'footprint' in building and (building['kind'] != 'hall'
+                    or tuple(building['footprint']) != (2, 2)):
                 continue
             candidate = dict(building, footprint=BUILDING_FOOTPRINTS[building['kind']])
             others = [b for t in towns for b in t.get('buildings', []) if b is not building]
@@ -1490,7 +1493,7 @@ def migrate_footprints(world):
                         and not any(abs(t['player']['x'] - x) < .68 and abs(t['player']['y'] - y) < .68
                                 for t in towns if 'player' in t)
                         for x, y in tiles)
-            building['footprint'] = list(candidate['footprint'] if clear and not tiles.intersection(occupied_tiles(obstacles)) else (1, 1))
+            building['footprint'] = list(candidate['footprint'] if clear and not tiles.intersection(occupied_tiles(obstacles)) else building.get('footprint', (1, 1)))
 
 
 def command(town, data, world=None):

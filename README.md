@@ -969,7 +969,7 @@ Save files and terrain chunks stay at the root, outside version control.
 
 ## Building footprints and range previews
 
-Town halls, mills, woodworker's workshops (forgeries), butcher shops, bakeries,
+Town halls occupy 3×3 tiles. Mills, woodworker's workshops (forgeries), butcher shops, bakeries,
 smokehouses, and tanneries occupy 2×2 tiles; sawpits occupy 3×2. Cottages,
 woodcutters, and farms retain their 1×1 footprints.
 The [updated building family](docs/building-style-family.svg) uses broad shaded
@@ -1020,7 +1020,7 @@ and the hall's building range. Workers approach any reachable outside edge.
 Buildings, moves, acres, and roads can cover berry bushes, which disappear from
 the covered tiles as soon as placement succeeds. Other resources still block placement.
 Older buildings expand when their saved site is clear. Crowded older sites retain
-one tile until moved to a clear site with room for the new footprint.
+their saved footprint until moved to a clear site with room for the new dimensions.
 
 Build mode shows existing farm, woodcutter, fishing-hut, and mine ranges, alongside
 the hall's building area. The selected building's range and full footprint follow

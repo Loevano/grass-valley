@@ -68,4 +68,21 @@ app.run(`tool='move';moveIndex=1;`);
 assert.equal(app.run(`placementValid(town,{x:16,y:20},'mill')`),false,'Moved stock tiles cannot enter a pen');
 app.run(`town.buildings.pop();world.towns.friend={buildings:[{kind:'barn',x:20,y:20}]};tool='home';moveIndex=null;`);
 assert.equal(app.run(`placementValid(town,{x:23,y:23},'home')`),false,'Other towns reserve their barn pens too');
+app.run(`
+  world.towns={own:town};town.buildings=[{kind:'hall',x:5,y:5,footprint:[3,3]}];
+  tool='move';moveIndex=0;
+`);
+assert.equal(app.run(`JSON.stringify(placementBuilding({x:12,y:12},'hall').footprint)`),'[3,3]','Hall move preview covers nine tiles');
+app.run(`town.map_resources=[{kind:'rock',x:14,y:14}];`);
+assert.equal(app.run(`placementValid(town,{x:12,y:12},'hall')`),false,'Hall move rejects an obstacle on its far corner');
+app.run(`
+  town.map_resources=[];tool=null;moveIndex=null;
+  const hallSteps=ClientScene.prepare(world);let hallScene;
+  do{hallScene=hallSteps.next();}while(!hallScene.done);
+  ClientScene.commit(hallScene.value);draw();
+`);
+assert.equal(app.run(`JSON.stringify(townOutline(town.buildings))`),'[[5,5],[8,5],[8,8],[5,8]]','Hall overview includes all nine tiles');
+assert.equal(app.run(`ClientScene.current.playerBuildings.has('7,7')`),true,'Hall far corner blocks founder movement');
+app.run(`selectTile(7,7);`);
+assert.equal(app.run(`selection.index`),0,'Hall far corner selects the hall');
 console.log('Full building placement, scene collision, ranges, edge access and selection passed');

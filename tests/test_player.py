@@ -16,8 +16,8 @@ class PlayerMovement(unittest.TestCase):
         before = copy.deepcopy(self.town)
         player = self.walk(1, -1)
         self.assertGreater(player['x'], 5)
-        self.assertLess(player['y'], 7)
-        self.assertAlmostEqual(math.hypot(player['x'] - 5, player['y'] - 7), .3)
+        self.assertLess(player['y'], before['player']['y'])
+        self.assertAlmostEqual(math.hypot(player['x'] - 5, player['y'] - before['player']['y']), .3)
         before.pop('player')
         after = copy.deepcopy(self.town)
         after.pop('player')
@@ -110,10 +110,11 @@ class PlayerMovement(unittest.TestCase):
         self.assertEqual(player, ensure_player(self.town))
 
     def test_building_and_relocation_cannot_trap_player(self):
+        self.town['map_resources'] = []
         for action in ['build', 'move']:
             before = copy.deepcopy(self.town)
             with self.assertRaisesRegex(ValueError, 'Walk away'):
-                command(self.town, {'action': action, 'kind': 'home', 'index': 0, 'x': 5, 'y': 7})
+                command(self.town, {'action': action, 'kind': 'home', 'index': 0, **{k: int(self.town['player'][k]) for k in ('x', 'y')}})
             self.assertEqual(before, self.town)
 
 

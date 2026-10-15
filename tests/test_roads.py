@@ -28,7 +28,7 @@ class Roads(unittest.TestCase):
     def test_each_tile_requires_ten_seconds_of_builder_work(self):
         for x in (5, 6):
             command(self.town, {'action': 'build_road', 'x': x, 'y': 8})
-        self.town['villagers'][0]['construction_position'] = {'x': 5, 'y': 7}
+        self.town['villagers'][0]['construction_position'] = {'x': 4, 'y': 8}
         first, second = self.town['roads']
         construct(self.town, self.town, workers=set(), elapsed=10)
         self.assertEqual(first['construction']['progress'], 0)
@@ -38,16 +38,16 @@ class Roads(unittest.TestCase):
         self.assertEqual(self.town['villagers'][0]['construction_target']['kind'], 'road')
         construct(self.town, self.town, workers={0}, elapsed=1)
         self.assertNotIn('construction', first)
-        self.town['villagers'][0]['construction_position'] = {'x': 6, 'y': 7}
+        self.town['villagers'][0]['construction_position'] = {'x': 6, 'y': 9}
         construct(self.town, self.town, workers={0}, elapsed=9)
         self.assertIn('construction', second)
         construct(self.town, self.town, workers={0}, elapsed=1)
         self.assertNotIn('construction', second)
 
     def test_unfinished_road_does_not_boost_walking(self):
-        command(self.town, {'action': 'build_road', 'x': 5, 'y': 7})
+        command(self.town, {'action': 'build_road', 'x': 5, 'y': 8})
         player = command(self.town, {'action': 'walk', 'dx': 1, 'dy': -1})['player']
-        self.assertAlmostEqual(math.hypot(player['x'] - 5, player['y'] - 7), .3)
+        self.assertAlmostEqual(math.hypot(player['x'] - 5, player['y'] - 8), .3)
 
     def test_road_builders_walk_to_sites_before_working(self):
         command(self.town, {'action': 'build_road', 'x': 12, 'y': 8})
@@ -79,21 +79,21 @@ class Roads(unittest.TestCase):
                 self.assertEqual(self.town['map_resources'], [outside])
 
     def test_speed_on_roads_and_normal_speed_off_roads(self):
-        self.town['roads'] = [{'x': 5, 'y': 7}]
+        self.town['roads'] = [{'x': 5, 'y': 8}]
         player = command(self.town, {'action': 'walk', 'dx': 1, 'dy': -1})['player']
-        self.assertAlmostEqual(math.hypot(player['x'] - 5, player['y'] - 7), .45)
+        self.assertAlmostEqual(math.hypot(player['x'] - 5, player['y'] - 8), .45)
         self.town['player'].update(x=8., y=8.)
         player = command(self.town, {'action': 'walk', 'dx': 1, 'dy': -1})['player']
         self.assertAlmostEqual(math.hypot(player['x'] - 8, player['y'] - 8), .3)
 
     def test_shared_roads_are_saved_and_used_by_visitors(self):
         friend = copy.deepcopy(self.town)
-        friend['roads'] = [{'x': 5, 'y': 7}]
+        friend['roads'] = [{'x': 5, 'y': 8}]
         world = {'shared_map': {}, 'towns': {'own': self.town, 'friend': friend}}
         self.assertEqual(export_world(world)['towns']['friend']['roads'], friend['roads'])
         self.assertEqual(walking_map(world, self.town)['roads'], friend['roads'])
         player = command(self.town, {'action': 'walk', 'dx': 1, 'dy': -1}, world)['player']
-        self.assertAlmostEqual(math.hypot(player['x'] - 5, player['y'] - 7), .45)
+        self.assertAlmostEqual(math.hypot(player['x'] - 5, player['y'] - 8), .45)
 
     def test_builders_reach_sites_faster_on_roads(self):
         self.town['buildings'].append({'kind': 'home', 'x': 12, 'y': 8,
@@ -116,8 +116,8 @@ class Roads(unittest.TestCase):
         self.assertEqual(self.town['villagers'][0]['construction_position'], {'x': 1, 'y': 1})
 
     def test_speed_boost_preserves_collision(self):
-        self.town['roads'] = [{'x': 5, 'y': 7}]
-        self.town['buildings'].append({'kind': 'home', 'x': 6, 'y': 7})
+        self.town['roads'] = [{'x': 5, 'y': 8}]
+        self.town['buildings'].append({'kind': 'home', 'x': 6, 'y': 8})
         for _ in range(10):
             player = command(self.town, {'action': 'walk', 'dx': 1, 'dy': 0})['player']
         self.assertLessEqual(player['x'], 5.32)

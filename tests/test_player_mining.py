@@ -11,6 +11,7 @@ from shared_world import bind_map, export_world
 class PlayerMining(unittest.TestCase):
     def setUp(self):
         self.town = flat_town()
+        self.town['buildings'][0]['y'] = 3
         self.town['map_resources'] = []
         self.town['player'].update(x=5, y=7)
         economy.ensure_inventory(self.town)
@@ -80,6 +81,7 @@ class PlayerMining(unittest.TestCase):
         landscape.update(map_resources=[rock], mineral_version=1, industry_version=2)
         world = {'towns': {'own': self.town, 'friend': flat_town('Friend')},
                  'shared_map': landscape}
+        world['towns']['friend']['buildings'][0]['y'] = 3
         bind_map(world)
         command(self.town, {'action': 'mine'}, world)
         self.assertEqual(world['towns']['friend']['map_resources'], [])

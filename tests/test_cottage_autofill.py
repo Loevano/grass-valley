@@ -12,7 +12,7 @@ class CottageAutofill(unittest.TestCase):
         self.world = {'towns': {'own': self.town}}
 
     def cottage(self, **extra):
-        self.town['buildings'].append({'kind': 'home', 'x': 6, 'y': 6, **extra})
+        self.town['buildings'].append({'kind': 'home', 'x': 6, 'y': 9, **extra})
         return len(self.town['buildings']) - 1
 
     def test_fills_available_capacity_across_cottages(self):
