@@ -5,6 +5,7 @@ from collections import deque
 from math import ceil
 import secrets
 import farming
+import orchards
 from equipment import find_item, gathering_bonus
 from terrain import tree_regrows
 
@@ -19,6 +20,7 @@ BUILDINGS = {
     'wooden_statue': {'label': 'Carved wooden statue', 'level': 4, 'wood': 0, 'carved_furniture': 1, 'slots': 0},
     'fish_pond': {'label': 'Fish pond', 'level': 5, 'wood': 25, 'planks': 10, 'job': 'breeding', 'slots': 2},
     'orchard': {'label': 'Orchard', 'level': 5, 'wood': 25, 'job': 'orcharding', 'slots': 2},
+    'orchard_tree': {'label': 'Fruit tree', 'level': 5, 'wood': 5, 'slots': 0},
     'bakery': {'label': 'Bakery', 'level': 4, 'wood': 30, 'planks': 5, 'job': 'baking', 'slots': 1},
     'butcher': {'label': 'Butcher shop', 'level': 4, 'wood': 25, 'planks': 5, 'job': 'butchery', 'slots': 2},
     'tannery': {'label': 'Tannery', 'level': 5, 'wood': 30, 'planks': 10, 'job': 'tanning', 'slots': 2},
@@ -501,7 +503,7 @@ def building_storage_keys(building):
 def storage_size(building):
     if building['kind'] in ('farm', 'acre'):
         return sum(storage_allocations(building).values())
-    return 0 if building['kind'] in {'home', 'market', 'well', *DECORATIONS} else 200 if building['kind'] == 'hall' else STOREHOUSE_CAPACITIES[building.get('level', 1) - 1] if building['kind'] == 'storehouse' else WORKPLACE_STORAGE_SIZES.get(building['kind'], 50) * storage_multiplier(building)
+    return 0 if building['kind'] in {'home', 'market', 'well', 'orchard_tree', *DECORATIONS} else 200 if building['kind'] == 'hall' else STOREHOUSE_CAPACITIES[building.get('level', 1) - 1] if building['kind'] == 'storehouse' else WORKPLACE_STORAGE_SIZES.get(building['kind'], 50) * storage_multiplier(building)
 
 
 def inventory(building):
@@ -947,8 +949,7 @@ def extra_worker(town, villager, building, capacity):
         for key, count in outputs.items():
             deliver(town, key, count, capacity)
     elif kind == 'orchard':
-        if deliver(town, 'fruit', speed, capacity) == 0:
-            return 'Storage full'
+        return 'Harvest fruit from planted trees'
     elif kind == 'barn':
         # Growth and output are advanced once by the host, independently of keepers.
         if not sum(building.get('animals', {}).values()):
@@ -971,6 +972,9 @@ def extra_worker(town, villager, building, capacity):
 
 def public_catalog():
     return {'buildings': BUILDINGS, 'building_footprints': BUILDING_FOOTPRINTS, 'crops': CROPS, 'animals': ANIMALS,
+            'orchard_stage_seconds': orchards.STAGE_SECONDS,
+            'orchard_harvest_yield': orchards.HARVEST_YIELD,
+            'orchard_reach': orchards.REACH,
             'farming_growth_seconds': farming.GROWTH_SECONDS,
             'farming_harvest_yield': farming.HARVEST_YIELD,
             'farming_harvest_yields': farming.HARVEST_YIELDS,

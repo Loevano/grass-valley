@@ -4,6 +4,7 @@ import math
 
 import progression as economy
 import farming
+import orchards
 import barns
 from navigation import routes
 from spatial import SpatialIndex, occupied_tiles
@@ -201,6 +202,7 @@ def _advance(town, landscape, villager, building, source, index, seconds, stop_a
         spec.extend([building.get('level', 1), economy.fishing_boat_level(building), boating, 'boat_cargo_cycle'])
     state = villager.get('work_animation')
     farming_job = villager['job'] == 'farming'
+    orchard_job = villager['job'] == 'orcharding' and source['kind'] == 'orchard_tree'
     barn_keeper = villager['job'] == 'husbandry' and building['kind'] == 'barn'
     butcher = building.get('butchering') if villager['job'] == 'butchery' else None
     butcher_trip = butcher and butcher.get('pickup')
@@ -313,9 +315,8 @@ def _advance(town, landscape, villager, building, source, index, seconds, stop_a
     if (not state or state['task'] != spec or state['phase'] in ('waiting', 'waiting_storage')
             or (farming_job and state['phase'] == 'waiting_field' and not farming.claimed(town, source, index))):
         resume_phase = state.get('resume_phase') if state and state['task'] == spec else None
-        if villager['job'] == 'woodcutting' and villager.get('pending_output'):
-            # Older saves can be waiting on an unreachable or vanished tree
-            # with gathered wood. Deliver that cargo before trying more work.
+        if villager['job'] in ('woodcutting', 'orcharding') and villager.get('pending_output'):
+            # Finish cargo from an unreachable or removed tree before working again.
             resume_phase = 'returning'
         position = starting_position(town, landscape, villager, index, blocked)
         if position is None:
@@ -425,6 +426,14 @@ def _advance(town, landscape, villager, building, source, index, seconds, stop_a
             # Retry a blocked route on the next tick, rather than looping with
             # unchanged remaining time while the host holds the world lock.
             return finished, 0
+        if orchard_job and phase == 'idle':
+            return finished, 0
+        if orchard_job and phase == 'working' and not villager.get('pending_output'):
+            if (orchards.tree_state(source)['stage'] != 'ripe'
+                    or economy.local_room(building, 'fruit') <= 1e-9
+                    or economy.production_room(town, 'fruit') <= 1e-9):
+                state.update(phase='waiting_storage', path=[])
+                return finished, 0
         if farming_job and phase not in ('depositing', 'returning', 'collecting_water'):
             # Keep harvesting while another ripe acre fits the reserved farm
             # allowance. Once returning, finish the trip before accepting work.
@@ -500,17 +509,25 @@ def _advance(town, landscape, villager, building, source, index, seconds, stop_a
             # The animal's shared processing timer keeps the butcher at the shop.
             state['elapsed'] += remaining
             return finished, 0
-        duration = .65 if phase in ('depositing', 'collecting_water') else farming.WORK_SECONDS if farming_job else 3.2
+        duration = (.65 if phase in ('depositing', 'collecting_water') else farming.WORK_SECONDS if farming_job else
+                    orchards.PICK_SECONDS / (economy.efficiency(villager, 'orcharding') * (1 + .25 * (building.get('level', 1) - 1)))
+                    if orchard_job else 3.2)
         take = min(remaining, max(0, duration - state['elapsed']))
         state['elapsed'] += take
         remaining -= take
         if farming_job and phase == 'working':
             field['progress'] = state['elapsed']
             economy.practice(villager, 'farming', take)
+        if orchard_job and phase == 'working':
+            economy.practice(villager, 'orcharding', take)
         if state['elapsed'] + 1e-9 < duration:
             break
+        if orchard_job and phase == 'working' and state['elapsed'] + 1e-9 >= duration:
+            if not orchards.harvest(town, building, source, villager):
+                state.update(phase='waiting_storage', path=[])
+                return finished, 0
         if phase == 'depositing':
-            if stop_at_delivery:
+            if stop_at_delivery or orchard_job:
                 state.update(phase='idle', elapsed=0, farmAction=None)
                 return True, remaining
             path = travel(state, work_spot or source, not work_spot)

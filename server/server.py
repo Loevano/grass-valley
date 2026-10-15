@@ -17,6 +17,7 @@ import logistics
 import barns
 import work_cycles
 import farming
+import orchards
 import equipment
 import npcs
 import trading
@@ -489,7 +490,7 @@ def migrate_worker_capacities(town):
 
 
 def settler_capacity(building):
-    if building['kind'] == 'hall':
+    if building['kind'] in ('hall', 'orchard_tree'):
         return 0
     tiers = economy.WORKER_CAPACITIES.get(building['kind'])
     if tiers:
@@ -636,7 +637,7 @@ def work_assignment(town, job, worker_index, spatial=None, reservations=None, wa
             if b['kind'] == economy.JOB_BUILDINGS[job] and completed(b):
                 assigned = assigned_settlers(town, index)
                 if worker_index in assigned and assigned.index(worker_index) < settler_capacity(b):
-                    return b, b
+                    return b, orchards.choose_tree(town, b, worker_index) if job == 'orcharding' else b
         return None
     if job == 'building':
         return None
@@ -1118,6 +1119,7 @@ def tick(world):
                        _spatial_index=town_spatial)
         construct(town, walking)
         farming.grow(town, TICK_SECONDS)
+        orchards.grow(town, TICK_SECONDS)
         landscape = world.get('shared_map', town)
         economy.player_tick(town, landscape, capacity(town))
         for barn_index, barn in enumerate(town['buildings']):
@@ -1187,6 +1189,9 @@ def tick(world):
                                 villager['production_status'] = 'Waiting for an available tree'
                 continue
             building = assignment[0]
+            if job == 'orcharding':
+                orchards.advance(town, walking, villager, building, source, index, TICK_SECONDS)
+                continue
             if job == 'hauling':
                 logistics.haul(town, walking, villager, building, logistics_route, TICK_SECONDS)
                 continue
@@ -1359,7 +1364,9 @@ def linked_buildings(town, index):
     building = town['buildings'][index]
     return [(i, b) for i, b in enumerate(town['buildings'])
             if i == index or (building['kind'] == 'farm' and b['kind'] == 'acre'
-                              and b.get('farm_index') == index)]
+                              and b.get('farm_index') == index)
+            or (building['kind'] == 'orchard' and b['kind'] == 'orchard_tree'
+                and b.get('orchard_index') == index)]
 
 
 def validate_acre(town, farm_index, x, y):
@@ -1370,6 +1377,16 @@ def validate_acre(town, farm_index, x, y):
     farm = town['buildings'][farm_index]
     if max(abs(x - farm['x']), abs(y - farm['y'])) > RESOURCE_REACH:
         raise ValueError('Place acres within 3 tiles of their farm in each direction.')
+
+
+def validate_orchard_tree(town, orchard_index, x, y):
+    if (type(orchard_index) is not int or not 0 <= orchard_index < len(town['buildings'])
+            or town['buildings'][orchard_index]['kind'] != 'orchard'
+            or not completed(town['buildings'][orchard_index])):
+        raise ValueError('Select a completed orchard before planting a fruit tree.')
+    orchard = town['buildings'][orchard_index]
+    if max(abs(x - orchard['x']), abs(y - orchard['y'])) > orchards.REACH:
+        raise ValueError('Plant fruit trees within 3 tiles of their orchard in each direction.')
 
 
 def validate_building_range(town, x, y):
@@ -1610,16 +1627,21 @@ def command(town, data, world=None):
             raise ValueError('Missing building materials: ' + ', '.join(costs))
         if kind == 'acre':
             validate_acre(town, data.get('farm_index'), x, y)
+        if kind == 'orchard_tree':
+            validate_orchard_tree(town, data.get('orchard_index'), x, y)
         economy.spend(town, costs)
         building = {'kind': kind, 'x': x, 'y': y,
                     'construction': {'progress': 0, 'total': BUILD_SECONDS}}
         if kind in BUILDING_FOOTPRINTS:
             building['footprint'] = list(BUILDING_FOOTPRINTS[kind])
-        if kind == 'acre' or kind in economy.DECORATIONS:
+        if kind in ('acre', 'orchard_tree') or kind in economy.DECORATIONS:
             building.pop('construction')
         if kind == 'acre':
             building['farm_index'] = data['farm_index']
             farming.field_state(building)
+        if kind == 'orchard_tree':
+            building['orchard_index'] = data['orchard_index']
+            orchards.tree_state(building)
         town['buildings'].append(building)
         clear_building_forage(town, [building])
     elif action == 'move':
@@ -1660,6 +1682,8 @@ def command(town, data, world=None):
                 validate_placement(world, town, {'action': 'move', 'index': i, 'x': nx, 'y': ny})
         if moved['kind'] == 'acre':
             validate_acre(town, moved.get('farm_index'), x, y)
+        if moved['kind'] == 'orchard_tree':
+            validate_orchard_tree(town, moved.get('orchard_index'), x, y)
         # Rearranging must remain possible even after spending the starting coins.
         if not town.get('sandbox'):
             economy.record_activity(town, 'coins', min(1, town['coins']), 'out')
@@ -1722,6 +1746,9 @@ def command(town, data, world=None):
                 elif assigned in new_indices:
                     villager['building_index'] = new_indices[assigned]
         for building in town['buildings']:
+            orchard_index = building.get('orchard_index')
+            if type(orchard_index) is int:
+                building['orchard_index'] = new_indices.get(orchard_index)
             farm_index = building.get('farm_index')
             if type(farm_index) is int:
                 if farm_index in removed_indices:
@@ -1760,6 +1787,8 @@ def command(town, data, world=None):
         if type(index) is not int or not 0 <= index < len(town['buildings']):
             raise ValueError('Choose a building first.')
         building = town['buildings'][index]
+        if building['kind'] == 'orchard_tree':
+            raise ValueError('Fruit trees have no upgrades. Upgrade their orchard instead.')
         if building['kind'] == 'acre':
             raise ValueError('Acres have no upgrades. Upgrade their farm instead.')
         if building['kind'] == 'well':
@@ -1802,6 +1831,8 @@ def command(town, data, world=None):
         if type(index) is not int or not 0 <= index < len(town['buildings']):
             raise ValueError('Choose a building first.')
         building = town['buildings'][index]
+        if building['kind'] == 'orchard_tree':
+            raise ValueError('Fruit trees have no upgrades. Upgrade their orchard instead.')
         if building['kind'] == 'acre':
             raise ValueError('Acres have no upgrades. Upgrade their farm instead.')
         if building['kind'] == 'well':

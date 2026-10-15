@@ -22,7 +22,7 @@ const run=new Function('document','window','localStorage','setTimeout','clearTim
  const groups=[...$('buildings').children];
  check(groups.map(group=>group.children[0].textContent).join('|')==='Housing & storage|Food & farming|Crafting|Decorations|Mining & metal|Horses|Trade|Paths','Build menu has labeled categories');
  const buttons=groups.flatMap(group=>[...group.children]).filter(button=>button.buildingKind);
- check(buttons.length===Object.keys(costs).length-1&&new Set(buttons.map(button=>button.buildingKind)).size===buttons.length,'Every standalone building appears exactly once');
+ check(buttons.length===Object.keys(costs).filter(kind=>!['acre','orchard_tree'].includes(kind)).length&&new Set(buttons.map(button=>button.buildingKind)).size===buttons.length,'Every standalone building appears exactly once');
  check(groups.every(group=>group.attributes['aria-labelledby']===group.children[0].id),'Category headings label their groups');
  check(groups[0].children.some(button=>button.buildingKind==='home')&&groups[1].children.includes(barnButton),'Housing and food buildings are grouped appropriately');
  world.progression.buildings.market={level:5,wood:20};world.progression.buildings.tradehouse={level:10,wood:50};render();

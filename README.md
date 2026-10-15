@@ -351,6 +351,19 @@ the Python host, refresh both browsers, and create a new world to use the shared
   The selector shows **Mixed crops** when the acres grow different types.
   Assign farmers at the farm. Clicking an acre shows its state and owning farm;
   **Destroy** is its only action.
+- At hall level 5, select a completed orchard and choose **Plant fruit tree ·
+  5 wood**. Plant on open tiles within three tiles of its shed in each direction.
+  Trees grow automatically: 60 seconds as a sapling, 30 in blossom, then 60 growing
+  fruit. Each ripe tree holds 8 fruit until a qualified orchard worker picks it
+  and carries the harvest to the shed. After picking, the tree rests for 30 seconds,
+  blossoms again, and grows another harvest; watering and replanting are unnecessary.
+  A basic worker takes 3.2 seconds to pick, plus travel and unloading. Worker skill,
+  talent, and orchard levels increase picking speed; tree growth and yield stay fixed.
+  Full storage or production caps pause picking and preserve fruit on the tree.
+  Select a tree to see its stage and owning orchard, move it, or remove it.
+  Moving the shed moves all linked trees; destroying it removes those trees and
+  salvages stored fruit. Existing orchards keep their goods and workers and now need
+  planted trees. Fruit uses the existing storage, hauling, pie, and market systems.
 - Click a building, moving villager, or resource to open its information panel.
   Click the town hall for milestone progress and its upgrade. Close panels with
   Escape. Building panels show one combined activity status and average cycle

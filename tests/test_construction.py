@@ -73,14 +73,16 @@ class Construction(unittest.TestCase):
 
     def test_buildings_start_as_sites_and_acres_are_ready_both_cost_wood(self):
         self.town['buildings'].append({'kind': 'farm', 'x': 7, 'y': 6})
+        self.town['buildings'].append({'kind': 'orchard', 'x': 9, 'y': 3})
         self.town.update(level=10, wood=1000, goods={'planks': 200, 'tools': 10, 'iron': 20, 'steel': 20})
         for index, kind in enumerate(kind for kind, cost in COSTS.items() if cost):
             with self.subTest(kind=kind):
                 wood = self.town['wood']
                 site = self.build(kind, x=12 if kind == 'barn' else 8,
                                   y=12 if kind == 'barn' else 6,
-                                  **({'farm_index': 1} if kind == 'acre' else {}))
-                if kind == 'acre':
+                                  **({'farm_index': 1} if kind == 'acre' else
+                                     {'orchard_index': 2} if kind == 'orchard_tree' else {}))
+                if kind in ('acre', 'orchard_tree'):
                     self.assertNotIn('construction', site)
                 else:
                     self.assertEqual(site['construction'], {'progress': 0, 'total': BUILD_SECONDS})

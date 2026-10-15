@@ -126,6 +126,10 @@ class AllWorkplaceStorage(unittest.TestCase):
         if kind == 'woodcutter':
             town['map_resources'].append({'kind': 'tree', 'x': 3, 'y': 1})
             worker['construction_position'] = {'x': 3, 'y': 0}
+        elif kind == 'orchard':
+            town['buildings'].append({'kind': 'orchard_tree', 'x': 3, 'y': 1, 'orchard_index': 2,
+                                      'tree': {'stage': 'ripe', 'elapsed': 0, 'fruit': 8}})
+            worker['construction_position'] = {'x': 3, 'y': 0}
         elif kind == 'fishing_hut':
             town['map_resources'].append({'kind': 'water', 'x': 3, 'y': 1})
         elif kind in ('farm', 'acre'):
@@ -162,9 +166,9 @@ class AllWorkplaceStorage(unittest.TestCase):
                 world, town, building, worker = self.workplace(kind, output, limit / 2)
                 for storage in town['buildings'][:2]:
                     self.assertEqual(economy.local_room(storage, output), 0)
-                for _ in range(economy.production_seconds(building) // 3):
+                for _ in range(3 if kind == 'orchard' else economy.production_seconds(building) // 3):
                     server.tick(world)
-                if kind in ('farm', 'acre', 'barn'):
+                if kind in ('farm', 'acre', 'barn', 'orchard'):
                     # A nearby farm can receive the harvest in the same tick.
                     self.assertGreater(town['produced'].get(output, 0), 0)
                     self.assertAlmostEqual(town['produced'][output], logistics.production_stock(building, output)
@@ -193,9 +197,9 @@ class AllWorkplaceStorage(unittest.TestCase):
                 self.assertLessEqual(logistics.buffered(building), economy.storage_size(building))
                 economy.withdraw(town, output, limit / 2, source=building)
                 economy.add_stock(town, output, -limit / 2)
-                for _ in range(economy.production_seconds(building) // 3):
+                for _ in range(3 if kind == 'orchard' else economy.production_seconds(building) // 3):
                     server.tick(world)
-                if kind in ('farm', 'acre', 'barn'):
+                if kind in ('farm', 'acre', 'barn', 'orchard'):
                     self.assertGreater(town['produced'].get(output, 0), 0)
                     self.assertAlmostEqual(town['produced'][output], logistics.production_stock(building, output)
                                            + building.get('pending_output', {}).get(output, 0) - limit / 2)
