@@ -113,7 +113,7 @@ const run=new Function('document','window','localStorage','setTimeout','clearTim
   assert.strictEqual(new Set(boatLooks).size,3,'Full-size boat tiers look different');
   draw();
   assert(draw.piers.length===2&&draw.piers.every(pier=>pier.length>1),'Unstaffed boat huts keep their visible docks');
-  assert(docked.every(b=>{const [px,py]=point(b.x,b.y);return hitTargets.some(hit=>hit.type==='building'&&hit.index===b.objectIndex&&hit.townId==='own'&&hit.left<=px&&hit.right>=px&&hit.top<=py+tileH/2&&hit.bottom>=py+tileH/2);}), 'Clicking a visible boat opens its own hut');
+  assert(docked.every(b=>{const [px,py]=point(b.x,b.y);return hitTargets.some(hit=>hit.type==='boat'&&hit.index===b.objectIndex&&hit.townId==='own'&&hit.left<=px&&hit.right>=px&&hit.top<=py+tileH/2&&hit.bottom>=py+tileH/2);}), 'Visible boats have a separate boat selection target linked to their own hut');
   town.buildings[0].construction={progress:0,total:30,upgrade:{profession_upgrades:['boat','improved_boat']}};
   assert.strictEqual(fishingBoatSprites([['own',town]],town.map_resources)[0].level,1,'Owned boat stays visible at its current tier during upgrades');
   assert.strictEqual(fishingBoatSprites([['own',{...town,buildings:[{kind:'fishing_hut',x:4,y:5}]}]],town.map_resources).length,0,'Unpurchased huts have no boat');

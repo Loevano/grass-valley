@@ -315,8 +315,9 @@ the Python host, refresh both browsers, and create a new world to use the shared
   then 50% fish per catch. Exploration upgrades add 25% then 50% sailing speed
   and fish per catch while afloat. Each upgrade requires the previous tier.
   Each fishing hut buys and owns its own boat. The initial purchase applies
-  immediately and shows a full-size boat on nearby water; click it to manage its
-  hut. Assigned fishers prefer deeper connected water within the hut's reach,
+  immediately and shows a full-size boat on nearby water; click it to see cargo
+  and buy boat upgrades. The hut offers only the initial boat purchase. Assigned
+  fishers prefer deeper connected water within the hut's reach,
   share one voyage and carry 5, 10, or 20 fish across the three boat tiers. They
   fish offshore until the boat is full or the spot runs out, then return to unload
   at the dock while staying aboard. Cargo is shared by all crew and survives saving.
@@ -352,7 +353,10 @@ the Python host, refresh both browsers, and create a new world to use the shared
   **Destroy** is its only action.
 - Click a building, moving villager, or resource to open its information panel.
   Click the town hall for milestone progress and its upgrade. Close panels with
-  Escape. On small screens, panels appear as a bottom drawer.
+  Escape. Building panels show status and a progress bar first, followed by any
+  problem explanation, storage, worker assignments, and upgrades. Production,
+  crop, and trade controls sit with worker assignments. Barn panels keep their
+  animal-first layout. On small screens, panels appear as a bottom drawer.
 - Every finished building except the town hall and acres has an **Add settler** control,
   an assigned roster, and removal controls. Woodcutters, fishing huts, and storehouses
   start with 1 space, cottages with 2. Acres have no independent worker assignments

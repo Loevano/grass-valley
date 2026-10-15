@@ -97,6 +97,12 @@ Catch progression, storage scaling, and smokehouse staffing remain planned.
 
 ### Simple production upgrades
 
+Building panels now lead with status and host-reported progress, then explain
+blocked work before storage, worker assignments, and upgrades. Production and
+trade controls sit with worker assignments. Barn panels retain their animal-first
+layout. Fishing huts sell the initial boat; clicking a boat opens its own cargo
+and upgrade panel. Fishing balance and storage work below remain planned.
+
 The upgrade panel now uses compact rows with a short benefit, cost and work time,
 and an Upgrade action. Completed upgrades show a status without a disabled button;
 the purchase popup retains full benefits and requirements. The compact rows retain
