@@ -1425,8 +1425,11 @@ function renderTownTrades(town,target){
 function marketSaleGoods(catalog){
   return catalog.sellable_goods || [...new Set(['hides','leather','iron_ore','iron','saddles','steel','trade_crates','fish','trout','salmon','sturgeon','planks','wool','flour','smoked_fish','smoked_trout','smoked_salmon','smoked_sturgeon','tools','herbs','fruit','milk','eggs','meat','bread','prepared_meat',...Object.values(catalog.profession_recipes || {}).flat().map(recipe=>recipe.output)])];
 }
+function manualMarketSaleGoods(catalog){
+  return catalog.manual_sellable_goods || marketSaleGoods(catalog);
+}
 function renderQuickMarketSale(town,target){
-  const keys=marketSaleGoods(world.progression),quantities=[1,5,10,50,100,200];
+  const keys=manualMarketSaleGoods(world.progression),quantities=[1,5,10,50,100,200];
   const signature=JSON.stringify([world.world_id,identity?.town_id,keys]);
   if(renderQuickMarketSale.signature!==signature){
     const worldId=world.world_id,townId=identity?.town_id;
@@ -1452,7 +1455,7 @@ function renderQuickMarketSale(town,target){
       const key=selectedResource(),quantity=Number(amount.value),available=key?amountOf(currentTown,key):0;
       const price=key?(world.progression.fish?.[key]?.coins ?? world.progression.sale_prices?.[key] ?? (key==='tools'?3:1)):0;
       const total=quantity*price;
-      stock.textContent=key?`${Math.floor(available)} available`:'Choose a resource to sell.';
+      stock.textContent=key?`${Math.floor(available)} available${available<quantity?` · Need ${quantity} to sell this amount.`:''}`:resource.value.trim()?'This resource cannot be sold. Choose a resource from the list.':'Choose a resource to sell.';
       sell.textContent=key?`Sell ${quantity} · ${total} coin${total===1?'':'s'}`:'Sell';
       sell.disabled=viewed!==townId||identity?.town_id!==townId||world.world_id!==worldId||!key||!quantities.includes(quantity)||available<quantity;
     };
@@ -1739,7 +1742,7 @@ function renderProfession(town,item,index,target,upgrades,details,boats,unlocked
   }
   if(item.kind==='market'&&owner){
     const heading=document.createElement('h3');heading.textContent='Sell goods';target.append(heading);
-    for(const [title,members] of resourceCategories(marketSaleGoods(catalog))){
+    for(const [title,members] of resourceCategories(manualMarketSaleGoods(catalog))){
       const group=resourceGroup(title);target.append(group);
       for(const key of members){
         const price=catalog.fish?.[key]?.coins ?? catalog.sale_prices?.[key] ?? ({trout:2,salmon:3,sturgeon:5}[key] || (key==='tools'?3:1));

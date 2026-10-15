@@ -18,7 +18,7 @@ class MarketSales(unittest.TestCase):
         self.town['food'] = amount * economy.EDIBLE.get(resource, 0)
 
     def test_quick_sale_quantities_withdraw_goods_and_award_full_value(self):
-        for resource in ('planks', 'smoked_sturgeon'):
+        for resource in ('planks', 'smoked_sturgeon', 'wheat'):
             for amount in (1, 5, 10, 50, 100, 200):
                 with self.subTest(resource=resource, amount=amount):
                     self.setUp()
@@ -30,6 +30,17 @@ class MarketSales(unittest.TestCase):
                     self.assertEqual(self.town['coins'], coins + amount * economy.sale_price(resource))
                     self.assertEqual(self.town['market_sales'], amount)
                     self.assertEqual(self.town['food'], (250 - amount) * economy.EDIBLE.get(resource, 0))
+
+    def test_wheat_is_offered_for_one_time_sales_only(self):
+        catalog = economy.public_catalog()
+        self.assertIn('wheat', catalog['manual_sellable_goods'])
+        self.assertNotIn('wheat', catalog['sellable_goods'])
+
+    def test_one_time_wheat_sale_does_not_configure_automatic_sales(self):
+        self.stock('wheat', 250)
+        rules = copy.deepcopy(self.town.get('rules', {}))
+        server.command(self.town, {'action': 'sell_goods', 'resource': 'wheat', 'amount': 200})
+        self.assertEqual(self.town.get('rules', {}), rules)
 
     def test_invalid_sales_preserve_stock_coins_and_sale_progress(self):
         self.stock('planks', 199)

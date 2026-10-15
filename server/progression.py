@@ -250,6 +250,7 @@ SELLABLE_GOODS = tuple(dict.fromkeys((*LATE_GOODS, *FISH, 'planks', 'wool', 'flo
                                     *SMOKED_FISH, 'tools', 'herbs', 'fruit', 'milk',
                                     'eggs', 'meat', 'bread', 'prepared_meat',
                                     *(r['output'] for recipes in PROFESSION_RECIPES.values() for r in recipes))))
+MANUAL_SELLABLE_GOODS = (*SELLABLE_GOODS, 'wheat')
 TRADABLE_GOODS = tuple(dict.fromkeys(('coins', 'wood', 'planks', 'wool', 'flour', 'tools',
                                      'wheat', 'fodder', 'manure', 'herbs', *EDIBLE,
                                      *CRAFTED_GOODS, *LATE_GOODS)))
@@ -964,6 +965,7 @@ def public_catalog():
             'job_requirements': JOB_REQUIREMENTS, 'talent_roots': TALENT_ROOTS,
             'profession_recipes': PROFESSION_RECIPES, 'storage_keys': STORAGE_KEYS,
             'production_seconds': PRODUCTION_SECONDS, 'sale_prices': SALE_PRICES, 'sellable_goods': SELLABLE_GOODS,
+            'manual_sellable_goods': MANUAL_SELLABLE_GOODS,
             'boats': PLAYER_BOATS, 'fish': FISH, 'smoked_fish': SMOKED_FISH,
             'upgrades': PROFESSION_UPGRADES, 'recipes': RECIPES, 'edible': EDIBLE,
             'storage_goods': STORAGE_GOODS, 'fixed_storage': FIXED_STORAGE,
