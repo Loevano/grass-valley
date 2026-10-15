@@ -4014,11 +4014,44 @@ function drawBarnPath(b,size=120){
     if(i<points.length-1)polygon([ground(end.x-r,end.y-r),ground(end.x+r,end.y-r),ground(end.x+r,end.y+r),ground(end.x-r,end.y+r)],'#b1a078');
   }
 }
+function barnGatePassage(person,pen){
+  if(!person)return false;
+  const {a,nx,ny,tx,ty}=pen;
+  const normal=p=>(p.x-a.x)*nx+(p.y-a.y)*ny,tangent=p=>(p.x-a.x)*tx+(p.y-a.y)*ty;
+  const across=normal(person),along=tangent(person);
+  if(Math.abs(across)>=1.7||along<=-.6||along>=2.6)return false;
+  // Never close on somebody already occupying the doorway.
+  if(Math.abs(across)<.25&&along>.18&&along<1.82)return true;
+  const state=person.state || {};
+  if(state.playbackQueue?.length&&!state.path?.length)return false;
+  let route=state.path || [];
+  if(state.playbackQueue?.length)route=state.playbackQueue.flatMap(chunk=>chunk.samples.slice(chunk.index+1));
+  else if(state.segments?.length)route=state.segments.map(segment=>segment.target);
+  else if(state.waypoints?.length)route=state.waypoints;
+  let position=person,travelled=0;
+  for(const waypoint of route){
+    let next=Array.isArray(waypoint)?{x:waypoint[0],y:waypoint[1]}:waypoint;
+    let distance=Math.hypot(next.x-position.x,next.y-position.y);
+    if(distance<1e-9)continue;
+    // Founders publish short input steps; use their current approach direction.
+    if(person.kind==='player'&&route.length===1){
+      next={x:position.x+(next.x-position.x)*2.4/distance,y:position.y+(next.y-position.y)*2.4/distance};distance=2.4;
+    }
+    const before=normal(position),after=normal(next),delta=after-before;
+    if(Math.abs(delta)>1e-9){
+      const fraction=-before/delta,crossing=tangent(position)+(tangent(next)-tangent(position))*fraction;
+      if(fraction>=0&&fraction<=1&&travelled+distance*fraction<=2.4&&crossing>.18&&crossing<1.82)return true;
+    }
+    travelled+=distance;if(travelled>2.4)break;
+    position=next;
+  }
+  return false;
+}
 function barnFenceSprites(buildings,landscape={},people=[],seconds=0){
   const sprites=[],size=landscape.map_size || 120,previous=barnFenceSprites.states || new Map(),states=new Map();
   for(const barn of buildings){
     if(!barnActive(barn))continue;
-    const pen=barnPen(barn,size),{a,end,tx,ty,nx,ny}=pen;
+    const pen=barnPen(barn,size),{a,end,tx,ty}=pen;
     for(const [x,y,endX,endY] of pen.segments){
       const length=Math.max(Math.abs(endX-x),Math.abs(endY-y));
       for(let step=0;step<length-1e-6;step++){
@@ -4027,8 +4060,7 @@ function barnFenceSprites(buildings,landscape={},people=[],seconds=0){
         sprites.push({kind:'barn_fence',x:(start.x+finish.x)/2,y:(start.y+finish.y)/2,start,end:finish});
       }
     }
-    const nearby=people.some(p=>p&&Math.abs((p.x-a.x)*nx+(p.y-a.y)*ny)<1.7
-      &&(p.x-a.x)*tx+(p.y-a.y)*ty>-.6&&(p.x-a.x)*tx+(p.y-a.y)*ty<2.6);
+    const nearby=people.some(person=>barnGatePassage(person,pen));
     const key=`${world.world_id}/${barn.townId || viewed}/${barn.x},${barn.y}/${pen.orientation}`;
     const old=previous.get(key),hold=nearby ? .5 : Math.max(0,(old?.hold || 0)-seconds),target=Number(nearby||hold>0);
     const opening=old?Math.max(0,Math.min(1,old.opening+Math.sign(target-old.opening)*seconds*4)):target;
