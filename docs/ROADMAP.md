@@ -65,6 +65,8 @@ Producers fetch only required inputs; storehouse haulers collect finished output
 Full workplace output storage pauses production until hauling or consumption frees room.
 Advanced bakery recipes now require 5/10/15/20 baking practice for rolls, herb
 bread, fruit pies, and cakes; basic bread remains available to beginners.
+Ingredient affordability now uses the delivery checks' rounding tolerance, so
+fractional fuel cannot strand a ready batch. Spending leaves no negative stock.
 Meals cost 1.5 food/minute per working resident and 0.6 per idle resident.
 The compact host test sustains 200 working residents with one top-tier mill,
 one bread bakery, 12 farms, 24 acres, and four haulers; fuel is supplied.

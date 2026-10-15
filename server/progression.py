@@ -416,7 +416,9 @@ def production_room(town, key):
 
 
 def afford(town, costs):
-    return all(quantity(town, k) >= v for k, v in costs.items())
+    # Match delivery checks: fractional production can leave a tiny roundoff
+    # shortfall that must not stall a batch with effectively enough supplies.
+    return all(quantity(town, k) + 1e-9 >= v for k, v in costs.items())
 
 
 def spend(town, costs):
@@ -428,9 +430,9 @@ def spend(town, costs):
         withdraw(town, key, amount)
         record_activity(town, key, amount, 'out')
         if key in {'wood', 'food', 'coins'}:
-            town[key] -= amount
+            town[key] = max(0, town[key] - amount)
         else:
-            town.setdefault('goods', {})[key] = quantity(town, key) - amount
+            town.setdefault('goods', {})[key] = max(0, quantity(town, key) - amount)
             town['food'] = max(0, town['food'] - amount * EDIBLE.get(key, 0))
 
 
