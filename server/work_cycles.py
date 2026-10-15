@@ -570,11 +570,31 @@ def _advance(town, landscape, villager, building, source, index, seconds, stop_a
             path = travel(state, work_spot or source, not work_spot)
             if barn_keeper and any(building.get('animals', {}).values()):
                 # Alternate short feeding rounds with unloading beside the barn.
-                spots = [(2, 0), (0, 2), (-2, 0), (0, -2)]
+                # Reserve destinations, rather than repeating the same four
+                # routes for keepers whose roster indices happen to match.
+                claimed = set()
+                for worker in town['villagers']:
+                    if (worker is villager or worker['job'] != 'husbandry'
+                            or worker.get('construction_target') or worker.get('logistics_trip')):
+                        continue
+                    animation = worker.get('work_animation', {})
+                    if animation.get('task', [])[:4] != spec[:4]:
+                        continue
+                    if animation.get('phase') in ('walking', 'working'):
+                        destination = animation['path'][-1] if animation['path'] else animation
+                    elif animation.get('route_pending') and animation.get('resume_phase') == 'walking':
+                        destination = animation.get('route_target', animation)
+                    else:
+                        continue
+                    claimed.add((destination['x'], destination['y']))
+                spots = [(2, 0), (0, 2), (-2, 0), (0, -2),
+                         (2, 2), (-2, 2), (-2, -2), (2, -2)]
                 cursor = state.get('barn_round', index)
                 for step in range(len(spots)):
                     dx, dy = spots[(cursor + step) % len(spots)]
                     target = {'x': building['x'] + dx, 'y': building['y'] + dy}
+                    if (target['x'], target['y']) in claimed:
+                        continue
                     round_path = travel(state, target, False)
                     if routes.is_waiting(villager):
                         path = None

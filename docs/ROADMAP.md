@@ -277,6 +277,8 @@ are collected in [Pathing decisions](PATHING.md).
   keep other buildings out of the pen; selection and build tools show its range.
   Barn workers now follow host-confirmed feeding rounds through the pen, returning
   beside the barn to unload; their routes and round progress persist in saves.
+  Keepers reserve separate tending destinations so their rounds do not move
+  in lockstep, including at the barn's full worker capacity.
   Assigned keepers tend and train on their rounds; growth and output advance once
   per barn on an independent clock, sped up by keeper count.
 - Reedhaven's expanded marsh quarters have 56 buildings, 32 residents, custom

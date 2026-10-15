@@ -62,6 +62,45 @@ class BarnWorkers(unittest.TestCase):
         work_cycles.advance(saved_town, saved_town, saved_worker, saved_barn, saved_barn, 0, .1)
         self.assertEqual(saved_worker['work_animation'], self.worker['work_animation'])
 
+    def test_keepers_with_matching_roster_offsets_choose_distinct_rounds(self):
+        # Unrelated villagers can put keepers four slots apart in the roster.
+        self.town['villagers'] = [{'job': 'idle'} for _ in range(21)]
+        keepers = [0, 4, 8, 12, 16, 20]
+        for index in keepers:
+            self.town['villagers'][index] = copy.deepcopy(self.worker)
+        stock = copy.deepcopy(self.barn)
+        walking = {index: [] for index in keepers}
+        deliveries = {index: 0 for index in keepers}
+        saved_town = None
+        for tick in range(600):
+            for index in keepers:
+                worker = self.town['villagers'][index]
+                deliveries[index] += work_cycles.advance(
+                    self.town, self.town, worker, self.barn, self.barn, index, .1)
+                if saved_town is not None:
+                    saved_barn = saved_town['buildings'][1]
+                    work_cycles.advance(saved_town, saved_town, saved_town['villagers'][index],
+                                        saved_barn, saved_barn, index, .1)
+            if tick == 300:
+                saved_town = json.loads(json.dumps(self.town))
+            destinations = []
+            for index in keepers:
+                state = self.town['villagers'][index]['work_animation']
+                if 'barn_round' not in state:
+                    continue
+                if state['phase'] in ('walking', 'working'):
+                    target = state['path'][-1] if state['path'] else state
+                    destinations.append((target['x'], target['y']))
+                if state['phase'] == 'walking':
+                    walking[index].append((state['x'], state['y']))
+            self.assertEqual(len(destinations), len(set(destinations)),
+                             'Active keepers must not share a tending destination')
+        self.assertTrue(all(count > 2 for count in deliveries.values()))
+        for index in keepers[1:]:
+            self.assertNotEqual(walking[keepers[0]], walking[index])
+        self.assertEqual(self.barn, stock)
+        self.assertEqual(saved_town, self.town, 'Reloading must preserve separate keeper rounds')
+
     def test_isolated_keeper_stays_on_the_only_open_tile(self):
         self.worker['logistics_position'] = {'x': 11, 'y': 12}
         self.town['map_resources'] = [{'kind': 'rock', 'x': x, 'y': y}
