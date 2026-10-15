@@ -50,6 +50,18 @@ The existing world API still refreshes host state and interface data, including
 collision indexes used by founder movement. A lightweight overview request/change
 mechanism remains future work; this feature does not reduce snapshot traffic.
 
+## Village building artwork
+
+First prototypes for the woodcutter, woodworking workshop, farm, and town hall are
+available in the [village building concept sheet](village-building-concepts.svg)
+([PNG preview](village-building-concepts.png)). The town hall includes its five
+existing visual stages. The [house upgrade sheet](house-upgrade-concepts.svg)
+([PNG preview](house-upgrade-concepts.png)) shows all four structural house levels
+and the separate timber-framing upgrade. These studies follow the approved
+production building palette and isometric style, retaining current footprints.
+Design review and implementation remain; preserve construction states, structural
+and capacity markers, equipment upgrades, worker access, and animation alignment.
+
 ## Production line balancing
 
 **Status:** wood and grain chains and species-preserving smoking implemented.
