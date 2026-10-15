@@ -11,6 +11,7 @@ headings, and formatting examples based on [Pathing decisions](PATHING.md).
 | --- | --- | --- |
 | Backend | Understand request flow, calculation ownership, and animation response priorities separately from smooth playback. | [Backend](BACKEND.md) |
 | Pathing | Keep movement, destination selection, routing, caching, and scheduling decisions together, with planned work distinguished from current behavior. | [Pathing decisions](PATHING.md) |
+| Rust migration | Replace the host in bounded stages, with copyable prompts, behavior checks, save compatibility, and optional later client work. | [Rust migration plan](RUST_MIGRATION.md) |
 | Balancing | Set satisfying progression times, production ratios, and rewards for manual work. | [Balancing](BALANCING.md) |
 | Game design | Make town building and exploration fun, with connected stories, rewarding items, and cosmetics. | [Game design](GAME_DESIGN.md) |
 | Artwork | Give the game a cohesive, attractive appearance with readable characters, buildings, and landscapes. | [Artwork](ARTWORK.md) |
