@@ -20,9 +20,9 @@ const run=new Function('document','window','localStorage','setTimeout','clearTim
     const overlaps=hitTargets.filter(h=>px>=h.left&&px<=h.right&&py>=h.top&&py<=h.bottom);
     check(overlaps[overlaps.length-1].type==='resource'&&overlaps.some(h=>h.type==='building'),'Foreground trees overlap the woodcutter');
     canvas.onmousemove(pointer);
-    check(buildingHover?.index===1,'Hover highlights the woodcutter through overlapping trees');
+    check(buildingHover===null,'A foreground tree does not highlight the building behind it');
     await canvas.onclick(pointer);
-    check(selection?.type==='building'&&selection.index===1,'Click selects the woodcutter through overlapping trees');
+    check(selection?.type==='resource','Click follows the foreground tree instead of the building behind it');
     const tree=hitTargets.find(h=>h.type==='resource'&&h.index===0);
     await canvas.onclick({clientX:(tree.left+tree.right)/2,clientY:tree.top+2});
     check(selection?.type==='resource'&&selection.index===0,'Tree canopy outside buildings remains selectable');
@@ -31,11 +31,11 @@ const run=new Function('document','window','localStorage','setTimeout','clearTim
     tool='home';canvas.onmousemove({clientX:buildingX,clientY:py+tileH/2});
     check(buildingHover===null&&buildTile===null,'Construction mode still rejects occupied tiles');
     tool=null;
-    world={world_id:'shared',shared_map:{map_resources:town.map_resources},towns:{own:{...town,buildings:[town.buildings[0]]},friend:{...town,buildings:[town.buildings[1]]}}};
+    world={world_id:'shared',shared_map:{map_resources:[]},towns:{own:{...town,buildings:[town.buildings[0]]},friend:{...town,buildings:[town.buildings[1]]}}};
     viewed='own';render();
     const [sharedX,sharedY]=point(5,5);
     await canvas.onclick({clientX:sharedX+tileW*.15,clientY:sharedY});
-    check(viewed==='friend'&&selection?.type==='building'&&selection.index===0,'Overlapping shared-map buildings select the correct owner and index');
+    check(viewed==='friend'&&selection?.type==='building'&&selection.index===0,'Shared-map buildings retain their correct owner and index');
   })();`);
 run(documentMock,{devicePixelRatio:1,addEventListener(){}},{getItem:()=>null},()=>0,()=>{})
   .then(()=>{if(typeof print==='function')print('Overlapping selection checks passed');else console.log('Overlapping selection checks passed');})

@@ -6,7 +6,7 @@ module.exports=function client(options={}){
   function element(){return {open:false,children:[],style:{setProperty(){}},classList:{toggle(){},add(){},remove(){}},
     append(...children){this.children.push(...children);},replaceChildren(...children){this.children=children;},
     setAttribute(){},addEventListener(){},focus(){},showModal(){this.open=true;},close(){this.open=false;},
-    getContext(){return new Proxy({}, {get:()=>()=>{}});},getBoundingClientRect(){return {left:0,top:0,width:960,height:660};}};}
+    getContext(){return new Proxy({getImageData:()=>({data:[0,0,0,255]})}, {get:(target,key)=>key in target?target[key]:()=>{}});},getBoundingClientRect(){return {left:0,top:0,width:960,height:660};}};}
   const document={getElementById(id){if(!elements.has(id))elements.set(id,element());return elements.get(id);},
     createElement:element,querySelectorAll:()=>[],addEventListener(name,callback){listeners.set(name,callback);}};
   document.getElementById('world').getContext=()=>context2d;

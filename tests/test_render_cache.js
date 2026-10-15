@@ -27,12 +27,13 @@ const run=new Function('document','window','localStorage','setTimeout','clearTim
   world={world_id:'cache-test',towns:{own:town}};viewed='own';cameraTown='cache-test/own';camera={x:30,y:30,zoom:1};
   const groundSurfaces=()=>surfaces.filter(surface=>![...resourceSprites.values(),...buildingSprites.values()].includes(surface));
   draw();
-  const highHits=hitTargets.map(hit=>({...hit})),highSurface=groundCache.surface;
+  const hitAreas=()=>hitTargets.map(({paint,...area})=>area);
+  const highHits=hitAreas(),highSurface=groundCache.surface;
   const changeQuality=quality=>{$('graphics-quality').value=quality;$('graphics-quality').onchange();};
   changeQuality('low');
   assert.equal(canvas.width,720,'Low reduces the canvas resolution on Retina displays');
   assert.equal(groundCache.dpr,.75,'Low reduces cached ground resolution');
-  assert.deepStrictEqual(hitTargets,highHits,'Quality preserves selection areas in CSS pixels');
+  assert.deepStrictEqual(hitAreas(),highHits,'Quality preserves selection areas in CSS pixels');
   changeQuality('medium');
   assert.equal(canvas.width,960,'Medium caps the canvas at standard resolution');
   assert.equal(groundCache.dpr,1,'Medium uses standard ground resolution');

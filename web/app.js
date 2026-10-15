@@ -4073,18 +4073,19 @@ function fishingBoatSprites(entries,resources,villagers=[]){
     return {...boat,passenger,crew,x:passenger?passenger.x:berth.x,y:passenger?passenger.y:berth.y};
   });
 }
-function drawFishingBoat(boat){
+function drawFishingBoat(boat,target=ctx){
+  const ctx=target,paintPolygon=(points,fill,stroke)=>polygon(points,fill,stroke,target);
   const [x,top]=point(boat.x,boat.y),y=top+tileH/2,s=tileW/46;
   ctx.save();ctx.lineWidth=1.5*s;
   ctx.strokeStyle='#b8dcda';ctx.beginPath();ctx.ellipse(x,y+6*s,23*s,8*s,0,0,Math.PI*2);ctx.stroke();
-  polygon([[x-23*s,y-3*s],[x-13*s,y+12*s],[x+12*s,y+12*s],[x+25*s,y-4*s]],boat.level===3?'#a27640':'#805738','#493627');
-  polygon([[x-23*s,y-3*s],[x-9*s,y-9*s],[x+25*s,y-4*s],[x+10*s,y+5*s],[x-12*s,y+5*s]],'#c29a63','#efcb8c');
-  polygon([[x-16*s,y-2*s],[x-8*s,y-5*s],[x+17*s,y-2*s],[x+8*s,y+2*s],[x-9*s,y+2*s]],'#574637');
+  paintPolygon([[x-23*s,y-3*s],[x-13*s,y+12*s],[x+12*s,y+12*s],[x+25*s,y-4*s]],boat.level===3?'#a27640':'#805738','#493627');
+  paintPolygon([[x-23*s,y-3*s],[x-9*s,y-9*s],[x+25*s,y-4*s],[x+10*s,y+5*s],[x-12*s,y+5*s]],'#c29a63','#efcb8c');
+  paintPolygon([[x-16*s,y-2*s],[x-8*s,y-5*s],[x+17*s,y-2*s],[x+8*s,y+2*s],[x-9*s,y+2*s]],'#574637');
   ctx.fillStyle='#e0bb80';ctx.fillRect(x-8*s,y-4*s,3*s,8*s);ctx.fillRect(x+6*s,y-3*s,3*s,7*s);
   ctx.strokeStyle='#efd49f';ctx.lineWidth=2*s;ctx.beginPath();ctx.moveTo(x-15*s,y+12*s);ctx.lineTo(x+14*s,y-10*s);ctx.stroke();
   if(boat.level>=2){
     ctx.fillStyle='#dfd6ac';ctx.fillRect(x,y-31*s,2*s,32*s);
-    polygon([[x+2*s,y-31*s],[x+2*s,y-7*s],[x+20*s,y-7*s]],boat.level===3?'#d4af6b':'#ece3c5','#805738');
+    paintPolygon([[x+2*s,y-31*s],[x+2*s,y-7*s],[x+20*s,y-7*s]],boat.level===3?'#d4af6b':'#ece3c5','#805738');
   }
   ctx.restore();
 }
@@ -4499,7 +4500,7 @@ function draw(seconds=0){
       const boatY=py+tileH/2;
       polygon([[px-23*scale,boatY-3*scale],[px-12*scale,boatY+5*scale],[px+10*scale,boatY+5*scale],
         [px+25*scale,boatY-4*scale],[px+12*scale,boatY+12*scale],[px-13*scale,boatY+12*scale]],b.level===3?'#a27640':'#805738','#493627');
-      hitTargets.push({type:'boat',index:b.objectIndex,townId:b.townId,left:px-25*scale,right:px+25*scale,top:py+(tileH/2)-(b.level>=2?32:10)*scale,bottom:py+tileH/2+13*scale});
+      hitTargets.push({type:'boat',index:b.objectIndex,townId:b.townId,left:px-25*scale,right:px+25*scale,top:py+(tileH/2)-(b.level>=2?32:10)*scale,bottom:py+tileH/2+13*scale,paint:target=>drawFishingBoat(b,target)});
       continue;
     }
     if(b.kind==='player'){
@@ -4514,7 +4515,10 @@ function draw(seconds=0){
         ctx.fillStyle='#fff0b1';ctx.font=`bold ${12*scale}px sans-serif`;ctx.textAlign='center';
         ctx.fillText(b.townId===identity?.town_id?'You':world.towns[b.townId]?.name || 'Founder',px,baseY-(b.mounted&&!sailing?43:31)*scale);
       }
-      hitTargets.push({type:'player',index:0,townId:b.townId,left:px-(b.mounted?20:10)*scale,right:px+(b.mounted?24:10)*scale,top:baseY-(b.mounted?39:27)*scale,bottom:baseY+5*scale});
+      hitTargets.push({type:'player',index:0,townId:b.townId,left:px-(b.mounted?20:10)*scale,right:px+(b.mounted?24:10)*scale,top:baseY-(b.mounted?39:27)*scale,bottom:baseY+5*scale,paint:target=>{
+        if(sailing)polygon([[px-20*scale,baseY],[px-10*scale,baseY+10*scale],[px+12*scale,baseY+10*scale],[px+21*scale,baseY-2*scale]],'#805838','#d4af6b',target);
+        drawVillager({...b,mounted:b.mounted&&!sailing,leadingHorse:b.leadingHorse&&!sailing},false,target);
+      }});
       continue;
     }
     const character=b.kind==='villager'||b.kind==='npc';
@@ -4525,11 +4529,26 @@ function draw(seconds=0){
     const owner=world.towns[b.townId] || town;
     const simplifiedResource=tileW<32&&(b.kind==='tree'||b.kind==='rock');
     const height=simplifiedResource?tileH/(2*scale):b.kind==='tree'?(b.species==='ancient'?94:70):character?26:b.kind==='acre'?0:b.kind==='rock'?80:type==='building'?buildingHeight(b,owner)+(b.kind==='hall'?(owner?.level>=4?35:33):18):45;
-    const halfWidth=simplifiedResource?tileW*.45:character?9*scale:b.kind==='rock'?28*scale:b.kind==='sawpit'&&footprintTiles(b).length===1?tileW*.65:tileW*.45;
+    const halfWidth=simplifiedResource?tileW*.45:character?9*scale:type==='resource'?30*scale:b.kind==='sawpit'&&footprintTiles(b).length===1?tileW*.65:tileW*.45;
     const groundPoints=type==='building'&&footprintTiles(b).length>1?footprintTiles(b).map(p=>point(p.x,p.y)):[];
     hitTargets.push({type,index,townId:b.townId || viewed,
       left:Math.min(centerX-halfWidth,...groundPoints.map(p=>p[0]-tileW/2)),right:Math.max(centerX+halfWidth,...groundPoints.map(p=>p[0]+tileW/2)),
-      top:baseY-height*scale,bottom:Math.max(baseY+(character?5*scale:b.kind==='sawpit'?22*scale:tileH/2),...groundPoints.map(p=>p[1]+tileH))});
+      top:type==='resource'&&!simplifiedResource?py-80*scale:baseY-height*scale,bottom:Math.max(baseY+(character?5*scale:b.kind==='sawpit'?22*scale:tileH/2),...groundPoints.map(p=>p[1]+tileH)),
+      paint:target=>{
+        if(character){drawVillager(b,false,target);return;}
+        if(type==='building'){
+          if(b.kind==='acre'&&!b.construction){
+            polygon([[px,py+tileH*.1],[px+tileW*.4,py+tileH*.5],[px,py+tileH*.9],[px-tileW*.4,py+tileH*.5]],'#80764a','#ab9561',target);
+          }else paintBuilding(b,owner,null,target);
+          return;
+        }
+        if(simplifiedResource){
+          polygon([[px,py+tileH*.25],[px+tileW*.45,py+tileH*.5],[px,py+tileH*.75],[px-tileW*.45,py+tileH*.5]],'#fff',null,target);return;
+        }
+        target.translate(px,py);target.scale(scale,scale);
+        const willow=b.kind==='tree'&&(world.shared_map || town)?.terrain?.[b.y]?.[b.x]==='b';
+        paintResource(target,b,willow,tileW>=32,resourceData.rockJoins.get(b));
+      }});
     if(character&&selection?.type===type&&selection.index===b.index&&(!world.shared_map||b.townId===viewed||type==='npc')){
       ctx.fillStyle='#fff0b144';ctx.strokeStyle='#fff0b1';ctx.lineWidth=2;ctx.beginPath();ctx.ellipse(centerX,baseY,12*scale,6*scale,0,0,Math.PI*2);ctx.fill();ctx.stroke();
     }
@@ -5515,11 +5534,23 @@ function tileAt(event){
   const rect=canvas.getBoundingClientRect(),dx=event.clientX-rect.left-originX,dy=event.clientY-rect.top-originY;
   return {x:Math.floor(dx/tileW+dy/tileH),y:Math.floor(dy/tileH-dx/tileW)};
 }
+let pointerHitCanvas=null;
+function hitTargetContains(hit,px,py){
+  if(px<hit.left||px>hit.right||py<hit.top||py>hit.bottom)return false;
+  if(!hit.paint)return true; // Overview glyphs and labels use their screen bounds.
+  const surface=pointerHitCanvas ||= document.createElement('canvas');
+  const target=surface.getContext?.('2d',{willReadFrequently:true});
+  if(!target)return true;
+  // Sample only the pointer pixel using the same artwork and pose as the scene.
+  // Resetting the tiny canvas also resets transforms, styles and clipping.
+  surface.width=1;surface.height=1;
+  target.translate(.5-px,.5-py);
+  hit.paint(target);
+  return target.getImageData(0,0,1,1).data[3]>=128;
+}
 function hitTargetAt(px,py){
-  const hits=hitTargets.filter(h=>px>=h.left&&px<=h.right&&py>=h.top&&py<=h.bottom).reverse();
-  const front=hits[0];
-  // Nearby tree canopies must not block a building's clickable area.
-  return front?.type==='resource'?(hits.find(h=>h.type==='building') || front):front;
+  for(let i=hitTargets.length-1;i>=0;i--)if(hitTargetContains(hitTargets[i],px,py))return hitTargets[i];
+  return null;
 }
 canvas.onmousemove=event=>{
   const rect=canvas.getBoundingClientRect(),px=event.clientX-rect.left,py=event.clientY-rect.top;
@@ -5542,6 +5573,18 @@ canvas.onclick=async event=>{
       else inspect(hit.type,hit.index,hit.townId);
       return;
     }
+    // Ground roads and water use their visible tile; sprite misses never fall back to it.
+    const tile=tileAt(event),towns=world.shared_map?Object.entries(world.towns):[[viewed,world.towns[viewed]]];
+    if(!mapOverview())for(const [id,town] of towns){
+      const index=(town?.roads || []).findIndex(r=>r.x===tile.x&&r.y===tile.y);
+      if(index>=0){inspect('road',index,id);return;}
+    }
+    if(!mapOverview()){
+      const resources=world.shared_map?.map_resources || world.towns[viewed]?.map_resources || [];
+      const index=resources.findIndex(r=>r.kind==='water'&&r.x===tile.x&&r.y===tile.y);
+      if(index>=0){inspect('resource',index);return;}
+    }
+    openPanel(null);return;
   }
   const tile=tileAt(event);
   await selectTile(tile.x,tile.y);

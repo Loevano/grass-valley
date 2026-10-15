@@ -880,6 +880,10 @@ With Node.js available, check worker movement and animation transitions with
 `node tests/test_building_selection.js`. Check contextual panels, object selection,
 keyboard controls, and visitor restrictions with `node tests/test_selection_panels.js`.
 Check upgraded building artwork and selection with `node tests/test_building_visual_upgrades.js`.
+Visible-shape pointer selection is checked in Chromium with
+`node tests/test_pointer_selection.js`; this needs the Playwright/Chromium setup
+above. Mouse clicks select the frontmost visible object under the pointer; empty
+space around its artwork does not select it. Keyboard tile selection is unchanged.
 
 ## Hall levels 5–10
 

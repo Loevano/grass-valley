@@ -42,7 +42,8 @@ const client=require('./client_harness');
     assert.equal(app.run('commands.length'),before,'Clicking a rock still blocks building');
     assert.equal(app.run('town.map_resources.length'),2,'The client waits for host removal of '+resourceKind);
     app.run('tool=null;');
-    await app.run('canvas.onclick(pointer(13,13))');
+    app.frame(0);
+    await app.run('const [bushX,bushY]=point(13,13);canvas.onclick({clientX:bushX,clientY:bushY+2*tileW/46})');
     assert.equal(app.run('selection?.type'),'resource',resourceKind+' can still be inspected outside build mode');
   }
   console.log('Bush and herb placement click and preview checks passed');
