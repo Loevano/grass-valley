@@ -93,6 +93,41 @@ class ShortestRouteCache(unittest.TestCase):
                     points = [(0, 0)] + [(p['x'], p['y']) for p in path]
                     self.assertEqual(sum(cost(a, b) for a, b in zip(points, points[1:])), costs[(4, 4)])
 
+    def test_multiple_goals_match_exhaustive_travel_costs(self):
+        rng = random.Random(51)
+        for diagonal in (False, True):
+            for mode in ('smooth', 'departure', 'arrival'):
+                for _ in range(8):
+                    tiles = [(x, y) for x in range(5) for y in range(5)]
+                    goals = {(3, 4), (4, 3), (4, 4)}
+                    blocked = {p for p in tiles if p != (0, 0) and rng.random() < .25}
+                    roads = {p for p in tiles if p not in blocked and rng.random() < .5}
+                    def cost(a, b):
+                        before, after = (2 if a in roads else 3), (2 if b in roads else 3)
+                        weight = 2 * before if mode == 'departure' else 2 * after if mode == 'arrival' else before + after
+                        return weight * (2 ** .5 if a[0] != b[0] and a[1] != b[1] else 1)
+                    costs = {(0, 0): 0}
+                    for _ in tiles:
+                        for a in tiles:
+                            if a not in costs or a in blocked:
+                                continue
+                            for b in tiles:
+                                dx, dy = abs(a[0] - b[0]), abs(a[1] - b[1])
+                                if b in blocked or max(dx, dy) != 1 or (not diagonal and dx + dy != 1):
+                                    continue
+                                if dx and dy and ({(a[0], b[1]), (b[0], a[1])} & blocked):
+                                    continue
+                                costs[b] = min(costs.get(b, float('inf')), costs[a] + cost(a, b))
+                    expected = min((costs.get(goal, float('inf')) for goal in goals))
+                    path = self.cache.route((0, 0), goals, blocked, 5, [], False,
+                                            roads=roads, road_mode=mode, diagonal=diagonal)
+                    if expected == float('inf'):
+                        self.assertIsNone(path)
+                    else:
+                        points = [(0, 0)] + [(p['x'], p['y']) for p in path]
+                        self.assertIn(points[-1], goals)
+                        self.assertAlmostEqual(sum(cost(a, b) for a, b in zip(points, points[1:])), expected)
+
     def test_host_routes_use_completed_shared_roads_and_ignore_construction(self):
         town = {'map_size': 12, 'buildings': [], 'map_resources': [], 'terrain': self.terrain,
                 'roads': [{'x': x, 'y': 1, 'construction': {'progress': 9, 'total': 10}} for x in range(9)]}

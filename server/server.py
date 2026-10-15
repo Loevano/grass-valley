@@ -2001,6 +2001,10 @@ def command(town, data, world=None):
                                       'remaining': economy.BUTCHER_SECONDS, 'id': secrets.token_hex(8),
                                       'pickup': {'kind': 'barn', 'x': barn['x'], 'y': barn['y']},
                                       'stage': 'fetching'}
+            butcher_index = next((i for i in assigned_settlers(town, index)[:settler_capacity(building)]
+                                  if town['villagers'][i]['job'] == 'butchery'
+                                  and not town['villagers'][i].get('construction_target')
+                                  and not economy.qualification(town['villagers'][i], 'butchery')), None)
         elif action == 'set_recipe':
             if building['kind'] == 'workshop':
                 raise ValueError('Add a workshop request with a quantity instead.')
@@ -2123,6 +2127,11 @@ def command(town, data, world=None):
                                               walking=walking)
                               if villager['job'] != 'idle' else None)
                 villager['work_target'] = assignment[1] if assignment else None
+                if action == 'butcher_animal' and index == butcher_index and assignment:
+                    # Start the bounded search with the order, rather than
+                    # waiting for the next three-second simulation update.
+                    logistics.cancel_trip(town, villager)
+                    work_cycles.advance(town, walking, villager, *assignment, index, 0)
         construct(town, walking, elapsed=0)
     if town.get('sandbox'):
         fill_cottages(town)

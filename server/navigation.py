@@ -254,15 +254,26 @@ class RouteCache:
         queue, previous = deque([start]), {start: None}
         costs, order = {start: 0}, 0
         weighted = bool(roads) or diagonal
+        goal_bounds = None
+        if isinstance(target, (set, frozenset)):
+            if not target:
+                return None
+            goal_bounds = (min(x for x, y in target), max(x for x, y in target),
+                           min(y for x, y in target), max(y for x, y in target))
         # A road step costs 4 units versus 6 on open ground (50% faster).
         # Smooth walkers spend half an edge on each tile. Builders time the
         # departure tile; haulers time the arrival tile. Keep those host rules.
         def heuristic(tile):
-            if isinstance(target, (set, frozenset)):
-                return 0
-            dx, dy = abs(tile[0]-target['x']), abs(tile[1]-target['y'])
+            if goal_bounds is not None:
+                # A constant-cost lower bound for any goal, including a shop's
+                # perimeter. A zero heuristic floods the map before returning
+                # to nearby workplaces and adds whole simulation ticks of wait.
+                dx = max(goal_bounds[0] - tile[0], 0, tile[0] - goal_bounds[1])
+                dy = max(goal_bounds[2] - tile[1], 0, tile[1] - goal_bounds[3])
+            else:
+                dx, dy = abs(tile[0]-target['x']), abs(tile[1]-target['y'])
             distance = max(dx, dy)+(sqrt(2)-1)*min(dx, dy) if diagonal else dx+dy
-            return (4 if roads else 6)*max(0, distance-int(adjacent))
+            return (4 if roads else 6)*max(0, distance-int(adjacent and goal_bounds is None))
 
         def open_tile(tile):
             if examined is not None:

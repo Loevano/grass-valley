@@ -2,8 +2,10 @@
 import copy
 import json
 import unittest
+from unittest.mock import patch
 
 from fixtures import flat_town
+from navigation import RouteCache
 import progression as economy
 import server
 import work_cycles
@@ -159,6 +161,39 @@ class ButcherAnimation(unittest.TestCase):
         state = self.advance(3)
         self.assertEqual(state['phase'], 'working')
         self.assertIsNone(state.get('butcherAnimal'))
+
+
+class BoundedButcherRouting(unittest.TestCase):
+    def test_return_to_shop_footprint_does_not_add_route_waiting_ticks(self):
+        town = flat_town(size=120)
+        town['level'] = 5
+        barn = {'kind': 'barn', 'x': 30, 'y': 30, 'fence_orientation': 1,
+                'animals': {'pig': 2}, 'animal_growth': {'pig': [240, 240]}}
+        shop = {'kind': 'butcher', 'x': 49, 'y': 52, 'footprint': [2, 2]}
+        town['buildings'].extend([barn, shop])
+        worker = town['villagers'][0]
+        worker.update(job='butchery', building_index=2, husbandry=2,
+                      logistics_position={'x': 27, 'y': 44})
+        cache = RouteCache()
+        world = {'towns': {'own': town}}
+        with patch.object(server, 'routes', cache), patch.object(work_cycles, 'routes', cache):
+            server.command(town, {'action': 'butcher_animal', 'index': 2,
+                                 'barn_index': 1, 'animal': 'pig'}, world)
+            phases = set()
+            for _ in range(400):
+                with cache.update(world), cache.worker(worker):
+                    work_cycles.advance(town, town, worker, shop, shop, 0, .1)
+                state = worker['work_animation']
+                phases.add(state['phase'])
+                self.assertLessEqual(cache.work, cache.quantum)
+                self.assertNotEqual(state['phase'], 'waiting', 'Accessible short trips must fit the route quantum')
+                if state['phase'] == 'working':
+                    break
+            else:
+                self.fail('Butcher never returned to the shop')
+            self.assertTrue({'walking', 'finding_animal', 'dragging', 'working'} <= phases)
+            self.assertIn((state['x'], state['y']), perimeter(shop))
+            self.assertEqual(shop['butchering']['remaining'], 60)
 
 
 if __name__ == '__main__':

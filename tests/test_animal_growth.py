@@ -22,8 +22,7 @@ class AnimalGrowth(unittest.TestCase):
         self.worker = self.town['villagers'][0]
         self.worker.update(job='husbandry', building_index=1)
         self.butcher = self.town['villagers'][1]
-        self.butcher.update(job='butchery', building_index=2, husbandry=2,
-                            work_animation={'phase': 'working'})
+        self.butcher.update(job='butchery', building_index=2, husbandry=2)
 
     def buy(self, animal='pig'):
         server.command(self.town, {'action': 'buy_animal', 'index': 1, 'animal': animal})

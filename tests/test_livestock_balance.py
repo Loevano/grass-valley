@@ -21,11 +21,12 @@ class LivestockBalance(unittest.TestCase):
         self.assertEqual(barn['animal_growth']['pig'], [240])
         self.assertNotIn('meat', barn.get('output_buffer', {}))
         butcher = town['villagers'][0]
-        butcher.update(job='butchery', building_index=2, husbandry=2, talents={},
-                       work_animation={'phase': 'working'})
+        butcher.update(job='butchery', building_index=2, husbandry=2, talents={})
         server.command(town, {'action': 'butcher_animal', 'index': 2,
                               'barn_index': 1, 'animal': 'pig'})
         self.assertEqual(barn['animal_growth']['pig'], [0])
+        # Isolate processing economics; fetching is covered by the animation tests.
+        butcher['work_animation'] = {'phase': 'working'}
         self.assertEqual(logistics.butcher_animal(town, shop, butcher, 60), 'Working')
         self.assertEqual(economy.quantity(town, 'hides'), 2)
         logistics.drop_off(town, shop, butcher)

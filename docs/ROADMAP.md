@@ -244,6 +244,10 @@ rewards, with replacement previews only for the last animal of that species.
 Butchers now fetch the selected animal from its barn, drag it to the shop, and
 process it with a blood-pool animation. The host saves each leg, handles blocked
 routes, and starts the shared processing timer only after arrival.
+Butchery orders start bounded departure planning immediately. Routes to shop
+perimeters use a goal-directed search so fetching does not add unnecessary
+host updates before the return trip; walking, pickup, and processing keep their
+normal durations.
 Countdowns follow the host update schedule, including while dropdowns are open;
 overdue countdowns wait for host confirmation without advancing saved growth.
 Butchery requests show immediate pending feedback. Command confirmations request

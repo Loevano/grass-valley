@@ -61,6 +61,32 @@ class CommandRouting(unittest.TestCase):
         self.assertEqual(self.barn['animals']['pig'], 1)
         self.assertEqual(self.shop['butchering']['stage'], 'fetching')
         self.assertEqual(self.shop['butchering']['remaining'], 60)
+        worker = self.town['villagers'][1]
+        self.assertTrue(worker['work_animation']['route_pending'])
+        self.assertIn(('work', id(worker)), self.cache.pending)
+
+    def test_butchery_command_plans_departure_without_advancing_game_time(self):
+        worker = self.town['villagers'][1]
+        self.barn['fence_orientation'] = 1
+        position = {'x': 22, 'y': 27}
+        worker['logistics_position'] = dict(position)
+        self.run_command('butcher_animal')
+        animation = worker['work_animation']
+        self.assertEqual(animation['phase'], 'walking')
+        self.assertTrue(animation['path'])
+        self.assertEqual({k: animation[k] for k in position}, position)
+        self.assertEqual(animation['elapsed'], 0)
+        self.assertEqual(self.shop['butchering']['remaining'], 60)
+        self.assertTrue(all(sample['time'] == 0 for sample in animation['playback']))
+
+    def test_butchery_command_only_plans_the_available_lead_butcher(self):
+        helper = dict(self.town['villagers'][1], name='Helper')
+        self.shop['settler_level'] = 2
+        self.town['villagers'].insert(1, helper)
+        helper['construction_target'] = {'kind': 'home', 'x': 35, 'y': 2}
+        self.run_command('butcher_animal')
+        self.assertNotIn('work_animation', helper)
+        self.assertIn('work_animation', self.town['villagers'][2])
 
     def test_command_preserves_another_towns_pending_route_and_admission_reservation(self):
         neighbor = flat_town(size=40)
