@@ -4632,11 +4632,11 @@ function draw(seconds=0){
     const owner=world.towns[b.townId] || town;
     const simplifiedResource=tileW<32&&(b.kind==='tree'||b.kind==='rock');
     const height=simplifiedResource?tileH/(2*scale):b.kind==='tree'?(b.species==='ancient'?94:70):character?26:b.kind==='acre'?0:b.kind==='rock'?80:type==='building'?buildingHeight(b,owner)+(b.kind==='hall'?(owner?.level>=4?35:33):18):45;
-    const halfWidth=simplifiedResource?tileW*.45:character?9*scale:type==='resource'?30*scale:b.kind==='sawpit'&&footprintTiles(b).length===1?tileW*.65:detailedBuildingKinds.includes(b.kind)&&footprintTiles(b).length===1?tileW*.8:tileW*.45;
+    const halfWidth=simplifiedResource?tileW*.45:character?9*scale:type==='resource'?30*scale:b.kind==='barn'?tileW*.9:b.kind==='sawpit'&&footprintTiles(b).length===1?tileW*.65:detailedBuildingKinds.includes(b.kind)&&footprintTiles(b).length===1?tileW*.8:tileW*.45;
     const groundPoints=type==='building'&&footprintTiles(b).length>1?footprintTiles(b).map(p=>point(p.x,p.y)):[];
     hitTargets.push({type,index,townId:b.townId || viewed,
       left:Math.min(centerX-halfWidth,...groundPoints.map(p=>p[0]-tileW/2)),right:Math.max(centerX+halfWidth,...groundPoints.map(p=>p[0]+tileW/2)),
-      top:type==='resource'&&!simplifiedResource?py-80*scale:baseY-height*scale,bottom:Math.max(baseY+(character?5*scale:b.kind==='sawpit'?22*scale:detailedBuildingKinds.includes(b.kind)?18*scale:tileH/2),...groundPoints.map(p=>p[1]+tileH)),
+      top:type==='resource'&&!simplifiedResource?py-80*scale:baseY-height*scale,bottom:Math.max(baseY+(character?5*scale:b.kind==='sawpit'?22*scale:detailedBuildingKinds.includes(b.kind)||b.kind==='barn'?18*scale:tileH/2),...groundPoints.map(p=>p[1]+tileH)),
       paint:target=>{
         if(character){drawVillager(b,false,target);return;}
         if(type==='building'){
@@ -4907,11 +4907,11 @@ function drawBuilding(b,town=world.towns[viewed],farmState=null){
 }
 function paintBuildingGround(b,target,paintPolygon){
   const tiles=footprintTiles(b);if(tiles.length===1)return;
+  if(!b.construction&&(detailedBuildingKinds.includes(b.kind)||b.kind==='sawpit'))return;
   const s=tileW/46,[width,depth]=b.footprint;
   const corners=[[b.x-.5,b.y-.5],[b.x+width-.5,b.y-.5],[b.x+width-.5,b.y+depth-.5],[b.x-.5,b.y+depth-.5]]
     .map(([x,y])=>{const [px,py]=point(x,y);return [px,py+tileH/2];});
   paintPolygon(corners,b.kind==='hall'?'#929387':'#a48d66','#6c715c');
-  if(detailedBuildingKinds.includes(b.kind))return;
   for(const tile of tiles){
     const [x,y]=point(tile.x,tile.y);
     if(b.kind==='hall'||b.kind==='sawpit'||b.construction||tile.y===b.y)continue;
@@ -4954,36 +4954,29 @@ function paintSawpit(b,town,target,paintPolygon,usable){
   const [width,depth]=b.footprint || [1,1],level=buildingVisualLevel(b,town);
   const [x,top]=point(b.x+(width-1)/2,b.y+(depth-1)/2);
   const large=width*depth>1,fit=Math.min(width/3,depth/2),s=tileW/46,scale=(large ? .6*fit : .4)*s;
-  // Canvas version of the approved refined C sketch. Workers remain live actors.
+  // Keep the open saw bench silhouette, with broad timber and no surface seams.
   target.save();target.translate(x,top+tileH/2);target.scale(scale,scale);target.translate(large ? -110 : -100,-103.5);
-  const poly=(points,fill,stroke,weight=1)=>{
-    target.lineWidth=weight;paintPolygon(points,usable?fill:(fill==='#8e7752'?'#a34f49':fill),stroke);
+  const poly=(points,fill)=>{
+    paintPolygon(points,usable?fill:(fill==='#8e7752'?'#a34f49':fill));
   };
   const line=(points,color,weight=1)=>{
-    target.beginPath();points.forEach(([px,py],i)=>i?target.lineTo(px,py):target.moveTo(px,py));target.strokeStyle=color;target.lineWidth=weight;target.stroke();
+    target.beginPath();points.forEach(([px,py],i)=>i?target.lineTo(px,py):target.moveTo(px,py));target.strokeStyle=color;target.lineWidth=Math.max(2.8,weight);target.stroke();
   };
-  const oval=(cx,cy,rx,ry,angle,fill,stroke,weight=1)=>{
+  const oval=(cx,cy,rx,ry,angle,fill)=>{
     target.beginPath();target.ellipse(cx,cy,rx,ry,angle,0,Math.PI*2);
     if(fill!=='none'){target.fillStyle=fill;target.fill();}
-    if(stroke){target.strokeStyle=stroke;target.lineWidth=weight;target.stroke();}
   };
   target.save();target.globalAlpha=0.18;
   poly([[45,99],[99,126],[161,95],[107,68]],'#735439');
   target.restore();
   // Rear timber shed: shaded back panel and low open-front half wall.
-  poly([[95,108],[144,84],[144,57],[95,81]],'#847053','#594d38',1);
-  line([[105,80],[105,102]],'#a48d66',0.8);
-  line([[116,75],[116,97]],'#a48d66',0.8);
-  line([[127,70],[127,92]],'#a48d66',0.8);
-  line([[138,65],[138,87]],'#a48d66',0.8);
-  poly([[48,94],[95,117],[95,98],[48,75]],'#b69a70','#735439',1);
-  line([[49,81],[94,104]],'#947044',0.8);
-  line([[49,87],[94,110]],'#947044',0.8);
-  poly([[48,75],[95,98],[95,102],[48,79]],'#c4a477','#735439',0.7);
+  poly([[95,108],[144,84],[144,57],[95,81]],'#847053');
+  poly([[48,94],[95,117],[95,98],[48,75]],'#b69a70');
+  poly([[48,75],[95,98],[95,102],[48,79]],'#c4a477');
   // Posts and diagonal braces use the same material scale as the bench.
-  poly([[47,56],[47,99],[51,101],[51,58]],'#735439','#c4a477',0.8);
-  poly([[94,79],[94,117],[98,115],[98,77]],'#735439','#c4a477',0.8);
-  poly([[143,54],[143,92],[147,90],[147,52]],'#735439','#c4a477',0.8);
+  poly([[47,56],[47,99],[51,101],[51,58]],'#735439');
+  poly([[94,79],[94,117],[98,115],[98,77]],'#735439');
+  poly([[143,54],[143,92],[147,90],[147,52]],'#735439');
   line([[50,67],[62,62]],'#b48a56',2.5);
   line([[143,63],[133,68]],'#b48a56',2.5);
   // Tool rack and a warm lantern sit behind the cutting station.
@@ -4995,41 +4988,29 @@ function paintSawpit(b,town,target,paintPolygon,usable){
   line([[120,76],[126,73]],'#98aaa7',2);
   line([[128,73],[134,70]],'#98aaa7',2);
   line([[54,60],[54,68],[59,70]],'#735439',1.8);
-  poly([[54,68],[59,70],[59,77],[54,75]],'#edc77d','#594d38',0.7);
+  poly([[54,68],[59,70],[59,77],[54,75]],'#edc77d');
   // A compact pitched roof finishes the shed without covering the bench.
-  poly([[95,80],[154,50],[124,45]],'#b69a70','#735439',1);
-  poly([[100,23],[154,50],[124,45],[70,18]],'#a58d66','#735439',1);
-  poly([[41,53],[95,80],[124,45],[70,18]],'#8e7752','#735439',1.2);
-  line([[49,44],[103,71]],'#ac926b',0.8);
-  line([[57,35],[111,62]],'#ac926b',0.8);
-  line([[65,26],[119,53]],'#ac926b',0.8);
-  line([[60,31],[52,41]],'#735439',0.65);
-  line([[78,40],[70,50]],'#735439',0.65);
-  line([[96,49],[88,59]],'#735439',0.65);
-  line([[114,58],[106,68]],'#735439',0.65);
+  poly([[95,80],[154,50],[124,45]],'#b69a70');
+  poly([[100,23],[154,50],[124,45],[70,18]],'#a58d66');
+  poly([[41,53],[95,80],[124,45],[70,18]],'#8e7752');
   line([[41,53],[95,80],[154,50]],'#c9a579',2);
   line([[70,18],[124,45]],'#c4a477',1.5);
   // Materials have separate input and output silhouettes.
   if(large){
     target.save();target.translate(40,88);target.scale(42/44,32/34);
-    poly([[2,15],[27,27],[32,21],[7,9]],'#a47c4e','#735439',0.9);
-    oval(29,24,4,5,-25*Math.PI/180,'#dbb580','#735439',0.9);
-    poly([[10,11],[35,23],[40,17],[15,5]],'#b48a56','#735439',0.9);
-    oval(37,20,4,5,-25*Math.PI/180,'#dbb580','#735439',0.9);
-    poly([[5,7],[30,19],[35,13],[10,1]],'#b48a56','#735439',0.9);
-    oval(32,16,4,5,-25*Math.PI/180,'#dbb580','#735439',0.9);
-    line([[28,23],[30,25]],'#9c784b',1);
-    line([[36,19],[38,21]],'#9c784b',1);
-    line([[31,15],[33,17]],'#9c784b',1);
+    poly([[2,15],[27,27],[32,21],[7,9]],'#a47c4e');
+    oval(29,24,4,5,-25*Math.PI/180,'#dbb580');
+    poly([[10,11],[35,23],[40,17],[15,5]],'#b48a56');
+    oval(37,20,4,5,-25*Math.PI/180,'#dbb580');
+    poly([[5,7],[30,19],[35,13],[10,1]],'#b48a56');
+    oval(32,16,4,5,-25*Math.PI/180,'#dbb580');
     target.restore();
     target.save();target.translate(157,68);target.scale(37/40,31/34);
     for(let row=0;row<3+level;row++){
       const y=19-row*4;
-      poly([[2,y],[26,y+12],[37,y+7],[13,y-5]],'#c4a477','#735439',.8);
-      poly([[26,y+12],[37,y+7],[37,y+10],[26,y+15]],'#e0bd84','#735439',.8);
+      poly([[2,y],[26,y+12],[37,y+7],[13,y-5]],'#c4a477');
+      poly([[26,y+12],[37,y+7],[37,y+10],[26,y+15]],'#e0bd84');
     }
-    line([[7,7],[30,18]],'#e0bd84',.8);
-    line([[13,4],[35,15]],'#e0bd84',.8);
     line([[18,10],[18,23]],'#68563e',1.6);
     target.restore();
   }
@@ -5037,35 +5018,26 @@ function paintSawpit(b,town,target,paintPolygon,usable){
   target.save();target.globalAlpha=0.16;
   poly([[78,112],[122,134],[163,114],[119,92]],'#223b29');
   target.restore();
-  poly([[85,92],[83,116],[87,118],[90,94]],'#735439','#c4a477',0.8);
-  poly([[105,81],[108,104],[112,102],[110,79]],'#735439','#c4a477',0.8);
-  poly([[128,112],[126,132],[130,130],[133,110]],'#735439','#c4a477',0.8);
-  poly([[150,100],[152,119],[156,117],[154,98]],'#735439','#c4a477',0.8);
+  poly([[85,92],[83,116],[87,118],[90,94]],'#735439');
+  poly([[105,81],[108,104],[112,102],[110,79]],'#735439');
+  poly([[128,112],[126,132],[130,130],[133,110]],'#735439');
+  poly([[150,100],[152,119],[156,117],[154,98]],'#735439');
   line([[87,115],[108,85]],'#947044',2.4);
   line([[130,128],[152,102]],'#947044',2.4);
-  poly([[80,87],[130,112],[154,100],[104,75]],'#c4a477','#735439',1);
-  poly([[80,87],[130,112],[130,116],[80,91]],'#947044','#735439',0.8);
+  poly([[80,87],[130,112],[154,100],[104,75]],'#c4a477');
+  poly([[80,87],[130,112],[130,116],[80,91]],'#947044');
   poly([[130,112],[154,100],[154,104],[130,116]],'#735439');
-  line([[87,84],[137,109]],'#e0bd84',0.7);
-  line([[98,79],[148,104]],'#e0bd84',0.7);
   // Raised log, visible end grain and a cut aligned with the saw teeth.
-  poly([[86,79],[143,107],[145,100],[88,72]],'#947044','#735439',1);
-  poly([[88,72],[92,70],[149,98],[145,100]],'#c4a477','#735439',1);
-  oval(146,103,4,5.5,-25*Math.PI/180,'#dbb580','#735439',0.8);
-  oval(146,103,2,3.2,-25*Math.PI/180,'none','#9c784b',0.8);
-  line([[97,81],[136,100]],'#735439',0.7);
+  poly([[86,79],[143,107],[145,100],[88,72]],'#947044');
+  poly([[88,72],[92,70],[149,98],[145,100]],'#c4a477');
+  oval(146,103,4,5.5,-25*Math.PI/180,'#dbb580');
   line([[136,93],[131,99],[131,104]],'#594d38',1.5);
   // Four larger teeth remain visible in the normal-size preview.
   target.save();target.translate(108,99);target.rotate(-24*Math.PI/180);target.translate(-108,-99);
-  poly([[114,94],[144,101],[141,108],[135,105],[132,109],[127,106],[124,110],[119,107],[115,110],[111,105]],(b.profession_upgrades || []).includes('saw')?'#e8efdf':'#c4d2ce','#68563e',0.8);
-  line([[115,97],[140,103]],'#e8efdf',1);
-  poly([[104,90],[114,94],[111,106],[102,102]],'#c4a477','#735439',0.8);
+  poly([[114,94],[144,101],[141,108],[135,105],[132,109],[127,106],[124,110],[119,107],[115,110],[111,105]],(b.profession_upgrades || []).includes('saw')?'#e8efdf':'#c4d2ce');
+  poly([[104,90],[114,94],[111,106],[102,102]],'#c4a477');
   poly([[106,95],[110,96],[108,102],[105,100]],'#594d38');
   target.restore();
-  // A few chips indicate cutting, leaving the walking edge uncluttered.
-  poly([[113,128],[116,129],[115,131],[112,130]],'#d3bc83');
-  poly([[122,123],[125,124],[124,126],[121,125]],'#d3bc83');
-  poly([[107,130],[109,132],[107,133],[105,131]],'#d3bc83');
   // Existing structural and capacity upgrades retain their separate wall plaques.
   target.fillStyle='#344b42';target.fillRect(133,66,15,10);
   target.fillStyle='#fff0b1';target.font='bold 8px sans-serif';target.textAlign='center';target.fillText(String(buildingLevel(b)),140,74);
@@ -5078,73 +5050,52 @@ function paintSawpit(b,town,target,paintPolygon,usable){
   target.fillText(labels.sawpit,x,top+tileH/2-(103.5-18)*scale-7*s);
 }
 function paintDetailedBuilding(b,town,target,paintPolygon,usable){
-  // Shared drawing primitives keep the approved village and trade artwork in
-  // one isometric style. Compact legacy sites retain their saved footprints.
+  // Broad unoutlined faces and a few chunky props match the scenery and workers.
+  // Compact legacy sites retain their saved footprints and upgrade identities.
   const [width,depth]=b.footprint || [1,1];
   const fit=['home','woodcutter','farm'].includes(b.kind)?1:Math.min(width,depth)/2;
   const [x,top]=point(b.x+(width-1)/2,b.y+(depth-1)/2),s=tileW/46;
   const level=buildingVisualLevel(b,town),rise=4*(level-1),upgrades=b.profession_upgrades || [];
   target.save();target.translate(x,top+tileH/2);target.scale(.46*s*fit,.46*s*fit);
-  // Ground uses the game's 2:1 projection; doors stay at worker scale.
+  // Ground uses the game's 2:1 projection; doors use broad readable shapes.
   const p=(x,y,z=0)=>[(x-y)*25,(x+y)*12.5-z*1.5];
-  const poly=(points,fill,stroke='#624b35',weight=.75,warning='#a34f49')=>{
-    target.lineWidth=weight;paintPolygon(points,usable?fill:warning,stroke);
+  const poly=(points,fill,warning='#a34f49')=>{
+    paintPolygon(points,usable?fill:warning);
   };
-  const line=(points,color='#735439',weight=1)=>{
+  const line=(points,color='#735439',weight=2.4)=>{
     target.beginPath();points.forEach(([x,y],i)=>i?target.lineTo(x,y):target.moveTo(x,y));
-    target.strokeStyle=color;target.lineWidth=weight;target.stroke();
+    target.strokeStyle=color;target.lineWidth=Math.max(2.4,weight);target.stroke();
   };
-  const oval=(x,y,rx,ry,fill,stroke=null)=>{
+  const oval=(x,y,rx,ry,fill)=>{
     target.beginPath();target.ellipse(x,y,rx,ry,0,0,Math.PI*2);
     if(fill){target.fillStyle=fill;target.fill();}
-    if(stroke){target.strokeStyle=stroke;target.lineWidth=.75;target.stroke();}
   };
-  const face=(coords,fill,stroke='#624b35',weight=.75,warning='#a34f49')=>poly(coords.map(c=>p(...c)),fill,stroke,weight,warning);
-  const edge=(a,end,color='#735439',weight=1)=>line([p(...a),p(...end)],color,weight);
+  const face=(coords,fill,warning='#a34f49')=>poly(coords.map(c=>p(...c)),fill,warning);
+  const edge=(a,end,color='#735439',weight=2.4)=>line([p(...a),p(...end)],color,weight);
+  oval(3,6,65,22,'#223b293d');
   const walls=(x1=-.95,x2=.95,y1=-1.1,y2=.65,h=43+rise,light='#c6b28d',dark='#9b8b6c')=>{
-    face([[x1,y2,0],[x2,y2,0],[x2,y2,h],[x1,y2,h]],light,'#624b35',.75,'#c76d64');
+    face([[x1,y2,0],[x2,y2,0],[x2,y2,h],[x1,y2,h]],light,'#c76d64');
     face([[x2,y1,0],[x2,y2,0],[x2,y2,h],[x2,y1,h]],dark);
-    for(const x of [x1,x2])edge([x,y2,3],[x,y2,h],'#735439',2);
-    edge([x2,y1,3],[x2,y1,h],'#735439',2);
-    edge([x1,y2,22],[x2,y2,22],'#947044',1.4);edge([x2,y1,22],[x2,y2,22],'#735439',1.4);
+    for(const x of [x1,x2])edge([x,y2,3],[x,y2,h],'#796347',3.4);
+    edge([x2,y1,3],[x2,y1,h],'#6a6048',3.4);
     if(level>=2){
-      const mid=(x1+x2)/2;
-      for(const x of [x1,mid,x2])edge([x,y2,7],[x,y2,h],'#674c33',1.8);
-      edge([x1,y2,h*.68],[x2,y2,h*.68],'#674c33',1.7);edge([x1,y2,h],[mid,y2,h*.68],'#947044',1.5);
-      edge([x2,y1,h*.68],[x2,y2,h*.68],'#674c33',1.5);edge([x2,y1,h],[x2,(y1+y2)/2,h*.68],'#947044',1.4);
+      edge([x1,y2,h*.68],[x2,y2,h*.68],'#796347',3.4);
+      edge([x2,y1,h],[x2,(y1+y2)/2,h*.68],'#796347',3.4);
     }
     const stone=level>=3?13:6;
     face([[x1,y2,0],[x2,y2,0],[x2,y2,stone],[x1,y2,stone]],'#a2a497');
     face([[x2,y1,0],[x2,y2,0],[x2,y2,stone],[x2,y1,stone]],'#767f73');
-    for(let x=x1+.3;x<x2;x+=.45)edge([x,y2,0],[x,y2,stone-1],'#797e6e',.6);
-    if(level>=3)for(const z of [5,10]){edge([x1,y2,z],[x2,y2,z],'#8b9585',.65);edge([x2,y1,z],[x2,y2,z],'#6f7d70',.65);}
-    const door=x1+.25;
-    face([[door,y2+.015,4],[door+.42,y2+.015,4],[door+.42,y2+.015,29],[door,y2+.015,29]],'#594d38','#c4a477');
-    edge([door+.11,y2+.025,7],[door+.11,y2+.025,26],'#947044',.7);
-    face([[x2+.01,-.8,23],[x2+.01,-.4,23],[x2+.01,-.4,33],[x2+.01,-.8,33]],'#edc77d','#594d38',1.2);
-    edge([x2+.02,-.6,23],[x2+.02,-.6,33],'#735439',.8);
-    edge([x2+.02,-.8,28],[x2+.02,-.4,28],'#735439',.8);
+    const door=x1+.22;
+    face([[door,y2+.015,3],[door+.6,y2+.015,3],[door+.6,y2+.015,33],[door,y2+.015,33]],'#515342');
+    face([[x2+.01,-.8,23],[x2+.01,-.25,23],[x2+.01,-.25,35],[x2+.01,-.8,35]],'#edc77d');
   };
   const roof=(x1=-1.1,x2=1.1,y1=-1.25,y2=.82,h=43+rise,peak=19,light='#a17e55',dark='#826642')=>{
     const mid=(x1+x2)/2;
     face([[x1,y2,h],[x2,y2,h],[mid,y2,h+peak]],'#bdab8c');
-    edge([mid,y2,h+2],[mid,y2,h+peak-2],'#735439',1.4);
     face([[x1,y1,h],[x1,y2,h],[mid,y2,h+peak],[mid,y1,h+peak]],light);
     face([[mid,y1,h+peak],[mid,y2,h+peak],[x2,y2,h],[x2,y1,h]],dark);
-    for(const t of [.25,.5,.75]){
-      edge([x1+(mid-x1)*t,y1,h+peak*t],[x1+(mid-x1)*t,y2,h+peak*t],'#c9a579',.65);
-      edge([mid+(x2-mid)*t,y1,h+peak*(1-t)],[mid+(x2-mid)*t,y2,h+peak*(1-t)],'#a88e70',.65);
-    }
-    for(const [y,t] of [[-.8,.28],[-.15,.53],[.42,.75]]){
-      edge([mid+(x2-mid)*t,y,h+peak*(1-t)],[mid+(x2-mid)*(t+.16),y,h+peak*(1-t-.16)],'#5d5848',.55);
-    }
-    edge([x1,y2,h],[mid,y2,h+peak],'#dec498',1.25);
-    edge([mid,y2,h+peak],[x2,y2,h],'#dec498',1.25);
-    edge([mid,y1,h+peak],[mid,y2,h+peak],'#c4a477',level>=2?1.6:1.2);
-    if(level>=2){edge([x1,y2,h],[mid,y2,h+peak],'#d6bc8c',1.8);edge([mid,y2,h+peak],[x2,y2,h],'#d6bc8c',1.8);}
     if(level>=3&&!['home','hall'].includes(b.kind)){
-      face([[mid-.1,y2+.02,h+3],[mid+.1,y2+.02,h+3],[mid+.1,y2+.02,h+9],[mid-.1,y2+.02,h+9]],'#4b4a3a','#c4a477');
-      edge([mid,y2+.03,h+3],[mid,y2+.03,h+9],'#b69a70',.7);
+      face([[mid-.1,y2+.02,h+3],[mid+.1,y2+.02,h+3],[mid+.1,y2+.02,h+9],[mid-.1,y2+.02,h+9]],'#4b4a3a');
     }
   };
   const chimney=(z)=>{
@@ -5152,42 +5103,35 @@ function paintDetailedBuilding(b,town,target,paintPolygon,usable){
     face([[x,y,z-7],[x+.24,y,z-7],[x+.24,y,z+14],[x,y,z+14]],'#a2a497');
     face([[x+.24,y-.25,z-7],[x+.24,y,z-7],[x+.24,y,z+14],[x+.24,y-.25,z+14]],'#767f73');
     face([[x-.04,y-.3,z+14],[x+.29,y-.3,z+14],[x+.29,y+.04,z+14],[x-.04,y+.04,z+14]],'#c0bdab');
-    for(const h of [z,z+6,z+11])edge([x,y,h],[x+.24,y,h],'#767f73',.6);
   };
   const bench=(x,y,width=1.1,depth=.4,height=13)=>{
     for(const [dx,dy] of [[0,0],[width,0],[0,depth],[width,depth]])edge([x+dx,y+dy,0],[x+dx,y+dy,height],'#735439',2.2);
     face([[x,y,height],[x+width,y,height],[x+width,y+depth,height],[x,y+depth,height]],'#c4a477');
     face([[x,y+depth,height-3],[x+width,y+depth,height-3],[x+width,y+depth,height],[x,y+depth,height]],'#947044');
-    edge([x,y+depth,2],[x+width,y+depth,height-3],'#b48a56',1.3);
   };
   const lantern=(x,y,z)=>{
     const [a,b]=p(x,y,z);line([[a,b-7],[a,b],[a+4,b]],'#735439',1.2);
-    poly([[a+2,b],[a+7,b+2],[a+7,b+9],[a+2,b+7]],'#edc77d','#594d38');
+    poly([[a+2,b],[a+7,b+2],[a+7,b+9],[a+2,b+7]],'#edc77d');
   };
   const sack=(x,y)=>{
-    const [a,b]=p(x,y);oval(a,b-7,6,10,'#d3bc83','#735439');
+    const [a,b]=p(x,y);oval(a,b-7,6,10,'#d3bc83');
     poly([[a-3,b-14],[a-4,b-18],[a+3,b-18],[a+2,b-14]],'#d3bc83');
-    line([[a-3,b-14],[a+2,b-14]],'#9b7a4b',.8);
   };
   const tub=(x,y,water='#787956',rx=10,ry=5)=>{
     const [a,b]=p(x,y);
     poly([[a-rx,b-14],[a-rx+1,b],[a,b+4],[a+rx-1,b],[a+rx,b-14]],'#a98756');
-    for(const dx of [-6,-2,3,7])line([[a+dx,b-13],[a+dx*.9,b+2]],'#735439',.6);
-    oval(a,b-14,rx,ry,'#b69a70','#735439');oval(a,b-14,rx-2,ry-1.5,water);
+    oval(a,b-14,rx,ry,'#b69a70');oval(a,b-14,rx-2,ry-1.5,water);
     line([[a-rx+1,b-4],[a,b],[a+rx-1,b-4]],'#677064',1.3);
   };
   const awning=(color)=>{
     for(const x of [-.1,.95])edge([x,1.45,0],[x,1.45,30],'#735439',1.8);
     face([[-.2,.68,36],[1.05,.68,36],[1.05,1.5,29],[-.2,1.5,29]],color);
-    for(const x of [.05,.5,.95])edge([x,.7,36],[x,1.5,29],'#d9c4a1',.8);
-    edge([-.2,1.5,29],[1.05,1.5,29],'#c4a477',1.3);
   };
   const crate=(x,y)=>{
     face([[x,y,0],[x+.45,y,0],[x+.45,y+.35,0],[x,y+.35,0]],'#ac895d');
     face([[x,y+.35,0],[x+.45,y+.35,0],[x+.45,y+.35,9],[x,y+.35,9]],'#ac895d');
     face([[x+.45,y,0],[x+.45,y+.35,0],[x+.45,y+.35,9],[x+.45,y,9]],'#947044');
     face([[x,y,9],[x+.45,y,9],[x+.45,y+.35,9],[x,y+.35,9]],'#c4a477');
-    edge([x+.15,y+.35,1],[x+.15,y+.35,8],'#735439',.6);
   };
   const boards=(x,y)=>{
     for(const z of [2,5,8,11]){
@@ -5199,9 +5143,8 @@ function paintDetailedBuilding(b,town,target,paintPolygon,usable){
   const shed=(light,dark,wide=false)=>{
     const [x1,x2,y1,y2]=wide?[-1.05,1.05,-1.1,.35]:[-1.1,.55,-1.1,.3],h=38+rise;
     face([[x2,y1,0],[x2,y2,0],[x2,y2,13],[x2,y1,13]],'#947e60');
-    face([[x1,y1,0],[x2,y1,0],[x2,y1,h],[x1,y1,h]],'#746e53','#624b35',.75,'#c76d64');
-    for(const z of [7,14,21,28])edge([x1,y1,z],[x2,y1,z],'#8c8261',.65);
-    for(const x of [x1,x2])edge([x,y2,0],[x,y2,h],'#735439',level>=2?2.8:2);
+    face([[x1,y1,0],[x2,y1,0],[x2,y1,h],[x1,y1,h]],'#746e53','#c76d64');
+    for(const x of [x1,x2])edge([x,y2,0],[x,y2,h],'#9c885e',level>=2?4.5:3.8);
     edge([x1,y1,0],[x1,y1,h],'#735439',2);
     face([[x1,y2,0],[x1+.25,y2,0],[x1+.25,y2,15],[x1,y2,15]],'#b69a70');
     if(level>=2){
@@ -5215,13 +5158,11 @@ function paintDetailedBuilding(b,town,target,paintPolygon,usable){
     if(level>=3){
       face([[x2,y1,0],[x2,y2,0],[x2,y2,12],[x2,y1,12]],'#858e86');
       face([[x1,y2,0],[x1+.25,y2,0],[x1+.25,y2,12],[x1,y2,12]],'#b1b3a2');
-      edge([x2,y1,6],[x2,y2,6],'#6f7d70',.65);
-      for(const y of [y1+.3,y1+.8])edge([x2,y,0],[x2,y,6],'#6f7d70',.65);
       for(const x of [x1,x2])edge([x,y2,3],[x,y2,9],'#84958e',3.8);
     }
     roof(x1-.15,x2+.15,y1-.15,y2+.15,h,17,light,dark);
     edge([x1+.2,y2-.1,27],[x2-.15,y2-.1,27],'#735439',2);
-    for(const [i,x] of [x1+.4,(x1+x2)/2,x2-.35].entries()){
+    for(const [i,x] of [x1+.45,x2-.4].entries()){
       edge([x,y2-.1,27],[x,y2-.1,17],'#c4a477',1.4);
       if(i===0)face([[x-.08,y2-.1,18],[x+.12,y2-.1,18],[x+.12,y2-.1,14],[x-.08,y2-.1,14]],'#98aaa7');
       else edge([x-.13,y2-.1,17],[x+.14,y2-.1,17],i===1?'#98aaa7':'#c4d2ce',i===1?2:1);
@@ -5231,18 +5172,18 @@ function paintDetailedBuilding(b,town,target,paintPolygon,usable){
   if(b.kind==='butcher'){
     walls(-.95,.95,-1.1,.65,43+rise,'#c2aa90','#99816c');
     roof(-1.1,1.1,-1.25,.82,43+rise,19,'#aa7a78','#855d64');
-    face([[-.02,.67,13],[.79,.67,13],[.79,.67,30],[-.02,.67,30]],'#473f32','#947044',1);
+    face([[-.02,.67,13],[.79,.67,13],[.79,.67,30],[-.02,.67,30]],'#473f32');
     awning('#a57670');bench(-.02,1,1.02,.42,14);
-    for(const x of [.16,.53,.81]){const [a,b]=p(x,1.19,16);oval(a,b,3.6,2.4,'#b66e65','#80574b');oval(a+.4,b-.2,1.2,.7,'#eadac1');}
+    for(const x of [.2,.72]){const [a,b]=p(x,1.19,16);oval(a,b,5,3.2,'#b66e65');}
     const [a,bottom]=p(-1.2,1.05);
     poly([[a-8,bottom-18],[a-8,bottom],[a,bottom+4],[a+8,bottom],[a+8,bottom-18]],'#947044');
-    oval(a,bottom-18,8,4,'#dbb580','#735439');oval(a,bottom-18,4.8,2.3,null,'#b48a56');
+    oval(a,bottom-18,8,4,'#dbb580');
     line([[a+2,bottom-19],[a+2,bottom-29]],'#735439',1.8);
     poly([[a+2,bottom-28],[a+9,bottom-28],[a+9,bottom-23],[a+2,bottom-23]],'#c4d2ce');
     const [signX,signY]=p(1.03,-.15,34);
     line([[signX,signY],[signX+12,signY-6],[signX+12,signY+2]],'#735439',1.3);
-    poly([[signX+6,signY+2],[signX+19,signY-4],[signX+19,signY+9],[signX+6,signY+15]],'#674c33','#c4a477');
-    poly([[signX+10,signY+5],[signX+16,signY+2],[signX+16,signY+6],[signX+10,signY+9]],'#c4d2ce',null);
+    poly([[signX+6,signY+2],[signX+19,signY-4],[signX+19,signY+9],[signX+6,signY+15]],'#674c33');
+    poly([[signX+10,signY+5],[signX+16,signY+2],[signX+16,signY+6],[signX+10,signY+9]],'#c4d2ce');
     lantern(-.95,.7,30);
   }else if(b.kind==='bakery'){
     walls(-.95,.95,-1.1,.65,43+rise,'#d0bb95','#ac9574');
@@ -5253,33 +5194,32 @@ function paintDetailedBuilding(b,town,target,paintPolygon,usable){
     face([[1,-.35,21],[1.3,-.35,28],[1.3,.45,28],[1,.45,21]],'#c3b496');
     face([[1.3,-.35,28],[1.6,-.35,21],[1.6,.45,21],[1.3,.45,28]],'#a3947c');
     const [a,bottom]=p(1.3,.47,3);
-    poly([[a-5,bottom+2],[a-5,bottom-13],[a,bottom-18],[a+5,bottom-13],[a+5,bottom+2]],'#463b32','#d1b994',1.1);
-    poly([[a-3,bottom],[a-1,bottom-9],[a+1,bottom-4],[a+3,bottom-12],[a+4,bottom]],'#e7af5d',null);
+    poly([[a-5,bottom+2],[a-5,bottom-13],[a,bottom-18],[a+5,bottom-13],[a+5,bottom+2]],'#463b32');
+    poly([[a-3,bottom],[a-1,bottom-9],[a+1,bottom-4],[a+3,bottom-12],[a+4,bottom]],'#e7af5d');
     for(const [i,key] of ['larger_oven','double_hearth_oven','masterwork_oven'].entries())if(upgrades.includes(key)){
       edge([1.61,-.25,5+i*5],[1.61,.35,5+i*5],'#edc77d',1.5);
     }
     awning('#bca67b');bench(-.12,1,1.12,.42,13);
-    for(const [x,y] of [[.08,1.12],[.46,1.12],[.83,1.12],[.27,1.34],[.67,1.34]]){
-      const [a,b]=p(x,y,15);oval(a,b,4,2.3,'#d9b36b','#947044');
-      line([[a-1.5,b-1.5],[a-.5,b+.5]],'#f2d18c',.7);line([[a+1,b-1],[a+2,b+1]],'#f2d18c',.7);
+    for(const [x,y] of [[.05,1.2],[.47,1.2],[.89,1.2]]){
+      const [a,b]=p(x,y,15);oval(a,b,5,3.3,'#d9b36b');
     }
-    sack(-1.32,.35);sack(-1.3,.85);
+    sack(-1.32,.65);
     edge([1.6,.83,1],[1.35,.83,30],'#c4a477',1.7);
     face([[1.2,.83,29],[1.5,.83,29],[1.5,.83,36],[1.2,.83,36]],'#d3bc83');lantern(-.95,.7,30);
   }else if(b.kind==='smokehouse'){
     walls(-.95,.95,-1.1,.65,49+rise,'#a2977e','#7f7d6b');
     roof(-1.1,1.1,-1.25,.82,49+rise,19,'#7d8883','#596d69');chimney(63+rise);
-    face([[-.21,.67,5],[.7,.67,5],[.7,.67,39],[-.21,.67,39]],'#554e40','#c4a477',1);
-    for(const z of [15,20,25,30,35])edge([-.15,.69,z],[.63,.69,z],'#95866a',1.4);
+    face([[-.21,.67,5],[.7,.67,5],[.7,.67,39],[-.21,.67,39]],'#554e40');
+    for(const z of [18,25,32])edge([-.15,.69,z],[.63,.69,z],'#95866a',1.4);
     face([[.03,.7,7],[.47,.7,7],[.47,.7,12],[.03,.7,12]],'#332e27');edge([.12,.72,8],[.37,.72,8],'#c68b4d',1);
     for(const x of [-1.2,.25]){edge([x,1.3,0],[x,1.3,32],'#735439',2);edge([x,1.3,4],[x+.19,1.3,12],'#b48a56',1.3);}
     edge([-1.3,1.3,32],[.35,1.3,32],'#c4a477',2);
     for(const x of [-.93,-.5,-.07]){
-      const [a,b]=p(x,1.3,27);line([[a,b-7],[a,b-3]],'#d1b37c',.65);
-      poly([[a,b-4],[a+3,b],[a+1,b+6],[a+3,b+9],[a-1,b+8],[a-3,b+9],[a-2,b+5],[a-3,b]],'#b28c75');oval(a+.3,b-1,.6,.6,'#473f32');
+      const [a,b]=p(x,1.3,27);line([[a,b-7],[a,b-3]],'#d1b37c',2.4);
+      poly([[a,b-4],[a+3,b],[a+1,b+6],[a+3,b+9],[a-1,b+8],[a-3,b+9],[a-2,b+5],[a-3,b]],'#b28c75');
     }
     for(let i=0;i<3;i++){
-      const [a,b]=p(1.4,-.35+i*.3);poly([[a-6,b-3],[a+4,b+2],[a+6,b-2],[a-4,b-7]],'#947044');oval(a+5,b,2.7,3,'#dbb580','#735439');
+      const [a,b]=p(1.4,-.35+i*.3);poly([[a-6,b-3],[a+4,b+2],[a+6,b-2],[a-4,b-7]],'#947044');oval(a+5,b,2.7,3,'#dbb580');
     }
     tub(1.25,.85,'#a39479',7,3.5);lantern(-.95,.7,34);
   }else if(b.kind==='tannery'){
@@ -5288,8 +5228,7 @@ function paintDetailedBuilding(b,town,target,paintPolygon,usable){
     for(const x of [.4,1.55])edge([x,-.12,0],[x,-.12,47],'#735439',2.5);
     edge([.35,-.12,46],[1.6,-.12,46],'#c4a477',2.1);edge([.4,-.12,10],[1.55,-.12,10],'#947044',1.5);
     const [a,b]=p(.98,-.12,28);
-    poly([[-8,-12],[-3,-9],[0,-12],[3,-9],[8,-12],[6,-4],[9,9],[3,7],[0,11],[-3,7],[-9,9],[-6,-4]].map(([x,y])=>[a+x*1.12,b+y*1.12]),'#bc8a57','#735439',.85);
-    line([[a-4,b-6],[a,b-2],[a-3,b+5]],'#d3a36f',.65);line([[a+2,b-7],[a+5,b-1],[a+3,b+5]],'#d3a36f',.65);
+    poly([[-8,-12],[-3,-9],[0,-12],[3,-9],[8,-12],[6,-4],[9,9],[3,7],[0,11],[-3,7],[-9,9],[-6,-4]].map(([x,y])=>[a+x*1.12,b+y*1.12]),'#bc8a57');
     for(const [dx,dy,ex,ey] of [[-9,-12,-14,-27],[9,-12,14,-13],[-9,9,-14,9],[9,9,14,23]])line([[a+dx,b+dy],[a+ex,b+ey]],'#e4cea4',.7);
     bench(-1.15,.78,.66,.35,13);
     face([[-1.12,.83,17],[-.52,.83,17],[-.52,1.05,12],[-1.12,1.05,12]],'#c69a64');edge([-.96,.94,17],[-.73,.94,19],'#c4d2ce',1.5);
@@ -5297,16 +5236,15 @@ function paintDetailedBuilding(b,town,target,paintPolygon,usable){
     edge([.35,1.18,4],[.45,1.18,26],'#c4a477',1.6);lantern(-1.3,.5,25);
   }else if(b.kind==='woodcutter'){
     shed('#8e8860','#706f4f');
-    for(const [x,y] of [[.7,-.65],[.9,-.1]])for(const [dx,z] of [[0,3],[.34,3],[.17,8]]){
+    for(const [x,y] of [[.85,-.35]])for(const [dx,z] of [[0,3],[.34,3],[.17,8]]){
       face([[x+dx,y,z],[x+dx+.7,y,z],[x+dx+.7,y+.19,z],[x+dx,y+.19,z]],'#947044');
-      const [a,b]=p(x+dx+.7,y+.09,z);oval(a,b,3,3.8,'#dbb580','#735439');oval(a,b,1.5,2.2,null,'#b48a56');
+      const [a,b]=p(x+dx+.7,y+.09,z);oval(a,b,4,4.8,'#dbb580');
     }
     const [a,bottom]=p(-1.27,.85);
     poly([[a-8,bottom-18],[a-8,bottom],[a,bottom+4],[a+8,bottom],[a+8,bottom-18]],'#947044');
-    oval(a,bottom-18,8,4,'#dbb580','#735439');oval(a,bottom-18,4.8,2.3,null,'#b48a56');
+    oval(a,bottom-18,8,4,'#dbb580');
     edge([-1.25,.85,13],[-1.17,.85,30],'#c4a477',1.8);
     face([[-1.17,.85,30],[-.85,.85,33],[-.85,.85,25],[-1.17,.85,26]],upgrades.includes('axe')?'#e8efdf':'#c4d2ce');
-    for(const [x,y] of [[-.35,1.3],[-.12,1.1],[-.56,1.55]])face([[x,y,.2],[x+.08,y,.2],[x+.13,y+.08,.2],[x+.03,y+.08,.2]],'#d3bc83',null);
     edge([.5,.75,0],[.5,.75,26],'#c4a477',1.7);
     face([[.5,.75,26],[.76,.75,29],[.76,.75,21],[.5,.75,22]],upgrades.includes('tools')?'#e8efdf':'#c4d2ce');
   }else if(b.kind==='workshop'){
@@ -5315,42 +5253,36 @@ function paintDetailedBuilding(b,town,target,paintPolygon,usable){
     face([[.48,1.1,16],[.72,1.1,16],[.72,1.1,23],[.48,1.1,23]],'#84958e');
     edge([.6,1.1,19],[.6,1.1,28],'#c4d2ce',1);edge([-.23,1.12,18],[0,1.12,21],'#735439',1.8);
     const [a,py]=p(-.1,1.1,20);poly([[a-3,py-2],[a+3,py-2],[a+4,py+2],[a-2,py+2]],'#98aaa7');
-    const [cx,cy]=p(.86,1.42,6);oval(cx,cy-2,5,3,'#b48a56','#735439');oval(cx,cy-4,5,2.5,'#e0bd84','#735439');
+    const [cx,cy]=p(.86,1.42,6);oval(cx,cy-2,5,3,'#b48a56');oval(cx,cy-4,5,2.5,'#e0bd84');
   }else if(b.kind==='farm'){
     walls(-.95,.95,-1.1,.65,37+rise,'#c6b080','#a68f65');
     roof(-1.1,1.1,-1.25,.82,37+rise,18,'#b49b60','#958049');
-    face([[-.08,.67,13],[.78,.67,13],[.78,.67,29],[-.08,.67,29]],'#5a583c','#947044',1);bench(-.07,.85,.9,.38,13);
-    for(const [x,color] of [[.08,'#8da962'],[.3,'#d9bd70'],[.55,'#cc8962']]){const [a,b]=p(x,1.05,15);oval(a,b,3,2.3,color,'#735439');}
+    face([[-.08,.67,13],[.78,.67,13],[.78,.67,29],[-.08,.67,29]],'#5a583c');bench(-.07,.85,.9,.38,13);
+    for(const [x,color] of [[.08,'#8da962'],[.3,'#d9bd70'],[.55,'#cc8962']]){const [a,b]=p(x,1.05,15);oval(a,b,3,2.3,color);}
     sack(-1.27,.45);sack(-1.22,.92);crate(1.08,.15);
     for(const y of [-.12,.12])edge([1.05,y,0],[1.05,y,30],'#c4a477',1.5);
     edge([1.05,-.32,30],[1.05,.09,30],'#98aaa7',1.4);
-    for(const y of [-.29,-.17,-.05,.07])edge([1.05,y,30],[1.05,y,26],'#98aaa7',.8);
+    for(const y of [-.25,-.03])edge([1.05,y,30],[1.05,y,26],'#98aaa7',.8);
     tub(.75,1.24,'#bba475',7,3.4);lantern(-.95,.7,29);
   }else if(b.kind==='home'){
     const h=34+3*(level-1),timber=upgrades.includes('timber_frame');
     const light=level===1?'#c4ae86':level===2?'#cbb68e':level===3?'#d1bea0':'#b8bcab';
     const dark=level===1?'#a18c69':level===2?'#a99572':level===3?'#b2a285':'#8f9a8d';
     walls(-.95,.95,-1.05,.65,h,light,dark);
-    if(level===1)for(const x of [-.8,-.55,-.3,-.05,.2,.45,.7,.9])edge([x,.65,7],[x,.65,h-1],'#a28a63',.4);
     if(timber){
-      for(const x of [-.95,0,.95])edge([x,.65,6],[x,.65,h],'#735439',1.6);
-      edge([-.95,.65,h*.65],[.95,.65,h*.65],'#735439',1.4);
+      for(const x of [-.95,0,.95])edge([x,.65,6],[x,.65,h],'#796347',3.2);
+      edge([-.95,.65,h*.65],[.95,.65,h*.65],'#796347',3);
       edge([.95,-1,12],[.95,-.4,25],'#674c33',2);edge([.95,-1,25],[.95,-.4,12],'#674c33',2);
     }
     if(level>=3){
       const stone=level===3?12:h;
       face([[-.95,.65,0],[.95,.65,0],[.95,.65,stone],[-.95,.65,stone]],'#b8bcab');
       face([[.95,-1.05,0],[.95,.65,0],[.95,.65,stone],[.95,-1.05,stone]],'#8f9a8d');
-      for(let z=5;z<stone;z+=6){
-        edge([-.95,.65,z],[.95,.65,z],'#8d9686',.5);edge([.95,-1.05,z],[.95,.65,z],'#758273',.5);
-        for(const x of [-.6,-.05,.5])edge([x+(z%2)*.12,.65,z-5],[x+(z%2)*.12,.65,z],'#8d9686',.5);
-      }
-      face([[-.7,.67,4],[-.28,.67,4],[-.28,.67,29],[-.7,.67,29]],'#594d38','#d4c4a0');
-      face([[.96,-.8,23],[.96,-.4,23],[.96,-.4,33],[.96,-.8,33]],'#edc77d','#594d38',1.2);
-      edge([.97,-.6,23],[.97,-.6,33],'#735439',.8);
+      face([[-.73,.67,3],[-.13,.67,3],[-.13,.67,33],[-.73,.67,33]],'#594d38');
+      face([[.96,-.8,23],[.96,-.4,23],[.96,-.4,33],[.96,-.8,33]],'#edc77d');
       if(timber){edge([.97,-1,12],[.97,-.4,25],'#674c33',2);edge([.97,-1,25],[.97,-.4,12],'#674c33',2);}
     }
-    face([[.22,.67,18],[.6,.67,18],[.6,.67,27],[.22,.67,27]],'#edc77d','#735439',1);edge([.41,.68,18],[.41,.68,27],'#735439',.7);
+    face([[.2,.67,16],[.72,.67,16],[.72,.67,28],[.2,.67,28]],'#edc77d');
     roof(-1.1,1.1,-1.2,.81,h,18,level<3?'#aa7b62':'#986d58',level<3?'#855c4d':'#795849');
     face([[.53,-.78,h+9],[.75,-.78,h+9],[.75,-.78,h+25],[.53,-.78,h+25]],'#b1b3a2');
     face([[.75,-1,h+9],[.75,-.78,h+9],[.75,-.78,h+25],[.75,-1,h+25]],'#858e86');
@@ -5361,9 +5293,7 @@ function paintDetailedBuilding(b,town,target,paintPolygon,usable){
       face([[-.3,.87,h-3],[-.1,.87,h-3],[-.1,.87,h+2],[-.3,.87,h+2]],'#edc77d');
     }
     face([[-.86,.78,.1],[-.18,.78,.1],[-.18,1.03,.1],[-.86,1.03,.1]],'#b8bcab');lantern(-.95,.7,29);
-    const [a,py]=p(.6,1);oval(a,py,4.5,2.2,'#947044','#735439');oval(a,py-3,4,3.2,'#78945c');
-    for(const [dx,dy] of [[-2,-3],[1,-5],[3,-2]])oval(a+dx,py+dy,1,1,'#d6b879');
-    if(level>=2)bench(-1.5,.35,.42,.26,10);
+    const [a,py]=p(.6,1);oval(a,py,4.5,2.2,'#947044');oval(a,py-3,4,3.2,'#78945c');
   }else if(b.kind==='hall'){
     const h=43+3*(level-1),x1=-1.3,x2=1.3,y1=-1.2,y2=.8;
     face([[x1,y2,0],[x2,y2,0],[x2,y2,h],[x1,y2,h]],level<3?'#c5b08b':'#c6bca2');
@@ -5371,16 +5301,16 @@ function paintDetailedBuilding(b,town,target,paintPolygon,usable){
     const stone=level<3?7:14;
     face([[x1,y2,0],[x2,y2,0],[x2,y2,stone],[x1,y2,stone]],'#aeb1a0');
     face([[x2,y1,0],[x2,y2,0],[x2,y2,stone],[x2,y1,stone]],'#7f8d7c');
-    for(const x of [x1,-.4,.4,x2])edge([x,y2,5],[x,y2,h],'#735439',1.6);
-    edge([x1,y2,h*.63],[x2,y2,h*.63],'#735439',1.6);
+    for(const x of [x1,x2])edge([x,y2,5],[x,y2,h],'#796347',3.2);
+    edge([x1,y2,h*.63],[x2,y2,h*.63],'#796347',3.2);
     if(level>=2){edge([x1,y2,h],[-.4,y2,h*.63],'#947044',1.6);edge([.4,y2,h*.63],[x2,y2,h],'#947044',1.6);}
-    for(const y of [-1.1,-.5,.1,.7])edge([x2,y,6],[x2,y,h],'#735439',1.1);
-    face([[-.4,.82,4],[.15,.82,4],[.15,.82,30],[-.4,.82,30]],'#594d38','#d3bc8f',1.2);edge([-.12,.84,5],[-.12,.84,29],'#947044',.8);
+    for(const y of [-1.1,.7])edge([x2,y,6],[x2,y,h],'#735439',1.1);
+    face([[-.5,.82,3],[.22,.82,3],[.22,.82,34],[-.5,.82,34]],'#515342');
     for(const x of [-.96,.63]){
-      face([[x,.82,22],[x+.3,.82,22],[x+.3,.82,32],[x,.82,32]],'#edc77d','#735439',1);edge([x+.15,.83,22],[x+.15,.83,32],'#735439',.6);
+      face([[x,.82,22],[x+.3,.82,22],[x+.3,.82,32],[x,.82,32]],'#edc77d');
     }
     for(const y of [-.8,0]){
-      face([[1.31,y,22],[1.31,y+.3,22],[1.31,y+.3,32],[1.31,y,32]],'#edc77d','#735439',1);edge([1.32,y+.15,22],[1.32,y+.15,32],'#735439',.6);
+      face([[1.31,y,22],[1.31,y+.3,22],[1.31,y+.3,32],[1.31,y,32]],'#edc77d');
     }
     const roofColors=[['#7f9795','#5a747b'],['#748e91','#52767b'],['#6c8990','#476975'],['#637c8b','#405c70'],['#596f83','#374e65']][level-1];
     roof(-1.47,1.47,-1.36,.96,h,23,...roofColors);
@@ -5420,36 +5350,28 @@ function paintDetailedBuilding(b,town,target,paintPolygon,usable){
 function paintBarn(b,town,target,paintPolygon,usable){
   const s=tileW/46,level=buildingVisualLevel(b,town),rise=4*(level-1);
   const p=(x,y,z=0)=>{const [px,py]=point(b.x+x,b.y+y);return [px,py+tileH/2-z*s];};
-  const poly=(coords,fill,stroke='#624b35',width=.8)=>{target.lineWidth=width*s;paintPolygon(coords.map(c=>p(...c)),usable?fill:'#a34f49',stroke);};
-  const line=(a,end,color,width=1)=>{const [x,y]=p(...a),[ex,ey]=p(...end);target.beginPath();target.moveTo(x,y);target.lineTo(ex,ey);target.strokeStyle=color;target.lineWidth=width*s;target.stroke();};
+  const poly=(coords,fill)=>{paintPolygon(coords.map(c=>p(...c)),usable?fill:'#a34f49');};
+  const line=(a,end,color,width=1)=>{const [x,y]=p(...a),[ex,ey]=p(...end);target.beginPath();target.moveTo(x,y);target.lineTo(ex,ey);target.strokeStyle=color;target.lineWidth=Math.max(1.6,width)*s;target.stroke();};
   target.save();
-  poly([[-.6,-.65,0],[.65,-.65,0],[.65,.65,0],[-.6,.65,0]],'#314832');
+  const [shadowX,shadowY]=p(0,0);target.fillStyle='#223b293d';target.beginPath();target.ellipse(shadowX+3*s,shadowY+4*s,28*s,11*s,0,0,Math.PI*2);target.fill();
   poly([[-.6,.6,0],[.6,.6,0],[.6,.6,35+rise],[-.6,.6,35+rise]],'#bdab8c');
   poly([[.6,-.6,0],[.6,.6,0],[.6,.6,35+rise],[.6,-.6,35+rise]],'#8b8069');
-  for(const t of [-.4,-.2,0,.2,.4]){
-    line([t,.6,4],[t,.6,34+rise],'#72553f',.5);line([.6,t,4],[.6,t,34+rise],'#65593e',.5);
-  }
   const stone=8+2*(level-1);
   poly([[-.6,.6,0],[.6,.6,0],[.6,.6,stone],[-.6,.6,stone]],'#a2a497');
   poly([[.6,-.6,0],[.6,.6,0],[.6,.6,stone],[.6,-.6,stone]],'#767f73');
-  for(const t of [-.3,.15,.4])line([t,.6,0],[t,.6,stone-1],'#677064',.6);
   for(const [x,y] of [[-.6,.6],[.6,.6],[.6,-.6]])line([x,y,2],[x,y,36+rise],'#604d36',2);
-  poly([[-.35,.612,0],[.35,.612,0],[.35,.612,24],[-.35,.612,24]],'#633f34','#e3cba1',1.2);
+  poly([[-.35,.612,0],[.35,.612,0],[.35,.612,24],[-.35,.612,24]],'#633f34');
   line([0,.62,0],[0,.62,24],'#e3cba1');
   for(const [a,end] of [[-.35,0],[0,.35]])line([a,.63,23],[end,.63,1],'#d6bd90');
   poly([[-.6,.6,35+rise],[.6,.6,35+rise],[0,.6,51+rise]],'#bdab8c');
   poly([[-.75,-.76,35+rise],[-.75,.76,35+rise],[0,.76,53+rise],[0,-.76,53+rise]],'#6b8076');
   poly([[0,-.76,53+rise],[0,.76,53+rise],[.75,.76,35+rise],[.75,-.76,35+rise]],'#52685f');
-  for(const y of [-.45,-.1,.25,.6])line([0,y,52+rise],[.73,y,35+rise],'#c3a282',.6);
-  line([-.75,.76,35+rise],[0,.76,53+rise],'#dec498',1.5);line([0,.76,53+rise],[.75,.76,35+rise],'#dec498',1.5);
-  line([0,-.76,53+rise],[0,.76,53+rise],'#d0b185');
-  poly([[-.13,.64,34+rise],[.13,.64,34+rise],[.13,.64,40+rise],[-.13,.64,40+rise]],'#403f30','#d6bc86');
-  poly([[.42,.67,16],[.58,.67,16],[.58,.67,23],[.42,.67,23]],'#edc77d','#594d38');
+  poly([[-.13,.64,34+rise],[.13,.64,34+rise],[.13,.64,40+rise],[-.13,.64,40+rise]],'#403f30');
+  poly([[.42,.67,16],[.58,.67,16],[.58,.67,23],[.42,.67,23]],'#edc77d');
   for(const x of [-.8,-1.1]){
     poly([[x,.2,0],[x+.25,.2,0],[x+.25,.6,0],[x,.6,0]],'#aa8847');
     poly([[x,.2,7],[x+.25,.2,7],[x+.25,.6,7],[x,.6,7]],'#d6b765');
     poly([[x,.6,0],[x+.25,.6,0],[x+.25,.6,7],[x,.6,7]],'#bea15d');
-    line([x+.12,.6,0],[x+.12,.6,7],'#8e7547',.9);
   }
   const [x,y]=p(.6,-.2,22);
   target.fillStyle='#344b42';target.fillRect(x-4*s,y-6*s,9*s,6*s);

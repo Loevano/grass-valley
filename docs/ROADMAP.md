@@ -1,14 +1,5 @@
 # Roadmap
 
-## Building style cohesion
-
-**Status:** a [visual comparison prototype](building-style-prototype.svg) is ready
-for review; the game renderer is unchanged. See the
-[artwork reference](ARTWORK.md#building-style-cohesion-prototype) for the proposed
-rules. Remaining work: choose the direction, cover the other building families
-and upgrade variants, preserve readable doors and props on compact saved sites,
-and validate the complete village at multiple zoom levels before implementation.
-
 The roadmap starts with the cached zoomed-out map improvement. Design details
 and cache rules are in [Backend](BACKEND.md#cached-zoomed-out-map).
 

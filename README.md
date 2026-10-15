@@ -965,6 +965,11 @@ Save files and terrain chunks stay at the root, outside version control.
 Town halls, mills, woodworker's workshops (forgeries), butcher shops, bakeries,
 smokehouses, and tanneries occupy 2×2 tiles; sawpits occupy 3×2. Cottages,
 woodcutters, and farms retain their 1×1 footprints.
+The [updated building family](docs/building-style-family.svg) uses broad shaded
+faces, chunky supports, and fewer, larger profession props to match workers,
+trees, and rocks. Fine roof seams, masonry joints, and continuous outlines are
+removed. Structural, capacity, and equipment upgrades remain visible. Completed
+updated buildings have ground shadows; construction sites keep their lot pads.
 Production buildings include a covered workplace, outdoor workbench, and stock yard.
 Their artwork retains the original angled style: the sawpit is an open timber
 shed with a pitched roof, half walls, a tool rack, and a lantern. Its sawing bench

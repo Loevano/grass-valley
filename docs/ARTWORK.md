@@ -33,31 +33,41 @@ The workshop has a bench canopy and tool rack, and the hall is wider without
 scaling up its doors and windows. Their
 existing footprints and visible upgrade conventions remain unchanged.
 
-## Building style cohesion prototype
+## Building style cohesion
 
-**Proposed:** simplify the updated buildings to match the landscape's broad,
-mostly unoutlined shapes and the workers' chunky proportions. The
+**Implemented:** the updated building families use the landscape's broad,
+mostly unoutlined shapes and the workers' chunky proportions. The original
 [comparison sheet](building-style-prototype.svg) shows level-2 cottages, bakeries,
 and woodcutters beside the same existing workers, trees, and rocks. The left
-column captures the current Canvas artwork; the right column is a new vector
+column captures the previous Canvas artwork; the right column is a vector
 sketch. Enlarged views and a 46px-tile reference strip compare readability.
 
 ![Current buildings beside proposed simpler versions, using the same workers and scenery.](building-style-prototype.png)
 
-| Element | Proposed treatment |
+| Element | Treatment |
 | --- | --- |
 | Surfaces | Broad light and dark faces; remove roof seams, plank lines, masonry joints, and continuous brown outlines. |
 | Structure | A few thick supports and braces, with a clear door and warm window shapes. |
 | Profession | Keep a few large cues: the bakery's chimney, oven, and bread counter; the woodcutter's open shelter, axe, and logs. |
-| Scale | Make doors and useful props readable beside the existing workers; avoid shrinking those anchors on compact sites. |
+| Scale | Use broader doors and fewer, larger props beside the existing workers; retain the fit of compact saved sites. |
 | Grounding | Use a restrained green ground shadow rather than relying on a sharply outlined yard pad. |
 
-This is a review prototype, not an approved replacement or a runtime change.
-It does not specify every structural, capacity, or profession upgrade. Before
-implementation, compare those variants, the other building families, compact
-saved sites, selection states, and the full village at several zoom levels.
-The host must continue to own building footprints, worker positions, and state;
-workers and shadows should remain separate from authoritative snapshots.
+The accepted direction is implemented for cottages, town halls, woodcutters,
+farms, woodworker's workshops, bakeries, butcher shops, smokehouses, tanneries,
+barns, and sawpits. The [implemented family sheet](building-style-family.svg)
+captures the renderer with existing trees and workers and every structural tier.
+
+![The eleven simplified building families and their structural tiers.](building-style-family.png)
+
+Roofs and masonry use plain shaded faces. Structural levels retain their bracing,
+stone bases, dormers, belfry, banners, and stock changes. Profession equipment and
+independent capacity plaques remain visible; smoke stays attached to the same
+chimney caps. Larger door shapes and fewer, larger goods improve readability.
+Completed updated buildings use ground shadows rather than outlined lot pads;
+construction sites retain their lot surfaces. Compact saved sites keep their
+existing fit and footprints. Their small scale remains a constraint on prop
+readability. The host continues to own building footprints, worker positions,
+and saved state; the artwork never changes those snapshots.
 
 ## Resource and building icons
 
@@ -180,7 +190,7 @@ their existing meaning. The SVG state icons remain diagram labels.
 | Decision | Options to compare | Status |
 | --- | --- | --- |
 | Final medium | Pixel art or soft storybook illustration | Open |
-| Amount of stylization | Simple geometric charm or more illustrated detail | Open |
+| Amount of stylization | Broad geometric buildings matched to the existing scenery and workers | Building direction implemented |
 | Character cosmetics | Outfits, color variants, accessories, or a combination | Open |
 | Building identity | Biome material variants, upgrade variants, cosmetic variants | Open |
 | Animation scope | Refine existing work actions first; choose ambient additions later | Proposed |
