@@ -24,7 +24,8 @@ const run=new Function('document','window','localStorage','setTimeout','clearTim
  }
  const commands=[];act=data=>commands.push(data);
  inspect('building',1);
- const fields=()=>panelNodes().filter(c=>c.tag==='input'&&c.type==='checkbox');
+ const fields=()=>panelNodes().filter(c=>c.tag==='input'&&c.type==='checkbox'&&!c.attributes['aria-label']?.startsWith('Accept all '));
+ const categoryToggle=title=>panelNodes().find(c=>c.attributes['aria-label']==='Accept all '+title+' resources');
  const meters=()=>panelNodes().filter(c=>c.tag==='meter');
  const button=text=>panelNodes().find(c=>c.tag==='button'&&c.textContent===text);
  const toggle=key=>fields().find(c=>c.attributes['aria-label']==='Accept '+key);
@@ -43,11 +44,24 @@ const run=new Function('document','window','localStorage','setTimeout','clearTim
  const groups=panelNodes().filter(c=>c.className==='resource-group');
  const baking=groups.find(c=>c.children[0].textContent==='Baking');
  check(baking&&panelNodes(baking).some(c=>c.textContent==='Bread')&&panelNodes(baking).some(c=>c.textContent==='Wheat'),'Storage groups ingredients and foods by trade');
+ check(categoryToggle('Baking').indeterminate&&!categoryToggle('Baking').checked,'Partially enabled categories show a mixed checkbox');
+ const beforeCategory=commands.length,fishBefore=toggle('Fish').checked;
+ categoryToggle('Baking').checked=true;categoryToggle('Baking').onchange();
+ check(commands.length===beforeCategory+1&&['wheat','flour','bread'].every(key=>commands.at(-1).enabled[key]),'Category selection enables its resources with one command');
+ check(['Wheat','Flour','Bread'].every(key=>toggle(key).checked)&&!categoryToggle('Baking').indeterminate,'Category selection updates child switches and clears mixed state');
+ categoryToggle('Baking').checked=false;categoryToggle('Baking').onchange();
+ check(commands.length===beforeCategory+2&&['wheat','flour','bread'].every(key=>!commands.at(-1).enabled[key]),'Category deselection disables all of its resources with one command');
+ check(!categoryToggle('Baking').checked&&!categoryToggle('Baking').indeterminate&&toggle('Fish').checked===fishBefore,'Category changes preserve other categories');
+ toggle('Bread').checked=true;toggle('Bread').onchange();
+ check(categoryToggle('Baking').indeterminate&&!categoryToggle('Baking').checked,'Individual changes update the category mixed state');
+ town.buildings[1].storage_enabled=commands.at(-1).enabled;render();
+ check(categoryToggle('Baking').indeterminate,'Category mixed state survives host refresh');
  toggle('Bread').checked=false;toggle('Bread').onchange();
  check(!commands.at(-1).enabled.bread&&commands.at(-1).enabled.fish,'Disabling bread preserves the fish switch');
  const beforeAll=commands.length;
  toggle('Wood').onclick({altKey:true});toggle('Wood').checked=true;toggle('Wood').onchange();
  check(commands.length===beforeAll+1&&Object.values(commands.at(-1).enabled).every(Boolean)&&fields().every(c=>c.checked),'Option-click enables all with one command');
+ check(categoryToggle('Baking').checked&&!categoryToggle('Baking').indeterminate,'Toggle-all updates category checkboxes');
  toggle('Wood').onclick({altKey:true});toggle('Wood').checked=false;toggle('Wood').onchange();
  check(commands.length===beforeAll+2&&Object.values(commands.at(-1).enabled).every(enabled=>!enabled)&&fields().every(c=>!c.checked),'Repeated Option-click disables all with one command');
  town.buildings[1].storage_enabled=commands.at(-1).enabled;render();
@@ -69,7 +83,7 @@ const run=new Function('document','window','localStorage','setTimeout','clearTim
  check(panelNodes().find(c=>c.className==='storage-summary').textContent==='350 capacity per enabled resource','Level 8 warehouses show the expanded capacity');
  check(!panelNodes().some(c=>c.tag==='button'&&c.title?.startsWith('Upgrade to level'))&&panelNodes().some(c=>c.className==='upgrade-card-status'&&c.textContent==='Maxed'),'Level 8 shows maxed storage without an action');
  viewed='friend';inspect('building',1);
- check(meters().length===28&&!fields().length,'Visitors see storage meters without switches');
+ check(meters().length===28&&!fields().length&&!categoryToggle('Baking'),'Visitors see storage meters without switches');
  check(!button('Allocate')&&!button('Save allocations'),'Visitors cannot change allocations');
  viewed='own';
  town.buildings.push({kind:'woodcutter',x:3,y:3,output_buffer:{wood:2.5},stored_goods:{wood:1}});

@@ -582,9 +582,16 @@ function storageGoodUnlocked(town,key){
 function renderStorage(town,item,index,target=$('selection-details')){
   const capacity=buildingStorageSize(item),allocations=roomAllocations(item);
   const owner=viewed===identity?.town_id,canConfigure=owner&&item.kind==='storehouse';
-  const enabled=roomEnabled(item),edible=foodGoods(),stored={...item.stored_goods},toggles=[];
+  const enabled=roomEnabled(item),edible=foodGoods(),stored={...item.stored_goods},toggles=new Map(),categoryToggles=[];
   for(const [key,n] of Object.entries(item.output_buffer || {}))stored[key]=(stored[key] || 0)+n;
   const keys=buildingStorageKeys(item).filter(key=>storageGoodUnlocked(town,key)||stored[key]>0||item.input_buffer?.[key]>0||amountOf(town,key)>0);
+  const syncToggles=()=>{
+    for(const [key,toggle] of toggles)toggle.checked=enabled[key];
+    for(const {toggle,members} of categoryToggles){
+      toggle.checked=members.every(key=>enabled[key]);
+      toggle.indeterminate=!toggle.checked&&members.some(key=>enabled[key]);
+    }
+  };
   const stock=stored;
   const displayCapacity=Object.entries(allocations).reduce((sum,[key,n])=>sum+(key==='food'||key in edible?n:0),0)
     +Math.min(capacity,Object.entries(allocations).reduce((sum,[key,n])=>sum+(key!=='food'&&!(key in edible)?n:0),0));
@@ -601,10 +608,22 @@ function renderStorage(town,item,index,target=$('selection-details')){
   }
   if(item.kind==='storehouse'){
     const note=document.createElement('p');note.className='storage-note';
-    note.textContent='Each resource has its own capacity. Disabled goods remain available to use.'+(canConfigure?' Option/Alt-click any resource checkbox to toggle all shown resources on or off.':'');target.append(note);
+    note.textContent='Each resource has its own capacity. Disabled goods remain available to use.'+(canConfigure?' Use a category checkbox to toggle its shown resources. Option/Alt-click any resource checkbox to toggle all shown resources on or off.':'');target.append(note);
   }
   for(const [title,members] of resourceCategories(keys)){
     const group=resourceGroup(title);target.append(group);
+    if(canConfigure){
+      const heading=group.children[0];heading.className='storage-category-heading';
+      const toggle=document.createElement('input');toggle.type='checkbox';
+      toggle.setAttribute('aria-label',`Accept all ${title} resources`);
+      toggle.onchange=()=>{
+        if(viewed!==identity?.town_id)return;
+        for(const key of members)enabled[key]=toggle.checked;
+        syncToggles();
+        act({action:'configure_storage',index,enabled:{...enabled}});
+      };
+      categoryToggles.push({toggle,members});heading.append(toggle);
+    }
     for(const key of members){
       const label=key==='food'?'Provisions':goodName(key);
       const row=document.createElement('div');row.className='storage-row';
@@ -621,12 +640,12 @@ function renderStorage(town,item,index,target=$('selection-details')){
           if(toggleAll){
             const acceptAll=!keys.every(resource=>enabled[resource]);
             for(const resource of keys)enabled[resource]=acceptAll;
-            for(const input of toggles)input.checked=acceptAll;
           }else enabled[key]=toggle.checked;
           toggleAll=false;
+          syncToggles();
           act({action:'configure_storage',index,enabled:{...enabled}});
         };
-        toggles.push(toggle);
+        toggles.set(key,toggle);
         caption.append(toggle);
       }
       const amount=stock[key] || 0,limit=allocations[key] || 0,displayLimit=Number(limit.toFixed(2));
@@ -636,6 +655,7 @@ function renderStorage(town,item,index,target=$('selection-details')){
       meter.setAttribute('aria-label',`${label} stored`);meter.setAttribute('aria-valuetext',`${Math.floor(amount)} stored, ${displayLimit} capacity`);row.append(meter);group.append(row);
     }
   }
+  syncToggles();
   for(const [key,n] of Object.entries(stored))if(n>0&&!buildingStorageGoods(item).includes(key))target.append(fact(String(Math.floor(n)),`${goodName(key)} from previous storage · available to use or haul away`));
   for(const [key,n] of Object.entries(item.input_buffer || {}))if(n>0)target.append(fact(String(Math.floor(n)),`${goodName(key)} reserved for production`));
 }

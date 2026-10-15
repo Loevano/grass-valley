@@ -23,6 +23,21 @@ const rows=()=>Array.from(app.run('storage()'));
 assert.deepEqual(new Set(rows()),new Set(['Wood','Stone','Provisions','Vegetables','Fish','Berries','Herbs']),'A starting storehouse omits locked goods and empty categories');
 assert(!app.run('nodes().some(node=>node.className==="resource-group"&&node.children[0].textContent==="Metalworking")'));
 assert.equal(app.run('roomAllocations(town.buildings[1]).steel'),50,'Hidden resources retain authoritative capacity');
+app.run(`
+  function categoryToggle(title){return nodes().find(node=>node.className==='storage-category-heading'&&node.textContent===title)?.children[0];}
+  town.buildings[1].storage_enabled.planks=true;storage();
+  const timberToggle=categoryToggle('Timber');
+  timberToggle.checked=false;timberToggle.onchange();
+`);
+assert.equal(app.run('commands.at(-1).enabled.wood'),false,'Category deselection changes shown resources');
+assert.equal(app.run('commands.at(-1).enabled.planks'),true,'Category deselection preserves locked resources in the same category');
+assert.equal(app.run('commands.at(-1).enabled.steel'),true,'Category deselection preserves other categories');
+app.run(`
+  timberToggle.checked=true;timberToggle.onchange();
+  viewed='friend';const beforeStaleCategory=commands.length;timberToggle.onchange();
+`);
+assert.equal(app.run('commands.length'),app.run('beforeStaleCategory'),'Detached category controls cannot change another town');
+app.run(`viewed='own';town.buildings[1].storage_enabled.planks=false;storage();`);
 app.run(`toggle('Wood').checked=false;toggle('Wood').onchange();`);
 assert.equal(app.run('commands.at(-1).enabled.steel'),true,'An ordinary switch preserves hidden settings');
 app.run(`toggle('Wood').onclick({altKey:true});toggle('Wood').onchange();`);

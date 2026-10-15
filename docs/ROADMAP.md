@@ -127,7 +127,8 @@ Production now respects each resource's existing storage allowance, including
 pending deliveries. Each edible good and fish species now has an independent
 item capacity in halls, storehouses, and workplaces. Storage filters and market
 lists are organized by production trade; Option/Alt-clicking a storage resource
-checkbox toggles all shown resources on or off. Legacy food filters expand without losing stock.
+checkbox toggles all shown resources on or off. Category checkboxes toggle their
+shown resources together and indicate partial selections. Legacy food filters expand without losing stock.
 Markets also offer a quick-sale form at the top: choose 1, 5, 10, 50, 100, or
 200 goods and type or choose a resource before selling at the usual price.
 Wheat is available for one-time sales without changing automatic-sale rules;
