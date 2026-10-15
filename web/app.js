@@ -437,7 +437,7 @@ const labels = {road:'Dirt road',hall:'Town hall',home:'Cottage',woodcutter:'Woo
 function buildingLevel(building){return ['acre','orchard_tree'].includes(building.kind)?1:building.level || 1;}
 const woodWorkerCapacities={woodcutter:[1,2,3],sawpit:[1,2],workshop:[1]};
 const workerCapacities={...woodWorkerCapacities,farm:[1,2,4],acre:[1],mill:[1],bakery:[1],mine:[1,2,4,8],smelter:[1,2,3],steelworks:[1]};
-const decorationKinds=['wooden_bench','wooden_statue','lantern'];
+const decorationKinds=['wooden_bench','wooden_statue','lantern','flower_box','wooden_table','signpost','garden_arch'];
 function decorationOrientation(building){
   return Number.isInteger(building.orientation)&&building.orientation>=0&&building.orientation<4?building.orientation:0;
 }
@@ -814,7 +814,8 @@ const colors = {hall:'#a88861',home:'#c5ad80',woodcutter:'#947b55',farm:'#bc9b5c
 // Small vector illustrations share the map's earth, sage, and amber palette.
 Object.assign(labels,{orchard_tree:'Fruit tree',barn:'Barn',sawpit:'Sawpit',mill:'Mill',smokehouse:'Smokehouse',workshop:'Workshop',fish_pond:'Fish pond',orchard:'Orchard',market:'Market stall',bakery:'Bakery',butcher:'Butcher shop'});
 Object.assign(labels,{workshop:'Workshop',wooden_bench:'Wooden bench',wooden_statue:'Carved wooden statue',lantern:'Lantern'});
-Object.assign(costs,{wooden_bench:0,wooden_statue:0,lantern:0});
+Object.assign(labels,{flower_box:'Flower box',wooden_table:'Wooden table',signpost:'Signpost',garden_arch:'Garden arch'});
+Object.assign(costs,Object.fromEntries(decorationKinds.map(kind=>[kind,0])));
 Object.assign(costs,{orchard_tree:5,barn:25,sawpit:25,mill:30,smokehouse:25,workshop:30,fish_pond:25,orchard:25,market:20,bakery:30,butcher:25});
 Object.assign(colors,{barn:'#b9866b',sawpit:'#aa8b60',mill:'#c1b080',smokehouse:'#8c8173',workshop:'#a28c72',fish_pond:'#7899a2',orchard:'#83a36b',market:'#c5ad80',bakery:'#c1a078',butcher:'#b9866b'});
 Object.assign(labels,{tannery:'Tannery',mine:'Mine',smelter:'Forgery',stable:'Stable',saddler:'Saddler',steelworks:'Steelworks',tradehouse:'Trade house'});
@@ -974,7 +975,7 @@ function renderResourceList(town){
     }
   }
 }
-function materialCosts(spec){return Object.fromEntries(Object.entries(spec).filter(([k,v])=>v&&['wood','stone','coins','planks','wool','tools','leather','iron_ore','iron','saddles','steel','trade_crates','furniture','carved_furniture'].includes(k)));}
+function materialCosts(spec){return Object.fromEntries(Object.entries(spec).filter(([k,v])=>v&&['wood','stone','coins','planks','wool','tools','leather','iron_ore','iron','saddles','steel','trade_crates','furniture','carved_furniture','lanterns','flower_boxes','wooden_tables','signposts','garden_arches'].includes(k)));}
 function buildingCosts(town,spec){return town?.sandbox?{}:materialCosts(spec);}
 function canAfford(town,cost){return Object.entries(cost).every(([k,v])=>amountOf(town,k)>=v);}
 function costText(cost){return Object.entries(cost).map(([k,v])=>`${v} ${goodName(k).toLowerCase()}`).join(' + ');}
@@ -1063,6 +1064,10 @@ const iconPaths = {
   wooden_bench:'<path fill="#a78454" d="M3 9h26v5H3zm0 9h26v5H3zM5 23h3v7H5zm19 0h3v7h-3z"/>',
   lantern:'<path d="M16 3v5M9 11h14v16H9zM7 10h18M7 28h18"/><path fill="#e8c16d" d="M12 14h8v10h-8z"/>',
   wooden_statue:'<path fill="#b18a58" d="M6 26h20v5H6zm6-14h8l4 14H8z"/><circle fill="#b18a58" cx="16" cy="7" r="6"/>',
+  flower_box:'<path fill="#a78454" d="M3 17h26l-3 12H6z"/><path fill="#719451" d="M8 19V9h3v10zm7 0V6h3v13zm7 0V9h3v10z"/><circle fill="#c47d70" cx="9" cy="9" r="4"/><circle fill="#e8c16d" cx="16" cy="6" r="4"/><circle fill="#c47d70" cx="24" cy="10" r="4"/>',
+  wooden_table:'<path fill="#94704c" d="M7 17h4v13H7zm14 0h4v13h-4z"/><path fill="#cda875" d="m2 12 14-7 14 7-14 7z"/><path fill="#a78454" d="m2 12 14 7 14-7v4l-14 7-14-7z"/>',
+  signpost:'<path fill="#94704c" d="M14 3h4v28h-4z"/><path fill="#cda875" d="M3 7h20l6 6-6 6H3z"/><path stroke="#e8dcc0" stroke-width="3" d="M8 13h12"/>',
+  garden_arch:'<path fill="#a78454" d="M5 29V8h4v21zm18 0V8h4v21zM2 5h28v5H2z"/><path fill="#719451" d="M3 11h8v6H3zm17-9h8v6h-8zM3 21h8v5H3z"/><circle fill="#c47d70" cx="7" cy="13" r="3"/><circle fill="#e8c16d" cx="23" cy="5" r="3"/>',
   fine_axe:'<path fill="#94704c" d="m6 28 15-24 3 2-15 24z"/><path fill="#bacac5" d="m18 5 7-3 5 9-8 4z"/>',
   steel_axe:'<path fill="#94704c" d="m6 28 15-24 3 2-15 24z"/><path fill="#dce8ed" d="m18 5 7-3 5 9-8 4z"/>',
   masterwork_axe:'<path fill="#94704c" d="m6 28 15-24 3 2-15 24z"/><path fill="#d9bd70" d="m18 5 7-3 5 9-8 4z"/>',
@@ -1191,6 +1196,7 @@ Object.assign(iconPaths,{
   village_market:'<path fill="#cda875" d="M5 21h22v8H5z"/><path d="M6 21V12m20 9V12"/><path fill="#719451" d="M3 5h26v9q-4 5-8 0-5 5-10 0-4 5-8 0z"/><path fill="#b9866b" d="M9 21v-4h6v4z"/><path fill="#d9bd70" d="M19 21v-4h5v4z"/>',
   boat:'<path fill="#7899a2" d="M2 28q7 4 14 0 7 4 14 0"/><path fill="#94704c" d="m2 19 9 2h19l-7 7H9z"/><path stroke="#94704c" stroke-width="2" d="M16 21V2"/><path fill="#e8dcc0" d="m18 3 10 14H18z"/><path fill="#d9bd70" d="M13 5 5 17h8z"/>',
 });
+for(const [product,kind] of Object.entries({flower_boxes:'flower_box',wooden_tables:'wooden_table',signposts:'signpost',garden_arches:'garden_arch'}))iconPaths[product]=iconPaths[kind];
 // Species keep different body shapes and markings after smoking, so the
 // silhouette identifies the fish even when the warm smoked palette is used.
 for(const [kind,body,color,marks] of [
@@ -1519,7 +1525,7 @@ function villagersTable(town){
   for(const [index,v] of town.villagers.entries())body.append(villagerRow(town,v,index));
   table.append(body);return table;
 }
-const settlerSpaces={orchard_tree:0,hall:1,home:2,storehouse:1,woodcutter:1,fishing_hut:1,farm:1,acre:1,barn:2,sawpit:1,mill:1,smokehouse:2,workshop:1,fish_pond:2,orchard:2,market:1,bakery:1,butcher:2,wooden_bench:0,wooden_statue:0,lantern:0};
+const settlerSpaces={orchard_tree:0,hall:1,home:2,storehouse:1,woodcutter:1,fishing_hut:1,farm:1,acre:1,barn:2,sawpit:1,mill:1,smokehouse:2,workshop:1,fish_pond:2,orchard:2,market:1,bakery:1,butcher:2,...Object.fromEntries(decorationKinds.map(kind=>[kind,0]))};
 function settlerBuilding(town,v,index){
   if(Number.isInteger(v.building_index))return v.building_index;
   const kind={woodcutting:'woodcutter',farming:'farm',fishing:'fishing_hut'}[v.job];
@@ -1734,6 +1740,9 @@ function productionFacts(rows){
   }
   return list;
 }
+function craftedDecoration(output){
+  return world.progression?.decorations?.find(kind=>world.progression.buildings[kind]?.[output]);
+}
 function renderRecipes(town,item,index,target){
   const recipes=world.progression?.profession_recipes?.[item.kind];
   if(!recipes)return;
@@ -1749,7 +1758,7 @@ function renderRecipes(town,item,index,target){
   for(const spec of recipes){
     const unlocked=town.sandbox||spec.level===1||workers.some(v=>(v[job] || 0)>=spec.level);
     const option=document.createElement('option');option.value=spec.output;
-    option.textContent=`${item.kind==='workshop'&&spec.output==='furniture'?'Wooden bench (furniture)':goodName(spec.output)} · Lv ${spec.level}${unlocked?'':' · Locked'}`;
+    option.textContent=`${item.kind==='workshop'&&spec.output==='furniture'?'Wooden bench (furniture)':goodName(spec.output)}${craftedDecoration(spec.output)?' · Decoration':''} · Lv ${spec.level}${unlocked?'':' · Locked'}`;
     option.disabled=!unlocked;chooser.append(option);
   }
   chooser.value=draft?.recipe || selectedProfessionRecipe(item).output;
@@ -1764,6 +1773,8 @@ function renderRecipes(town,item,index,target){
       ['Batch time',`${seconds}s`],['Practice',`+${((item.kind==='butcher'?0.1:0.08)*seconds/3).toFixed(2)} per batch`]];
     if(food)rows.push(['Food value',`${Number((spec.amount*food).toFixed(2))} per batch`]);
     if(spec.level>1&&!town.sandbox)rows.push(['Requires',`Worker level ${spec.level}+`]);
+    const decoration=craftedDecoration(spec.output);
+    if(decoration)rows.push(['Place',`${world.progression.buildings[decoration].label} · Build → Decorations after delivery`]);
     note.replaceChildren(productionFacts(rows));
   };
   updateNote();
@@ -2719,6 +2730,8 @@ function render(){
       button.hidden=!own || own.level<spec.level;
       button.classList.toggle('selected',kind===tool);button.disabled=!own || own.level<spec.level || !canAfford(own,buildingCosts(own,spec));
       button.textContent=`${labels[kind]} · ${own?.sandbox?'Free · Instant':kind==='road'?'Free · 10s per tile · +50% walking':costText(buildingCosts(own,spec))}${own&&own.level<spec.level?` · Hall ${spec.level}`:''}`;button.append(illustration(kind));
+      const recipe=decorationKinds.includes(kind)&&world.progression?.profession_recipes?.workshop?.find(recipe=>spec[recipe.output]);
+      button.title=recipe?`Craft ${goodName(recipe.output).toLowerCase()} in the Workshop, wait for delivery, then place here.`:'';
     }
     group.hidden=![...group.children].some(button=>button.buildingKind&&!button.hidden);
   }
@@ -5710,15 +5723,20 @@ function paintBuilding(b,town,farmState=null,target=ctx,usable=buildingUsable(to
     const orientation=decorationOrientation(b),faces=[];
     const turn=(x,y,z)=>[...[ [x,y],[-y,x],[-x,-y],[y,-x] ][orientation],z];
     const wood=['#c0a674','#a58a5b','#806c49'],dark=['#9d855c','#806b49','#665a40'];
-    const box=(x0,y0,z0,x1,y1,z1,colors=wood)=>{
+    const face=(points,color,layer=0)=>faces.push({points,color,layer,depth:points.reduce((sum,[x,y,z])=>sum+x+y+z,0)/points.length});
+    const box=(x0,y0,z0,x1,y1,z1,colors=wood,layer=0)=>{
       const base=[[x0,y0],[x1,y0],[x1,y1],[x0,y1]].map(([x,y])=>turn(x,y,z0));
       const top=base.map(([x,y])=>[x,y,z1]);
-      const face=(points,color)=>faces.push({points,color,depth:points.reduce((sum,[x,y,z])=>sum+x+y+z,0)/points.length});
-      face(top,colors[0]);
+      face(top,colors[0],layer);
       for(let i=0;i<4;i++){
         const j=(i+1)%4,nx=base[j][1]-base[i][1],ny=base[i][0]-base[j][0];
-        if(nx+ny>0)face([base[i],base[j],top[j],top[i]],colors[nx>0?1:2]);
+        if(nx+ny>0)face([base[i],base[j],top[j],top[i]],colors[nx>0?1:2],layer);
       }
+    };
+    const flower=(x,y,z,color,base=9)=>{
+      box(x-.6,y-.6,base,x+.6,y+.6,z,['#8ba363','#6e8c50','#547144']);
+      face([[x-3,y,z-5],[x-5,y,z-2],[x-3,y,z+2],[x+2,y,z+3],[x+5,y,z],[x+3,y,z-4]].map(p=>turn(...p)),color);
+      face([[x-1,y+.1,z-2],[x+1,y+.1,z-2],[x+1,y+.1,z],[x-1,y+.1,z]].map(p=>turn(...p)),'#edcf84');
     };
     if(b.kind==='wooden_bench'){
       for(const x of [-12,9])for(const y of [-4,2])box(x,y,0,x+3,y+3,9,dark);
@@ -5733,6 +5751,34 @@ function paintBuilding(b,town,farmState=null,target=ctx,usable=buildingUsable(to
       box(-4,6,17,4,14,29,glass);
       box(-5,5,28,5,15,31,iron);
       box(-5,5,15,5,15,18,iron);
+    }else if(b.kind==='flower_box'){
+      box(-13,-5,0,13,5,9);
+      box(-11,-3,9,11,3,10,['#68543c','#68543c','#68543c']);
+      box(-14,-6,9,14,-4,12);box(-14,4,9,14,6,12);
+      box(-14,-4,9,-12,4,12);box(12,-4,9,14,4,12);
+      flower(-8,0,18,'#be7f77');flower(0,-1,23,'#d6b967');flower(8,1,19,'#c699a0');
+    }else if(b.kind==='wooden_table'){
+      for(const x of [-10,7])for(const y of [-6,3])box(x,y,0,x+3,y+3,14,dark);
+      // The tabletop covers the leg joints; its plant sits above that surface.
+      box(-12,-8,13,12,8,16,wood,1);
+      box(-6,0,16,-1,5,22,['#c7926b','#ab7958','#8c624b'],2);
+      box(-5,1,22,-2,4,25,['#8da66a','#6f8e53','#557447'],3);
+    }else if(b.kind==='signpost'){
+      box(-2,-2,0,2,2,32,dark);
+      box(-12,-1,20,10,2,28);
+      for(const points of [
+        [[10,-1,20],[15,-1,24],[10,-1,28]],[[10,2,20],[15,2,24],[10,2,28]],
+        [[10,-1,28],[15,-1,24],[15,2,24],[10,2,28]],
+        [[10,-1,20],[15,-1,24],[15,2,24],[10,2,20]],
+      ])face(points.map(p=>turn(...p)),'#a58a5b');
+      box(-8,2,23,5,2.5,25,['#e1cc91','#d4bb80','#c0a674']);
+    }else if(b.kind==='garden_arch'){
+      for(const x of [-12,9])box(x,-2,0,x+3,2,33,dark);
+      box(-15,-4,31,15,4,35);
+      box(-13,2,5,-8,4,12,['#8ba363','#6e8c50','#547144']);
+      box(-13,2,18,-8,4,26,['#8ba363','#6e8c50','#547144']);
+      box(3,-3,35,11,3,38,['#8ba363','#6e8c50','#547144']);
+      flower(-10,4,23,'#be7f77',18);flower(7,3,39,'#d6b967',35);
     }else{
       box(-9,-7,0,9,7,4,dark);
       box(-4,-3,4,-1,4,10);
@@ -5743,7 +5789,7 @@ function paintBuilding(b,town,farmState=null,target=ctx,usable=buildingUsable(to
       box(-4,-3,24,4,4,33);
       box(-1,4,27,2,6,30); // A carved nose makes the statue's facing clear.
     }
-    faces.sort((a,b)=>a.depth-b.depth);
+    faces.sort((a,b)=>a.layer-b.layer||a.depth-b.depth);
     for(const {points,color} of faces)paintPolygon(points.map(([x,y,z])=>[x-y,(x+y)/2-z]),color);
     ctx.restore();return;
   }

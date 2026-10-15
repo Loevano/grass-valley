@@ -19,6 +19,10 @@ BUILDINGS = {
     'wooden_bench': {'label': 'Wooden bench', 'level': 4, 'wood': 0, 'furniture': 1, 'slots': 0},
     'wooden_statue': {'label': 'Carved wooden statue', 'level': 4, 'wood': 0, 'carved_furniture': 1, 'slots': 0},
     'lantern': {'label': 'Lantern', 'level': 4, 'wood': 0, 'lanterns': 1, 'slots': 0},
+    'flower_box': {'label': 'Flower box', 'level': 4, 'wood': 0, 'flower_boxes': 1, 'slots': 0},
+    'wooden_table': {'label': 'Wooden table', 'level': 4, 'wood': 0, 'wooden_tables': 1, 'slots': 0},
+    'signpost': {'label': 'Signpost', 'level': 4, 'wood': 0, 'signposts': 1, 'slots': 0},
+    'garden_arch': {'label': 'Garden arch', 'level': 4, 'wood': 0, 'garden_arches': 1, 'slots': 0},
     'fish_pond': {'label': 'Fish pond', 'level': 5, 'wood': 25, 'planks': 10, 'job': 'breeding', 'slots': 2},
     'orchard': {'label': 'Orchard', 'level': 5, 'wood': 25, 'job': 'orcharding', 'slots': 2},
     'orchard_tree': {'label': 'Fruit tree', 'level': 5, 'wood': 5, 'slots': 0},
@@ -60,7 +64,8 @@ WORKER_CAPACITIES = {
     'farm': (1, 2, 4), 'acre': (1,), 'mill': (1,), 'bakery': (1,),
     'mine': (1, 2, 4, 8), 'smelter': (1, 2, 3), 'steelworks': (1,),
 }
-DECORATIONS = ('wooden_bench', 'wooden_statue', 'lantern')
+DECORATIONS = ('wooden_bench', 'wooden_statue', 'lantern', 'flower_box',
+               'wooden_table', 'signpost', 'garden_arch')
 CRAFTED_WORKER_TOOLS = {
     'crafted_axe': {'name': 'Crafted axe', 'job': 'woodcutting', 'bonus': .25},
     'crafted_saw': {'name': 'Crafted saw', 'job': 'woodworking', 'bonus': .25},
@@ -209,6 +214,10 @@ PROFESSION_RECIPES = {
         {'level': 2, 'inputs': {'planks': 2, 'tools': 1}, 'output': 'crafted_axe', 'amount': 1},
         {'level': 3, 'inputs': {'planks': 2, 'tools': 2}, 'output': 'crafted_saw', 'amount': 1},
         {'level': 2, 'inputs': {'planks': 2, 'wood': 1}, 'output': 'lanterns', 'amount': 1},
+        {'level': 2, 'inputs': {'planks': 2, 'herbs': 1}, 'output': 'flower_boxes', 'amount': 1},
+        {'level': 3, 'inputs': {'planks': 4, 'wood': 2}, 'output': 'wooden_tables', 'amount': 1},
+        {'level': 2, 'inputs': {'planks': 2, 'wood': 1}, 'output': 'signposts', 'amount': 1},
+        {'level': 4, 'inputs': {'planks': 6, 'wood': 2}, 'output': 'garden_arches', 'amount': 1},
     ],
     'bakery': [
         {'level': 1, 'inputs': {'flour': 2, 'wood': .5}, 'output': 'bread', 'amount': 2},
@@ -236,6 +245,7 @@ PRODUCTION_SECONDS = {
     'furniture': 12, 'carved_furniture': 15,
     'crafted_axe': 9, 'crafted_saw': 12,
     'lanterns': 9,
+    'flower_boxes': 9, 'wooden_tables': 12, 'signposts': 9, 'garden_arches': 15,
     'bread': 6, 'bread_rolls': 6, 'herb_bread': 6, 'fruit_pies': 9, 'cakes': 12,
     'prepared_meat': 6, 'herbed_meat': 6, 'smoked_meat': 9,
     'sausages': 9, 'meat_pies': 12,
@@ -248,7 +258,8 @@ SALE_PRICES.update(meat=2, prepared_meat=4)
 SALE_PRICES.update({key: spec['coins'] for key, spec in SMOKED_FISH.items()})
 # Woodcraft prices cover ingredients and reward higher tiers per active work second.
 SALE_PRICES.update(wooden_bowls=2, crates=6, furniture=10, carved_furniture=15,
-                   crafted_axe=8, crafted_saw=12, lanterns=5)
+                   crafted_axe=8, crafted_saw=12, lanterns=5,
+                   flower_boxes=6, wooden_tables=9, signposts=5, garden_arches=12)
 # Include fuel value in metal margins and carry the higher input prices downstream.
 SALE_PRICES.update(hides=2, leather=4, iron_ore=2, iron=10, saddles=35, steel=26, trade_crates=45)
 LATE_GOODS = ('hides', 'leather', 'iron_ore', 'iron', 'saddles', 'steel', 'trade_crates')
@@ -492,7 +503,7 @@ FIXED_STORAGE = {
     'sawpit': {'wood': 30, 'planks': 20},
     'mill': {'wheat': 80, 'flour': 80},
     'smokehouse': {'food': 45, 'wood': 5},
-    'workshop': {'planks': 15, 'wood': 5, 'tools': 5, 'wool': 5, **{key: 5 for key in CRAFTED_GOODS}},
+    'workshop': {'planks': 15, 'wood': 5, 'tools': 5, 'wool': 5, 'herbs': 5, **{key: 5 for key in CRAFTED_GOODS}},
     'fish_pond': {'fodder': 15, 'food': 35},
     'market': {},
 }

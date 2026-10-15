@@ -9,7 +9,7 @@ app.run(`
   const original=JSON.stringify(world),commands=[];
   act=async command=>commands.push(command);
 `);
-for(let index=1;index<=3;index++){
+for(let index=1;index<=app.run('decorationKinds.length');index++){
   app.run(`inspect('building',${index});`);
   assert.equal(app.run(`$('selection-decoration').hidden`),false);
   assert.equal(app.run(`$('selection-decoration-orientation').children.length`),4);

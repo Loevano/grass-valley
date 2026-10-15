@@ -132,6 +132,17 @@ the town's build range. Decorations occupy one tile, provide no gameplay bonus,
 and can be moved or removed like buildings; removal gives no refund. Sandbox
 placement and upgrades follow the existing free/instant rules.
 
+The workshop also crafts lanterns (practice 2; 2 planks + 1 wood; 9 seconds),
+flower boxes (practice 2; 2 planks + 1 herb; 9 seconds), wooden tables (practice 3;
+4 planks + 2 wood; 12 seconds), signposts (practice 2; 2 planks + 1 wood;
+9 seconds), and garden arches (practice 4; 6 planks + 2 wood; 15 seconds).
+Each recipe makes one item before worker efficiency; a quantity request limits
+total output to the requested number. All seven decorations consume one delivered
+crafted item when placed. They unlock with the level 4 workshop and support four
+free facing directions. New goods use normal hauling, storage, caps, and sales;
+the workshop has a five-herb buffer for flower boxes. Their sale prices are
+5/6/9/5/12 coins for lanterns/flower boxes/tables/signposts/arches respectively.
+
 Existing woodcutters are capped at three. Existing sawpits retain their two spaces
 and higher saved tiers are capped at two; workshops are capped at one.
 Excess assigned workers rest, retaining skills and

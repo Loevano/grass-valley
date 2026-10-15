@@ -102,6 +102,12 @@ existing fit and footprints. Their small scale remains a constraint on prop
 readability. The host continues to own building footprints, worker positions,
 and saved state; the artwork never changes those snapshots.
 
+Player-crafted decorations include benches, carved statues, lanterns, flower boxes,
+wooden tables, signposts, and garden arches. Their four orientations rotate ground
+coordinates while preserving upright height and fixed world lighting. Broad flower
+clusters, foliage, and plain timber faces retain the scenery's simple material
+palette. The four new pieces share their interface artwork with their crafted items.
+
 ## Resource and building icons
 
 The interface has dedicated SVG artwork for all 50 resource keys (including coins

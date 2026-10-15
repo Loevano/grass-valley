@@ -37,3 +37,41 @@ assert.equal(app.run('commands.length'),3);
 assert.equal(app.run('JSON.stringify(workshop)'),snapshot,'Rendering and commands leave host snapshots untouched');
 assert(app.run("decorationKinds.includes('lantern')"));
 console.log('Workshop request quantities, FIFO display, cancellation and ownership controls passed');
+
+// All decoration recipes explain the route from crafting to placement.
+app.run(`viewed='own';workshop.craft_queue=[];`);
+for(const kind of progression.decorations){
+  const recipe=progression.profession_recipes.workshop.find(recipe=>progression.buildings[kind][recipe.output]);
+  app.run(`target.replaceChildren();renderRecipes(town,workshop,1,target);
+    target.children[0].value=${JSON.stringify(recipe.output)};target.children[0].onchange();
+    target.children[2].value='1';target.children[3].onclick();`);
+  assert.deepEqual(JSON.parse(app.run('JSON.stringify(commands.at(-1))')),
+    {action:'queue_workshop',index:1,recipe:recipe.output,amount:1});
+  assert(app.run('target.children[0].children.some(option=>option.value==='+JSON.stringify(recipe.output)+'&&option.textContent.includes("Decoration"))'));
+  const rows=JSON.parse(app.run('JSON.stringify(target.children[1].children[0].children.map(child=>child.textContent))'));
+  assert(rows.includes(`${progression.buildings[kind].label} · Build → Decorations after delivery`));
+  assert.deepEqual(JSON.parse(app.run(`JSON.stringify(materialCosts(world.progression.buildings[${JSON.stringify(kind)}]))`)),
+    {[recipe.output]:1},`${kind} consumes its crafted item in the build menu`);
+  assert.equal(app.run(`settlerCapacity({kind:${JSON.stringify(kind)}})`),0);
+  if(['flower_box','wooden_table','signpost','garden_arch'].includes(kind))assert.equal(app.run(`iconPaths[${JSON.stringify(kind)}]===iconPaths[${JSON.stringify(recipe.output)}]`),true,
+    `${kind} and its crafted item have matching icons`);
+}
+console.log('Every decoration has a workshop request, placement instructions, crafted-item cost, and zero worker spaces');
+
+const palette=client();
+palette.run(`
+  const town={name:'Decoration palette',level:4,wood:100,food:40,coins:20,goods:{},harvested:0,
+    buildings:[{kind:'hall',x:5,y:5}],map_resources:[],villagers:[],roads:[],player:{x:3,y:3,facing:1}};
+  world={world_id:'decoration-palette',progression:${JSON.stringify(progression)},towns:{own:town}};
+  identity={town_id:'own'};viewed='own';panel='build';render();
+  const buttons=[...$('buildings').children].flatMap(group=>group.children).filter(button=>decorationKinds.includes(button.buildingKind));
+`);
+assert.equal(palette.run('buttons.length'),progression.decorations.length);
+for(const kind of progression.decorations){
+  const recipe=progression.profession_recipes.workshop.find(recipe=>progression.buildings[kind][recipe.output]);
+  assert(palette.run(`buttons.find(button=>button.buildingKind===${JSON.stringify(kind)}).disabled`),'Crafted stock is required');
+  assert.match(palette.run(`buttons.find(button=>button.buildingKind===${JSON.stringify(kind)}).title`),/Workshop.*delivery/);
+  palette.run(`town.goods[${JSON.stringify(recipe.output)}]=1;render();`);
+  assert.equal(palette.run(`buttons.find(button=>button.buildingKind===${JSON.stringify(kind)}).disabled`),false,'Delivered stock enables placement');
+}
+console.log('Decoration palette requires crafted stock and explains the workshop build path');

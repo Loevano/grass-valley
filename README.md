@@ -477,6 +477,19 @@ the Python host, refresh both browsers, and create a new world to use the shared
   then wait for the worker to deliver completed goods.
   **Build → Decorations** lets you place a wooden bench for 1 furniture, a
   carved wooden statue for 1 carved furniture, or a lantern for 1 lantern.
+  Four more workshop recipes each make one matching placeable decoration:
+
+  | Decoration | Crafting practice required | Ingredients | Active work |
+  | --- | --- | --- | --- |
+  | Flower box | 2 | 2 planks + 1 herb | 9 seconds |
+  | Wooden table | 3 | 4 planks + 2 wood | 12 seconds |
+  | Signpost | 2 | 2 planks + 1 wood | 9 seconds |
+  | Garden arch | 4 | 6 planks + 2 wood | 15 seconds |
+
+  The build path is **Sawpit → planks → Workshop → queue decoration → delivery
+  → Build → Decorations**. Workshops unlock at hall level 4 and require a crafter
+  with 2 Sawing practice. Recipe details identify the matching placeable piece;
+  build buttons require its delivered crafted item, and explain where to make it.
   Placement is immediate on an open
   tile within the town's build range. Each occupies one tile and can be moved or
   removed like a building; removal gives no refund. Select a placed decoration and

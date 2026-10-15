@@ -86,7 +86,7 @@ const {chromium}=require('playwright');
             kind,x:5,y:5,footprint:[1,1],level:kind==='storehouse'?8:kind==='well'?1:3,settler_level:3,
             ...(kind==='orchard_tree'?{tree:{stage:'ripe',fruit:8}}:{}),
             profession_upgrades:kind==='fishing_hut'?['nets','wool_nets']:kind==='mine'?['steel_pickaxe']:[]}));
-        specialtyBuildings.push(...['wooden_bench','wooden_statue','lantern'].flatMap(kind=>[0,1,2,3].map(orientation=>({kind,orientation,x:5,y:5}))));
+        specialtyBuildings.push(...decorationKinds.flatMap(kind=>[0,1,2,3].map(orientation=>({kind,orientation,x:5,y:5}))));
         specialtyBuildings.push({kind:'mill',x:5,y:5,footprint:[2,2],level:3},
           ...[0,12,24].map(progress=>({kind:'workshop',x:5,y:5,footprint:[2,2],construction:{progress,total:30}})));
         for(const building of specialtyBuildings){

@@ -68,6 +68,33 @@ class WorkshopQueue(unittest.TestCase):
             self.assertEqual(economy.quantity(self.town, resource), remaining)
             self.assertNotIn('construction', self.town['buildings'][-1])
 
+    def test_every_decoration_can_be_requested_delivered_and_placed(self):
+        for kind in economy.DECORATIONS:
+            with self.subTest(kind=kind):
+                self.setUp()
+                self.worker.update(crafting=5, talents={})
+                spec = economy.BUILDINGS[kind]
+                recipe = next(r for r in economy.PROFESSION_RECIPES['workshop']
+                              if spec.get(r['output']))
+                resource = recipe['output']
+                self.store['storage_enabled'][resource] = True
+                with self.assertRaisesRegex(ValueError, 'Missing building materials'):
+                    server.command(self.town, dict(action='build', kind=kind, x=9, y=5))
+                self.request(resource, 1)
+                self.building['input_buffer'] = logistics.requirements(self.building, self.worker)
+                self.assertEqual(logistics.produce(self.town, self.building, self.worker,
+                                                  economy.PRODUCTION_SECONDS[resource]), 'Working')
+                self.assertEqual(economy.quantity(self.town, resource), 0,
+                                 'Pending goods cannot be placed before delivery')
+                self.deliver()
+                self.assertEqual(economy.quantity(self.town, resource), 1)
+                self.assertEqual(self.building['craft_queue'], [])
+                server.command(self.town, dict(action='build', kind=kind, x=9, y=5))
+                self.assertEqual(economy.quantity(self.town, resource), 0)
+                decoration = self.town['buildings'][-1]
+                self.assertEqual(decoration, {'kind': kind, 'x': 9, 'y': 5})
+                self.assertEqual(economy.storage_size(decoration), 0)
+
     def test_save_keeps_order_remaining_and_partial_work(self):
         self.request('lanterns', 4)
         self.request('tools', 2)
