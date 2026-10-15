@@ -251,8 +251,9 @@ the Python host, refresh both browsers, and create a new world to use the shared
   hall within its current range shifts the building area to its new location.
 - Open **Build**, choose a building, hover over open grass to highlight its tile, then left-click
   to place it and spend wood. Keep clicking open tiles to place more of the selected building,
-  or **Cancel selection** to clear it. Place woodcutters within ten horizontal/vertical tile steps
-  of trees; farmers can fetch water farther away during the watering stage.
+  or **Cancel selection** to clear it. Buildings, acres, roads, and moves clear berry bushes
+  and herb patches under their full footprint after placement succeeds. Place woodcutters
+  within ten horizontal/vertical tile steps of trees; farmers can fetch water farther away during the watering stage.
 - Choose **Dirt road** in Build to place free road construction sites on open ground within
   your town’s building area. Each tile takes 10 seconds of builder work after arrival.
   Players and settlers walk 50% faster on completed road tiles.

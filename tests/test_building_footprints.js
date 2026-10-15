@@ -14,7 +14,7 @@ assert.equal(app.run(`placementValid(town,{x:13,y:13},'sawpit')`),true);
 assert.equal(app.run(`placementValid(town,{x:31,y:13},'mill')`),false,'Entire footprint stays within the map');
 app.run(`town.map_resources.push({kind:'rock',x:14,y:14});`);
 assert.equal(app.run(`placementValid(town,{x:13,y:13},'mill')`),false,'Stock yard cannot overlap resources');
-app.run(`town.map_resources=[{kind:'berry_bush',x:13,y:13},{kind:'berry_bush',x:14,y:14}];`);
+app.run(`town.map_resources=[{kind:'berry_bush',x:13,y:13},{kind:'herb_patch',x:14,y:14}];`);
 for(const kind of ['home','mill','road']){
   assert.equal(app.run(`placementValid(town,{x:13,y:13},'${kind}')`),true,kind+' preview permits bushes');
 }

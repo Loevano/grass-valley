@@ -1320,7 +1320,7 @@ def validate_footprint(town, building, moving=(), world=None):
     if len(tiles) > 1:
         owners = world['towns'].values() if world and 'shared_map' in world else [town]
         occupied.update(occupied_tiles(r for owner in owners for r in owner.get('roads', [])))
-    resources = occupied_tiles(r for r in town['map_resources'] if r['kind'] != 'berry_bush')
+    resources = occupied_tiles(r for r in town['map_resources'] if r['kind'] not in {'berry_bush', 'herb_patch'})
     locals_ = occupied_tiles(town.get('npcs', []))
     size, terrain = town.get('map_size', MAP_SIZE), town.get('terrain', [])
     for x, y in tiles:
@@ -1342,11 +1342,11 @@ def validate_footprint(town, building, moving=(), world=None):
             validate_placement(world, town, {'x': x, 'y': y})
 
 
-def clear_building_bushes(town, buildings):
+def clear_building_forage(town, buildings):
     tiles = occupied_tiles(buildings)
     # Keep the shared landscape list so every town and chunk sees the removal.
     town['map_resources'][:] = [r for r in town['map_resources']
-                               if r['kind'] != 'berry_bush' or (r['x'], r['y']) not in tiles]
+                               if r['kind'] not in {'berry_bush', 'herb_patch'} or (r['x'], r['y']) not in tiles]
 
 
 def migrate_footprints(world):
@@ -1450,7 +1450,7 @@ def command(town, data, world=None):
         if world and 'shared_map' in world:
             validate_placement(world, town, data)
         terrain = town.get('terrain', [])
-        obstacles = (town['buildings'] + [r for r in town['map_resources'] if r['kind'] != 'berry_bush']
+        obstacles = (town['buildings'] + [r for r in town['map_resources'] if r['kind'] not in {'berry_bush', 'herb_patch'}]
                      + town.get('npcs', []))
         if (terrain and terrain[y][x] == 'v') or (x, y) in occupied_tiles(obstacles):
             raise ValueError('Place roads on open ground.')
@@ -1459,7 +1459,7 @@ def command(town, data, world=None):
             if not town.get('sandbox'):
                 road['construction'] = {'progress': 0, 'total': ROAD_BUILD_SECONDS}
             town.setdefault('roads', []).append(road)
-        clear_building_bushes(town, [{'x': x, 'y': y}])
+        clear_building_forage(town, [{'x': x, 'y': y}])
         return {}
     if world and 'shared_map' in world:
         if action == 'walk':
@@ -1488,7 +1488,7 @@ def command(town, data, world=None):
             raise ValueError('Choose a building and a tile inside your town.')
         if any(b['x'] == x and b['y'] == y for b in town['buildings']):
             raise ValueError('That tile is already occupied.')
-        if any(r['kind'] != 'berry_bush' and r['x'] == x and r['y'] == y for r in town['map_resources']):
+        if any(r['kind'] not in {'berry_bush', 'herb_patch'} and r['x'] == x and r['y'] == y for r in town['map_resources']):
             raise ValueError('Choose open grass; trees, water, and rocks occupy this tile.')
         player = ensure_player(town)
         if abs(player['x'] - x) < .68 and abs(player['y'] - y) < .68:
@@ -1515,7 +1515,7 @@ def command(town, data, world=None):
             building['farm_index'] = data['farm_index']
             farming.field_state(building)
         town['buildings'].append(building)
-        clear_building_bushes(town, [building])
+        clear_building_forage(town, [building])
     elif action == 'move':
         index, x, y = data.get('index'), data.get('x'), data.get('y')
         if type(index) is not int or not 0 <= index < len(town['buildings']):
@@ -1541,7 +1541,7 @@ def command(town, data, world=None):
             if any(j not in moving_indices and b['x'] == nx and b['y'] == ny
                    for j, b in enumerate(town['buildings'])):
                 raise ValueError('That tile is already occupied.')
-            if any(r['kind'] != 'berry_bush' and r['x'] == nx and r['y'] == ny for r in town['map_resources']):
+            if any(r['kind'] not in {'berry_bush', 'herb_patch'} and r['x'] == nx and r['y'] == ny for r in town['map_resources']):
                 raise ValueError('Choose open grass; trees, water, and rocks occupy this tile.')
             if any(n['x'] == nx and n['y'] == ny for n in town['npcs']):
                 raise ValueError('A local is standing here. Choose another tile.')
@@ -1571,7 +1571,7 @@ def command(town, data, world=None):
             building.update(x=building['x'] + dx, y=building['y'] + dy)
             if building['kind'] in BUILDING_FOOTPRINTS:
                 building['footprint'] = list(BUILDING_FOOTPRINTS[building['kind']])
-        clear_building_bushes(town, [b for _, b in group])
+        clear_building_forage(town, [b for _, b in group])
     elif action == 'destroy':
         index = data.get('index')
         if type(index) is not int or not 0 <= index < len(town['buildings']):

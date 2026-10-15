@@ -2181,7 +2181,7 @@ function render(){
     $('goods-list').replaceChildren();
     for(const [key,value] of Object.entries(own.goods || {}))if(value>0)$('goods-list').append(fact(`${Math.floor(value)} / ${Math.floor(resourceStorage(own,key))}`,goodName(key)));
   }
-  if(buildTile && (!town || !insideBuildingRange(town,buildTile) || town.buildings.some(b=>b.x===buildTile.x&&b.y===buildTile.y) || town.map_resources.some(r=>r.kind!=='berry_bush'&&r.x===buildTile.x&&r.y===buildTile.y)))buildTile=null;
+  if(buildTile && (!town || !insideBuildingRange(town,buildTile) || town.buildings.some(b=>b.x===buildTile.x&&b.y===buildTile.y) || town.map_resources.some(r=>!['berry_bush','herb_patch'].includes(r.kind)&&r.x===buildTile.x&&r.y===buildTile.y)))buildTile=null;
   if(typeof ClientScene==='undefined'||panel==='build')for(const group of $('buildings').children){
     for(const button of group.children){
       if(!button.buildingKind)continue;
@@ -3955,7 +3955,7 @@ function placementValid(town,tile,kind,moving=null){
     && !buildings.some(b=>!moving?.includes(b)&&occupies(b,p.x,p.y))
     && !obstacles.some(b=>b.kind==='barn'&&rangeContains(b,p,town))
     && !(town.npcs || []).some(n=>n.x===p.x&&n.y===p.y)
-    && !town.map_resources.some(r=>r.kind!=='berry_bush'&&r.x===p.x&&r.y===p.y)
+    && !town.map_resources.some(r=>!['berry_bush','herb_patch'].includes(r.kind)&&r.x===p.x&&r.y===p.y)
     && (tiles.length===1||!mapRoads(town).some(r=>r.x===p.x&&r.y===p.y))
     && !(world.shared_map?Object.values(world.towns):[town]).some(t=>t.player&&Math.abs(t.player.x-p.x)<.68&&Math.abs(t.player.y-p.y)<.68))
     && (kind!=='barn'||!obstacles.some(b=>footprintTiles(b).some(p=>rangeContains(proposed,p,town))))
@@ -4577,7 +4577,7 @@ async function selectTile(x,y){
   }
   if(viewed!==identity?.town_id)return;
   if(npc>=0){notice('A local is standing here. Choose another tile.');return;}
-  if(resource>=0&&town.map_resources[resource].kind!=='berry_bush'){notice('Choose open grass, away from resources.');return;}
+  if(resource>=0&&!['berry_bush','herb_patch'].includes(town.map_resources[resource].kind)){notice('Choose open grass, away from resources.');return;}
   if(tool==='move'){
     if(moveIndex===null){if(index<0){notice('Click the tile beneath a building.');return;}moveIndex=index;render();}
     else{

@@ -62,19 +62,21 @@ class Roads(unittest.TestCase):
                 command(self.town, {'action': 'build_road', 'x': x, 'y': y})
         self.assertNotIn('roads', self.town)
 
-    def test_roads_clear_covered_bushes_only_after_valid_placement(self):
-        bush = {'kind': 'berry_bush', 'x': 6, 'y': 8}
-        outside = {'kind': 'berry_bush', 'x': 7, 'y': 8}
-        rock = {'kind': 'rock', 'x': 6, 'y': 8}
-        self.town['map_resources'] = [bush, outside, rock]
-        with self.assertRaises(ValueError):
-            command(self.town, dict(action='build_road', x=6, y=8))
-        self.assertEqual(self.town['map_resources'], [bush, outside, rock])
-        self.town['map_resources'].remove(rock)
-        command(self.town, dict(action='build_road', x=6, y=8))
-        self.assertEqual(self.town['map_resources'], [outside])
-        command(self.town, dict(action='remove_road', x=6, y=8))
-        self.assertEqual(self.town['map_resources'], [outside])
+    def test_roads_clear_covered_forage_only_after_valid_placement(self):
+        for resource in ('berry_bush', 'herb_patch'):
+            with self.subTest(resource=resource):
+                bush = {'kind': resource, 'x': 6, 'y': 8}
+                outside = {'kind': resource, 'x': 7, 'y': 8}
+                rock = {'kind': 'rock', 'x': 6, 'y': 8}
+                self.town['map_resources'] = [bush, outside, rock]
+                with self.assertRaises(ValueError):
+                    command(self.town, dict(action='build_road', x=6, y=8))
+                self.assertEqual(self.town['map_resources'], [bush, outside, rock])
+                self.town['map_resources'].remove(rock)
+                command(self.town, dict(action='build_road', x=6, y=8))
+                self.assertEqual(self.town['map_resources'], [outside])
+                command(self.town, dict(action='remove_road', x=6, y=8))
+                self.assertEqual(self.town['map_resources'], [outside])
 
     def test_speed_on_roads_and_normal_speed_off_roads(self):
         self.town['roads'] = [{'x': 5, 'y': 7}]
