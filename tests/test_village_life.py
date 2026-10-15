@@ -33,7 +33,11 @@ class VillageLife(unittest.TestCase):
                 blocked = village_life.blocked_tiles(self.world, village)
                 self.assertNotIn((round(state['x']), round(state['y'])), blocked)
                 self.assertEqual(npcs.local_key(npc), anchors[npc['name']])
-        self.assertEqual(moved, {n['name'] for n in self.locals})
+        self.assertEqual(moved, {n['name'] for n in self.locals if n.get('pose') != 'passed_out'})
+        for npc in self.locals:
+            if npc.get('pose') == 'passed_out':
+                self.assertEqual(npcs.position(npc), (npc['x'], npc['y']))
+                self.assertEqual(npc['routine']['phase'], 'sleeping')
         self.assertTrue({'woodcutting', 'fishing', 'gathering', 'husbandry', 'crafting', 'baking'} <= jobs)
         self.assertEqual({key: self.town[key] for key in before}, before)
 

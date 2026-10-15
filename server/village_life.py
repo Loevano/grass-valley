@@ -3,6 +3,7 @@ from spatial import occupied_tiles
 from collections import deque
 import math
 import barns
+import swamp_village
 
 from villages import BASE_BUILDINGS, EXTRA_BUILDINGS, LIFE_BUILDINGS, PLANTINGS
 
@@ -11,6 +12,8 @@ SPEED = .65
 
 def work_stop(npc, village):
     role = npc['role']
+    if npc.get('ambient_stop'):
+        return tuple(npc['ambient_stop']), 'idle', None
     if village.get('life_version') != 1:
         return (2, 3), 'idle', None
     if 'woodworker' in role or 'boatwright' in role:
@@ -35,11 +38,14 @@ def blocked_tiles(world, village):
     if village.get('life_version') == 1:
         blocked.update((vx+dx, vy+dy) for _, dx, dy, _, _ in LIFE_BUILDINGS)
         blocked.update((vx+dx, vy+dy) for _, dx, dy in PLANTINGS)
+    radius = 19 if swamp_village.expanded(village) else 9
+    if swamp_village.expanded(village):
+        blocked.update((vx+r['x'], vy+r['y']) for r in swamp_village.additions())
     # Read only already active chunks. Sleeping village life never loads terrain.
     manager = world.get('_chunks')
     if manager:
-        for cy in range((vy-9)//40, (vy+9)//40+1):
-            for cx in range((vx-9)//40, (vx+9)//40+1):
+        for cy in range((vy-radius)//40, (vy+radius)//40+1):
+            for cx in range((vx-radius)//40, (vx+radius)//40+1):
                 record = manager.records.get(f'{cx},{cy}')
                 if record is None:
                     continue
@@ -52,7 +58,7 @@ def blocked_tiles(world, village):
 
 
 def route(start, goal, blocked, village, fences=()):
-    radius = 9 if village.get('layout_version') == 2 else 5
+    radius = 19 if swamp_village.expanded(village) else 9 if village.get('layout_version') == 2 else 5
     queue = deque([start])
     parents = {start: None}
     while queue:
@@ -88,6 +94,9 @@ def advance(world, seconds):
             state = npc.setdefault('routine', dict(x=npc['x'], y=npc['y'], path=[],
                 stop=-1, wait=index*.8, elapsed=0, phase='idle', job='idle', facing=1,
                 origin=[npc['x'], npc['y']]))
+            if npc.get('pose') == 'passed_out':
+                state.update(path=[], phase='sleeping', job='idle', paused=False)
+                continue
             # Locals stop beside visitors so talking and trading remain practical.
             state['paused'] = any(math.hypot(p['x']-state['x'], p['y']-state['y']) <= 1.8 for p in players)
             if state['paused']:
@@ -139,7 +148,10 @@ def advance(world, seconds):
                     job, source = 'idle', None
                 vx, vy = village['x'], village['y']
                 hall = (vx-2, vy+8) if village.get('life_version') == 1 else (vx-2, vy-2)
-                stops = [(vx+work[0], vy+work[1]), (vx+2, vy+3), hall, (npc['x'], npc['y'])]
+                market = (vx+2, vy+3)
+                if npc.get('ambient_stop'):
+                    market = (vx+10+(index % 2), vy+6+(index % 3))
+                stops = [(vx+work[0], vy+work[1]), market, hall, (npc['x'], npc['y'])]
                 state['stop'] = (state['stop']+1) % len(stops)
                 state['goal'] = list(stops[state['stop']])
                 state['job'] = job if state['stop'] == 0 else 'idle'

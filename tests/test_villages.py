@@ -21,16 +21,17 @@ class WildernessVillages(unittest.TestCase):
             for village in landscape['villages']:
                 x, y = village['x'], village['y']
                 residents = [n for n in landscape['npcs'] if n.get('village') == village['name']]
-                self.assertEqual(len(residents), 8)
+                self.assertEqual(len(residents), 32 if village['biome'] == 'b' else 8)
                 records = [manager.read(f'{cx},{cy}')
                            for cy in range((y-24)//CHUNK_SIZE, (y+24)//CHUNK_SIZE+1)
                            for cx in range((x-24)//CHUNK_SIZE, (x+24)//CHUNK_SIZE+1)]
                 resources = [r for record in records for r in record['map_resources']]
                 structures = [r for r in resources if r.get('village') == village['name']
                               and r['kind'] in ('village_hut', 'village_market')]
-                self.assertEqual(len(structures), 14)
+                self.assertEqual(len(structures), 56 if village['biome'] == 'b' else 14)
                 self.assertEqual(sum(r.get('variant') == 'hall' for r in structures), 1)
-                self.assertEqual(sum(r['kind'] == 'village_market' for r in structures), 3)
+                self.assertEqual(sum(r['kind'] == 'village_market' for r in structures),
+                                 9 if village['biome'] == 'b' else 3)
                 self.assertTrue(any(r.get('animals') for r in structures))
                 planted = [r for r in resources if r.get('village') == village['name']
                            and r['kind'] in ('tree', 'herb_patch', 'berry_bush')]
@@ -176,6 +177,74 @@ class WildernessVillages(unittest.TestCase):
         before = copy.deepcopy(record)
         apply_villages(record, key, world['shared_map']['villages'], CHUNK_SIZE)
         self.assertEqual(record, before)
+
+    def test_swamp_upgrade_preserves_old_center_and_avoids_player_work(self):
+        for field in ('buildings', 'roads', 'npcs', None):
+            world = new_world(42, explorable=True)
+            village = world['shared_map']['villages'][0]
+            vx, vy = village['x'], village['y']
+            village.pop('swamp_version')
+            world['shared_map']['npcs'] = [n for n in world['shared_map']['npcs']
+                if not n.get('ambient_stop') and not n.get('pose')]
+            old_npcs = copy.deepcopy(world['shared_map']['npcs'])
+            world['towns']['own'] = {'buildings': [], 'roads': []}
+            if field == 'npcs':
+                world['shared_map']['npcs'].append(dict(name='Visitor', x=vx+17, y=vy+17))
+            elif field:
+                # Include the full footprint, not just the building's origin.
+                world['towns']['own'][field].append(dict(x=vx-20, y=vy+17, footprint=[2, 2]))
+            ensure_villages(world)
+            self.assertEqual(village.get('swamp_version'), None if field else 1)
+            self.assertEqual(world['shared_map']['npcs'][:len(old_npcs)], old_npcs)
+            if field:
+                continue
+            key = chunk_key(vx, vy)
+            record = copy.deepcopy(world['_chunks'].read(key))
+            record.pop('swamp_version')
+            record['map_resources'] = [r for r in record['map_resources']
+                if max(abs(r['x']-vx), abs(r['y']-vy)) <= 9 or not r.get('village')]
+            harvested = (vx-5, vy-4)
+            record['map_resources'] = [r for r in record['map_resources']
+                if (r['x'], r['y']) != harvested]
+            stump = dict(kind='tree', x=harvested[0], y=harvested[1], remaining=120)
+            record['tree_stumps'].append(stump)
+            apply_villages(record, key, [village], CHUNK_SIZE)
+            self.assertIn(stump, record['tree_stumps'])
+            self.assertFalse(any((r['x'], r['y']) == harvested for r in record['map_resources']))
+            self.assertEqual(len(record['map_resources']), len({(r['x'], r['y']) for r in record['map_resources']}))
+            before = copy.deepcopy(record)
+            apply_villages(record, key, [village], CHUNK_SIZE)
+            self.assertEqual(record, before)
+
+    def test_swamp_quarters_have_decorations_and_connected_safe_paths(self):
+        import swamp_village
+        import village_life
+        world = new_world(99, explorable=True)
+        village = world['shared_map']['villages'][0]
+        vx, vy = village['x'], village['y']
+        manager = world['_chunks']
+        records = [manager.read(f'{cx},{cy}')
+                   for cy in range((vy-19)//CHUNK_SIZE, (vy+18)//CHUNK_SIZE+1)
+                   for cx in range((vx-19)//CHUNK_SIZE, (vx+18)//CHUNK_SIZE+1)]
+        resources = [r for record in records for r in record['map_resources']]
+        decor = [r for r in resources if r['kind'] == 'village_decor']
+        self.assertEqual(len(decor), 130)
+        self.assertTrue({'bench', 'candle_lantern', 'barrels', 'ferns', 'cattails', 'mushrooms', 'reeds'}
+                        <= {r['variant'] for r in decor})
+        self.assertEqual(sum(r.get('variant') == 'tavern' for r in resources), 1)
+        blocked = {(r['x'], r['y']) for r in resources}
+        for npc in world['shared_map']['npcs']:
+            if npc.get('village') != village['name']:
+                continue
+            start = (npc['x'], npc['y'])
+            self.assertNotIn(start, blocked)
+            self.assertTrue(village_life.route(start, (vx, vy), blocked, village))
+        for y in range(vy+swamp_village.MIN_OFFSET, vy+swamp_village.MAX_OFFSET+1):
+            for x in range(vx+swamp_village.MIN_OFFSET, vx+swamp_village.MAX_OFFSET+1):
+                if (x, y) in blocked:
+                    continue
+                record = manager.read(chunk_key(x, y))
+                self.assertTrue(protected({}, record['terrain'][y % CHUNK_SIZE][x % CHUNK_SIZE], x, y))
 
     def test_coordinate_noise_produces_desert_and_ice(self):
         biomes = set()

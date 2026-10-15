@@ -1,5 +1,6 @@
 """Small wilderness settlements, persisted independently of player towns."""
 from spatial import occupied_tiles
+import swamp_village
 
 VILLAGE_RADIUS = 24
 THEMES = (
@@ -91,6 +92,7 @@ def ensure_villages(world):
     if 'villages' in landscape:
         expand_villages(world)
         ensure_village_life(world)
+        swamp_village.ensure(world)
         return
     offset = landscape.get('starter_offset', 880)
     size = landscape['map_size']
@@ -128,6 +130,7 @@ def ensure_villages(world):
     landscape['villages'] = villages
     expand_villages(world)
     ensure_village_life(world)
+    swamp_village.ensure(world)
 
 
 def ensure_village_life(world):
@@ -144,6 +147,11 @@ def ensure_village_life(world):
 
 
 def apply_villages(record, key, villages, chunk_size):
+    _apply_villages(record, key, villages, chunk_size)
+    return swamp_village.apply(record, key, villages, chunk_size)
+
+
+def _apply_villages(record, key, villages, chunk_size):
     """Overlay once per saved chunk, preserving subsequent resource changes."""
     previous_version = record.get('village_version', 0)
     if previous_version == 3:
