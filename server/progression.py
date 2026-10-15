@@ -828,6 +828,18 @@ def take_supply(landscape, source, amount):
 
 def start_activity(town, landscape, action):
     player = town['player']
+    if action == 'mine':
+        terrain = landscape.get('terrain', [])
+        reachable = [r for r in landscape['map_resources'] if r['kind'] == 'rock'
+                     and terrain and terrain[r['y']][r['x']] in 'gm'
+                     and distance(player, r) <= 1.8]
+        if not reachable:
+            raise ValueError('Walk beside a grassland stone to mine it.')
+        source = min(reachable, key=lambda r: distance(player, r))
+        landscape['map_resources'].remove(source)
+        player.pop('activity', None)
+        player['activity_status'] = 'Stone permanently cleared'
+        return
     if action == 'gather':
         chest = next((r for r in landscape['map_resources'] if r['kind'] == 'chest' and distance(player, r) <= 1.8), None)
         if chest:

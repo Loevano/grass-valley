@@ -68,6 +68,13 @@ const run=new Function('document','window','localStorage','setTimeout','clearTim
     check($('selection-title').textContent==='Forest','Clicking treetop selects resource');
     await clickTile(0,2);
     check($('selection-title').textContent==='Rock outcrop','Rock opens mining availability information');
+    town.terrain=Array(12).fill('g'.repeat(12));render();
+    let rockInfo=panelNodes().find(child=>child.className==='info-copy').textContent;
+    check(rockInfo.includes('M')&&rockInfo.includes('Permanently removes')&&!rockInfo.includes('unavailable'),'Grassland stones explain permanent clearing with M');
+    town.map_resources[2].ore='iron';render();
+    rockInfo=panelNodes().find(child=>child.className==='info-copy').textContent;
+    check($('selection-title').textContent==='Iron vein'&&rockInfo.includes('extracts iron ore')&&rockInfo.includes('no resource reward'),'Grassland veins explain both mine production and permanent clearing');
+    delete town.map_resources[2].ore;delete town.terrain;
     await clickSprite('villager',0);
     check(selection.type==='villager'&&$('selection-title').textContent==='Ada','Moving villager is selectable');
     const profile=$('selection-details').children[0].children.find(child=>child.tag==='dl');

@@ -279,7 +279,9 @@ the Python host, refresh both browsers, and create a new world to use the shared
   pause regrowth until removed. Older worlds retain their original regrowth rules.
   Swamp willows and rare ancient trees take five times as much chopping and
   about sixteen minutes 40 seconds to regrow.
-  Water regenerates its shared supply. Rock outcrops cannot be mined yet.
+  Water regenerates its shared supply. Press **M** beside a stone on light or dark
+  grassland to permanently clear it, with no resource reward. Cleared stones stay
+  gone after leaving the area or reloading. Rocks on other terrain remain in place.
 - New shared worlds have a large lake with three treasure islands. At hall level 3,
   select **You** and build an **Exploration boat** for 20 wood and 10 planks.
   Walk onto water to sail automatically and step onto land to disembark. Stand

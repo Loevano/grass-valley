@@ -168,6 +168,34 @@ class ExplorableMap(unittest.TestCase):
         self.assertFalse(any(r['kind'] == 'chest' and r['x'] == 440 and r['y'] == 80
                              for r in stored['shared_map']['map_resources']))
 
+    def test_mined_grassland_stone_stays_gone_after_eviction_and_reload(self):
+        self.visit(240, 400)
+        landscape = self.world['shared_map']
+        rock = next(r for r in landscape['map_resources'] if r['kind'] == 'rock'
+                    and landscape['terrain'][r['y']][r['x']] in 'gm')
+        x, y = rock['x'], rock['y']
+        self.visit(x, y + 1)
+        self.manager.flush()
+        before = self.manager.snapshot()
+        server.command(self.town, {'action': 'mine'}, self.world)
+        after = self.manager.snapshot()
+        key = chunk_key(x, y)
+        self.assertNotEqual(before['resource_chunks'][key]['version'],
+                            after['resource_chunks'][key]['version'])
+        self.assertTrue(server.walkable(self.town, x, y))
+        self.visit(80, 80)
+        self.assertNotIn(key, self.manager.records)
+        landscape['chunk_clock'] += 3600
+        stored = json.loads(json.dumps(export_world(self.world)))
+        restored = attach(stored, self.root / 'save_chunks')
+        stored['towns']['own']['player'].update(x=x, y=y + 1)
+        restored.activate()
+        bind_map(stored)
+        server.prepare_landscapes(stored, regenerate=True)
+        self.assertFalse(any((r['x'], r['y']) == (x, y)
+                             for r in stored['shared_map']['map_resources']))
+        self.assertTrue(server.walkable(stored['towns']['own'], x, y))
+
     def test_sleeping_stumps_use_reduced_regrowth_rate(self):
         record = self.manager.read('2,2')
         record['terrain'][0] = 'f' + record['terrain'][0][1:]

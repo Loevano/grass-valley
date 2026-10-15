@@ -25,7 +25,7 @@ class FallingLanterns(unittest.TestCase):
         lanterns.advance(self.world, .25)
         self.assertEqual(self.world, original)
         for action, data in [('lanterns_walk', dict(dx=1, dy=0)), ('join_quarry', {}),
-                             ('walk', dict(dx=1, dy=0)), ('gather', {})]:
+                             ('walk', dict(dx=1, dy=0)), ('gather', {}), ('mine', {})]:
             with self.assertRaises(ValueError):
                 self.act('one', action, **data)
         self.act('two', 'join_lanterns')

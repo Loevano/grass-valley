@@ -81,8 +81,8 @@ let frameActors=null,animationFrameRunning=false;
 const workers = new Map();
 let workerTown = null, lastFrame = null, animalClock = 0;
 const walkKeys = new Set();
-const defaultBindings={up:'w',left:'a',down:'s',right:'d',camera:'y',fish:'f',chop:'c',gather:'g',build:'b',interact:'i'};
-const bindingLabels={up:'Walk up',left:'Walk left',down:'Walk down',right:'Walk right',camera:'Toggle camera lock',fish:'Fish',chop:'Cut wood',gather:'Gather berries and herbs',build:'Toggle building mode',interact:'Interact with nearby NPC'};
+const defaultBindings={up:'w',left:'a',down:'s',right:'d',camera:'y',fish:'f',chop:'c',gather:'g',build:'b',interact:'i',mine:'m'};
+const bindingLabels={up:'Walk up',left:'Walk left',down:'Walk down',right:'Walk right',camera:'Toggle camera lock',fish:'Fish',chop:'Cut wood',gather:'Gather berries and herbs',build:'Toggle building mode',interact:'Interact with nearby NPC',mine:'Clear grassland stone'};
 let keybindings={...defaultBindings}, cameraLocked=true, graphicsQuality='high';
 try{
   const saved=JSON.parse(localStorage.getItem('lantern-settings') || 'null');
@@ -124,7 +124,7 @@ function renderSettings(){
   for(const action of Object.keys(defaultBindings))$('binding-'+action).value=keybindings[action].toUpperCase();
   $('world').setAttribute('aria-label',`Town grid. Use ${['up','left','down','right'].map(action=>keybindings[action].toUpperCase()).join(', ')} to walk. Press ${keybindings.camera.toUpperCase()} to toggle camera lock. Press ${keybindings.interact.toUpperCase()} to interact with a nearby NPC. Use arrow keys and Enter to inspect tiles.`);
   $('movement-hint').textContent=`Click map · ${['up','left','down','right'].map(action=>keybindings[action].toUpperCase()).join('/')} to walk · ${keybindings.camera.toUpperCase()} camera lock · ${keybindings.fish.toUpperCase()} fish · ${keybindings.chop.toUpperCase()} chop · ${keybindings.gather.toUpperCase()} gather · ${keybindings.build.toUpperCase()} building mode · ${keybindings.interact.toUpperCase()} interact`;
-  $('movement-hint').textContent+=' · Space town hall';
+  $('movement-hint').textContent+=` · ${keybindings.mine.toUpperCase()} clear stone · Space town hall`;
 }
 for(const action of Object.keys(defaultBindings)){
   const label=document.createElement('label');label.textContent=bindingLabels[action];label.setAttribute('for','binding-'+action);
@@ -1166,9 +1166,9 @@ window.addEventListener('keydown',event=>{
     const action=actions.find(([name,fallback])=>key===(keybindings[name] || fallback));
     if(action){
       const town=world.towns[identity.town_id],landscape=world.shared_map || town;
-      const nearby=(landscape.map_resources || []).some(r=>action[2].includes(r.kind)&&Math.abs(r.x-town.player.x)+Math.abs(r.y-town.player.y)<=1.8);
-      if(!nearby || action[0]==='mine'){
-        event.preventDefault();notice(nearby?'Mining is not available yet.':action[3]);return;
+      const nearby=(landscape.map_resources || []).some(r=>action[2].includes(r.kind)&&Math.abs(r.x-town.player.x)+Math.abs(r.y-town.player.y)<=1.8&&(action[0]!=='mine'||['g','m'].includes(landscape.terrain?.[r.y]?.[r.x])));
+      if(!nearby){
+        event.preventDefault();notice(action[0]==='mine'?'Walk beside a grassland stone to mine it.':action[3]);return;
       }
     }
   }
@@ -1178,7 +1178,7 @@ window.addEventListener('keydown',event=>{
   if(['up','left','down','right'].some(action=>keybindings[action]===key)&&!event.ctrlKey&&!event.metaKey&&!event.altKey&&canControlPlayer()){
     event.preventDefault();walkKeys.add(key);
   }
-  for(const action of ['fish','chop','gather'])if(key===keybindings[action]&&!event.repeat&&!event.ctrlKey&&!event.metaKey&&!event.altKey&&canControlPlayer()){
+  for(const action of ['fish','chop','gather','mine'])if(key===keybindings[action]&&!event.repeat&&!event.ctrlKey&&!event.metaKey&&!event.altKey&&canControlPlayer()){
     event.preventDefault();playerAction(action);
   }
   if(event.key==='Escape' && !$('settings-panel').open && !$('world-menu').open && !$('delete-world-dialog').open && !$('regenerate-world-dialog').open && !$('upgrade-dialog').open){
@@ -1759,7 +1759,7 @@ function renderSelection(town){
     if(town.player?.activity){
       const state=document.createElement('p');state.textContent=`${goodName(town.player.activity.job)} · ${town.player.activity_status || 'Working'}`;$('selection-details').append(state);
     }
-    if(viewed===identity?.town_id)for(const [action,label] of [['fish','Fish'],['chop','Cut wood'],['gather','Gather'],['stop_activity','Stop working']]){
+    if(viewed===identity?.town_id)for(const [action,label] of [['fish','Fish'],['chop','Cut wood'],['gather','Gather'],['mine','Clear stone'],['stop_activity','Stop working']]){
       const button=document.createElement('button');button.textContent=label;button.onclick=()=>playerAction(action);$('selection-details').append(button);
     }
     return;
@@ -1825,6 +1825,7 @@ function renderSelection(town){
     $('selection-details').append(illustration(item.kind));
     const p=document.createElement('p');p.className='info-copy';
     const swamp=town.terrain?.[item.y]?.[item.x]==='b';
+    const grasslandRock=item.kind==='rock'&&['g','m'].includes((world.shared_map || town).terrain?.[item.y]?.[item.x]);
     if(item.kind==='village_hut'||item.kind==='village_market'){
       $('selection-title').textContent=`${item.village} · ${item.label || (item.kind==='village_market'?'Market':'Cottage')}`;
       p.textContent=`A ${item.biome==='b'?'swamp':item.biome==='d'?'desert':'ice'} village. Walk beside a resident and click them or press ${keybindings.interact.toUpperCase()} to talk and trade travel equipment.`;
@@ -1835,7 +1836,7 @@ function renderSelection(town){
       if(viewed===identity?.town_id){const button=document.createElement('button');button.textContent='Collect loot';button.onclick=()=>playerAction('gather');$('selection-details').append(button);}return;
     }
     $('selection-title').textContent=({berry_bush:'Berry bush',herb_patch:'Herb patch'}[item.kind]) || (swamp?{tree:'Swamp willow',water:'Swamp water',rock:'Rock outcrop'}:{tree:'Forest',water:'Water',rock:'Rock outcrop',berry_bush:'Berry bush',herb_patch:'Herb patch'})[item.kind];
-    p.textContent={tree:'Renewable wood source. Place a woodcutter within 10 horizontal or vertical tile steps, then assign a villager to woodcutting.',water:'Uses: farming / fishing\nFishing hut reach: 3–5 tile steps (+3 / +5 / +7 with boat tiers)\nFarmers fetch water when watering',rock:'Occupied tile\nMining: unavailable',berry_bush:`Food: berries\nGather: stand nearby · ${keybindings.gather.toUpperCase()}`,herb_patch:`Use: animal breeding\nGather: stand nearby · ${keybindings.gather.toUpperCase()}`}[item.kind];
+    p.textContent={tree:'Renewable wood source. Place a woodcutter within 10 horizontal or vertical tile steps, then assign a villager to woodcutting.',water:'Uses: farming / fishing\nFishing hut reach: 3–5 tile steps (+3 / +5 / +7 with boat tiers)\nFarmers fetch water when watering',rock:grasslandRock?'Occupied tile':'Occupied tile\nMining: unavailable',berry_bush:`Food: berries\nGather: stand nearby · ${keybindings.gather.toUpperCase()}`,herb_patch:`Use: animal breeding\nGather: stand nearby · ${keybindings.gather.toUpperCase()}`}[item.kind];
     if(item.kind==='rock'&&(world.shared_map||viewed===identity?.town_id)){
       const own=world.towns[identity?.town_id],progress=own?localStoryProgress(own,'Flint'):{};
       if(progress.story_stage===1){
@@ -1857,6 +1858,9 @@ function renderSelection(town){
       if(viewed===identity?.town_id){const button=document.createElement('button');button.textContent='Lead horse to stable';button.disabled=town.level<8||!!town.player.leading_horse||Math.abs(town.player.x-item.x)+Math.abs(town.player.y-item.y)>1.8||!town.buildings.some(b=>b.kind==='stable'&&!b.construction);button.onclick=()=>act({action:'lead_horse',x:item.x,y:item.y});$('selection-details').append(button);}
     }
     if(item.kind==='rock'&&item.ore){$('selection-title').textContent='Iron vein';p.textContent='A mine within 10 tile steps extracts iron ore. Smelt ore with wood into iron, then make steel, saddles, and trade crates.';}
+    if(grasslandRock){
+      p.textContent+=`\nClear: stand nearby · ${keybindings.mine.toUpperCase()}\nPermanently removes this stone; no resource reward.`;
+    }
     if(item.supply_max){$('selection-details').append(fact(`${Math.floor(item.supply || 0)} / ${item.supply_max}`,item.kind==='tree'?'Wood remaining before felling':'Shared supply'));if(item.kind!=='tree')$('selection-details').append(fact(`${item.regeneration} per 3 seconds`,'Regeneration'));}
     $('selection-details').append(p);
   }else{

@@ -21,7 +21,9 @@ function session(saved=null){
     return {get commands(){return commands;},get quality(){return graphicsQuality;},get actions(){return actions;},get bindings(){return keybindings;},get locked(){return cameraLocked;},get following(){return playerView.following;},
       get camera(){return typeof camera==='undefined'?null:{...camera};},get held(){return [...walkKeys];},step:seconds=>playerSprite(town,seconds),
       addHall(){town.buildings.push({kind:'hall',x:12,y:14});},pan(){if(typeof camera!=='undefined'){camera.x=30;camera.y=30;}},get panel(){return panel;},get tool(){return tool;},
-      place(){panel='build';tool='home';buildTile={x:1,y:1};hoverTile={x:1,y:1};},get placement(){return buildTile || hoverTile;}};
+      place(){panel='build';tool='home';buildTile={x:1,y:1};hoverTile={x:1,y:1};},get placement(){return buildTile || hoverTile;},
+      stone(biome='g',x=6,y=7){town.terrain=Array(16).fill(biome.repeat(16));town.map_resources=[{kind:'rock',x,y}];},
+      sharedStone(){world.shared_map={terrain:Array(16).fill('m'.repeat(16)),map_resources:[{kind:'rock',x:6,y:7}]};town.map_resources=[];}};
   `);
   const state=run(document,{addEventListener(type,callback){listeners[type]=callback;}},
     {getItem:key=>storage.get(key),setItem:(key,value)=>storage.set(key,value)},()=>0,()=>{});
@@ -83,6 +85,19 @@ function session(saved=null){
   }
   key('f');key('c');key('g');check(state.actions.join(',')==='fish,chop,gather','F/C/G start the matching character activities');
   key('f',{repeat:true});key('g',{ctrlKey:true});check(state.actions.length===3,'Held actions and modified shortcuts do not repeat requests');
+  const mining=session();
+  check(mining.state.bindings.mine==='m','M defaults to clearing grassland stones');
+  mining.key('m');check(!mining.state.actions.length,'M with no nearby stone sends no command');
+  mining.state.stone('f');mining.key('m');check(!mining.state.actions.length,'Forest rocks cannot be cleared');
+  mining.state.stone('g',9,8);mining.key('m');check(!mining.state.actions.length,'Distant stones cannot be cleared');
+  mining.state.stone();mining.key('m');
+  check(mining.state.actions.join(',')==='mine','M clears an adjacent grassland stone');
+  mining.key('m',{repeat:true});mining.key('m',{metaKey:true});
+  check(mining.state.actions.length===1,'Held and modified mining shortcuts send no extra commands');
+  mining.state.sharedStone();mining.key('m');
+  check(mining.state.actions.length===2,'Mining uses shared landscape resources and terrain');
+  mining.rebind('mine','n');mining.key('m');mining.key('n');
+  check(mining.state.actions.length===3,'Mining follows its custom binding');
   check(state.locked&&state.bindings.camera==='y','Camera starts locked with Y binding');
   key('Y');check(!state.locked&&!state.following,'Y unlocks camera');
   key('y',{repeat:true});check(!state.locked,'Held Y does not toggle repeatedly');

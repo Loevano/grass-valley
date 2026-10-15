@@ -41,7 +41,7 @@ class QuarryPuzzle(unittest.TestCase):
         self.act('one', 'join_quarry')
         self.assertNotIn('activity', town['player'])
         for action, data in [('quarry_walk', {'dx': 1, 'dy': 0}),
-                             ('walk', {'dx': 1, 'dy': 0}), ('gather', {})]:
+                             ('walk', {'dx': 1, 'dy': 0}), ('gather', {}), ('mine', {})]:
             with self.assertRaises(ValueError):
                 self.act('one', action, **data)
         self.assertFalse(self.world['quarry']['started'])

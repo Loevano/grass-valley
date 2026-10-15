@@ -1380,11 +1380,11 @@ def command(town, data, world=None):
     action = data.get('action')
     if action in {'join_lanterns', 'leave_lanterns', 'lanterns_walk', 'lanterns_collect'}:
         return lanterns.change(town, data, world)
-    if world and lanterns.inside(world, town) and action in {'walk', 'fish', 'chop', 'gather', 'join_quarry'}:
+    if world and lanterns.inside(world, town) and action in {'walk', 'fish', 'chop', 'gather', 'mine', 'join_quarry'}:
         raise ValueError('Leave the courier path before exploring the valley or quarry.')
     if action in {'join_quarry', 'leave_quarry', 'quarry_walk', 'quarry_interact'}:
         return quests.change(town, data, world)
-    if world and quests.inside(world, town) and action in {'walk', 'fish', 'chop', 'gather'}:
+    if world and quests.inside(world, town) and action in {'walk', 'fish', 'chop', 'gather', 'mine'}:
         raise ValueError('Leave the quarry before exploring the valley.')
     if action == 'walk' and 'steps' in data:
         steps = data['steps']
@@ -1470,7 +1470,7 @@ def command(town, data, world=None):
             validate_placement(world, town, data)
     if action == 'walk':
         return move_player(town, data)
-    if action in {'fish', 'chop', 'gather', 'stop_activity'}:
+    if action in {'fish', 'chop', 'gather', 'mine', 'stop_activity'}:
         landscape = world.get('shared_map', town) if world else town
         ensure_player(walking_map(world, town) if world and 'shared_map' in world else town)
         economy.start_activity(town, landscape, action)
