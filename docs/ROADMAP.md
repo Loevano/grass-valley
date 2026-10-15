@@ -75,6 +75,10 @@ The implemented [grain flow](GRAINFLOW.md) keeps one worker per mill and bakery.
 Equipment upgrades scale throughput, storage, and producer carrying capacity.
 Producers fetch only required inputs; storehouse haulers collect finished outputs.
 Full workplace output storage pauses production until hauling or consumption frees room.
+Hauling and supply trips now remove goods at pickup, keep a saved worker inventory
+shown as Carrying, and credit the destination only on arrival. Carried goods remain
+in resource totals but are unavailable in transit; workers retain undelivered loads
+when destination storage fills or is disabled.
 Advanced bakery recipes now require 5/10/15/20 baking practice for rolls, herb
 bread, fruit pies, and cakes; basic bread remains available to beginners.
 Ingredient affordability now uses the delivery checks' rounding tolerance, so

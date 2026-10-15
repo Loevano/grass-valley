@@ -413,7 +413,7 @@ def production_room(town, key):
         total += building.get('pending_output', {}).get(key, 0)
     for villager in town.get('villagers', []):
         trip = villager.get('logistics_trip', {})
-        if trip.get('operation') == 'sell' and trip.get('picked_up') and not trip['delivered']:
+        if trip.get('operation') in {'collect', 'sell'} and trip.get('picked_up') and not trip['delivered']:
             total += trip['cargo'].get(key, 0)
     return max(0, cap - total)
 

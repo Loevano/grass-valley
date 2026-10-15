@@ -568,8 +568,16 @@ class FarmingCycle(unittest.TestCase):
             server.tick(self.world)
             if self.town.get('produced', {}).get('wheat', 0):
                 break
-        self.assertEqual(store['stored_goods']['wheat'], economy.storage_size(store))
         self.assertEqual(self.town['produced']['wheat'], farming.HARVEST_YIELD)
+        self.assertEqual(store.get('stored_goods', {}).get('wheat', 0), 0,
+                         'Pickup frees farm storage before the hauler arrives at the storehouse')
+        hauler = self.town['villagers'][1]
+        self.assertEqual(hauler['logistics_trip']['cargo'], {'wheat': economy.storage_size(store)})
+        for _ in range(20):
+            server.tick(self.world)
+            if store.get('stored_goods', {}).get('wheat', 0):
+                break
+        self.assertEqual(store['stored_goods']['wheat'], economy.storage_size(store))
 
     def test_saved_output_trip_does_not_block_a_farmer_with_water_ready(self):
         farming.field_state(self.acre).update(stage='thirsty', crop='wheat')

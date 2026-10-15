@@ -36,3 +36,13 @@ assert(!get('food').inputs.sell,'The aggregate Food total cannot be sold separat
 app.run('document.activeElement=null;town.buildings.pop();renderResourceList(town)');assert(wheat.disabled,'A completed market is required');
 app.run('world.world_id="another"');wheat.value='50';wheat.onchange();assert.equal(app.run('commands.length'),0,'Stale controls cannot modify another world');
 console.log('Resource stock, activity, and popup controls passed');
+const transit=app.run(`resourceStocks({wood:5,food:0,goods:{},buildings:[],villagers:[
+  {logistics_trip:{operation:'collect',picked_up:true,delivered:false,cargo:{wood:12,bread:2}}},
+  {logistics_trip:{operation:'supply',picked_up:true,delivered:false,cargo:{wheat:8}}},
+  {logistics_trip:{operation:'collect',picked_up:false,delivered:false,cargo:{wood:20}}},
+  {logistics_trip:{operation:'supply',picked_up:true,delivered:true,cargo:{wheat:4}}}
+]})`);
+assert.equal(transit.wood.free,5);assert.equal(transit.wood.pending,12);assert.equal(transit.wood.total,17);
+assert.equal(transit.wheat.free,0);assert.equal(transit.wheat.reserved,8);assert.equal(transit.wheat.total,8);
+assert.equal(transit.bread.total,2);assert.equal(transit.food.total,3,'Carried food retains its food value');
+console.log('In-transit resource accounting passed');

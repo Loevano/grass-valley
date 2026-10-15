@@ -139,11 +139,16 @@ the Python host, refresh both browsers, and create a new world to use the shared
 - **Resources (4)** opens a popup table with resource names and icons, total stock,
   free stock, reserved stock, **Buy at**, **Sell at**, **In/min**, and **Out/min**.
   Total stock includes workplace output and carried goods once; reserved stock
-  includes processor ingredients and cargo committed to sales. Pending output is
-  included in the total but becomes free only after delivery. Food summarizes
+  includes processor ingredients, supplies in transit, and cargo committed to sales.
+  Pending output is included in the total but becomes free only after delivery. Food summarizes
   edible goods in food-value units; individual resource rows count items.
   Activity records actual production, consumption, purchases, and sales during the
   last 60 seconds of running game time, excluding internal hauling and reservation.
+  Transported goods leave their source at pickup and enter destination storage
+  only on delivery. Each villager's **Carrying** line shows their current load,
+  including supplies and gathered output. Carried goods remain in total stock
+  but cannot be spent or consumed in transit. A full or disabled destination
+  leaves the worker holding the remaining goods until storage becomes available.
   Thresholds save automatically; blank disables a rule. A completed market and an
   assigned merchant are required. Merchants buy up to 10 items every 3 seconds at
   twice the existing sale price, stopping at the free-stock target, available coins,

@@ -1718,8 +1718,7 @@ def command(town, data, world=None):
         moved_specs = [{k: b[k] for k in ('kind', 'x', 'y')} for _, b in group]
         for villager in town['villagers']:
             trip = villager.get('logistics_trip', {})
-            if (trip.get('operation') == 'sell'
-                    and any(spec in (trip.get('workplace'), trip.get('storage')) for spec in moved_specs)):
+            if any(spec in (trip.get('workplace'), trip.get('storage')) for spec in moved_specs):
                 logistics.cancel_trip(town, villager)
             if villager.get('pending_workplace') in moved_specs:
                 logistics.cancel_output(town, villager)
@@ -1742,8 +1741,7 @@ def command(town, data, world=None):
         removed_specs = [{k: b[k] for k in ('kind', 'x', 'y')} for _, b in group]
         for villager in town['villagers']:
             trip = villager.get('logistics_trip', {})
-            if (trip.get('operation') == 'sell'
-                    and any(spec in (trip.get('workplace'), trip.get('storage')) for spec in removed_specs)):
+            if any(spec in (trip.get('workplace'), trip.get('storage')) for spec in removed_specs):
                 logistics.cancel_trip(town, villager)
             if (villager.get('pending_workplace') in removed_specs
                     or villager.get('building_index') in removed_indices):

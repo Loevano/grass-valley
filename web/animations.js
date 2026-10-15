@@ -237,6 +237,7 @@ const WorkerAnimation = (() => {
       return {...position,path:deliveryPath,phase:path===null?'waiting':'walking',source:target,home:null,blocked,size,bounds,roads,roadMode:'arrival',transport:true,boating:false,sailing:null,
         transportCargo:trip?.cargo || {},pickupRemaining:(trip?.path.length || 1)-1-(trip?.pickup_step ?? 0),
         deliveryRemaining:(trip?.path.length || 1)-1-(trip?.delivery_step ?? 0),
+        transportHolding:trip?.picked_up&&!trip.delivered&&(trip.step || 0)>=trip.delivery_step,
         transportSpeed:1+.25*Math.floor((villager.hauling || 0)/20),elapsed:0,clock:state?.clock || index*.37,facing:state?.facing || 1};
     }
     const source=villager.construction_target || (villager.job==='idle'?null:villager.work_target);
@@ -414,7 +415,8 @@ const WorkerAnimation = (() => {
   function* advanceSteps(state, seconds, active) {
     if(state.routeWaiting)return;
     if(state.storagePaused&&!state.transport&&!state.construction)return;
-    const cargo=()=>state.transport&&state.path.length<=state.pickupRemaining&&state.path.length>state.deliveryRemaining?state.transportCargo:{};
+    const cargo=()=>state.transport&&((state.transportHolding&&state.path.length<=state.deliveryRemaining)
+      ||(state.path.length<=state.pickupRemaining&&state.path.length>state.deliveryRemaining))?state.transportCargo:{};
     state.cargo=cargo();
     // A completed host-owned drop-off waits for the next authoritative cycle.
     if(state.hostWork&&state.phase==='depositing'&&state.elapsed>=.65)return;
@@ -422,6 +424,9 @@ const WorkerAnimation = (() => {
     if(state.path.length){
       let remaining=seconds;
       while(state.path.length&&remaining>0){
+        if(state.transportHolding&&state.path.length<=state.deliveryRemaining){
+          state.phase='waiting';state.cargo=state.transportCargo;return;
+        }
         if(pathBlocked(state)){state.needsPlan=true;state.phase='waiting';return;}
         const next=state.path[0],dx=next.x-state.x,dy=next.y-state.y,length=Math.hypot(dx,dy);
         if(dx-dy!==0)state.facing=dx-dy>0?1:-1;

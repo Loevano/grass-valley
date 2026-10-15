@@ -2,6 +2,8 @@ import copy
 import json
 import unittest
 
+from fixtures import flat_town
+
 import logistics
 import progression as economy
 import server
@@ -168,6 +170,194 @@ class HaulingSkill(unittest.TestCase):
         logistics.advance_trip(self.town, {'buildings': [], 'map_resources': []}, self.worker, .6)
         self.assertEqual(self.worker['logistics_trip']['cargo'], {'wood': 3})
         self.assertTrue(self.worker['logistics_trip']['delivered'])
+
+
+class CarriedInventory(unittest.TestCase):
+    def setUp(self):
+        self.town = flat_town('Carrying')
+        economy.ensure_inventory(self.town)
+        self.worker = self.town['villagers'][0]
+        self.worker.update(job='hauling', talents={})
+        self.source = {'kind': 'woodcutter', 'x': 3, 'y': 2, 'output_buffer': {'wood': 20}}
+        self.store = {'kind': 'storehouse', 'x': 7, 'y': 2, 'storage_enabled': {'wood': True}}
+        self.town['buildings'].extend([self.source, self.store])
+        economy.add_stock(self.town, 'wood', 20)
+        self.landscape = {'buildings': [], 'map_resources': []}
+        self.total = self.town['wood']
+
+    def start(self, operation='collect', hauler=True, worker=None):
+        if operation == 'supply' and hauler:
+            (worker or self.worker)['logistics_position'] = {'x': self.store['x'], 'y': self.store['y'] - 1}
+        paths = iter([[(0, 0), (1, 0), (2, 0)], [(2, 0), (3, 0), (4, 0)]])
+        self.assertTrue(logistics.start_trip(self.town, self.landscape, worker or self.worker,
+                                            self.source, self.store, operation, lambda *_: next(paths),
+                                            hauler=hauler))
+
+    def advance(self, seconds):
+        logistics.advance_trip(self.town, self.landscape, self.worker, seconds)
+
+    def test_pickup_removes_source_and_delivery_credits_only_the_held_load(self):
+        self.start()
+        self.advance(.6)
+        self.assertEqual(self.source['output_buffer']['wood'], 20)
+        self.advance(.6)
+        trip = self.worker['logistics_trip']
+        self.assertTrue(trip['picked_up'])
+        self.assertFalse(trip['delivered'])
+        self.assertEqual(trip['cargo'], {'wood': 20})
+        self.assertEqual(self.source['output_buffer']['wood'], 0)
+        self.assertEqual(economy.quantity(self.town, 'wood'), self.total - 20)
+        self.assertEqual(self.store.get('stored_goods', {}), {})
+        logistics.record_output(self.town, self.source, 'wood', 5)
+        self.advance(1.2)
+        self.assertEqual(self.store['stored_goods']['wood'], 20)
+        self.assertEqual(self.source['output_buffer']['wood'], 5)
+        self.assertEqual(self.town['wood'], self.total + 5)
+        self.assertEqual(self.worker['hauling'], .08)
+
+    def test_reload_and_second_worker_cannot_pick_up_the_same_goods(self):
+        self.start()
+        self.advance(1.2)
+        other = self.town['villagers'][1]
+        other.update(job='hauling', talents={})
+        self.start(worker=other)
+        logistics.advance_trip(self.town, self.landscape, other, 1.2)
+        self.assertEqual(other['logistics_trip']['cargo'], {})
+        self.town = json.loads(json.dumps(self.town))
+        self.worker = self.town['villagers'][0]
+        economy.ensure_inventory(self.town)
+        self.advance(0)
+        self.assertEqual(self.town['wood'], self.total - 20)
+        self.advance(2)
+        self.assertEqual(self.town['buildings'][-1]['stored_goods']['wood'], 20)
+        self.assertEqual(self.town['wood'], self.total)
+
+    def test_partial_delivery_keeps_remainder_until_room_is_available(self):
+        self.start()
+        self.advance(1.2)
+        self.store['stored_goods'] = {'wood': 45}
+        economy.add_stock(self.town, 'wood', 45)
+        self.advance(2)
+        trip = self.worker['logistics_trip']
+        self.assertFalse(trip['delivered'])
+        self.assertEqual(trip['cargo'], {'wood': 15})
+        self.assertEqual(self.store['stored_goods']['wood'], 50)
+        self.advance(100)
+        self.assertEqual(trip['cargo'], {'wood': 15})
+        self.assertEqual(self.worker['hauling'], .08)
+        economy.withdraw(self.town, 'wood', 20, source=self.store)
+        economy.add_stock(self.town, 'wood', -20)
+        self.advance(0)
+        self.assertNotIn('logistics_trip', self.worker)
+        self.assertEqual(self.store['stored_goods']['wood'], 45)
+        self.assertEqual(self.worker['hauling'], .08)
+        self.assertEqual(self.town['wood'], self.total + 25)
+
+    def test_disabled_destination_preserves_carried_goods_until_reenabled(self):
+        self.start()
+        self.advance(1.2)
+        self.store['storage_enabled']['wood'] = False
+        self.advance(20)
+        self.assertEqual(self.worker['logistics_trip']['cargo'], {'wood': 20})
+        self.assertEqual(self.store.get('stored_goods', {}), {})
+        self.assertEqual(self.source['output_buffer']['wood'], 0)
+        self.store['storage_enabled']['wood'] = True
+        self.advance(0)
+        self.assertEqual(self.store['stored_goods']['wood'], 20)
+        self.assertEqual(self.town['wood'], self.total)
+
+    def test_supply_is_unavailable_at_pickup_and_reserved_until_delivery(self):
+        self.source.update(kind='sawpit', output_buffer={})
+        self.store['stored_goods'] = {'wood': 20}
+        self.worker.update(job='woodworking', building_index=1)
+        self.start('supply', hauler=False)
+        self.advance(1.2)
+        self.assertEqual(self.store['stored_goods']['wood'], 0)
+        self.assertEqual(self.source.get('input_buffer', {}), {})
+        self.assertEqual(self.town['wood'], self.total - 20)
+        self.assertEqual(logistics.supply_request(self.town, self.source, self.worker), {})
+        self.advance(2)
+        self.assertEqual(self.source['input_buffer']['wood'], 20)
+        self.assertEqual(self.town['wood'], self.total - 20)
+
+    def test_hauler_takes_supplies_before_leaving_storage(self):
+        self.source.update(kind='sawpit', output_buffer={})
+        self.store['stored_goods'] = {'wood': 20}
+        self.town['villagers'][1].update(job='woodworking', building_index=1, talents={})
+        self.start('supply')
+        self.advance(0)
+        self.assertTrue(self.worker['logistics_trip']['picked_up'])
+        self.assertEqual(self.store['stored_goods']['wood'], 0)
+        self.assertEqual(self.source.get('input_buffer', {}), {})
+        self.advance(1.2)
+        self.assertEqual(self.source['input_buffer']['wood'], 20)
+        self.assertTrue(self.worker['logistics_trip']['delivered'])
+        self.advance(2)
+        self.assertNotIn('logistics_trip', self.worker)
+
+    def test_carried_collection_counts_toward_production_caps(self):
+        self.town['rules'] = {'production_caps': {'wood': self.total}}
+        self.start()
+        self.advance(1.2)
+        self.assertEqual(economy.production_room(self.town, 'wood'), 0)
+
+    def test_reassigned_hauler_reaches_supply_source_before_pickup_even_after_replan(self):
+        self.source.update(kind='sawpit', output_buffer={})
+        self.store['stored_goods'] = {'wood': 20}
+        self.town['villagers'][1].update(job='woodworking', building_index=1, talents={})
+        self.worker['logistics_position'] = {'x': 0, 'y': 0}
+        logistics.start_trip(self.town, self.landscape, self.worker, self.source, self.store,
+                             'supply', server.logistics_route, hauler=True)
+        trip = self.worker['logistics_trip']
+        self.assertGreater(trip['pickup_step'], 0)
+        self.advance(.6)
+        self.assertEqual(self.store['stored_goods']['wood'], 20)
+        self.assertFalse(trip.get('picked_up', False))
+        logistics.replan_trip(self.landscape, self.worker, self.source, self.store, set(), set(), ())
+        pickup = trip['path'][trip['pickup_step']]
+        self.assertEqual(abs(pickup[0] - self.store['x']) + abs(pickup[1] - self.store['y']), 1)
+        self.advance(100)
+        self.assertEqual(self.source['input_buffer']['wood'], 20)
+        self.assertEqual(self.store['stored_goods']['wood'], 0)
+
+    def test_cancellation_returns_goods_once_to_the_correct_source(self):
+        for operation in ('collect', 'supply'):
+            with self.subTest(operation=operation):
+                self.setUp()
+                if operation == 'supply':
+                    self.source.update(kind='sawpit', output_buffer={})
+                    self.store['stored_goods'] = {'wood': 20}
+                    self.town['villagers'][1].update(job='woodworking', building_index=1, talents={})
+                self.start(operation)
+                self.advance(1.2 if operation == 'collect' else 0)
+                logistics.cancel_trip(self.town, self.worker)
+                logistics.cancel_trip(self.town, self.worker)
+                origin = self.source if operation == 'collect' else self.store
+                self.assertEqual(economy.inventory(origin).get('wood'), 20)
+                self.assertEqual(self.town['wood'], self.total)
+
+    def test_orphaned_output_moves_from_pending_to_carrying_once(self):
+        self.source.update(output_buffer={}, pending_output={'wood': 20}, orphaned_output={'wood': 20})
+        economy.add_stock(self.town, 'wood', -20)
+        self.start()
+        self.advance(1.2)
+        self.assertEqual(self.source['pending_output']['wood'], 0)
+        self.assertEqual(self.source['orphaned_output']['wood'], 0)
+        self.assertEqual(self.worker['logistics_trip']['cargo'], {'wood': 20})
+        self.assertEqual(self.town['wood'], self.total - 20)
+        self.advance(2)
+        self.assertEqual(self.town['wood'], self.total)
+
+    def test_demolition_salvages_a_carried_load_once(self):
+        for index in (1, 2):
+            with self.subTest(destroyed=index):
+                self.setUp()
+                self.start()
+                self.advance(1.2)
+                server.command(self.town, {'action': 'destroy', 'index': index})
+                self.assertNotIn('logistics_trip', self.worker)
+                self.assertEqual(self.town['wood'], self.total)
+                self.assertEqual(sum(economy.inventory(b).get('wood', 0) for b in self.town['buildings']), self.total)
 
 
 if __name__ == '__main__':

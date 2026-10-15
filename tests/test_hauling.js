@@ -32,10 +32,27 @@ assert.deepStrictEqual(cargoState.cargo,{wood:12,planks:3.5},'Show the mixed loa
 animation.advance(cargoState,1,true);
 assert.deepStrictEqual(cargoState.cargo,{},'Hide the load after reaching the destination');
 assert(cargoState.path.length,'The empty return walk can continue');
+const waiting=animation.plan(town,{...loaded,logistics_position:{x:4,y:0},
+  logistics_trip:{...cargoTrip,step:4,delivery_step:4,picked_up:true,cargo:{wood:5}}},0);
+animation.advance(waiting,0,true);
+assert.deepStrictEqual(waiting.cargo,{wood:5},'Goods remain visible while destination storage is full');
+const waitingSupply=animation.plan(town,{...loaded,logistics_position:{x:3,y:0},
+  logistics_trip:{...cargoTrip,step:3,picked_up:true,cargo:{wood:5}}},0);
+animation.advance(waitingSupply,10,true);
+assert.strictEqual(waitingSupply.x,3,'A worker holding undelivered supplies waits at the destination');
+assert.deepStrictEqual(waitingSupply.cargo,{wood:5});
+waitingSupply.transportHolding=false;
+animation.advance(waitingSupply,1,true);
+assert.strictEqual(waitingSupply.x,4,'The return walk resumes once the host confirms delivery');
+assert.deepStrictEqual(waitingSupply.cargo,{});
 const cargoText=v=>card(town,v,0).children.find(c=>c.className==='villager-cargo').textContent;
 assert.strictEqual(cargoText(loaded),'Collecting: 12 Wood · 3.5 Planks');
-assert.strictEqual(cargoText({...loaded,logistics_trip:{...cargoTrip,step:2}}),'Carrying: 12 Wood · 3.5 Planks');
+assert.strictEqual(cargoText({...loaded,logistics_trip:{...cargoTrip,step:2}}),'Collecting: 12 Wood · 3.5 Planks','Path progress alone does not prove pickup');
+assert.strictEqual(cargoText({...loaded,logistics_trip:{...cargoTrip,step:2,picked_up:true}}),'Carrying: 12 Wood · 3.5 Planks');
 assert.strictEqual(cargoText({...loaded,logistics_trip:{...cargoTrip,step:3,delivered:true}}),'Carrying: nothing');
+assert.strictEqual(cargoText({...loaded,job:'milling',logistics_trip:{...cargoTrip,operation:'supply',picked_up:true,cargo:{wheat:8}}}),'Carrying: 8 Wheat','Producers show carried supplies');
+assert.strictEqual(cargoText({...villager,job:'farming',logistics_trip:null,pending_output:{wheat:4}}),'Carrying: 4 Wheat','Gatherers show pending harvests');
+assert.strictEqual(cargoText({...villager,job:'idle',logistics_trip:null}),'Carrying: nothing');
 const paints=[],labels=[];
 const ctx={fillRect(){paints.push(this.fillStyle);},strokeRect(){},strokeText(){},fillText(text){labels.push(text);}};
 const drawCargo=new Function('ctx','goodName',source.slice(source.indexOf('function drawHaulerCargo('),source.indexOf('// Tools and materials are drawn'))+'return drawHaulerCargo;')(ctx,key=>key);

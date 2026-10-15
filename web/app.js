@@ -861,8 +861,8 @@ function resourceStocks(town){
   }
   for(const villager of town.villagers || []){
     const trip=villager.logistics_trip;
-    if(trip?.operation==='sell'&&trip.picked_up&&!trip.delivered)
-      for(const [key,amount] of Object.entries(trip.cargo || {}))add(key,'reserved',amount);
+    if(trip?.picked_up&&!trip.delivered)
+      for(const [key,amount] of Object.entries(trip.cargo || {}))add(key,trip.operation==='collect'?'pending':'reserved',amount);
   }
   for(const row of Object.values(stocks))row.total=row.free+row.reserved+row.pending;
   return stocks;
@@ -1461,11 +1461,11 @@ function villagerCard(town,v,index,withLink=false){
   div.append(skillBar('Hauling',v.hauling || 0));
   const hauling=document.createElement('small');hauling.className='villager-hauling';
   hauling.textContent=`Hauling: ${(50*workerEfficiency(v,'hauling')).toFixed(0)} goods per trip · ${(1.8*(1+.25*Math.floor((v.hauling || 0)/20))).toFixed(2)} tiles/s before road bonuses. Successful deliveries earn practice; every 20 practice adds 50 carrying capacity and 25% base travel speed.`;div.append(hauling);
-  if(['hauling','trading'].includes(v.job)){
+  {
     const trip=v.logistics_trip,load=document.createElement('small');load.className='villager-cargo';
-    const carrying=trip&&!trip.delivered&&(trip.step || 0)>=(trip.pickup_step ?? 0);
-    const goods=Object.entries(trip?.cargo || {}).filter(([,amount])=>amount>0).map(([key,amount])=>`${Number(amount.toFixed(2))} ${goodName(key)}`).join(' · ');
-    load.textContent=carrying&&goods?`Carrying: ${goods}`:trip&&!trip.delivered&&goods?`Collecting: ${goods}`:'Carrying: nothing';div.append(load);
+    const carrying=trip?.picked_up&&!trip.delivered;
+    const goods=Object.entries(trip?(trip.delivered?{}:trip.cargo || {}):v.pending_output || {}).filter(([,amount])=>amount>0).map(([key,amount])=>`${Number(amount.toFixed(2))} ${goodName(key)}`).join(' · ');
+    load.textContent=goods?(carrying||!trip?`Carrying: ${goods}`:`Collecting: ${goods}`):'Carrying: nothing';div.append(load);
   }
   for(const [job,label] of Object.entries(professionJobs))if(v[job] || v.job===job)div.append(skillBar(label,v[job] || 0));
   const traits=document.createElement('small');traits.className='villager-talents';
@@ -3064,7 +3064,10 @@ function animatedVillagers(town, seconds, townId=viewed, frameLayout=null){
       }
     }
     state.roads=roads;
-    if(state.transport&&trip?.cargo&&state.signature===signature)state.transportCargo=trip.cargo;
+    if(state.transport&&trip?.cargo&&state.signature===signature){
+      state.transportCargo=trip.cargo;
+      state.transportHolding=trip.picked_up&&!trip.delivered&&(trip.step || 0)>=trip.delivery_step;
+    }
     state.routeWaiting=!!villager.route_waiting;
     state.storagePaused=!!villager.production_status?.startsWith('Waiting for storage space');
     const confirmedPlayback=workPlayback&&!state.transport;
