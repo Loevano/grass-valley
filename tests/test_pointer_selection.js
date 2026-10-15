@@ -87,6 +87,10 @@ const {chromium}=require('playwright');
             ...(kind==='orchard_tree'?{tree:{stage:'ripe',fruit:8}}:{}),
             profession_upgrades:kind==='fishing_hut'?['nets','wool_nets']:kind==='mine'?['steel_pickaxe']:[]}));
         specialtyBuildings.push(...decorationKinds.flatMap(kind=>[0,1,2,3].map(orientation=>({kind,orientation,x:5,y:5}))));
+        specialtyBuildings.push(...['home','hall','sawpit','barn','mill','bakery'].flatMap(kind=>[1,2,3].map(orientation=>{
+          const dimensions=buildingFootprints[kind] || [1,1];
+          return {kind,x:5,y:5,level:2,orientation,footprint:orientation%2?[...dimensions].reverse():dimensions};
+        })));
         specialtyBuildings.push({kind:'mill',x:5,y:5,footprint:[2,2],level:3},
           ...[0,12,24].map(progress=>({kind:'workshop',x:5,y:5,footprint:[2,2],construction:{progress,total:30}})));
         for(const building of specialtyBuildings){

@@ -102,6 +102,13 @@ existing fit and footprints. Their small scale remains a constraint on prop
 readability. The host continues to own building footprints, worker positions,
 and saved state; the artwork never changes those snapshots.
 
+Completed buildings support four saved orientations. Ground geometry turns while
+height and labels stay upright; rotated faces paint in depth order, with rear walls
+and gables filling the newly visible sides. Mill axles and chimney smoke use the
+same turned anchors. Rectangular sites turn their saved footprint too; move previews,
+collision checks, and selection bounds follow those dimensions. Compact legacy
+sites keep their dimensions until moved. Barn entrances retain their separate control.
+
 Player-crafted decorations include benches, carved statues, lanterns, flower boxes,
 wooden tables, signposts, and garden arches. Their four orientations rotate ground
 coordinates while preserving upright height and fixed world lighting. Broad flower

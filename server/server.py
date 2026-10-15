@@ -1466,6 +1466,11 @@ def validate_footprint(town, building, moving=(), world=None):
             validate_placement(world, town, {'x': x, 'y': y})
 
 
+def moved_footprint(building):
+    dimensions = BUILDING_FOOTPRINTS.get(building['kind'], (1, 1))
+    return dimensions[::-1] if building.get('orientation', 0) % 2 else dimensions
+
+
 def clear_building_forage(town, buildings):
     tiles = occupied_tiles(buildings)
     # Keep the shared landscape list so every town and chunk sees the removal.
@@ -1484,7 +1489,7 @@ def migrate_footprints(world):
             if 'footprint' in building and (building['kind'] != 'hall'
                     or tuple(building['footprint']) != (2, 2)):
                 continue
-            candidate = dict(building, footprint=BUILDING_FOOTPRINTS[building['kind']])
+            candidate = dict(building, footprint=moved_footprint(building))
             others = [b for t in towns for b in t.get('buildings', []) if b is not building]
             obstacles = others + list(landscape.get('map_resources', [])) + list(landscape.get('npcs', []))
             obstacles += [r for t in towns for r in t.get('roads', [])]
@@ -1503,15 +1508,26 @@ def command(town, data, world=None):
         bind_map(world)
     ensure_resources(town)
     action = data.get('action')
-    if action == 'set_decoration_orientation':
+    if action in {'set_building_orientation', 'set_decoration_orientation'}:
         index, orientation = data.get('index'), data.get('orientation')
         if type(index) is not int or not 0 <= index < len(town['buildings']):
-            raise ValueError('Choose a decoration first.')
+            raise ValueError('Choose a building first.')
         building = town['buildings'][index]
-        if (building['kind'] not in economy.DECORATIONS or building.get('construction')
+        allowed = (economy.DECORATIONS if action == 'set_decoration_orientation'
+                   else {*economy.BUILDINGS, *COSTS, 'hall', 'acre'})
+        if (building['kind'] not in allowed or building.get('construction')
                 or type(orientation) is not int or orientation not in range(4)):
-            raise ValueError('Choose a completed decoration and a direction.')
-        building['orientation'] = orientation
+            raise ValueError('Choose a completed decoration and a direction.' if action == 'set_decoration_orientation'
+                             else 'Choose a completed building and a direction.')
+        candidate = dict(building, orientation=orientation)
+        if orientation % 2 != building.get('orientation', 0) % 2 and 'footprint' in building:
+            candidate['footprint'] = list(reversed(building['footprint']))
+        changed_tiles = footprint_tiles(candidate) != footprint_tiles(building)
+        if changed_tiles:
+            validate_footprint(town, candidate, {index}, world)
+        building.update(candidate)
+        if changed_tiles:
+            clear_building_forage(town, [building])
         return {}
     if action == 'set_fence_orientation':
         index, orientation = data.get('index'), data.get('orientation')
@@ -1706,7 +1722,7 @@ def command(town, data, world=None):
         for i, building in group:
             nx, ny = building['x'] + dx, building['y'] + dy
             validate_footprint(town, dict(building, x=nx, y=ny,
-                                         footprint=BUILDING_FOOTPRINTS.get(building['kind'], (1, 1))), moving_indices, world)
+                                         footprint=moved_footprint(building)), moving_indices, world)
             if not (0 <= nx < size and 0 <= ny < size):
                 raise ValueError('Choose a tile inside your town for every linked acre.')
             if any(j not in moving_indices and b['x'] == nx and b['y'] == ny
@@ -1743,7 +1759,7 @@ def command(town, data, world=None):
         for _, building in group:
             building.update(x=building['x'] + dx, y=building['y'] + dy)
             if building['kind'] in BUILDING_FOOTPRINTS:
-                building['footprint'] = list(BUILDING_FOOTPRINTS[building['kind']])
+                building['footprint'] = list(moved_footprint(building))
         clear_building_forage(town, [b for _, b in group])
     elif action == 'destroy':
         index = data.get('index')

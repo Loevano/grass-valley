@@ -439,7 +439,8 @@ function buildingLevel(building){return ['acre','orchard_tree'].includes(buildin
 const woodWorkerCapacities={woodcutter:[1,2,3],sawpit:[1,2],workshop:[1]};
 const workerCapacities={...woodWorkerCapacities,farm:[1,2,4],acre:[1],mill:[1],bakery:[1],mine:[1,2,4,8],smelter:[1,2,3],steelworks:[1]};
 const decorationKinds=['wooden_bench','wooden_statue','lantern','flower_box','wooden_table','signpost','garden_arch'];
-function decorationOrientation(building){
+function buildingGroundTurn(building,x,y){return [[x,y],[-y,x],[-x,-y],[y,-x]][buildingOrientation(building)];}
+function buildingOrientation(building){
   return Number.isInteger(building.orientation)&&building.orientation>=0&&building.orientation<4?building.orientation:0;
 }
 function woodCapacities(){return world.progression?.wood_worker_capacities || woodWorkerCapacities;}
@@ -498,7 +499,7 @@ function buildingVisualLevel(building,town){
 const detailedBuildingKinds=['butcher','bakery','smokehouse','tannery','woodcutter','workshop','farm','home','hall','fishing_hut','fish_pond','mine','smelter','steelworks','storehouse','mill','market','orchard','stable','saddler','tradehouse','well'];
 function buildingHeight(building,town){
   if(decorationKinds.includes(building.kind))return building.kind==='wooden_bench'?15:32;
-  return ({hall:62,storehouse:48,well:32,orchard_tree:36,woodcutter:44,fishing_hut:44,mine:27,smelter:36,steelworks:38,stable:32,tannery:38,saddler:40,tradehouse:44,barn:53,mill:52,smokehouse:62,workshop:44,sawpit:28,market:36,fish_pond:32,orchard:40,bakery:58,butcher:44,home:46,farm:44}[building.kind] || 27)+4*(buildingVisualLevel(building,town)-1)+(building.kind==='mill'&&footprintTiles(building).length>1?10:0);
+  return ({hall:62,storehouse:48,well:32,orchard_tree:36,woodcutter:44,fishing_hut:44,mine:27,smelter:36,steelworks:40,stable:32,tannery:38,saddler:40,tradehouse:44,barn:53,mill:52,smokehouse:62,workshop:44,sawpit:28,market:36,fish_pond:32,orchard:40,bakery:58,butcher:44,home:46,farm:44}[building.kind] || 27)+4*(buildingVisualLevel(building,town)-1)+(building.kind==='mill'&&footprintTiles(building).length>1?10:0);
 }
 const storehouseCapacities=[50,75,100,150,200,250,300,350];
 function farmStorageCapacity(building){
@@ -2359,6 +2360,15 @@ function renderSelection(town){
     $('selection-details').append(p);
   }else{
     $('selection-title').textContent=buildingName(item);
+    if(!item.construction&&viewed===identity?.town_id){
+      const control=$('selection-decoration-orientation'),index=selection.index;
+      $('selection-decoration').hidden=false;control.replaceChildren();
+      for(const [orientation,label] of ['Lower left ↙','Upper left ↖','Upper right ↗','Lower right ↘'].entries()){
+        const option=document.createElement('option');option.value=String(orientation);option.textContent=label;control.append(option);
+      }
+      control.value=String(buildingOrientation(item));
+      control.onchange=()=>act({action:'set_building_orientation',index,orientation:Number(control.value)});
+    }
     if(item.kind==='orchard_tree'){
       const orchard=town.buildings[item.orchard_index];
       $('selection-art').append(illustration('orchard_tree'));
@@ -2428,15 +2438,6 @@ function renderSelection(town){
     $('selection-move').hidden=viewed!==identity?.town_id;
     $('selection-move').textContent=`${item.kind==='farm'?'Move farm & acres':item.kind==='orchard'?'Move orchard & trees':'Move'} · ${!town.sandbox&&town.coins?'1 coin':'Free'}`;
     $('selection-move').onclick=()=>{const index=selection.index;openPanel('build');tool='move';moveIndex=index;render();};
-    if(decoration&&!item.construction&&viewed===identity?.town_id){
-      const control=$('selection-decoration-orientation'),index=selection.index;
-      $('selection-decoration').hidden=false;control.replaceChildren();
-      for(const [orientation,label] of ['Lower left ↙','Upper left ↖','Upper right ↗','Lower right ↘'].entries()){
-        const option=document.createElement('option');option.value=String(orientation);option.textContent=label;control.append(option);
-      }
-      control.value=String(decorationOrientation(item));
-      control.onchange=()=>act({action:'set_decoration_orientation',index,orientation:Number(control.value)});
-    }
     if(barnActive(item)&&viewed===identity?.town_id){
       const pen=barnPen(item,mapSize(town)),control=$('selection-fence-orientation');
       $('selection-fence').hidden=false;control.replaceChildren();
@@ -4747,11 +4748,11 @@ function draw(seconds=0){
     const owner=world.towns[b.townId] || town;
     const simplifiedResource=tileW<32&&(b.kind==='tree'||b.kind==='rock');
     const height=simplifiedResource?tileH/(2*scale):b.kind==='tree'?(b.species==='ancient'?94:70):character?26:b.kind==='acre'?0:b.kind==='rock'?80:type==='building'?buildingHeight(b,owner)+(b.kind==='hall'?(owner?.level>=4?35:33):18):45;
-    const halfWidth=simplifiedResource?tileW*.45:character?9*scale:type==='resource'?30*scale:b.kind==='barn'?tileW*.9:b.kind==='orchard_tree'||decorationKinds.includes(b.kind)?tileW*.65:b.kind==='sawpit'&&footprintTiles(b).length===1?tileW*.65:detailedBuildingKinds.includes(b.kind)&&footprintTiles(b).length===1?tileW*.8:tileW*.45;
+    const halfWidth=simplifiedResource?tileW*.45:character?9*scale:type==='resource'?30*scale:b.kind==='barn'?tileW*.9:b.kind==='orchard_tree'||decorationKinds.includes(b.kind)?tileW*.65:b.kind==='sawpit'&&footprintTiles(b).length===1?tileW*.75:detailedBuildingKinds.includes(b.kind)&&footprintTiles(b).length===1?tileW*.8:tileW*.45;
     const groundPoints=type==='building'&&footprintTiles(b).length>1?footprintTiles(b).map(p=>point(p.x,p.y)):[];
     hitTargets.push({type,index,townId:b.townId || viewed,
       left:Math.min(centerX-halfWidth,...groundPoints.map(p=>p[0]-tileW/2)),right:Math.max(centerX+halfWidth,...groundPoints.map(p=>p[0]+tileW/2)),
-      top:type==='resource'&&!simplifiedResource?py-80*scale:baseY-height*scale,bottom:Math.max(baseY+(character?5*scale:b.kind==='sawpit'?22*scale:detailedBuildingKinds.includes(b.kind)||b.kind==='barn'||decorationKinds.includes(b.kind)||b.kind==='orchard_tree'?18*scale:tileH/2),...groundPoints.map(p=>p[1]+tileH)),
+      top:type==='resource'&&!simplifiedResource?py-80*scale:baseY-height*scale,bottom:Math.max(baseY+(character?5*scale:b.kind==='sawpit'||b.kind==='barn'?24*scale:detailedBuildingKinds.includes(b.kind)||b.kind==='barn'||decorationKinds.includes(b.kind)||b.kind==='orchard_tree'?18*scale:tileH/2),...groundPoints.map(p=>p[1]+tileH)),
       paint:target=>{
         if(character){drawVillager(b,false,target);return;}
         if(type==='building'){
@@ -4831,8 +4832,9 @@ function footprintTiles(building){
 }
 function occupies(building,x,y){return footprintTiles(building).some(p=>p.x===x&&p.y===y);}
 function placementBuilding(tile,kind){
-  const moving=tool==='move'&&decorationKinds.includes(kind)?world.towns[viewed]?.buildings[moveIndex]:null;
-  return {...tile,kind,...(moving?{orientation:decorationOrientation(moving)}:{}),footprint:(world.progression?.building_footprints || buildingFootprints)[kind] || [1,1]};
+  const moving=tool==='move'?world.towns[viewed]?.buildings[moveIndex]:null;
+  const orientation=buildingOrientation(moving || {}),dimensions=(world.progression?.building_footprints || buildingFootprints)[kind] || [1,1];
+  return {...tile,kind,...(moving?{orientation}:{}),footprint:orientation%2?[...dimensions].reverse():dimensions};
 }
 function gameplayRange(building,town){
   if(building.kind==='hall')return {reach:buildingRange(town),square:false};
@@ -4923,7 +4925,8 @@ function drawFarmCrops(b,state,collectCrop=null){
     if(level>=3){ctx.strokeStyle='#79a6ad';ctx.lineWidth=2*scale;ctx.beginPath();ctx.moveTo(x,y+tileH*.15);ctx.lineTo(x+tileW*.34,y+tileH*.5);ctx.stroke();}
   }
   for(let row=0;row<4;row++){
-    const [ax,ay]=point(b.x-.3+row*.2,b.y-.35),[bx,by]=point(b.x-.3+row*.2,b.y+.35);
+    const [rx,ry]=buildingGroundTurn(b,-.3+row*.2,-.35),[ex,ey]=buildingGroundTurn(b,-.3+row*.2,.35);
+    const [ax,ay]=point(b.x+rx,b.y+ry),[bx,by]=point(b.x+ex,b.y+ey);
     if(field.stage!=='unplowed'){
       ctx.strokeStyle='#655638';ctx.lineWidth=scale;
       ctx.beginPath();ctx.moveTo(ax,ay+tileH/2);ctx.lineTo(bx,by+tileH/2);ctx.stroke();
@@ -4931,7 +4934,7 @@ function drawFarmCrops(b,state,collectCrop=null){
     for(let crop=0;crop<4;crop++){
       const order=row*4+crop;
       if(stage===0 || (stage===3&&order<(field.progress || 0)/2*16))continue;
-      const x=b.x-.3+row*.2,y=b.y-.3+crop*.2;
+      const [cx,cy]=buildingGroundTurn(b,-.3+row*.2,-.3+crop*.2),x=b.x+cx,y=b.y+cy;
       // Characters' feet sit .15 tile heights ahead of a crop's ground anchor.
       const stalk={kind:'crop',cropType,x,y,depth:x+y-.3,stage,
         height:field.stage==='sprouting'?1+progress*2:stage===2?3+progress*3:6,
@@ -5002,7 +5005,7 @@ function drawBuilding(b,town=world.towns[viewed],farmState=null){
   const key=JSON.stringify([b.kind,b.footprint,buildingVisualLevel(b,town),b.kind==='hall'?town?.level || 1:buildingLevel(b),b.settler_level || 1,
     [...(b.profession_upgrades || [])].sort(),
     b.kind==='orchard_tree'?b.tree?.stage || 'sapling':null,
-    decorationKinds.includes(b.kind)?decorationOrientation(b):null,usable,resolution,tileW>=32]);
+    buildingOrientation(b),usable,resolution,tileW>=32]);
   let sprite=buildingSprites.get(key);
   const [x,top]=point(b.x,b.y);
   if(!sprite && bytes<=buildingSpriteByteLimit && typeof document!=='undefined'){
@@ -5070,6 +5073,7 @@ function paintBuildingGround(b,target,paintPolygon){
   }
 }
 function paintSawpit(b,town,target,paintPolygon,usable){
+  if(buildingOrientation(b))return paintTurnedSawpit(b,town,target,paintPolygon,usable);
   const [width,depth]=b.footprint || [1,1],level=buildingVisualLevel(b,town);
   const [x,top]=point(b.x+(width-1)/2,b.y+(depth-1)/2);
   const large=width*depth>1,fit=Math.min(width/3,depth/2),s=tileW/46,scale=(large ? .6*fit : .4)*s;
@@ -5168,6 +5172,74 @@ function paintSawpit(b,town,target,paintPolygon,usable){
   target.fillStyle='#fff0b1';target.font=`${10*s}px sans-serif`;target.textAlign='center';
   target.fillText(labels.sawpit,x,top+tileH/2-(103.5-18)*scale-7*s);
 }
+function paintTurnedSawpit(b,town,target,paintPolygon,usable){
+  const [width,depth]=b.footprint || [1,1],large=width*depth>1;
+  const dimensions=buildingOrientation(b)%2?[depth,width]:[width,depth];
+  const fit=large?Math.min(dimensions[0]/3,dimensions[1]/2):.65,s=tileW/46;
+  const [x,top]=point(b.x+(width-1)/2,b.y+(depth-1)/2);
+  target.save();target.translate(x,top+tileH/2);target.scale(s*fit,s*fit);
+  const painter=buildingPainter(b,target,paintPolygon,(x,y,z)=>[(x-y)*18,(x+y)*9-z]);
+  const {p}=painter;
+  const face=(coords,color)=>painter.poly(coords.map(c=>p(...c)),usable?color:'#a34f49');
+  const box=(x1,y1,z1,x2,y2,z2,color='#b69a70')=>{
+    face([[x1,y1,z1],[x2,y1,z1],[x2,y1,z2],[x1,y1,z2]],color);
+    face([[x1,y2,z1],[x2,y2,z1],[x2,y2,z2],[x1,y2,z2]],color);
+    face([[x1,y1,z1],[x1,y2,z1],[x1,y2,z2],[x1,y1,z2]],'#847053');
+    face([[x2,y1,z1],[x2,y2,z1],[x2,y2,z2],[x2,y1,z2]],'#947044');
+    face([[x1,y1,z2],[x2,y1,z2],[x2,y2,z2],[x1,y2,z2]],'#c4a477');
+  };
+  // Low open shed, tool rack, timber input and the foreground cutting bench.
+  box(-1.3,-1.2,0,1.3,-1.1,31,'#847053');
+  for(const x of [-1.3,1.3])for(const y of [-1.1,.2])box(x,y,0,x+.12,y+.12,32,'#735439');
+  for(const y of [-1.2,.35])face([[-1.5,y,32],[1.55,y,32],[0,y,44]],'#b69a70');
+  face([[-1.5,-1.2,32],[-1.5,.35,32],[0,.35,44],[0,-1.2,44]],'#8e7752');
+  face([[0,-1.2,44],[0,.35,44],[1.55,.35,32],[1.55,-1.2,32]],'#a58d66');
+  for(const x of [-.8,-.25,.3])box(x,-1.05,15,x+.08,-.94,24,'#98aaa7');
+  for(const x of [-.9,.8])for(const y of [.55,1.12])box(x,y,0,x+.12,y+.12,13,'#735439');
+  box(-1.05,.45,12,1.1,1.35,16);
+  box(-.95,.72,16,1.25,1.02,22,'#947044');
+  face([[1.26,.72,16],[1.26,1.02,16],[1.26,1.02,22],[1.26,.72,22]],'#dbb580');
+  face([[.45,.9,21],[.45,.9,28],[1.35,.9,28],[1.35,.9,23],[1.2,.9,24],[1.05,.9,22],[.9,.9,24],[.75,.9,22]],
+    (b.profession_upgrades || []).includes('saw')?'#e8efdf':'#c4d2ce');
+  box(.25,.84,25,.5,.98,29,'#735439');
+  if(large){
+    for(let i=0;i<3;i++)box(-1.85,-.4,i*4,-1.5,.8,i*4+4,'#b48a56');
+    for(let i=0;i<3+buildingVisualLevel(b,town);i++)box(1.45,-.65,i*3,1.8,.15,i*3+2);
+  }
+  painter.flush();
+  const [plaqueX,plaqueY]=p(1.32,-.4,24);
+  target.fillStyle='#344b42';target.fillRect(plaqueX-5,plaqueY-6,10,7);
+  target.fillStyle='#fff0b1';target.font='bold 5px sans-serif';target.textAlign='center';target.fillText(String(buildingLevel(b)),plaqueX,plaqueY);
+  if((b.settler_level || 1)>1){
+    target.fillStyle='#6baeb5';target.fillRect(plaqueX-5,plaqueY+3,10,5);
+    target.fillStyle='#eee0bd';target.fillText(String(b.settler_level),plaqueX,plaqueY+7);
+  }
+  target.restore();
+  target.fillStyle='#fff0b1';target.font=`${10*s}px sans-serif`;target.textAlign='center';
+  target.fillText(labels.sawpit,x,top-(buildingHeight(b,town)+7)*s);
+}
+// Rotated geometry is depth sorted before painting. Zero keeps the original artwork.
+function buildingPainter(b,target,paintPolygon,project){
+  const orientation=buildingOrientation(b),jobs=[];
+  let depth=0;
+  const turn=(x,y)=>buildingGroundTurn(b,x,y);
+  const p=(x,y,z=0)=>{
+    [x,y]=turn(x,y);depth=x+y+z*.06;
+    const point=project(x,y,z);point.depth=depth;return point;
+  };
+  const draw=(paint,d=depth)=>{if(orientation)jobs.push({paint,depth:d});else paint();};
+  const at=points=>points.reduce((sum,p)=>sum+(p.depth ?? depth),0)/points.length;
+  const poly=(points,fill)=>draw(()=>paintPolygon(points,fill),at(points));
+  const line=(points,color,weight=2.4)=>draw(()=>{
+    target.beginPath();points.forEach(([x,y],i)=>i?target.lineTo(x,y):target.moveTo(x,y));
+    target.strokeStyle=color;target.lineWidth=weight;target.stroke();
+  },at(points));
+  const oval=(x,y,rx,ry,fill)=>draw(()=>{
+    target.beginPath();target.ellipse(x,y,rx,ry,0,0,Math.PI*2);
+    if(fill){target.fillStyle=fill;target.fill();}
+  });
+  return {p,poly,line,oval,draw,turn,flush(){jobs.sort((a,b)=>a.depth-b.depth);for(const job of jobs)job.paint();}};
+}
 function paintDetailedBuilding(b,town,target,paintPolygon,usable){
   // Broad unoutlined faces and a few chunky props match the scenery and workers.
   // Compact legacy sites retain their saved footprints and upgrade identities.
@@ -5176,23 +5248,20 @@ function paintDetailedBuilding(b,town,target,paintPolygon,usable){
   const [x,top]=point(b.x+(width-1)/2,b.y+(depth-1)/2),s=tileW/46;
   const level=buildingVisualLevel(b,town),rise=4*(level-1),upgrades=b.profession_upgrades || [];
   target.save();target.translate(x,top+tileH/2);target.scale(.46*s*fit,.46*s*fit);
-  // Ground uses the game's 2:1 projection; doors use broad readable shapes.
-  const p=(x,y,z=0)=>[(x-y)*25,(x+y)*12.5-z*1.5];
-  const poly=(points,fill,warning='#a34f49')=>{
-    paintPolygon(points,usable?fill:warning);
-  };
-  const line=(points,color='#735439',weight=2.4)=>{
-    target.beginPath();points.forEach(([x,y],i)=>i?target.lineTo(x,y):target.moveTo(x,y));
-    target.strokeStyle=color;target.lineWidth=Math.max(2.4,weight);target.stroke();
-  };
-  const oval=(x,y,rx,ry,fill)=>{
-    target.beginPath();target.ellipse(x,y,rx,ry,0,0,Math.PI*2);
-    if(fill){target.fillStyle=fill;target.fill();}
-  };
+  // Ground uses the game's 2:1 projection; doors and signs stay upright.
+  const painter=buildingPainter(b,target,paintPolygon,(x,y,z)=>[(x-y)*25,(x+y)*12.5-z*1.5]);
+  const {p}=painter;
+  const poly=(points,fill,warning='#a34f49')=>painter.poly(points,usable?fill:warning);
+  const line=(points,color='#735439',weight=2.4)=>painter.line(points,color,Math.max(2.4,weight));
+  const oval=painter.oval;
   const face=(coords,fill,warning='#a34f49')=>poly(coords.map(c=>p(...c)),fill,warning);
   const edge=(a,end,color='#735439',weight=2.4)=>line([p(...a),p(...end)],color,weight);
   oval(3,6,65,22,'#223b293d');
   const walls=(x1=-.95,x2=.95,y1=-1.1,y2=.65,h=43+rise,light='#c6b28d',dark='#9b8b6c')=>{
+    if(buildingOrientation(b)){
+      face([[x1,y1,0],[x2,y1,0],[x2,y1,h],[x1,y1,h]],light);
+      face([[x1,y1,0],[x1,y2,0],[x1,y2,h],[x1,y1,h]],dark);
+    }
     face([[x1,y2,0],[x2,y2,0],[x2,y2,h],[x1,y2,h]],light,'#c76d64');
     face([[x2,y1,0],[x2,y2,0],[x2,y2,h],[x2,y1,h]],dark);
     for(const x of [x1,x2])edge([x,y2,3],[x,y2,h],'#796347',3.4);
@@ -5213,6 +5282,7 @@ function paintDetailedBuilding(b,town,target,paintPolygon,usable){
     // Cap its rise by the span so both roof faces retain visible area.
     peak=Math.min(peak,(x2-x1)*25/6);
     const mid=(x1+x2)/2;
+    if(buildingOrientation(b))face([[x1,y1,h],[x2,y1,h],[mid,y1,h+peak]],'#bdab8c');
     face([[x1,y2,h],[x2,y2,h],[mid,y2,h+peak]],'#bdab8c');
     face([[x1,y1,h],[x1,y2,h],[mid,y2,h+peak],[mid,y1,h+peak]],light);
     face([[mid,y1,h+peak],[mid,y2,h+peak],[x2,y2,h],[x2,y1,h]],dark);
@@ -5224,6 +5294,10 @@ function paintDetailedBuilding(b,town,target,paintPolygon,usable){
   };
   const chimney=(z)=>{
     const x=.55,y=-.85;
+    if(buildingOrientation(b)){
+      face([[x,y-.25,z-7],[x+.24,y-.25,z-7],[x+.24,y-.25,z+14],[x,y-.25,z+14]],'#a2a497');
+      face([[x,y-.25,z-7],[x,y,z-7],[x,y,z+14],[x,y-.25,z+14]],'#767f73');
+    }
     face([[x,y,z-7],[x+.24,y,z-7],[x+.24,y,z+14],[x,y,z+14]],'#a2a497');
     face([[x+.24,y-.25,z-7],[x+.24,y,z-7],[x+.24,y,z+14],[x+.24,y-.25,z+14]],'#767f73');
     face([[x-.04,y-.3,z+14],[x+.29,y-.3,z+14],[x+.29,y+.04,z+14],[x-.04,y+.04,z+14]],'#c0bdab');
@@ -5405,8 +5479,10 @@ function paintDetailedBuilding(b,town,target,paintPolygon,usable){
     const boatTier=fishingBoatLevel(b);
     if(boatTier){
       const [a,py]=p(.1,.65,27);
-      target.fillStyle=['','#c29a63','#ece3c5','#d4af6b'][boatTier];target.fillRect(a-5,py-5,10,10);
-      target.fillStyle='#493627';target.font='bold 8px sans-serif';target.textAlign='center';target.fillText(String(boatTier),a,py+3);
+      painter.draw(()=>{
+        target.fillStyle=['','#c29a63','#ece3c5','#d4af6b'][boatTier];target.fillRect(a-5,py-5,10,10);
+        target.fillStyle='#493627';target.font='bold 8px sans-serif';target.textAlign='center';target.fillText(String(boatTier),a,py+3);
+      });
     }
   }else if(b.kind==='fish_pond'){
     // The water is the main silhouette; the feed rack stays low and open.
@@ -5421,6 +5497,10 @@ function paintDetailedBuilding(b,town,target,paintPolygon,usable){
   }else if(b.kind==='mine'){
     // Broad rock faces match nearby boulders; the dark adit reads without a roof.
     const h=38+rise;
+    if(buildingOrientation(b)){
+      face([[-1.3,-1,0],[1.1,-1,0],[1.1,-1,h-10],[.4,-1,h+2],[-1.1,-1,h-7]],'#929b88');
+      face([[-1.3,-1,0],[-1.3,.7,0],[-1.1,.7,h-7],[-1.1,-1,h-7]],'#707e70');
+    }
     face([[-1.3,.7,0],[1.1,.7,0],[1.1,.7,h-10],[.05,.7,h],[-1.1,.7,h-7]],'#929b88');
     face([[1.1,-1,0],[1.1,.7,0],[1.1,.7,h-10],[1.1,-.5,h-6]],'#707e70');
     face([[-1.1,.7,h-7],[.05,.7,h],[.4,-.65,h+2],[1.1,-.5,h-6],[1.1,.7,h-10]],'#b3b8a1');
@@ -5599,6 +5679,10 @@ function paintDetailedBuilding(b,town,target,paintPolygon,usable){
     const [a,py]=p(.6,1);oval(a,py,4.5,2.2,'#947044');oval(a,py-3,4,3.2,'#78945c');
   }else if(b.kind==='hall'){
     const h=43+3*(level-1),x1=-1.3,x2=1.3,y1=-1.2,y2=.8;
+    if(buildingOrientation(b)){
+      face([[x1,y1,0],[x2,y1,0],[x2,y1,h],[x1,y1,h]],'#c5b08b');
+      face([[x1,y1,0],[x1,y2,0],[x1,y2,h],[x1,y1,h]],'#9a896c');
+    }
     face([[x1,y2,0],[x2,y2,0],[x2,y2,h],[x1,y2,h]],level<3?'#c5b08b':'#c6bca2');
     face([[x2,y1,0],[x2,y2,0],[x2,y2,h],[x2,y1,h]],level<3?'#9a896c':'#a39d87');
     const stone=level<3?7:14;
@@ -5638,6 +5722,7 @@ function paintDetailedBuilding(b,town,target,paintPolygon,usable){
   // Keep structural and worker-capacity upgrades independent, as on the barn.
   const plaqueAnchor={fish_pond:[-.25,-.75],tannery:[-.04,-.05],woodcutter:[.56,-.05],hall:[1.32,-.05],
     market:[1.1,.72],orchard:[.9,.5],mill:[.71,-.05],saddler:[.66,-.05]}[b.kind] || [.97,-.05];
+  painter.flush();
   const [plaqueX,plaqueY]=p(...plaqueAnchor,20);
   if(b.kind!=='well'){
     target.fillStyle='#344b42';target.fillRect(plaqueX-5,plaqueY-7,13,9);
@@ -5655,11 +5740,17 @@ function paintDetailedBuilding(b,town,target,paintPolygon,usable){
 }
 function paintBarn(b,town,target,paintPolygon,usable){
   const s=tileW/46,level=buildingVisualLevel(b,town),rise=4*(level-1);
-  const p=(x,y,z=0)=>{const [px,py]=point(b.x+x,b.y+y);return [px,py+tileH/2-z*s];};
-  const poly=(coords,fill)=>{paintPolygon(coords.map(c=>p(...c)),usable?fill:'#a34f49');};
-  const line=(a,end,color,width=1)=>{const [x,y]=p(...a),[ex,ey]=p(...end);target.beginPath();target.moveTo(x,y);target.lineTo(ex,ey);target.strokeStyle=color;target.lineWidth=Math.max(1.6,width)*s;target.stroke();};
+  const painter=buildingPainter(b,target,paintPolygon,(x,y,z)=>{const [px,py]=point(b.x+x,b.y+y);return [px,py+tileH/2-z*s];});
+  const {p}=painter;
+  const poly=(coords,fill)=>painter.poly(coords.map(c=>p(...c)),usable?fill:'#a34f49');
+  const line=(a,end,color,width=1)=>painter.line([p(...a),p(...end)],color,Math.max(1.6,width)*s);
   target.save();
   const [shadowX,shadowY]=p(0,0);target.fillStyle='#223b293d';target.beginPath();target.ellipse(shadowX+3*s,shadowY+4*s,28*s,11*s,0,0,Math.PI*2);target.fill();
+  if(buildingOrientation(b)){
+    poly([[-.6,-.6,0],[.6,-.6,0],[.6,-.6,35+rise],[-.6,-.6,35+rise]],'#bdab8c');
+    poly([[-.6,-.6,0],[-.6,.6,0],[-.6,.6,35+rise],[-.6,-.6,35+rise]],'#8b8069');
+    poly([[-.6,-.6,35+rise],[.6,-.6,35+rise],[0,-.6,42.5+rise]],'#bdab8c');
+  }
   poly([[-.6,.6,0],[.6,.6,0],[.6,.6,35+rise],[-.6,.6,35+rise]],'#bdab8c');
   poly([[.6,-.6,0],[.6,.6,0],[.6,.6,35+rise],[.6,-.6,35+rise]],'#8b8069');
   const stone=8+2*(level-1);
@@ -5680,6 +5771,7 @@ function paintBarn(b,town,target,paintPolygon,usable){
     poly([[x,.2,7],[x+.25,.2,7],[x+.25,.6,7],[x,.6,7]],'#d6b765');
     poly([[x,.6,0],[x+.25,.6,0],[x+.25,.6,7],[x,.6,7]],'#bea15d');
   }
+  painter.flush();
   const [x,y]=p(.6,-.2,22);
   target.fillStyle='#344b42';target.fillRect(x-4*s,y-6*s,9*s,6*s);
   target.fillStyle='#fff0b1';target.font=`bold ${5*s}px sans-serif`;target.textAlign='center';target.fillText(String(buildingLevel(b)),x+.5*s,y-1*s);
@@ -5701,11 +5793,14 @@ function paintBuilding(b,town,farmState=null,target=ctx,usable=buildingUsable(to
   if(b.kind==='orchard_tree'){
     const [x,top]=point(b.x,b.y),s=tileW/46,stage=b.tree?.stage || 'sapling',small=stage==='sapling',height=small?14:29;
     ctx.save();ctx.translate(x,top+tileH/2);ctx.scale(s,s);
+    const treeFacing=buildingOrientation(b);
+    if(treeFacing)ctx.scale(treeFacing===1||treeFacing===2?-1:1,1);
     ctx.fillStyle='#223b293d';ctx.beginPath();ctx.ellipse(2,3,small?9:18,small?4:7,0,0,Math.PI*2);ctx.fill();
     paintPolygon([[-3,1],[3,1],[2,-height],[-1,-height-3]],'#8c7350');
     if(!small)paintPolygon([[-1,-13],[-9,-24],[-6,-25],[2,-16],[10,-25],[12,-22],[2,-10]],'#8c7350');
     const crown=small?.45:1;
-    ctx.save();ctx.translate(0,-height);ctx.scale(crown,crown);
+    const [crownX,crownY]=buildingGroundTurn(b,2,1);
+    ctx.save();ctx.translate((crownX-crownY-1)*.5,-height+(crownX+crownY-3)*.25);ctx.scale(crown,crown);
     paintPolygon([[-19,3],[-21,-5],[-13,-14],[1,-16],[16,-11],[20,1],[10,11],[-6,12]],'#64844d');
     paintPolygon([[-21,-5],[-13,-14],[1,-16],[16,-11],[7,-3],[-7,2]],'#8aa563');
     paintPolygon([[7,-3],[16,-11],[20,1],[10,11],[5,5]],'#507346');
@@ -5759,7 +5854,7 @@ function paintBuilding(b,town,farmState=null,target=ctx,usable=buildingUsable(to
     ctx.save();ctx.translate(x,y);ctx.scale(s,s);
     ctx.fillStyle='#223b2944';ctx.beginPath();ctx.ellipse(3,5,21,7,0,0,Math.PI*2);ctx.fill();
     // Turn local ground coordinates, leaving height upright and lighting fixed.
-    const orientation=decorationOrientation(b),faces=[];
+    const orientation=buildingOrientation(b),faces=[];
     const turn=(x,y,z)=>[...[ [x,y],[-y,x],[-x,-y],[y,-x] ][orientation],z];
     const wood=['#c0a674','#a58a5b','#806c49'],dark=['#9d855c','#806b49','#665a40'];
     const face=(points,color,layer=0)=>faces.push({points,color,layer,depth:points.reduce((sum,[x,y,z])=>sum+x+y+z,0)/points.length});
@@ -6000,7 +6095,8 @@ function drawBuildingAnimation(b,town,time){
     const [width,depth]=b.footprint || [1,1],fit=Math.min(width,depth)/2;
     const [cx,cy]=point(b.x+(width-1)/2,b.y+(depth-1)/2);
     ctx.translate((cx-x)/s,(cy-top)/s);ctx.scale(fit,fit);
-    ctx.translate(-15*.46,(10-(48+4*(buildingVisualLevel(b,town)-1))*1.5)*.46);
+    const [ax,ay]=buildingGroundTurn(b,.1,.7);
+    ctx.translate((ax-ay)*25*.46,((ax+ay)*12.5-(48+4*(buildingVisualLevel(b,town)-1))*1.5)*.46);
     ctx.strokeStyle='#c5ad79';ctx.lineWidth=3;
     for(let i=0;i<4;i++){
       const a=i*Math.PI/2+Math.PI/4+time*2;
@@ -6015,8 +6111,9 @@ function drawBuildingAnimation(b,town,time){
     const [width,depth]=b.footprint || [1,1],fit=Math.min(width,depth)/2;
     const [cx,cy]=point(b.x+(width-1)/2,b.y+(depth-1)/2);
     ctx.translate((cx-x)/s,(cy-top)/s);ctx.scale(fit,fit);
-    const chimneyX=(.67+.975)*25*.46;
-    const chimneyY=((.67-.975)*12.5-((b.kind==='bakery'?71:77)+4*(buildingVisualLevel(b,town)-1))*1.5)*.46;
+    const [chimneyGroundX,chimneyGroundY]=buildingGroundTurn(b,.675,-.98);
+    const chimneyX=(chimneyGroundX-chimneyGroundY)*25*.46;
+    const chimneyY=((chimneyGroundX+chimneyGroundY)*12.5-((b.kind==='bakery'?71:77)+4*(buildingVisualLevel(b,town)-1))*1.5)*.46;
     ctx.fillStyle='#c7c6af66';
     for(let i=0;i<3;i++){
       const rise=(time*.4+i/3)%1;

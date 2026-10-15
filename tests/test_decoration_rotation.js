@@ -16,7 +16,7 @@ for(let index=1;index<=app.run('decorationKinds.length');index++){
   assert.equal(app.run(`$('selection-decoration-orientation').value`),'0','Legacy decorations face their default direction');
   app.run(`$('selection-decoration-orientation').value='3';$('selection-decoration-orientation').onchange();`);
   assert.deepEqual(JSON.parse(app.run(`JSON.stringify(commands.at(-1))`)),
-    {action:'set_decoration_orientation',index,orientation:3});
+    {action:'set_building_orientation',index,orientation:3});
 }
 assert.equal(app.run('JSON.stringify(world)'),app.run('original'),'Controls wait for the host instead of mutating snapshots');
 app.run(`town.buildings[1].orientation=2;inspect('building',1);`);
@@ -25,7 +25,7 @@ assert.equal(app.run(`tool='move';moveIndex=1;placementBuilding({x:14,y:14},'woo
 assert.equal(app.run(`tool='wooden_bench';placementBuilding({x:14,y:14},'wooden_bench').orientation`),undefined,'New placements use the default direction');
 app.run(`tool=null;moveIndex=null;`);
 app.run(`inspect('building',0);`);
-assert.equal(app.run(`$('selection-decoration').hidden`),true,'Ordinary buildings have no decoration controls');
+assert.equal(app.run(`$('selection-decoration').hidden`),false,'Ordinary buildings have the same facing control');
 app.run(`identity={town_id:'friend'};inspect('building',1);`);
 assert.equal(app.run(`$('selection-decoration').hidden`),true,'Visitors cannot rotate decorations');
 app.run(`identity={town_id:'own'};town.buildings[1].construction={progress:0,total:30};inspect('building',1);`);
