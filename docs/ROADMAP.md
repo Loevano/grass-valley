@@ -85,7 +85,10 @@ Meals cost 1.5 food/minute per working resident and 0.6 per idle resident.
 The compact host test sustains 200 working residents with one top-tier mill,
 one bread bakery, 12 farms, 24 acres, and four haulers; fuel is supplied.
 Additional bakeries provide variety. Building panels show recipes and upgrade
-options without grain-flow summaries. Existing extra processor slots
+options without grain-flow summaries. Recipe details use labeled rows for inputs,
+output, batch time, practice, food value, and worker requirements. Production
+storage shows a total with expandable resource capacities.
+Existing extra processor slots
 become equipment upgrades while preserving goods, residents, and partial work.
 
 Sandbox worlds are available for supply chain experiments: all buildings are

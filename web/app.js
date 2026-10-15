@@ -1511,6 +1511,15 @@ function renderMarketSales(town,target){
   }
   target.append(renderMarketSales.editor);
 }
+function productionFacts(rows){
+  const list=document.createElement('dl');list.className='production-facts';
+  for(const [label,value] of rows){
+    const term=document.createElement('dt');term.textContent=label;
+    const detail=document.createElement('dd');detail.textContent=value;
+    list.append(term,detail);
+  }
+  return list;
+}
 function renderRecipes(town,item,index,target){
   const recipes=world.progression?.profession_recipes?.[item.kind];
   if(!recipes)return;
@@ -1526,12 +1535,16 @@ function renderRecipes(town,item,index,target){
   chooser.value=selectedProfessionRecipe(item).output;
   chooser.disabled=viewed!==identity?.town_id;
   target.append(chooser);
-  const note=document.createElement('small');
+  const note=document.createElement('div');note.className='recipe-details';
   const updateNote=()=>{
     const spec=recipes.find(recipe=>recipe.output===chooser.value);
     const seconds=world.progression.production_seconds?.[spec.output] || 3;
     const food=world.progression.edible?.[spec.output];
-    note.textContent=`${costText(spec.inputs)} → ${spec.amount} ${goodName(spec.output).toLowerCase()} · ${seconds}s · ${((item.kind==='butcher'?0.1:0.08)*seconds/3).toFixed(2)} practice${food?` · ${spec.amount*food} food`:''}${spec.level>1&&!town.sandbox?` · Worker level ${spec.level}+`:''}`;
+    const rows=[['Ingredients',costText(spec.inputs)],['Produces',`${spec.amount} ${goodName(spec.output).toLowerCase()}`],
+      ['Batch time',`${seconds}s`],['Practice',`+${((item.kind==='butcher'?0.1:0.08)*seconds/3).toFixed(2)} per batch`]];
+    if(food)rows.push(['Food value',`${Number((spec.amount*food).toFixed(2))} per batch`]);
+    if(spec.level>1&&!town.sandbox)rows.push(['Requires',`Worker level ${spec.level}+`]);
+    note.replaceChildren(productionFacts(rows));
   };
   updateNote();
   chooser.onchange=()=>{if(!chooser.disabled){updateNote();act({action:'set_recipe',index,recipe:chooser.value});}};
@@ -2060,8 +2073,18 @@ function renderSelection(town){
     if(costs[item.kind]&&item.kind!=='well'){
       const level=buildingLevel(item),preview=upgradePreview({action:'upgrade_building',index:selection.index},town,item),maxLevel=item.kind==='storehouse'?storehouseCapacities.length:item.kind==='home'?4:3;
       if(!item.construction&&!['barn','butcher'].includes(item.kind)){
-        const benefits=document.createElement('p');benefits.className='info-copy';
-        benefits.textContent=upgradeBenefit(item.kind,level,item);production.append(benefits);
+        if(storageUpgradeKinds().includes(item.kind)){
+          const benefits=document.createElement('div');benefits.className='production-capacity';
+          benefits.append(productionFacts([['Storage spaces',String(buildingStorageSize(item))]]));
+          const limits=buildingSection('Capacity by resource',true);limits.className='production-limits';
+          limits.append(productionFacts(Object.entries(roomAllocations(item)).map(([key,amount])=>[goodName(key),String(amount)])));
+          const note=document.createElement('p');note.className='production-note';
+          note.textContent=['mill','bakery'].includes(item.kind)?'1 worker · Equipment increases production.':'Worker capacity upgraded separately.';
+          benefits.append(limits,note);production.append(benefits);
+        }else{
+          const benefits=document.createElement('p');benefits.className='info-copy';
+          benefits.textContent=upgradeBenefit(item.kind,level,item);production.append(benefits);
+        }
       }
       if(item.kind==='farm'){
         const note=document.createElement('p');note.textContent='Farm upgrades apply to every linked acre.';details.append(note);

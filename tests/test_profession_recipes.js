@@ -4,7 +4,7 @@ const {execFileSync}=require('child_process');
 const source=fs.readFileSync('web/app.js','utf8');
 const progression=JSON.parse(execFileSync('python3',['-c','import json, progression; print(json.dumps(progression.public_catalog()))'],{cwd:require('path').join(__dirname,'../server'),encoding:'utf8'}));
 const world={progression};
-const document={createElement(tag){return {tag,children:[],attributes:{},append(...items){this.children.push(...items);},setAttribute(key,value){this.attributes[key]=value;}};}};
+const document={createElement(tag){return {tag,children:[],attributes:{},append(...items){this.children.push(...items);},replaceChildren(...items){this.children=items;},setAttribute(key,value){this.attributes[key]=value;}};}};
 const commands=[];
 const context=new Function('world','document','identity','viewed','act',
   source.slice(source.indexOf('const goodName='),source.indexOf('function renderResourceList('))+
@@ -18,6 +18,10 @@ function panel(town,item,index,owner=true){
   ui.renderRecipes(town,item,index,target);
   return {chooser:target.children[0],note:target.children[1],description:ui.productionDescription(item)};
 }
+function recipeFacts(note){
+  const rows=note.children[0].children;
+  return Object.fromEntries(rows.flatMap((row,index)=>index%2?[]:[[row.textContent,rows[index+1].textContent]]));
+}
 for(const [kind,recipes] of Object.entries(progression.profession_recipes)){
   const job=progression.buildings[kind].job,index=3,item={kind};
   const worker={job,building_index:index,...progression.job_requirements[job]};
@@ -29,7 +33,7 @@ for(const [kind,recipes] of Object.entries(progression.profession_recipes)){
   assert(chooser.children.slice(1).every(option=>option.disabled));
   assert.equal(chooser.children[0].textContent.toLowerCase(),recipes[0].output.replaceAll('_',' ')+' · lv 1');
   assert.equal(chooser.children[1].textContent.toLowerCase(),recipes[1].output.replaceAll('_',' ')+` · lv ${recipes[1].level} · locked`);
-  assert(panel(town,item,index).note.textContent.includes('→ '+recipes[0].amount));
+  assert.strictEqual(recipeFacts(panel(town,item,index).note).Produces,`${recipes[0].amount} ${recipes[0].output.replaceAll('_',' ')}`);
   assert(description.includes(recipes[0].output.replaceAll('_',' ')));
   for(const [recipeIndex,recipe] of recipes.entries()){
     if(recipeIndex===0)continue;
@@ -43,14 +47,14 @@ for(const [kind,recipes] of Object.entries(progression.profession_recipes)){
     assert.deepStrictEqual(commands.at(-1),{action:'set_recipe',index,recipe:recipe.output});
     item.recipe=recipe.output;
     description=panel(town,item,index).description;
-    const note=panel(town,item,index).note.textContent;
+    const note=recipeFacts(panel(town,item,index).note);
     const seconds=progression.production_seconds[recipe.output];
-    assert(note.includes(`${seconds}s`));
-    assert(note.includes(`${((kind==='butcher'?0.1:0.08)*seconds/3).toFixed(2)} practice`));
+    assert.strictEqual(note['Batch time'],`${seconds}s`);
+    assert.strictEqual(note.Practice,`+${((kind==='butcher'?0.1:0.08)*seconds/3).toFixed(2)} per batch`);
     assert(description.includes(`/ ${seconds}s batch`));
     assert(description.includes(`${((kind==='butcher'?0.1:0.08)*seconds/3).toFixed(2)} practice / batch`));
-    assert(note.includes(recipe.output.replaceAll('_',' ')));
-    assert(note.includes('Worker level '+level+'+'));
+    assert.strictEqual(note.Produces,`${recipe.amount} ${recipe.output.replaceAll('_',' ')}`);
+    assert.strictEqual(note.Requires,'Worker level '+level+'+');
     assert(description.includes('Recipe level '+level));
     assert(description.includes(recipe.output.replaceAll('_',' ')));
   }
