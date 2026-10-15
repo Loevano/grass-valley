@@ -65,8 +65,8 @@ until moved to a clear site with the full 3×2 footprint.
 
 The [SVG concept comparison](barn-concepts.svg) shows three proposed barn upgrades,
 each with the same 7×7 pen open and closed. The sketches retain the current angled
-view, timber palette, and shared door and animal scale. They are awaiting selection;
-the current game still uses a decorative fence without a working entrance.
+view, timber palette, and shared door and animal scale. Concept C is the selected
+direction; the current game still uses a decorative fence without a working entrance.
 
 ![Three barn concepts with closed and open gates: single swing, paired swing, and sliding timber.](barn-concepts.png)
 
@@ -76,8 +76,14 @@ the current game still uses a decorative fence without a working entrance.
 | B — The hayloft barn | Ochre roof, hayloft hood, three fence rails | Two smaller leaves swing inward |
 | C — The stone-footed barn | Sage roof, stone base, braced fence rails | A timber leaf slides along a guide beside the fence |
 
-Barn and gate styles can be mixed. Choose the visual direction before implementing
-the moving gate. Controls, automatic opening, animal and worker access, collision,
+The [refined concept C](barn-c-refined.svg) replaces the tapered yard path with a
+constant-width connection from the barn door to the gate. Its bend follows the
+isometric grid, so the long edges read as diagonal lines. The comparison sheet
+also includes this refinement.
+
+![Concept C with a diagonal path connecting the barn door and sliding gate.](barn-c-refined.png)
+
+Controls, automatic opening, animal and worker access, collision,
 and persistence remain open gameplay decisions; the drawings do not specify them.
 The state icons are diagram labels, not proposed in-game controls.
 
