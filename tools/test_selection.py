@@ -5,6 +5,8 @@ from pathlib import Path
 import re
 import subprocess
 
+from tools.rust_checks import rust_checks, SELECTION_ERROR
+
 SOURCE_SUFFIXES = {'.py', '.js', '.mjs', '.json', '.html', '.css'}
 
 
@@ -29,7 +31,8 @@ def test_files(root):
 
 
 def changed_files(root, since=None):
-    commands = [['git', 'diff', '--name-only', '-z', since or 'HEAD', '--'],
+    # Disable rename detection so both the removed and added paths are checked.
+    commands = [['git', 'diff', '--no-renames', '--name-only', '-z', since or 'HEAD', '--'],
                 ['git', 'ls-files', '--others', '--exclude-standard', '-z']]
     return sorted({name for command in commands
                    for name in subprocess.check_output(command, cwd=root, text=True).split('\0') if name})
@@ -101,19 +104,27 @@ def affected_tests(root, changed):
         reasons = sorted(changed & dependencies)
         if reasons:
             selected[test] = reasons
+    rust = rust_checks(root, changed)
     covered = {name for reasons in selected.values() for name in reasons}
+    covered.update(reason.removeprefix('Removed file: ') for reasons in rust.values() for reason in reasons)
     unknown = sorted(name for name in changed - covered
-                     if Path(name).suffix in SOURCE_SUFFIXES and not name.startswith('tests/'))
+                     if Path(name).suffix in SOURCE_SUFFIXES and not name.startswith(('tests/', 'rust/')))
     if unknown:
         # A new/unreferenced runtime file or configuration cannot safely be
         # assumed irrelevant. Explain the conservative expansion to the user.
         for test in test_files(root):
             selected.setdefault(test, []).extend(f'Unmapped runtime file: {name}' for name in unknown)
+    selected.update(rust)
     return selected
 
 
 def explicit_tests(root, patterns):
     available = test_files(root)
+    if any(pattern.startswith('rust:') for pattern in patterns):
+        rust = rust_checks(root, all_packages=True)
+        if SELECTION_ERROR in rust:
+            return {**explicit_tests(root, [p for p in patterns if not p.startswith('rust:')]), **rust}
+        available += list(rust)
     selected = {}
     for pattern in patterns:
         normalized = pattern.removeprefix('./')

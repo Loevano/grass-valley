@@ -887,12 +887,41 @@ libraries yet, so checks work offline after the toolchain is installed. The
 layout and pin follow the official [Cargo workspace documentation](https://doc.rust-lang.org/cargo/reference/workspaces.html)
 and [rustup toolchain-file documentation](https://rust-lang.github.io/rustup/overrides.html#the-toolchain-file).
 
-Until R04 slice 2, `python3 tools/check.py` **does not select or validate Rust**;
-run the Cargo commands above separately. Slice 2 will add affected packages,
-reverse dependencies, manifests, shared fixtures, removed-source detection, and
-failure/missing-command reporting with selection tests. Slice 3 will add the
-small replay CLI. The current performance harness measures Python and browser
-code only; it cannot establish Rust-host performance.
+R04 slice 2 integrates Rust into `python3 tools/check.py`. From the repository
+root, inspect selection or select packages explicitly (quote globs):
+
+```sh
+python3 tools/check.py --list
+python3 tools/check.py --tests rust:lantern-core
+python3 tools/check.py --tests 'rust:*'
+```
+
+The runner reads [Cargo metadata](https://doc.rust-lang.org/cargo/commands/cargo-metadata.html)
+from `rust/` with `--no-deps --locked --offline`. Changed package files, including
+manifests and removed sources, select that package and transitive reverse path
+dependencies (including dev/build/optional/target-specific declarations).
+Workspace configuration, lockfile/toolchain changes, runner changes, and unmapped
+Rust files select every member. Git renames retain both old and new paths.
+
+Literal `include!`, `include_str!`, `include_bytes!`, and `#[path]` inputs outside
+package directories select their consumers and reverse dependencies. Shared
+fixtures under `tests/replay/`, `tests/fixtures/`, or `fixtures/` conservatively
+select all Rust packages when no literal consumer is known; put dynamically loaded
+shared fixtures in those directories. Python/JS fixture consumers are selected by
+their existing import/reference rules. Documentation-only and clean checkouts
+need no Cargo; Python-only explicit checks retain their existing behavior.
+
+Each selected package runs formatting, locked offline tests (including doc tests),
+and [Clippy](https://doc.rust-lang.org/clippy/usage.html) for all targets with
+warnings denied. Metadata, missing-tool, timeout, and command errors fail the
+unified report and exit nonzero; `--list` also exits nonzero on selection errors.
+JSON records commands, exit codes, durations, logs, and selection reasons; Markdown
+lists each command result and selection reasons. `--all` includes every Rust
+package as well as Python/JS tests. Install the pinned toolchain before running
+Rust checks; offline Cargo checks never fetch missing dependencies.
+
+Slice 3 still needs the small replay CLI. The current performance harness measures
+Python and browser code only; it cannot establish Rust-host performance.
 
 ## Check the simulation
 

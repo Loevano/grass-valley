@@ -2,7 +2,7 @@
 
 A migration that can be completed one task at a time, with a prompt for each task.
 
-**Status:** R01–R03 complete; R04 slice 1 complete; check-runner support is next.
+**Status:** R01–R03 complete; R04 slices 1–2 complete; Rust replay CLI is next.
 Rust contains only an experimental workspace scaffold; gameplay is not ported.
 **Initial plan revision:** `445ddddd675a87eb7adb50442b2dbf3c14ea6c6f`.
 **R01 audit revision:** `935db7b95885c101c62dfd6bf9e16f39b6a7a8fe`.
@@ -218,7 +218,7 @@ only after work is performed. Keep unfinished stages visible in the roadmap.
 | R01 | Contracts, coverage inventory, decisions | This plan | Complete; [contracts and evidence](RUST_CONTRACTS.md), audited at `935db7b`; commit: `docs: define R01 migration contracts` (this change) |
 | R02 | Fix current relocation continuity | R01 | Complete; `fix: preserve worker continuity when relocating workplaces` (this change); evidence below |
 | R03 | Replay fixtures and comparison oracle | R02 | Complete: slice 1 `9637eb5`; slice 2 `049fe10`; slice 3 `test: add backend-neutral replay comparison reports` (this change); [protocol and evidence](REPLAY_BACKENDS.md) |
-| R04 | Cargo workspace and applicable checks | R03 | In progress: slice 1 complete (`build: establish experimental Rust workspace`, this change); slices 2–3 remain; evidence below |
+| R04 | Cargo workspace and applicable checks | R03 | In progress: slice 1 `732619a`; slice 2 complete (`feat: integrate affected Rust checks`, this change); slice 3 remains; evidence below |
 | R05 | Typed state, IDs, units, and boundary DTOs | R04 | Not started |
 | R06 | Legacy import and read-only save inspection | R05 | Not started |
 | R07 | Terrain versions and chunk generation | R06 | Not started |
@@ -490,12 +490,43 @@ report is not Rust validation. Build output was confirmed ignored by Git.
 No performance comparison is needed for workspace scaffolding;
 the existing harness still does not measure Rust.
 
-Remaining slice 2: extend selection/reporting for affected Rust packages and
-reverse dependencies, changed manifests/toolchain/lockfile, shared fixtures, and
-removed sources; preserve Python/JS behavior and test missing/failed commands.
+Slice 1 was committed as `732619a`. The check-runner limitation above describes
+that revision and is superseded by slice 2.
+
+### R04 slice 2 evidence and remaining work
+
+The affected-check runner now reads offline locked Cargo metadata to select
+package changes and transitive reverse path dependencies, including renamed,
+dev/build, optional, and target-specific declarations. Workspace config, lockfile,
+toolchain, runner changes, and unmapped Rust inputs conservatively select all
+members. Shared fixture directories and literal Rust include/path references are
+covered; Git rename detection is disabled to retain removed and added paths.
+Removed files are explicitly labeled in selection reasons. Existing Python/JS
+selection remains in place, including shared fixture consumers and explicit cases.
+
+Selected packages run formatting, locked offline tests, and all-target Clippy
+with warnings denied from `rust/`. Metadata errors become a failing selection
+entry; missing commands, timeouts, and nonzero exits cannot produce a passing
+report. JSON and Markdown expose selection reasons, command results, and logs;
+JSON also records command arguments, exit codes, and durations. Explicit
+`--tests rust:lantern-core`, Rust globs, and `--all` are supported. See the
+[setup documentation](../README.md#experimental-rust-workspace) for commands,
+fixture placement rules, and official Cargo/Clippy references.
+
+Validation: targeted tooling tests cover package/reverse dependency selection,
+manifest/config/fixture changes, removed and renamed paths, metadata failures,
+missing Cargo, each failed Rust command, report status/exit codes, explicit/full
+selection, and preservation of Python/JS selection. Final affected validation
+(`python3 tools/check.py --output performance-results/r04-slice2`) passed all
+37 Python cases across three tooling modules and six Cargo commands covering both
+packages. The JSON and Markdown reports were inspected; overall status is `pass`
+and performance is `not_run`. No performance comparison is needed: this is check-runner
+functionality, not a performance investigation; Python-host benchmarks still
+cannot measure Rust. The Python launcher and core scaffold are unchanged.
+
 Remaining slice 3: connect a small supported fixture to the Rust replay CLI and
-report unsupported gameplay explicitly. R04's unified-report completion gate is
-not yet met. No speculative third-party libraries were adopted.
+report unsupported gameplay explicitly. R04 remains in progress until that slice
+is complete; no gameplay is ported by the workspace or runner work.
 
 ## R05 — Typed state, IDs, units, and DTOs
 

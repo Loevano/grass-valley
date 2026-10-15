@@ -16,6 +16,7 @@ import time
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 from tools.test_selection import affected_tests, changed_files, explicit_tests, test_files
+from tools.rust_checks import rust_checks, SELECTION_ERROR
 
 
 def compare(baseline, candidate, absolute=2, relative=.20):
@@ -60,16 +61,33 @@ def run(command, log, cwd=ROOT):
 
 def correctness(output, selected):
     results = []
-    python = [Path(test).stem if test.endswith('.py') else test for test in selected if not test.endswith('.js')]
+    python = [Path(test).stem if test.endswith('.py') else test for test in selected
+              if not test.endswith('.js') and not test.startswith('rust:')]
     commands = [('python', [sys.executable, 'tools/test_python.py', '--output', str(output / 'python-timings.json'), *python], python)] if python else []
     commands.extend((Path(test).stem, ['node', test], [test]) for test in selected if test.endswith('.js'))
+    for test in selected:
+        if test.startswith('rust:') and test != SELECTION_ERROR:
+            package = test.removeprefix('rust:')
+            commands.extend([
+                (f'rust-{package}-fmt', ['cargo', 'fmt', '-p', package, '--', '--check'], [test]),
+                (f'rust-{package}-test', ['cargo', 'test', '-p', package, '--locked', '--offline'], [test]),
+                (f'rust-{package}-clippy', ['cargo', 'clippy', '-p', package, '--all-targets',
+                                          '--locked', '--offline', '--', '-D', 'warnings'], [test]),
+            ])
+    if SELECTION_ERROR in selected:
+        log = output / 'rust-selection.log'
+        log.write_text('\n'.join(selected[SELECTION_ERROR]) + '\n')
+        results.append({'name': 'rust-selection', 'status': 'fail', 'exit_code': 1,
+                        'log': str(log), 'tests': [SELECTION_ERROR], 'seconds': 0})
+        print(f'FAIL rust-selection: {log}', flush=True)
     for name, command, tests in commands:
         log = output / f'{name}.log'
         if name == 'python':
             (output / 'python-timings.json').unlink(missing_ok=True)
         started = time.perf_counter()
-        code = run(command, log)
+        code = run(command, log, cwd=ROOT / 'rust') if name.startswith('rust-') else run(command, log)
         results.append({'name': name, 'status': 'pass' if code == 0 else 'fail',
+                        'command': command, 'exit_code': code,
                         'log': str(log), 'tests': tests, 'seconds': time.perf_counter() - started})
         if code:
             print(f'FAIL {name}: {log}', flush=True)
@@ -172,7 +190,8 @@ def main():
         parser.error('Use at least three paired runs and one server cycle.')
     try:
         changed = [] if args.performance_only or args.all or args.tests else changed_files(ROOT, args.since)
-        selected = {} if args.performance_only else ({test: ['Explicit full suite'] for test in test_files(ROOT)}
+        selected = {} if args.performance_only else ({**{test: ['Explicit full suite'] for test in test_files(ROOT)},
+                                                     **rust_checks(ROOT, all_packages=True)}
                     if args.all else explicit_tests(ROOT, args.tests) if args.tests else affected_tests(ROOT, changed))
     except (ValueError, subprocess.CalledProcessError) as error:
         parser.error(str(error))
@@ -183,7 +202,7 @@ def main():
             print(f'{test}: {", ".join(reasons)}')
         if not selected:
             print('No applicable tests. Use --tests to select checks or --all for the full suite.')
-        return 0
+        return 1 if SELECTION_ERROR in selected else 0
     output = (args.output or ROOT / 'performance-results' / time.strftime('%Y%m%d-%H%M%S')).resolve()
     output.mkdir(parents=True, exist_ok=True)
     report = {'schema': 1, 'candidate_commit': subprocess.check_output(['git', 'rev-parse', 'HEAD'], cwd=ROOT, text=True).strip(),
@@ -220,6 +239,12 @@ def main():
         lines.append(f'| {metric} | {value["baseline"]:.2f} | {value["candidate"]:.2f} | {percent} | {value["status"]} |')
     lines.extend(['', 'Absolute frame budgets:'] + [f'- {b["metric"]}: {b["value_ms"]:.2f} ms / {b["limit_ms"]} ms ({"pass" if b["ok"] else "fail"})' for b in report['performance'].get('budgets', [])])
     lines.extend(report['performance'].get('reasons', []))
+    lines.extend(['', 'Correctness commands:', '', '| Command | Result | Exit | Log |',
+                  '|---|---|---:|---|'] +
+                 [f'| {r["name"]} | {r["status"]} | {r["exit_code"]} | {r["log"]} |'
+                  for r in report['correctness']])
+    lines.extend(['', 'Selection reasons:'] +
+                 [f'- {test}: {", ".join(reasons)}' for test, reasons in selected.items()])
     lines.extend(['', f'Selected tests: {len(selected)} ({mode})', '', 'Slowest applicable tests:']
                  + [f'- {test["test"]}: {test["seconds"]:.3f}s ({test["status"]})' for test in report['slowest_tests']])
     (output / 'report.md').write_text('\n'.join(lines) + '\n')
