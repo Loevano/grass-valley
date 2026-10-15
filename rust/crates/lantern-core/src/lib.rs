@@ -1,0 +1,6 @@
+//! Experimental simulation core boundary. Gameplay rules are not ported yet.
+//!
+//! Future rules receive time, commands, and random inputs explicitly from the host.
+//! Networking, filesystem access, and wall-clock access belong outside this crate.
+
+#![no_std]

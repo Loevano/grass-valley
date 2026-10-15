@@ -851,6 +851,49 @@ you can answer later.
 See the [improvement references](docs/README.md) for backend structure and animation
 priorities, balancing theory, game design, and artwork, with tables and diagrams.
 
+## Experimental Rust workspace
+
+R04 slice 1 provides `rust/crates/lantern-core` (an empty `no_std` library)
+and `rust/crates/lantern-host` (a placeholder executable depending on core).
+The core has no external dependencies or I/O; it compiles and its test harness
+runs without a listener. No gameplay rules, replay adapter, or HTTP host are
+implemented. Start the playable game with `python3 server/server.py` as before.
+
+Install [Rust with rustup](https://www.rust-lang.org/tools/install), then run
+commands **inside `rust/`** so rustup discovers `rust-toolchain.toml`:
+
+```sh
+cd rust
+rustup show
+cargo check --workspace --locked --offline
+cargo fmt --all -- --check
+cargo test --workspace --locked --offline
+cargo clippy --workspace --all-targets --locked --offline -- -D warnings
+cargo run -p lantern-host --locked --offline
+```
+
+The toolchain file pins Rust **1.99.0**, with rustfmt and Clippy, to the release
+validated for this slice; it does not track `stable`. The workspace uses edition
+2024 and resolver 3. `rust-version = "1.99"` declares the minimum supported
+compiler, not the exact toolchain selection. Toolchain upgrades are deliberate
+changes: update the pin, run these checks, and record the evidence. The official
+[release notes](https://doc.rust-lang.org/stable/releases.html) include 1.99.1;
+this scaffold uses the locally available 1.99.0 and does not claim to pin the
+latest patch. A direct Homebrew installation ignores the rustup file: verify
+`rustc --version` and `cargo --version` against the pin before checking.
+
+Commit `rust/Cargo.lock`; `rust/target/` is ignored. There are no registry
+libraries yet, so checks work offline after the toolchain is installed. The
+layout and pin follow the official [Cargo workspace documentation](https://doc.rust-lang.org/cargo/reference/workspaces.html)
+and [rustup toolchain-file documentation](https://rust-lang.github.io/rustup/overrides.html#the-toolchain-file).
+
+Until R04 slice 2, `python3 tools/check.py` **does not select or validate Rust**;
+run the Cargo commands above separately. Slice 2 will add affected packages,
+reverse dependencies, manifests, shared fixtures, removed-source detection, and
+failure/missing-command reporting with selection tests. Slice 3 will add the
+small replay CLI. The current performance harness measures Python and browser
+code only; it cannot establish Rust-host performance.
+
 ## Check the simulation
 
 Run checks applicable to the files you changed. The default runner follows local

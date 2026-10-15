@@ -2,7 +2,8 @@
 
 A migration that can be completed one task at a time, with a prompt for each task.
 
-**Status:** R01–R03 complete; R04 is next. Rust implementation has not started.
+**Status:** R01–R03 complete; R04 slice 1 complete; check-runner support is next.
+Rust contains only an experimental workspace scaffold; gameplay is not ported.
 **Initial plan revision:** `445ddddd675a87eb7adb50442b2dbf3c14ea6c6f`.
 **R01 audit revision:** `935db7b95885c101c62dfd6bf9e16f39b6a7a8fe`.
 **Scope:** replace the Python host first. Keep the browser playable during that
@@ -217,7 +218,7 @@ only after work is performed. Keep unfinished stages visible in the roadmap.
 | R01 | Contracts, coverage inventory, decisions | This plan | Complete; [contracts and evidence](RUST_CONTRACTS.md), audited at `935db7b`; commit: `docs: define R01 migration contracts` (this change) |
 | R02 | Fix current relocation continuity | R01 | Complete; `fix: preserve worker continuity when relocating workplaces` (this change); evidence below |
 | R03 | Replay fixtures and comparison oracle | R02 | Complete: slice 1 `9637eb5`; slice 2 `049fe10`; slice 3 `test: add backend-neutral replay comparison reports` (this change); [protocol and evidence](REPLAY_BACKENDS.md) |
-| R04 | Cargo workspace and applicable checks | R03 | Not started |
+| R04 | Cargo workspace and applicable checks | R03 | In progress: slice 1 complete (`build: establish experimental Rust workspace`, this change); slices 2–3 remain; evidence below |
 | R05 | Typed state, IDs, units, and boundary DTOs | R04 | Not started |
 | R06 | Legacy import and read-only save inspection | R05 | Not started |
 | R07 | Terrain versions and chunk generation | R06 | Not started |
@@ -467,6 +468,34 @@ Use current official library/toolchain documentation, commit Cargo.lock, and kee
 build artifacts out of Git. Test selection and failure reporting. Update setup,
 progress, and roadmap documentation, validate the affected set, and commit.
 ```
+
+### R04 slice 1 evidence and remaining work
+
+The dependency-free workspace now contains an empty `no_std` `lantern-core` and
+a placeholder `lantern-host` executable with a path dependency on core. No rules,
+listener, filesystem access, time source, replay support, or gameplay port were
+added. The normal Python launcher is unchanged. Rust 1.99.0 is pinned with
+rustfmt/Clippy; Cargo.lock is committed and `rust/target/` is ignored. See the
+[setup and toolchain upgrade policy](../README.md#experimental-rust-workspace)
+for commands and current official Cargo/rustup references.
+
+Validation passed with installed Homebrew Rust/Cargo 1.99.0 (rustup is unavailable):
+offline locked workspace check, formatting, tests, Clippy with warnings denied,
+and placeholder execution. Core unit/doc harnesses currently contain zero tests:
+there are no gameplay behaviors to exercise. The library compiles independently
+with `cargo test -p lantern-core --locked --offline` without networking.
+The affected Python/JS runner selected zero tests and reported `not_run`;
+`performance-results/r04-slice1/report.md` and `report.json` were inspected. This
+report is not Rust validation. Build output was confirmed ignored by Git.
+No performance comparison is needed for workspace scaffolding;
+the existing harness still does not measure Rust.
+
+Remaining slice 2: extend selection/reporting for affected Rust packages and
+reverse dependencies, changed manifests/toolchain/lockfile, shared fixtures, and
+removed sources; preserve Python/JS behavior and test missing/failed commands.
+Remaining slice 3: connect a small supported fixture to the Rust replay CLI and
+report unsupported gameplay explicitly. R04's unified-report completion gate is
+not yet met. No speculative third-party libraries were adopted.
 
 ## R05 — Typed state, IDs, units, and DTOs
 
