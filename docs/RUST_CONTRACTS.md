@@ -1,0 +1,409 @@
+# Rust migration contracts — R01
+
+Audit date: 2026-10-16. Source revision: `935db7b95885c101c62dfd6bf9e16f39b6a7a8fe`.
+This is a documentation baseline for [R01](RUST_MIGRATION.md#r01--contracts-and-decisions).
+No Rust implementation, save conversion, or production-save inspection occurred.
+
+## Authority, status, and acceptance
+
+**Required parity** means existing behavior or an explicit requirement in the
+migration plan, AGENTS.md, [BACKEND.md](BACKEND.md), or [PATHING.md](PATHING.md).
+**Design decision** selects an internal approach for later stages, with a reason
+and acceptance test. **Recommendation** is a proposed future change, not user
+approval of changed gameplay, compatibility, or data loss. Executing R01 approves
+this audit, not the execution of later stages or removal of any existing feature.
+
+Every coverage row below has a Rust migration status. `unported` means no Rust
+implementation exists; `implemented` means code exists but parity has not been
+proved; `verified` requires named Rust and cross-host evidence plus a revision;
+`intentionally deferred` requires a reason, owner stage, and cutover consequence.
+Python test references identify existing evidence to reuse, not tests run in R01
+or proof that Rust works. All existing features are **unported**. None is accepted
+for removal. Any unported, unverified, or deferred existing feature blocks R24;
+a deferred existing feature can be removed only with explicit user acceptance.
+
+Coverage is split into HTTP, actions, catalogs, saved state, and feature/test
+matrices. Rows are cumulative: an action inherits its endpoint's authentication,
+errors, save behavior, catalog definitions, and associated feature invariants.
+An endpoint passing while one of its actions or catalogs is missing is not parity.
+Tests listed are starting points; R03 must add missing negative, replay, import,
+and boundary cases rather than assume file-level references prove all contracts.
+
+## HTTP coverage matrix
+
+The runtime boundary is `server/server.py:Handler`, not the development profiler.
+All listed routes are unported. JSON replies carry `Content-Type: application/json`,
+`Cache-Control: no-store`, and `Content-Length`. Successful mutation is HTTP 200.
+POST bodies must be JSON objects of 1–4096 bytes. Caught ValueError/TypeError maps
+to HTTP 400 with `{error: message}`; unknown POST routes return 404. Do not infer
+transactional rollback for every legacy validation failure: R03 captures actual
+mutation order. Invalid requests must never gain another town's authority.
+
+| Method / route | Input, authorization, and observable result | Existing evidence | Rust status / stage |
+| --- | --- | --- | --- |
+| GET `/api/world` | Public active-world snapshot; query `world_id`, `chunks`, `known`, `resources`; mismatched world ID clears known caches. Includes towns, shared map, quests, clock, catalogs and readiness. JSON frozen under lock; transmission outside lock. Invalid chunk queries: 400. | `tests/test_http.py`, `tests/test_chunk_world.py`, `tests/test_shared_world.py` | unported / R20–21 |
+| GET `/api/players` | Public `{world_id,sampled_at,players}`; current founder state by town, no ownership tokens. Exact raw path match. | `tests/test_http.py`, `tests/test_remote_players.js`, `tests/test_player_polling.js` | unported / R20–21 |
+| GET `/api/lanterns` | Public `{world_id,quest}`; quest nullable, hazards and playing flag derived. URL path match allows query. | `tests/test_lanterns.py`, `tests/test_lanterns.js` | unported / R18–21 |
+| GET `/api/worlds` | Public `{active_world,can_manage,worlds:[{id,name,sandbox,town_count}]}`. Exact raw path match. | `tests/test_http.py`, `tests/test_world_creation.js` | unported / R20 |
+| POST `/api/worlds/create` | Host only; trimmed name 1–24 chars, boolean sandbox; random ID, fresh explorable world, activate and save. | `tests/test_http.py`, `tests/test_world_creation.js` | unported / R20 |
+| POST `/api/worlds/open` | Host only; existing `world_id`; flush old chunks, switch state/tokens, save active selection. | `tests/test_http.py`, `tests/test_chunk_world.py` | unported / R20 |
+| POST `/api/worlds/delete` | Host only; existing ID and exact name `confirmation`; delete only selected world and its chunks, clear active selection if necessary, save registry. | `tests/test_http.py`, `tests/test_chunk_world.py` | unported / R20 |
+| POST `/api/worlds/regenerate` | Host only; sandbox and exact name confirmation required. New world ID invalidates caches/tokens; preserve registered account names/PIN hashes/town IDs and town names, recreate progress; other worlds unchanged. | `tests/test_http.py`, `tests/test_world_creation.js` | unported / R20 |
+| POST `/api/login` | Active matching `world_id` or 409; `player_name,pin`, optional `town_name`, optional Authorization token for legacy claim. Returns `needs_town` or `{token,town_id}`; save after completed login. | `tests/test_http.py`, `tests/test_player_login.js` | unported / R20 |
+| POST `/api/join` | Legacy public town creation; active world match required; `name` string conversion, trim/truncate to 24; four-town limit. Returns private token and town ID; save. Retain even if current UI prefers login. | `tests/test_http.py`, `tests/test_shared_world.py` | unported / R20 |
+| POST `/api/command` | Active matching `world_id` or 409, raw Authorization token resolves owning town or 401; action rows below. Returns `{ok:true,...result}`. Saves after success except chunked `walk` (next tick persists it). | `tests/test_http.py`, `tests/test_command_response.js`, `tests/test_command_routing.py` | unported / R20–21 |
+| GET static / fallback | Serve `web/` including `/`, HTML/JS/CSS and `/favicon.ico` from `icons/`; unknown GET delegates to SimpleHTTPRequestHandler. Its HEAD/static MIME/cache/path behavior must be characterized before replacement. Other unsupported methods inherit HTTP-server behavior. | `tests/test_http.py`; static/HEAD/unknown-method fixture gap for R03/R20 | unported / R20 |
+
+Host-only means **all** of: connection peer is loopback, Host hostname is
+`localhost` or a loopback IP, and Origin is absent or exactly `http://` plus Host.
+A forged Host/Origin from a LAN peer grants no rights. Normal host listens on
+`0.0.0.0:8000`; LAN players retain play access without world-management access.
+Commands never trust a client-supplied town ID to select their owner.
+
+Account parity includes Unicode `strip().casefold()` keys; display names 1–24
+characters; exactly four ASCII digits for PINs; existing PBKDF2-HMAC-SHA256 hashes
+with 200,000 iterations and hex salts; constant-time hash comparison; existing
+accounts reconnect even to a full world; token reuse per town; token-authorized
+legacy claiming; refusal to claim an already registered town; optional provisioning
+merges only existing towns and never overwrites existing accounts. No tokens,
+salts, PIN hashes, or provisioning records in public snapshots or fixture logs.
+Cryptographic credentials are separate from deterministic gameplay randomness.
+
+## Action coverage matrix
+
+Every literal dispatched by `server.command` appears once below, including legacy
+aliases and actions absent from today's panels. All inputs also include `action`
+and the HTTP `world_id`; indices refer to the owning town's published lists unless
+explicitly an NPC/shared target. Unknown actions are errors. Integers exclude
+booleans wherever Python uses `type(value) is int`. Delegated functions retain
+their validation and proximity rules; this inventory is not authorization to
+simplify them. Empty command results still become `{ok:true}` at HTTP.
+
+| Action | Boundary fields / required behavior | Owner and existing tests | Rust status / stage |
+| --- | --- | --- | --- |
+| `walk` | dx,dy or steps (1–5 validated input dictionaries); normalized movement, collision substeps, ordered batch, authoritative player reply | `server`; `tests/test_player.py`, `tests/test_player_prediction.js`, `tests/test_command_routing.py` | unported / R08 |
+| `fish` | start/stop founder activity; availability/access checked; player reply; adventures prohibit valley actions | `progression`; `tests/test_player.py`, `tests/test_player_mining.py`, `tests/test_wilderness.py` | unported / R08/R13 |
+| `chop` | start/stop founder activity; availability/access checked; player reply; adventures prohibit valley actions | `progression`; `tests/test_player.py`, `tests/test_player_mining.py`, `tests/test_wilderness.py` | unported / R08/R13 |
+| `gather` | start/stop founder activity; availability/access checked; player reply; adventures prohibit valley actions | `progression`; `tests/test_player.py`, `tests/test_player_mining.py`, `tests/test_wilderness.py` | unported / R08/R13 |
+| `mine` | start/stop founder activity; availability/access checked; player reply; adventures prohibit valley actions | `progression`; `tests/test_player.py`, `tests/test_player_mining.py`, `tests/test_wilderness.py` | unported / R08/R13 |
+| `stop_activity` | start/stop founder activity; availability/access checked; player reply; adventures prohibit valley actions | `progression`; `tests/test_player.py`, `tests/test_player_mining.py`, `tests/test_wilderness.py` | unported / R08/R13 |
+| `build` | kind,x,y,orientation; optional farm_index/orchard_index; footprint/territory/cost/unlock validation; linked field/tree placement | `server`; `tests/test_construction.py`, `tests/test_building_footprints.py`, `tests/test_acres.py`, `tests/test_orchards.py` | unported / R12 |
+| `move` | index,x,y; linked acres/trees move together; validate all before cost; cancellation and cargo accounting; known continuity bug below | `server`; `tests/test_construction.py`, `tests/test_building_range.py`, `tests/test_delivery_resume.py` | unported / R02/R12 |
+| `destroy` | index; hall protected; linked removal, index remap, stock/pending-output salvage and trip cancellation | `server`; `tests/test_construction.py`, `tests/test_storage_movement.py`, `tests/test_destroy_tool.js` | unported / R12 |
+| `set_building_orientation` | index,orientation 0–3; completed target; rotate saved footprint, validate changed occupancy | `server`; `tests/test_building_rotation.py`, `tests/test_decoration_rotation.py` | unported / R12 |
+| `set_decoration_orientation` | index,orientation 0–3; completed target; rotate saved footprint, validate changed occupancy | `server`; `tests/test_building_rotation.py`, `tests/test_decoration_rotation.py` | unported / R12 |
+| `set_fence_orientation` | index,orientation 0–3; completed barn, inward gate, no trapped founder/worker/NPC | `server/barns`; `tests/test_barn_fences.py`, `tests/test_barn_fences.js` | unported / R12/R17 |
+| `build_road` | x,y; road placement access/territory and construction; removal preserves unrelated roads | `server`; `tests/test_roads.py`, `tests/test_roads.js` | unported / R12 |
+| `remove_road` | x,y; road placement access/territory and construction; removal preserves unrelated roads | `server`; `tests/test_roads.py`, `tests/test_roads.js` | unported / R12 |
+| `assign_settler` | index,building_index; capacity, qualification, continuity and old-task release | `server`; `tests/test_settlers.py`, `tests/test_settler_professions.py`, `tests/test_builder_reassignment.js` | unported / R12 |
+| `remove_settler` | index; unassign rather than delete resident; cancel pending output/trip, job idle | `server`; `tests/test_settlers.py`, `tests/test_delivery_resume.py` | unported / R12 |
+| `job` | index,job; unlocked completed workplace/free slot or idle/building; assignment chosen in existing list order | `server`; `tests/test_settlers.py`, `tests/test_settler_professions.py` | unported / R12 |
+| `configure_storage` | index,enabled resource→boolean map; completed storehouse; omitted allowed resources disabled, legacy allocation fields cleared | `server`; `tests/test_storage_movement.py`, `tests/test_storage_controls.js` | unported / R13 |
+| `configure_rule` | resource,cap finite nonnegative or null removes cap | `logistics`; `tests/test_production_rules.py`, `tests/test_production_rules.js` | unported / R13 |
+| `configure_resource_trade` | resource,buy_below,sell_above; nullable finite nonnegative thresholds; buy < sell; atomic configuration | `logistics`; `tests/test_market_sales.py`, `tests/test_resource_overview.js` | unported / R14 |
+| `configure_market_sale` | resource,cap,enabled,amount 1–10; completed market, finite cap ≥1; preserve disabled cap/strictness | `logistics`; `tests/test_market_sales.py`, `tests/test_market_sales.js` | unported / R14 |
+| `upgrade_capacity` | index; independent staffing/storage/building upgrade rules, costs and construction; acres/trees/wells exclusions | `server`; `tests/test_worker_capacity.py`, `tests/test_building_upgrades.py`, `tests/test_acre_upgrades.py` | unported / R12 |
+| `upgrade_building` | index; independent staffing/storage/building upgrade rules, costs and construction; acres/trees/wells exclusions | `server`; `tests/test_worker_capacity.py`, `tests/test_building_upgrades.py`, `tests/test_acre_upgrades.py` | unported / R12 |
+| `upgrade` | hall milestone and costs, reward coins not a cost, maximum level 10, saved construction/upgrade_remaining | `server/progression`; `tests/test_hall_levels.py`, `tests/test_hall_water.py`, `tests/test_hall_refresh.js` | unported / R13 |
+| `set_crop` | index,crop; farm or acre; hall unlock; farm applies to linked acres | `server/farming`; `tests/test_acres.py`, `tests/test_farming_cycle.py` | unported / R16 |
+| `set_recipe` | index,recipe output key; matching workplace, qualified tier; release obsolete ingredients, reset worker partial production | `server/logistics`; `tests/test_profession_recipes.py`, `tests/test_industry.py` | unported / R15 |
+| `queue_workshop` | index,recipe,amount 1–999; qualified recipe, max 50 requests, persistent request ID, ordered remaining counts | `server/logistics`; `tests/test_workshop_queue.py`, `tests/test_workshop_queue.js` | unported / R15 |
+| `cancel_workshop` | index,request_id; remove exact order; active change releases unused inputs, completed goods preserved | `server/logistics`; `tests/test_workshop_queue.py`, `tests/test_workshop_queue.js` | unported / R15 |
+| `profession_upgrade` | index,upgrade; matching kind, skill/hall/prerequisite/cost checks; boat immediate, others construction | `server/progression`; `tests/test_profession_recipes.py`, `tests/test_building_upgrades.py`, `tests/test_boats.py` | unported / R12/R15/R17 |
+| `set_animal_count` | index,animal,count; unlocked barn species, shared capacity; preserve surviving ages/names | `server/progression`; `tests/test_animal_growth.py`, `tests/test_animal_names.py`, `tests/test_livestock_balance.py` | unported / R17 |
+| `buy_animal` | index,animal; legacy purchase excludes horse; breeding only horse, two adults plus supplies; capacity/unlocks | `server/progression`; `tests/test_wild_horses.py`, `tests/test_livestock_balance.py` | unported / R17 |
+| `breed_animal` | index,animal; legacy purchase excludes horse; breeding only horse, two adults plus supplies; capacity/unlocks | `server/progression`; `tests/test_wild_horses.py`, `tests/test_livestock_balance.py` | unported / R17 |
+| `butcher_animal` | index shop,barn_index,animal; qualified butcher; select first adult, preserve name in order; replacement only last species member; fetching stage before processing | `server/logistics`; `tests/test_butcher_animation.py`, `tests/test_animal_growth.py`, `tests/test_animal_butchery.js` | unported / R17 |
+| `buy_boat` | founder boat tier, hall/fishing practice and costs; player reply | `server/progression`; `tests/test_boats.py`, `tests/test_player_controls.js` | unported / R17 |
+| `upgrade_boat` | founder boat tier, hall/fishing practice and costs; player reply | `server/progression`; `tests/test_boats.py`, `tests/test_player_controls.js` | unported / R17 |
+| `build_boat` | legacy founder boat action; hall ≥3, 20 wood +10 planks (sandbox exemption); player reply | `server`; `tests/test_boats.py` | unported / R17 |
+| `sell_goods` | resource,amount integer 1–200; completed market, free stock, existing sale values | `server/progression`; `tests/test_market_sales.py`, `tests/test_market_sales.js` | unported / R14 |
+| `create_trade` | target_town,give_resource,give_amount,want_resource,want_amount; distinct goods, 1–100, both markets/hall ≥5, max 10 offers; no reservation on offer | `trading`; `tests/test_trading.py` | unported / R18 |
+| `accept_trade` | source_town,offer_id; targeted receiver only; recheck outgoing stock/incoming enabled capacity for both, exact-once atomic exchange | `trading`; `tests/test_trading.py` | unported / R18 |
+| `cancel_trade` | offer_id; only own offer, no stock exchange | `trading`; `tests/test_trading.py` | unported / R18 |
+| `lead_horse` | x,y; wild horse within 1.8, hall ≥8 and stable; remove shared wild resource, leading flag | `horses`; `tests/test_wild_horses.py` | unported / R17 |
+| `stable_horse` | index; completed nearby stable, capacity/age/saddle checks; leading, riding, mounted flags and animal ages preserved | `horses`; `tests/test_wild_horses.py` | unported / R17 |
+| `ride_horse` | index; completed nearby stable, capacity/age/saddle checks; leading, riding, mounted flags and animal ages preserved | `horses`; `tests/test_wild_horses.py` | unported / R17 |
+| `return_horse` | index; completed nearby stable, capacity/age/saddle checks; leading, riding, mounted flags and animal ages preserved | `horses`; `tests/test_wild_horses.py` | unported / R17 |
+| `toggle_mount` | owned riding horse required; toggle mounted, clear activity, player reply | `horses`; `tests/test_wild_horses.py`, `tests/test_player_controls.js` | unported / R17 |
+| `buy_equipment` | item,npc_index; trader catalog and distance ≤1.8; buy price, sell half floor, equipped stock protected; player reply | `equipment`; `tests/test_equipment.py`, `tests/test_equipment_controls.js` | unported / R18 |
+| `sell_equipment` | item,npc_index; trader catalog and distance ≤1.8; buy price, sell half floor, equipped stock protected; player reply | `equipment`; `tests/test_equipment.py`, `tests/test_equipment_controls.js` | unported / R18 |
+| `equip_item` | item; owned slot equipment, unsafe swamp unequip prohibited; player reply | `equipment`; `tests/test_equipment.py`, `tests/test_equipment_controls.js` | unported / R18 |
+| `unequip_item` | item; owned slot equipment, unsafe swamp unequip prohibited; player reply | `equipment`; `tests/test_equipment.py`, `tests/test_equipment_controls.js` | unported / R18 |
+| `interact_local` | npc_index; nearby routine position; optional item; per-local met/gift/story/cooldown, goods/storage/cost and one-time rewards | `npcs`; `tests/test_npcs.py`, `tests/test_npc_stories.py`, `tests/test_wilderness.py` | unported / R18 |
+| `claim_local_gift` | npc_index; nearby routine position; optional item; per-local met/gift/story/cooldown, goods/storage/cost and one-time rewards | `npcs`; `tests/test_npcs.py`, `tests/test_npc_stories.py`, `tests/test_wilderness.py` | unported / R18 |
+| `advance_local_story` | npc_index; nearby routine position; optional item; per-local met/gift/story/cooldown, goods/storage/cost and one-time rewards | `npcs`; `tests/test_npcs.py`, `tests/test_npc_stories.py`, `tests/test_wilderness.py` | unported / R18 |
+| `trade_local` | npc_index; nearby routine position; optional item; per-local met/gift/story/cooldown, goods/storage/cost and one-time rewards | `npcs`; `tests/test_npcs.py`, `tests/test_npc_stories.py`, `tests/test_wilderness.py` | unported / R18 |
+| `buy_worker_tool` | npc_index; nearby routine position; optional item; per-local met/gift/story/cooldown, goods/storage/cost and one-time rewards | `npcs`; `tests/test_npcs.py`, `tests/test_npc_stories.py`, `tests/test_wilderness.py` | unported / R18 |
+| `inspect_story_rock` | x,y; nearby story target; preserve quest flags/rewards | `npcs`; `tests/test_npc_stories.py` | unported / R18 |
+| `give_worker_tool` | index,item; transfer adds target_index; own workers only, one tool each, crafted stock fallback, exact-once inventory | `npcs`; `tests/test_toolsmiths.py`, `tests/test_equipment.py` | unported / R18 |
+| `take_worker_tool` | index,item; transfer adds target_index; own workers only, one tool each, crafted stock fallback, exact-once inventory | `npcs`; `tests/test_toolsmiths.py`, `tests/test_equipment.py` | unported / R18 |
+| `transfer_worker_tool` | index,item; transfer adds target_index; own workers only, one tool each, crafted stock fallback, exact-once inventory | `npcs`; `tests/test_toolsmiths.py`, `tests/test_equipment.py` | unported / R18 |
+| `join_quarry` | shared members by town, two founders start; separate valley position; leaving secures gate to avoid stranding companion | `quests`; `tests/test_quests.py`, `tests/test_quests.js` | unported / R18 |
+| `leave_quarry` | shared members by town, two founders start; separate valley position; leaving secures gate to avoid stranding companion | `quests`; `tests/test_quests.py`, `tests/test_quests.js` | unported / R18 |
+| `quarry_walk` | dx,dy cardinal; member/start/completion/wall/gate checks | `quests`; `tests/test_quests.py`, `tests/test_quests.js` | unported / R18 |
+| `quarry_interact` | target inscription/sun/leaf/moon/treasure; adjacency, ordered runes, all recorded members get reward once | `quests`; `tests/test_quests.py`, `tests/test_quests.js` | unported / R18 |
+| `join_lanterns` | shared saved members; mutually exclusive quarry; rejoin preserves course position/checkpoint, clears valley activity | `lanterns`; `tests/test_lanterns.py`, `tests/test_lanterns.js` | unported / R18 |
+| `leave_lanterns` | shared saved members; mutually exclusive quarry; rejoin preserves course position/checkpoint, clears valley activity | `lanterns`; `tests/test_lanterns.py`, `tests/test_lanterns.js` | unported / R18 |
+| `lanterns_walk` | dx,dy cardinal; two active members, bounds, 0.12 simulation-second step limit, hazard hit/checkpoint | `lanterns`; `tests/test_lanterns.py`, `tests/test_lanterns.js` | unported / R18 |
+| `lanterns_collect` | at least two inside finishers at x=11; complete once; every recorded member gets coins/badge | `lanterns`; `tests/test_lanterns.py`, `tests/test_lanterns.js` | unported / R18 |
+
+## Browser-required catalog coverage matrix
+
+Public values and nested identifiers must retain JSON shapes, ordering where the
+client uses it, costs, rates, thresholds and labels from the source revision.
+Numeric Python dictionary keys become JSON strings. These tables include catalogs
+sent by HTTP and catalogs kept locally in the existing browser; porting the host
+does not authorize replacing those local UI definitions.
+
+| Catalog / fields | Source, consumer and verification obligation | Rust status / stage |
+| --- | --- | --- |
+| `progression.buildings` | `server/progression.py:public_catalog` → `web/app.js`; compare complete nested value to synthetic Python snapshot in R03/R21 | unported / R13–18/R21 |
+| `progression.building_footprints` | `server/progression.py:public_catalog` → `web/app.js`; compare complete nested value to synthetic Python snapshot in R03/R21 | unported / R13–18/R21 |
+| `progression.crops` | `server/progression.py:public_catalog` → `web/app.js`; compare complete nested value to synthetic Python snapshot in R03/R21 | unported / R13–18/R21 |
+| `progression.animals` | `server/progression.py:public_catalog` → `web/app.js`; compare complete nested value to synthetic Python snapshot in R03/R21 | unported / R13–18/R21 |
+| `progression.orchard_stage_seconds` | `server/progression.py:public_catalog` → `web/app.js`; compare complete nested value to synthetic Python snapshot in R03/R21 | unported / R13–18/R21 |
+| `progression.orchard_harvest_yield` | `server/progression.py:public_catalog` → `web/app.js`; compare complete nested value to synthetic Python snapshot in R03/R21 | unported / R13–18/R21 |
+| `progression.orchard_reach` | `server/progression.py:public_catalog` → `web/app.js`; compare complete nested value to synthetic Python snapshot in R03/R21 | unported / R13–18/R21 |
+| `progression.farming_growth_seconds` | `server/progression.py:public_catalog` → `web/app.js`; compare complete nested value to synthetic Python snapshot in R03/R21 | unported / R13–18/R21 |
+| `progression.farming_harvest_yield` | `server/progression.py:public_catalog` → `web/app.js`; compare complete nested value to synthetic Python snapshot in R03/R21 | unported / R13–18/R21 |
+| `progression.farming_harvest_yields` | `server/progression.py:public_catalog` → `web/app.js`; compare complete nested value to synthetic Python snapshot in R03/R21 | unported / R13–18/R21 |
+| `progression.animal_growth_seconds` | `server/progression.py:public_catalog` → `web/app.js`; compare complete nested value to synthetic Python snapshot in R03/R21 | unported / R13–18/R21 |
+| `progression.butcher_seconds` | `server/progression.py:public_catalog` → `web/app.js`; compare complete nested value to synthetic Python snapshot in R03/R21 | unported / R13–18/R21 |
+| `progression.animal_meat` | `server/progression.py:public_catalog` → `web/app.js`; compare complete nested value to synthetic Python snapshot in R03/R21 | unported / R13–18/R21 |
+| `progression.animal_products` | `server/progression.py:public_catalog` → `web/app.js`; compare complete nested value to synthetic Python snapshot in R03/R21 | unported / R13–18/R21 |
+| `progression.tradable_goods` | `server/progression.py:public_catalog` → `web/app.js`; compare complete nested value to synthetic Python snapshot in R03/R21 | unported / R13–18/R21 |
+| `progression.job_requirements` | `server/progression.py:public_catalog` → `web/app.js`; compare complete nested value to synthetic Python snapshot in R03/R21 | unported / R13–18/R21 |
+| `progression.talent_roots` | `server/progression.py:public_catalog` → `web/app.js`; compare complete nested value to synthetic Python snapshot in R03/R21 | unported / R13–18/R21 |
+| `progression.profession_recipes` | `server/progression.py:public_catalog` → `web/app.js`; compare complete nested value to synthetic Python snapshot in R03/R21 | unported / R13–18/R21 |
+| `progression.storage_keys` | `server/progression.py:public_catalog` → `web/app.js`; compare complete nested value to synthetic Python snapshot in R03/R21 | unported / R13–18/R21 |
+| `progression.production_seconds` | `server/progression.py:public_catalog` → `web/app.js`; compare complete nested value to synthetic Python snapshot in R03/R21 | unported / R13–18/R21 |
+| `progression.sale_prices` | `server/progression.py:public_catalog` → `web/app.js`; compare complete nested value to synthetic Python snapshot in R03/R21 | unported / R13–18/R21 |
+| `progression.sellable_goods` | `server/progression.py:public_catalog` → `web/app.js`; compare complete nested value to synthetic Python snapshot in R03/R21 | unported / R13–18/R21 |
+| `progression.buyable_goods` | `server/progression.py:public_catalog` → `web/app.js`; compare complete nested value to synthetic Python snapshot in R03/R21 | unported / R13–18/R21 |
+| `progression.manual_sellable_goods` | `server/progression.py:public_catalog` → `web/app.js`; compare complete nested value to synthetic Python snapshot in R03/R21 | unported / R13–18/R21 |
+| `progression.boats` | `server/progression.py:public_catalog` → `web/app.js`; compare complete nested value to synthetic Python snapshot in R03/R21 | unported / R13–18/R21 |
+| `progression.fish` | `server/progression.py:public_catalog` → `web/app.js`; compare complete nested value to synthetic Python snapshot in R03/R21 | unported / R13–18/R21 |
+| `progression.smoked_fish` | `server/progression.py:public_catalog` → `web/app.js`; compare complete nested value to synthetic Python snapshot in R03/R21 | unported / R13–18/R21 |
+| `progression.upgrades` | `server/progression.py:public_catalog` → `web/app.js`; compare complete nested value to synthetic Python snapshot in R03/R21 | unported / R13–18/R21 |
+| `progression.recipes` | `server/progression.py:public_catalog` → `web/app.js`; compare complete nested value to synthetic Python snapshot in R03/R21 | unported / R13–18/R21 |
+| `progression.edible` | `server/progression.py:public_catalog` → `web/app.js`; compare complete nested value to synthetic Python snapshot in R03/R21 | unported / R13–18/R21 |
+| `progression.storage_goods` | `server/progression.py:public_catalog` → `web/app.js`; compare complete nested value to synthetic Python snapshot in R03/R21 | unported / R13–18/R21 |
+| `progression.fixed_storage` | `server/progression.py:public_catalog` → `web/app.js`; compare complete nested value to synthetic Python snapshot in R03/R21 | unported / R13–18/R21 |
+| `progression.wood_worker_capacities` | `server/progression.py:public_catalog` → `web/app.js`; compare complete nested value to synthetic Python snapshot in R03/R21 | unported / R13–18/R21 |
+| `progression.storage_upgrade_kinds` | `server/progression.py:public_catalog` → `web/app.js`; compare complete nested value to synthetic Python snapshot in R03/R21 | unported / R13–18/R21 |
+| `progression.workplace_storage_sizes` | `server/progression.py:public_catalog` → `web/app.js`; compare complete nested value to synthetic Python snapshot in R03/R21 | unported / R13–18/R21 |
+| `progression.worker_capacities` | `server/progression.py:public_catalog` → `web/app.js`; compare complete nested value to synthetic Python snapshot in R03/R21 | unported / R13–18/R21 |
+| `progression.decorations` | `server/progression.py:public_catalog` → `web/app.js`; compare complete nested value to synthetic Python snapshot in R03/R21 | unported / R13–18/R21 |
+| `progression.food_per_minute` | `server/progression.py:public_catalog` → `web/app.js`; compare complete nested value to synthetic Python snapshot in R03/R21 | unported / R13–18/R21 |
+| `progression.crafted_worker_tools` | `server/progression.py:public_catalog` → `web/app.js`; compare complete nested value to synthetic Python snapshot in R03/R21 | unported / R13–18/R21 |
+| `progression.wood_per_cycle` | `server/progression.py:public_catalog` → `web/app.js`; compare complete nested value to synthetic Python snapshot in R03/R21 | unported / R13–18/R21 |
+| `progression.stone_per_rock` | `server/progression.py:public_catalog` → `web/app.js`; compare complete nested value to synthetic Python snapshot in R03/R21 | unported / R13–18/R21 |
+| `progression.home_stone_cost` | `server/progression.py:public_catalog` → `web/app.js`; compare complete nested value to synthetic Python snapshot in R03/R21 | unported / R13–18/R21 |
+| `hall_upgrades`, `hall_ready` | `server.HALL_UPGRADES`, `progression.milestone`; per-town eligibility and current upgrades; `tests/test_hall_levels.py`, `tests/test_hall_water.py` | unported / R13/R21 |
+| `local_stories` | `npcs.STORIES`; stages/clues/rewards consumed by app; `tests/test_npc_stories.py` | unported / R18/R21 |
+| `quarry_catalog` | `quests.CATALOG`; layout, runes, clue, reward, keepsake; `web/quarry.js`, `tests/test_quests.js` | unported / R18/R21 |
+| Courier catalog / board | `lanterns.CATALOG` exists in Python but is **not** sent as an HTTP catalog. `web/lanterns.js` owns its board constants; `/api/lanterns` supplies quest and hazards; `tests/test_lanterns.js` | unported / R18/R21 |
+| Equipment, worker tools and local shops | `equipment.ITEMS`, `npcs.WORKER_TOOLS`, `TOOL_SHOPS`, `GIFTS`, `BARTERERS`; local browser definitions and tests must agree with host acceptance/prices/slots; `tests/test_equipment_controls.js`, `tests/test_toolsmiths.py` | unported / R18/R21 |
+| Core buildings/jobs/costs and browser labels | `server.COSTS/JOBS/BUILDING_JOBS/SETTLER_SPACES` extend progression; hall/home/storehouse/woodcutter/farm/acre/fishing hut plus all progression buildings; local app build/help/job/resource/art tables remain compatible; `tests/test_profession_recipes.js`, `tests/test_resource_visibility.js`, `tests/test_settler_professions.js` | unported / R12–18/R21 |
+| Terrain and geometry conventions | `spatial.BUILDING_FOOTPRINTS`, biome codes, resource kind/species, orientations and barn fences; `web/scene.js`, `web/app.js`, `web/animations.js`; `tests/test_building_footprints.js`, `tests/test_terrain_rendering.js`, `tests/test_barn_fences.js` | unported / R07–12/R21 |
+
+The following concrete identifiers expand the catalog boundary (including nested
+recipes and upgrades); omission of an individual kind is a missing feature:
+
+- Production buildings: `well`, `barn`, `sawpit`, `mill`, `smokehouse`, `workshop`, `wooden_bench`, `wooden_statue`, `lantern`, `flower_box`, `wooden_table`, `signpost`, `garden_arch`, `fish_pond`, `orchard`, `orchard_tree`, `bakery`, `butcher`, `tannery`, `mine`, `smelter`, `stable`, `saddler`, `steelworks`, `tradehouse`, `market`.
+- Profession recipe workplaces: `workshop`, `bakery`, `butcher`.
+- Profession recipe outputs: `tools`, `wooden_bowls`, `crates`, `furniture`, `carved_furniture`, `crafted_axe`, `crafted_saw`, `lanterns`, `flower_boxes`, `wooden_tables`, `signposts`, `garden_arches`, `bread`, `bread_rolls`, `herb_bread`, `fruit_pies`, `cakes`, `prepared_meat`, `herbed_meat`, `smoked_meat`, `sausages`, `meat_pies`.
+- Crops: `vegetables`, `wheat`, `carrots`, `fodder`.
+- Animals: `chicken`, `sheep`, `pig`, `cow`, `horse`.
+- Storage resources: `wood`, `stone`, `food`, `planks`, `wheat`, `fodder`, `flour`, `wool`, `tools`, `manure`, `herbs`, `wooden_bowls`, `crates`, `furniture`, `carved_furniture`, `crafted_axe`, `crafted_saw`, `lanterns`, `flower_boxes`, `wooden_tables`, `signposts`, `garden_arches`, `hides`, `leather`, `iron_ore`, `iron`, `saddles`, `steel`, `trade_crates`, `vegetables`, `carrots`, `fish`, `berries`, `eggs`, `meat`, `milk`, `fruit`, `smoked_fish`, `bread`, `prepared_meat`, `trout`, `salmon`, `sturgeon`, `smoked_trout`, `smoked_salmon`, `smoked_sturgeon`, `bread_rolls`, `herb_bread`, `fruit_pies`, `cakes`, `herbed_meat`, `smoked_meat`, `sausages`, `meat_pies`.
+- Profession upgrades: `nets`, `boat`, `improved_boat`, `master_boat`, `wool_nets`, `steel_pickaxe`, `timber_frame`, `improved_millstones`, `geared_millstones`, `masterwork_millstones`, `larger_oven`, `double_hearth_oven`, `masterwork_oven`.
+- Equipment: `swamp_boots`, `desert_clothing`.
+- Worker tools: `crafted_axe`, `crafted_saw`, `fine_axe`, `fine_fishing_rod`, `fine_sickle`, `steel_fishing_rod`, `masterwork_fishing_rod`, `steel_axe`, `masterwork_axe`, `steel_sickle`, `masterwork_sickle`.
+- Stories: `Moss`, `Tobin`, `Flint`.
+
+## Save-version compatibility matrix
+
+Legacy format names here are structural labels, **not invented schema numbers**.
+The Python loader has no top-level format discriminator. Required Rust support is
+an import contract, currently unported; it does not claim that any Rust loader
+exists. Inspect/import must parse copies without invoking Python load/ensure
+functions on production data. Preserve source bytes and report each conversion.
+
+| Input / discriminator | Required interpretation and conversion | Existing evidence / future acceptance | Rust status / stage |
+| --- | --- | --- | --- |
+| No save file | Empty registry, no selected world; create explicitly | `tests/test_http.py`; fresh-root fixture | unported / R06/R20 |
+| Legacy `{world,tokens}` | Wrap as world ID `legacy`, name `My first world`; ownership tokens preserved | `tests/test_http.py:test_legacy_save_migration_preserves_progress_and_ownership` | unported / R06 |
+| Registry `{worlds,active_world}` | All entries, names, worlds, tokens, optional players; missing selected ID means no active world; inactive worlds retained | `tests/test_http.py`; multiple-world round trip | unported / R06/R19 |
+| Independent town landscapes, no `shared_map` | Keep independent terrain/resources/NPCs; no automatic shared-map conversion | `tests/test_shared_world.py:test_old_world_is_not_converted`, `tests/test_terrain.py` | unported / R06–07 |
+| Shared nonchunked landscape | Single map persisted, town map fields rebound; retain 120-tile and saved legacy dimensions | `tests/test_shared_world.py`, `tests/test_chunk_world.py` | unported / R06–07 |
+| Chunked landscape (`chunked`, `chunk_size`) | Registry omits terrain/resources/stumps; require associated chunk directory, seed, dimensions, starter offset, clock; default missing starter offset 880, not current 160. Retain legacy 1920 and current 480 dimensions, 40-tile chunks | `tests/test_chunk_world.py`; import active and evicted edited chunks | unported / R06–07 |
+| Terrain version absent or 1 | Original starter/map generator and legacy chunks; Python seed/sample semantics. Never substitute latest | `tests/test_regional_terrain.py` v1 digest, `tests/test_terrain.py` | unported / R07 |
+| Terrain version 2 | First regional layout, connected rivers/lake, original per-chunk RNG | `tests/test_regional_terrain.py` v2 digest and connectivity | unported / R07 |
+| Terrain version 3 | `terrain_regions.sample_tile`, revised habitats and islands; chunk-v3 random seed prefix | `tests/test_regional_terrain.py`; add frozen v3 vectors | unported / R07 |
+| Terrain version 4 | v3 plus sparse grass | Reconstruction test covers v4; add frozen vectors distinguishing v3/v4 | unported / R07 |
+| Terrain version 5 | v4 plus open farmland | Reconstruction test covers v5; add distinguishing golden fixtures | unported / R07 |
+| Terrain version 6 | v5 plus green habitats, forest-only regrowth and meadow clearings | `tests/test_terrain.py`, reconstruction; preserve old grassland regrowth for older versions | unported / R07 |
+| Terrain version 7 | v6 plus removal of water components smaller than three tiles, including seams **after** starter/village edits; current new explorable worlds | `tests/test_chunk_world.py`, `tests/test_regional_terrain.py` | unported / R07 |
+| Unsupported/future versions or malformed references | Reject with location/reason before writes; never default an explicit unknown version to 1 or 7 | Add negative synthetic import fixtures R06/R07 | unported / R06–07 |
+| Optional `<save-stem>.players.json` | Private world→normalized account map; merge only known worlds/towns; existing account wins; archive with backup | `tests/test_http.py` provisioning and legacy claim cases | unported / R06/R20 |
+| Rust schema (future) | Explicit schema and RNG versions, supported-reader range and conversion log; legacy inputs converted to a new root, never overwritten | R06/R19 crash/reload and version refusal fixtures | unported / R06/R19 |
+
+All versions 1–7 remain required even for **unvisited** chunks: importing only
+already generated chunks cannot preserve a world that can still be explored.
+Saved records take precedence over regeneration; seeded base generation and
+idempotent legacy repairs/overlays are separate operations. `ChunkMap.read` can
+catch up resources and apply village/terrain repair, so it is not a raw inspection
+API. Preserve changes to mined resources, trees/stumps, and village ground.
+
+## Saved subsystem coverage and feature/test mapping
+
+This is the semantic persistence inventory, including state nested below buildings,
+workers, founders, landscapes, and adventures. It also covers autonomous behavior
+without a command. All rows require import → play → save → reload comparisons.
+
+| Subsystem / required state and behavior | Source | Existing test mapping / missing acceptance | Rust status / stage |
+| --- | --- | --- | --- |
+| Registry, active world, sandbox, town sites/origins, ownership and credentials | `server.py`, `shared_world.py`, `player_login.py` | `tests/test_http.py`, `tests/test_shared_world.py`, `tests/test_world_creation.js`, `tests/test_player_login.js`; inactive-world immobility, LAN isolation, shutdown save | unported / R06/R19–21 |
+| Terrain seed/version/rows/resources/species, map size, chunk metadata/clock, resource supply/max/regeneration and stumps | `terrain.py`, `terrain_regions.py`, `chunk_world.py` | `tests/test_terrain.py`, `tests/test_regional_terrain.py`, `tests/test_chunk_world.py`, `tests/test_map_chunks.js`, `tests/test_scroll_chunks.js`; v1–7 seam/eviction/unvisited goldens | unported / R06–07 |
+| Landscape migration markers and forage halls | `terrain.py`, `progression.py`, `server.prepare_landscapes` | `forage_version` absent/1, `industry_version` absent/1/2, `mineral_version` absent/1, `npc_roster_version` through 3 and `npc_placement_version`; `tests/test_wilderness.py`, `tests/test_npcs.py`, `tests/test_local_expansion.py`; import twice must not duplicate resources | unported / R06–07/R18 |
+| Buildings, levels, footprints/orientation, roads/construction, linked farm/orchard indices, barn gates/pens | `server.py`, `spatial.py`, `barns.py` | `tests/test_construction.py`, `tests/test_building_footprints.py`, `tests/test_building_rotation.py`, `tests/test_decoration_rotation.py`, `tests/test_barn_fences.py`, `tests/test_roads.py`, matching JS controls/geometry | unported / R12 |
+| Town stock/goods/food valuation/coins, building stored goods, enabled filters, capacities, input/output buffers, pending output and reserved ingredients | `progression.py`, `logistics.py` | `tests/test_economy.py`, `tests/test_resource_precision.py`, `tests/test_storage_movement.py`, `tests/test_storage_unlocks.js`, `tests/test_logistics.py`, `tests/test_resource_visibility.js`; conservation includes cargo and reserved stock | unported / R13–14 |
+| Legacy balance/staffing conversions | `server.migrate_*`, `progression.ensure_inventory/relocate_market_stock` | `wood_chain_version`, `grain_chain_version`, `worker_capacity_version`, `acre_upgrade_version` absent→1; `inventory_version`, `market_storage_version` absent→1; `food_balance_version` absent→1→2. `tests/test_wood_chain.py`, `tests/test_grain_chain.py`, `tests/test_worker_capacity.py`, `tests/test_acre_upgrades.py`, `tests/test_economy.py`; preserve partial grain work queue, refunds, tools, displaced residents and cargo; idempotence | unported / R06/R13 |
+| Hall milestones/upgrade_remaining, achievements, harvested/produced counters and skills | `server.py`, `progression.py` | `tests/test_hall_levels.py`, `tests/test_hall_water.py`, `tests/test_progression.py`, `tests/test_progression_controls.js`; water radius, completion eligibility, reward once | unported / R13 |
+| Residents: names/counters, talents, skill practice, housing, hunger/shortage, arrivals/departures and assignment/capacity | `server.py`, `progression.py` | `tests/test_settlers.py`, `tests/test_settler_professions.py`, `tests/test_villager_names.py`, `tests/test_departures.py`, `tests/test_cottage_autofill.py`, `tests/test_worker_capacity.py` | unported / R12–13/R18 |
+| Founder continuous position/facing, activity/status, practice, boat tiers, inventory/equipment/tools, horse/mount/saddle, keepsakes | `server.py`, `progression.py`, `equipment.py`, `horses.py`, `npcs.py` | `tests/test_player.py`, `tests/test_player_mining.py`, `tests/test_boats.py`, `tests/test_equipment.py`, `tests/test_player_prediction.js`, `tests/test_player_polling.js`, `tests/test_remote_players.js` | unported / R08/R17–18 |
+| Worker work_animation task/phase/elapsed/position/path/playback, work_target/claims, watering_round, pending leg/route_waiting, cargo/pending workplace | `work_cycles.py`, `server.py`, `farming.py`, `logistics.py` | `tests/test_simulation.py`, `tests/test_delivery_resume.py`, `tests/test_workplace_dropoff.py`, `tests/test_woodcutter_targets.py`, `tests/test_barn_workers.py`, `tests/test_villager_playback.js`, `tests/test_path_retention.js`; relocate/reassign/reload continuity | unported / R02/R11 |
+| Builder construction_target/position/path/arrival, upgrade helpers and claimed sites | `server.construct` | `tests/test_construction.py`, `tests/test_builder_reassignment.js`, `tests/test_construction.js`; retain progress/claim across reload | unported / R11–12 |
+| Logistics trips/legs/positions/targets, pickup state, held sale goods, producer output, reservations, cancellations | `logistics.py` | `tests/test_delivery_resume.py`, `tests/test_hauling.py`, `tests/test_logistics.py`, `tests/test_delivery_animation.js`, `tests/test_hauling.js`; exact-once transfer/refund and unused tick continuation | unported / R14 |
+| Production caps, market purchases/sales thresholds/strictness/batches; resource_activity seconds and 60-second buckets | `logistics.py`, `resource_activity.py` | `tests/test_production_rules.py`, `tests/test_market_sales.py`, `tests/test_resource_activity.py`, `tests/test_resource_overview.js`; imports do not advance production milestones, hauling/reservation is not production | unported / R13–14 |
+| Profession production_work, recipe, upgrades, grain_work_queue, workshop craft_queue IDs/remaining/inputs | `progression.py`, `logistics.py` | `tests/test_profession_recipes.py`, `tests/test_industry.py`, `tests/test_recipe_balance.py`, `tests/test_wood_chain.py`, `tests/test_grain_chain.py`, `tests/test_workshop_queue.py`, `tests/test_toolsmiths.py`; every catalog recipe, qualification, fuel and cap | unported / R15 |
+| Farming field states/crop/pass/claims/water/growth/harvest cargo; orchard tree stages/yields | `farming.py`, `orchards.py`, `work_cycles.py` | `tests/test_farming_cycle.py`, `tests/test_farming_destinations.py`, `tests/test_acres.py`, `tests/test_orchards.py`, `tests/test_farming_animation.js`, `tests/test_farming_water.js`; multi-acre batch and first-task fairness | unported / R16 |
+| Fishing piers, boat crew/captain trip/depth/reach, mixed species cargo, catch chance, XP and species-preserving smoking | `work_cycles.py`, `progression.py`, `logistics.py` | `tests/test_fishing_range.py`, `tests/test_fishing_luck.py`, `tests/test_boats.py`, `tests/test_smoking.py`, `tests/test_fishing_animation.js`; all fish/smoked fish catalog members | unported / R17 |
+| Barn/stable animal counts/ages/names, growth/output clocks, keeper rounds and butchering order ID/name/pickup/stage/remaining | `barns.py`, `progression.py`, `logistics.py`, `work_cycles.py` | `tests/test_animal_growth.py`, `tests/test_animal_names.py`, `tests/test_livestock_balance.py`, `tests/test_barn_workers.py`, `tests/test_butcher_animation.py`, `tests/test_animal_timers.js`; no animation-driven rewards | unported / R17 |
+| Wild horse home/wander timer/from/start, capture, settlement, breeding, riding unlock | `horses.py` | `tests/test_wild_horses.py`; saved ecology separate from decorative horse display | unported / R17 |
+| NPC roster/placement, villages/layout/life/swamp versions, saved routine paths/phase/timing, outdoor lanes/tavern, visits/stories/gifts/cooldowns | `npcs.py`, `villages.py`, `swamp_village.py`, `village_life.py` | `tests/test_npcs.py`, `tests/test_npc_stories.py`, `tests/test_villages.py`, `tests/test_village_life.py`, `tests/test_npc_routines.js`; layout versions 1/2, life 0/1, chunk village overlays through 3, swamp 1/2; preserve occupied player ground and moved visit keys | unported / R18 |
+| Town trade_offers IDs/targets/terms and completed_trades | `trading.py` | `tests/test_trading.py`; owner/target isolation, outgoing/incoming capacity checked atomically, stale offer cannot double reward | unported / R18 |
+| Quarry members/inside/positions, started/completed/gate_latched, rune sequence/solved/message, coins and keepsakes | `quests.py` | `tests/test_quests.py`, `tests/test_quests.js`; reconnect and departed participant reward eligibility | unported / R18 |
+| Courier members/inside/positions/checkpoints/hits/last_step, elapsed/completed/message, hazards derived | `lanterns.py` | `tests/test_lanterns.py`, `tests/test_lanterns.js`; two-player pause/resume, 0.25s elapsed clamp/0.05s hit slices, one-time reward | unported / R18 |
+| Navigation/collision and deterministic destination selection, roads, bounds and pending searches | `navigation.py`, `spatial.py`, `work_cycles.py`, `logistics.py` | `tests/test_navigation.py`, `tests/test_spatial.py`, `tests/test_host_search_queue.py`, `tests/test_command_routing.py`, `tests/test_road_routing.js`; PATHING actor-specific rules are normative, queues/caches derived and rebuilt | unported / R08–11/R22 |
+| Browser scene/playback/prediction, UI catalogs, panels/help, animations, chunk cache, selection/rotation, overview and keybindings | `web/app.js`, `web/scene.js`, `web/animations.js`, `web/quarry.js`, `web/lanterns.js` | `tests/test_scene.js`, `tests/test_villager_playback.js`, `tests/test_map_overview.js`, `tests/test_command_response.js`, `tests/test_keybindings.js`, plus action/catalog tests above; retain existing browser, no client port | unported (Rust integration) / R21 |
+| Derived-only runtime state | `_chunks`, shared map aliases, spatial indexes, caches, route frontiers/admission reservations, scene overlays and jobs, host monotonic deadlines | `tests/test_host_search_queue.py`, `tests/test_shared_world.py`, `tests/test_scene.js`; rebuild from persistent task/position/cargo, do not serialize locks/frontiers or let client mutate authoritative objects | unported / R05/R10/R19 |
+
+## Architecture decisions and consequences
+
+These internal choices guide later stages. Recommendations that would change
+observable behavior are explicitly called out; none removes an existing feature.
+
+| ID / topic | Decision, reason and boundary | Testable consequence / owner |
+| --- | --- | --- |
+| D01 Ownership/layout | Use a Cargo workspace under `rust/`, core and host crates. One simulation owner orders commands, simulation steps and accepted worker results. HTTP/filesystem/wall-clock types stay outside rules. Existing Python remains default. Prevent races without a permanent Python subprocess dependency | Core runs offline with injected time/randomness; ordered traces cannot double apply transfers; R04/R05/R20 |
+| D02 Persistent IDs | Preserve existing opaque world/town/offer/request IDs. Allocate typed persistent IDs for buildings, workers, individual animals and NPCs on copy-based import; durable world-scoped monotonic counters, never reused. Import in recorded list order, record old index/coordinate→ID mappings. Coordinates remain locations, not identity; names are display data | Moving buildings, deleting earlier list entries, worker departure and reload preserve links/cargo/claims. Browser indices and coordinate-based local visit keys remain boundary adapters; import remaps all saved references before any entities are reordered. No wire ID change required. R05/R06/R12 |
+| D03 Quantities and position | Use finite IEEE-754 binary64 for fractional goods, food, work, practice and continuous tile positions to retain Python/browser behavior; typed wrappers distinguish units. Integer counts, orientations, tiles and IDs remain exact; 64-bit seeds/IDs travel without JS number truncation. Reject nonfinite external values; no blanket fixed-point rounding | Integer quantities and ownership exact. Comparison absolute error ≤1e-9 for fractional goods/work/practice/elapsed seconds, ≤1e-6 tiles for positions at matched times; no tolerance may mask lost items or boundary/phase errors. JSON roundtrip tests include >2^53 terrain seeds. R03/R05 |
+| D04 Time | Inject explicit elapsed seconds into core, keep separate production, courier, resident and persisted chunk/activity clocks. Preserve 3s economic tick ordering (construction before work, haulers before consumers), 0.05s fast-loop intent, courier clamp/hit slices and no wall-clock offline production. Monotonic host deadlines are not saved | Legal subdivision equivalence applies to movement/integration between economic boundaries, not arbitrary reordering of meals/random draws/production ticks. Replay stalls, pauses, reloads and tick overrun; current courier clamp remains unless separately changed. R03/R05/R18 |
+| D05 Randomness | Legacy terrain uses a compatibility implementation of Python Random seed conversion/MT19937, random/randrange/getrandbits, shuffle/choice and stable iteration. Preserve generator-specific string seeds, trig/noise and rounding semantics; merely choosing MT19937 is insufficient. Gameplay legacy traces inject recorded random draws; version new-world gameplay streams and persist state, separate from secure account/ID entropy | Old unvisited chunks match v1–7 goldens including starter/NPC overlays. R03 records draw sites/order. Existing saves have no global gameplay RNG state, so import cannot promise continuation of the old process's random future; it preserves state/distributions. Use independently seeded, Python-compatible MT19937 gameplay streams by world and subsystem, with explicit algorithm/seed-derivation version and serialized state. Import seeds streams from the saved terrain seed plus persistent world ID and subsystem name; R05 must freeze the exact encoding with golden vectors before adoption. This replaces unsaved process-global randomness, not saved outcomes; R03/R05/R07 |
+| D06 Terrain support | Support every currently accepted generator version 1–7 and legacy dimensions/offsets. New algorithm requires new version and new-world opt-in. Never upgrade a seed silently | Frozen vectors, boundary/chunk traversal and evicted resource tests per version; unsupported versions fail before write. R06/R07 |
+| D07 Browser compatibility | Preserve HTTP/JSON, raw Authorization token semantics, existing local browser assets, action names, public catalogs, null/missing distinctions, error statuses and user-facing errors. No mandatory WebSocket/WASM/client replacement. Chunk cache version strings are opaque; content-change and world-invalidation behavior matters, not a specific hash algorithm | Existing browser fixtures run against Rust endpoint; founder prediction and worker timelines agree; 49 requested/128 known/resource entries bounded, malformed/out-of-world keys fail, unchanged resources omitted. R03/R20/R21 |
+| D08 Toolchain/dependencies | R04 selects stable Rust, pins an exact reviewed toolchain in rust-toolchain.toml and commits Cargo.lock. No speculative crate versions here; adopt HTTP/JSON/crypto/Unicode libraries when justified, evaluate search library against resumability. Core has no network/runtime dependency. Preserve Python/Node tools during migration; release host gameplay eventually needs no Python | Build locked on supported development platforms; fmt/tests/clippy selected by affected crate graph; license/MSRV/platform review at adoption, compile offline after dependency cache. Missing tools fail visibly. R04; no dependencies added in R01 |
+| D09 Scheduling | Separate simulation, navigation, persistence and API revisions; one owner accepts only matching task/request generations and relevant navigation dependencies. Keep position/cargo while waiting. Independent route service cadence is recommended to meet latency targets without changing three-second balance | Stale route cannot replace a new assignment; unrelated output changes do not restart navigation. Preserve PATHING stable neighbor/tie order and actor-specific road cost modes, pending≠unreachable. R09/R10 |
+| D10 Saves/rollback | Explicit versioned DTOs separate from in-memory state; retain unknown legacy fields losslessly in an extension container or reject with a path before conversion. Atomic new-destination conversion with source manifest/checksums; one writer/root. Rust refuses normal Python root while experimental | Kill during conversion/write; reopen either prior or complete new state, never mixed chunk/registry generations. Python's per-file temp+replace is not a multi-file transaction or fsync durability guarantee; improve crash recovery without changing gameplay. R06/R19 |
+
+Numeric tolerances above are comparison limits, not permission to round saved
+values or permit negative balances. Field-specific existing precision expectations
+remain stronger where applicable. Terrain tiles, discrete phases, reward counts,
+claims, command acceptance, and deterministic seeded choices compare exactly.
+For equally optimal routes preserve stable ordering initially; accept a different
+route only through a documented comparison rule proving equal access, cost and
+arrival with no changed work/reward order. Cross-platform terrain float differences
+must be resolved, not hidden by positional tolerance.
+
+## Latency contract and workloads (proposed acceptance targets)
+
+No latency was measured in R01. These are recommendations for R03 fixtures,
+R10 scheduling and R23 acceptance, not implemented guarantees or approval to alter
+balance. Reference machine: this development Mac, native arm64, plugged into power,
+no concurrent benchmarks, loopback HTTP and a separate LAN run with round-trip
+latency recorded. R03 must record actual CPU model, memory, macOS, compiler/runtime,
+Chromium, build mode and power mode before freezing its baseline; the sandbox did
+not permit reading CPU/memory through sysctl during R01. Until that metadata is
+recorded, hardware-normalized acceptance remains unmeasured. Pair Python and Rust
+release binaries on the same machine/workload; do not compare different hardware.
+
+| Workload | Fixture / target and rationale |
+| --- | --- |
+| W1 Commands under load | Four towns, 200 active workers (50 each), seeded 480×480 version-7 world, mixed production/hauling/farming/building. Four browsers: ordinary snapshots every 2s, remote positions up to 50ms, courier board 100ms while open. Submit walk, upgrade_capacity, butcher_animal and assignments while saving/ticking. Host response p95 <100ms, p99 <250ms, max <1s; avoids input queued behind long simulation/search/save. Measure login separately including PBKDF2 |
+| W2 Local routes | Existing server_perf 64×64 wall-detour family, 16/64/256 total actors distributed over four towns; cold/warm caches, examined/unexamined obstacle edits and road changes. Ordinary reachable host route p95 <250ms, p99 <1s, max <2s; route-ready and actual first-movement delays measured separately |
+| W3 Blocked/recovery | Seal a delivery/field/butcher destination then reopen it; retain cargo and exactly-once pickup. Within W1/W2 load, resume host movement within 1s of accepted geometry change; continuing unreachable status within 1s, never report pending as final failure. Bounded search exhaustion produces explicit unreachable result |
+| W4 Saturation / long detours | 256 simultaneous orders exceeds today's 128 pending-search cap; add unreachable, chunk-boundary and long-detour requests. Every unchanged admitted or retrying request receives service within 1s; require terminal route/unreachable within 10s for the finite 64×64 fixtures. Report long/world-size cases separately; no fabricated universal completion deadline. Keep at most 128 pending searches and no overflow list initially, retain existing bounded LRU/continuation budgets until measurement justifies changes |
+| W5 End-to-end/browser | Existing client_perf small (1 town/5 workers/2,000 resources) and large (4 towns/200 workers/50,000 resources) fixtures, 1280×800 Chromium viewport at device scale 1; frame work p95 ≤8ms, plus measured input→ack→snapshot→scene→movement milestones. Existing 2s poll and behind-host playback prevent a subsecond visible worker guarantee; record actual visible delay rather than treating host route-ready as visible movement |
+| W6 Save/snapshot contention | W1 with active and evicted edited chunks, multiple saved inactive worlds, login/reconnect and concurrent slow snapshot receiver. Command targets still hold. Record save p50/p95/p99/max, snapshot serialization/bytes, peak memory, and lock/queue wait separately; crash recovery is mandatory regardless of speed |
+
+For each workload record at least five paired runs, seeds 0/42/99 where generation
+matters, warmup separated, at least 1,000 observations for p99, queue delay in ms
+and simulation time, restarts/cancellations, expansions, cache hits, max queue,
+retained waypoint units, peak memory, payload and save duration. Insufficient
+samples, missing hardware metadata, skipped host adapters or noisy measurements
+are **inconclusive**. R03/R23 must wire these metrics: current server_perf imports
+Python, drains many routing updates without real three-second waits, and lacks
+full route-start/end-to-end p99 measurements; client_perf uses synthetic HTTP.
+Neither is evidence of Rust-host speed or actual LAN latency. Existing absolute
+budgets in tools/check.py remain in force; do not relax them to meet these targets.
+
+## Rollback and release gate
+
+Backup unit is the complete registry (all worlds, active selection, credentials,
+tokens), all `<save-stem>_chunks/<terrain_seed>/` records including sleeping chunks,
+and optional `.players.json`. Also capture schema/generator versions and manifest
+checksums. Never put real accounts or local saves in fixtures, commits or reports.
+
+Before R24: separate roots/ports; stop experimental Rust and reopen Python's
+untouched source for rollback. Copy-based imports never silently synchronize new
+Rust progress into Python. R19 must commit a generation manifest or equivalent
+atomic snapshot boundary spanning registry and chunks and rehearse crashes.
+Only one authoritative host and writer may open a world at a time.
+
+**Recommendation for R24:** provide a tested reverse export preserving all covered
+state and account ownership before making Rust default. This is not a promise
+that reverse export exists. If reverse export is impractical, the user must
+explicitly accept one-way conversion and loss of post-backup Rust progress on
+rollback. R01 does not accept that loss. Default cutover remains blocked until
+R24 records the choice and restore rehearsal; an old backup alone is not lossless
+rollback. Unknown fields must not disappear during reverse export either.
+
+## Behavior, known bugs, and intentional differences
+
+| Category | Disposition and verification |
+| --- | --- |
+| Required existing gameplay | Preserve costs, recipe tiers, consumption, XP, staffing/storage limits, hall milestones, species, free last-animal replacement, butchery travel, sandbox exceptions, proximity and territory. Current balance wins over aspirational roadmap text |
+| Known relocation continuity bug | `server.command` move cancels matching trips/output and drops assigned work_animation; coordinate-based task identity can reset position. R02 owns reproduction/fix before R03 records normative traces. R01 neither fixes it nor blesses teleporting/cargo loss as parity. Other current cancellation/salvage rules remain until tested |
+| Documentation drift | PATHING's later “Host pathfinding queue” planned subsection conflicts with its implemented scheduling section; current navigation code/tests and scheduling section govern. BACKEND overview proposal is older than implemented roadmap/client tests. Do not count those prose gaps as missing current features or change unrelated docs in R01 |
+| Intended internal differences | Stable IDs, separate versioned DTOs, explicit clocks/RNG, independent navigation service and atomic multi-file saves improve implementation. They must preserve observable play and are unimplemented. Timing changes are evaluated against W1–W6; production rate/order changes need a separate behavior decision |
+| Deferred new scope | WASM/full Rust client R25–27, new balance work (including proposed fishing catch progression/storage), crowd avoidance, hierarchical routes and speculative flow-field optimization are intentionally deferred as additions. Existing browser integration remains unported and required; existing route behavior cannot be deferred with these additions |
+| Unapproved behavior changes | No removal of legacy join/build_boat/buy_animal actions; no new authentication scheme; no old-world terrain regeneration; no rounding all goods to integers; no automatic forward-only save cutover. New RNG sequences after importing a save without RNG state are documented above, not exact future-outcome parity |
+
+## Audit and completion evidence
+
+Inspected `server/server.py` dispatcher/HTTP/loop/load/save/migrations; delegated
+`logistics.py`, `equipment.py`, `npcs.py`, `trading.py`, `horses.py`, `quests.py`,
+`lanterns.py`; terrain/chunk/shared-world and village implementations; progression
+catalog and inventory migrations; PATHING/BACKEND; test inventory and relevant
+HTTP, legacy save, terrain, numeric and persistence cases; performance harnesses
+and affected-test selection. No local save or credentials were read.
+
+R01 inventories **66 actions**, **11 API method/route pairs plus static fallback**,
+and every key returned by `progression.public_catalog`, with separate hall,
+story, quarry, courier and browser-local catalogs. Structural save formats,
+terrain versions 1–7, migration markers and saved feature families are covered.
+R01 validation checks dispatcher actions and catalog keys against source, route
+literals against the HTTP matrix, all named test paths and local Markdown links,
+and documentation-only affected-check selection. Cross-host replay/goldens,
+static fallback characterization and Rust performance evidence are future-stage
+work, not waived parity requirements. No unresolved product choice authorizes a
+feature removal; dependency versions, RNG vectors, hardware baseline metadata and
+R24 rollback acceptance have explicit later-stage gates.
+
+Document validation: source inventory and reference checks passed (66 actions,
+11 API paths and all public progression keys). `python3 tools/check.py --list`
+and `python3 tools/check.py` selected zero applicable tests for these Markdown
+changes; correctness and performance were reported `not_run`. No gameplay/browser
+benchmarks were needed because this stage changes documentation only.

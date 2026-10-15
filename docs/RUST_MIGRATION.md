@@ -2,8 +2,9 @@
 
 A migration that can be completed one task at a time, with a prompt for each task.
 
-**Status:** plan prepared; Rust implementation has not started.
-**Inspected revision:** `445ddddd675a87eb7adb50442b2dbf3c14ea6c6f`.
+**Status:** R01 contracts and inventory complete; Rust implementation has not started.
+**Initial plan revision:** `445ddddd675a87eb7adb50442b2dbf3c14ea6c6f`.
+**R01 audit revision:** `935db7b95885c101c62dfd6bf9e16f39b6a7a8fe`.
 **Scope:** replace the Python host first. Keep the browser playable during that
 work. Shared WebAssembly code and a full Rust client are separate later decisions.
 This is a proposed implementation sequence, not approval to execute every stage.
@@ -213,7 +214,7 @@ only after work is performed. Keep unfinished stages visible in the roadmap.
 
 | Stage | Task | Requires | Status / commit / evidence |
 | --- | --- | --- | --- |
-| R01 | Contracts, coverage inventory, decisions | This plan | Not started |
+| R01 | Contracts, coverage inventory, decisions | This plan | Complete; [contracts and evidence](RUST_CONTRACTS.md), audited at `935db7b`; commit: `docs: define R01 migration contracts` (this change) |
 | R02 | Fix current relocation continuity | R01 | Not started |
 | R03 | Replay fixtures and comparison oracle | R02 | Not started |
 | R04 | Cargo workspace and applicable checks | R03 | Not started |
@@ -248,6 +249,9 @@ R25-R27 cover a separate client project. Stopping after any completed stage leav
 the existing Python launch available until the explicit cutover.
 
 ## R01 — Contracts and decisions
+
+Completed documentation: [migration contracts, coverage, compatibility and decisions](RUST_CONTRACTS.md).
+All Rust features remain unported. Recommendations do not approve behavior changes.
 
 **Deliver:** an endpoint/action coverage matrix, save-version matrix, feature/test
 mapping, and short architecture decisions. Mark every feature as unported,
