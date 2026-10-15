@@ -146,7 +146,8 @@ class SettlerProfessions(unittest.TestCase):
         for kind, wood in [('bakery', 30), ('butcher', 25)]:
             self.setUp()
             self.town.update(wood=100, goods={'planks': 10})
-            server.command(self.town, {'action': 'build', 'kind': kind, 'x': 4, 'y': 6})
+            # The full 2×2 site must clear both the hall and the founder.
+            server.command(self.town, {'action': 'build', 'kind': kind, 'x': 3, 'y': 7})
             self.assertEqual(self.town['wood'], 100 - wood)
             self.assertEqual(self.town['goods']['planks'], 5)
             self.assertIn('construction', self.town['buildings'][-1])

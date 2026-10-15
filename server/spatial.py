@@ -3,7 +3,8 @@
 CELL_SIZE = 8
 
 # Dimensions are saved on each building; absent dimensions preserve old layouts.
-BUILDING_FOOTPRINTS = {'hall': (2, 2), 'mill': (2, 2), 'sawpit': (3, 2), 'workshop': (2, 2)}
+BUILDING_FOOTPRINTS = {'hall': (2, 2), 'mill': (2, 2), 'sawpit': (3, 2), 'workshop': (2, 2),
+                       'butcher': (2, 2), 'bakery': (2, 2), 'smokehouse': (2, 2), 'tannery': (2, 2)}
 
 
 def footprint_tiles(building):

@@ -7,7 +7,7 @@ from fixtures import flat_town
 import progression as economy
 import server
 import work_cycles
-from spatial import occupied_tiles
+from spatial import occupied_tiles, perimeter
 
 
 class ButcherAnimation(unittest.TestCase):
@@ -67,6 +67,17 @@ class ButcherAnimation(unittest.TestCase):
         self.assertAlmostEqual(speeds['dragging'] / speeds['walking'], .65)
         self.assertEqual(self.barn, barn, 'Animation cannot consume or grow more livestock')
         self.assertEqual(self.shop['butchering']['remaining'], 60)
+
+    def test_large_shop_processes_animals_outside_the_whole_footprint(self):
+        self.shop['footprint'] = [2, 2]
+        self.worker['logistics_position'] = {'x': 7, 'y': 12}
+        self.reach('dragging')
+        state = self.reach('working')
+        self.assertIn((state['x'], state['y']), perimeter(self.shop))
+        self.assertNotIn((state['x'], state['y']), occupied_tiles([self.shop]))
+        self.assertEqual(self.shop['butchering']['stage'], 'working')
+        self.assertEqual(self.shop['butchering']['remaining'], 60)
+        self.assertEqual(state['butcherAnimal'], 'pig')
 
     def test_save_reload_preserves_each_leg_and_processing(self):
         for phase in ('walking', 'finding_animal', 'dragging', 'working'):

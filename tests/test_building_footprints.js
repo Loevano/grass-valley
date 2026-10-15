@@ -10,6 +10,12 @@ app.run(`
   viewed='own';identity={town_id:'own'};tool='mill';panel='build';
 `);
 assert.equal(app.run(`placementValid(town,{x:9,y:9},'mill')`),false,'Secondary tile overlaps a saved workplace');
+for(const kind of ['butcher','bakery','smokehouse','tannery']){
+  assert.equal(app.run(`JSON.stringify(placementBuilding({x:13,y:13},'${kind}').footprint)`),'[2,2]',kind+' previews all four tiles');
+  assert.equal(app.run(`placementValid(town,{x:9,y:9},'${kind}')`),false,kind+' rejects overlap on a secondary tile');
+  assert.equal(app.run(`placementValid(town,{x:31,y:13},'${kind}')`),false,kind+' keeps its yard inside the map');
+}
+
 assert.equal(app.run(`placementValid(town,{x:13,y:13},'sawpit')`),true);
 assert.equal(app.run(`placementValid(town,{x:31,y:13},'mill')`),false,'Entire footprint stays within the map');
 app.run(`town.map_resources.push({kind:'rock',x:14,y:14});`);

@@ -25,7 +25,8 @@ class BuildingFootprints(unittest.TestCase):
 
     def test_dimensions_and_collision_survive_json_save(self):
         import json
-        for kind, count in [('mill', 4), ('sawpit', 6), ('workshop', 4)]:
+        for kind, count in [('mill', 4), ('sawpit', 6), ('workshop', 4),
+                            ('butcher', 4), ('bakery', 4), ('smokehouse', 4), ('tannery', 4)]:
             building = self.build(kind)
             self.assertEqual(len(footprint_tiles(building)), count)
             saved = json.loads(json.dumps(building))
@@ -201,6 +202,25 @@ class BuildingFootprints(unittest.TestCase):
         friend['player'].update(x=11, y=11)
         with self.assertRaisesRegex(ValueError, 'player'):
             command(self.town, {'action': 'build', 'kind': 'mill', 'x': 10, 'y': 10}, world)
+
+    def test_production_buildings_preserve_crowded_sites_until_moved(self):
+        for kind in ('butcher', 'bakery', 'smokehouse', 'tannery'):
+            with self.subTest(kind=kind):
+                town = copy.deepcopy(self.town)
+                clear = {'kind': kind, 'x': 10, 'y': 10}
+                crowded = {'kind': kind, 'x': 16, 'y': 10}
+                blocker = {'kind': 'home', 'x': 17, 'y': 11}
+                town['buildings'].extend([clear, crowded, blocker])
+                world = {'towns': {'own': town}}
+                migrate_footprints(world)
+                self.assertEqual(clear['footprint'], [2, 2])
+                self.assertEqual(crowded['footprint'], [1, 1])
+                before = copy.deepcopy(world)
+                migrate_footprints(world)
+                self.assertEqual(world, before, 'Migration is stable on reload')
+                command(town, dict(action='move', index=2, x=20, y=10))
+                self.assertEqual(crowded['footprint'], [2, 2])
+                self.assertEqual((blocker['x'], blocker['y']), (17, 11))
 
     def test_saved_buildings_expand_only_where_clear_and_move_to_new_dimensions(self):
         self.town['buildings'].extend([{'kind': 'mill', 'x': 10, 'y': 10},

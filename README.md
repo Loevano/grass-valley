@@ -943,7 +943,8 @@ Save files and terrain chunks stay at the root, outside version control.
 
 ## Building footprints and range previews
 
-Town halls and mills occupy 2×2 tiles; sawpits occupy 3×2 and woodworker's workshops (forgeries) 2×2.
+Town halls, mills, woodworker's workshops (forgeries), butcher shops, bakeries,
+smokehouses, and tanneries occupy 2×2 tiles; sawpits occupy 3×2.
 Production buildings include a covered workplace, outdoor workbench, and stock yard.
 Their artwork retains the original angled style: the sawpit is an open timber
 shed with a pitched roof, half walls, a tool rack, and a lantern. Its sawing bench
@@ -953,6 +954,14 @@ of incoming logs and finished boards, following the approved
 worker capacity and the saw upgrade keep their separate visual markers.
 The workshop has a sheltered
 bench and hanging tools, and the mill yard holds grain bins and flour sacks.
+The butcher shop has a dusty rose roof, open counter, and chopping block.
+The bakery has an ochre roof, masonry oven, and bread display; the taller
+smokehouse has a sage slate roof, vented door, and hanging fish rack.
+The tannery has a low timber shed, stretched hide frame, and soaking vats,
+following the approved [production building concepts](docs/production-building-concepts.svg).
+These workplaces retain structural and worker-capacity plaques, with smoke aligned
+to the bakery and smokehouse chimneys. Crowded older sites use compact artwork
+until moved to a clear 2×2 site.
 Connected yard surfaces and
 cut timber stacks replace separate tiled pads. The hall is wider while its doors,
 windows, and lanterns stay at the same scale as other buildings.
