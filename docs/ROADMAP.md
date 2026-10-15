@@ -7,7 +7,7 @@ and cache rules are in [Backend](BACKEND.md#cached-zoomed-out-map).
 | ----- | ---------------------------------- | ------------------------ | ---------------------------------------------------------------------------------------------------------------- |
 | 1     | Cached zoomed-out town overview    | Implemented              | Show the landscape and city sizes without refreshing animated scene detail.                                      |
 | 2     | Production line balancing          | Wood and grain implemented; fishing remains | Develop clear fishing chains with capped staffing and simple upgrades. |
-| 3     | Scalable villager pathfinding       | Foundations implemented; host scheduling and shared navigation remain | Keep movement responsive as villager counts and towns grow, with bounded routing work. |
+| 3     | Scalable villager pathfinding       | Host queue implemented; cache refinement and shared navigation remain | Keep movement responsive as villager counts and towns grow, with bounded routing work. |
 
 ## Cached zoomed-out town overview
 
@@ -230,8 +230,8 @@ Delivered pacing remains unmeasured.
 
 ## Scalable villager pathfinding
 
-**Status:** partially implemented. Prioritize a host pathfinding queue before
-adding shared destination routing or navigation between regions.
+**Status:** host pathfinding scheduling implemented. Cache refinement and shared
+destination routing remain before navigation between regions.
 
 Current movement and routing decisions, implementation references, and open choices
 are collected in [Pathing decisions](PATHING.md).
@@ -263,7 +263,13 @@ are collected in [Pathing decisions](PATHING.md).
   avoiding occupied and impassable tiles. These ambient browser routes leave
   authoritative state untouched and stop when work or construction is assigned.
 - Browser planning is resumable and runs through a queue with an approximately
-  2 ms frame budget. The host still performs route searches synchronously.
+  2 ms frame budget. Host BFS/A* searches now share a 2,048-unit update budget
+  across towns, with 128-unit quanta and at most 128 pending searches. Weighted
+  service prioritizes blocked workers and urgent deliveries while ordinary work
+  receives regular service; reserved admission prevents saturation starvation.
+  Obsolete task/navigation requests are cancelled. Waiting workers retain their
+  position, cargo, assignment, and movement leg; blocked deliveries retain their
+  trip and pickup state. Queue data is derived and rebuilt after reload.
 - Gameplay movement remains authoritative on the host. Browser playback follows
   confirmed movement and reconnects missed updates at walking speed, with field
   changes aligned to completed farmer actions.
@@ -287,16 +293,11 @@ are collected in [Pathing decisions](PATHING.md).
 
 | Order | Improvement | Planned behavior |
 | --- | --- | --- |
-| 1 | Host pathfinding queue | Spread resumable searches across simulation updates under a bounded work budget. Prioritize blocked workers and urgent deliveries, keep ordinary requests from starving, and cancel obsolete requests when tasks or navigation change. |
-| 2 | Cache refinement | Limit shared-cache invalidation to affected navigation where practical. Existing route caches are bounded; bound pending requests when host scheduling is added. |
-| 3 | Flow fields for shared destinations | Reuse a map of travel directions toward common wells, warehouses, and workplaces across many villagers. Account for road speeds and access rules, and retain individual searches for specific acres and other unique destinations. |
+| 1 | Cache refinement | Limit shared-cache invalidation to affected navigation where practical. Route caches and host pending searches are bounded. |
+| 2 | Flow fields for shared destinations | Reuse a map of travel directions toward common wells, warehouses, and workplaces across many villagers. Account for road speeds and access rules, and retain individual searches for specific acres and other unique destinations. |
 
 Completion criteria:
 
-- Many simultaneous task changes do not require every route search to finish in
-  one simulation update; workers awaiting routes remain in a valid waiting state.
-- Requests cannot starve, obsolete routes are discarded, and caches and queues
-  remain bounded as villagers and towns are added.
 - Workers reach accessible destinations, honor road travel times, and recover
   when obstacles, buildings, or roads change.
 - Crowds do not cause repeated full-map searches; region and chunk boundaries
@@ -307,5 +308,6 @@ Completion criteria:
   with increasing villager counts, multiple towns, warm and cold caches, and
   obstacle changes before claiming a scaling improvement.
 
-Host work budgets, urgency rules, crowd spacing, and the villager counts that
-justify flow fields or hierarchical routing remain open implementation decisions.
+Crowd spacing and the villager counts that justify flow fields or hierarchical
+routing remain open implementation decisions. Host work budgets and urgency
+rules are documented in [Pathing decisions](PATHING.md#scheduling).

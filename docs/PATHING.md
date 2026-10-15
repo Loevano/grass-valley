@@ -160,6 +160,8 @@ Movement and routing decisions for Lantern Vale.
   - Exclude the starting tile.
   - Empty path: arrival condition already satisfied.
   - Host `None` / browser `null`: unreachable.
+  - A host `RoutePending` suspends the actor update; it never means unreachable.
+    Workplace phases retain the pending leg and publish stationary playback.
 - **Construction and logistics wrappers:** include the starting tile in trip paths.\
   Reference: [server/server.py](../server/server.py): `construction_route`, `logistics_route`
 - **Ambient residents:** use a separate contract.
@@ -344,9 +346,11 @@ Movement and routing decisions for Lantern Vale.
   Reference: [server/work_cycles.py](../server/work_cycles.py): `_advance`
   - Farmers retain harvest cargo and resume when acre or farm access returns.
   - Do not repeatedly retry an unchanged failure within one tick while holding the world lock.
-- Cancel logistics trips when destinations disappear or the next edge is blocked.\
+- Cancel logistics trips when destinations disappear. Replan blocked remaining
+  legs while retaining the trip, position, pickup state, and held cargo.\
   Reference: [server/logistics.py](../server/logistics.py): `advance_trip`, `cancel_trip`
-  - Subsequent task selection can find another trip.
+  - Unreachable remaining legs wait for access to return; explicit cancellation
+    still restores held sale goods exactly once.
 
 ## Shared route caches and invalidation
 
@@ -363,7 +367,8 @@ Movement and routing decisions for Lantern Vale.
   - Cache successful and failed searches.
   - Return copies so one worker cannot corrupt another worker's cached answer.
   - Return oversized answers without retaining them.
-- Cache bounds limit retained data, not the work required by a single search.
+- Cache bounds limit retained answers; host scheduling also bounds search work
+  within each simulation update.
 - Derived route caches are not saved in world snapshots.
 
 ### Host cache
@@ -416,8 +421,38 @@ Movement and routing decisions for Lantern Vale.
 
 ### Scheduling
 
-- **Host:** searches remain synchronous; a host pathfinding queue is planned.\
-  Reference: [server/navigation.py](../server/navigation.py): `RouteCache.search`
+- **Host:** BFS and travel-time A* retain their frontier, costs, and predecessors
+  between simulation updates. All towns share **2,048 work units per update**;
+  each unit inspects one queue/heap entry or reconstructs one waypoint.
+  Small plans may complete during the actor update; unfinished validated requests
+  use the remaining allowance after all actors have updated. At least half the
+  allowance is reserved for this final pass, preventing early actors from using
+  the service owed to requests validated later in the update.\
+  Reference: [server/navigation.py](../server/navigation.py): `RouteCache.update`, `RouteCache.drain`, `RouteCache.search_steps`
+  - Scheduling uses **128-unit quanta** and weighted round robin: **4 blocked,
+    2 urgent, 1 ordinary**. Each class rotates FIFO. Blocked next steps have the
+    highest priority; carried output, picked-up sale cargo, and supply trips are
+    urgent. Waiting solely for a new plan does not promote an ordinary request.
+  - At most **128 pending searches**, including completed answers awaiting their
+    actor. Saturation reserves the next free slot for one retrying actor, so
+    continuous new requests cannot monopolize admission. No overflow request list.
+  - Multi-leg plans retain at most **16 earlier answers / 32,768 waypoint units**
+    per pending actor, preventing shared-cache eviction from restarting a later leg.
+  - Requests revalidate task, start, goals, obstacles, terrain/chunks, roads, bounds,
+    and access rules before resuming. Changed queries replace obsolete searches;
+    actors that stop requesting a route release their jobs. Switching worlds or
+    loading a save discards pending searches. Terrain inputs are immutable copies.
+  - Workers keep their position, cargo, assignment, and pending movement leg while
+    waiting. Builders retain site claims, farmers keep their acres, and
+    woodcutters retain separate tree claims. Completed unloading and farm actions remain completed. The host
+    publishes `route_waiting` so browser fallback movement also holds its pose
+    and carried goods until a current route is available.
+  - Queue/frontier data stays outside saved snapshots. Saved waiting phases rebuild
+    derived searches after reload. Existing valid movement paths keep running.
+  - The allowance bounds search operations, rather than a strict wall-clock deadline;
+    navigation identity preparation and ordinary simulation work remain outside it.
+    Long searches and large backlogs can take multiple three-second ticks.
+  - Direct routing helpers outside simulation updates retain synchronous behavior.
 - **Browser:** prepared-scene searches use resumable generators.\
   Reference: [web/animations.js](../web/animations.js): `routeSteps`; [web/scene.js](../web/scene.js): `Queue`
   - Route searches yield every **128 inspected entries**.

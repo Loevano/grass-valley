@@ -196,6 +196,15 @@ const WorkerAnimation = (() => {
     const savedPosition=(villager.construction_target?villager.construction_position:
       villager.logistics_target?villager.logistics_position:workPosition)
       || villager.logistics_position || villager.construction_position || preferred;
+    if(villager.route_waiting){
+      const position=state?{x:state.x,y:state.y}:savedPosition;
+      const trip=villager.logistics_trip;
+      return {...position,path:[],phase:'waiting',source:villager.construction_target || villager.work_target,
+        home:null,blocked,size,bounds,roads,terrain:town.terrain,routeWaiting:true,construction:!!villager.construction_target,
+        transport:!!villager.logistics_target,transportCargo:trip?.cargo || {},
+        cargo:trip?.picked_up&&!trip.delivered?trip.cargo:villager.pending_output || {},
+        elapsed:0,clock:state?.clock || 0,facing:state?.facing || hostWork?.facing || 1};
+    }
     // A reload starts at the active host position, not a previous transport trip.
     // Existing sprites keep their visible position when a snapshot changes.
     const current=state?(!state.needsPlan&&state.path[0] || {x:Math.round(state.x),y:Math.round(state.y)}):
@@ -403,6 +412,7 @@ const WorkerAnimation = (() => {
     state.phase=path.length?'fetching_water':'collecting_water';
   }
   function* advanceSteps(state, seconds, active) {
+    if(state.routeWaiting)return;
     if(state.storagePaused&&!state.transport&&!state.construction)return;
     const cargo=()=>state.transport&&state.path.length<=state.pickupRemaining&&state.path.length>state.deliveryRemaining?state.transportCargo:{};
     state.cargo=cargo();

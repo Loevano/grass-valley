@@ -84,6 +84,7 @@ def claimed(town, field, index, reservations=None):
         if (len(task) >= 7 and task[4:7] == [field['kind'], field['x'], field['y']]
                 and (animation.get('phase') in ('walking', 'working', 'fetching_water',
                                                'collecting_water', 'returning_water', 'harvest_ready')
+                     or animation.get('route_pending')
                      or (field_state(field)['stage'] == 'thirsty' and animation.get('waterReady')))):
             return True
     return False
@@ -116,6 +117,7 @@ def choose_field(town, farm, fields, index, reservations=None):
                  and not claimed(town, a, index, reservations)]
     if previous in ready and (animation.get('phase') in ('walking', 'working', 'fetching_water',
                                                         'collecting_water', 'returning_water', 'harvest_ready')
+                              or animation.get('route_pending')
                               or (field_state(previous)['stage'] == 'thirsty' and animation.get('waterReady'))):
         return previous
     if ready:

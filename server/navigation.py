@@ -1,18 +1,130 @@
 """Bounded, derived travel-time route caches; never stored in world snapshots."""
 from collections import OrderedDict, deque
+from contextlib import contextmanager
 import heapq
 from math import sqrt
 from spatial import perimeter, footprint_tiles
 import barns
 
 
+class RoutePending(Exception):
+    """The update budget or queue capacity was reached; this is not failure."""
+
+
 class RouteCache:
-    def __init__(self, graphs=8, routes=256, steps=32768):
+    def __init__(self, graphs=8, routes=256, steps=32768, budget=2048, quantum=128, pending=128):
         self.graph_limit, self.route_limit, self.step_limit = graphs, routes, steps
         self.graphs = OrderedDict()
+        self.budget, self.quantum, self.pending_limit = budget, quantum, pending
+        self.pending = OrderedDict()
+        self.reservation = None
+        self.reservation_seen = False
+        self.world = None
+        self.active = False
+        self.owner = None
+        self.priority = 2
+        self.prefix = {}
+        self.turn = 0
+        self.sequence = 0
+        self.work = 0
+        self.seen = set()
+        self.waiting = set()
+
+    @contextmanager
+    def update(self, world):
+        """One shared search allowance for every town in a simulation update."""
+        if world is not self.world:
+            self.pending.clear()
+            self.reservation = None
+            self.world = world
+        self.active, self.work = True, 0
+        self.seen, self.waiting = set(), set()
+        self.reservation_seen = False
+        try:
+            yield
+            # Only requests revalidated against this update's task/navigation
+            # can run. Removed actors and changed tasks release their jobs.
+            for owner in list(self.pending):
+                if id(self.pending[owner]) not in self.seen:
+                    del self.pending[owner]
+            if not self.reservation_seen:
+                self.reservation = None
+            self.drain(self.budget - self.work)
+        finally:
+            self.active, self.owner = False, None
+
+    @contextmanager
+    def worker(self, worker, purpose='work', priority=None):
+        previous = self.owner, self.priority, self.prefix
+        self.prefix = {}
+        self.owner = (purpose, id(worker)) if self.active else None
+        animation = worker.get('work_animation', {})
+        blocked = ((animation.get('phase') == 'waiting' and not animation.get('route_pending'))
+                   or 'blocked' in worker.get('production_status', '').lower())
+        urgent = bool(worker.get('pending_output') or worker.get('logistics_trip', {}).get('picked_up'))
+        self.priority = priority if priority is not None else 0 if blocked else 1 if urgent else 2
+        try:
+            yield
+        except RoutePending:
+            self.waiting.add(id(worker))
+            worker['production_status'] = 'Waiting for a route'
+        finally:
+            if self.is_waiting(worker):
+                worker['route_waiting'] = True
+            else:
+                worker.pop('route_waiting', None)
+            self.owner, self.priority, self.prefix = previous
+
+    def is_waiting(self, worker):
+        return self.active and id(worker) in self.waiting
+
+    def drain(self, allowance):
+        """Weighted round robin: blocked 4, urgent 2, ordinary 1 quantum.
+
+        FIFO rotation within each class guarantees service even under a
+        continuous stream of higher priority requests. Count stale heap pops
+        and path reconstruction too, not just successful node expansions.
+        """
+        used = 0
+        lanes = (0, 0, 0, 0, 1, 1, 2)
+        while used < allowance and self.work < self.budget:
+            ready = [job for job in self.pending.values()
+                     if id(job) in self.seen and 'result' not in job]
+            if not ready:
+                break
+            for _ in lanes:
+                lane = lanes[self.turn % len(lanes)]
+                self.turn += 1
+                eligible = [job for job in ready if job['priority'] == lane]
+                if eligible:
+                    break
+            job = min(eligible, key=lambda job: job['order'])
+            for _ in range(min(self.quantum, allowance - used, self.budget - self.work)):
+                used += 1
+                self.work += 1
+                try:
+                    next(job['search'])
+                except StopIteration as done:
+                    job['result'] = done.value
+                    self.remember(job['paths'], job['key'], done.value)
+                    break
+            self.sequence += 1
+            job['order'] = self.sequence
+        return used
+
+    def remember(self, paths, key, path):
+        cost = len(path) if path is not None else 1
+        if key not in paths[0] and cost <= self.step_limit:
+            paths[0][key] = path
+            paths[1] += cost
+            while len(paths[0]) > self.route_limit or paths[1] > self.step_limit:
+                _, old = paths[0].popitem(last=False)
+                paths[1] -= len(old) if old is not None else 1
 
     def route(self, start, target, blocked, size, terrain, adjacent=True, bounds=None,
               roads=(), road_mode='smooth', diagonal=False, fences=()):
+        if self.active and self.owner is None:
+            raise RuntimeError('Simulation searches require a worker scope')
         if adjacent and isinstance(target, dict) and target.get('footprint'):
             tiles = footprint_tiles(target)
             target = {p for p in perimeter(target) - set(blocked)
@@ -33,25 +145,92 @@ class RouteCache:
                 self.graphs.popitem(last=False)
         self.graphs.move_to_end(graph)
         paths = self.graphs[graph]
-        goals = frozenset(target) if isinstance(target, set) else (target['x'], target['y'])
+        goals = frozenset(target) if isinstance(target, (set, frozenset)) else (target['x'], target['y'])
         key = start, goals, adjacent, road_mode if roads else None, diagonal
-        if key in paths[0]:
+        if self.active and self.owner is not None:
+            identity = graph, key
+            job = self.pending.get(self.owner)
+            if job and identity in job['prefix']:
+                path = job['prefix'][identity]
+            elif job and job['identity'] == identity and 'result' in job:
+                path = job['result']
+                del self.pending[self.owner]
+            elif key in paths[0]:
+                paths[0].move_to_end(key)
+                path = paths[0][key]
+            else:
+                if job and job['identity'] != identity:
+                    del self.pending[self.owner]
+                    job = None
+                if self.reservation == self.owner:
+                    self.reservation_seen = True
+                if job is None and (len(self.pending) >= self.pending_limit
+                                    or self.reservation not in (None, self.owner)):
+                    # Reserve the next free slot for the first rejected actor.
+                    # Ignore later admission attempts until that actor enters;
+                    # this rotates admission through retrying actors without an
+                    # unbounded overflow queue, even under continuous urgency.
+                    if self.reservation is None:
+                        self.reservation = self.owner
+                        self.reservation_seen = True
+                    self.waiting.add(self.owner[1])
+                    raise RoutePending()
+                if job is None:
+                    if self.reservation == self.owner:
+                        self.reservation = None
+                    # Freeze terrain as well as obstacles. A suspended search
+                    # never reads mutable authoritative chunk records.
+                    if hasattr(terrain, 'records'):
+                        from chunk_world import ChunkTerrain
+                        frozen = ChunkTerrain({k: {'terrain': rows} for k, rows in ground}, size)
+                    else:
+                        frozen = ground
+                    self.sequence += 1
+                    job = {'identity': identity, 'key': key, 'paths': paths,
+                           'priority': self.priority, 'order': self.sequence,
+                           'prefix': dict(self.prefix),
+                           'search': self.search_steps(start, goals if isinstance(target, (set, frozenset)) else dict(target),
+                               graph[1], size, frozen, adjacent, bounds, roads, road_mode, diagonal, fences)}
+                    self.pending[self.owner] = job
+                if job:
+                    self.seen.add(id(job))
+                    job['priority'] = min(job['priority'], self.priority)
+                    # Small plans can finish immediately, but all calls and
+                    # resumed jobs share the same hard per-update allowance.
+                    # Reserve half for the end of the update, when even late
+                    # actors have revalidated their jobs. Early high-priority
+                    # actors must not spend the ordinary class's whole share.
+                    self.drain(max(0, min(self.quantum, self.budget // 2 - self.work)))
+                if job is None or 'result' not in job:
+                    self.waiting.add(self.owner[1])
+                    raise RoutePending()
+                path = job['result']
+                del self.pending[self.owner]
+            # Keep a bounded prefix for multi-leg plans whose earlier graph
+            # may leave the shared LRU while a later leg is still queued.
+            prefix_cost = sum(len(p) if p else 1 for p in self.prefix.values())
+            if len(self.prefix) < 16 and prefix_cost + (len(path) if path else 1) <= self.step_limit:
+                self.prefix[identity] = path
+        elif key in paths[0]:
             paths[0].move_to_end(key)
             path = paths[0][key]
         else:
             path = self.search(start, target, blocked, size, terrain, adjacent, bounds, roads, road_mode, diagonal, fences)
-            cost = len(path) if path is not None else 1
-            if cost <= self.step_limit:
-                paths[0][key] = path
-                paths[1] += cost
-                while len(paths[0]) > self.route_limit or paths[1] > self.step_limit:
-                    _, old = paths[0].popitem(last=False)
-                    paths[1] -= len(old) if old is not None else 1
+            self.remember(paths, key, path)
         # Callers consume and edit paths. Cache only immutable coordinates.
         return None if path is None else [{'x': x, 'y': y} for x, y in path]
 
     @staticmethod
-    def search(start, target, blocked, size, terrain, adjacent, bounds, roads=(), road_mode='smooth', diagonal=False, fences=()):
+    def search(*args, **kwargs):
+        search = RouteCache.search_steps(*args, **kwargs)
+        while True:
+            try:
+                next(search)
+            except StopIteration as done:
+                return done.value
+
+    @staticmethod
+    def search_steps(start, target, blocked, size, terrain, adjacent, bounds, roads=(), road_mode='smooth', diagonal=False, fences=()):
         queue, previous = deque([start]), {start: None}
         costs, order = {start: 0}, 0
         weighted = bool(roads) or diagonal
@@ -59,7 +238,7 @@ class RouteCache:
         # Smooth walkers spend half an edge on each tile. Builders time the
         # departure tile; haulers time the arrival tile. Keep those host rules.
         def heuristic(tile):
-            if isinstance(target, set):
+            if isinstance(target, (set, frozenset)):
                 return 0
             dx, dy = abs(tile[0]-target['x']), abs(tile[1]-target['y'])
             distance = max(dx, dy)+(sqrt(2)-1)*min(dx, dy) if diagonal else dx+dy
@@ -74,18 +253,20 @@ class RouteCache:
 
         heap = [(heuristic(start), 0, 0, start)] if weighted else []
         while (heap if weighted else queue):
+            yield
             if weighted:
                 _, _, cost, tile = heapq.heappop(heap)
                 if costs[tile] != cost:
                     continue
             else:
                 tile = queue.popleft()
-            reached = tile in target if isinstance(target, set) else abs(tile[0] - target['x']) + abs(tile[1] - target['y']) == int(adjacent)
-            if reached and adjacent and not isinstance(target, set):
+            reached = tile in target if isinstance(target, (set, frozenset)) else abs(tile[0] - target['x']) + abs(tile[1] - target['y']) == int(adjacent)
+            if reached and adjacent and not isinstance(target, (set, frozenset)):
                 reached = not barns.crosses(tile, (target['x'], target['y']), fences)
             if reached:
                 path = []
                 while previous[tile] is not None:
+                    yield
                     path.append(tile)
                     tile = previous[tile]
                 return tuple(reversed(path))

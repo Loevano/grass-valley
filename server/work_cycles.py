@@ -6,7 +6,7 @@ import progression as economy
 import farming
 import orchards
 import barns
-from navigation import routes
+from navigation import routes, RoutePending
 from spatial import SpatialIndex, occupied_tiles
 
 
@@ -132,7 +132,16 @@ def advance(town, landscape, villager, building, source, index, seconds):
                 villager['work_animation'] = copy.deepcopy(captain)
                 return False
     previous = villager.get('work_animation', {}).get('playback')
-    finished, _ = _advance(town, landscape, villager, building, source, index, seconds)
+    try:
+        finished, _ = _advance(town, landscape, villager, building, source, index, seconds)
+    except RoutePending:
+        # Pier planning happens before any work or movement. Keep the last
+        # confirmed pose, including saved offshore positions.
+        state = villager.get('work_animation')
+        if state:
+            state['version'] += 1
+            state['playback'] = [_sample(state, 0, source)]
+        finished = False
     state = villager.get('work_animation')
     if state and state.get('playback') is not previous:
         state['playback'].append(_sample(state, seconds, source))
@@ -273,7 +282,7 @@ def _advance(town, landscape, villager, building, source, index, seconds, stop_a
             blocked.discard((building['x'], building['y']))
             blocked.difference_update((p['x'], p['y']) for p in pier)
             work_spot = source
-    def travel(start, target, adjacent=True):
+    def plan_travel(start, target, adjacent=True):
         if boating:
             tile = (round(start['x']), round(start['y']))
             afloat = tile in water_tiles and (tile != (dock['x'], dock['y']) or tile == (berth['x'], berth['y']))
@@ -307,6 +316,29 @@ def _advance(town, landscape, villager, building, source, index, seconds, stop_a
                 path.pop()
             path.append(destination)
         return path
+
+    def travel(start, target, adjacent=True):
+        try:
+            return plan_travel(start, target, adjacent)
+        except RoutePending:
+            # Pending is a stationary phase, never an unreachable destination.
+            # Remember the leg so returning cargo/filled cans do not restart
+            # an outbound trip when the search becomes ready.
+            phase = start.get('phase')
+            if isinstance(target, set):
+                resume = 'fetching_water'
+            elif target is building and butcher_trip and phase == 'finding_animal':
+                resume = 'dragging'
+            elif target is building and (target is not source or barn_keeper):
+                resume = 'returning'
+            else:
+                resume = 'returning_water' if phase == 'collecting_water' else 'walking'
+            start['route_pending'] = True
+            start['resume_phase'] = resume
+            if isinstance(target, dict) and target is not source and target is not building and target is not animal_target:
+                start['route_target'] = dict(target)
+            return None
+
     # The reserved animal remains at its saved position if its butcher changes.
     animal_target, animal_adjacent = butcher_trip, True
     if butcher_trip and butcher.get('position'):
@@ -314,6 +346,7 @@ def _advance(town, landscape, villager, building, source, index, seconds, stop_a
         animal_adjacent = False
     if (not state or state['task'] != spec or state['phase'] in ('waiting', 'waiting_storage')
             or (farming_job and state['phase'] == 'waiting_field' and not farming.claimed(town, source, index))):
+        retry_target = state.get('route_target') if state and state['task'] == spec else None
         resume_phase = state.get('resume_phase') if state and state['task'] == spec else None
         if villager['job'] in ('woodcutting', 'orcharding') and villager.get('pending_output'):
             # Finish cargo from an unreachable or removed tree before working again.
@@ -331,8 +364,8 @@ def _advance(town, landscape, villager, building, source, index, seconds, stop_a
                  'y': position['y'], 'elapsed': 0, 'waterReady': water_ready,
                  'version': (state or {}).get('version', 0), 'facing': 1}
         if resume_phase:
-            target = building if resume_phase in ('returning', 'dragging') else animal_target or work_spot or source
-            adjacent = animal_adjacent if target is animal_target else not work_spot if target is source else True
+            target = retry_target or (building if resume_phase in ('returning', 'dragging') else animal_target or work_spot or source)
+            adjacent = False if retry_target else animal_adjacent if target is animal_target else not work_spot if target is source else True
             path = [] if resume_phase == 'fetching_water' else travel(state, target, adjacent)
             state.update(path=path or [], phase='waiting' if path is None else resume_phase if path else
                          {'returning': 'depositing', 'dragging': 'working',
@@ -538,8 +571,10 @@ def _advance(town, landscape, villager, building, source, index, seconds, stop_a
                 for step in range(len(spots)):
                     dx, dy = spots[(cursor + step) % len(spots)]
                     target = {'x': building['x'] + dx, 'y': building['y'] + dy}
-                    round_path = route(state, target, blocked, size, terrain, False,
-                                       pen_bounds, roads, fences=fences)
+                    round_path = travel(state, target, False)
+                    if routes.is_waiting(villager):
+                        path = None
+                        break
                     if round_path:
                         path = round_path
                         state['barn_round'] = (cursor + step + 1) % len(spots)
