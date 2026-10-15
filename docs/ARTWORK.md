@@ -61,6 +61,26 @@ until moved to a clear site with the full 3×2 footprint.
 
 ![Refined concept C: a rear timber shed and an open sawing bench.](sawpit-c-refined.png)
 
+## Barn and gate concepts
+
+The [SVG concept comparison](barn-concepts.svg) shows three proposed barn upgrades,
+each with the same 7×7 pen open and closed. The sketches retain the current angled
+view, timber palette, and shared door and animal scale. They are awaiting selection;
+the current game still uses a decorative fence without a working entrance.
+
+![Three barn concepts with closed and open gates: single swing, paired swing, and sliding timber.](barn-concepts.png)
+
+| Concept | Barn and fence | Gate motion |
+| --- | --- | --- |
+| A — The familiar farm | Red roof, warm timber, two fence rails | One broad leaf swings inward |
+| B — The hayloft barn | Ochre roof, hayloft hood, three fence rails | Two smaller leaves swing inward |
+| C — The stone-footed barn | Sage roof, stone base, braced fence rails | A timber leaf slides along a guide beside the fence |
+
+Barn and gate styles can be mixed. Choose the visual direction before implementing
+the moving gate. Controls, automatic opening, animal and worker access, collision,
+and persistence remain open gameplay decisions; the drawings do not specify them.
+The state icons are diagram labels, not proposed in-game controls.
+
 ## Composition sketch
 
 ![Proposed artwork reference: an angled cottage, founder, path, and palette, with a diagram of depth layers.](artwork-reference.svg)
