@@ -210,6 +210,11 @@ Play experience should also assess these batch sizes and
 material investments alongside the remaining fishing balance work.
 Advanced woodcraft and metal sale values now cover ingredients, including fuel;
 higher workshop recipe tiers preserve or improve profit per active work second.
+Workshop production now uses saved quantity requests in order and waits when its
+queue is empty. Completed furniture and lanterns can be placed as benches and
+lantern decorations. Request cancellation preserves finished goods and releases
+unused ingredients. Delivered workshop pacing still needs play experience alongside
+the wood-chain balancing above.
 
 Barn animal counts are configurable per species within shared capacity.
 Linked sliders sit below each species heading and above its individual animals.

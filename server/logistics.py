@@ -258,6 +258,27 @@ def requirements(building, villager):
     return {}
 
 
+def advance_workshop_queue(town, building):
+    """Release obsolete reservations and unfinished work when the head changes."""
+    spec = economy.selected_recipe(building) if building.get('craft_queue') else None
+    economy.ensure_inventory(town)
+    for key in list(building.get('input_buffer', {})):
+        if spec is None or key not in spec['inputs']:
+            amount = building['input_buffer'].pop(key)
+            buffer = building.setdefault('output_buffer', {})
+            buffer[key] = buffer.get(key, 0) + amount
+            economy.add_stock(town, key, amount)
+    index = next(i for i, candidate in enumerate(town['buildings']) if candidate is building)
+    for worker in town['villagers']:
+        trip = worker.get('logistics_trip', {})
+        if (trip.get('operation') == 'supply'
+                and all(building.get(k) == v for k, v in trip['workplace'].items())):
+            cancel_trip(town, worker)
+        if worker.get('building_index') == index:
+            worker.pop('production_work', None)
+    building.pop('buffer_full', None)
+
+
 def supply_request(town, building, villager):
     needs = requirements(building, villager)
     inputs = dict(building.get('input_buffer', {}))
@@ -278,6 +299,10 @@ def supply_request(town, building, villager):
         needs = {'fish': fish, **needs}
     # Reserve each ingredient's share so separate storage workers can supply a recipe.
     batches = buffer_size(building) / sum(needs.values()) if needs else 0
+    if building['kind'] == 'workshop' and building.get('craft_queue') and needs:
+        spec = economy.selected_recipe(building)
+        speed = economy.processing_efficiency(villager, building)
+        batches = min(batches, building['craft_queue'][0]['remaining'] / (spec['amount'] * speed))
     room = max(0, buffer_size(building) - sum(inputs.values()))
     request = {}
     for key, amount in needs.items():
@@ -352,6 +377,12 @@ def produce(town, building, villager, elapsed=3):
         economy.record_activity(town, key, amount - building['input_buffer'].get(key, 0), 'out')
     for key, amount in produced.items():
         record_output(town, building, key, amount, villager)
+    if building['kind'] == 'workshop':
+        queue = building['craft_queue']
+        queue[0]['remaining'] = max(0, queue[0]['remaining'] - sum(produced.values()))
+        if queue[0]['remaining'] <= 1e-9:
+            queue.pop(0)
+            advance_workshop_queue(town, building)
     villager[villager['job']] = worker[villager['job']]
     return status
 

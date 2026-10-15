@@ -103,7 +103,7 @@ solve an exhausted forest or blocked storage.
 
 Woodcutters start with one slot, upgrade to two for 20 wood/30 seconds, then three
 for 40 wood/60 seconds. Sawpits start with one slot and upgrade once to two for
-20 wood/30 seconds. Woodworker's workshops have one slot and no worker upgrade.
+20 wood/30 seconds. Workshops have one slot and no worker upgrade.
 These limits apply to each building, including sandbox buildings.
 
 Building levels increase wood-building storage, input buffers, and production

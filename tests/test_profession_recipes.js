@@ -44,8 +44,13 @@ for(const [kind,recipes] of Object.entries(progression.profession_recipes)){
     chooser=panel(town,item,index).chooser;
     assert(!chooser.children[recipeIndex].disabled);
     chooser.value=recipe.output;chooser.onchange();
-    assert.deepStrictEqual(commands.at(-1),{action:'set_recipe',index,recipe:recipe.output});
-    item.recipe=recipe.output;
+    if(kind==='workshop'){
+      assert.notEqual(commands.at(-1)?.action,'queue_workshop','Selecting previews a request without submitting it');
+      item.craft_queue=[{id:'request',recipe:recipe.output,amount:5,remaining:5}];
+    }else{
+      assert.deepStrictEqual(commands.at(-1),{action:'set_recipe',index,recipe:recipe.output});
+      item.recipe=recipe.output;
+    }
     description=panel(town,item,index).description;
     const note=recipeFacts(panel(town,item,index).note);
     const seconds=progression.production_seconds[recipe.output];

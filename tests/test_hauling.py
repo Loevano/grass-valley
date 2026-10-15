@@ -66,7 +66,8 @@ class HaulingSkill(unittest.TestCase):
     def test_supply_shares_capacity_and_trains_only_for_goods_moved(self):
         self.worker['talents'] = {'hauling': -1}
         self.store['stored_goods'] = {'wood': 100, 'planks': 100}
-        workshop = {'kind': 'workshop', 'x': 4, 'y': 2}
+        workshop = {'kind': 'workshop', 'x': 4, 'y': 2,
+                    'craft_queue': [{'id': 'tools', 'recipe': 'tools', 'amount': 100, 'remaining': 100}]}
         self.town['buildings'].append(workshop)
         producer = self.town['villagers'][1]
         producer.update(job='crafting', building_index=3, crafting=0, talents={})
@@ -133,7 +134,8 @@ class HaulingSkill(unittest.TestCase):
 
     def test_supply_manifest_contains_each_recipe_ingredient(self):
         self.store['stored_goods'] = {'wood': 100, 'planks': 100}
-        workshop = {'kind': 'workshop', 'x': 4, 'y': 2}
+        workshop = {'kind': 'workshop', 'x': 4, 'y': 2,
+                    'craft_queue': [{'id': 'tools', 'recipe': 'tools', 'amount': 100, 'remaining': 100}]}
         self.town['buildings'].append(workshop)
         self.town['villagers'][1].update(job='crafting', building_index=3, crafting=0, talents={})
         cargo = logistics.planned_cargo(self.town, workshop, self.store, 'supply', self.worker)

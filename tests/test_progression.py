@@ -207,6 +207,7 @@ class Progression(unittest.TestCase):
         self.town.update(level=4,goods={},wood=0)
         mill,_=self.workplace('mill',0,input_buffer={'wheat':4})
         workshop,_=self.workplace('workshop',1,x=4,y=6,input_buffer={'planks':4,'wood':10})
+        command(self.town, dict(action='queue_workshop', index=len(self.town['buildings'])-1, recipe='tools', amount=10))
         tick(self.world)
         self.assertEqual(mill['pending_output']['flour'],2)
         self.assertNotIn('pending_output', workshop)

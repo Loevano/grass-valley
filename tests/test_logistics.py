@@ -151,7 +151,7 @@ class ResourceLogistics(unittest.TestCase):
                 if kind == 'workshop':
                     # Additional crafted tools have individual allowances,
                     # sharing the workshop's 50-space total inventory limit.
-                    self.assertEqual(sum(limits.values()), 60)
+                    self.assertEqual(sum(limits.values()), 65)
                     building['stored_goods'] = {'planks': 15, 'wood': 5, 'wool': 5,
                                                 'tools': 5, 'wooden_bowls': 5,
                                                 'crates': 5, 'furniture': 5, 'carved_furniture': 5}
@@ -875,6 +875,7 @@ class ResourceLogistics(unittest.TestCase):
         b = self.add('storehouse', x=1, y=3, storage_allocations={'planks': 100})
         self.add('storehouse', x=10, y=10, storage_allocations={'tools': 100})
         workshop = self.add('workshop')
+        workshop['craft_queue'] = [{'id': 'tools', 'recipe': 'tools', 'amount': 10, 'remaining': 10}]
         self.town.update(wood=10, goods={'planks': 10})
         producer = self.assign(0, workshop)
         self.assign(1, a)

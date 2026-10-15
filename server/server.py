@@ -1887,14 +1887,43 @@ def command(town, data, world=None):
         economy.spend(town, costs)
         building['construction'] = {'progress': 0, 'total': BUILD_SECONDS * level,
                                     'upgrade': {'level': level + 1}}
-    elif action in {'set_crop', 'set_recipe', 'set_animal_count', 'buy_animal', 'breed_animal', 'butcher_animal', 'profession_upgrade'}:
+    elif action in {'set_crop', 'set_recipe', 'queue_workshop', 'cancel_workshop', 'set_animal_count', 'buy_animal', 'breed_animal', 'butcher_animal', 'profession_upgrade'}:
         index = data.get('index')
         if type(index) is not int or not 0 <= index < len(town['buildings']):
             raise ValueError('Choose a building first.')
         building = town['buildings'][index]
         if not completed(building):
             raise ValueError('Finish construction first.')
-        if action == 'set_animal_count':
+        if action in {'queue_workshop', 'cancel_workshop'}:
+            if building['kind'] != 'workshop':
+                raise ValueError('Choose a workshop.')
+            queue = building.get('craft_queue', [])
+            if action == 'queue_workshop':
+                spec = next((r for r in economy.PROFESSION_RECIPES['workshop']
+                             if r['output'] == data.get('recipe')), None)
+                if spec is None:
+                    raise ValueError('Choose a workshop recipe.')
+                amount = data.get('amount')
+                if type(amount) is not int or not 1 <= amount <= 999:
+                    raise ValueError('Request between 1 and 999 items.')
+                if len(queue) >= 50:
+                    raise ValueError('The workshop queue is full (50 requests).')
+                workers = [v for v in town['villagers'] if v.get('building_index') == index
+                           and v['job'] == 'crafting' and not economy.qualification(v, 'crafting')]
+                if not town.get('sandbox') and spec['level'] > 1 and not any(v.get('crafting', 0) >= spec['level'] for v in workers):
+                    raise ValueError(f"Requires an assigned worker with level {spec['level']} crafting.")
+                building.setdefault('craft_queue', []).append({'id': secrets.token_hex(8),
+                    'recipe': spec['output'], 'amount': amount, 'remaining': amount})
+                if len(building['craft_queue']) == 1:
+                    logistics.advance_workshop_queue(town, building)
+            else:
+                position = next((i for i, order in enumerate(queue) if order['id'] == data.get('request_id')), None)
+                if position is None:
+                    raise ValueError('Choose a queued workshop request.')
+                queue.pop(position)
+                if position == 0:
+                    logistics.advance_workshop_queue(town, building)
+        elif action == 'set_animal_count':
             animal, count = data.get('animal'), data.get('count')
             spec = economy.ANIMALS.get(animal)
             if (building['kind'] != 'barn' or animal not in economy.ANIMAL_MEAT
@@ -1940,6 +1969,8 @@ def command(town, data, world=None):
                                       'pickup': {'kind': 'barn', 'x': barn['x'], 'y': barn['y']},
                                       'stage': 'fetching'}
         elif action == 'set_recipe':
+            if building['kind'] == 'workshop':
+                raise ValueError('Add a workshop request with a quantity instead.')
             recipes = economy.PROFESSION_RECIPES.get(building['kind'], [])
             spec = next((r for r in recipes if r['output'] == data.get('recipe')), None)
             if spec is None:

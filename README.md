@@ -398,7 +398,7 @@ the Python host, refresh both browsers, and create a new world to use the shared
   for 20 then 40 wood to reach twice then three times the initial spaces. Capacity
   upgrades take 30 then 60 seconds of builder work and do not increase housing
   or storage.
-  Farms, mills, bakeries, woodcutters, sawpits, woodworker's workshops, mines,
+  Farms, mills, bakeries, woodcutters, sawpits, workshops, mines,
   Forgery (formerly Iron smelter), and steelworks start with 1 worker space.
   Farms upgrade 1 → 2 → 4, mines 1 → 2 → 4 → 8, woodcutters and Forgery
   1 → 2 → 3, and sawpits 1 → 2. Mills, bakeries, workshops, and steelworks
@@ -443,12 +443,17 @@ the Python host, refresh both browsers, and create a new world to use the shared
   and sell for 5/6/6/7 coins. Processing skill increases batch size and ingredient use
   together. Farmers' skill improves field yields; barn animal counts and keeper
   staffing determine livestock output.
-- Workshops offer seven recipes; bakeries and butcher shops offer five, selected in the
+- Workshops offer eight recipes; bakeries and butcher shops offer five, selected in the
   workplace panel. Level 1 is available to beginners. Advanced workshop and butcher
   recipes require 2–5 practice; baking requires 5/10/15/20 practice for rolls,
   herb bread, fruit pies, and cakes. Unlocks use qualified
   workers assigned to that workplace. Each worker must meet the selected recipe's
-  level to produce it. Existing workplaces retain their original recipe by default.
+  level to produce it. Bakeries and butcher shops retain their original recipe by default.
+  Workshops produce only requested quantities: select a recipe, enter 1–999 items,
+  and **Add to queue**. Up to 50 requests run in order, with saved remaining quantities
+  and a Cancel action. Cancelling keeps completed goods and returns unused inputs;
+  the final batch scales ingredients and output to avoid exceeding the request.
+  Empty workshops wait for requests, including workshops in older saves.
 
   | Recipe tier | Workshop | Bakery (baking level) | Butcher shop |
   | --- | --- | --- | --- |
@@ -467,8 +472,12 @@ the Python host, refresh both browsers, and create a new world to use the shared
   Existing sawpits keep two worker spaces, higher tiers are capped at two, and
   workshops are capped at one. Excess workers rest, keeping skills and equipment.
 
-  **Build → Decorations** lets you place a wooden bench for 1 furniture or a
-  carved wooden statue for 1 carved furniture. Placement is immediate on an open
+  Workshops also make **Lanterns** at 2 crafting practice (2 planks + 1 wood,
+  9 seconds). Request **Wooden bench (furniture)** for benches or **Lanterns**,
+  then wait for the worker to deliver completed goods.
+  **Build → Decorations** lets you place a wooden bench for 1 furniture, a
+  carved wooden statue for 1 carved furniture, or a lantern for 1 lantern.
+  Placement is immediate on an open
   tile within the town's build range. Each occupies one tile and can be moved or
   removed like a building; removal gives no refund. Decorations have no production,
   worker, storage, or upgrade benefits.
@@ -674,7 +683,7 @@ the Python host, refresh both browsers, and create a new world to use the shared
   Upgrade progress survives saving, moving, and restarting the host.
   Cottages provide 2/4/6/8 housing spaces at levels 1–4, and storehouses
   hold 50/75/100/150/200/250/300/350 of each enabled resource. Level 5 becomes a Warehouse.
-  Woodcutters, sawpits, and woodworker's workshops increase storage and production
+  Woodcutters, sawpits, and workshops increase storage and production
   buffers from 50 to 62.5 to 75 spaces at levels 1/2/3; input buffers and resource
   allocations scale too. These levels provide no output bonus. Farms and fishing huts
   gain 25% production per worker at level 2 and 50% at level 3.
@@ -969,7 +978,7 @@ Save files and terrain chunks stay at the root, outside version control.
 
 ## Building footprints and range previews
 
-Town halls occupy 3×3 tiles. Mills, woodworker's workshops (forgeries), butcher shops, bakeries,
+Town halls occupy 3×3 tiles. Mills, workshops (forgeries), butcher shops, bakeries,
 smokehouses, and tanneries occupy 2×2 tiles; sawpits occupy 3×2. Cottages,
 woodcutters, and farms retain their 1×1 footprints.
 The [updated building family](docs/building-style-family.svg) uses broad shaded
@@ -990,7 +999,7 @@ of incoming logs and finished boards, following the approved
 [concept C](docs/sawpit-c-refined.svg). Completed storage levels add boards;
 worker capacity and the saw upgrade keep their separate visual markers.
 The woodcutter has an olive timber shelter, round logs, axes, and a splitting
-block. The sage-roofed woodworker's workshop has an open bench, hand tools, a
+block. The sage-roofed workshop has an open bench, hand tools, a
 vise, boards, and finished woodwork. The farm has an ochre roof, crop hatch,
 seed sacks, and a rake; planted acres remain separate. The mill yard holds grain
 bins and flour sacks. These follow the approved

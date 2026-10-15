@@ -24,6 +24,12 @@ class ProfessionRecipes(unittest.TestCase):
         return index, self.town['buildings'][index], job
 
     def select(self, index, output):
+        building = self.town['buildings'][index]
+        if building['kind'] == 'workshop':
+            for order in list(building.get('craft_queue', [])):
+                server.command(self.town, dict(action='cancel_workshop', index=index, request_id=order['id']))
+            server.command(self.town, dict(action='queue_workshop', index=index, recipe=output, amount=100))
+            return
         server.command(self.town, {'action': 'set_recipe', 'index': index, 'recipe': output})
 
     def test_third_tier_prerequisites_are_two_personal_practice(self):
@@ -125,7 +131,7 @@ class ProfessionRecipes(unittest.TestCase):
         self.assertEqual(self.town['harvested'], before['harvested'])
         self.assertNotIn('wood', self.town.get('produced', {}))
         self.select(index, 'furniture')
-        self.assertEqual(building['output_buffer'], {'wood': 5})
+        self.assertEqual(building['output_buffer'], {'wood': 5, 'planks': 10})
 
     def test_new_products_obey_caps_storage_food_and_market_sales(self):
         for kind, recipes in economy.PROFESSION_RECIPES.items():

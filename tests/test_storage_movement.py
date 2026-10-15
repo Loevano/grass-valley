@@ -148,6 +148,9 @@ class AllWorkplaceStorage(unittest.TestCase):
             worker['construction_position'] = ({'x': field['x'], 'y': field['y']} if kind == 'acre'
                                                else {'x': building['x'], 'y': building['y'] + 1})
         elif kind in economy.RECIPES:
+            if kind == 'workshop':
+                building['craft_queue'] = [{'id': 'storage-check', 'recipe': output,
+                                            'amount': 100, 'remaining': 100}]
             if kind == 'mine':
                 town['mineral_version'] = 1
                 town['map_resources'].append({'kind': 'rock', 'ore': 'iron', 'x': 3, 'y': 1})

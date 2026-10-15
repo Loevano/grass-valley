@@ -116,7 +116,7 @@ class WoodChain(unittest.TestCase):
         self.assertEqual(restored, before)
 
     def test_decorations_consume_furniture_and_reuse_placement_and_removal_rules(self):
-        for kind, good in [('wooden_bench', 'furniture'), ('wooden_statue', 'carved_furniture')]:
+        for kind, good in [('wooden_bench', 'furniture'), ('wooden_statue', 'carved_furniture'), ('lantern', 'lanterns')]:
             with self.subTest(kind=kind):
                 self.setUp()
                 before = copy.deepcopy(self.town)

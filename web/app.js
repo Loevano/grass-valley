@@ -431,7 +431,7 @@ const labels = {road:'Dirt road',hall:'Town hall',home:'Cottage',woodcutter:'Woo
 function buildingLevel(building){return ['acre','orchard_tree'].includes(building.kind)?1:building.level || 1;}
 const woodWorkerCapacities={woodcutter:[1,2,3],sawpit:[1,2],workshop:[1]};
 const workerCapacities={...woodWorkerCapacities,farm:[1,2,4],acre:[1],mill:[1],bakery:[1],mine:[1,2,4,8],smelter:[1,2,3],steelworks:[1]};
-const decorationKinds=['wooden_bench','wooden_statue'];
+const decorationKinds=['wooden_bench','wooden_statue','lantern'];
 function woodCapacities(){return world.progression?.wood_worker_capacities || woodWorkerCapacities;}
 function storageUpgradeKinds(){return world.progression?.storage_upgrade_kinds || [...Object.keys(woodCapacities()),'mill','bakery'];}
 function workplaceStorageSize(building){return (world.progression?.workplace_storage_sizes || {mill:160,bakery:100})[building.kind] || 50;}
@@ -804,8 +804,8 @@ const costs = {road:0,home:20,woodcutter:15,farm:15,storehouse:25,fishing_hut:15
 const colors = {hall:'#a88861',home:'#c5ad80',woodcutter:'#947b55',farm:'#bc9b5c',storehouse:'#8c9b8b',fishing_hut:'#7899a2'};
 // Small vector illustrations share the map's earth, sage, and amber palette.
 Object.assign(labels,{orchard_tree:'Fruit tree',barn:'Barn',sawpit:'Sawpit',mill:'Mill',smokehouse:'Smokehouse',workshop:'Workshop',fish_pond:'Fish pond',orchard:'Orchard',market:'Market stall',bakery:'Bakery',butcher:'Butcher shop'});
-Object.assign(labels,{workshop:"Woodworker's workshop",wooden_bench:'Wooden bench',wooden_statue:'Carved wooden statue'});
-Object.assign(costs,{wooden_bench:0,wooden_statue:0});
+Object.assign(labels,{workshop:'Workshop',wooden_bench:'Wooden bench',wooden_statue:'Carved wooden statue',lantern:'Lantern'});
+Object.assign(costs,{wooden_bench:0,wooden_statue:0,lantern:0});
 Object.assign(costs,{orchard_tree:5,barn:25,sawpit:25,mill:30,smokehouse:25,workshop:30,fish_pond:25,orchard:25,market:20,bakery:30,butcher:25});
 Object.assign(colors,{barn:'#b9866b',sawpit:'#aa8b60',mill:'#c1b080',smokehouse:'#8c8173',workshop:'#a28c72',fish_pond:'#7899a2',orchard:'#83a36b',market:'#c5ad80',bakery:'#c1a078',butcher:'#b9866b'});
 Object.assign(labels,{tannery:'Tannery',mine:'Mine',smelter:'Forgery',stable:'Stable',saddler:'Saddler',steelworks:'Steelworks',tradehouse:'Trade house'});
@@ -1052,6 +1052,7 @@ const iconPaths = {
   crafted_axe:'<path fill="#94704c" d="m6 28 15-24 3 2-15 24z"/><path fill="#bacac5" d="m18 5 7-3 5 9-8 4z"/>',
   crafted_saw:'<path fill="#bacac5" d="M4 13h22v8l-3-2-3 2-3-2-3 2-3-2-3 2-4-2z"/><path fill="none" stroke="#94704c" stroke-width="3" d="M26 11h4v12h-4z"/>',
   wooden_bench:'<path fill="#a78454" d="M3 9h26v5H3zm0 9h26v5H3zM5 23h3v7H5zm19 0h3v7h-3z"/>',
+  lantern:'<path d="M16 3v5M9 11h14v16H9zM7 10h18M7 28h18"/><path fill="#e8c16d" d="M12 14h8v10h-8z"/>',
   wooden_statue:'<path fill="#b18a58" d="M6 26h20v5H6zm6-14h8l4 14H8z"/><circle fill="#b18a58" cx="16" cy="7" r="6"/>',
   fine_axe:'<path fill="#94704c" d="m6 28 15-24 3 2-15 24z"/><path fill="#bacac5" d="m18 5 7-3 5 9-8 4z"/>',
   steel_axe:'<path fill="#94704c" d="m6 28 15-24 3 2-15 24z"/><path fill="#dce8ed" d="m18 5 7-3 5 9-8 4z"/>',
@@ -1513,7 +1514,7 @@ function villagersTable(town){
   for(const [index,v] of town.villagers.entries())body.append(villagerRow(town,v,index));
   table.append(body);return table;
 }
-const settlerSpaces={orchard_tree:0,hall:1,home:2,storehouse:1,woodcutter:1,fishing_hut:1,farm:1,acre:1,barn:2,sawpit:1,mill:1,smokehouse:2,workshop:1,fish_pond:2,orchard:2,market:1,bakery:1,butcher:2,wooden_bench:0,wooden_statue:0};
+const settlerSpaces={orchard_tree:0,hall:1,home:2,storehouse:1,woodcutter:1,fishing_hut:1,farm:1,acre:1,barn:2,sawpit:1,mill:1,smokehouse:2,workshop:1,fish_pond:2,orchard:2,market:1,bakery:1,butcher:2,wooden_bench:0,wooden_statue:0,lantern:0};
 function settlerBuilding(town,v,index){
   if(Number.isInteger(v.building_index))return v.building_index;
   const kind={woodcutting:'woodcutter',farming:'farm',fishing:'fishing_hut'}[v.job];
@@ -1583,7 +1584,8 @@ function renderSettlers(town,item,buildingIndex,target=$('selection-details'),up
 }
 function selectedProfessionRecipe(item){
   const recipes=world.progression?.profession_recipes?.[item.kind];
-  return recipes?.find(recipe=>recipe.output===item.recipe) || recipes?.[0];
+  const output=item.kind==='workshop'?item.craft_queue?.[0]?.recipe:item.recipe;
+  return recipes?.find(recipe=>recipe.output===output) || recipes?.[0];
 }
 function renderStable(town,item,index,target){
   const nearby=Math.abs(town.player.x-item.x)+Math.abs(town.player.y-item.y)<=1.8;
@@ -1729,16 +1731,22 @@ function productionFacts(rows){
 function renderRecipes(town,item,index,target){
   const recipes=world.progression?.profession_recipes?.[item.kind];
   if(!recipes)return;
+  let draft=null;
+  if(item.kind==='workshop'){
+    const key=`${world.world_id}/${viewed}/${index}/${item.x},${item.y}`;
+    if(renderRecipes.workshopDraft?.key!==key)renderRecipes.workshopDraft={key,recipe:selectedProfessionRecipe(item).output,amount:'1'};
+    draft=renderRecipes.workshopDraft;
+  }
   const job=world.progression.buildings[item.kind].job;
   const workers=town.villagers.filter(v=>v.building_index===index&&v.job===job&&!jobRequirement(v,job));
   const chooser=document.createElement('select');chooser.setAttribute('aria-label','Production recipe');
   for(const spec of recipes){
     const unlocked=town.sandbox||spec.level===1||workers.some(v=>(v[job] || 0)>=spec.level);
     const option=document.createElement('option');option.value=spec.output;
-    option.textContent=`${goodName(spec.output)} · Lv ${spec.level}${unlocked?'':' · Locked'}`;
+    option.textContent=`${item.kind==='workshop'&&spec.output==='furniture'?'Wooden bench (furniture)':goodName(spec.output)} · Lv ${spec.level}${unlocked?'':' · Locked'}`;
     option.disabled=!unlocked;chooser.append(option);
   }
-  chooser.value=selectedProfessionRecipe(item).output;
+  chooser.value=draft?.recipe || selectedProfessionRecipe(item).output;
   chooser.disabled=viewed!==identity?.town_id;
   target.append(chooser);
   const note=document.createElement('div');note.className='recipe-details';
@@ -1753,8 +1761,27 @@ function renderRecipes(town,item,index,target){
     note.replaceChildren(productionFacts(rows));
   };
   updateNote();
-  chooser.onchange=()=>{if(!chooser.disabled){updateNote();act({action:'set_recipe',index,recipe:chooser.value});}};
+  chooser.onchange=()=>{if(!chooser.disabled){updateNote();if(draft)draft.recipe=chooser.value;else act({action:'set_recipe',index,recipe:chooser.value});}};
   target.append(note);
+  if(item.kind==='workshop'){
+    const quantity=document.createElement('input');quantity.id='workshop-quantity';quantity.type='number';quantity.min=1;quantity.max=999;quantity.step=1;quantity.value=draft.amount;
+    quantity.setAttribute('aria-label','Requested quantity');quantity.disabled=chooser.disabled;
+    const add=document.createElement('button');add.textContent='Add to queue';add.disabled=chooser.disabled;
+    const valid=()=>Number.isInteger(Number(quantity.value))&&Number(quantity.value)>=1&&Number(quantity.value)<=999&&recipes.some(spec=>spec.output===chooser.value)&&!chooser.children[recipes.findIndex(spec=>spec.output===chooser.value)].disabled;
+    quantity.oninput=()=>{draft.amount=quantity.value;add.disabled=chooser.disabled||!valid();};
+    const preview=chooser.onchange;chooser.onchange=()=>{preview();add.disabled=chooser.disabled||!valid();};
+    add.disabled=chooser.disabled||!valid();
+    add.onclick=()=>{if(!chooser.disabled&&valid())act({action:'queue_workshop',index,recipe:chooser.value,amount:Number(quantity.value)});};
+    target.append(quantity,add);
+    const heading=document.createElement('h3');heading.textContent='Request queue';target.append(heading);
+    const hint=document.createElement('p');hint.textContent=item.craft_queue?.length?'Workers craft requests in order. Finished goods become available after delivery.':'No requests. Add an item and quantity to start crafting.';target.append(hint);
+    for(const [position,order] of (item.craft_queue || []).entries()){
+      const row=document.createElement('div');row.className='storage-row';
+      const label=document.createElement('span');label.textContent=`${position+1}. ${order.recipe==='furniture'?'Wooden benches':goodName(order.recipe)} · ${Number(order.remaining.toFixed(2))} / ${order.amount} remaining`;row.append(label);
+      const cancel=document.createElement('button');cancel.textContent='Cancel';cancel.disabled=chooser.disabled;
+      cancel.onclick=()=>{if(!cancel.disabled)act({action:'cancel_workshop',index,request_id:order.id});};row.append(cancel);target.append(row);
+    }
+  }
 }
 function productionDescription(item){
   if(item.kind==='mine')return 'Output: 2 iron ore / 9s batch\nRequires an iron vein within 10 tile steps\nOre regenerates slowly; steel pickaxes add 25% output';
@@ -2123,6 +2150,7 @@ function renderFishingBoat(town,item,index){
 function renderSelection(town){
   const marketFocus=document.activeElement?.id?.startsWith('sale-')?document.activeElement:null;
   const barnFocus=document.activeElement?.id?.startsWith('barn-count-')?{id:document.activeElement.id,value:document.activeElement.value}:null;
+  const workshopFocus=document.activeElement?.id==='workshop-quantity';
   $('selection-panel').classList.toggle('building-info',['building','boat'].includes(selection?.type));
   $('selection-art').replaceChildren();$('selection-level').hidden=true;
   // Park hall controls in the hidden attached container before rebuilding cards.
@@ -2337,7 +2365,7 @@ function renderSelection(town){
     $('selection-level').hidden=false;$('selection-level').textContent=`Lv ${item.kind==='hall'?town.level:buildingLevel(item)}`;
     const decoration=decorationKinds.includes(item.kind);
     const workers=buildingSection(decoration?'Decoration':item.kind==='well'?'Water':['hall','home'].includes(item.kind)?'Settlers':'Workers');
-    const production=decoration?document.createElement('div'):buildingSection(item.kind==='barn'?'Animals':item.kind==='butcher'?'Butchery':item.kind==='market'?'Trade':['hall','home','storehouse'].includes(item.kind)?'Benefits':'Production',!['barn','butcher'].includes(item.kind));
+    const production=decoration?document.createElement('div'):buildingSection(item.kind==='barn'?'Animals':item.kind==='butcher'?'Butchery':item.kind==='workshop'?'Requests':item.kind==='market'?'Trade':['hall','home','storehouse'].includes(item.kind)?'Benefits':'Production',!['barn','butcher','workshop'].includes(item.kind));
     const upgrades=decoration?document.createElement('div'):buildingSection('Upgrades'),details=buildingSection('Building details',true),storageOverview=decoration?document.createElement('div'):buildingSection('Storage');
     const boats=item.kind==='fishing_hut'?buildingSection('Fishing boats'):null;
     const unlockedUpgrades=decoration?document.createElement('div'):buildingSection('Unlocked upgrades',true);
@@ -2464,6 +2492,7 @@ function renderSelection(town){
   }
   if(marketFocus&&$('selection-details').contains?.(marketFocus))marketFocus.focus();
   if(barnFocus){const input=$(barnFocus.id);if(input&&$('selection-details').contains?.(input)){input.value=barnFocus.value;input.focus();}}
+  if(workshopFocus&&$('selection-details').contains?.($('workshop-quantity')))$('workshop-quantity').focus();
 }
 const buildingCategories=[
   ['Housing & storage',['home','storehouse']],
@@ -5554,6 +5583,11 @@ function paintBuilding(b,town,farmState=null,target=ctx,usable=buildingUsable(to
       for(const px of [-15,12]){ctx.fillStyle='#674c33';ctx.fillRect(px,-3,3,13);}
       ctx.fillStyle='#a78454';ctx.fillRect(-18,-13,36,5);ctx.fillRect(-18,-5,36,6);
       ctx.strokeStyle='#d6b17b';ctx.lineWidth=1;ctx.strokeRect(-18,-13,36,5);ctx.strokeRect(-18,-5,36,6);
+    }else if(b.kind==='lantern'){
+      ctx.fillStyle='#674c33';ctx.fillRect(-2,-35,4,43);ctx.fillRect(-2,-35,15,3);
+      ctx.strokeStyle='#4c514c';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(10,-33);ctx.lineTo(10,-28);ctx.stroke();
+      ctx.fillStyle='#e8c16d';ctx.fillRect(5,-27,10,15);
+      ctx.strokeRect(4,-28,12,17);ctx.fillStyle='#656158';ctx.fillRect(3,-30,14,3);ctx.fillRect(3,-11,14,3);
     }else{
       ctx.fillStyle='#674c33';ctx.fillRect(-12,1,24,7);
       ctx.fillStyle='#b18a58';ctx.beginPath();ctx.moveTo(-9,1);ctx.lineTo(-5,-20);ctx.lineTo(5,-20);ctx.lineTo(9,1);ctx.fill();

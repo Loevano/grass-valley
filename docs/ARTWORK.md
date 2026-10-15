@@ -23,7 +23,7 @@ Rendering lives in [web/app.js](../web/app.js); interface styling lives in
 [web/style.css](../web/style.css). The sketch below is a proposed composition
 reference, not a finished asset or a decision about the final art medium.
 
-The enlarged hall, mill, sawpit, and woodworker's workshop keep the established
+The enlarged hall, mill, sawpit, and workshop keep the established
 palette, angled roofs, simple shading, and warm lanterns. Their current refinement
 adds connected yards, recognizable work equipment, cut timber, grain bins, and
 flour sacks. The sawpit uses the approved concept C: a rear timber shed and an
@@ -53,7 +53,7 @@ sketch. Enlarged views and a 46px-tile reference strip compare readability.
 | Grounding | Use a restrained green ground shadow rather than relying on a sharply outlined yard pad. |
 
 The accepted direction is implemented for cottages, town halls, woodcutters,
-farms, woodworker's workshops, bakeries, butcher shops, smokehouses, tanneries,
+farms, workshops, bakeries, butcher shops, smokehouses, tanneries,
 barns, and sawpits. The [implemented family sheet](building-style-family.svg)
 captures the renderer with existing trees and workers and every structural tier.
 

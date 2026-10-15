@@ -120,7 +120,7 @@ These are starting values to make the prototype playable, **not final design dec
 - New worlds share one 120×120 landscape, with randomized hall sites at least 40 tiles apart. Construction stays within 30 steps of the owner's hall, adding 5 steps per completed hall upgrade, and within the same range of its original site. Existing worlds keep their separate town maps.
 - Cottages, woodcutters, farms, and storehouses occupy one tile each.
 - Town halls and mills occupy 2×2 tiles; sawpits occupy 3×2
-  and woodworker's workshops (forgeries) 2×2.
+  and workshops (forgeries) 2×2.
   Production buildings include an outdoor workplace and stock yard. Placement,
   collision, and worker access use the complete footprint. Clear older sites
   expand when opened; crowded saved sites keep one tile until moved.
@@ -142,7 +142,7 @@ These are starting values to make the prototype playable, **not final design dec
   Rock mining is not implemented. Existing saves gain
   resources only on unoccupied tiles, preserving their buildings.
 - The hall starts with 100 wood and 100 spaces per food type. Storehouses hold 50/75/100/150/200/250/300/350 of each enabled resource across eight levels; level 5 becomes a Warehouse. Each resource has independent capacity, including separate switches and item capacities for each edible good and fish species. Disabled resources keep existing stock available to use. Legacy Food switches enable each food type, while existing stock and untyped provisions are preserved. Option/Alt-clicking a storage checkbox enables every resource. Resource and market lists share production-trade categories. Storage workers collect outputs and distribute inputs along walkable routes. Producers fetch only required inputs; finished outputs remain at their workplace for haulers to collect. Full storage preserves buffered goods and eventually pauses work.
-- Woodcutters have 1/2/4 worker spaces, sawpits 1/2, and woodworker's workshops 1.
+- Woodcutters have 1/2/4 worker spaces, sawpits 1/2, and workshops 1.
   Their building levels upgrade storage and buffers to 50/62.5/75 spaces instead
   of output. Base chopping yields 0.75 wood per productive cycle. Workshops craft
   equipable axes and saws, while furniture places benches and carved furniture
