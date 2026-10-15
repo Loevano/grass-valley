@@ -315,13 +315,18 @@ function playerSprite(town,seconds){
   }
   if(!walkingRequest&&s.steps.length&&playerTown===identity?.town_id){
     walkingRequest=true;
-    const steps=s.steps.slice(),data={action:'walk',...steps[0],world_id:world.world_id};
+    const steps=s.steps.slice(),predicted=s.target,data={action:'walk',...steps[0],world_id:world.world_id};
     if(steps.length>1)data.steps=steps;
     const controller=new AbortController(),timeout=setTimeout(()=>controller.abort(),1000);
     request('/api/command',data,{signal:controller.signal}).then(result=>{
       if(playerView===s){
-        const unrendered=new Set(s.segments.map(segment=>segment.step));s.segments=[];
-        s.steps.splice(0,steps.length);s.authoritative={...result.player};s.target={...result.player};
+        const unrendered=new Set(s.segments.map(segment=>segment.step));
+        s.steps.splice(0,steps.length);
+        // Confirmation changes input ownership, not the unfinished playback path.
+        // Only a host correction may replace already acknowledged waypoints.
+        const confirmed=playerMovementDistance(result.player.x-predicted.x,result.player.y-predicted.y)<1e-6;
+        s.segments=confirmed?s.segments.filter(segment=>!s.steps.includes(segment.step)):[];
+        s.authoritative={...result.player};s.target={...result.player};
         const current=world.towns[playerTown];if(current)current.player={...result.player};
         for(const step of s.steps){
           s.target=predictPlayerStep(current || town,s.target,step.dx,step.dy);
@@ -332,6 +337,7 @@ function playerSprite(town,seconds){
       .finally(()=>{clearTimeout(timeout);walkingRequest=false;});
   }
   const distance=playerMovementDistance(s.target.x-s.x,s.target.y-s.y);
+  const moving=distance>.001||s.segments.some(segment=>playerMovementDistance(segment.target.x-s.x,segment.target.y-s.y)>.001);
   let remaining=seconds;
   // Follow each predicted step so buffering a turn cannot cut across obstacles.
   while(remaining>0){
@@ -343,13 +349,13 @@ function playerSprite(town,seconds){
     if(progress<1||!s.segments.length)break;
     remaining=Math.max(0,remaining-duration);s.segments.shift();
   }
-  s.facing=s.target.facing;s.clock+=seconds;s.path=distance>.001?[s.target]:[];s.phase='idle';
+  s.facing=(s.segments[0]?.target || s.target).facing;s.clock+=seconds;s.path=moving?[s.target]:[];s.phase='idle';
   const activity=town.player.activity;
   s.source=activity;s.castTarget=activity;s.elapsed=s.clock%3;
   const working=!s.path.length&&!!activity&&!town.player.activity_status?.includes('full')&&!town.player.activity_status?.includes('Waiting');
   if(working&&!s.path.length)s.phase='working';
   if(activity)s.facing=town.player.facing;
-  if(playerTown===identity?.town_id&&s.following&&(dx||dy||distance>.001)){
+  if(playerTown===identity?.town_id&&s.following&&(dx||dy||moving)){
     if(typeof camera!=='undefined'){camera.x=s.x;camera.y=s.y;}
   }
   return {kind:'player',townId:playerTown,x:s.x,y:s.y,index:1,state:s,villager:{job:activity?.job || 'idle'},active:working,equipment:town.player.equipment,mounted:!!town.player.mounted,leadingHorse:!!town.player.leading_horse};

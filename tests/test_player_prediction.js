@@ -127,6 +127,54 @@ const run=new Function('document','window','localStorage','setTimeout','clearTim
       assert.equal(calls,Math.floor((elapsed+1e-6)/.1)+1,'Uneven frames preserve the 10 Hz movement cadence');
       clearWalk();
     }
+    // A reply must not replace an unfinished turn with the batch's final point.
+    for(const turn of ['a','s']){
+      town.player={x:5,y:7,facing:1};playerView=null;playerSprite(town,0);host={...town.player};
+      request=(path,data)=>{
+        for(const step of data.steps || [data])host=predictPlayerStep(town,host,step.dx,step.dy);
+        const confirmed={...host};
+        return new Promise(resolve=>{release=()=>resolve({player:confirmed});});
+      };
+      walkKeys.add('d');playerSprite(town,.1);
+      walkKeys.delete('d');walkKeys.add(turn);playerSprite(town,.01);clearWalk();
+      // Send the turn, then enqueue a return while that turn is in flight.
+      release();for(let i=0;i<6;i++)await Promise.resolve();
+      playerSprite(town,0);
+      walkKeys.add('d');walkCooldown=0;playerSprite(town,.01);clearWalk();
+      const before={x:playerView.x,y:playerView.y};
+      release();for(let i=0;i<6;i++)await Promise.resolve();
+      hero=playerSprite(town,.01);
+      const expected=predictPlayerStep(town,{x:5+.3/Math.SQRT2,y:7-.3/Math.SQRT2},turn==='a'?-1:1,1);
+      const direction={x:expected.x-before.x,y:expected.y-before.y};
+      const travel=screenDistance(direction.x,direction.y),fraction=.01*3*Math.SQRT2*23/travel;
+      assert(Math.abs(hero.x-(before.x+direction.x*fraction))<1e-9
+        &&Math.abs(hero.y-(before.y+direction.y*fraction))<1e-9,
+        'Acknowledging '+turn+' preserves its unfinished path before reversing');
+      assert.equal(hero.state.facing,turn==='a'?-1:1,'Facing follows the current segment');
+      assert(hero.state.path.length,'Returning to the same endpoint still animates walking');
+      assert.equal(camera.x,hero.x);assert.equal(camera.y,hero.y);
+      release();for(let i=0;i<6;i++)await Promise.resolve();
+      for(let frame=0;frame<20;frame++)playerSprite(town,.02);
+      assert(Math.abs(playerView.x-host.x)<1e-9&&Math.abs(playerView.y-host.y)<1e-9,
+        'Turning playback drains to the confirmed host position');
+    }
+    // A complete out-and-back path can end at the current position.
+    town.player={x:5,y:7,facing:1};playerView=null;playerSprite(town,0);host={...town.player};
+    request=(path,data)=>{
+      for(const step of data.steps || [data])host=predictPlayerStep(town,host,step.dx,step.dy);
+      const confirmed={...host};
+      return new Promise(resolve=>{release=()=>resolve({player:confirmed});});
+    };
+    walkKeys.add('d');playerSprite(town,0);
+    walkKeys.delete('d');walkKeys.add('a');walkCooldown=0;playerSprite(town,0);clearWalk();
+    hero=playerSprite(town,.01);
+    assert(hero.x>5&&hero.state.path.length,'An out-and-back path keeps its stride even when its endpoint is unchanged');
+    assert.equal(hero.state.facing,1,'The return direction does not flip the outbound sprite');
+    assert.equal(camera.x,hero.x,'The camera follows a loop before its endpoint changes');
+    release();for(let i=0;i<6;i++)await Promise.resolve();
+    playerSprite(town,0);release();for(let i=0;i<6;i++)await Promise.resolve();
+    for(let frame=0;frame<20;frame++)playerSprite(town,.02);
+    assert(Math.abs(playerView.x-5)<1e-9&&Math.abs(playerView.y-7)<1e-9,'Confirmed loops finish at the host position');
     const blockedTown={...town,map_resources:[{kind:'water',x:4,y:3}]};
     world={world_id:'obstacles',towns:{own:blockedTown}};
     assert.equal(predictPlayerStep(blockedTown,{x:3.3,y:3,facing:1},1,0).x,3.3,'Prediction respects water collision radius');
