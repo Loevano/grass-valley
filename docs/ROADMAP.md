@@ -177,6 +177,9 @@ chickens/sheep/pigs/cows; each assigned keeper adds one base growth speed.
 Growth is independent of animation, routes, output storage, and production caps.
 The inspector shows growth, current cycle times, and automatic collection of
 products, meat, and hides. Existing manual butcher jobs remain supported.
+Replacement countdowns follow the host update schedule and tick between snapshots,
+including while dropdowns are open. Cycle times are labeled as averages; overdue
+countdowns wait for host confirmation without advancing saved growth.
 Play experience should assess delivered output, hauling, and the new cycle pacing
 alongside the fixed 25 eggs, wool, or milk per animal. Delivered pacing remains unmeasured.
 

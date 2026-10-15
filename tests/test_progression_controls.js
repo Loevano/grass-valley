@@ -56,7 +56,7 @@ const run=new Function('document','window','localStorage','setTimeout','clearTim
  check($('selection-details').children[0].children[0].textContent==='Animals','Barn animals appear before storage and workers');
  check(JSON.stringify(town.buildings[1])===originalHerd,'Rendering leaves authoritative animal state unchanged');
  town.villagers[0].job='husbandry';town.villagers[0].building_index=1;render();
- check(panelNodes().some(c=>c.textContent?.includes('15s with current keepers')),'Assigned keepers shorten the cycle');
+ check(panelNodes().some(c=>c.textContent?.includes('15s average with current keepers')),'Assigned keepers shorten the cycle');
  town.villagers[0].job='idle';delete town.villagers[0].building_index;
  town.buildings[1].animals.chicken=2;delete town.buildings[1].animal_growth;
  inspect('building',2);

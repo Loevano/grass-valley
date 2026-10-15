@@ -41,6 +41,7 @@ SETTLER_SPACES = {'hall': 1, 'home': 2, 'storehouse': 1, 'woodcutter': 1,
 BUILDING_JOBS = {'storehouse': 'hauling', 'woodcutter': 'woodcutting', 'farm': 'farming',
                  'fishing_hut': 'fishing', 'acre': 'farming'}
 TICK_SECONDS = 3
+NEXT_TICK_AT = None
 BUILD_SECONDS = 30
 ROAD_BUILD_SECONDS = 10
 # New towns develop professions instead of repeating wood-only upgrades.
@@ -1937,10 +1938,13 @@ class Handler(SimpleHTTPRequestHandler):
                         self.reply(400, {'error': str(error)})
                         return
                     snapshot = dict(snapshot, shared_map=landscape)
-                snapshot = dict(snapshot, hall_upgrades=HALL_UPGRADES, progression=economy.public_catalog(), local_stories=npcs.STORIES, quarry_catalog=quests.CATALOG,
+                sampled_at = time.monotonic()
+                clock = {'tick_seconds': TICK_SECONDS,
+                         'next_tick_in': max(0, NEXT_TICK_AT - sampled_at) if NEXT_TICK_AT is not None else TICK_SECONDS}
+                snapshot = dict(snapshot, simulation_clock=clock, hall_upgrades=HALL_UPGRADES, progression=economy.public_catalog(), local_stories=npcs.STORIES, quarry_catalog=quests.CATALOG,
                                 hall_ready={k: economy.milestone(t, t['level'] + 1) for k, t in WORLD['towns'].items()}, world_id=ACTIVE_WORLD,
                                 name=WORLDS[ACTIVE_WORLD]['name'] if ACTIVE_WORLD else None,
-                                players_sampled_at=time.monotonic())
+                                players_sampled_at=sampled_at)
                 # Freeze the mutable world while locked, then release it before
                 # a slow LAN transfer can block movement or simulation ticks.
                 body = json.dumps(snapshot, separators=(',', ':')).encode()
@@ -2164,15 +2168,17 @@ def lantern_simulation():
 
 
 def simulation():
-    next_tick = time.monotonic() + TICK_SECONDS
+    global NEXT_TICK_AT
+    with LOCK:
+        NEXT_TICK_AT = time.monotonic() + TICK_SECONDS
     while True:
-        time.sleep(max(0, next_tick - time.monotonic()))
+        time.sleep(max(0, NEXT_TICK_AT - time.monotonic()))
         with LOCK:
             tick(WORLD)
             save()
-        # Work and lock contention belong inside the three-second interval.
-        # If a tick overruns, resume now without replaying a backlog of ticks.
-        next_tick = max(next_tick + TICK_SECONDS, time.monotonic())
+            # Publish the next deadline with the state produced by this tick.
+            # Overruns resume now without replaying a backlog of ticks.
+            NEXT_TICK_AT = max(NEXT_TICK_AT + TICK_SECONDS, time.monotonic())
 
 
 WORLD, TOKENS = {'towns': {}}, {}

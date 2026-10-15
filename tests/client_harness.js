@@ -10,7 +10,7 @@ module.exports=function client(options={}){
   const document={getElementById(id){if(!elements.has(id))elements.set(id,element());return elements.get(id);},
     createElement:element,querySelectorAll:()=>[],addEventListener(name,callback){listeners.set(name,callback);}};
   document.getElementById('world').getContext=()=>context2d;
-  const sandbox={document,console,performance:{now:()=>0},AbortController,setTimeout,clearTimeout,setInterval:()=>0,
+  const sandbox={document,console,performance:{now:()=>0},AbortController,setTimeout,clearTimeout,setInterval:options.setInterval || (()=>0),
     localStorage:options.localStorage || {getItem:()=>null,setItem(){}},requestAnimationFrame:callback=>frames.push(callback),
     fetch:()=>new Promise(()=>{})};
   sandbox.window={devicePixelRatio:1,addEventListener(name,callback){listeners.set(name,callback);}};

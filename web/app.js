@@ -79,7 +79,7 @@ function hydrateMapChunks(next){
 }
 let frameActors=null,animationFrameRunning=false;
 const workers = new Map();
-let workerTown = null, lastFrame = null, animalClock = 0;
+let workerTown = null, lastFrame = null, animalClock = 0, worldReceivedAt = null;
 const walkKeys = new Set();
 const defaultBindings={up:'w',left:'a',down:'s',right:'d',camera:'y',fish:'f',chop:'c',gather:'g',build:'b',interact:'i',mine:'m'};
 const bindingLabels={up:'Walk up',left:'Walk left',down:'Walk down',right:'Walk right',camera:'Toggle camera lock',fish:'Fish',chop:'Cut wood',gather:'Gather berries and herbs',build:'Toggle building mode',interact:'Interact with nearby NPC',mine:'Clear grassland stone'};
@@ -1548,18 +1548,55 @@ function animalAges(barn,animal){
 function animalGrowthDuration(animal){
   return world.progression?.animals?.[animal]?.growth_seconds || world.progression?.animal_growth_seconds || 300;
 }
+function barnGrowthSpeed(town,item,index){
+  const assigned=town.villagers.filter((v,i)=>settlerBuilding(town,v,i)===index).slice(0,settlerCapacity(item));
+  return 1+assigned.filter(v=>v.job==='husbandry'&&!v.construction_target).length;
+}
+function barnReplacementSeconds(age,duration,speed,now=performance.now()){
+  const clock=world.simulation_clock;
+  if(!clock||worldReceivedAt===null)return Math.ceil((duration-Math.min(duration,age))/speed);
+  const ticks=Math.max(1,Math.ceil((duration-Math.min(duration,age))/(speed*clock.tick_seconds)));
+  const elapsed=Math.max(0,(now-worldReceivedAt)/1000);
+  return Math.max(0,Math.ceil(clock.next_tick_in+(ticks-1)*clock.tick_seconds-elapsed));
+}
+function updateBarnTimers(now=performance.now()){
+  const timers=renderBarnAnimals.timers;
+  if(!timers||panel!=='selection'||selection?.type!=='building'||selection.index!==timers.index
+      ||world.world_id!==timers.worldId||viewed!==timers.townId)return;
+  const town=world.towns[viewed],item=town?.buildings[timers.index];
+  if(!item||item.kind!=='barn'||item.x!==timers.x||item.y!==timers.y)return;
+  const speed=barnGrowthSpeed(town,item,timers.index);
+  const count=Object.values(item.animals || {}).reduce((sum,n)=>sum+n,0);
+  const state=`${count} growing · ${speed}× speed`;
+  if(timers.state.textContent!==state)timers.state.textContent=state;
+  for(const {animal,timing} of timers.cycles){
+    const text=`${animalGrowthDuration(animal)}s base cycle · ${Number((animalGrowthDuration(animal)/speed).toFixed(1))}s average with current keepers`;
+    if(timing.textContent!==text)timing.textContent=text;
+  }
+  for(const {animal,number,duration,time,percent,progress} of timers.rows){
+    if(number>=(item.animals?.[animal] || 0))continue;
+    const age=Math.min(duration,item.animal_growth?.[animal]?.[number] ?? duration);
+    const seconds=barnReplacementSeconds(age,duration,speed,now);
+    const text=seconds?`${Math.floor(seconds/60)}m ${seconds%60}s until replacement`:'Awaiting host update…';
+    if(time.textContent!==text)time.textContent=text;
+    const value=`${Math.floor(age/duration*100)}%`;
+    if(percent.textContent!==value)percent.textContent=value;
+    if(progress.value!==age)progress.value=age;
+  }
+}
 function renderBarnAnimals(town,item,index,target){
   const catalog=world.progression,owner=viewed===identity?.town_id,capacity=4*buildingLevel(item);
   const count=Object.values(item.animals || {}).reduce((sum,n)=>sum+n,0);
-  const assigned=town.villagers.filter((v,i)=>settlerBuilding(town,v,i)===index).slice(0,settlerCapacity(item));
-  const speed=1+assigned.filter(v=>v.job==='husbandry'&&!v.construction_target).length;
+  const speed=barnGrowthSpeed(town,item,index);
+  const timers={worldId:world.world_id,townId:viewed,index,x:item.x,y:item.y,rows:[],cycles:[]};
+  renderBarnAnimals.timers=timers;
   const overview=document.createElement('div');overview.className='livestock-overview';
   const spaces=document.createElement('strong');spaces.textContent=`${count} / ${capacity} animal spaces`;
-  const state=document.createElement('span');state.textContent=`${count} growing · ${speed}× speed`;
+  const state=document.createElement('span');state.textContent=`${count} growing · ${speed}× speed`;timers.state=state;
   overview.append(spaces,state);target.append(overview);
   const cycle=document.createElement('p');cycle.className='livestock-cycle';cycle.textContent='Grow → Collect products → Young replacement';target.append(cycle);
   const note=document.createElement('p');note.className='livestock-note';
-  note.textContent='Animals always grow, without feed or workers. Each assigned keeper adds 1× growth speed. Products are collected automatically as storage and production caps allow; growth never pauses.';target.append(note);
+  note.textContent=`Animals always grow, without feed or workers. Each assigned keeper adds 1× growth speed. Products are collected automatically as storage and production caps allow; growth never pauses. Cycle times are averages; growth updates every ${world.simulation_clock?.tick_seconds || 3} seconds.`;target.append(note);
   for(const [animal,spec] of Object.entries(catalog.animals)){
     if(animal==='horse'||town.level<spec.level)continue;
     const duration=animalGrowthDuration(animal),ages=animalAges(item,animal);
@@ -1570,7 +1607,7 @@ function renderBarnAnimals(town,item,index,target){
     const stock=document.createElement('span');stock.className='livestock-state';stock.textContent=ages.length?`${ages.length} growing`:'Not stocked';
     heading.append(name,stock);card.append(heading);
     const timing=document.createElement('p');timing.className='livestock-note';
-    timing.textContent=`${duration}s base cycle · ${Number((duration/speed).toFixed(1))}s with current keepers`;card.append(timing);
+    timing.textContent=`${duration}s base cycle · ${Number((duration/speed).toFixed(1))}s average with current keepers`;timers.cycles.push({animal,timing});card.append(timing);
     const yieldNote=document.createElement('p');yieldNote.className='livestock-yield';
     yieldNote.textContent=animal==='pig'?'Raised for meat and hides':`${products} ${goodName(spec.output).toLowerCase()} per growth cycle`;
     card.append(yieldNote);
@@ -1584,7 +1621,9 @@ function renderBarnAnimals(town,item,index,target){
       caption.append(label,percent);row.append(caption);
       const progress=document.createElement('progress');progress.max=duration;progress.value=confirmed;
       progress.setAttribute('aria-label',`${goodName(animal)} ${number+1} growth`);row.append(progress);
-      const seconds=Math.ceil((duration-confirmed)/speed),time=document.createElement('small');time.textContent=`${Math.floor(seconds/60)}m ${seconds%60}s until replacement`;row.append(time);card.append(row);
+      const seconds=barnReplacementSeconds(confirmed,duration,speed),time=document.createElement('small');
+      time.textContent=seconds?`${Math.floor(seconds/60)}m ${seconds%60}s until replacement`:'Awaiting host update…';
+      timers.rows.push({animal,number,duration,time,percent,progress});row.append(time);card.append(row);
     });
     if(owner){
       const label=document.createElement('label');label.textContent='Animals to keep';
@@ -2143,7 +2182,8 @@ async function refresh(){
     const query=world.shared_map?.chunked?'?'+new URLSearchParams({chunks:view,world_id:world.world_id,
       known:chunkTerrainWorld===world.world_id?[...chunkTerrainCache.keys()].join(';'):'',
       resources:chunkTerrainWorld===world.world_id?[...chunkResourceCache].map(([key,update])=>`${key}:${update.version}`).join(';'):''}):'';
-    const next=await request('/api/world'+query);
+    const previousWorldId=world.world_id;
+    const next=await request('/api/world'+query),receivedAt=performance.now();
     const selectedResource=next.world_id===world.world_id&&next.shared_map?.chunked&&selection?.type==='resource'
       ?world.shared_map?.map_resources?.[selection.index]:null;
     requestedMapView=next.world_id===world.world_id?view:null;
@@ -2175,7 +2215,7 @@ async function refresh(){
       }
       ClientScene.commit(result.value);resourceCache=result.value.resourceData;
     }
-    world=next;frameActors=null;
+    world=next;worldReceivedAt=receivedAt;frameActors=null;
     const savedIdentity=identities[world.world_id];
     identity=savedIdentity?.token && world.towns[savedIdentity.town_id]?savedIdentity:null;
     // Keep characters moving even if the lightweight endpoint is unavailable.
@@ -2183,7 +2223,9 @@ async function refresh(){
       players:Object.fromEntries(Object.entries(world.towns).filter(([,town])=>town.player).map(([id,town])=>[id,town.player]))});
     catalog=await request('/api/worlds');
     if(!world.towns[viewed]){viewed=identity?.town_id || Object.keys(world.towns)[0];selection=null;panel=null;tool=null;moveIndex=null;buildTile=null;hoverTile=null;keyboardTile=null;}
-    render();renderWorldMenu();
+    // Keep an open dropdown intact while snapshots and existing timers advance.
+    if(document.activeElement?.tagName!=='SELECT'||previousWorldId!==world.world_id){render();renderWorldMenu();}
+    else updateBarnTimers();
     if(!world.world_id){if(!$('world-menu').open)$('world-menu').showModal();menuStarted=true;}
   })();
   try{await refreshing;}finally{refreshing=null;}
@@ -4732,6 +4774,7 @@ function updateActors(seconds){
   frameActors={world,hero,villagers,otherPlayers};
 }
 function animate(now){
+  updateBarnTimers(now);
   const seconds=lastFrame===null?0:Math.min((now-lastFrame)/1000,.1);lastFrame=now;
   if(typeof ClientScene!=='undefined'){
     updateActors(seconds);ClientScene.queue.run(2);
@@ -4747,6 +4790,6 @@ function animate(now){
 document.addEventListener?.('visibilitychange',()=>{lastFrame=null;clearWalk();});
 requestAnimationFrame(animate);
 refresh().catch(()=>notice('Cannot reach the host. Check the connection.'));
-setInterval(()=>{if(document.activeElement?.tagName!=='SELECT')refresh().catch(()=>notice('Connection lost. Waiting for the host…'));},2000);
+setInterval(()=>{refresh().catch(()=>notice('Connection lost. Waiting for the host…'));},2000);
 
 setInterval(()=>refreshPlayers().catch(()=>{}),50);

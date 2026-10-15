@@ -7,7 +7,7 @@ import server
 class SimulationTiming(unittest.TestCase):
     def run_cycles(self, durations, save_duration=.02):
         now = 0
-        starts, sleeps = [], []
+        starts, sleeps, deadlines = [], [], []
 
         class Finished(Exception):
             pass
@@ -16,6 +16,7 @@ class SimulationTiming(unittest.TestCase):
             nonlocal now
             if len(starts) == len(durations):
                 raise Finished
+            deadlines.append(server.NEXT_TICK_AT)
             sleeps.append(seconds)
             now += seconds
 
@@ -28,12 +29,14 @@ class SimulationTiming(unittest.TestCase):
             nonlocal now
             now += save_duration
 
-        with patch.object(server.time, 'monotonic', side_effect=lambda: now), \
+        with patch.object(server, 'NEXT_TICK_AT', None), \
+                patch.object(server.time, 'monotonic', side_effect=lambda: now), \
                 patch.object(server.time, 'sleep', side_effect=sleep), \
                 patch.object(server, 'tick', side_effect=tick), \
                 patch.object(server, 'save', side_effect=save):
             with self.assertRaises(Finished):
                 server.simulation()
+        self.assertEqual(deadlines, starts)
         return starts, sleeps
 
     def test_simulation_and_saving_do_not_lengthen_worker_update_intervals(self):

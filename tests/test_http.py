@@ -13,6 +13,22 @@ import server
 
 
 class LanHost(unittest.TestCase):
+    def test_world_snapshot_exposes_the_next_growth_update_without_saving_clock(self):
+        with patch.object(server, 'NEXT_TICK_AT', 103), \
+                patch.object(server.time, 'monotonic', return_value=100.5):
+            status, body = self.call('/api/world')
+            self.assertEqual(status, 200)
+            snapshot = json.loads(body)
+            self.assertEqual(snapshot['simulation_clock'], {'tick_seconds': 3, 'next_tick_in': 2.5})
+        with patch.object(server, 'NEXT_TICK_AT', 99), \
+                patch.object(server.time, 'monotonic', return_value=100):
+            snapshot = json.loads(self.call('/api/world')[1])
+            self.assertEqual(snapshot['simulation_clock']['next_tick_in'], 0)
+        server.save()
+        saved = json.loads(server.SAVE.read_text())
+        self.assertNotIn('simulation_clock', saved['worlds']['legacy']['world'])
+        self.assertNotIn('NEXT_TICK_AT', server.WORLD)
+
     def test_slow_world_transfer_does_not_block_movement_or_player_snapshots(self):
         owner = json.loads(self.call('/api/join', {'name': 'LAN home'})[1])
         original_player = dict(server.WORLD['towns'][owner['town_id']]['player'])
@@ -131,6 +147,9 @@ class LanHost(unittest.TestCase):
         self.assertEqual(empty['players'], {})
 
     def setUp(self):
+        clock_patch = patch.object(server, 'NEXT_TICK_AT', None)
+        clock_patch.start()
+        self.addCleanup(clock_patch.stop)
         self.previous = server.WORLD, server.TOKENS, server.SAVE, server.WORLDS, server.ACTIVE_WORLD
         self.directory = tempfile.TemporaryDirectory()
         server.WORLD, server.TOKENS = {'towns': {}}, {}
