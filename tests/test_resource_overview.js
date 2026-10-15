@@ -8,7 +8,7 @@ app.run(`
     villagers:[{pending_output:{flour:4},logistics_trip:{operation:'sell',picked_up:true,delivered:false,cargo:{bread:2}}}],
     rules:{market_purchases:{wheat:30},market_sales:{bread:{cap:10,enabled:true}}},
     resource_activity:{seconds:90,buckets:[{at:30,in:{wood:99},out:{}},{at:33,in:{wood:4},out:{wheat:3}},{at:90,in:{wood:2},out:{wheat:1}}]}};
-  world={world_id:'test',towns:{own:town},progression:{storage_keys:['wood','food','wheat','flour','bread'],edible:{bread:1.5},buyable_goods:['wheat','bread'],sellable_goods:['bread']}};
+  world={world_id:'test',towns:{own:town},progression:{storage_keys:['wood','food','wheat','flour','bread','vegetables'],edible:{bread:1.5,vegetables:1},buyable_goods:['wheat','bread','vegetables'],sellable_goods:['bread','vegetables']}};
   identity={town_id:'own'};viewed='friend';const commands=[];act=data=>commands.push(data);
 `);
 const stocks=app.run('resourceStocks(town)');
@@ -25,6 +25,10 @@ wheat.value='40';app.run('document.activeElement=renderResourceList.rows.get("wh
 assert.strictEqual(get('wheat').inputs.buy,wheat);assert.equal(wheat.value,'40','Snapshot refresh preserves focused draft');
 wheat.onchange();assert.equal(app.run('JSON.stringify(commands.pop())'),JSON.stringify({action:'configure_resource_trade',resource:'wheat',buy_below:40,sell_above:null}));
 wheat.value='';wheat.onchange();assert.equal(app.run('commands.pop().buy_below'),null,'Blank disables buying');
+const vegetables=get('vegetables').inputs.sell;assert(vegetables,'Vegetables have a Sell at control');
+vegetables.value='50';vegetables.onchange();
+assert.equal(app.run('JSON.stringify(commands.pop())'),JSON.stringify({action:'configure_resource_trade',resource:'vegetables',buy_below:null,sell_above:50}));
+assert(app.run('marketSaleGoods({}).includes("vegetables")'),'The fallback market catalog supports vegetables');
 app.run('document.activeElement=null;town.buildings.pop();renderResourceList(town)');assert(wheat.disabled,'A completed market is required');
 app.run('world.world_id="another"');wheat.value='50';wheat.onchange();assert.equal(app.run('commands.length'),0,'Stale controls cannot modify another world');
 console.log('Resource stock, activity, and popup controls passed');

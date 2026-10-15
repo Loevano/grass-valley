@@ -106,6 +106,22 @@ class ResourceTrade(unittest.TestCase):
         self.assertEqual(economy.quantity(self.town, 'planks'), 12)
         self.assertEqual(logistics.sale_cargo(self.town, building, self.worker), {})
 
+    def test_vegetable_sales_sell_surplus_and_retain_food_threshold(self):
+        self.configure(sell=10, key='vegetables')
+        building = self.town['buildings'][0]
+        economy.deliver(self.town, 'vegetables', 13, 100)
+        coins = self.town['coins']
+        food = self.town['food']
+        cargo = logistics.pickup_sale(self.town, building, self.worker)
+        self.assertEqual(cargo, {'vegetables': 3})
+        self.worker['logistics_trip'] = {'picked_up': True}
+        sold = logistics.transfer(self.town, building, self.town['buildings'][-1], 'sell', self.worker, cargo)
+        self.assertEqual(sold, {'vegetables': 3})
+        self.assertEqual(economy.quantity(self.town, 'vegetables'), 10)
+        self.assertEqual(self.town['food'], food - 3)
+        self.assertEqual(self.town['coins'], coins + 3)
+        self.assertEqual(logistics.sale_cargo(self.town, building, self.worker), {})
+
     def test_invalid_thresholds_are_atomic_and_blank_disables(self):
         self.configure(buy=5, sell=10)
         before = copy.deepcopy(self.town['rules'])

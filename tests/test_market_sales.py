@@ -18,7 +18,7 @@ class MarketSales(unittest.TestCase):
         self.town['food'] = amount * economy.EDIBLE.get(resource, 0)
 
     def test_quick_sale_quantities_withdraw_goods_and_award_full_value(self):
-        for resource in ('planks', 'smoked_sturgeon', 'wheat'):
+        for resource in ('planks', 'smoked_sturgeon', 'wheat', 'vegetables'):
             for amount in (1, 5, 10, 50, 100, 200):
                 with self.subTest(resource=resource, amount=amount):
                     self.setUp()
@@ -30,6 +30,12 @@ class MarketSales(unittest.TestCase):
                     self.assertEqual(self.town['coins'], coins + amount * economy.sale_price(resource))
                     self.assertEqual(self.town['market_sales'], amount)
                     self.assertEqual(self.town['food'], (250 - amount) * economy.EDIBLE.get(resource, 0))
+
+    def test_vegetables_are_offered_for_automatic_and_quick_sales(self):
+        catalog = economy.public_catalog()
+        self.assertIn('vegetables', catalog['sellable_goods'])
+        self.assertIn('vegetables', catalog['manual_sellable_goods'])
+        self.assertEqual(economy.sale_price('vegetables'), 1)
 
     def test_wheat_is_offered_for_one_time_sales_only(self):
         catalog = economy.public_catalog()

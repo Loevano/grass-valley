@@ -249,7 +249,7 @@ SALE_PRICES.update(hides=2, leather=4, iron_ore=2, iron=10, saddles=35, steel=26
 LATE_GOODS = ('hides', 'leather', 'iron_ore', 'iron', 'saddles', 'steel', 'trade_crates')
 SELLABLE_GOODS = tuple(dict.fromkeys((*LATE_GOODS, *FISH, 'planks', 'wool', 'flour',
                                     *SMOKED_FISH, 'tools', 'herbs', 'fruit', 'milk',
-                                    'eggs', 'meat', 'bread', 'prepared_meat',
+                                    'eggs', 'meat', 'bread', 'prepared_meat', 'vegetables',
                                     *(r['output'] for recipes in PROFESSION_RECIPES.values() for r in recipes))))
 MANUAL_SELLABLE_GOODS = (*SELLABLE_GOODS, 'wheat')
 TRADABLE_GOODS = tuple(dict.fromkeys(('coins', 'wood', 'planks', 'wool', 'flour', 'tools',

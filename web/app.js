@@ -1632,7 +1632,7 @@ function renderTownTrades(town,target){
   }
 }
 function marketSaleGoods(catalog){
-  return catalog.sellable_goods || [...new Set(['hides','leather','iron_ore','iron','saddles','steel','trade_crates','fish','trout','salmon','sturgeon','planks','wool','flour','smoked_fish','smoked_trout','smoked_salmon','smoked_sturgeon','tools','herbs','fruit','milk','eggs','meat','bread','prepared_meat',...Object.values(catalog.profession_recipes || {}).flat().map(recipe=>recipe.output)])];
+  return catalog.sellable_goods || [...new Set(['hides','leather','iron_ore','iron','saddles','steel','trade_crates','fish','trout','salmon','sturgeon','planks','wool','flour','smoked_fish','smoked_trout','smoked_salmon','smoked_sturgeon','tools','herbs','fruit','milk','eggs','meat','bread','prepared_meat','vegetables',...Object.values(catalog.profession_recipes || {}).flat().map(recipe=>recipe.output)])];
 }
 function manualMarketSaleGoods(catalog){
   return catalog.manual_sellable_goods || marketSaleGoods(catalog);
