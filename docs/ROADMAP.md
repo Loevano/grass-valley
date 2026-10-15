@@ -127,11 +127,12 @@ checkbox toggles all shown resources on or off. Category checkboxes toggle their
 shown resources together and indicate partial selections. Legacy food filters expand without losing stock.
 Markets also offer a quick-sale form at the top: choose 1, 5, 10, 50, 100, or
 200 goods and type or choose a resource before selling at the usual price.
-Wheat is available for one-time sales without changing automatic-sale rules;
+All individual stored resources support quick and automatic sales;
 the form explains unsupported resources and insufficient stock.
 The Resources popup now compares total, free, and reserved stock alongside editable
 Buy at/Sell at thresholds and actual activity over the last minute of running game time.
-Vegetables support quick sales and automatic surplus sales at 1 coin each.
+Basic resources, including vegetables, berries, carrots, fodder, manure, stone,
+wheat, and wood, sell for 1 coin each.
 Host-recorded flows exclude hauling and ingredient reservation. Merchants can buy
 up to 10 goods per three seconds at twice their sale value, constrained by the
 free-stock target, coins, and enabled storage. Imported goods do not advance

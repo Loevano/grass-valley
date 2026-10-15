@@ -1,8 +1,9 @@
 const assert=require('assert'),fs=require('fs');
 const source=fs.readFileSync('web/app.js','utf8');
 const document={createElement(tag){return {tag,value:'',children:[],attributes:{},append(...items){this.children.push(...items);},setAttribute(key,value){this.attributes[key]=value;}};}};
-const town={goods:{planks:250,smoked_sturgeon:200,wheat:250}},commands=[];
-const world={world_id:'market',towns:{own:town},progression:{sellable_goods:['planks','smoked_sturgeon'],manual_sellable_goods:['planks','smoked_sturgeon','wheat'],sale_prices:{planks:2,smoked_sturgeon:6}}};
+const basicResources=['vegetables','berries','carrots','fodder','manure','stone','wheat','wood'];
+const town={goods:{planks:250,smoked_sturgeon:200,...Object.fromEntries(basicResources.map(key=>[key,250]))}},commands=[];
+const world={world_id:'market',towns:{own:town},progression:{sellable_goods:['planks','smoked_sturgeon',...basicResources],manual_sellable_goods:['planks','smoked_sturgeon',...basicResources],sale_prices:{planks:2,smoked_sturgeon:6}}};
 const identity={town_id:'own'},view={town:'own'};
 const create=new Function('document','world','identity','view','goodName','amountOf','act',
   'let viewed=view.town;'+
@@ -19,7 +20,7 @@ const stock=fields.find(n=>n.tag==='small');
 const submit=()=>form.onsubmit({preventDefault(){}});
 assert.deepEqual(amount.children.map(n=>n.value),['1','5','10','50','100','200']);
 assert.equal(resource.attributes.list,options.id,'Typing and dropdown selection share the host resource catalog');
-assert.deepEqual(options.children.map(n=>n.value),['Wheat','Smoked sturgeon','Planks']);
+assert.deepEqual(options.children.map(n=>n.value).sort(),['Planks','Smoked sturgeon',...basicResources.map(key=>key[0].toUpperCase()+key.slice(1))].sort());
 assert(sell.disabled,'A resource must be selected');
 resource.value='Planks';resource.oninput();
 for(const quantity of [1,5,10,50,100,200]){
@@ -32,9 +33,11 @@ assert.equal(sell.textContent,'Sell 200 · 1200 coins');submit();
 assert.deepEqual(commands.pop(),{action:'sell_goods',resource:'smoked_sturgeon',amount:200});
 resource.value='sturgeon';resource.oninput();assert(sell.disabled);submit();assert.equal(commands.length,0,'Partial names cannot sell a different good');
 assert.equal(stock.textContent,'This resource cannot be sold. Choose a resource from the list.');
-resource.value='wheat';resource.oninput();assert(!sell.disabled,'Typing wheat enables sales when stock is sufficient');
-assert.equal(sell.textContent,'Sell 200 · 200 coins');submit();
-assert.deepEqual(commands.pop(),{action:'sell_goods',resource:'wheat',amount:200});
+for(const key of basicResources){
+  resource.value=key;resource.oninput();assert(!sell.disabled,`Typing ${key} enables sales when stock is sufficient`);
+  assert.equal(sell.textContent,'Sell 200 · 200 coins');submit();
+  assert.deepEqual(commands.pop(),{action:'sell_goods',resource:key,amount:200});
+}
 resource.value='Planks';resource.onchange();
 const latest={goods:{planks:199}};world.towns.own=latest;
 const refreshed=document.createElement('div');render(latest,refreshed);

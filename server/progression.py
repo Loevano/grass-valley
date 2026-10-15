@@ -252,8 +252,9 @@ LATE_GOODS = ('hides', 'leather', 'iron_ore', 'iron', 'saddles', 'steel', 'trade
 SELLABLE_GOODS = tuple(dict.fromkeys((*LATE_GOODS, *FISH, 'planks', 'wool', 'flour',
                                     *SMOKED_FISH, 'tools', 'herbs', 'fruit', 'milk',
                                     'eggs', 'meat', 'bread', 'prepared_meat', 'vegetables',
+                                    'berries', 'carrots', 'fodder', 'manure', 'stone', 'wheat', 'wood',
                                     *(r['output'] for recipes in PROFESSION_RECIPES.values() for r in recipes))))
-MANUAL_SELLABLE_GOODS = (*SELLABLE_GOODS, 'wheat')
+MANUAL_SELLABLE_GOODS = SELLABLE_GOODS
 TRADABLE_GOODS = tuple(dict.fromkeys(('coins', 'wood', 'planks', 'wool', 'flour', 'tools',
                                      'wheat', 'fodder', 'manure', 'herbs', *EDIBLE,
                                      *CRAFTED_GOODS, *LATE_GOODS)))
