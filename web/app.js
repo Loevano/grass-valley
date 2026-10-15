@@ -1531,7 +1531,7 @@ function renderRecipes(town,item,index,target){
     const spec=recipes.find(recipe=>recipe.output===chooser.value);
     const seconds=world.progression.production_seconds?.[spec.output] || 3;
     const food=world.progression.edible?.[spec.output];
-    note.textContent=`${costText(spec.inputs)} → ${spec.amount} ${goodName(spec.output).toLowerCase()} · ${seconds}s · ${(0.04*seconds/3).toFixed(2)} practice${food?` · ${spec.amount*food} food`:''}${spec.level>1&&!town.sandbox?` · Worker level ${spec.level}+`:''}`;
+    note.textContent=`${costText(spec.inputs)} → ${spec.amount} ${goodName(spec.output).toLowerCase()} · ${seconds}s · ${((item.kind==='butcher'?0.1:0.08)*seconds/3).toFixed(2)} practice${food?` · ${spec.amount*food} food`:''}${spec.level>1&&!town.sandbox?` · Worker level ${spec.level}+`:''}`;
   };
   updateNote();
   chooser.onchange=()=>{if(!chooser.disabled){updateNote();act({action:'set_recipe',index,recipe:chooser.value});}};
@@ -1541,7 +1541,7 @@ function productionDescription(item){
   if(item.kind==='mine')return 'Output: 2 iron ore / 9s batch\nRequires an iron vein within 10 tile steps\nOre regenerates slowly; steel pickaxes add 25% output';
   const spec=selectedProfessionRecipe(item);
   const recipe=spec?[spec.inputs,spec.output,spec.amount]:world.progression.recipes[item.kind];
-  if(recipe){const seconds=world.progression.production_seconds?.[recipe[1]] || 3;return `${costText(recipe[0])} → ${recipe[2]} ${goodName(recipe[1]).toLowerCase()} / ${seconds}s batch${item.kind==='smokehouse'?'\nEach raw fish becomes its own smoked species\n+0.5 food and +1 coin per fish\nAccepts fish, trout, salmon, and sturgeon':''}\n${(0.04*seconds/3).toFixed(2)} practice / batch (neutral talent)\nSkill: larger batches + more ingredients\nRequires qualified workers${spec?` · Recipe level ${spec.level}`:''}`;}
+  if(recipe){const seconds=world.progression.production_seconds?.[recipe[1]] || 3;return `${costText(recipe[0])} → ${recipe[2]} ${goodName(recipe[1]).toLowerCase()} / ${seconds}s batch${item.kind==='smokehouse'?'\nEach raw fish becomes its own smoked species\n+0.5 food and +1 coin per fish\nAccepts fish, trout, salmon, and sturgeon':''}\n${((item.kind==='butcher'?0.1:0.08)*seconds/3).toFixed(2)} practice / batch (neutral talent)\nSkill: larger batches + more ingredients\nRequires qualified workers${spec?` · Recipe level ${spec.level}`:''}`;}
   return {barn:'Set animal counts\nAutomatic growth and replacement\nChicken: 60s · Sheep: 120s · Pig: 240s · Cow: 360s\nNo feed or workers required\nEach keeper adds 1× growth speed\n4 animals / level',orchard:'Output: fruit\nRequires workers',stable:'Capture wild horses and bring them here\nFeed: fodder / vegetables\nSettling and growth: 5 minutes of full feeding\nBreed two adults; saddle one to ride\n4 horses / level',market:'Sell goods for coins\nOffer goods to another town\nBoth owners need a completed market'}[item.kind] || 'Requires workers';
 }
 function animalAges(barn,animal){

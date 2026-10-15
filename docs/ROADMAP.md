@@ -156,6 +156,8 @@ The [luxury meat balance](BALANCING.md#grain-staple-and-luxury-meat) gives
 Barns now grow and replace animals automatically without feed, with additional
 keepers shortening cycles. Delivered livestock pacing and its interaction with
 grain equipment still need play experience.
+Settler and player skill gains are doubled, including butchery. Existing practice
+and unlock thresholds are preserved; delivered training pace still needs playtesting.
 Sawpit work is labeled Sawing throughout job and skill controls, with a hand-driven
 sawing animation during productive work. Saved practice and production rates are
 preserved. The wood and grain rates still need play experience across town layouts

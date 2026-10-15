@@ -46,8 +46,9 @@ for(const [kind,recipes] of Object.entries(progression.profession_recipes)){
     const note=panel(town,item,index).note.textContent;
     const seconds=progression.production_seconds[recipe.output];
     assert(note.includes(`${seconds}s`));
-    assert(note.includes(`${(0.04*seconds/3).toFixed(2)} practice`));
+    assert(note.includes(`${((kind==='butcher'?0.1:0.08)*seconds/3).toFixed(2)} practice`));
     assert(description.includes(`/ ${seconds}s batch`));
+    assert(description.includes(`${((kind==='butcher'?0.1:0.08)*seconds/3).toFixed(2)} practice / batch`));
     assert(note.includes(recipe.output.replaceAll('_',' ')));
     assert(note.includes('Worker level '+level+'+'));
     assert(description.includes('Recipe level '+level));

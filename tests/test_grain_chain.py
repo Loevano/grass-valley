@@ -57,8 +57,8 @@ class GrainChain(unittest.TestCase):
         for bakery, baker in zip(bakeries, bakers):
             self.assertEqual(bakery['input_buffer'], {'flour': 0, 'wood': 0})
             self.assertEqual(baker['pending_output'], {'bread': 20})
-            self.assertAlmostEqual(baker['baking'], .8)
-        self.assertAlmostEqual(miller['milling'], .8)
+            self.assertAlmostEqual(baker['baking'], 1.6)
+        self.assertAlmostEqual(miller['milling'], 1.6)
 
     def test_chain_delivers_bread_with_producers_fetching_inputs_and_hauler_collecting_outputs(self):
         self.farms()
@@ -84,7 +84,7 @@ class GrainChain(unittest.TestCase):
         self.assertGreaterEqual(produced['flour'] - before.get('flour', 0), 160)
         self.assertGreaterEqual(produced['bread'] - before.get('bread', 0), 160)
         for baker, practice in zip(bakers, practice_before):
-            self.assertGreaterEqual(baker['baking'] - practice, 5 * .8 * .8)
+            self.assertGreaterEqual(baker['baking'] - practice, 5 * 1.6 * .8)
         self.assertGreater(self.town['goods']['bread'], 0)
         self.assertGreater(self.town['buildings'][store_index]['stored_goods']['bread'], 0)
         for producer in self.town['villagers'][:5]:

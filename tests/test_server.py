@@ -71,7 +71,7 @@ class VillageRules(unittest.TestCase):
         tick({'towns': {'absent-owner': self.town}})
         self.assertEqual(self.town['wood'], wood)
         self.assertGreater(self.town['buildings'][1]['pending_output']['wood'], 0)
-        self.assertEqual(self.town['villagers'][0]['woodcutting'], skill + .04)
+        self.assertEqual(self.town['villagers'][0]['woodcutting'], skill + .08)
 
     def test_destroy_removes_each_building_kind_without_refund(self):
         for kind in ['home', 'woodcutter', 'farm', 'storehouse']:

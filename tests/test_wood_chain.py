@@ -69,7 +69,7 @@ class WoodChain(unittest.TestCase):
         self.assertEqual(logistics.produce(self.town, building, worker, elapsed=6), 'Working')
         self.assertEqual(building['input_buffer'], {'wood': 2.5})
         self.assertEqual(worker['pending_output'], {'planks': 1.25})
-        self.assertEqual(worker['woodworking'], .08)
+        self.assertEqual(worker['woodworking'], .16)
         self.assertEqual(npcs.tool_bonus({'worker_tool': 'crafted_axe'}, 'woodcutting'), .25)
         self.assertEqual(npcs.tool_bonus({'worker_tool': 'crafted_axe'}, 'fishing'), 0)
 

@@ -60,7 +60,7 @@ class RecipeBalance(unittest.TestCase):
         self.assertEqual(logistics.produce(self.town, self.building, self.worker), 'Working')
         self.assertEqual(self.building['input_buffer'], {'flour': 8, 'wood': 4.5})
         self.assertEqual(self.worker['pending_output'], {'bread': 2})
-        self.assertEqual(self.worker['baking'], 5.08)
+        self.assertEqual(self.worker['baking'], 5.16)
         self.assertNotIn('production_work', self.worker)
 
     def test_blocked_time_does_not_advance_timer_or_grant_practice(self):
@@ -80,7 +80,7 @@ class RecipeBalance(unittest.TestCase):
                 self.assertEqual(worker, before)
                 logistics.configure_rules(self.town, {'resource': 'bread', 'cap': None})
         self.assertEqual(logistics.produce(self.town, self.building, self.worker), 'Working')
-        self.assertEqual(self.worker['baking'], 5.08)
+        self.assertEqual(self.worker['baking'], 5.16)
 
     def test_partial_batch_survives_save_and_two_workers_have_independent_timers(self):
         other = copy.deepcopy(self.worker)
@@ -89,7 +89,7 @@ class RecipeBalance(unittest.TestCase):
         restored = json.loads(json.dumps(self.town))
         building, worker = restored['buildings'][-1], restored['villagers'][0]
         self.assertEqual(logistics.produce(restored, building, worker), 'Working')
-        self.assertEqual(worker['baking'], 5.08)
+        self.assertEqual(worker['baking'], 5.16)
         self.assertEqual(other['baking'], 5)
 
     def test_recipe_switch_discards_partial_batch_without_consuming_inputs(self):
@@ -102,7 +102,7 @@ class RecipeBalance(unittest.TestCase):
         for remaining in (9, 6, 3):
             self.assertIn(f'{remaining}s remaining', logistics.produce(self.town, self.building, self.worker))
         self.assertEqual(logistics.produce(self.town, self.building, self.worker), 'Working')
-        self.assertEqual(self.worker['baking'], 20.16)
+        self.assertEqual(self.worker['baking'], 20.32)
         self.assertEqual(self.worker['pending_output'], {'cakes': 4})
 
     def test_complex_foods_reward_processing_over_eating_ingredients_separately(self):
@@ -124,7 +124,7 @@ class RecipeBalance(unittest.TestCase):
         self.assertEqual(logistics.produce(self.town, self.building, self.worker), 'Working')
         self.assertEqual(self.worker['pending_output'], {'bread': 2.5})
         self.assertEqual(self.building['input_buffer'], {'flour': 7.5, 'wood': 4.375})
-        self.assertEqual(self.worker['baking'], 5.1)
+        self.assertEqual(self.worker['baking'], 5.2)
 
     def test_reassignment_cancels_unfinished_work(self):
         logistics.produce(self.town, self.building, self.worker)

@@ -49,7 +49,7 @@ class ProfessionRecipes(unittest.TestCase):
                     self.assertEqual(logistics.produce(self.town, building, self.worker, elapsed=economy.production_seconds(building)), 'Working')
                     self.assertEqual(building['input_buffer'], costs)
                     self.assertEqual(self.worker['pending_output'], {spec['output']: amount})
-                    rate = .05 if job == 'butchery' else .04
+                    rate = .1 if job == 'butchery' else .08
                     self.assertAlmostEqual(self.worker[job], (0 if spec['level'] == 1 else spec['level']) + rate * economy.production_seconds(building) / 3)
                     logistics.drop_off(self.town, building, self.worker)
                     self.assertEqual(economy.quantity(self.town, spec['output']), amount)
@@ -190,4 +190,4 @@ class ProfessionRecipes(unittest.TestCase):
         self.assertEqual(logistics.transfer(self.town, building, store, 'collect', hauler), {'carved_furniture': 1})
         self.assertEqual(store['stored_goods']['carved_furniture'], 1)
         self.assertEqual(economy.quantity(self.town, 'carved_furniture'), 1)
-        self.assertAlmostEqual(hauler['hauling'], .08)
+        self.assertAlmostEqual(hauler['hauling'], .16)

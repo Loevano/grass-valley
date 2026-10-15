@@ -37,13 +37,13 @@ class Progression(unittest.TestCase):
 
     def test_settler_training_reaches_unlock_and_output_thresholds_on_time(self):
         worker = {'woodcutting': 0, 'talents': {}}
-        for _ in range(249):
+        for _ in range(124):
             economy.practice(worker, 'woodcutting')
         self.assertIsNotNone(economy.qualification(worker, 'woodworking'))
         economy.practice(worker, 'woodcutting')
         self.assertEqual(worker['woodcutting'], 10)
         self.assertIsNone(economy.qualification(worker, 'woodworking'))
-        for _ in range(249):
+        for _ in range(124):
             economy.practice(worker, 'woodcutting')
         self.assertEqual(economy.efficiency(worker, 'woodcutting'), 1)
         worker = json.loads(json.dumps(worker))
@@ -81,11 +81,11 @@ class Progression(unittest.TestCase):
             # Starting or spamming requests never grants production or practice.
             self.assertEqual(self.town['player'].get(job,0),0)
             tick(self.world)
-            self.assertEqual(self.town['player'][job],1)
-            tick(self.world)
             self.assertEqual(self.town['player'][job],2)
+            tick(self.world)
+            self.assertEqual(self.town['player'][job],4)
         saved = json.loads(json.dumps(self.world))
-        self.assertEqual(saved['towns']['a']['player']['gathering'],2)
+        self.assertEqual(saved['towns']['a']['player']['gathering'],4)
         command(self.town, {'action':'walk','dx':1,'dy':0}, self.world)
         self.assertNotIn('activity',self.town['player'])
         xp=self.town['player']['gathering'];tick(self.world)
@@ -100,7 +100,7 @@ class Progression(unittest.TestCase):
         self.town['goods']['herbs']=100
         self.town['buildings'][-1]['stored_goods']['herbs']=100
         tick(self.world)
-        self.assertEqual(self.town['player']['gathering'],1)
+        self.assertEqual(self.town['player']['gathering'],2)
         self.assertEqual(self.town['player']['activity_status'],'Storage full')
         command(self.town, {'action':'stop_activity'})
         self.assertNotIn('activity',self.town['player'])
@@ -127,7 +127,7 @@ class Progression(unittest.TestCase):
                     before = economy.quantity(town, good)
                     economy.player_tick(town, town, 100)
                     self.assertAlmostEqual(economy.quantity(town, good) - before, expected)
-                    self.assertEqual(town['player']['gathering'], 1)
+                    self.assertEqual(town['player']['gathering'], 2)
 
     def test_clothing_bonus_respects_supply_storage_and_production_caps(self):
         for limit in ['supply', 'storage', 'cap']:
@@ -176,7 +176,7 @@ class Progression(unittest.TestCase):
         tick(self.world)
         self.assertEqual(self.town['wood'],0)
         self.assertEqual(self.town['buildings'][1]['pending_output']['wood'],.75)
-        self.assertEqual(sum(v['woodcutting'] for v in self.town['villagers']),.04)
+        self.assertEqual(sum(v['woodcutting'] for v in self.town['villagers']),.08)
 
     def test_processing_consumes_local_materials_and_pauses_when_buffer_full(self):
         self.town['buildings'].append({'kind': 'storehouse', 'x': 10, 'y': 10,
@@ -193,7 +193,7 @@ class Progression(unittest.TestCase):
         self.town['buildings'][1]['stored_goods'] = {'planks': 100}
         tick(self.world)
         self.assertEqual(b['input_buffer']['wood'],8)
-        self.assertEqual(self.town['villagers'][0]['woodworking'],.08)
+        self.assertEqual(self.town['villagers'][0]['woodworking'],.16)
         b['output_buffer']['planks']=0;b['input_buffer']['wood']=0
         self.town['buildings'][1]['stored_goods'] = {}
         tick(self.world)

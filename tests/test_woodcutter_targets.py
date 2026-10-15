@@ -107,7 +107,7 @@ class WoodcutterTargets(unittest.TestCase):
         server.tick({'towns': {'owner': self.town}})
         seconds = server.TICK_SECONDS - 1 / 1.8
         self.assertAlmostEqual(worker['pending_output']['wood'], economy.WOOD_PER_CYCLE * seconds / 3)
-        self.assertEqual(worker['woodcutting'], round(.04 * seconds / 3, 3))
+        self.assertEqual(worker['woodcutting'], round(.08 * seconds / 3, 3))
 
     def test_return_and_unloading_time_do_not_earn_wood_or_practice(self):
         self.town['villagers'][1]['job'] = 'idle'
@@ -120,7 +120,7 @@ class WoodcutterTargets(unittest.TestCase):
         phases = {sample['phase'] for sample in worker['work_animation']['playback']}
         self.assertTrue({'returning', 'depositing', 'walking'} <= phases)
         self.assertAlmostEqual(worker['pending_output']['wood'], economy.WOOD_PER_CYCLE * .2 / 3)
-        self.assertEqual(worker['woodcutting'], round(.04 * .2 / 3, 3))
+        self.assertEqual(worker['woodcutting'], round(.08 * .2 / 3, 3))
 
     def test_saved_waiting_cargo_returns_before_retrying_unreachable_tree(self):
         for removed in (False, True):

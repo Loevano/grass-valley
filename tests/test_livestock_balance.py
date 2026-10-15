@@ -30,7 +30,7 @@ class LivestockBalance(unittest.TestCase):
             logistics.drop_off(town, shop, butcher)
         self.assertEqual(economy.quantity(town, 'prepared_meat'), 8)
         self.assertEqual(town['food'], 32)
-        self.assertAlmostEqual(butcher['butchery'], .4)
+        self.assertAlmostEqual(butcher['butchery'], .8)
 
     def test_every_meat_recipe_adds_food_and_sale_value_over_its_inputs(self):
         for recipe in economy.PROFESSION_RECIPES['butcher']:

@@ -683,7 +683,7 @@ class ResourceLogistics(unittest.TestCase):
         self.assertEqual(hauler['job'], 'hauling')
         self.ticks(6)
         self.assertGreater(producer['woodcutting'], 0)
-        self.assertLess(producer['woodcutting'], .24, 'Travel and unloading do not train the producer')
+        self.assertLess(producer['woodcutting'], .48, 'Travel and unloading do not train the producer')
         self.assertGreater(self.town['wood'], 65)
         self.assertAlmostEqual(self.town['wood'] - 65 + sum(b.get('pending_output', {}).values()),
                                self.town['produced']['wood'])

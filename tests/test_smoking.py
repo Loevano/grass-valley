@@ -27,7 +27,7 @@ class Smoking(unittest.TestCase):
                 self.assertEqual(logistics.produce(self.town, self.smoke, self.worker), 'Working')
                 self.assertEqual(self.smoke['input_buffer'], {raw: 0, 'wood': 0})
                 self.assertEqual(self.worker['pending_output'], {output: 1})
-                self.assertEqual(self.worker['preserving'], .04)
+                self.assertEqual(self.worker['preserving'], .08)
                 self.assertEqual(self.town['food'], 0)
                 logistics.drop_off(self.town, self.smoke, self.worker)
                 self.assertEqual(self.town['food'], spec['food'] + .5)

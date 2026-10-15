@@ -362,8 +362,8 @@ the Python host, refresh both browsers, and create a new world to use the shared
 - Settlers have permanent natural strengths and weaknesses: +25% or −25%
   output and practice gained in one profession family. Every 20 practice in
   their current job adds another base output multiplier. Neutral settlers gain
-  0.04 practice per active three-second work cycle: about 12½ minutes to reach
-  10 practice and 25 minutes for each output bonus. Butchery gains 25% more
+  0.08 practice per active three-second work cycle: about 6¼ minutes to reach
+  10 practice and 12½ minutes for each output bonus. Butchery gains 25% more
   practice from completed work, with the same talent modifiers. Travel and blocked work
   pause training. Their panel shows talents
   and current output; workplace selectors show qualifications and output too.
@@ -437,8 +437,8 @@ the Python host, refresh both browsers, and create a new world to use the shared
   excluding transport and blocked work. Each worker has an independent saved
   batch timer. Ingredients are consumed and goods awarded only at completion;
   changing assignment or recipe discards unfinished work without ingredient loss.
-  Successful batches award 0.04 practice per 3 seconds, adjusted by talent
-  (a neutral baker gains 0.08 per bread batch). Blocked work earns no practice.
+  Successful batches award 0.08 practice per 3 seconds, adjusted by talent
+  (a neutral baker gains 0.16 per bread batch). Blocked work earns no practice.
 - The base grain chain is **2 farms → 1 miller → 2 bakeries**, with one farmer
   and at least two wheat acres per farm, nearby water, and short delivery paths.
   One miller makes 40 flour per active minute; two bread bakers use it to make
@@ -692,7 +692,7 @@ the Python host, refresh both browsers, and create a new world to use the shared
   Butcher shops prepare the automatically collected meat. Adults from older saves
   can still be selected for **Butcher & replace**, and existing manual jobs finish
   normally with one minute of qualified butcher work.
-  Each completed manual butchery job grants 1 practice, adjusted by talent, crediting
+  Each completed manual butchery job grants 2 practice, adjusted by talent, crediting
   the full minute of manually assigned work.
   Extra workers cannot duplicate or accelerate the batch. Processing pauses
   without a worker, and completed meat waits for buffer space or a production cap
@@ -713,7 +713,7 @@ the Python host, refresh both browsers, and create a new world to use the shared
 - Your character can fish with **F**, chop with **C**, and gather berries or herbs
   with **G** while standing beside the source. Actions repeat every three seconds
   until you move, press the same key again, or press Escape. Select **You** to see
-  fishing, woodcutting, and gathering levels. Every 20 practice raises a level;
+  fishing, woodcutting, and gathering levels. Each active cycle earns 2 practice. Every 20 practice raises a level;
   work and practice pause when storage is full or supplies are empty. These keys
   can be changed in Settings without losing older movement preferences.
 - Edible goods are included in the Food total. Eating, recipes, and sales consume

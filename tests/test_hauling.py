@@ -52,7 +52,7 @@ class HaulingSkill(unittest.TestCase):
                 self.assertEqual(self.store['stored_goods']['wood'], moved)
                 self.assertEqual(logistics.buffered(self.source), 80 - moved)
                 self.assertEqual(self.town['wood'], total)
-                self.assertAlmostEqual(self.worker['hauling'], round(practice + .04, 3))
+                self.assertAlmostEqual(self.worker['hauling'], round(practice + .08, 3))
 
     def test_supply_shares_capacity_and_trains_only_for_goods_moved(self):
         self.worker['talents'] = {'hauling': -1}
@@ -63,7 +63,7 @@ class HaulingSkill(unittest.TestCase):
         producer.update(job='crafting', building_index=3, crafting=0, talents={})
         logistics.transfer(self.town, workshop, self.store, 'supply', self.worker)
         self.assertAlmostEqual(sum(workshop['input_buffer'].values()), 37.5)
-        self.assertAlmostEqual(self.worker['hauling'], .03)
+        self.assertAlmostEqual(self.worker['hauling'], .06)
         self.assertAlmostEqual(sum(self.store['stored_goods'].values()), 162.5)
         self.assertEqual(producer['crafting'], 0)
 
@@ -98,11 +98,11 @@ class HaulingSkill(unittest.TestCase):
             'delivery_step': 1, 'delivered': False}
         landscape = {'buildings': [], 'map_resources': []}
         logistics.advance_trip(self.town, landscape, self.worker, .6)
-        self.assertEqual(self.worker['hauling'], .04)
+        self.assertEqual(self.worker['hauling'], .08)
         restored = json.loads(json.dumps(self.town))
         worker = restored['villagers'][0]
         logistics.advance_trip(restored, landscape, worker, 1)
-        self.assertEqual(worker['hauling'], .04)
+        self.assertEqual(worker['hauling'], .08)
         self.assertNotIn('logistics_trip', worker)
 
     def test_cargo_preview_matches_delivery_without_changing_stock(self):

@@ -221,8 +221,8 @@ Balance values remain adjustable.
 Settlers combine learned experience with permanent natural strengths and weaknesses.
 One profession family gains 25% output and practice; another loses 25%. Related jobs
 inherit the family's talent. Weaknesses slow training but never prohibit a career.
-Settlers gain 0.04 practice per active three-second work cycle before talents,
-so 10 practice takes 12.5 minutes and 20 takes 25 minutes of active work.
+Settlers gain 0.08 practice per active three-second work cycle before talents,
+so 10 practice takes 6.25 minutes and 20 takes 12.5 minutes of active work.
 Butchery uses its higher rate described below; see [BALANCING.md](BALANCING.md)
 for current rates, production ratios, and proposed pacing targets.
 Each 20 practice in the current job adds one base output multiplier. Traits persist
@@ -262,10 +262,10 @@ one coin of sale value per fish. Workshop batches take six to
 fifteen. Butcher recipes take six to twelve seconds. Batch timers belong to each
 worker and persist in saves. Missing inputs, caps, and full buffers pause progress;
 ingredients, outputs, and practice are committed together when a batch completes.
-Completed work grants 0.04 practice per three active seconds, adjusted by talent.
+Completed work grants 0.08 practice per three active seconds, adjusted by talent.
 Butchery grants 25% more practice from completed work with the same talent modifiers.
 Manually assigned animal butchery credits its full sixty seconds on completion:
-1 practice per animal before talent modifiers.
+2 practice per animal before talent modifiers.
 Changing assignment or recipe resets unfinished work. Fruit pies, cakes, and meat
 pies provide 7, 9, and 8 pantry food per basic batch; advanced food market prices
 round up their per-unit food value. Basic bread and prepared meat remain one coin.
