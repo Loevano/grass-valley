@@ -123,8 +123,8 @@ function renderSettings(){
   $('camera-lock-button').setAttribute('aria-pressed',String(cameraLocked));
   for(const action of Object.keys(defaultBindings))$('binding-'+action).value=keybindings[action].toUpperCase();
   $('world').setAttribute('aria-label',`Town grid. Use ${['up','left','down','right'].map(action=>keybindings[action].toUpperCase()).join(', ')} to walk. Press ${keybindings.camera.toUpperCase()} to toggle camera lock. Press ${keybindings.interact.toUpperCase()} to interact with a nearby NPC. Use arrow keys and Enter to inspect tiles.`);
-  $('movement-hint').textContent=`Click map · ${['up','left','down','right'].map(action=>keybindings[action].toUpperCase()).join('/')} to walk · ${keybindings.camera.toUpperCase()} camera lock · ${keybindings.fish.toUpperCase()} fish · ${keybindings.chop.toUpperCase()} chop · ${keybindings.gather.toUpperCase()} gather · ${keybindings.build.toUpperCase()} building mode · ${keybindings.interact.toUpperCase()} interact`;
-  $('movement-hint').textContent+=` · ${keybindings.mine.toUpperCase()} clear stone · Space town hall`;
+  $('movement-hint').textContent=`${['up','left','down','right'].map(action=>keybindings[action].toUpperCase()).join('/')} to walk · 7 Help`;
+  $('help-gameplay-controls').textContent=`${['up','left','down','right'].map(action=>keybindings[action].toUpperCase()).join('/')} walk · ${keybindings.camera.toUpperCase()} camera lock · ${keybindings.fish.toUpperCase()} fish · ${keybindings.chop.toUpperCase()} chop · ${keybindings.gather.toUpperCase()} gather · ${keybindings.mine.toUpperCase()} clear stone · ${keybindings.build.toUpperCase()} building mode · ${keybindings.interact.toUpperCase()} interact · Space town hall`;
 }
 for(const action of Object.keys(defaultBindings)){
   const label=document.createElement('label');label.textContent=bindingLabels[action];label.setAttribute('for','binding-'+action);
@@ -604,12 +604,12 @@ function renderStorage(town,item,index,target=$('selection-details')){
   }
   if(storageUpgradeKinds().includes(item.kind)){
     const note=document.createElement('p');note.className='storage-note';
-    note.textContent=`Production buffer: ${capacity} spaces${['sawpit','workshop','mill','bakery'].includes(item.kind)?` · Separate input buffer: ${Number(Object.values(item.input_buffer || {}).reduce((sum,n)=>sum+n,0).toFixed(2))} / ${capacity}`:''}. Storage levels increase these limits; worker capacity is separate.`;
+    note.textContent=`Production buffer: ${capacity} spaces${['sawpit','workshop','mill','bakery'].includes(item.kind)?` · Separate input buffer: ${Number(Object.values(item.input_buffer || {}).reduce((sum,n)=>sum+n,0).toFixed(2))} / ${capacity}`:''}.`;
     target.append(note);
   }
   if(item.kind==='storehouse'){
     const note=document.createElement('p');note.className='storage-note';
-    note.textContent='Each resource has its own capacity. Disabled goods remain available to use.'+(canConfigure?' Use a category checkbox to toggle its shown resources. Option/Alt-click any resource checkbox to toggle all shown resources on or off.':'');target.append(note);
+    note.textContent='Storage controls: Help (7) → Resources & storage.';target.append(note);
   }
   for(const [title,members] of resourceCategories(keys)){
     const group=resourceGroup(title);target.append(group);
@@ -1008,7 +1008,7 @@ function renderItems(town){
   if(!town)return;
   const tools=document.createElement('div');tools.className='resource-group';
   const heading=document.createElement('h3');heading.textContent='Villager tools';tools.append(heading);
-  const hint=document.createElement('p');hint.className='muted';hint.textContent='Select a villager to assign. Nobody returns the tool. Matching workers appear first.';tools.append(hint);
+  const hint=document.createElement('p');hint.className='muted';hint.textContent='Select a villager · Nobody returns the tool.';tools.append(hint);
   for(const [key,gear] of Object.entries(workerTools)){
     const available=availableWorkerTools(town,key);
     const assigned=town.villagers.map((v,index)=>({v,index})).filter(({v})=>v.worker_tool===key);
@@ -1031,7 +1031,7 @@ function renderItems(town){
     const button=document.createElement('button');button.textContent=equipped?`Unequip ${item.name.toLowerCase()}`:`Equip ${item.name.toLowerCase()}`;button.onclick=()=>act({action:equipped?'unequip_item':'equip_item',item:key});row.append(button);clothing.append(row);
   }
   if(clothing.children.length>1)target.append(clothing);
-  if(!target.children.length){const empty=document.createElement('p');empty.className='muted';empty.textContent='No items yet. Collect tools from Sylva, Reed and Fern, or buy stronger tools from Bram and Runa, or find equipment in treasure and local trades.';target.append(empty);}
+  if(!target.children.length){const empty=document.createElement('p');empty.className='muted';empty.textContent='No items yet. Find tools and equipment through local gifts, trades, and treasure.';target.append(empty);}
 }
 function professionSkill(town,job){return Math.max(town.player?.[job] || 0,...town.villagers.map(v=>v[job] || 0));}
 function jobRequirement(v,job){
@@ -1591,7 +1591,7 @@ function renderStable(town,item,index,target){
   const nearby=Math.abs(town.player.x-item.x)+Math.abs(town.player.y-item.y)<=1.8;
   const adults=animalAges(item,'horse').filter(age=>age>=(world.progression.animal_growth_seconds || 300)).length;
   const full=(item.animals?.horse || 0)>=4*buildingLevel(item);
-  const note=document.createElement('p');note.textContent='Walk beside the stable to bring in a wild horse, saddle an adult, or return your riding horse. Riding adds 75% land speed; roads also apply. A saddle stays with you for future rides.';target.append(note);
+  const note=document.createElement('p');note.textContent='Stand beside the stable to settle, saddle, or return a horse. Guide: Help (7) → Animals & horses.';target.append(note);
   for(const [action,label,available] of [
     ['stable_horse','Settle the horse you are leading',town.player.leading_horse&&!full],
     ['ride_horse','Saddle an adult horse and ride',adults>0&&!town.player.horse&&(town.player.saddle||amountOf(town,'saddles')>=1)],
@@ -1602,7 +1602,7 @@ function renderStable(town,item,index,target){
 }
 function renderTownTrades(town,target){
   const heading=document.createElement('h3');heading.textContent='Trade with another town';target.append(heading);
-  const note=document.createElement('small');note.textContent='Offers use available stock when accepted. Both owners need a finished market. Incoming goods require enabled storage. Each offer can be accepted once.';target.append(note);
+  const note=document.createElement('small');note.textContent='Both towns need a finished market and room for incoming goods.';target.append(note);
   const select=(label,entries,categorized=false)=>{
     const input=document.createElement('select');input.setAttribute('aria-label',label);
     for(const [title,keys] of categorized?resourceCategories(entries.map(([key])=>key)):[['',entries.map(([key])=>key)]]){
@@ -1684,7 +1684,7 @@ function renderMarketSales(town,target){
   if(renderMarketSales.signature!==signature){
     const editor=document.createElement('div');
     const title=document.createElement('h3');title.textContent='Automatic sales';editor.append(title);
-    const note=document.createElement('p');note.className='storage-note';note.textContent='Enable a product and set its sale cap. When town stock reaches the cap, the merchant collects goods from other buildings and returns to sell them. Changes save automatically.';editor.append(note);
+    const note=document.createElement('p');note.className='storage-note';note.textContent='Enable products and set sale caps. Saves automatically. Guide: Help (7) → Markets & trade.';editor.append(note);
     for(const [title,members] of resourceCategories(keys)){
       const group=resourceGroup(title);editor.append(group);
       for(const key of members){
@@ -1844,7 +1844,7 @@ function renderBarnAnimals(town,item,index,target){
   overview.append(spaces,state);target.append(overview);
   const cycle=document.createElement('p');cycle.className='livestock-cycle';cycle.textContent='Grow → Fully grown → Butcher';target.append(cycle);
   const note=document.createElement('p');note.className='livestock-note';
-  note.textContent=`Animals always grow, without feed or workers. Each assigned keeper adds 1× growth speed. Products are collected during growth as storage and production caps allow. Adults stop producing and stay until butchered. Only the last animal of a species in this barn gets a free young replacement. Cycle times are averages; growth updates every ${world.simulation_clock?.tick_seconds || 3} seconds.`;target.append(note);
+  note.textContent='No feed required. Growth and replacement rules: Help (7) → Animals & horses.';target.append(note);
   for(const [animal,spec] of Object.entries(catalog.animals)){
     if(animal==='horse'||town.level<spec.level)continue;
     const duration=animalGrowthDuration(animal),ages=animalAges(item,animal);
@@ -1900,7 +1900,7 @@ function renderAnimalButchery(town,item,index,target){
   const catalog=world.progression,owner=viewed===identity?.town_id;
   const card=document.createElement('div');card.className='animal-butchery';target.append(card);
   const heading=document.createElement('h3');heading.textContent='Butcher animals';card.append(heading);
-  const note=document.createElement('p');note.className='livestock-note';note.textContent='Fully grown animals stay in the barn until selected for butchery. A free young animal is added immediately only when no others of that species remain in that barn.';card.append(note);
+  const note=document.createElement('p');note.className='livestock-note';note.textContent='Adults wait for butchery; a free young animal appears only when no others of that species remain in this barn.';card.append(note);
   const task=item.butchering,duration=catalog.butcher_seconds || 60;
   if(task){
     const status=document.createElement('p');status.className='butchery-status';
@@ -2131,7 +2131,7 @@ function renderSelection(town){
   if(selection.type==='player'){
     $('selection-title').textContent=viewed===identity?.town_id?'You':'Town founder';
     const p=document.createElement('p');
-    p.textContent=viewed===identity?.town_id?'Your adventuring villager. Click the map and use your movement keys to explore. Open Settings to change keybindings. Your position is saved with this world.':'This is the town owner’s adventuring villager.';
+    p.textContent=viewed===identity?.town_id?'Your adventuring villager · Position saved with this world.':'This is the town owner’s adventuring villager.';
     $('selection-details').append(p);
     const skills=document.createElement('div');skills.className='player-skills';skills.setAttribute('role','group');skills.setAttribute('aria-label','Player skills');
     for(const job of ['fishing','woodcutting','gathering']){
@@ -2325,7 +2325,7 @@ function renderSelection(town){
       !assigned.length?'Needs workers':[...new Set(assigned.map(v=>productionStatus(v,item)).filter(Boolean))].join(' · ') || `${assigned.length} assigned worker${assigned.length===1?'':'s'}.`;
     if(!item.construction&&!decoration&&item.kind!=='well')renderSettlers(town,item,selection.index,workers,upgradeActions,details);
     if(item.kind==='well'){
-      const note=document.createElement('p');note.textContent='Workers fetch water here for watering crops. Keep a path to an adjacent tile clear. Supplies water automatically once built; no assigned workers are needed.';details.append(note);
+      const note=document.createElement('p');note.textContent='Automatic crop water · No workers needed. Keep an adjacent tile accessible.';details.append(note);
     }
     if(status.textContent&&item.kind==='barn')workers.append(status);
     if(item.kind==='market'&&!item.construction&&viewed===identity?.town_id)renderQuickMarketSale(town,production);
