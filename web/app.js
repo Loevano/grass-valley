@@ -474,7 +474,7 @@ function resourceReach(building){
   return building.kind==='woodcutter'?10:building.kind==='fishing_hut'?3+buildingLevel(building)-1+(fishingBoatLevel(building)?3+2*(fishingBoatLevel(building)-1):0):3;
 }
 function buildingVisualLevel(building,town){
-  return building.kind==='hall'?Math.min(5,town?.level || 1):Math.min(3,buildingLevel(building));
+  return building.kind==='hall'?Math.min(5,town?.level || 1):Math.min(building.kind==='home'?4:3,buildingLevel(building));
 }
 function buildingHeight(building,town){
   if(decorationKinds.includes(building.kind))return building.kind==='wooden_bench'?15:32;
@@ -491,7 +491,7 @@ function buildingStorageSize(building){
   return ['home','market','well',...decorationKinds].includes(building.kind)?0:building.kind==='hall'?200:building.kind==='storehouse'?storehouseCapacities[buildingLevel(building)-1]:workplaceStorageSize(building)*storageMultiplier(building);}
 function storageCapacity(town){return town.buildings.filter(b=>!b.construction).reduce((sum,b)=>sum+buildingStorageSize(b),0);}
 
-const storageKeys=['wood','food','planks','wheat','fodder','flour','wool','tools','manure','herbs'];
+const storageKeys=['wood','stone','food','planks','wheat','fodder','flour','wool','tools','manure','herbs'];
 function buildingName(building){return building.kind==='storehouse'&&buildingLevel(building)>=5?'Warehouse':labels[building.kind];}
 const storageGoods={
   hall:[...storageKeys,'vegetables','carrots','fish','trout','salmon','sturgeon','berries','eggs','meat','milk','fruit','smoked_fish','smoked_trout','smoked_salmon','smoked_sturgeon','bread','prepared_meat'],
@@ -514,7 +514,7 @@ function roomAllocations(building){
     return Object.fromEntries(buildingStorageKeys(building).map(key=>[key,enabled[key]?buildingStorageSize(building):0]));
   }
   const fixed=world.progression?.fixed_storage || {
-    hall:{wood:100,food:100},home:{},woodcutter:{wood:50},fishing_hut:{food:50},
+    hall:{wood:100,stone:100,food:100},home:{},woodcutter:{wood:50},fishing_hut:{food:50},
     farm:{food:20,wheat:10,fodder:10,manure:10},acre:{food:20,wheat:10,fodder:10,manure:10},
     barn:{food:20,fodder:15,wool:10,manure:5,hides:10},orchard:{food:50},
     bakery:{flour:40,wood:10,herbs:20,food:40},butcher:{food:50},sawpit:{wood:30,planks:20},mill:{wheat:80,flour:80},
@@ -648,7 +648,7 @@ function upgradeBenefit(kind,level,item){
   if(kind==='farm')return `+${25*(level-1)}% crops / worker\n${farmStorageCapacity({kind,level})} capacity per crop`;
   if(kind==='home'&&item?.profession_upgrades?.includes('timber_frame'))level++;
   if(kind==='fishing_hut')return `+${25*(level-1)}% food / catch / worker\n${resourceReach({...item,kind,level})} tile reach`;
-  return kind==='barn'?`${4*level} animal spaces`:['sawpit','mill','smokehouse','workshop','fish_pond','orchard','market','bakery','butcher'].includes(kind)?'Separate worker capacity':kind==='home'?`${2*level} spaces\n-${25*(level-1)}% departure`:kind==='storehouse'?`${buildingStorageSize({kind,level})} capacity per resource${level>=5?'\nWarehouse':''}`:`+${25*(level-1)}% ${kind==='woodcutter'?'wood':kind==='fishing_hut'?'food / catch':kind==='acre'?'field food':'food'} / worker`;
+  return kind==='barn'?`${4*level} animal spaces`:['sawpit','mill','smokehouse','workshop','fish_pond','orchard','market','bakery','butcher'].includes(kind)?'Separate worker capacity':kind==='home'?`${2*level} spaces\n-${Math.min(75,25*(level-1))}% departure`:kind==='storehouse'?`${buildingStorageSize({kind,level})} capacity per resource${level>=5?'\nWarehouse':''}`:`+${25*(level-1)}% ${kind==='woodcutter'?'wood':kind==='fishing_hut'?'food / catch':kind==='acre'?'field food':'food'} / worker`;
 }
 let pendingUpgrade=null;
 const professionBenefits={
@@ -698,8 +698,10 @@ function buildingUpgradePreview(command,town,item){
   const capacity=command.action==='upgrade_capacity',level=capacity?item.settler_level || 1:buildingLevel(item);
   if(decorationKinds.includes(item.kind))return null;
   const currentBenefits=upgradeBenefit(item.kind,level,item).split('\n'),nextBenefits=upgradeBenefit(item.kind,level+1,item).split('\n');
-  const maxLevel=capacity?capacityMaxLevel(item):item.kind==='storehouse'?storehouseCapacities.length:3;
-  return {title:`${buildingName(item)} · ${capacity?'Capacity tier':'Level'} ${level+1}`,benefits:capacity?[`${settlerCapacity(item)} → ${settlerCapacity({...item,settler_level:level+1})} worker spaces`]:nextBenefits.map((benefit,i)=>currentBenefits[i]&&currentBenefits[i]!==benefit?`${currentBenefits[i]} → ${benefit}`:benefit),cost:{wood:capacity?20*level:costs[item.kind]*level},seconds:30*level,requirements:'',ready:level<maxLevel};
+  const maxLevel=capacity?capacityMaxLevel(item):item.kind==='storehouse'?storehouseCapacities.length:item.kind==='home'?4:3;
+  const cost={wood:capacity?20*level:costs[item.kind]*level};
+  if(!capacity&&item.kind==='home'&&level===3)cost.stone=world.progression?.home_stone_cost ?? 30;
+  return {title:`${buildingName(item)} · ${capacity?'Capacity tier':'Level'} ${level+1}`,benefits:capacity?[`${settlerCapacity(item)} → ${settlerCapacity({...item,settler_level:level+1})} worker spaces`]:nextBenefits.map((benefit,i)=>currentBenefits[i]&&currentBenefits[i]!==benefit?`${currentBenefits[i]} → ${benefit}`:benefit),cost,seconds:30*level,requirements:'',ready:level<maxLevel};
 }
 function upgradeCard(button,preview,{title=preview?.title,status='',benefits=preview?.benefits || []}={}){
   const card=document.createElement('div');card.className='upgrade-card';
@@ -793,6 +795,7 @@ function resourceCategories(keys){
     ['Overview',['food','coins']],
     ['Baking',['wheat','flour','bread','bread_rolls','herb_bread','fruit_pies','cakes',...products('bakery')]],
     ['Fishing',['fish','trout','salmon','sturgeon',...Object.keys(catalog.fish || {}),'smoked_fish','smoked_trout','smoked_salmon','smoked_sturgeon',...Object.keys(catalog.smoked_fish || {})]],
+    ['Masonry',['stone']],
     ['Timber',['wood','planks','tools','wooden_bowls','crates','furniture','carved_furniture','crafted_axe','crafted_saw',...products('workshop')]],
     ['Farming',['vegetables','carrots','fodder','manure','herbs']],
     ['Orcharding and gathering',['fruit','berries']],
@@ -858,7 +861,7 @@ function renderRules(town){
     row.append(label,input,save);target.append(row);
   }
 }
-function materialCosts(spec){return Object.fromEntries(Object.entries(spec).filter(([k,v])=>v&&['wood','coins','planks','wool','tools','leather','iron_ore','iron','saddles','steel','trade_crates','furniture','carved_furniture'].includes(k)));}
+function materialCosts(spec){return Object.fromEntries(Object.entries(spec).filter(([k,v])=>v&&['wood','stone','coins','planks','wool','tools','leather','iron_ore','iron','saddles','steel','trade_crates','furniture','carved_furniture'].includes(k)));}
 function buildingCosts(town,spec){return town?.sandbox?{}:materialCosts(spec);}
 function canAfford(town,cost){return Object.entries(cost).every(([k,v])=>amountOf(town,k)>=v);}
 function costText(cost){return Object.entries(cost).map(([k,v])=>`${v} ${goodName(k).toLowerCase()}`).join(' + ');}
@@ -1900,7 +1903,7 @@ function renderSelection(town){
     }
     if(item.kind==='rock'&&item.ore){$('selection-title').textContent='Iron vein';p.textContent='A mine within 10 tile steps extracts iron ore. Smelt ore with wood into iron, then make steel, saddles, and trade crates.';}
     if(grasslandRock){
-      p.textContent+=`\nClear: stand nearby · ${keybindings.mine.toUpperCase()}\nPermanently removes this stone; no resource reward.`;
+      p.textContent+=`\nClear: stand nearby · ${keybindings.mine.toUpperCase()}\nPermanently removes this rock and collects ${world.progression?.stone_per_rock ?? 10} stone.\nRequires storage room for the full yield.`;
     }
     if(item.supply_max){$('selection-details').append(fact(`${Math.floor(item.supply || 0)} / ${item.supply_max}`,item.kind==='tree'?'Wood remaining before felling':'Shared supply'));if(item.kind!=='tree')$('selection-details').append(fact(`${item.regeneration} per 3 seconds`,'Regeneration'));}
     $('selection-details').append(p);
@@ -1978,7 +1981,7 @@ function renderSelection(town){
       renderStorage(town,item,selection.index,storageOverview);
     }
     if(costs[item.kind]&&item.kind!=='well'){
-      const level=buildingLevel(item),cost=costs[item.kind]*level,maxLevel=item.kind==='storehouse'?storehouseCapacities.length:3;
+      const level=buildingLevel(item),preview=upgradePreview({action:'upgrade_building',index:selection.index},town,item),maxLevel=item.kind==='storehouse'?storehouseCapacities.length:item.kind==='home'?4:3;
       if(!item.construction&&!['barn','butcher'].includes(item.kind)){
         const benefits=document.createElement('p');benefits.className='info-copy';
         benefits.textContent=upgradeBenefit(item.kind,level,item);production.append(benefits);
@@ -1989,7 +1992,7 @@ function renderSelection(town){
       const button=document.createElement('button');
       button.className='upgrade-button';
       button.textContent='Upgrade';
-      button.title=level>=maxLevel?`Fully upgraded · Level ${maxLevel}${item.kind==='storehouse'?' · Warehouse':''}`:`Upgrade to level ${level+1} · ${town.sandbox?'Free · Instant':`${cost} wood · ${30*level} seconds`} · ${upgradeBenefit(item.kind,level+1,item)}`;
+      button.title=level>=maxLevel?`Fully upgraded · Level ${maxLevel}${item.kind==='storehouse'?' · Warehouse':''}`:`Upgrade to level ${level+1} · ${town.sandbox?'Free · Instant':`${costText(preview.cost)} · ${30*level} seconds`} · ${upgradeBenefit(item.kind,level+1,item)}`;
       button.setAttribute('aria-label',button.title);
       button.disabled=!!item.construction||level>=maxLevel||viewed!==identity?.town_id;
       const index=selection.index;
@@ -4403,8 +4406,9 @@ function paintBuilding(b,town,farmState=null,target=ctx,usable=buildingUsable(to
     ctx.beginPath();ctx.moveTo(x-w,y-h);ctx.lineTo(x,y+depth-h*.55);ctx.moveTo(x,y+depth-h);ctx.lineTo(x-w,y-h*.55);ctx.stroke();
   }
   if(level>=3){
-    paintPolygon([[x-w,y],[x,y+depth],[x,y+depth-9*s],[x-w,y-9*s]],usable?'#b1b3a2':'#c76d64');
-    paintPolygon([[x,y+depth],[x+w,y],[x+w,y-9*s],[x,y+depth-9*s]],usable?'#858e86':'#a34f49');
+    const masonry=b.kind==='home'&&level>=4?h:9*s;
+    paintPolygon([[x-w,y],[x,y+depth],[x,y+depth-masonry],[x-w,y-masonry]],usable?'#b1b3a2':'#c76d64');
+    paintPolygon([[x,y+depth],[x+w,y],[x+w,y-masonry],[x,y+depth-masonry]],usable?'#858e86':'#a34f49');
     ctx.strokeStyle='#666f64';ctx.lineWidth=s;
     ctx.beginPath();ctx.moveTo(x-w,y-4*s);ctx.lineTo(x,y+depth-4*s);ctx.lineTo(x+w,y-4*s);ctx.stroke();
   }

@@ -62,6 +62,14 @@ const run=new Function('document','window','localStorage','setTimeout','clearTim
    check(row.children[0].textContent==='Capacity per resource'&&row.children[1].textContent===capacities[level-1]+' → '+capacities[level]&&row.children[2].textContent==='+'+(capacities[level]-capacities[level-1]),'Every storage tier shows compact before/after and gain');
    $('cancel-upgrade').onclick();
  }
+ town.buildings[1].level=3;showUpgrade({action:'upgrade_building',index:1});
+ check($('upgrade-cost').textContent==='60 wood + 30 stone','Level 4 cottage previews both materials');
+ check($('upgrade-time').textContent.includes('90 seconds'),'Level 4 cottage requires 90 seconds of builder work');
+ check($('confirm-upgrade').disabled,'Missing stone blocks the cottage upgrade');
+ town.goods.stone=30;renderUpgradeDialog();
+ check(!$('confirm-upgrade').disabled,'Stored stone enables the cottage upgrade');
+ check(upgradeBenefit('home',4,{profession_upgrades:['timber_frame']}).includes('-75% departure'),'Timber framing cannot exceed 75 percent departure protection');
+ $('cancel-upgrade').onclick();town.buildings[1].level=1;town.goods={};
  showUpgrade({action:'upgrade_building',index:1});town.buildings.splice(1,1);
  $('confirm-upgrade').onclick();check(commands.length===3&&$('confirm-upgrade').disabled,'Removed buildings cannot redirect an upgrade');
  $('upgrade-dialog').close();check(!pendingUpgrade,'Escape/native close clears pending command');

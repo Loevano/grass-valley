@@ -20,7 +20,7 @@ app.run(`
   function toggle(label){return nodes().find(node=>node.className==='storage-caption'&&node.children[0].textContent===label).children.find(node=>node.type==='checkbox');}
 `);
 const rows=()=>Array.from(app.run('storage()'));
-assert.deepEqual(new Set(rows()),new Set(['Wood','Provisions','Vegetables','Fish','Berries','Herbs']),'A starting storehouse omits locked goods and empty categories');
+assert.deepEqual(new Set(rows()),new Set(['Wood','Stone','Provisions','Vegetables','Fish','Berries','Herbs']),'A starting storehouse omits locked goods and empty categories');
 assert(!app.run('nodes().some(node=>node.className==="resource-group"&&node.children[0].textContent==="Metalworking")'));
 assert.equal(app.run('roomAllocations(town.buildings[1]).steel'),50,'Hidden resources retain authoritative capacity');
 app.run(`toggle('Wood').checked=false;toggle('Wood').onchange();`);
@@ -62,7 +62,7 @@ assert(rows().includes('Steel')&&rows().includes('Cakes')&&rows().includes('Flou
 app.run(`town.buildings[1].stored_goods={};town.buildings[1].output_buffer={};town.buildings[1].input_buffer={};town.goods={};`);
 assert(!rows().includes('Steel'));
 app.run(`town.buildings[2].profession_upgrades=[];viewed='friend';`);
-assert.deepEqual(new Set(rows()),new Set(['Wood','Provisions','Vegetables','Fish','Berries','Herbs']),'Visitors use the viewed town unlocks');
+assert.deepEqual(new Set(rows()),new Set(['Wood','Stone','Provisions','Vegetables','Fish','Berries','Herbs']),'Visitors use the viewed town unlocks');
 assert.equal(app.run('nodes().filter(node=>node.type==="checkbox").length'),0);
 app.run(`viewed='own';`);
 assert(!Array.from(app.run('storage(0)')).includes('Steel'),'Hall storage uses the same filtering');

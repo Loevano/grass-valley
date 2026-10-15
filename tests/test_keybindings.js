@@ -193,7 +193,7 @@ function session(saved=null){
   windows.key('4');
   check(windows.state.panel==='resources'&&!windows.document.getElementById('resources-panel').hidden,'4 opens Resources');
   const resourceGroups=windows.document.getElementById('resources-list').children;
-  check(resourceGroups.map(group=>group.children[0].textContent).join(',')==='Overview,Baking,Fishing,Timber,Farming,Orcharding and gathering,Livestock,Butchery','Resources have clear category headings');
+  check(resourceGroups.map(group=>group.children[0].textContent).join(',')==='Overview,Baking,Fishing,Masonry,Timber,Farming,Orcharding and gathering,Livestock,Butchery','Resources have clear category headings');
   const resources=resourceGroups.flatMap(group=>group.children.slice(1));
   const resource=label=>resources.find(row=>row.children[1].textContent===label)?.children[0].textContent;
   check(resource('Wood')==='50 / 0'&&resource('Food')==='30 / 0','Resources show stored amounts and allocated capacity');
@@ -201,8 +201,8 @@ function session(saved=null){
   check(resource('Fish')==='0 / 0'&&resource('Prepared meat')==='0 / 0'&&resource('Herbs')==='0 / 0','Unproduced resources remain visible');
   check(resource('Trout')==='0 / 0'&&resource('Salmon')==='0 / 0'&&resource('Sturgeon')==='0 / 0','Premium fish appear in Resources');
   check(resource('Smoked trout')==='0 / 0'&&resource('Smoked salmon')==='0 / 0'&&resource('Smoked sturgeon')==='0 / 0','Smoked species appear in Resources');
-  check(resources.length===28,'Resources include all storage categories, edible goods, and coins');
-  check(new Set(resources.map(row=>row.children[1].textContent)).size===28,'Each resource appears in exactly one section');
+  check(resources.length===29,'Resources include all storage categories, edible goods, and coins');
+  check(new Set(resources.map(row=>row.children[1].textContent)).size===29,'Each resource appears in exactly one section');
   windows.key('4');check(windows.state.panel===null,'4 closes Resources');
   windows.key('3');
   windows.key('8');

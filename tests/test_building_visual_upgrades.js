@@ -40,6 +40,9 @@ const run=new Function('document','window','localStorage','setTimeout','clearTim
   const silhouettes=['barn','sawpit','mill','smokehouse','workshop','fish_pond','orchard','market','bakery','butcher'].map(kind=>appearance({kind,x:5,y:5}));
   assert.strictEqual(new Set(silhouettes).size,10,'Advanced workplaces have distinct artwork');
   assert.notStrictEqual(appearance({kind:'mill',x:5,y:5}),(()=>{marks.length=0;drawBuilding({kind:'mill',x:5,y:5},town,{elapsed:1});return JSON.stringify(marks);})(),'Active mill sails rotate');
+  const cottage={kind:'home',x:5,y:5,level:4};
+  assert.notStrictEqual(appearance(cottage),appearance({...cottage,level:3}),'Level 4 cottages have full stone walls');
+  assert.strictEqual(buildingVisualLevel(cottage,town),4,'Level 4 cottage artwork is not capped at 3');
   const hall={kind:'hall',x:5,y:5};
   const halls=[1,2,3,4,5].map(level=>appearance(hall,{...town,level}));
   assert.strictEqual(new Set(halls).size,5,'Each completed hall level has distinct artwork');

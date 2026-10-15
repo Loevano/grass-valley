@@ -280,8 +280,10 @@ the Python host, refresh both browsers, and create a new world to use the shared
   Swamp willows and rare ancient trees take five times as much chopping and
   about sixteen minutes 40 seconds to regrow.
   Water regenerates its shared supply. Press **M** beside a stone on light or dark
-  grassland to permanently clear it, with no resource reward. Cleared stones stay
-  gone after leaving the area or reloading. Rocks on other terrain remain in place.
+  grassland to permanently clear it and collect 10 stone. The full yield needs
+  available storage and production-cap room; otherwise the rock stays in place.
+  Stone is stored in the hall or enabled storehouses and pays for level 4 cottages.
+  Cleared rocks stay gone after leaving the area or reloading. Rocks on other terrain remain in place.
 - New shared worlds have a large lake with three treasure islands. At hall level 3,
   select **You** and build an **Exploration boat** for 20 wood and 10 planks.
   Walk onto water to sail automatically and step onto land to disembark. Stand
@@ -468,9 +470,9 @@ the Python host, refresh both browsers, and create a new world to use the shared
   skills and stop their work. The Villagers panel warns about shortages and keeps
   the latest departure visible. Feeding everyone resets the shortage timer; each
   departure gives another minute of grace and delays new arrivals for a minute.
-  The last settler stays to help recovery. Level 2/3 cottages provide 25%/50% lower
-  departure risk per housing space, shared across the population (up to 75% with
-  timber framing). Only finished cottages count; capacity upgrades add worker
+  The last settler stays to help recovery. Level 2/3/4 cottages provide 25%/50%/75% lower
+  departure risk per housing space, shared across the population (capped at 75%,
+  including timber framing). Only finished cottages count; capacity upgrades add worker
   slots rather than comfort.
 - There is no fixed population limit. The town hall shelters five settlers;
   each finished cottage provides two housing spaces per building level, plus
@@ -600,9 +602,11 @@ the Python host, refresh both browsers, and create a new world to use the shared
   Zoom in to see individual trees and rocks; their tiles remain selectable at any zoom.
 - Build cottages to attract residents; maintain food and add storage as needed.
 - Select any completed cottage, storehouse, woodcutter, farm, fishing hut, or acre
-  to upgrade it through level 3 (storehouses through level 8). Builders work for 30 seconds to reach level 2
+  to upgrade it through level 3 (cottages through level 4; storehouses through level 8). Builders work for 30 seconds to reach level 2
   and 60 seconds to reach level 3 after arriving. Each upgrade costs its original
   building price multiplied by its current level; the panel previews the benefit.
+  The level 4 cottage additionally costs 30 stone (60 wood + 30 stone total)
+  and takes 90 seconds of builder work.
   Profession upgrades take 30 seconds of builder work. Materials are paid when
   starting; buildings pause their benefits and production until work finishes.
   Assigned workers automatically help upgrade their own workplace, then resume
@@ -612,7 +616,7 @@ the Python host, refresh both browsers, and create a new world to use the shared
   travel and waiting for an available worker or reachable route.
   Builders can cross completed acres to reach farms surrounded by fields.
   Upgrade progress survives saving, moving, and restarting the host.
-  Cottages provide 2/4/6 housing spaces (the town limit stays 16), and storehouses
+  Cottages provide 2/4/6/8 housing spaces at levels 1–4, and storehouses
   hold 50/75/100/150/200/250/300/350 of each enabled resource. Level 5 becomes a Warehouse.
   Woodcutters, sawpits, and woodworker's workshops increase storage and production
   buffers from 50 to 62.5 to 75 spaces at levels 1/2/3; input buffers and resource
@@ -627,6 +631,7 @@ the Python host, refresh both browsers, and create a new world to use the shared
   Completed building upgrades change the artwork; settler-capacity upgrades add
   separate blue markers:
   level 2 adds timber framing and roof trim; level 3 adds stonework and a dormer.
+  Level 4 cottages have full stone walls.
   Acres gain raised borders and irrigation, halls develop through five visual
   levels, and profession upgrades add visible tools, nets, boats, or framing.
   Each workplace has its own roof color and equipment. Wall plaques show building

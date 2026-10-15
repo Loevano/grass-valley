@@ -41,6 +41,8 @@ ANIMAL_GROWTH_SECONDS = 300
 ANIMAL_PRODUCTS = {'chicken': 25, 'sheep': 25, 'cow': 25}
 TREE_REGROWTH_RATE = .9
 WOOD_PER_CYCLE = .75
+STONE_PER_ROCK = 10
+HOME_STONE_COST = 30
 # Meals are charged once per three-second host tick.
 IDLE_FOOD = .03
 WORKER_FOOD = .045
@@ -425,11 +427,11 @@ def spend(town, costs):
 
 
 def costs_of(spec):
-    return {k: v for k, v in spec.items() if k in {'wood', 'coins', 'planks', 'wool', 'tools', *CRAFTED_GOODS, *LATE_GOODS} and v}
+    return {k: v for k, v in spec.items() if k in {'wood', 'stone', 'coins', 'planks', 'wool', 'tools', *CRAFTED_GOODS, *LATE_GOODS} and v}
 
 
 STOREHOUSE_CAPACITIES = (50, 75, 100, 150, 200, 250, 300, 350)
-STORAGE_KEYS = ('wood', 'food', 'planks', 'wheat', 'fodder', 'flour', 'wool', 'tools', 'manure', 'herbs', *CRAFTED_GOODS, *LATE_GOODS, *EDIBLE)
+STORAGE_KEYS = ('wood', 'stone', 'food', 'planks', 'wheat', 'fodder', 'flour', 'wool', 'tools', 'manure', 'herbs', *CRAFTED_GOODS, *LATE_GOODS, *EDIBLE)
 STORAGE_GOODS = {
     **{kind: STORAGE_KEYS for kind in ('hall', 'storehouse')},
     'market': (),
@@ -449,7 +451,7 @@ for kind, recipes in PROFESSION_RECIPES.items():
 STORAGE_GOODS['butcher'] = (*STORAGE_GOODS['butcher'], 'hides')
 STORAGE_GOODS['smokehouse'] = (*FISH, 'wood', *SMOKED_FISH)
 FIXED_STORAGE = {
-    'hall': {'wood': 100, 'food': 100},
+    'hall': {'wood': 100, 'stone': 100, 'food': 100},
     'stable': {'fodder': 30, 'food': 15, 'manure': 5},
     **{kind: {key: 50 / len(set((*inputs, output))) for key in (*inputs, output)}
        for kind, (inputs, output, _) in RECIPES.items() if kind in {'tannery', 'mine', 'smelter', 'saddler', 'steelworks', 'tradehouse'}},
@@ -836,9 +838,15 @@ def start_activity(town, landscape, action):
         if not reachable:
             raise ValueError('Walk beside a grassland stone to mine it.')
         source = min(reachable, key=lambda r: distance(player, r))
+        ensure_inventory(town)
+        if production_room(town, 'stone') < STONE_PER_ROCK:
+            raise ValueError(f'Raise the stone production cap to collect {STONE_PER_ROCK} stone.')
+        if storage_room(town, 'stone') < STONE_PER_ROCK:
+            raise ValueError(f'Make storage room for {STONE_PER_ROCK} stone first.')
+        deliver(town, 'stone', STONE_PER_ROCK, storage_limit(town, 'stone'))
         landscape['map_resources'].remove(source)
         player.pop('activity', None)
-        player['activity_status'] = 'Stone permanently cleared'
+        player['activity_status'] = f'Found {STONE_PER_ROCK} stone; stone permanently cleared'
         return
     if action == 'gather':
         chest = next((r for r in landscape['map_resources'] if r['kind'] == 'chest' and distance(player, r) <= 1.8), None)
@@ -964,4 +972,5 @@ def public_catalog():
             'workplace_storage_sizes': WORKPLACE_STORAGE_SIZES,
             'worker_capacities': WORKER_CAPACITIES, 'decorations': DECORATIONS,
             'food_per_minute': {'idle': food_per_minute(False), 'working': food_per_minute()},
-            'crafted_worker_tools': CRAFTED_WORKER_TOOLS, 'wood_per_cycle': WOOD_PER_CYCLE}
+            'crafted_worker_tools': CRAFTED_WORKER_TOOLS, 'wood_per_cycle': WOOD_PER_CYCLE,
+            'stone_per_rock': STONE_PER_ROCK, 'home_stone_cost': HOME_STONE_COST}

@@ -3,6 +3,7 @@ import json
 import unittest
 
 from fixtures import flat_town
+import progression as economy
 from server import command, prepare_landscapes, walkable
 from shared_world import bind_map, export_world
 
@@ -12,8 +13,9 @@ class PlayerMining(unittest.TestCase):
         self.town = flat_town()
         self.town['map_resources'] = []
         self.town['player'].update(x=5, y=7)
+        economy.ensure_inventory(self.town)
 
-    def test_clears_only_nearest_grassland_stone_without_reward(self):
+    def test_clears_only_nearest_grassland_rock_and_stores_ten_stone(self):
         for biome in 'gm':
             for ore in (None, 'iron'):
                 with self.subTest(biome=biome, ore=ore):
@@ -31,10 +33,30 @@ class PlayerMining(unittest.TestCase):
                     self.assertEqual(self.town['map_resources'], [diagonal])
                     self.assertTrue(walkable(self.town, 6, 7))
                     self.assertNotIn('activity', result['player'])
-                    for key in before.keys() - {'player', 'map_resources'}:
+                    self.assertEqual(economy.quantity(self.town, 'stone'),
+                                     economy.quantity(before, 'stone') + 10)
+                    self.assertEqual(self.town['buildings'][0]['stored_goods']['stone'],
+                                     economy.quantity(self.town, 'stone'))
+                    for key in before.keys() - {'player', 'map_resources', 'goods', 'buildings', 'produced'}:
                         self.assertEqual(self.town[key], before[key], key)
                     command(self.town, {'action': 'mine'})
                     self.assertEqual(self.town['map_resources'], [])
+
+    def test_full_storage_or_production_cap_keeps_rock_and_stock_unchanged(self):
+        rock = {'kind': 'rock', 'x': 6, 'y': 7}
+        self.town['map_resources'] = [rock]
+        for cap in (0, 9):
+            self.town['rules'] = {'production_caps': {'stone': cap}}
+            before = copy.deepcopy(self.town)
+            with self.assertRaisesRegex(ValueError, 'production cap'):
+                command(self.town, {'action': 'mine'})
+            self.assertEqual(self.town, before)
+        self.town.pop('rules')
+        economy.deliver(self.town, 'stone', 95, 200)
+        before = copy.deepcopy(self.town)
+        with self.assertRaisesRegex(ValueError, 'storage room'):
+            command(self.town, {'action': 'mine'})
+        self.assertEqual(self.town, before)
 
     def test_rejects_distant_stones_other_biomes_and_other_resources(self):
         for biome, kind, x in [('g', 'rock', 8), ('m', 'tree', 6)] + [
@@ -63,6 +85,8 @@ class PlayerMining(unittest.TestCase):
             prepare_landscapes(restored, regenerate=True)
         self.assertFalse(any(r['kind'] == 'rock' for r in restored['shared_map']['map_resources']))
         self.assertTrue(walkable(restored['towns']['own'], 6, 7))
+        self.assertEqual(economy.quantity(restored['towns']['own'], 'stone'), 10)
+        self.assertEqual(economy.quantity(restored['towns']['friend'], 'stone'), 0)
 
 
 if __name__ == '__main__':

@@ -73,7 +73,7 @@ const run=new Function('document','window','localStorage','setTimeout','clearTim
     check(rockInfo.includes('M')&&rockInfo.includes('Permanently removes')&&!rockInfo.includes('unavailable'),'Grassland stones explain permanent clearing with M');
     town.map_resources[2].ore='iron';render();
     rockInfo=panelNodes().find(child=>child.className==='info-copy').textContent;
-    check($('selection-title').textContent==='Iron vein'&&rockInfo.includes('extracts iron ore')&&rockInfo.includes('no resource reward'),'Grassland veins explain both mine production and permanent clearing');
+    check($('selection-title').textContent==='Iron vein'&&rockInfo.includes('extracts iron ore')&&rockInfo.includes('collects 10 stone'),'Grassland veins explain both mine production and permanent clearing');
     delete town.map_resources[2].ore;delete town.terrain;
     await clickSprite('villager',0);
     check(selection.type==='villager'&&$('selection-title').textContent==='Ada','Moving villager is selectable');
@@ -229,7 +229,9 @@ const run=new Function('document','window','localStorage','setTimeout','clearTim
     check($('upgrade-dialog').open&&$('confirm-upgrade').disabled,'Unaffordable building opens popup with confirmation disabled');
     $('confirm-upgrade').onclick();check(commands.length===beforeUpgrade,'Unaffordable building sends no command');$('cancel-upgrade').onclick();
     town.wood=65;town.buildings[1].construction={progress:0,total:30};render();check(buildingUpgrade().disabled,'Unfinished buildings cannot upgrade');
-    delete town.buildings[1].construction;town.buildings[1].level=3;render();check(!buildingUpgrade()&&panelNodes().some(child=>child.className==='upgrade-card-status'&&child.textContent==='Maxed'),'Level 3 shows maxed status without an action');
+    delete town.buildings[1].construction;town.buildings[1].level=3;render();
+    check(buildingUpgrade().title.includes('30 stone')&&buildingUpgrade().title.includes('8 spaces'),'Level 3 cottage offers a stone-funded level 4 upgrade');
+    town.buildings[1].level=4;render();check(!buildingUpgrade()&&panelNodes().some(child=>child.className==='upgrade-card-status'&&child.textContent==='Maxed'),'Level 4 shows maxed status without an action');
     friend.buildings[1].level=1;viewed='friend';inspect('building',1);check(buildingUpgrade().disabled,'Visitor cannot upgrade buildings');
     town.buildings.push({kind:'storehouse',level:3,x:7,y:3});check(storageCapacity(town)===300+50*town.buildings.filter(b=>!['hall','storehouse','home'].includes(b.kind)&&!b.construction).length,'Client storage reflects upgraded storehouses');
     identity=null;render();

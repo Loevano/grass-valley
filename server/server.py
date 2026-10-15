@@ -1708,12 +1708,17 @@ def command(town, data, world=None):
         if not completed(building):
             raise ValueError('Finish construction before upgrading.')
         level = building_level(building)
-        if level >= (len(economy.STOREHOUSE_CAPACITIES) if building['kind'] == 'storehouse' else 3):
+        if level >= (len(economy.STOREHOUSE_CAPACITIES) if building['kind'] == 'storehouse'
+                     else 4 if building['kind'] == 'home' else 3):
             raise ValueError('This building is fully upgraded.')
-        cost = 0 if town.get('sandbox') else COSTS[building['kind']] * level
-        if town['wood'] < cost:
-            raise ValueError(f'Gather {cost} wood to upgrade this building.')
-        economy.spend(town, {'wood': cost})
+        costs = {'wood': COSTS[building['kind']] * level}
+        if building['kind'] == 'home' and level == 3:
+            costs['stone'] = economy.HOME_STONE_COST
+        costs = building_costs(town, costs)
+        if not economy.afford(town, costs):
+            required = ' + '.join(f'{amount} {key}' for key, amount in costs.items())
+            raise ValueError(f'Gather {required} to upgrade this building.')
+        economy.spend(town, costs)
         building['construction'] = {'progress': 0, 'total': BUILD_SECONDS * level,
                                     'upgrade': {'level': level + 1}}
     elif action in {'set_crop', 'set_recipe', 'set_animal_count', 'buy_animal', 'breed_animal', 'butcher_animal', 'profession_upgrade'}:

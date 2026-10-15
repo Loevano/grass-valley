@@ -4,7 +4,8 @@ import unittest
 from unittest.mock import patch
 
 from fixtures import start_woodcutting
-from server import BUILD_SECONDS, capacity, command, construct, new_town, tick
+import progression as economy
+from server import BUILD_SECONDS, capacity, command, construct, housing_capacity, housing_loyalty, new_town, tick
 
 
 class BuildingUpgrades(unittest.TestCase):
@@ -73,6 +74,41 @@ class BuildingUpgrades(unittest.TestCase):
         self.assertEqual(self.town['wood'], 75)
         command(self.town, {'action': 'upgrade_building', 'index': index})
         self.assertEqual(site['construction']['total'], 2 * BUILD_SECONDS)
+
+    def test_level_four_cottage_spends_stone_and_keeps_housing_until_completed(self):
+        index = self.add('home', level=3)
+        economy.ensure_inventory(self.town)
+        before = copy.deepcopy(self.town)
+        with self.assertRaisesRegex(ValueError, '60 wood.*30 stone'):
+            command(self.town, {'action': 'upgrade_building', 'index': index})
+        self.assertEqual(self.town, before)
+        economy.deliver(self.town, 'stone', 30, 200)
+        command(self.town, {'action': 'upgrade_building', 'index': index})
+        site = self.town['buildings'][index]
+        self.assertEqual(self.town['wood'], 40)
+        self.assertEqual(economy.quantity(self.town, 'stone'), 0)
+        self.assertEqual(self.town['buildings'][0]['stored_goods']['stone'], 0)
+        self.assertEqual(site['construction']['total'], 90)
+        self.assertEqual(housing_capacity(self.town), 11)
+        self.assertEqual(housing_loyalty(self.town), .5)
+        self.town = json.loads(json.dumps(self.town))
+        self.town['villagers'][0]['construction_position'] = {'x': 5, 'y': 2}
+        construct(self.town, self.town, workers={0}, elapsed=90)
+        self.assertEqual(self.town['buildings'][index]['level'], 4)
+        self.assertEqual(housing_capacity(self.town), 13)
+        self.assertEqual(housing_loyalty(self.town), .75)
+        before = copy.deepcopy(self.town)
+        with self.assertRaisesRegex(ValueError, 'fully upgraded'):
+            command(self.town, {'action': 'upgrade_building', 'index': index})
+        self.assertEqual(self.town, before)
+
+    def test_sandbox_level_four_cottage_needs_no_stone(self):
+        self.town['sandbox'] = True
+        index = self.add('home', level=3)
+        command(self.town, {'action': 'upgrade_building', 'index': index})
+        self.assertEqual(self.town['buildings'][index]['level'], 4)
+        self.assertNotIn('construction', self.town['buildings'][index])
+        self.assertEqual(self.town['wood'], 100)
 
     def test_rejected_upgrades_do_not_change_town(self):
         index = self.add('home', construction={'progress': 0, 'total': 30})

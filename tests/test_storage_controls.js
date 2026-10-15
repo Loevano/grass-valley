@@ -28,7 +28,7 @@ const run=new Function('document','window','localStorage','setTimeout','clearTim
  const meters=()=>panelNodes().filter(c=>c.tag==='meter');
  const button=text=>panelNodes().find(c=>c.tag==='button'&&c.textContent===text);
  const toggle=key=>fields().find(c=>c.attributes['aria-label']==='Accept '+key);
- check(meters().length===27&&fields().length===27,'Storage has meters and resource switches');
+ check(meters().length===28&&fields().length===28,'Storage has meters and resource switches');
  check(meters().find(c=>c.attributes['aria-label']==='Fish stored').value===10&&meters().find(c=>c.attributes['aria-label']==='Smoked fish stored').value===4,'Food types have separate item counts');
  check(meters().find(c=>c.attributes['aria-label']==='Wood stored').max===150,'Each enabled resource has full level capacity');
  check(toggle('Wood').checked&&!toggle('Planks').checked,'Old positive allocations become enabled resources');
@@ -69,7 +69,7 @@ const run=new Function('document','window','localStorage','setTimeout','clearTim
  check(panelNodes().find(c=>c.className==='storage-summary').textContent==='350 capacity per enabled resource','Level 8 warehouses show the expanded capacity');
  check(!panelNodes().some(c=>c.tag==='button'&&c.title?.startsWith('Upgrade to level'))&&panelNodes().some(c=>c.className==='upgrade-card-status'&&c.textContent==='Maxed'),'Level 8 shows maxed storage without an action');
  viewed='friend';inspect('building',1);
- check(meters().length===27&&!fields().length,'Visitors see storage meters without switches');
+ check(meters().length===28&&!fields().length,'Visitors see storage meters without switches');
  check(!button('Allocate')&&!button('Save allocations'),'Visitors cannot change allocations');
  viewed='own';
  town.buildings.push({kind:'woodcutter',x:3,y:3,output_buffer:{wood:2.5},stored_goods:{wood:1}});
