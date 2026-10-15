@@ -244,6 +244,9 @@ process it with a blood-pool animation. The host saves each leg, handles blocked
 routes, and starts the shared processing timer only after arrival.
 Countdowns follow the host update schedule, including while dropdowns are open;
 overdue countdowns wait for host confirmation without advancing saved growth.
+Butchery requests show immediate pending feedback. Command confirmations request
+a fresh snapshot after any earlier poll and redraw the controls, including when
+the animal dropdown retains focus, without waiting for the next two-second poll.
 Animal drawings use species proportions, with larger cows and smaller chickens;
 young animals stay visible and herd size no longer shrinks individual animals.
 Play experience should assess delivered output, hauling, manual butchery pacing,

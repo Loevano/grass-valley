@@ -1249,7 +1249,7 @@ async function request(path, data, options={}) {
   const response = await fetch(path,{...options,method:data?'POST':'GET',headers:{'Content-Type':'application/json','Authorization':identity?.token || '',...options.headers},body:data?JSON.stringify(data):undefined});
   const result = await response.json(); if(!response.ok) throw Error(result.error || 'Connection failed'); return result;
 }
-async function act(data) { try { await request('/api/command',{...data,world_id:world.world_id}); commandEffect(data); await refresh(); } catch(e) {notice(e.message);await refresh();} }
+async function act(data) { try { await request('/api/command',{...data,world_id:world.world_id}); commandEffect(data); await refresh({afterCommand:true}); } catch(e) {notice(e.message);await refresh({afterCommand:true});} }
 $('join-form').onsubmit=async event=>{
   event.preventDefault();
   const worldId=world.world_id,button=$('login-submit');
@@ -1985,7 +1985,13 @@ function renderAnimalButchery(town,item,index,target){
   const qualified=town.villagers.some(v=>v.building_index===index&&v.job==='butchery'&&!jobRequirement(v,'butchery'));
   const button=document.createElement('button');button.className='livestock-butcher';button.textContent=task?'Butchering in progress':!choices.length?'No fully grown animals':!qualified?'Assign a qualified butcher':'Butcher';
   button.disabled=!!task||!choices.length||!qualified;chooser.disabled=button.disabled;
-  button.onclick=()=>{if(button.disabled||viewed!==identity?.town_id)return;const [barnIndex,animal]=chooser.value.split(':');act({action:'butcher_animal',index,barn_index:Number(barnIndex),animal});};card.append(button);
+  button.onclick=async()=>{
+    if(button.disabled||viewed!==identity?.town_id)return;
+    const [barnIndex,animal]=chooser.value.split(':');
+    button.disabled=true;chooser.disabled=true;button.textContent='Requesting butchery…';
+    try{await act({action:'butcher_animal',index,barn_index:Number(barnIndex),animal});}
+    finally{button.disabled=false;chooser.disabled=false;button.textContent='Butcher';}
+  };card.append(button);
 }
 function renderProfession(town,item,index,target,upgrades,details,boats,unlockedUpgrades){
   if(item.construction)return;
@@ -2627,7 +2633,10 @@ function updateDepartures(next){
     if(id===identity?.town_id)notice(departureMessage(town));
   }
 }
-async function refresh(){
+async function refresh({afterCommand=false}={}){
+  // An in-flight poll may have sampled the world before the command ran.
+  // Finish it first, then request a snapshot that can confirm the action.
+  if(afterCommand&&refreshing){try{await refreshing;}catch{}}
   if(refreshing)return refreshing;
   refreshing=(async()=>{
     const keys=mapChunkKeys(),view=keys.join(';');
@@ -2677,7 +2686,7 @@ async function refresh(){
     if(!world.towns[viewed]){viewed=identity?.town_id || Object.keys(world.towns)[0];selection=null;panel=null;tool=null;moveIndex=null;buildTile=null;hoverTile=null;keyboardTile=null;}
     // Keep dropdowns and a slider being dragged intact while snapshots advance.
     const barnSliderDragging=renderBarnAnimals.dragging&&document.activeElement?.id?.startsWith('barn-count-');
-    if((document.activeElement?.tagName!=='SELECT'&&!barnSliderDragging)||previousWorldId!==world.world_id){render();renderWorldMenu();}
+    if(afterCommand||(document.activeElement?.tagName!=='SELECT'&&!barnSliderDragging)||previousWorldId!==world.world_id){render();renderWorldMenu();}
     else updateBarnTimers();
     if(!world.world_id){if(!$('world-menu').open)$('world-menu').showModal();menuStarted=true;}
   })();
