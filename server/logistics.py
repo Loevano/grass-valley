@@ -170,6 +170,9 @@ def drop_off(town, building, villager):
 
 
 def cancel_output(town, villager):
+    animation = villager.get('work_animation')
+    if animation and not villager.get('logistics_trip'):
+        villager['logistics_position'] = {k: animation[k] for k in ('x', 'y')}
     villager.pop('production_work', None)
     spec = villager.pop('pending_workplace', None)
     goods = villager.pop('pending_output', {})

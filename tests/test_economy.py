@@ -61,5 +61,13 @@ class EconomyRules(unittest.TestCase):
         self.assertEqual(self.town['villagers'][0]['work_target']['kind'], 'water')
         command(self.town, {'action': 'move', 'index': 1, 'x': 8, 'y': 6})
         tick(self.world)
+        self.assertEqual(self.town['villagers'][0]['production_status'], 'Returning gathered goods')
+        for _ in range(20):
+            tick(self.world)
+            if not self.town['villagers'][0].get('pending_output'):
+                break
+        self.assertFalse(self.town['villagers'][0].get('pending_output'))
+        self.assertEqual(self.town['buildings'][1]['output_buffer']['fish'], 1)
+        tick(self.world)
         self.assertIsNone(self.town['villagers'][0]['work_target'])
         self.assertEqual(self.town['villagers'][0]['fishing'], .24)

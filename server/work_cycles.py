@@ -104,6 +104,56 @@ def walking_bounds(town, landscape):
             max(0, center['y'] - 60), min(size - 1, center['y'] + 60))
 
 
+def relocate(town, villager, moved_specs, dx, dy):
+    """Retarget moved work without discarding the actor or its carried output."""
+    pending = villager.get('pending_workplace')
+    if pending in moved_specs:
+        villager['pending_workplace'] = dict(pending, x=pending['x'] + dx, y=pending['y'] + dy)
+    water_round = villager.get('watering_round')
+    if water_round and dict(zip(('kind', 'x', 'y'), water_round[:3])) in moved_specs:
+        water_round[1:3] = [water_round[1] + dx, water_round[2] + dy]
+    state = villager.get('work_animation')
+    if not state:
+        return
+    task = state['task']
+    workplace = dict(zip(('kind', 'x', 'y'), task[1:4]))
+    source = dict(zip(('kind', 'x', 'y'), task[4:7]))
+    home_moved, source_moved = workplace in moved_specs, source in moved_specs
+    if not (home_moved or source_moved):
+        return
+    if home_moved:
+        task[2:4] = [workplace['x'] + dx, workplace['y'] + dy]
+        if task[0] == 'fishing':
+            state.pop('pier', None)
+    if source_moved:
+        task[5:7] = [source['x'] + dx, source['y'] + dy]
+        target = villager.get('work_target')
+        if target:
+            villager['work_target'] = dict(target, x=source['x'] + dx, y=source['y'] + dy)
+    phase = state.get('resume_phase', state['phase'])
+    returning = phase in ('returning', 'depositing', 'dragging')
+    # Work and outbound travel to an unmoved source remain valid. Water trips
+    # also keep their destination; the subsequent return uses the new acre.
+    if ((home_moved and returning) or
+            (source_moved and phase not in ('fetching_water', 'collecting_water')) or
+            (home_moved and task[0] == 'fishing')):
+        resume = ('dragging' if phase == 'dragging' else 'returning' if returning
+                  or villager.get('pending_output') else 'returning_water' if phase == 'returning_water'
+                  else 'walking')
+        state.update(path=[], phase='waiting', resume_phase=resume, route_pending=True, elapsed=0)
+        state.pop('route_target', None)
+    # Publish a confirmed stationary pose until the next tick replans. Removing
+    # playback would let browser fallback work run against an obsolete route.
+    target = next((b for b in town['buildings'] + town['map_resources']
+                   if all(b.get(k) == v for k, v in source.items())), source)
+    sample = _sample(state, 0, target)
+    if source_moved and 'farmField' in sample:
+        sample['farmField'].update(x=task[5], y=task[6])
+    state['version'] = state.get('version', 0) + 1
+    state['relocation'] = state.get('relocation', 0) + 1
+    state['playback'] = [sample]
+
+
 def starting_position(town, landscape, villager, index, blocked):
     """Use the same safe saved position for target selection and animation."""
     hall = next(b for b in town['buildings'] if b['kind'] == 'hall')
@@ -366,7 +416,8 @@ def _advance(town, landscape, villager, building, source, index, seconds, stop_a
             water_ready = villager.get('watering_round') == water_round
         state = {'task': spec, 'x': position['x'],
                  'y': position['y'], 'elapsed': 0, 'waterReady': water_ready,
-                 'version': (state or {}).get('version', 0), 'facing': 1}
+                 'version': (state or {}).get('version', 0),
+                 'relocation': (state or {}).get('relocation', 0), 'facing': 1}
         if resume_phase:
             target = retry_target or (building if resume_phase in ('returning', 'dragging') else animal_target or work_spot or source)
             adjacent = False if retry_target else animal_adjacent if target is animal_target else not work_spot if target is source else True

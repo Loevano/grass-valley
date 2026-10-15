@@ -2,7 +2,7 @@
 
 A migration that can be completed one task at a time, with a prompt for each task.
 
-**Status:** R01 contracts and inventory complete; Rust implementation has not started.
+**Status:** R01 contracts/inventory and R02 Python relocation fix complete; Rust implementation has not started.
 **Initial plan revision:** `445ddddd675a87eb7adb50442b2dbf3c14ea6c6f`.
 **R01 audit revision:** `935db7b95885c101c62dfd6bf9e16f39b6a7a8fe`.
 **Scope:** replace the Python host first. Keep the browser playable during that
@@ -215,7 +215,7 @@ only after work is performed. Keep unfinished stages visible in the roadmap.
 | Stage | Task | Requires | Status / commit / evidence |
 | --- | --- | --- | --- |
 | R01 | Contracts, coverage inventory, decisions | This plan | Complete; [contracts and evidence](RUST_CONTRACTS.md), audited at `935db7b`; commit: `docs: define R01 migration contracts` (this change) |
-| R02 | Fix current relocation continuity | R01 | Not started |
+| R02 | Fix current relocation continuity | R01 | Complete; `fix: preserve worker continuity when relocating workplaces` (this change); evidence below |
 | R03 | Replay fixtures and comparison oracle | R02 | Not started |
 | R04 | Cargo workspace and applicable checks | R03 | Not started |
 | R05 | Typed state, IDs, units, and boundary DTOs | R04 | Not started |
@@ -280,6 +280,50 @@ Validate the documents, update progress and roadmap, and commit this stage.
 ```
 
 ## R02 — Fix relocation continuity in the current game
+
+**Completed:** the original move command deleted the saved animation and orphaned
+carried output. Regression tests reproduced both failures at starting revision
+`536d3d77507577a3e58bcf9dacadd66ba5601af2`. Relocation now retargets coordinate
+references, preserves position/cargo/work at unchanged sources and filled cans,
+and replaces obsolete routes. Confirmed browser playback drops obsolete relocation
+history without resetting the visible pose. No Rust implementation was added.
+
+Coverage: `tests/test_relocation.py`, `tests/test_path_retention.js`, and
+`tests/test_villager_playback.js` exercise moving workers, carried output through
+JSON save/reload and migration, a picked-up delivery, unaffected work, linked acres,
+filled cans, removed sources/workplaces, and resized browser destinations.
+The [pathing reference](PATHING.md#revalidate-or-recover-when-needed) records the
+intentional exact-once logistics cancellation and demolition salvage rules. The new
+browser playback regression also fails against the starting revision: its obsolete
+return remains queued after relocation.
+
+Correctness evidence: the affected runner selected 169 files/cases
+(`performance-results/20261016-012045/report.md`). Final targeted checks cover the
+new relocation cases and updated cargo expectations; routing, farming, boat,
+storage, and playback checks pass. Local-socket/Chromium restrictions required
+rerunning the HTTP and pointer checks with sandbox escalation; pointer selection
+and 22 of 23 HTTP cases pass. Three unrelated failures were reproduced at the
+starting revision and remain unchanged: workshop capacity expects 65 instead of
+90 (`test_logistics`), `test_hall_refresh.js` lacks a DOM element, and the chunk
+HTTP snapshot is 20,474 bytes against a 20,000-byte assertion. Final targeted
+reports: `20261016-012204`, `20261016-012424`, `20261016-012430`, and
+`20261016-012544` under `performance-results/` (ignored local artifacts).
+
+Required performance comparison: **inconclusive**. Command:
+`python3 tools/check.py --performance-only --baseline 536d3d77507577a3e58bcf9dacadd66ba5601af2 --output performance-results/r02-performance`
+(sandbox escalation for local HTTP/Chromium). Baseline is the starting revision;
+candidate is that revision plus this change's uncommitted R02 runtime diff, SHA-256
+`c01c89c7fec6a3de069679028c53f29f40b64bef170343141f52bd5436bbed9b`.
+Hardware/environment: Apple M1 Max, macOS arm64, Python 3.9.6, Node 26.11.1,
+headless Chromium 149.0.7827.55, 1280×800 at DPR 1. Both sides' first browser and
+host runs passed every scenario check. Maximum scenario frame-work p95 was
+4.7 ms baseline / 5.4 ms candidate, below the 8 ms absolute budget in this single
+pair. The second candidate browser process could not load Homebrew's
+`libsimdutf.36.dylib`; its host scenarios still passed. The five-pair run stopped,
+so no aggregate comparison or performance pass is claimed. Read Markdown/JSON and
+per-scenario artifacts in `performance-results/r02-performance/`. The earlier
+sandboxed attempt (`20261016-012324`) was also inconclusive due to denied sockets.
+No thresholds, baselines, or machine dependencies were changed.
 
 **Deliver:** a focused Python/browser fix so migration does not leave the reported
 bug in everyday play. A moved workplace may require a new route, but must retain

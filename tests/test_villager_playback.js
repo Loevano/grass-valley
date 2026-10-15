@@ -182,3 +182,23 @@ for(let version=2;version<=7;version++){
 }
 Animation.playback(backlog,host(7,[sample(0,21,0),sample(0,21,0,'working'),sample(3,21,0,'working')]),.1);
 assert(Math.abs(backlog.x-.18)<1e-9,'Trimmed playback reconnects at walking speed');
+
+// A move must replace queued travel to the old workplace without teleporting.
+const movedState={x:10.25,y:2,clock:0};
+const oldTask=['woodcutting','woodcutter',9,3,'tree',12,3];
+const oldHost={...host(1,[sample(0,10.25,2),sample(3,9,2,'depositing')]),task:oldTask};
+Animation.playback(movedState,oldHost,0);
+Animation.playback(movedState,{...oldHost,version:2},0);
+assert.equal(movedState.playbackQueue.length,1);
+const relocated={...host(3,[sample(0,10.25,2),sample(3,8,3,'depositing')]),
+  task:['woodcutting','woodcutter',8,4,'tree',12,3]};
+const relocationSnapshot=JSON.stringify(relocated);
+Animation.playback(movedState,relocated,0);
+assert.equal(movedState.x,9); // Initial host pose was the end of oldHost.
+assert.equal(movedState.playbackQueue.length,1,'Relocation discards the obsolete queued return');
+assert.equal(movedState.playbackQueue[0].hostSamples.at(-1).x,8);
+assert.equal(JSON.stringify(relocated),relocationSnapshot);
+const movedField={...relocated,version:4,relocation:1,
+  task:['woodcutting','woodcutter',8,4,'tree',13,3]};
+Animation.playback(movedState,movedField,0);
+assert.equal(movedState.playbackQueue.length,1,'Moving only a linked source also discards its obsolete route');

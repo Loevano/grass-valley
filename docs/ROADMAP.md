@@ -8,7 +8,7 @@ and cache rules are in [Backend](BACKEND.md#cached-zoomed-out-map).
 | 1     | Cached zoomed-out town overview    | Implemented              | Show the landscape and city sizes without refreshing animated scene detail.                                      |
 | 2     | Production line balancing          | Wood and grain implemented; fishing remains | Develop clear fishing chains with capped staffing and simple upgrades. |
 | 3     | Scalable villager pathfinding       | Host queue implemented; cache refinement and shared navigation remain | Keep movement responsive as villager counts and towns grow, with bounded routing work. |
-| 4     | Rust migration | R01 contracts complete; implementation not started | Follow the [staged plan and prompts](RUST_MIGRATION.md), preserving playable checkpoints and saved worlds. |
+| 4     | Rust migration | R01 contracts and R02 Python relocation fix complete; Rust implementation not started | Follow the [staged plan and prompts](RUST_MIGRATION.md), preserving playable checkpoints and saved worlds. |
 
 ## Rust migration
 
@@ -19,8 +19,7 @@ implementation has not started. The proposed sequence keeps Python as the normal
 host while the Rust core, feature coverage, save compatibility, and browser contract
 are verified on disposable worlds. Default-host cutover follows the release gates.
 
-Remaining work starts with R02: fix and verify the current building-relocation
-movement reset before the port. R03 then adds replay fixtures and fills the audit
+Remaining work starts with R03: add replay fixtures and fill the audit
 evidence gaps. R04 selects concrete toolchain/dependency versions; release hardware
 metadata, new gameplay RNG vectors and R24 rollback acceptance remain gated as
 documented in the contracts. Later navigation stages cover bounded waiting, cache

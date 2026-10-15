@@ -41,3 +41,24 @@ Animation.plan(town,{job:'woodcutting',building_index:1,work_target:town.map_res
   work_animation:{playback:[{time:0,x:3,y:8},{time:3,x:7,y:8}]}},0);
 assert(probes<10,'Confirmed host playback does not perform a duplicate browser route search');
 console.log('Valid path retention, blocked-step detours, task changes, and snapshot isolation passed');
+
+// Fallback replanning must retain the visible pose when a workplace moves,
+// changes its footprint, or disappears from a new authoritative snapshot.
+for(const edit of ['move','footprint','remove']){
+  const buildings=[{kind:'hall',x:5,y:5},{kind:'woodcutter',x:12,y:5}];
+  const resource={kind:'tree',x:12,y:3};
+  const snapshot={map_size:24,terrain:Array(24).fill('g'.repeat(24)),map_resources:[resource],buildings,npcs:[]};
+  const worker={job:'woodcutting',building_index:1,work_target:resource};
+  const visual=Animation.plan(snapshot,worker,0);
+  Object.assign(visual,{x:9.25,y:3.5});
+  const next=JSON.parse(JSON.stringify(snapshot));
+  if(edit==='move')next.buildings[1].x=14;
+  if(edit==='footprint')next.buildings[1].footprint=[2,2];
+  if(edit==='remove'){next.buildings.pop();delete worker.building_index;worker.job='idle';worker.work_target=null;}
+  assert.equal(Animation.refreshNavigation(visual,next,worker),false,edit+' invalidates the old destination');
+  visual.needsPlan=true;
+  const replanned=Animation.plan(next,worker,0,visual);
+  assert.equal(replanned.x,9.25);
+  assert.equal(replanned.y,3.5);
+  if(edit==='move')assert.equal(replanned.home.x,14);
+}

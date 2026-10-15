@@ -3246,6 +3246,7 @@ function animatedVillagers(town, seconds, townId=viewed, frameLayout=null){
       }else{
         const visible=workPlayback&&state?.playbackQueue?{x:state.x,y:state.y,path:state.path,phase:state.phase,elapsed:state.elapsed,clock:state.clock,
           playbackQueue:state.playbackQueue,hostVersion:state.hostVersion,hostTask:state.hostTask,
+          hostWorkplace:state.hostWorkplace,hostRelocation:state.hostRelocation,
           farmAction:state.farmAction,farmField:state.farmField}:{};
         state=Object.assign(WorkerAnimation.plan(world.shared_map?{...town,roads:mapRoads(town),obstacles:Object.values(world.towns).flatMap(t=>t.buildings),home_hall:town.buildings.find(b=>b.kind==='hall')}:town,villager,index,state),visible,{signature,layout,task,needsPlan:false});workers.set(workerKey,state);
       }

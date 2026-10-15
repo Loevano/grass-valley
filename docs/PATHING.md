@@ -337,6 +337,19 @@ Movement and routing decisions for Lantern Vale.
 ### Revalidate or recover when needed
 
 - Task changes, moved/removed destinations, and impassable next steps can invalidate routes.
+- Workplace relocation preserves the worker's fractional position, assignment,
+  carried output, and filled watering can. Coordinate-based workplace/linked-acre
+  references move with the building. Work and travel to an unchanged source stay
+  valid; obsolete return and moved-source routes rebuild from the saved position.
+  A newly occupied worker tile uses the existing nearby-open-ground recovery,
+  rather than a hall spawn. If no source remains in reach, the worker waits at its
+  saved position; carried output can still finish its return.
+  Reference: [server/work_cycles.py](../server/work_cycles.py): `relocate`, `starting_position`
+- Relocation publishes a stationary confirmed sample immediately. Browser playback
+  discards queued travel to relocated workplaces or linked sources and joins new
+  samples from the visible pose. Ordinary field changes retain completed-action
+  history. Moved, removed, or resized fallback destinations require replanning.
+  Reference: [web/animations.js](../web/animations.js): `playback`, `refreshNavigation`
 - Host and browser planners check diagonal side tiles during search.
   - Logistics also rechecks both diagonal side tiles during an existing trip.\
     Reference: [server/logistics.py](../server/logistics.py): `advance_trip`
@@ -351,6 +364,13 @@ Movement and routing decisions for Lantern Vale.
   Reference: [server/logistics.py](../server/logistics.py): `advance_trip`, `cancel_trip`
   - Unreachable remaining legs wait for access to return; explicit cancellation
     still restores held sale goods exactly once.
+- Moving either logistics endpoint intentionally cancels its trip before moving
+  the building. Unpicked goods stay at their source; picked-up, undelivered goods
+  return to that source exactly once (to the hall only if the source is absent).
+  Delivered goods are not returned. The hauler retains its saved position and can
+  select a new trip. Production cargo stays with its worker during relocation;
+  demolition instead salvages unfinished output at the hall and retains position.
+  Reference: [server/server.py](../server/server.py): `command`; [server/logistics.py](../server/logistics.py): `cancel_trip`, `cancel_output`
 
 ## Shared route caches and invalidation
 
@@ -540,6 +560,7 @@ These items remain unfinished, in [roadmap order](ROADMAP.md#scalable-villager-p
   - [test_road_routing.js](../tests/test_road_routing.js)
   - [test_diagonal_routes.js](../tests/test_diagonal_routes.js)
 - **Retention, recovery, and playback without duplicate planning:**
+  - [test_relocation.py](../tests/test_relocation.py)
   - [test_path_retention.js](../tests/test_path_retention.js)
   - [test_construction.py](../tests/test_construction.py)
 - **Target reservations and farmer recovery:**

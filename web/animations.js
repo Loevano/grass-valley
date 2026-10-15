@@ -370,7 +370,7 @@ const WorkerAnimation = (() => {
     const occupied=new Set([...(town.obstacles || town.buildings),...(town.npcs || [])].flatMap(footprint).map(key));
     const water=new Set(town.map_resources.filter(r=>r.kind==='water').map(key));
     const home=state.home&&town.buildings.find(b=>b.kind===state.home.kind&&key(b)===key(state.home));
-    if(state.home&&!home)return false; // The destination moved or disappeared.
+    if(state.home&&(!home||JSON.stringify(footprint(home))!==JSON.stringify(footprint(state.home))))return false;
     for(const p of state.pier || []){
       const biome=town.terrain?.[p.y]?.[p.x];
       if(biome!=='v'&&(!town.chunked||biome)
@@ -496,6 +496,13 @@ const WorkerAnimation = (() => {
   function playback(state, host, seconds) {
     const task=JSON.stringify(host.task);
     if(state.hostTask===task&&host.version<state.hostVersion)return;
+    // Relocation invalidates queued travel to the old workplace. Join the new
+    // confirmed route from the visible pose, retaining ordinary field history.
+    const workplace=JSON.stringify(host.task?.slice(0,4));
+    if((state.hostWorkplace!==undefined&&state.hostWorkplace!==workplace)
+      ||(state.hostRelocation!==undefined&&state.hostRelocation!==(host.relocation || 0)))state.playbackQueue=[];
+    state.hostWorkplace=workplace;
+    state.hostRelocation=host.relocation || 0;
     const first=state.playbackQueue===undefined;
     if(!state.playbackQueue)state.playbackQueue=[];
     if(state.hostVersion!==host.version || state.hostTask!==task){

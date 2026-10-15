@@ -1193,7 +1193,7 @@ def _tick(world):
                 villager.pop('production_status', None)
                 if not source:
                     animation = villager.get('work_animation')
-                    if job == 'woodcutting' and animation:
+                    if animation and not villager.get('logistics_trip'):
                         villager['logistics_position'] = {key: animation[key] for key in ('x', 'y')}
                     villager.pop('work_animation', None)
                     villager.pop('watering_round', None)
@@ -1758,10 +1758,7 @@ def command(town, data, world=None):
             trip = villager.get('logistics_trip', {})
             if any(spec in (trip.get('workplace'), trip.get('storage')) for spec in moved_specs):
                 logistics.cancel_trip(town, villager)
-            if villager.get('pending_workplace') in moved_specs:
-                logistics.cancel_output(town, villager)
-            if villager.get('building_index') in moving_indices:
-                villager.pop('work_animation', None)
+            work_cycles.relocate(town, villager, moved_specs, dx, dy)
         for _, building in group:
             building.update(x=building['x'] + dx, y=building['y'] + dy)
             if building['kind'] in BUILDING_FOOTPRINTS:
