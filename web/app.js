@@ -2357,7 +2357,7 @@ function renderSelection(town){
     const foldKey=`${world.world_id}/${viewed}/${selection.index}/${item.kind}/${item.x},${item.y}`;
     if(buildingFolds.key!==foldKey)buildingFolds={key:foldKey,open:{}};
     $('selection-art').append(illustration(item.kind));
-    if(item.kind!=='barn')renderBuildingStatus(town,item,selection.index,$('selection-details'));
+    if(!['barn','workshop'].includes(item.kind))renderBuildingStatus(town,item,selection.index,$('selection-details'));
     $('selection-level').hidden=false;$('selection-level').textContent=`Lv ${item.kind==='hall'?town.level:buildingLevel(item)}`;
     const decoration=decorationKinds.includes(item.kind);
     const workers=buildingSection(decoration?'Decoration':item.kind==='well'?'Water':['hall','home'].includes(item.kind)?'Settlers':'Workers');
@@ -2463,10 +2463,11 @@ function renderSelection(town){
         button.onclick=()=>{orchardIndex=selection.index;openPanel('build');tool='orchard_tree';moveIndex=null;buildTile=null;hoverTile=null;render();};production.append(button);
       }
     }
-    if(['barn','butcher'].includes(item.kind)&&production.children.length>1)$('selection-details').append(production);
+    if(['barn','butcher','workshop'].includes(item.kind)&&production.children.length>1)$('selection-details').append(production);
+    if(item.kind==='workshop')renderBuildingStatus(town,item,selection.index,$('selection-details'));
     if(!item.construction&&!['home','market','well',...decorationKinds].includes(item.kind))$('selection-details').append(storageOverview);
     $('selection-details').append(workers);
-    if(!['barn','butcher'].includes(item.kind)&&production.children.length>1)workers.append(production);
+    if(!['barn','butcher','workshop'].includes(item.kind)&&production.children.length>1)workers.append(production);
     if(item.kind!=='barn'&&boats?.children.length>1)upgrades.append(boats);
     if(item.kind==='hall'){
       const preview=upgradePreview({action:'upgrade'},town,item);
