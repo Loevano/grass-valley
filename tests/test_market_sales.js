@@ -50,4 +50,18 @@ view.town='friend';render(town,document.createElement('div'));submit();assert.eq
 view.town='own';world.world_id='another-world';submit();assert.equal(commands.length,0,'A retained form cannot sell in a different world');
 const otherWorldPanel=document.createElement('div');render(town,otherWorldPanel);
 assert.notStrictEqual(otherWorldPanel.children[0],form,'World changes rebuild the editor');
+const app=require('./client_harness')();
+app.run(`
+  const createElement=document.createElement;
+  document.createElement=tag=>Object.assign(createElement(tag),{value:''});
+  world={world_id:'market-panel',towns:{own:{level:5,wood:50,food:20,coins:10,goods:{planks:10},
+    buildings:[{kind:'market',x:2,y:2}],villagers:[],player:{},map_resources:[]}},
+    progression:{...${JSON.stringify(world.progression)},buildings:{},upgrades:{},animals:{},profession_recipes:{}}};
+  identity={town_id:'own'};viewed='own';selection={type:'building',index:0};
+  renderSelection(world.towns.own);
+  function panelNodes(node=$('selection-details')){return node.children.flatMap(child=>[child,...panelNodes(child)]);}
+`);
+assert.equal(app.run(`panelNodes().filter(node=>node.textContent==='Quick sale').length`),1,'Market retains one quick-sale form');
+assert(app.run(`!panelNodes().some(node=>node.textContent==='Sell goods'||node.textContent?.startsWith('Sell 1 '))`),'Market omits the duplicate single-item sale list');
+assert(app.run(`panelNodes().some(node=>node.textContent==='Automatic sales')&&panelNodes().some(node=>node.textContent==='Trade with another town')`),'Automatic sales and town trades remain available');
 console.log('Quick market sales passed');

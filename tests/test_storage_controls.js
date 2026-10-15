@@ -118,6 +118,7 @@ const run=new Function('document','window','localStorage','setTimeout','clearTim
  }
  town.buildings[5].level=2;inspect('building',5);
  check(panelNodes().some(c=>c.className==='storage-note'&&c.textContent.includes('Separate input buffer: 0 / 200')),'Mill panel explains its upgraded input buffer');
+ check(!panelNodes().some(c=>['Storage spaces','Capacity by resource'].includes(c.textContent)),'Storage capacity is not repeated inside Production');
  town.buildings[5].level=1;
  inspect('building',0);check(!button('Allocate'),'Hall capacity cannot be edited');
  world.progression={fixed_storage:{mill:{wheat:35,flour:15}},workplace_storage_sizes:{mill:90},storage_upgrade_kinds:['mill']};
@@ -151,6 +152,7 @@ const run=new Function('document','window','localStorage','setTimeout','clearTim
  const editor=sales.children[0],saleGroups=editor.children.filter(c=>c.className==='resource-group');
  check(saleGroups.map(c=>c.children[0].textContent).join(',')==='Baking,Fishing,Timber,Other resources','Market sales use the same categories');
  const saleNodes=panelNodes(editor),breadCap=saleNodes.find(c=>c.id==='sale-cap-bread');
+ check(!saleNodes.some(c=>['Enabled','Disabled'].includes(c.textContent)),'Automatic sales use checkboxes without duplicate enabled labels');
  breadCap.value=17;renderMarketSales(town,document.createElement('div'));
  check(renderMarketSales.editor===editor&&breadCap.value===17,'Grouped market editors preserve drafts on refresh');
  const breadSale=saleNodes.find(c=>c.id==='sale-enabled-bread'),breadForm=saleNodes.find(c=>c.children.some(child=>child.children?.includes(breadSale)));

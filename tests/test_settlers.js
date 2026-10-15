@@ -30,7 +30,7 @@ const run=new Function('document','window','localStorage','setTimeout','clearTim
     const capacityUpgrade=()=>controls().find(c=>c.tag==='button'&&/^Upgrade (worker|settler) capacity:/.test(c.attributes['aria-label'] || ''));
     const workerRows=()=>controls().find(c=>c.className==='building-workers').children;
     inspect('building',1);
-    check(controls().some(c=>c.children?.[0]?.textContent==='1 / 2'),'Farm shows occupied and upgraded total spaces');
+    check(controls().some(c=>c.textContent==='Workers · 1/2'),'Farm heading shows occupied and upgraded total spaces');
     check(workerRows().length===1&&workerRows()[0].children[0].children[0].textContent==='Bea','Building lists its assigned worker compactly');
     check(workerRows()[0].children[0].children[1].textContent==='Farming · Lv 7','Farm worker shows relevant skill level');
     check(workerRows()[0].children[1].attributes['aria-label']==='Kick Bea from Farm','Kick control names the worker and building');
@@ -46,15 +46,15 @@ const run=new Function('document','window','localStorage','setTimeout','clearTim
     workerRows()[0].children[1].onclick();check(commands.at(-1).index===0,'Each kick control targets its own worker');
     inspect('building',0);
     check(!button('Add settler')&&!capacityUpgrade(),'Hall has no resident assignment or capacity upgrade controls');
-    check(button('You'),'Hall identifies the controllable character as its resident');
-    button('You').onclick();check(selection.type==='player','Hall resident opens the controllable character profile');
+    check(button('Resident · You'),'Hall identifies the controllable character as its resident');
+    button('Resident · You').onclick();check(selection.type==='player','Hall resident opens the controllable character profile');
     town.buildings[0].settler_level=3;inspect('building',0);
     check(!button('Add settler'),'Legacy upgraded halls still reject resident assignment');
     town.villagers[0].building_index=2;
     inspect('building',2);
     check(workerRows()[0].children[0].children[1].textContent.includes('Fishing · Lv 0'),'Non-workplace assignments show all skills with zero for missing values');
     delete town.villagers[0].building_index;
-    inspect('building',2);check(controls().some(c=>c.children?.[0]?.textContent==='0 / 2'),'Cottage has two spaces');
+    inspect('building',2);check(controls().some(c=>c.textContent==='Settlers · 0/2'),'Cottage heading shows its two spaces');
     town.villagers[0].building_index=2;
     town.wood=0;render();check(!capacityUpgrade().disabled,'Capacity preview available without enough wood');
     const beforeUpgrade=commands.length;capacityUpgrade().onclick();check($('confirm-upgrade').disabled,'Unaffordable capacity disables confirmation');
@@ -64,7 +64,7 @@ const run=new Function('document','window','localStorage','setTimeout','clearTim
     delete town.buildings[2].construction;viewed='friend';inspect('building',1);
     check(!button('Add worker')&&!button('Remove')&&!capacityUpgrade(),'Visitors see capacity without mutation controls');
     check(workerRows().length===1&&workerRows()[0].children.length===1,'Visitors see worker skills without kick controls');
-    inspect('building',0);check(button('Town founder')&&!button('Add settler'),'Visited halls show their founder without assignment controls');
+    inspect('building',0);check(button('Resident · Town founder')&&!button('Add settler'),'Visited halls show their founder without assignment controls');
     const before=commands.length;kick.onclick();check(commands.length===before,'Stale kick handlers cannot change a visited town');
     viewed='own';town.level=5;
     world.progression={buildings:{bakery:{job:'baking',level:4}},job_requirements:{baking:{milling:10}},talent_roots:{baking:'farming'},recipes:{},upgrades:{}};

@@ -79,13 +79,17 @@ const run=new Function('document','window','localStorage','setTimeout','clearTim
     check(selection.type==='villager'&&$('selection-title').textContent==='Ada','Moving villager is selectable');
     const profile=$('selection-details').children[0].children.find(child=>child.tag==='dl');
     function profileValue(label){const i=profile.children.findIndex(child=>child.textContent===label);return profile.children[i+1].textContent;}
-    check(profileValue('Name')==='Ada'&&profileValue('Job')==='Woodcutting','Villager popup labels name and job');
+    check(!panelNodes().some(child=>['Ada','Name','Job','Talent'].includes(child.textContent)),'Inspector title and job selector replace repeated profile fields');
     check(profileValue('House type')==='Town hall · shared shelter','Town without cottages shows shared shelter');
-    check(profileValue('Talent')==='No special talent','Missing talents have a readable fallback');
+    check(panelNodes().filter(child=>child.textContent==='No special talent').length===1,'Missing talents have one readable fallback');
     town.buildings.push({kind:'home',x:7,y:7,level:2});town.villagers[0].talents={woodcutting:1,farming:-1};render();
     const updatedProfile=$('selection-details').children[0].children.find(child=>child.tag==='dl');
     check(updatedProfile.children.some(child=>child.textContent==='Shared cottages · level 2'),'Housing shows completed cottage levels');
-    check(updatedProfile.children.some(child=>child.textContent==='Woodcutting'),'Profile shows the positive talent');
+    check(panelNodes().filter(child=>child.className==='villager-talents'&&child.textContent==='Strength: Woodcutting (+25%) · Weakness: Farming (−25%)').length===1,'One talent description includes strengths, weaknesses and bonuses');
+    const restingCard=villagerCard(town,{...town.villagers[0],job:'idle'},0);
+    check(!restingCard.children.some(child=>child.className==='villager-activity'),'Resting appears only in the job selector');
+    const fishingCard=villagerCard(town,{...town.villagers[0],job:'fishing'},999);
+    check(!fishingCard.children.some(child=>child.className==='villager-activity'),'An activity matching the selected job is omitted');
     town.buildings.pop();
     const job=$('selection-details').children[0].children.find(child=>child.tag==='select');
     job.value='farming';job.onchange();
@@ -102,7 +106,8 @@ const run=new Function('document','window','localStorage','setTimeout','clearTim
     check($('selection-details').children[0].children.some(child=>child.tag==='progress'),'Status has a progress bar');
     check($('selection-details').children[1].children[0].textContent==='Storage','Storage appears below status');
     const workerSection=$('selection-details').children[2];
-    check(workerSection.children[0].textContent==='Workers','Workers appear below storage');
+    check(workerSection.children[0].textContent==='Workers · 1/1','Worker heading includes staffing below storage');
+    check(!panelNodes(workerSection).some(child=>child.className==='selection-fact'&&child.children[1]?.textContent==='Workers'),'Staffing has no duplicate fact card');
     const assignment=workerSection.children.find(child=>child.className==='worker-assignment');
     check(assignment.children[0].tag==='select'&&assignment.children[1].textContent==='Add worker','Worker picker and add action share one row');
     check(!workerSection.children.some(child=>child.className==='workplace-status'),'Working status stays above storage');
@@ -110,8 +115,9 @@ const run=new Function('document','window','localStorage','setTimeout','clearTim
     town.villagers[0].work_animation={phase:'working',elapsed:1.6,path:[]};render();
     check($('selection-details').children[0].children.find(child=>child.tag==='progress').value===.5,'Status uses the host work timer');
     town.villagers[0].production_status='Workplace buffer full';render();
-    check($('selection-details').children[1].className==='building-problems'&&$('selection-details').children[1].children[0].textContent.includes('storage full'),'Problem explanation follows status and precedes storage');
-    check($('selection-details').children[2].children[0].textContent==='Storage','Problems keep storage above assignments');
+    check($('selection-details').children[0].children.find(child=>child.className==='workplace-status').textContent.includes('storage full'),'Specific problem replaces generic paused status');
+    check(!panelNodes().some(child=>child.className==='building-problems'),'A single blocked-work reason appears once');
+    check($('selection-details').children[1].children[0].textContent==='Storage','Storage stays above assignments');
     delete town.villagers[0].work_animation;delete town.villagers[0].production_status;
     check(JSON.stringify(town.villagers[0])===savedWorker,'Status rendering leaves host worker state unchanged');render();
     function workplaceSummary(kind,villagers){
@@ -142,9 +148,10 @@ const run=new Function('document','window','localStorage','setTimeout','clearTim
       summary=workplaceSummary(kind,crew);
       check(summary.label!=='Paused','A blocked worker does not hide ongoing building activity');
       crew[0].production_status='Workplace buffer full';summary=workplaceSummary(kind,crew);
-      check(summary.label==='Paused'&&summary.target.children[1].children.length===1,'Shared problems appear once for the building');
-      check(!summary.target.children[1].children[0].textContent.includes('Ada'),'Problem explanations omit worker names');
+      check(summary.label.includes('storage full')&&summary.target.children.length===1,'Shared problems replace generic paused status and appear once');
     }
+    summary=workplaceSummary('sawpit',[]);
+    check(summary.label.startsWith('No workers assigned.')&&summary.target.children.length===1,'Unstaffed buildings show one specific reason');
     check(!panelNodes().some(child=>child.textContent?.includes('Food space is shared')),'Storage omits the long explanatory text');
     const upgradeActions=panelNodes().find(child=>child.className==='building-upgrade-actions');
     check(upgradeActions.children.every(child=>child.className==='upgrade-card'),'Level and capacity use consistent upgrade cards');
@@ -153,10 +160,13 @@ const run=new Function('document','window','localStorage','setTimeout','clearTim
     check(!panelNodes().some(child=>child.textContent==='Building details'),'Building details section is omitted');
     render();
     check(!panelNodes().some(child=>child.textContent==='Building details'),'Refresh keeps building details omitted');
-    inspect('building',0);inspect('building',1);
+    inspect('building',0);
+    check(panelNodes().filter(child=>child.textContent==='Resident · You').length===1&&!panelNodes().some(child=>child.textContent==='You'),'Hall has one clickable resident row');
+    inspect('building',1);
     check(!panelNodes().some(child=>child.textContent==='Building details'),'Switching buildings keeps building details omitted');
     $('selection-move').onclick();
     check(tool==='move'&&moveIndex===1&&panel==='build','Inspector Move starts with the selected building');
+    check($('hint').hidden&&!$('mode-hint').hidden,'Move instructions appear only in the toolbar');
     await clickTile(21,20);
     check(moveIndex===1&&commands.length===1&&$('notice').textContent.includes('within 30 tile steps'),'Out-of-range moves keep selection and show the limit');
     await clickTile(8,8);
@@ -164,6 +174,7 @@ const run=new Function('document','window','localStorage','setTimeout','clearTim
     [...$('buildings').children].flatMap(group=>[...group.children]).filter(button=>button.buildingKind)[0].onclick();const [hoverX,hoverY]=point(8,8);canvas.onmousemove({clientX:hoverX,clientY:hoverY+tileH/2});
     listeners.keydown({key:'Escape'});
     check(panel===null&&tool===null&&buildTile===null&&$('side-panel').hidden,'Escape closes panels and cancels placement');
+    check(!$('hint').hidden&&$('mode-hint').hidden,'Cancelling restores the introductory build hint');
     $('world-menu').open=true;$('help-button').onclick();listeners.keydown({key:'Escape'});
     check(panel==='help','Escape respects the world dialog');$('world-menu').open=false;
     $('valley-button').onclick();$('towns').children[1].onclick();
@@ -181,15 +192,16 @@ const run=new Function('document','window','localStorage','setTimeout','clearTim
     const rosterRows=()=>$('villagers').children[0].children[1].children;
     const table=$('villagers').children[0];
     check(table.tag==='table'&&table.attributes['aria-label']==='Villagers overview','Overview uses an accessible table');
-    check(table.children[0].children[0].children.map(cell=>cell.textContent).join(',')==='Name,Job,Housing,Skills,Talents,Work status','Table labels comparison columns');
+    check(table.children[0].children[0].children.map(cell=>cell.textContent).join(',')==='Name,Job,Skills,Talents,Work status','Table omits repeated shared housing');
+    check($('villagers').children.filter(child=>child.textContent?.includes('Town hall · shared shelter')).length===1,'Shared housing appears once beneath the table');
     check(rosterRows().length===2,'Overview includes every villager');
     for(const row of rosterRows()){
       check(row.tag==='tr'&&row.children[0].attributes.scope==='row','Each villager has a table row header');
-      check(row.children[3].children[0].className==='villager-skills','Skills use a compact icon group');
+      check(row.children[2].children[0].className==='villager-skills','Skills use a compact icon group');
       check(!row.children[1].children.find(child=>child.tag==='select').disabled,'Every owner row has a job control');
-      check(row.children[2].textContent==='Shared, lvl 1','Housing is compact in the table');
-      check(row.children[5].children.length>=1,'Work status is visible in the table');
+      check(row.children.length===5,'Each row has only individual comparison fields');
     }
+    check(rosterRows()[0].children[4].children.length===1&&rosterRows()[1].children[4].children.length===0,'Distinct work status remains visible without repeating Resting');
     town.villagers[0].worker_tool='fine_axe';render();
     const equippedIcon=rosterRows()[0].children[0].children[0];
     check(equippedIcon.className==='villager-equipment'&&equippedIcon.tabIndex===0,'Equipped tool is visible beside the villager name and keyboard accessible');
@@ -199,17 +211,17 @@ const run=new Function('document','window','localStorage','setTimeout','clearTim
     check(rosterRows()[1].children[0].children[0].attributes['aria-label'].includes('Inactive for current job'),'Idle villager keeps its tool icon with an inactive bonus');
     delete town.villagers[0].worker_tool;delete town.villagers[1].worker_tool;render();
     check(rosterRows()[0].children[0].children.length===0,'Unequipped villagers have no equipment icon');
-    const skillIcons=rosterRows()[0].children[3].children[0].children;
+    const skillIcons=rosterRows()[0].children[2].children[0].children;
     check(skillIcons.length===2,'Zero and missing skills are hidden');
     check(skillIcons[0].attributes['aria-label']==='Woodcutting · 8 practice','Skill icon has an accessible skill name and value');
     check(skillIcons[0].children[0].children[1].style.clipPath==='inset(20% 0 0)','Skill artwork fills proportionally to its meter scale');
     town.villagers[1].baking=15;render();
-    const specialist=rosterRows()[1].children[3].children[0].children;
+    const specialist=rosterRows()[1].children[2].children[0].children;
     check(specialist.some(icon=>icon.title==='Baking · 15 practice'),'Advanced skills have icons too');
     town.villagers[1].woodcutting=0;town.villagers[1].farming=0;town.villagers[1].baking=0;render();
-    check(rosterRows()[1].children[3].children[0].children.length===0,'An untrained villager shows no skill icons');
-    check(rosterRows()[0].children[4].children[0].textContent.includes('Weakness: Farming'),'Table preserves talent strengths and weaknesses');
-    check(rosterRows()[1].children[4].children[0].textContent==='No special talent','Empty talents have a readable fallback');
+    check(rosterRows()[1].children[2].children[0].children.length===0,'An untrained villager shows no skill icons');
+    check(rosterRows()[0].children[3].children[0].textContent.includes('Weakness: Farming'),'Table preserves talent strengths and weaknesses');
+    check(rosterRows()[1].children[3].children[0].textContent==='No special talent','Empty talents have a readable fallback');
     render();check(rosterRows().length===2,'Refresh keeps every row visible');
     const rosterJob=rosterRows()[1].children[1].children.find(child=>child.tag==='select');
     rosterJob.value='woodcutting';rosterJob.onchange();check(commands.at(-1).index===1&&commands.at(-1).job==='woodcutting','Overview assigns the correct villager job');

@@ -18,8 +18,8 @@ assert.equal(client.run('sawCommands.at(-1).job'),'woodworking','Sawing assignme
 assert(client.run(`jobRequirement({},'crafting').includes('2 sawing practice')`));
 assert.equal(client.run(`goodName(workerTools.crafted_saw.job)`),'Sawing');
 assert(client.run(`departureMessage({last_departure:{name:'Ada',job:'woodworking',practice:{woodworking:7}}}).includes('7 sawing practice')`));
-assert(client.run(`sawCard.children.find(node=>node.className==='villager-profile').children.some(node=>node.textContent==='Sawing')`));
-assert(client.run(`villagerRow(sawTown,sawTown.villagers[0],0).children[3].children[0].children.some(node=>node.title==='Sawing · 7 practice')`));
+assert(client.run(`!sawCard.children.find(node=>node.className==='villager-profile').children.some(node=>node.textContent==='Sawing')`),'Job is shown by its selector without a repeated profile field');
+assert(client.run(`villagerRow(sawTown,sawTown.villagers[0],0).children[2].children[0].children.some(node=>node.title==='Sawing · 7 practice')`));
 
 client.run(`
   const sawMarks=[];

@@ -70,7 +70,8 @@ const run=new Function('document','window','localStorage','setTimeout','clearTim
  town.buildings[1].animals={chicken:2,sheep:1};town.buildings[1].animal_names={chicken:['Poppy','Clover'],sheep:['Fern']};render();
  const namedBarn=JSON.stringify(town.buildings[1]),cards=panelNodes().filter(node=>node.className==='livestock-card');
  check(cards[0].children[0].className==='livestock-heading'&&cards[0].children[1].className==='livestock-count'&&cards[0].children[2].className==='livestock-growth','Names, sliders, and individual animals appear in that order');
- check(panelNodes().some(node=>node.textContent?.startsWith('Poppy ·'))&&panelNodes().some(node=>node.textContent?.startsWith('Clover ·'))&&panelNodes().some(node=>node.textContent?.startsWith('Fern ·')),'Saved individual names are displayed');
+ check(['Poppy','Clover','Fern'].every(name=>panelNodes().some(node=>node.textContent===name)),'Saved adult animal names are displayed without repeated growth labels');
+ check(panelNodes().filter(node=>node.textContent==='Ready for butchery').length===3&&!panelNodes().some(node=>node.tag==='progress'&&!node.hidden),'Adults have one readiness label each and hide completed growth bars');
  check(Number(herdCount('chicken').max)===3&&Number(herdCount('sheep').max)===2,'Sliders share the barn capacity');
  const countCommands=commands.length;
  herdCount('chicken').value='3';herdCount('chicken').oninput();

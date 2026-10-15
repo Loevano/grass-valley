@@ -77,7 +77,7 @@ one bread bakery, 12 farms, 24 acres, and four haulers; fuel is supplied.
 Additional bakeries provide variety. Building panels show recipes and upgrade
 options without grain-flow summaries. Recipe details use labeled rows for inputs,
 output, batch time, practice, food value, and worker requirements. Production
-storage shows a total with expandable resource capacities.
+storage shows totals and resource capacities together in Storage.
 Existing extra processor slots
 become equipment upgrades while preserving goods, residents, and partial work.
 
@@ -121,6 +121,12 @@ the purchase popup retains full benefits and requirements. The compact rows reta
 the implemented worker limits and wood, mill, and bakery storage upgrades.
 Worker counts and capacity previews follow the host's staffing limits for every
 profession.
+Worker counts share their section heading. Villager inspectors keep one name,
+job control, and talent description; shared housing appears once in the overview.
+Blocked work uses its specific explanation, active animal butchery has one progress
+display, and adult barn animals show a single readiness label. Markets retain the
+quick-sale form without the duplicate single-item sale list; automatic sales use
+their checkboxes to show enabled state. Build and move instructions appear once.
 Fishing balancing and storage scaling below remain planned.
 
 Production now respects each resource's existing storage allowance, including

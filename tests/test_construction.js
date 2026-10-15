@@ -25,10 +25,10 @@ const run=new Function('document','window','localStorage','setTimeout','clearTim
   const card=$('selection-details').children[0];
   assert(card.children.some(c=>c.className==='villager-activity'&&c.textContent==='Walking to construction'));
   assert(card.children.some(c=>c.children.some(o=>o.value==='building')),'Builder job is selectable');
-  assert(card.children.find(c=>c.className==='villager-profile').children.some(c=>c.textContent==='Builder (automatic)'));
+  assert(!card.children.find(c=>c.className==='villager-profile').children.some(c=>c.textContent==='Job'),'Automatic construction is explained by activity without a repeated job field');
   const row=villagerRow(town,town.villagers[0],0);
   assert(row.children[1].children.some(c=>c.value==='idle'),'Automatic helping preserves the selected resting job');
-  assert(row.children[5].children.some(c=>c.textContent==='Walking to construction'),'Overview shows the automatic construction activity');
+  assert(row.children[4].children.some(c=>c.textContent==='Walking to construction'),'Overview shows the automatic construction activity');
   polygon=(_,color)=>fills.push(color);
   for(const progress of [0,12,24]){
     site.construction.progress=progress;fills.length=0;drawBuilding(site,town);

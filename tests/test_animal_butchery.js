@@ -44,4 +44,19 @@ town.villagers[0].husbandry=0;assert(panel().button.disabled);
 town.villagers[0].husbandry=2;town.buildings[0].animal_growth.pig=[0,239];assert(panel().button.disabled);
 assert(!panel(false).button,'Visitors cannot select animals');
 assert.deepStrictEqual(p.ui.animalAges({animals:{cow:2}},'cow'),[360,360],'Old saves keep adults');
+const app=require('./client_harness')();
+app.run(`
+  const createElement=document.createElement;
+  document.createElement=tag=>Object.assign(createElement(tag),{tag});
+  world={world_id:'butchery-panel',progression:${JSON.stringify(progression)},towns:{own:${JSON.stringify(town)}}};
+  identity={town_id:'own'};viewed='own';selection={type:'building',index:1};
+  const butcher=world.towns.own.buildings[1];
+  butcher.butchering={animal:'pig',name:'Poppy',amount:8,remaining:42};
+  renderSelection(world.towns.own);
+  function panelNodes(node=$('selection-details')){return node.children.flatMap(child=>[child,...panelNodes(child)]);}
+`);
+assert.equal(app.run(`panelNodes().filter(node=>node.tag==='progress').length`),1,'Active animal butchery has one progress display');
+assert.equal(app.run(`panelNodes().filter(node=>node.className==='butchery-status').length`),1);
+app.run(`delete butcher.butchering;renderSelection(world.towns.own);`);
+assert.equal(app.run(`panelNodes().filter(node=>node.className==='building-section building-status').length`),1,'Normal production status returns when butchery finishes');
 console.log('Animal butchery controls passed');

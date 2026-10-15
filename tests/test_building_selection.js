@@ -36,6 +36,7 @@ const run=new Function('document','window','localStorage','setTimeout','clearTim
     function hover(x,y){canvas.onmousemove(pointer(x,y));draw();} // Paint the next animation frame.
     [...$('buildings').children].flatMap(group=>[...group.children]).filter(button=>button.buildingKind)[0].onclick();
     check(tool==='home','Choosing a cottage activates its tool');
+    check($('hint').hidden&&!$('mode-hint').hidden,'Active building instructions appear in one place');
     camera={x:15,y:15,zoom:.5};draw();
     fills.length=0;hover(21,20);
     check(buildTile===null&&fills.includes('#c76d6455'),'Beyond the hall range previews red');

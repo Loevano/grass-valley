@@ -28,13 +28,13 @@ for(const [kind,spec] of Object.entries(catalog.buildings)){
 
 const before=app.run('JSON.stringify(town)');
 app.run('renderWorkerPanel();');
-assert(app.run(`nodes().some(node=>node.children[0]?.textContent==='2 / 2')`),'A fully staffed tannery displays 2 / 2 workers');
+assert(app.run(`nodes().some(node=>node.textContent==='Workers · 2/2')`),'A fully staffed tannery combines its heading and worker count');
 assert(app.run('addWorker().disabled'),'A full tannery cannot accept another worker');
 assert.equal(app.run(`upgradePreview({action:'upgrade_capacity',index:0},town,town.buildings[0]).benefits[0]`),'2 → 4 worker spaces');
 assert.equal(app.run('JSON.stringify(town)'),before,'Capacity rendering preserves authoritative town state');
 
 app.run('town.buildings[0].settler_level=2;renderWorkerPanel();');
-assert(app.run(`nodes().some(node=>node.children[0]?.textContent==='2 / 4')`),'An upgraded tannery displays 2 / 4 workers');
+assert(app.run(`nodes().some(node=>node.textContent==='Workers · 2/4')`),'An upgraded tannery displays its new staffing limit in the heading');
 assert(!app.run('addWorker().disabled'),'An upgraded tannery allows another worker');
 app.run('addWorker().onclick();');
 assert.deepEqual(JSON.parse(app.run('JSON.stringify(commands.at(-1))')),{action:'assign_settler',index:2,building_index:0});

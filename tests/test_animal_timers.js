@@ -61,11 +61,15 @@ assert.equal(client.run('timer.time.textContent'),'Awaiting host update…','A s
   assert.equal(client.run('barnGrowthSeconds(0,30,5,clock)'),6,'Four keepers retain their six-second cycle');
   client.run('world.towns.own.buildings[0].animal_growth.chicken=[30];');
   client.frame(12000);
-  assert.equal(client.run('timer.time.textContent'),'Fully grown · Ready for butchery');
-  assert.equal(client.run('timer.label.textContent'),'Chicken 1 · Fully grown');
+  assert.equal(client.run('timer.time.textContent'),'Ready for butchery');
+  assert.equal(client.run('timer.label.textContent'),'Chicken 1');
+  assert(client.run('timer.percent.hidden&&timer.progress.hidden'),'Adults hide completed growth meters and percentages');
   assert.equal(client.run('renderBarnAnimals.timers.state.textContent'),'0 growing · 1 fully grown · 2× speed');
   client.frame(60000);
-  assert.equal(client.run('timer.time.textContent'),'Fully grown · Ready for butchery','Adults wait without restarting a countdown');
+  assert.equal(client.run('timer.time.textContent'),'Ready for butchery','Adults wait without restarting a countdown');
+  client.run('world.towns.own.buildings[0].animal_growth.chicken=[0];');
+  client.frame(60000);
+  assert(client.run('!timer.percent.hidden&&!timer.progress.hidden'),'Confirmed replacement animals restore growth displays');
   client.run("viewed='elsewhere';timer.time.textContent='Detached';");
   client.frame(13000);
   assert.equal(client.run('timer.time.textContent'),'Detached','Leaving a town stops updating its old controls');
