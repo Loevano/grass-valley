@@ -477,6 +477,7 @@ const WorkerAnimation = (() => {
       if(state.hostVersion===undefined&&first){
         Object.assign(state,{x:host.x,y:host.y,phase:host.phase,elapsed:host.elapsed,
           farmAction:host.farmAction,farmField:host.playback.at(-1)?.farmField,
+          butcherAnimal:host.butcherAnimal,butcherPickup:host.butcherPickup,
           waterReady:host.waterReady,waterSource:host.waterSource,path:[]});
       }else if(host.playback?.length){
         const hostSamples=host.playback.map(p=>({...p}));
@@ -501,6 +502,7 @@ const WorkerAnimation = (() => {
       Object.assign(state,{x:a.x+(b.x-a.x)*fraction,y:a.y+(b.y-a.y)*fraction,
         phase:a.phase,elapsed:(a.elapsed || 0)+(a.x===b.x&&a.y===b.y?chunk.time-a.time:0),
         waterElapsed:(a.elapsed || 0)+chunk.time-a.time,waterReady:a.waterReady,waterSource:a.waterSource,farmAction:a.farmAction,farmField:a.farmField,
+        butcherAnimal:a.butcherAnimal,butcherPickup:a.butcherPickup,
         facing:b.x-b.y!==a.x-a.y?(b.x-b.y>a.x-a.y?1:-1):a.facing,
         path:a.x!==b.x||a.y!==b.y?[{x:b.x,y:b.y}]:[]});
       state.clock+=take;

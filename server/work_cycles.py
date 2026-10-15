@@ -147,6 +147,8 @@ def _sample(state, time, source):
     sample = {key: state.get(key) for key in ('x', 'y', 'phase', 'elapsed', 'facing',
               'waterReady', 'waterSource', 'farmAction')}
     sample['time'] = time
+    if state.get('butcherAnimal'):
+        sample.update(butcherAnimal=state['butcherAnimal'], butcherPickup=state.get('butcherPickup'))
     if state['task'][0] == 'farming' and source['kind'] == 'acre':
         sample['farmField'] = _field_view(source)
     return sample
@@ -195,6 +197,10 @@ def _advance(town, landscape, villager, building, source, index, seconds, stop_a
     state = villager.get('work_animation')
     farming_job = villager['job'] == 'farming'
     barn_keeper = villager['job'] == 'husbandry' and building['kind'] == 'barn'
+    butcher = building.get('butchering') if villager['job'] == 'butchery' else None
+    butcher_trip = butcher and butcher.get('pickup')
+    if butcher_trip:
+        spec.extend(['butcher_animal', butcher['id']])
     water_round = None
     if farming_job:
         field = farming.field_state(source)
@@ -279,6 +285,12 @@ def _advance(town, landscape, villager, building, source, index, seconds, stop_a
             pen_bounds[0] <= start['x'] <= pen_bounds[1]
             and pen_bounds[2] <= start['y'] <= pen_bounds[3]) else bounds
         path = route(start, target, blocked, size, terrain, adjacent, local_bounds, roads)
+        if path is not None and butcher_trip and target is animal_target and butcher.get('position'):
+            position = butcher['position']
+            if (start['x'], start['y']) == (position['x'], position['y']):
+                return []
+            if (target['x'], target['y']) != (position['x'], position['y']):
+                path.append(dict(position))
         if path is not None and farming_job and target is work_spot:
             destination = field_work_spot(source)
             if (start['x'], start['y']) == (destination['x'], destination['y']):
@@ -287,6 +299,11 @@ def _advance(town, landscape, villager, building, source, index, seconds, stop_a
                 path.pop()
             path.append(destination)
         return path
+    # The reserved animal remains at its saved position if its butcher changes.
+    animal_target, animal_adjacent = butcher_trip, True
+    if butcher_trip and butcher.get('position'):
+        animal_target = {k: round(butcher['position'][k]) for k in ('x', 'y')}
+        animal_adjacent = False
     if (not state or state['task'] != spec or state['phase'] in ('waiting', 'waiting_storage')
             or (farming_job and state['phase'] == 'waiting_field' and not farming.claimed(town, source, index))):
         resume_phase = state.get('resume_phase') if state and state['task'] == spec else None
@@ -307,10 +324,12 @@ def _advance(town, landscape, villager, building, source, index, seconds, stop_a
                  'y': position['y'], 'elapsed': 0, 'waterReady': water_ready,
                  'version': (state or {}).get('version', 0), 'facing': 1}
         if resume_phase:
-            target = building if resume_phase == 'returning' else work_spot or source
-            path = [] if resume_phase == 'fetching_water' else travel(state, target, not work_spot if target is source else True)
+            target = building if resume_phase in ('returning', 'dragging') else animal_target or work_spot or source
+            adjacent = animal_adjacent if target is animal_target else not work_spot if target is source else True
+            path = [] if resume_phase == 'fetching_water' else travel(state, target, adjacent)
             state.update(path=path or [], phase='waiting' if path is None else resume_phase if path else
-                         {'returning': 'depositing'}.get(resume_phase, 'working'))
+                         {'returning': 'depositing', 'dragging': 'working',
+                          'walking': 'finding_animal' if butcher_trip else 'working'}.get(resume_phase, 'working'))
             if path is None:
                 state['resume_phase'] = resume_phase
             villager['work_animation'] = state
@@ -323,7 +342,9 @@ def _advance(town, landscape, villager, building, source, index, seconds, stop_a
             state.update(path=[], phase='waiting_field')
             villager['work_animation'] = state
         else:
-            path = travel(state, work_spot or source, not work_spot)
+            target = building if butcher_trip and butcher.get('stage') == 'working' else animal_target or work_spot or source
+            adjacent = animal_adjacent if target is animal_target else not work_spot
+            path = travel(state, target, adjacent)
             # A cardinal step stays inside the two walkable tiles, even from
             # a fractional work position. Recentering first makes farmers
             # walk back across the acre they have just finished.
@@ -332,8 +353,15 @@ def _advance(town, landscape, villager, building, source, index, seconds, stop_a
                                      + abs(round(path[0]['y']) - y) <= 1))
             if path is not None and (state['x'], state['y']) != (x, y) and not direct_departure:
                 path.insert(0, {'x': x, 'y': y})
-            state.update(path=path or [], phase='waiting' if path is None else 'walking' if path else 'working')
+            arrival = 'finding_animal' if butcher_trip and butcher.get('stage') != 'working' else 'working'
+            state.update(path=path or [], phase='waiting' if path is None else 'walking' if path else arrival)
             villager['work_animation'] = state
+    if butcher_trip:
+        state['butcherAnimal'] = butcher['animal']
+        if state['phase'] in ('walking', 'finding_animal') and butcher.get('stage') != 'working':
+            state['butcherPickup'] = {k: (state['path'][-1] if state['path'] else state)[k] for k in ('x', 'y')}
+        if state['phase'] == 'working':
+            butcher['stage'] = 'working'
     if villager['job'] == 'fishing':
         state['pier'] = [{'x': p['x'], 'y': p['y']} for p in pier or []]
     state['version'] += 1
@@ -357,6 +385,8 @@ def _advance(town, landscape, villager, building, source, index, seconds, stop_a
             dx, dy = target['x'] - state['x'], target['y'] - state['y']
             distance = math.hypot(dx, dy)
             speed = 1.8 * (1.5 if (math.floor(state['x'] + .5), math.floor(state['y'] + .5)) in roads else 1)
+            if state['phase'] == 'dragging':
+                speed *= .65
             # Match the browser's small movement steps and road boundaries.
             movement = min(distance, .05, remaining * speed)
             remaining -= movement / speed
@@ -368,9 +398,16 @@ def _advance(town, landscape, villager, building, source, index, seconds, stop_a
             else:
                 state['x'] += dx / distance * movement
                 state['y'] += dy / distance * movement
+            if butcher_trip and state['phase'] == 'dragging':
+                butcher['position'] = {k: state[k] for k in ('x', 'y')}
             if not state['path']:
                 phase = state['phase']
                 state['phase'] = {'returning': 'depositing', 'fetching_water': 'collecting_water'}.get(phase, 'working')
+                if butcher_trip:
+                    if phase == 'walking' and butcher.get('stage') != 'working':
+                        state['phase'] = 'finding_animal'
+                    elif phase == 'dragging':
+                        butcher['stage'] = 'working'
                 state['elapsed'] = 0
                 if phase == 'returning_water':
                     state['waterReady'] = True
@@ -439,8 +476,22 @@ def _advance(town, landscape, villager, building, source, index, seconds, stop_a
             phase = state['phase']
         if phase == 'waiting_water':
             return finished, 0
+        if butcher_trip and phase == 'finding_animal':
+            take = min(remaining, max(0, 1.2 - state['elapsed']))
+            state['elapsed'] += take
+            remaining -= take
+            if state['elapsed'] + 1e-9 < 1.2:
+                break
+            path = travel(state, building)
+            butcher.update(stage='working' if path == [] else 'dragging',
+                           position={k: state[k] for k in ('x', 'y')})
+            state.update(path=path or [], phase='waiting' if path is None else 'dragging' if path else 'working', elapsed=0)
+            if path is None:
+                state['resume_phase'] = 'dragging'
+            continue
         if phase == 'working' and building.get('butchering'):
             # The animal's shared processing timer keeps the butcher at the shop.
+            state['elapsed'] += remaining
             return finished, 0
         duration = .65 if phase in ('depositing', 'collecting_water') else farming.WORK_SECONDS if farming_job else 3.2
         take = min(remaining, max(0, duration - state['elapsed']))

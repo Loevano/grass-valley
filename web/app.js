@@ -1660,6 +1660,7 @@ function renderAnimalButchery(town,item,index,target){
   if(task){
     const status=document.createElement('p');status.className='butchery-status';
     status.textContent=`${goodName(task.animal)} → ${task.amount} meat · ${Math.ceil(task.remaining)}s of work remaining${task.remaining===0?' · Waiting for buffer space or production cap':''}`;card.append(status);
+    if(task.stage&&task.stage!=='working')status.textContent=`${task.stage==='dragging'?'Dragging animal to shop':'Collecting animal from barn'} · ${status.textContent}`;
     const progress=document.createElement('progress');progress.max=duration;progress.value=duration-task.remaining;progress.setAttribute('aria-label','Animal butchery progress');card.append(progress);
   }
   if(!owner)return;
@@ -2672,6 +2673,7 @@ function animatedVillagers(town, seconds, townId=viewed, frameLayout=null){
         Object.assign(state,{x:hostWork.x,y:hostWork.y,phase:hostWork.phase,
           elapsed:hostWork.phase==='collecting_water'?0:hostWork.elapsed,waterElapsed:hostWork.elapsed,
           waterReady:hostWork.waterReady,waterSource:hostWork.waterSource,farmAction:hostWork.farmAction,facing:hostWork.facing,
+          butcherAnimal:hostWork.butcherAnimal,butcherPickup:hostWork.butcherPickup,
           fishingCaught:null,
           path:hostWork.path.map(p=>({...p})),hostWork:true,hostVersion:hostWork.version,
           hostTask:JSON.stringify(hostWork.task)});
@@ -2785,6 +2787,7 @@ function paintHorse(target,stride=0){
   target.fillStyle='#efe3cb';target.fillRect(18,-19,3,2);
 }
 function drawVillager(b,highlighted=false){
+  if(b.state.butcherAnimal&&!b.state.construction&&!b.state.transport)drawButcherAnimal(b);
   if(highlighted){
     const [x,y]=point(b.x,b.y),scale=tileW/46;
     const centerX=x+(b.index%3-1)*3,top=y+tileH*.65+Math.floor(b.index/3)-29*scale;
@@ -2809,6 +2812,7 @@ function drawVillager(b,highlighted=false){
   const fishing=s.phase==='working'&&!walking&&b.villager.job==='fishing';
   const farming=s.phase==='working'&&!walking&&b.villager.job==='farming'&&(!s.fieldCycle||!!s.farmAction);
   const constructing=working&&!!b.villager.construction_target;
+  const handlingAnimal=!!s.butcherAnimal&&['dragging','finding_animal'].includes(s.phase);
   const sawing=working&&!walking&&!constructing&&b.villager.job==='woodworking';
   const sawHandX=4+Math.sin((s.elapsed || 0)*7)*4;
   const farmStage=s.farmAction?['plowing','sowing','watering','harvesting'].indexOf(s.farmAction):Math.min(3,Math.floor((s.elapsed || 0)/2));
@@ -2911,7 +2915,9 @@ function drawVillager(b,highlighted=false){
   const farmHandX=farmStage===1?7+farmSwing*8:7;
   const farmHandY=farmStage===0?-8+farmSwing*4: farmStage===2?-8:-9-farmSwing*3;
   ctx.beginPath();
-  if(sawing){
+  if(handlingAnimal){
+    ctx.moveTo(-3,-11);ctx.lineTo(-7,-8);ctx.moveTo(3,-11);ctx.lineTo(-5,-8);
+  }else if(sawing){
     // One hand steadies the timber; the other follows the saw handle.
     ctx.moveTo(-3,-11);ctx.lineTo(9,-10);ctx.lineTo(17,-6);
     ctx.moveTo(3,-11);ctx.lineTo(sawHandX,-12);
@@ -3036,6 +3042,38 @@ function drawVillager(b,highlighted=false){
     }
     ctx.restore();
   }
+  ctx.restore();
+}
+function drawButcherAnimal(b){
+  const s=b.state,processing=s.phase==='working',dragging=s.phase==='dragging';
+  const finding=s.phase==='finding_animal';
+  const pickup=s.butcherPickup;
+  if(!processing&&!dragging&&!finding&&!pickup)return;
+  const position=processing||dragging||finding?b:pickup;
+  const [x,y]=point(position.x,position.y),scale=tileW/46;
+  const towardShop=s.source?(s.source.x-s.x)-(s.source.y-s.y):0;
+  const facing=processing&&towardShop?Math.sign(towardShop):s.facing || 1;
+  // The animal is reserved by the host; this extra sprite never changes barn stock.
+  const offset=(processing?19:-19)*facing;
+  ctx.save();
+  if(processing){
+    const growth=Math.min(1,(s.elapsed || 0)/7);
+    ctx.save();ctx.translate(x+offset*scale,y+tileH/2+2*scale);ctx.scale(scale,scale);
+    ctx.fillStyle='#702d32';ctx.beginPath();ctx.ellipse(0,0,5+growth*11,2+growth*4,.12,0,Math.PI*2);ctx.fill();
+    ctx.fillStyle='#9b3b40';
+    for(const [dx,dy,r] of [[-7,2,3],[9,-1,4],[3,4,2]]){
+      ctx.beginPath();ctx.ellipse(dx*growth,dy*growth,r*growth,Math.max(.3,r*growth*.5),0,0,Math.PI*2);ctx.fill();
+    }
+    ctx.restore();
+  }
+  if(dragging||finding){
+    ctx.strokeStyle='#bca17b';ctx.lineWidth=1.5*scale;
+    ctx.beginPath();ctx.moveTo(x+3*facing*scale,y+tileH*.65-10*scale);
+    ctx.quadraticCurveTo(x+offset*scale*.5,y+tileH/2-2*scale,x+(offset+5*facing)*scale,y+tileH/2-3*scale);ctx.stroke();
+  }
+  ctx.translate(offset*scale,processing?3*scale:0);
+  drawBarnAnimal({kind:'animal',species:s.butcherAnimal,x:position.x,y:position.y,
+    size:.8,facing:-facing,phase:s.clock || 0,walking:false,feeding:false,dragged:dragging||processing});
   ctx.restore();
 }
 function drawHaulerCargo(cargo){
@@ -3748,6 +3786,7 @@ function drawBarnAnimal(animal){
   const bob=animal.walking?Math.abs(stride)*.6:Math.sin(animal.phase*2)*.2;
   const coat={chicken:'#f4deb0',sheep:'#e7e2ce',pig:'#d9968e',cow:'#e5d9bc'}[animal.species];
   ctx.save();ctx.translate(x,top+tileH/2);ctx.scale(s*animal.facing,s);
+  if(animal.dragged)ctx.rotate(-.65);
   if(animal.species==='horse'){paintHorse(ctx,stride);ctx.restore();return;}
   ctx.fillStyle='#233b3044';ctx.beginPath();ctx.ellipse(0,1,chicken?4:8,2,0,0,Math.PI*2);ctx.fill();
   ctx.strokeStyle=chicken?'#c59b51':'#655443';ctx.lineWidth=chicken?1:1.5;

@@ -640,6 +640,10 @@ the Python host, refresh both browsers, and create a new world to use the shared
   profession improvements. Advanced workers saw, grind, smoke fish, hammer, feed
   animals and fish, pick fruit, knead dough, or prepare meat at their assigned
   workplace, then leave goods in its output buffer for collection. Work animations pause with production.
+  Selecting an adult for butchery sends one butcher to its barn to find it,
+  drag it back at a slower pace, and process it beside the shop with a small
+  blood pool. The one minute of processing starts after arrival; blocked trips
+  wait for a route. Pickup, transport, and processing resume after saving.
   Building, moving, demolition, animal purchases, crop changes, assignments, sales,
   and completed upgrades have brief visual feedback.
 - Click a building, then **Destroy building** to remove it without a resource

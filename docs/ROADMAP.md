@@ -186,6 +186,9 @@ an adult removes it; one young replacement appears only if no animals of that
 species remain in that barn. Explicitly clearing a species leaves it unstocked.
 The inspector shows growth countdowns, fully grown animals, and manual butcher
 rewards, with replacement previews only for the last animal of that species.
+Butchers now fetch the selected animal from its barn, drag it to the shop, and
+process it with a blood-pool animation. The host saves each leg, handles blocked
+routes, and starts the shared processing timer only after arrival.
 Countdowns follow the host update schedule, including while dropdowns are open;
 overdue countdowns wait for host confirmation without advancing saved growth.
 Animal drawings use species proportions, with larger cows and smaller chickens;

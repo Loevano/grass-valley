@@ -1144,6 +1144,19 @@ def tick(world):
                 advance_farmer(town, walking, villager, building, source, index, TICK_SECONDS, farm_reservations)
                 farm_reservations.pop(index, None)
                 continue
+            if job == 'butchery' and building.get('butchering'):
+                # One butcher owns the animal; helpers must not duplicate its trip.
+                crew = [i for i in assigned_settlers(town, villager['building_index'])[:settler_capacity(building)]
+                        if town['villagers'][i]['job'] == 'butchery'
+                        and not town['villagers'][i].get('construction_target')
+                        and not economy.qualification(town['villagers'][i], 'butchery')]
+                if index != crew[0]:
+                    animation = villager.pop('work_animation', None)
+                    if animation:
+                        villager['logistics_position'] = {k: animation[k] for k in ('x', 'y') if k in animation}
+                    villager['production_status'] = 'Another butcher is handling the animal'
+                    continue
+                logistics.cancel_trip(town, villager)
             boating = job == 'fishing' and work_cycles.fishing_boating(town, building, index)
             if boating:
                 crew = work_cycles.fishing_crew(town, building)
@@ -1180,7 +1193,8 @@ def tick(world):
                 villager['production_status'] = 'Working'
                 economy.practice(villager, job, TICK_SECONDS)
                 continue
-            if job != 'farming' and (not boating or villager.get('logistics_trip') or not work_cycles.boat_load(town, building)):
+            if (job != 'farming' and not (job == 'butchery' and building.get('butchering'))
+                    and (not boating or villager.get('logistics_trip') or not work_cycles.boat_load(town, building))):
                 if logistics.worker(town, walking, villager, building, logistics_route, TICK_SECONDS):
                     continue
             productive_seconds = TICK_SECONDS
@@ -1207,10 +1221,17 @@ def tick(world):
                     elif marker in butcher_cycles:
                         villager['production_status'] = 'Animal already being butchered this cycle'
                     elif villager.get('work_animation', {}).get('phase') != 'working':
-                        villager['production_status'] = 'Walking to butcher shop'
+                        animation = villager.get('work_animation', {})
+                        task = building['butchering']
+                        villager['production_status'] = {'walking': 'Walking to butcher shop' if task.get('stage') == 'working' else 'Walking to barn',
+                            'finding_animal': 'Finding the animal', 'dragging': 'Dragging animal to butcher shop',
+                            'waiting': 'Waiting for a route'}.get(animation.get('phase'), 'Walking to butcher shop')
                     else:
                         butcher_cycles.add(marker)
-                        villager['production_status'] = logistics.butcher_animal(town, building, villager, TICK_SECONDS)
+                        playback = villager.get('work_animation', {}).get('playback')
+                        seconds = sum(b['time'] - a['time'] for a, b in zip(playback, playback[1:])
+                                      if a['phase'] == 'working') if playback else TICK_SECONDS
+                        villager['production_status'] = logistics.butcher_animal(town, building, villager, seconds)
                     continue
                 if building['kind'] in {'barn', 'stable'}:
                     marker = id(building)
@@ -1766,7 +1787,9 @@ def command(town, data, world=None):
             barn['animals'][animal] = len(ages)
             barn.setdefault('animal_growth', {})[animal] = ages
             building['butchering'] = {'animal': animal, 'amount': economy.ANIMAL_MEAT[animal],
-                                      'remaining': economy.BUTCHER_SECONDS}
+                                      'remaining': economy.BUTCHER_SECONDS, 'id': secrets.token_hex(8),
+                                      'pickup': {'kind': 'barn', 'x': barn['x'], 'y': barn['y']},
+                                      'stage': 'fetching'}
         elif action == 'set_recipe':
             recipes = economy.PROFESSION_RECIPES.get(building['kind'], [])
             spec = next((r for r in recipes if r['output'] == data.get('recipe')), None)
