@@ -435,7 +435,7 @@ function workplaceStorageSize(building){return (world.progression?.workplace_sto
 function capacityTiers(){return world.progression?.worker_capacities || workerCapacities;}
 function settlerCapacity(building){
   const level=building.settler_level || 1,tiers=capacityTiers()[building.kind];
-  return tiers?tiers[Math.min(level,tiers.length)-1]:settlerSpaces[building.kind]*level;
+  return tiers?tiers[Math.min(level,tiers.length)-1]:(world.progression?.buildings?.[building.kind]?.slots ?? settlerSpaces[building.kind])*level;
 }
 function capacityMaxLevel(building){return capacityTiers()[building.kind]?.length || 3;}
 function grainEquipmentMultiplier(building){

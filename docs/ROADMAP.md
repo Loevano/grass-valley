@@ -98,6 +98,8 @@ The upgrade panel now uses compact rows with a short benefit, cost and work time
 and an Upgrade action. Completed upgrades show a status without a disabled button;
 the purchase popup retains full benefits and requirements. The compact rows retain
 the implemented worker limits and wood, mill, and bakery storage upgrades.
+Worker counts and capacity previews follow the host's staffing limits for every
+profession.
 Fishing balancing and storage scaling below remain planned.
 
 Production now respects each resource's existing storage allowance, including
