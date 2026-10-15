@@ -353,7 +353,8 @@ the Python host, refresh both browsers, and create a new world to use the shared
   **Destroy** is its only action.
 - Click a building, moving villager, or resource to open its information panel.
   Click the town hall for milestone progress and its upgrade. Close panels with
-  Escape. Building panels show status and a progress bar first, followed by any
+  Escape. Building panels show one combined activity status and average cycle
+  progress bar first, followed by any
   problem explanation, storage, worker assignments, and upgrades. Production,
   crop, and trade controls sit with worker assignments. Barn panels keep their
   animal-first layout. On small screens, panels appear as a bottom drawer.

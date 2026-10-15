@@ -97,7 +97,8 @@ Catch progression, storage scaling, and smokehouse staffing remain planned.
 
 ### Simple production upgrades
 
-Building panels now lead with status and host-reported progress, then explain
+Building panels now lead with one combined activity status and average
+host-reported cycle progress, then explain
 blocked work before storage, worker assignments, and upgrades. Production and
 trade controls sit with worker assignments. General instructions now live in the
 Help tab under expandable topics; gameplay panels retain brief hints, current

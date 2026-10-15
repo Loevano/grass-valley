@@ -97,7 +97,7 @@ const run=new Function('document','window','localStorage','setTimeout','clearTim
     check(selection.type==='villager'&&panel==='selection','Clicking again reopens the villager popup');
     inspect('building',1);
     check(!$('selection-destroy').hidden,'Owner can destroy a regular building');
-    check(panelNodes().some(child=>child.textContent==='Workers assigned · Awaiting next cycle'),'Workplace lists its assigned workers');
+    check(panelNodes().some(child=>child.textContent==='Waiting for next cycle'),'Workplace shows its current activity');
     check($('selection-details').children[0].children[0].textContent==='Status','Status appears first');
     check($('selection-details').children[0].children.some(child=>child.tag==='progress'),'Status has a progress bar');
     check($('selection-details').children[1].children[0].textContent==='Storage','Storage appears below status');
@@ -108,12 +108,43 @@ const run=new Function('document','window','localStorage','setTimeout','clearTim
     check(!workerSection.children.some(child=>child.className==='workplace-status'),'Working status stays above storage');
     const savedWorker=JSON.stringify(town.villagers[0]);
     town.villagers[0].work_animation={phase:'working',elapsed:1.6,path:[]};render();
-    check($('selection-details').children[0].children.find(child=>child.tag==='progress').value===1.6,'Status uses the host work timer');
+    check($('selection-details').children[0].children.find(child=>child.tag==='progress').value===.5,'Status uses the host work timer');
     town.villagers[0].production_status='Workplace buffer full';render();
     check($('selection-details').children[1].className==='building-problems'&&$('selection-details').children[1].children[0].textContent.includes('storage full'),'Problem explanation follows status and precedes storage');
     check($('selection-details').children[2].children[0].textContent==='Storage','Problems keep storage above assignments');
     delete town.villagers[0].work_animation;delete town.villagers[0].production_status;
     check(JSON.stringify(town.villagers[0])===savedWorker,'Status rendering leaves host worker state unchanged');render();
+    function workplaceSummary(kind,villagers){
+      const building={kind,x:3,y:7},snapshot={...town,buildings:[building],villagers};
+      const original=JSON.stringify(snapshot),target=document.createElement('div');
+      renderBuildingStatus(snapshot,building,0,target);
+      check(JSON.stringify(snapshot)===original,'Combined status preserves authoritative state');
+      const status=target.children[0],labels=status.children.filter(child=>child.className==='workplace-status'),bars=status.children.filter(child=>child.tag==='progress');
+      check(labels.length===1&&bars.length===1,'Every workplace has one activity label and one progress bar');
+      check(!labels[0].textContent.includes('Ada')&&!labels[0].textContent.includes('Bea'),'Building activity omits worker names');
+      return {label:labels[0].textContent,progress:bars[0].value,target};
+    }
+    const farmers=[{name:'Ada',job:'farming',building_index:0,work_animation:{phase:'working',farmAction:'plowing',elapsed:.5}},
+      {name:'Bea',job:'farming',building_index:0,work_animation:{phase:'working',farmAction:'plowing',elapsed:1.5}}];
+    let summary=workplaceSummary('farm',farmers);
+    check(summary.label==='Plowing'&&summary.progress===.5,'Farm combines identical stages and averages their cycle progress');
+    for(const action of ['sowing','watering','harvesting']){
+      farmers.forEach(worker=>worker.work_animation.farmAction=action);
+      check(workplaceSummary('farm',farmers).label===goodName(action),'Farm shows its current field action');
+    }
+    farmers[0].work_animation.farmAction='plowing';farmers[1].work_animation.farmAction='sowing';
+    check(workplaceSummary('farm',farmers).label==='Plowing · Sowing','Simultaneous farm stages share the activity label');
+    for(const kind of ['woodcutter','fishing_hut','sawpit','storehouse']){
+      const crew=farmers.map(worker=>({...worker,job:kind==='fishing_hut'?'fishing':'woodcutting',production_status:'Working',work_animation:{phase:'working',elapsed:.8}}));
+      summary=workplaceSummary(kind,crew);
+      check(summary.progress===.25,'Other workplaces combine worker progress too');
+      crew[1].production_status='Workplace buffer full';
+      summary=workplaceSummary(kind,crew);
+      check(summary.label!=='Paused','A blocked worker does not hide ongoing building activity');
+      crew[0].production_status='Workplace buffer full';summary=workplaceSummary(kind,crew);
+      check(summary.label==='Paused'&&summary.target.children[1].children.length===1,'Shared problems appear once for the building');
+      check(!summary.target.children[1].children[0].textContent.includes('Ada'),'Problem explanations omit worker names');
+    }
     check(!panelNodes().some(child=>child.textContent?.includes('Food space is shared')),'Storage omits the long explanatory text');
     const upgradeActions=panelNodes().find(child=>child.className==='building-upgrade-actions');
     check(upgradeActions.children.every(child=>child.className==='upgrade-card'),'Level and capacity use consistent upgrade cards');

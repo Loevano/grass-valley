@@ -2050,6 +2050,7 @@ function renderBuildingStatus(town,item,index,target){
     const sourceWork=['woodcutter','farm','fishing_hut'].includes(item.kind);
     if(sourceWork&&!buildingUsable(town,item))problems.push(`No ${item.kind==='woodcutter'?'trees':'water'} within ${resourceReach(item)} tile steps. Move this building closer to a source.`);
     if(!assigned.length)problems.push('No workers assigned. Add a worker below to start work.');
+    const paused=new Set();
     for(const {v} of assigned){
       const status=productionStatus(v,item);
       if(/waiting|requires|full|blocked|no |buy |cap reached|already tended|unavailable|cancelled/i.test(status)){
@@ -2058,12 +2059,13 @@ function renderBuildingStatus(town,item,index,target){
           /requires/i.test(status)?'Assign a qualified worker or train this worker.':
           /route|blocked|unavailable|cancelled/i.test(status)?'Keep paths and adjacent access tiles clear.':
           /suppl|delivery|resources/i.test(status)?'Check the required inputs and access to enabled storage.':'';
-        problems.push(`${v.name}: ${status}${help?`. ${help}`:''}`);
+        paused.add(v);
+        problems.push(`${status}${help?`. ${help}`:''}`);
       }
     }
     const active=assigned.filter(({v})=>v.production_work||v.work_animation||v.logistics_trip);
-    if(!active.length)line(problems.length?'Waiting for work':assigned.length?'Workers assigned · Awaiting next cycle':'Ready',0,1,'Work cycle');
-    for(const {v,i} of active){
+    if(!active.length)line(problems.length?'Waiting for work':'Waiting for next cycle',0,1,'Work cycle');
+    const activities=active.map(({v,i})=>{
       const state=v.work_animation,recipe=selectedProfessionRecipe(item),output=recipe?.output || world.progression?.recipes?.[item.kind]?.[1];
       const trip=v.logistics_trip,task=item.butchering;
       let value=0,total=1;
@@ -2072,7 +2074,15 @@ function renderBuildingStatus(town,item,index,target){
       else if(v.production_work){total=world.progression?.production_seconds?.[output] || 3;value=v.production_work.elapsed || 0;}
       else if(state?.phase==='working'){total=v.job==='farming'?2:3.2;value=state.elapsed || 0;}
       else if(state?.phase==='depositing'||state?.phase==='collecting_water'){total=.65;value=state.elapsed || 0;}
-      line(`${v.name} · ${problems.some(problem=>problem.startsWith(`${v.name}:`))?'Paused':productionStatus(v,item) || villagerActivity(town,v,i)}`,value,total,`${v.name} work progress`);
+      let label=productionStatus(v,item) || villagerActivity(town,v,i);
+      if(item.kind==='farm'&&state?.phase==='working'&&state.farmAction)label=goodName(state.farmAction);
+      else if(label==='Working')label=output?`Producing ${goodName(output).toLowerCase()}`:({woodcutter:'Cutting wood',fishing_hut:'Fishing'})[item.kind] || label;
+      return {label:label.split(' · ')[0],progress:Math.max(0,Math.min(1,value/total)),paused:paused.has(v)};
+    });
+    if(activities.length){
+      const working=activities.filter(activity=>!activity.paused),summary=working.length?working:activities;
+      const label=working.length?[...new Set(working.map(activity=>activity.label))].sort().join(' · '):'Paused';
+      line(label,summary.reduce((sum,activity)=>sum+activity.progress,0)/summary.length,1,`${buildingName(item)} average work progress`);
     }
   }
   target.append(section);
