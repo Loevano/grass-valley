@@ -2322,7 +2322,7 @@ function renderSelection(town){
     $('selection-level').hidden=false;$('selection-level').textContent=`Lv ${item.kind==='hall'?town.level:buildingLevel(item)}`;
     const decoration=decorationKinds.includes(item.kind);
     const workers=buildingSection(decoration?'Decoration':item.kind==='well'?'Water':['hall','home'].includes(item.kind)?'Settlers':'Workers');
-    const production=decoration?document.createElement('div'):buildingSection(item.kind==='barn'?'Animals':item.kind==='butcher'?'Butchery':item.kind==='market'?'Trade':['hall','home','storehouse'].includes(item.kind)?'Benefits':'Production',item.kind!=='barn');
+    const production=decoration?document.createElement('div'):buildingSection(item.kind==='barn'?'Animals':item.kind==='butcher'?'Butchery':item.kind==='market'?'Trade':['hall','home','storehouse'].includes(item.kind)?'Benefits':'Production',!['barn','butcher'].includes(item.kind));
     const upgrades=decoration?document.createElement('div'):buildingSection('Upgrades'),details=buildingSection('Building details',true),storageOverview=decoration?document.createElement('div'):buildingSection('Storage');
     const boats=item.kind==='fishing_hut'?buildingSection('Fishing boats'):null;
     const unlockedUpgrades=decoration?document.createElement('div'):buildingSection('Unlocked upgrades',true);
