@@ -438,6 +438,9 @@ function buildingLevel(building){return ['acre','orchard_tree'].includes(buildin
 const woodWorkerCapacities={woodcutter:[1,2,3],sawpit:[1,2],workshop:[1]};
 const workerCapacities={...woodWorkerCapacities,farm:[1,2,4],acre:[1],mill:[1],bakery:[1],mine:[1,2,4,8],smelter:[1,2,3],steelworks:[1]};
 const decorationKinds=['wooden_bench','wooden_statue','lantern'];
+function decorationOrientation(building){
+  return Number.isInteger(building.orientation)&&building.orientation>=0&&building.orientation<4?building.orientation:0;
+}
 function woodCapacities(){return world.progression?.wood_worker_capacities || woodWorkerCapacities;}
 function storageUpgradeKinds(){return world.progression?.storage_upgrade_kinds || [...Object.keys(woodCapacities()),'mill','bakery'];}
 function workplaceStorageSize(building){return (world.progression?.workplace_storage_sizes || {mill:160,bakery:100})[building.kind] || 50;}
@@ -2152,7 +2155,7 @@ function renderSelection(town){
   // Park hall controls in the hidden attached container before rebuilding cards.
   $('hall-details').append($('upgrade'));
   $('selection-panel').append($('hall-details'));
-  $('selection-details').replaceChildren();$('selection-fence').hidden=true;$('hall-details').hidden=true;$('selection-move').hidden=true;$('selection-destroy').hidden=true;
+  $('selection-details').replaceChildren();$('selection-fence').hidden=true;$('selection-decoration').hidden=true;$('hall-details').hidden=true;$('selection-move').hidden=true;$('selection-destroy').hidden=true;
   if(!selection)return;
   if(!town){selection=null;panel=null;return;}
   if(selection.type==='road'){
@@ -2398,6 +2401,15 @@ function renderSelection(town){
     $('selection-move').hidden=viewed!==identity?.town_id;
     $('selection-move').textContent=`${item.kind==='farm'?'Move farm & acres':item.kind==='orchard'?'Move orchard & trees':'Move'} · ${!town.sandbox&&town.coins?'1 coin':'Free'}`;
     $('selection-move').onclick=()=>{const index=selection.index;openPanel('build');tool='move';moveIndex=index;render();};
+    if(decoration&&!item.construction&&viewed===identity?.town_id){
+      const control=$('selection-decoration-orientation'),index=selection.index;
+      $('selection-decoration').hidden=false;control.replaceChildren();
+      for(const [orientation,label] of ['Lower left ↙','Upper left ↖','Upper right ↗','Lower right ↘'].entries()){
+        const option=document.createElement('option');option.value=String(orientation);option.textContent=label;control.append(option);
+      }
+      control.value=String(decorationOrientation(item));
+      control.onchange=()=>act({action:'set_decoration_orientation',index,orientation:Number(control.value)});
+    }
     if(barnActive(item)&&viewed===identity?.town_id){
       const pen=barnPen(item,mapSize(town)),control=$('selection-fence-orientation');
       $('selection-fence').hidden=false;control.replaceChildren();
@@ -4766,7 +4778,10 @@ function footprintTiles(building){
   return tiles;
 }
 function occupies(building,x,y){return footprintTiles(building).some(p=>p.x===x&&p.y===y);}
-function placementBuilding(tile,kind){return {...tile,kind,footprint:(world.progression?.building_footprints || buildingFootprints)[kind] || [1,1]};}
+function placementBuilding(tile,kind){
+  const moving=tool==='move'&&decorationKinds.includes(kind)?world.towns[viewed]?.buildings[moveIndex]:null;
+  return {...tile,kind,...(moving?{orientation:decorationOrientation(moving)}:{}),footprint:(world.progression?.building_footprints || buildingFootprints)[kind] || [1,1]};
+}
 function gameplayRange(building,town){
   if(building.kind==='hall')return {reach:buildingRange(town),square:false};
   if(['farm','barn','orchard'].includes(building.kind))return {reach:3,square:true};
@@ -4934,7 +4949,8 @@ function drawBuilding(b,town=world.towns[viewed],farmState=null){
   const bytes=width*height*resolution*resolution*4;
   const key=JSON.stringify([b.kind,b.footprint,buildingVisualLevel(b,town),b.kind==='hall'?town?.level || 1:buildingLevel(b),b.settler_level || 1,
     [...(b.profession_upgrades || [])].sort(),
-    b.kind==='orchard_tree'?b.tree?.stage || 'sapling':null,usable,resolution,tileW>=32]);
+    b.kind==='orchard_tree'?b.tree?.stage || 'sapling':null,
+    decorationKinds.includes(b.kind)?decorationOrientation(b):null,usable,resolution,tileW>=32]);
   let sprite=buildingSprites.get(key);
   const [x,top]=point(b.x,b.y);
   if(!sprite && bytes<=buildingSpriteByteLimit && typeof document!=='undefined'){
@@ -5690,25 +5706,45 @@ function paintBuilding(b,town,farmState=null,target=ctx,usable=buildingUsable(to
     const [x,top]=point(b.x,b.y),y=top+tileH/2,s=tileW/46;
     ctx.save();ctx.translate(x,y);ctx.scale(s,s);
     ctx.fillStyle='#223b2944';ctx.beginPath();ctx.ellipse(3,5,21,7,0,0,Math.PI*2);ctx.fill();
+    // Turn local ground coordinates, leaving height upright and lighting fixed.
+    const orientation=decorationOrientation(b),faces=[];
+    const turn=(x,y,z)=>[...[ [x,y],[-y,x],[-x,-y],[y,-x] ][orientation],z];
+    const wood=['#c0a674','#a58a5b','#806c49'],dark=['#9d855c','#806b49','#665a40'];
+    const box=(x0,y0,z0,x1,y1,z1,colors=wood)=>{
+      const base=[[x0,y0],[x1,y0],[x1,y1],[x0,y1]].map(([x,y])=>turn(x,y,z0));
+      const top=base.map(([x,y])=>[x,y,z1]);
+      const face=(points,color)=>faces.push({points,color,depth:points.reduce((sum,[x,y,z])=>sum+x+y+z,0)/points.length});
+      face(top,colors[0]);
+      for(let i=0;i<4;i++){
+        const j=(i+1)%4,nx=base[j][1]-base[i][1],ny=base[i][0]-base[j][0];
+        if(nx+ny>0)face([base[i],base[j],top[j],top[i]],colors[nx>0?1:2]);
+      }
+    };
     if(b.kind==='wooden_bench'){
-      for(const [px,py] of [[-14,2],[10,-10]]){ctx.fillStyle='#796346';ctx.fillRect(px,py,3,10);}
-      paintPolygon([[-18,-2],[9,-15],[20,-10],[-7,3]],'#b89e6d');
-      paintPolygon([[-18,-2],[-7,3],[-7,7],[-18,2]],'#977f55');
-      paintPolygon([[-18,-11],[9,-24],[9,-18],[-18,-5]],'#a58e60');
+      for(const x of [-12,9])for(const y of [-4,2])box(x,y,0,x+3,y+3,9,dark);
+      box(-15,-5,8,15,5,11);
+      for(const x of [-13,10])box(x,-5,10,x+3,-3,22,dark);
+      box(-15,-5,15,15,-3,22);
     }else if(b.kind==='lantern'){
-      ctx.fillStyle='#674c33';ctx.fillRect(-2,-35,4,43);ctx.fillRect(-2,-35,15,3);
-      ctx.strokeStyle='#4c514c';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(10,-33);ctx.lineTo(10,-28);ctx.stroke();
-      ctx.fillStyle='#e8c16d';ctx.fillRect(5,-27,10,15);
-      ctx.strokeRect(4,-28,12,17);ctx.fillStyle='#656158';ctx.fillRect(3,-30,14,3);ctx.fillRect(3,-11,14,3);
+      const iron=['#818477','#60695e','#48554e'],glass=['#f2d38a','#e7bc69','#c9974f'];
+      box(-2,-6,0,2,-2,37,dark);
+      box(-2,-6,34,2,14,37,dark);
+      box(-1,9,29,1,11,34,iron);
+      box(-4,6,17,4,14,29,glass);
+      box(-5,5,28,5,15,31,iron);
+      box(-5,5,15,5,15,18,iron);
     }else{
-      paintPolygon([[-13,2],[3,-6],[16,1],[0,9]],'#b39b6e');
-      paintPolygon([[-13,2],[0,9],[0,14],[-13,7]],'#8d7753');paintPolygon([[0,9],[16,1],[16,6],[0,14]],'#6f684b');
-      paintPolygon([[-7,2],[-5,-17],[3,-20],[9,-1],[0,5]],'#b99a64');
-      paintPolygon([[3,-20],[9,-1],[0,5],[0,-14]],'#947a50');
-      paintPolygon([[-6,-25],[-3,-31],[4,-32],[9,-27],[5,-21],[-2,-20]],'#c6ad79');
-      paintPolygon([[4,-32],[9,-27],[5,-21],[2,-23]],'#9f885c');
-      paintPolygon([[-6,-16],[-12,-10],[-10,-6],[-4,-11],[7,-10],[11,-14],[7,-18],[3,-14]],'#c0a674');
+      box(-9,-7,0,9,7,4,dark);
+      box(-4,-3,4,-1,4,10);
+      box(1,-3,4,4,4,10);
+      box(-5,-3,10,5,3,23);
+      box(-8,-2,13,-5,3,21);
+      box(5,-2,13,8,3,21);
+      box(-4,-3,24,4,4,33);
+      box(-1,4,27,2,6,30); // A carved nose makes the statue's facing clear.
     }
+    faces.sort((a,b)=>a.depth-b.depth);
+    for(const {points,color} of faces)paintPolygon(points.map(([x,y,z])=>[x-y,(x+y)/2-z]),color);
     ctx.restore();return;
   }
   if(b.kind==='sawpit'){paintSawpit(b,town,ctx,paintPolygon,usable);return;}

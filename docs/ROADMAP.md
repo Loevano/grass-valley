@@ -219,7 +219,8 @@ higher workshop recipe tiers preserve or improve profit per active work second.
 Workshop production now uses saved quantity requests in order and waits when its
 queue is empty. Order controls and the request queue appear first in the workshop
 inspector. Completed furniture and lanterns can be placed as benches and lantern
-decorations. Request cancellation preserves finished goods and releases
+decorations. All three decorations have four free facing directions, saved when
+moved or reloaded. Request cancellation preserves finished goods and releases
 unused ingredients. Delivered workshop pacing still needs play experience alongside
 the wood-chain balancing above.
 

@@ -479,7 +479,9 @@ the Python host, refresh both browsers, and create a new world to use the shared
   carved wooden statue for 1 carved furniture, or a lantern for 1 lantern.
   Placement is immediate on an open
   tile within the town's build range. Each occupies one tile and can be moved or
-  removed like a building; removal gives no refund. Decorations have no production,
+  removed like a building; removal gives no refund. Select a placed decoration and
+  use **Facing** to turn it in any of four directions for free. Its direction stays
+  saved when moved or reloaded. Decorations have no production,
   worker, storage, or upgrade benefits.
 
   Recipes show ingredient costs in the selector and use existing town resources.

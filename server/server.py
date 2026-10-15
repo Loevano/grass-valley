@@ -1502,6 +1502,16 @@ def command(town, data, world=None):
         bind_map(world)
     ensure_resources(town)
     action = data.get('action')
+    if action == 'set_decoration_orientation':
+        index, orientation = data.get('index'), data.get('orientation')
+        if type(index) is not int or not 0 <= index < len(town['buildings']):
+            raise ValueError('Choose a decoration first.')
+        building = town['buildings'][index]
+        if (building['kind'] not in economy.DECORATIONS or building.get('construction')
+                or type(orientation) is not int or orientation not in range(4)):
+            raise ValueError('Choose a completed decoration and a direction.')
+        building['orientation'] = orientation
+        return {}
     if action == 'set_fence_orientation':
         index, orientation = data.get('index'), data.get('orientation')
         if type(index) is not int or not 0 <= index < len(town['buildings']):

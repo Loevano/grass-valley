@@ -4,14 +4,15 @@ const results=JSON.parse(app.run(`
   const artTown={level:5,map_size:32,terrain:Array(32).fill('g'.repeat(32)),buildings:[],map_resources:[],villagers:[]};
   world={world_id:'production-art',towns:{own:artTown}};viewed='own';
   const cases=[];
-  for(const kind of ['butcher','bakery','smokehouse','tannery','woodcutter','workshop','farm','home','hall','barn','sawpit','fishing_hut','fish_pond','mine','smelter','steelworks','storehouse','mill','market','orchard','stable','saddler','tradehouse','well','orchard_tree','wooden_bench','wooden_statue'])
+  for(const kind of ['butcher','bakery','smokehouse','tannery','woodcutter','workshop','farm','home','hall','barn','sawpit','fishing_hut','fish_pond','mine','smelter','steelworks','storehouse','mill','market','orchard','stable','saddler','tradehouse','well','orchard_tree','wooden_bench','wooden_statue','lantern'])
   for(const zoom of [.7,1,2])
-  for(const footprint of (['woodcutter','farm','home','barn','fishing_hut','fish_pond','mine','smelter','steelworks','storehouse','market','orchard','stable','saddler','tradehouse','well','orchard_tree','wooden_bench','wooden_statue'].includes(kind)?[[1,1]]:kind==='sawpit'?[[3,2],[1,1]]:[[2,2],[1,1]]))
+  for(const footprint of (['woodcutter','farm','home','barn','fishing_hut','fish_pond','mine','smelter','steelworks','storehouse','market','orchard','stable','saddler','tradehouse','well','orchard_tree','wooden_bench','wooden_statue','lantern'].includes(kind)?[[1,1]]:kind==='sawpit'?[[3,2],[1,1]]:[[2,2],[1,1]]))
   for(const profession_upgrades of [[],...({home:[['timber_frame']],woodcutter:[['axe','tools']],bakery:[['larger_oven','double_hearth_oven','masterwork_oven']],sawpit:[['saw']],mine:[['steel_pickaxe']],fishing_hut:[['nets'],['wool_nets'],['boat'],['boat','improved_boat'],['nets','boat','improved_boat','master_boat']]}[kind] || [])])
   for(const stage of kind==='orchard_tree'?['sapling','blossom','fruit','ripe','harvested']:[null])
-  for(const level of (kind==='storehouse'?[1,2,3,4,5,6,7,8]:['well','orchard_tree','wooden_bench','wooden_statue'].includes(kind)?[1]:kind==='hall'?[1,2,3,4,5,10]:kind==='home'?[1,2,3,4]:[1,2,3])){
+  for(const orientation of decorationKinds.includes(kind)?[0,1,2,3]:[0])
+  for(const level of (kind==='storehouse'?[1,2,3,4,5,6,7,8]:['well','orchard_tree','wooden_bench','wooden_statue','lantern'].includes(kind)?[1]:kind==='hall'?[1,2,3,4,5,10]:kind==='home'?[1,2,3,4]:[1,2,3])){
     artTown.level=kind==='hall'?level:5;
-    const building={kind,x:5,y:5,footprint,level,settler_level:3,profession_upgrades,...(stage?{tree:{stage,fruit:8}}:{})};
+    const building={kind,x:5,y:5,footprint,level,orientation,settler_level:3,profession_upgrades,...(stage?{tree:{stage,fruit:8}}:{})};
     const snapshot=JSON.stringify(building);
     artTown.buildings=[building];cameraTown='production-art/own';camera={x:5,y:5,zoom:46/54*zoom};animationFrameRunning=true;
     const steps=ClientScene.prepare(world);let prepared;do{prepared=steps.next();}while(!prepared.done);ClientScene.commit(prepared.value);
@@ -38,14 +39,14 @@ const results=JSON.parse(app.run(`
       arc(x,y,r){this.ellipse(x,y,r,r);}
     };
     paintBuilding(building,artTown,null,target);
-    cases.push({kind,footprint,level,zoom,profession_upgrades,unchanged:snapshot===JSON.stringify(building),balanced:stack.length===0,
+    cases.push({kind,footprint,level,zoom,orientation,profession_upgrades,unchanged:snapshot===JSON.stringify(building),balanced:stack.length===0,
       extent:{left:Math.min(...points.map(p=>p[0])),right:Math.max(...points.map(p=>p[0])),top:Math.min(...points.map(p=>p[1])),bottom:Math.max(...points.map(p=>p[1]))},
       sprite:{left:image.x,right:image.x+image.width,top:image.y,bottom:image.y+image.height},hit});
   }
   JSON.stringify(cases);
 `));
 for(const result of results){
-  const name=`${result.kind} ${result.footprint.join('×')} level ${result.level} ${result.profession_upgrades.join(',')} at ${result.zoom}× zoom`;
+  const name=`${result.kind} orientation ${result.orientation} ${result.footprint.join('×')} level ${result.level} ${result.profession_upgrades.join(',')} at ${result.zoom}× zoom`;
   assert(result.unchanged,`${name}: artwork preserves the authoritative building`);
   assert(result.balanced,`${name}: artwork restores canvas state`);
   for(const key of ['sprite','hit']){
