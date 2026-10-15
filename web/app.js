@@ -895,7 +895,7 @@ function renderResourceList(town){
   if(renderResourceList.signature!==signature){
     const table=document.createElement('table');table.className='resources-table';
     const head=document.createElement('thead'),heading=document.createElement('tr');
-    for(const label of ['Resource','Icon','Stock (all)','Free','Reserved','Buy <','Sell >','In/min','Out/min']){
+    for(const label of ['Resource','Icon','Stock (all)','Free','Reserved','Buy at','Sell at','In/min','Out/min']){
       const cell=document.createElement('th');cell.scope='col';cell.textContent=label;heading.append(cell);
     }
     head.append(heading);table.append(head);
@@ -917,14 +917,14 @@ function renderResourceList(town){
         for(const [field,allowed] of [['buy',buyable.includes(key)],['sell',sellable.includes(key)]]){
           if(!allowed){cells[field].textContent='—';continue;}
           const input=document.createElement('input');input.type='number';input.min='0';input.step='any';input.placeholder='Off';
-          input.setAttribute('aria-label',`${goodName(key)} ${field==='buy'?'buy below':'sell above'}`);
+          input.setAttribute('aria-label',`${goodName(key)} ${field==='buy'?'buy at':'sell at'}`);
           input.setAttribute('aria-describedby','resources-trade-help');cells[field].append(input);inputs[field]=input;
           input.onchange=()=>{
             if(world.world_id!==worldId||identity?.town_id!==townId)return;
             if(Object.values(inputs).some(node=>node.reportValidity&&!node.reportValidity()))return;
             const value=field=>inputs[field]?.value?.trim()?Number(inputs[field].value):null;
             const buy=value('buy'),sell=value('sell');
-            if(buy!==null&&sell!==null&&buy>=sell){notice('Sell > must be higher than Buy <.');return;}
+            if(buy!==null&&sell!==null&&buy>=sell){notice('Sell at must be higher than Buy at.');return;}
             act({action:'configure_resource_trade',resource:key,buy_below:buy,sell_above:sell});
           };
         }

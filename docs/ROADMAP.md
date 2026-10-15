@@ -134,7 +134,7 @@ Markets also offer a quick-sale form at the top: choose 1, 5, 10, 50, 100, or
 Wheat is available for one-time sales without changing automatic-sale rules;
 the form explains unsupported resources and insufficient stock.
 The Resources popup now compares total, free, and reserved stock alongside editable
-buy/sell thresholds and actual activity over the last minute of running game time.
+Buy at/Sell at thresholds and actual activity over the last minute of running game time.
 Host-recorded flows exclude hauling and ingredient reservation. Merchants can buy
 up to 10 goods per three seconds at twice their sale value, constrained by the
 free-stock target, coins, and enabled storage. Imported goods do not advance

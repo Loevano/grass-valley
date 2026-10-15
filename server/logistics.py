@@ -46,7 +46,7 @@ def configure_market_sale(town, data):
         raise ValueError('Choose a sale batch from 1 to 10 goods.')
     buy = town.get('rules', {}).get('market_purchases', {}).get(key)
     if enabled and buy is not None and buy >= cap:
-        raise ValueError('The sale cap must be higher than Buy <.')
+        raise ValueError('The sale cap must be higher than Buy at.')
     rules = town.setdefault('rules', {}).setdefault('market_sales', {})
     rules[key] = {'enabled': enabled, 'cap': cap, 'amount': amount}
     if previous.get('strict'):
@@ -67,7 +67,7 @@ def configure_resource_trade(town, data):
     if sell is not None and key not in economy.SELLABLE_GOODS:
         raise ValueError('This resource cannot be sold automatically.')
     if buy is not None and sell is not None and buy >= sell:
-        raise ValueError('Sell > must be higher than Buy <.')
+        raise ValueError('Sell at must be higher than Buy at.')
     rules = town.setdefault('rules', {})
     purchases = rules.setdefault('market_purchases', {})
     if buy is None:

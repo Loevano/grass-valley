@@ -195,7 +195,7 @@ function session(saved=null){
   check(windows.document.getElementById('side-panel').hidden,'Resources does not open the sidebar');
   const table=windows.document.getElementById('resources-list').children[0];
   const resources=table.children[1].children.filter(row=>row.className!=='resource-category');
-  check(table.children[0].children[0].children.map(cell=>cell.textContent).join(',')==='Resource,Icon,Stock (all),Free,Reserved,Buy <,Sell >,In/min,Out/min','Resources has the requested columns');
+  check(table.children[0].children[0].children.map(cell=>cell.textContent).join(',')==='Resource,Icon,Stock (all),Free,Reserved,Buy at,Sell at,In/min,Out/min','Resources has the requested columns');
   const resource=label=>resources.find(row=>row.children[0].textContent===label)?.children[2].textContent;
   check(resource('Wood')==='50'&&resource('Food')==='30','Resources shows total stock');
   check(resource('Coins')==='5','Coins appear in Resources');
