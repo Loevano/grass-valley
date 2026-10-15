@@ -1,0 +1,135 @@
+{
+  "format_version": 1,
+  "id": "contract-example-only",
+  "provenance": {
+    "kind": "contract_example",
+    "python_revision": "191daecd2e2cd67f80e124cc65a477911279746b"
+  },
+  "initial": {
+    "recipe": "contract_example_v1",
+    "parameters": {
+      "town_ids": [
+        "town-a",
+        "town-b"
+      ],
+      "owner": "town-a",
+      "cargo": 2,
+      "stored": 3,
+      "reward": 0,
+      "food": 40,
+      "position": {
+        "x": 9.25,
+        "y": 2.0
+      }
+    },
+    "terrain": "synthetic_flat"
+  },
+  "steps": [
+    {
+      "operation": {
+        "kind": "advance",
+        "clock": "economy",
+        "seconds": 3
+      },
+      "random_draws": [],
+      "expected": {
+        "public": {
+          "result": null
+        },
+        "state": {
+          "owner": "town-a",
+          "position": {
+            "x": 9.25,
+            "y": 2.0
+          },
+          "cargo": 2,
+          "stored": 3,
+          "reward": 0,
+          "food": 39.925
+        }
+      },
+      "numeric_fields": [
+        {
+          "path": [
+            "state",
+            "position",
+            "x"
+          ],
+          "kind": "position"
+        },
+        {
+          "path": [
+            "state",
+            "position",
+            "y"
+          ],
+          "kind": "position"
+        },
+        {
+          "path": [
+            "state",
+            "food"
+          ],
+          "kind": "fraction"
+        }
+      ],
+      "invariants": [
+        {
+          "name": "wood conserved",
+          "kind": "sum",
+          "paths": [
+            [
+              "state",
+              "cargo"
+            ],
+            [
+              "state",
+              "stored"
+            ]
+          ],
+          "value": 5
+        },
+        {
+          "name": "owner preserved",
+          "kind": "equals",
+          "paths": [
+            [
+              "state",
+              "owner"
+            ]
+          ],
+          "value": "town-a"
+        },
+        {
+          "name": "no unearned reward",
+          "kind": "equals",
+          "paths": [
+            [
+              "state",
+              "reward"
+            ]
+          ],
+          "value": 0
+        },
+        {
+          "name": "nonnegative stock",
+          "kind": "nonnegative",
+          "paths": [
+            [
+              "state",
+              "food"
+            ],
+            [
+              "state",
+              "cargo"
+            ],
+            [
+              "state",
+              "stored"
+            ]
+          ]
+        }
+      ]
+    }
+  ]
+}
