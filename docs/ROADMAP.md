@@ -50,6 +50,16 @@ The existing world API still refreshes host state and interface data, including
 collision indexes used by founder movement. A lightweight overview request/change
 mechanism remains future work; this feature does not reduce snapshot traffic.
 
+## Production building artwork
+
+First visual prototypes for the butchery, bakery, smokehouse, and tannery are
+available in the [concept sheet](production-building-concepts.svg), with a
+[PNG preview](production-building-concepts.png). They follow the barn and sawpit's
+isometric geometry, muted palette, timber outlines, and visible work areas.
+These are design studies; in-game artwork remains unchanged. Review the four
+designs and their scale before implementing the approved drawings, preserving
+construction, upgrade indicators, worker access, and existing animation alignment.
+
 ## Production line balancing
 
 **Status:** wood and grain chains and species-preserving smoking implemented.
