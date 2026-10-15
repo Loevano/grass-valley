@@ -23,7 +23,7 @@ import trading
 import horses
 import quests
 import player_login
-from navigation import routes, RoutePending
+from navigation import routes
 import lanterns
 import village_life
 from spatial import SpatialIndex, BUILDING_FOOTPRINTS, footprint_tiles, occupied_tiles
@@ -572,8 +572,6 @@ def woodcutting_source(town, building, trees, worker_index, walking=None):
     task = animation.get('task', [])
     workplace = ['woodcutting', building['kind'], building['x'], building['y']]
     previous = tuple(task[4:7]) if len(task) >= 7 and task[:4] == workplace else None
-    if previous is None and (worker.get('work_target') or {}).get('kind') == 'tree':
-        previous = tuple(worker['work_target'][k] for k in ('kind', 'x', 'y'))
     claimed = set()
     for index, other in enumerate(town['villagers']):
         if (index == worker_index or other['job'] != 'woodcutting'
@@ -582,9 +580,6 @@ def woodcutting_source(town, building, trees, worker_index, walking=None):
         other_animation = other.get('work_animation', {})
         other_task = other_animation.get('task', [])
         if len(other_task) < 7 or other_task[0] != 'woodcutting':
-            target = other.get('work_target')
-            if target and target.get('kind') == 'tree' and other.get('production_status') == 'Waiting for a route':
-                claimed.add(tuple(target[k] for k in ('kind', 'x', 'y')))
             continue
         owner = settler_building(town, index)
         if owner is None:
@@ -617,14 +612,9 @@ def woodcutting_source(town, building, trees, worker_index, walking=None):
     candidates = sorted(available, key=lambda tree: (
         tree is not retained, abs(tree['x'] - building['x']) + abs(tree['y'] - building['y'])))
     for tree in candidates:
-        try:
-            path = work_cycles.route(position, tree, blocked, walking.get('map_size', 120),
-                                     walking.get('terrain', []), bounds=bounds, roads=roads,
-                                     fences=barns.fences(walking['buildings'], walking.get('map_size', 120)))
-        except RoutePending:
-            worker['work_target'] = tree
-            raise
-        if path is not None:
+        if work_cycles.route(position, tree, blocked, walking.get('map_size', 120),
+                             walking.get('terrain', []), bounds=bounds, roads=roads,
+                             fences=barns.fences(walking['buildings'], walking.get('map_size', 120))) is not None:
             return tree
     return None
 
@@ -874,93 +864,87 @@ def construct(town, landscape, workers=None, elapsed=TICK_SECONDS):
     # Dedicated builders claim sites before residents who are helping while idle.
     for index in sorted(workers, key=lambda i: town['villagers'][i]['job'] != 'building'):
         villager = town['villagers'][index]
-        with routes.worker(villager, 'construction'):
-            position = villager.get('construction_position',
-                                    {'x': hall['x'] - 2 + index % 5,
-                                     'y': hall['y'] + 3 + index // 5})
-            start = (position['x'], position['y'])
-            previous = villager.pop('construction_target', None)
-            walk = villager.get('construction_walk')
-            # Keep the claimed task even when another site is inserted before it.
-            ordered = sorted(enumerate(sites), key=lambda entry:
-                             not (previous and all(entry[1].get(k, 'road') == v for k, v in previous.items())))
-            for site_index, site in ordered:
-                if completed(site) or site_index in claimed:
-                    continue
-                if index in helpers and site_index != helpers[index]:
-                    continue
-                target = {'kind': site.get('kind', 'road'), 'x': site['x'], 'y': site['y']}
-                if 'footprint' in site:
-                    target['footprint'] = site['footprint']
-                retained = (walk and walk['target'] == target and walk.get('job') == villager['job']
-                            and tuple(walk['path'][walk['step']]) == start)
-                villager['construction_target'] = target
-                claimed.add(site_index)
-                path = walk['path'] if retained else construction_route(landscape, start, site)
+        position = villager.get('construction_position',
+                                {'x': hall['x'] - 2 + index % 5,
+                                 'y': hall['y'] + 3 + index // 5})
+        start = (position['x'], position['y'])
+        previous = villager.pop('construction_target', None)
+        walk = villager.get('construction_walk')
+        # Keep the claimed task even when another site is inserted before it.
+        ordered = sorted(enumerate(sites), key=lambda entry:
+                         not (previous and all(entry[1].get(k, 'road') == v for k, v in previous.items())))
+        for site_index, site in ordered:
+            if completed(site) or site_index in claimed:
+                continue
+            if index in helpers and site_index != helpers[index]:
+                continue
+            target = {'kind': site.get('kind', 'road'), 'x': site['x'], 'y': site['y']}
+            if 'footprint' in site:
+                target['footprint'] = site['footprint']
+            retained = (walk and walk['target'] == target and walk.get('job') == villager['job']
+                        and tuple(walk['path'][walk['step']]) == start)
+            path = walk['path'] if retained else construction_route(landscape, start, site)
+            if path is None:
+                continue
+            if not retained:
+                walk = {'target': target, 'job': villager['job'],
+                        'path': [list(p) for p in path], 'step': 0}
+            # Replan only when a step actually becomes impassable. Road edits
+            # change walking time immediately but do not discard a valid route.
+            if walk['step'] + 1 < len(path) and (not open_step(path[walk['step'] + 1])
+                    or barns.crosses(start, path[walk['step'] + 1], fences)):
+                path = construction_route(landscape, start, site)
                 if path is None:
-                    claimed.discard(site_index)
-                    villager.pop('construction_target', None)
                     continue
-                if not retained:
-                    walk = {'target': target, 'job': villager['job'],
-                            'path': [list(p) for p in path], 'step': 0}
-                # Replan only when a step actually becomes impassable. Road edits
-                # change walking time immediately but do not discard a valid route.
-                if walk['step'] + 1 < len(path) and (not open_step(path[walk['step'] + 1])
-                        or barns.crosses(start, path[walk['step'] + 1], fences)):
-                    routes.priority = 0
-                    path = construction_route(landscape, start, site)
-                    if path is None:
-                        continue
-                    walk = {'target': target, 'job': villager['job'],
-                            'path': [list(p) for p in path], 'step': 0}
-                villager['construction_walk'] = walk
-                claimed.add(site_index)
-                # A stable coordinate target avoids stale indices after destruction.
-                villager['construction_target'] = target
-                path = walk['path']
-                remaining, reached = elapsed, walk['step']
-                travelling = reached + 1 < len(path)
-                while reached + 1 < len(path):
-                    if (not open_step(path[reached + 1])
-                            or barns.crosses(path[reached], path[reached + 1], fences)):
-                        # Leave the worker at the last reachable waypoint; the next
-                        # update will find a detour from there.
-                        break
-                    tile = tuple(path[reached])
-                    destination = path[reached + 1]
-                    duration = math.hypot(destination[0]-tile[0], destination[1]-tile[1]) / (1.8 * (1.5 if tile in roads else 1))
-                    if remaining < duration:
-                        break
-                    remaining -= duration
-                    reached += 1
-                walk['step'] = reached
-                step = path[reached]
-                villager['construction_position'] = {'x': step[0], 'y': step[1]}
-                if travelling:
+                walk = {'target': target, 'job': villager['job'],
+                        'path': [list(p) for p in path], 'step': 0}
+            villager['construction_walk'] = walk
+            claimed.add(site_index)
+            # A stable coordinate target avoids stale indices after destruction.
+            villager['construction_target'] = target
+            path = walk['path']
+            remaining, reached = elapsed, walk['step']
+            travelling = reached + 1 < len(path)
+            while reached + 1 < len(path):
+                if (not open_step(path[reached + 1])
+                        or barns.crosses(path[reached], path[reached + 1], fences)):
+                    # Leave the worker at the last reachable waypoint; the next
+                    # update will find a detour from there.
                     break
-                villager['construction_arrived'] = True
-                construction = site['construction']
-                construction['progress'] = min(construction['total'],
-                                               construction['progress'] + elapsed)
-                if site.get('kind') == 'hall' and 'upgrade' not in construction:
-                    upgrade = hall_upgrade(town)
-                    town['upgrade_remaining'] = construction['total'] - construction['progress']
-                if construction['progress'] == construction['total']:
-                    del site['construction']
-                    if 'upgrade' in construction:
-                        site.update(construction['upgrade'])
-                    elif site.get('kind') == 'hall':
-                        if upgrade:
-                            town['level'] = upgrade['level']
-                            town['coins'] += upgrade['coins']
-                            economy.record_activity(town, 'coins', upgrade['coins'], 'in')
-                    villager.pop('construction_target', None)
-                    villager.pop('construction_arrived', None)
-                    villager.pop('construction_walk', None)
+                tile = tuple(path[reached])
+                destination = path[reached + 1]
+                duration = math.hypot(destination[0]-tile[0], destination[1]-tile[1]) / (1.8 * (1.5 if tile in roads else 1))
+                if remaining < duration:
+                    break
+                remaining -= duration
+                reached += 1
+            walk['step'] = reached
+            step = path[reached]
+            villager['construction_position'] = {'x': step[0], 'y': step[1]}
+            if travelling:
                 break
-            if 'construction_target' not in villager:
+            villager['construction_arrived'] = True
+            construction = site['construction']
+            construction['progress'] = min(construction['total'],
+                                           construction['progress'] + elapsed)
+            if site.get('kind') == 'hall' and 'upgrade' not in construction:
+                upgrade = hall_upgrade(town)
+                town['upgrade_remaining'] = construction['total'] - construction['progress']
+            if construction['progress'] == construction['total']:
+                del site['construction']
+                if 'upgrade' in construction:
+                    site.update(construction['upgrade'])
+                elif site.get('kind') == 'hall':
+                    if upgrade:
+                        town['level'] = upgrade['level']
+                        town['coins'] += upgrade['coins']
+                        economy.record_activity(town, 'coins', upgrade['coins'], 'in')
+                villager.pop('construction_target', None)
+                villager.pop('construction_arrived', None)
                 villager.pop('construction_walk', None)
+            break
+        if 'construction_target' not in villager:
+            villager.pop('construction_walk', None)
 
 
 def prepare_landscapes(world, regenerate=False):
@@ -1103,11 +1087,6 @@ def advance_farmer(town, walking, villager, building, source, index, seconds, re
 
 
 def tick(world):
-    with routes.update(world):
-        _tick(world)
-
-
-def _tick(world):
     prepare_landscapes(world, regenerate=True)
     towns = list(world['towns'].values())
     if 'shared_map' in world:
@@ -1163,212 +1142,207 @@ def _tick(world):
         # Haulers supply workplaces before this cycle's production consumes inputs.
         for index in sorted(range(len(town['villagers'])), key=lambda i: town['villagers'][i]['job'] != 'hauling'):
             villager = town['villagers'][index]
-            with routes.worker(villager):
-                job = villager['job']
-                if villager.get('construction_target'):
-                    villager['work_target'] = None
-                    villager['production_status'] = 'Helping with construction'
+            job = villager['job']
+            if villager.get('construction_target'):
+                villager['work_target'] = None
+                villager['production_status'] = 'Helping with construction'
+                continue
+            assignment = (farm_assignments.get(index) if job == 'farming' else
+                          work_assignment(town, job, index, town_spatial, walking=walking) if job != 'idle' else None)
+            finishing_output = False
+            if not assignment and villager.get('pending_output') and villager.get('work_animation', {}).get('task', [None])[0] == job:
+                spec = villager['pending_workplace']
+                workplace = next((b for b in town['buildings'] if completed(b) and all(b.get(k) == v for k, v in spec.items())), None)
+                if workplace:
+                    task = villager['work_animation']['task']
+                    assignment = workplace, {'kind': task[4], 'x': task[5], 'y': task[6]}
+                    finishing_output = True
+            source = assignment[1] if assignment else None
+            pending_workplace = villager.get('pending_workplace')
+            if pending_workplace and (not assignment or any(assignment[0].get(k) != v for k, v in pending_workplace.items())):
+                logistics.cancel_output(town, villager)
+            villager['work_target'] = source
+            villager.pop('production_status', None)
+            if not source:
+                animation = villager.get('work_animation')
+                if job == 'woodcutting' and animation:
+                    villager['logistics_position'] = {key: animation[key] for key in ('x', 'y')}
+                villager.pop('work_animation', None)
+                villager.pop('watering_round', None)
+                logistics.cancel_trip(town, villager)
+                reason = economy.qualification(villager, job)
+                if reason:
+                    villager['production_status'] = reason
+                elif job == 'woodcutting':
+                    camp_index = settler_building(town, index)
+                    if camp_index is not None:
+                        camp = town['buildings'][camp_index]
+                        if camp['kind'] == 'woodcutter' and completed(camp):
+                            nearby = lambda r: abs(r['x'] - camp['x']) + abs(r['y'] - camp['y']) <= WOODCUTTER_REACH
+                            if not town_spatial.nearby('tree', camp['x'], camp['y'], WOODCUTTER_REACH):
+                                regrowing = any(nearby(r) for r in landscape.get('tree_stumps', []))
+                                villager['production_status'] = ('Waiting for trees to regrow' if regrowing
+                                                                 else 'Waiting for trees within 10 tiles')
+                            else:
+                                villager['production_status'] = 'Waiting for an available tree'
+                continue
+            building = assignment[0]
+            if job == 'hauling':
+                logistics.haul(town, walking, villager, building, logistics_route, TICK_SECONDS)
+                continue
+            if job == 'trading':
+                logistics.merchant(town, walking, villager, building, logistics_route, TICK_SECONDS)
+                continue
+            if job == 'farming':
+                advance_farmer(town, walking, villager, building, source, index, TICK_SECONDS, farm_reservations)
+                farm_reservations.pop(index, None)
+                continue
+            if job == 'butchery' and building.get('butchering'):
+                # One butcher owns the animal; helpers must not duplicate its trip.
+                crew = [i for i in assigned_settlers(town, villager['building_index'])[:settler_capacity(building)]
+                        if town['villagers'][i]['job'] == 'butchery'
+                        and not town['villagers'][i].get('construction_target')
+                        and not economy.qualification(town['villagers'][i], 'butchery')]
+                if index != crew[0]:
+                    animation = villager.pop('work_animation', None)
+                    if animation:
+                        villager['logistics_position'] = {k: animation[k] for k in ('x', 'y') if k in animation}
+                    villager['production_status'] = 'Another butcher is handling the animal'
                     continue
-                assignment = (farm_assignments.get(index) if job == 'farming' else
-                              work_assignment(town, job, index, town_spatial, walking=walking) if job != 'idle' else None)
-                finishing_output = False
-                if not assignment and villager.get('pending_output') and villager.get('work_animation', {}).get('task', [None])[0] == job:
-                    spec = villager['pending_workplace']
-                    workplace = next((b for b in town['buildings'] if completed(b) and all(b.get(k) == v for k, v in spec.items())), None)
-                    if workplace:
-                        task = villager['work_animation']['task']
-                        assignment = workplace, {'kind': task[4], 'x': task[5], 'y': task[6]}
-                        finishing_output = True
-                source = assignment[1] if assignment else None
-                pending_workplace = villager.get('pending_workplace')
-                if pending_workplace and (not assignment or any(assignment[0].get(k) != v for k, v in pending_workplace.items())):
-                    logistics.cancel_output(town, villager)
-                villager['work_target'] = source
-                villager.pop('production_status', None)
-                if not source:
-                    animation = villager.get('work_animation')
-                    if job == 'woodcutting' and animation:
-                        villager['logistics_position'] = {key: animation[key] for key in ('x', 'y')}
-                    villager.pop('work_animation', None)
-                    villager.pop('watering_round', None)
-                    logistics.cancel_trip(town, villager)
+                logistics.cancel_trip(town, villager)
+            boating = job == 'fishing' and work_cycles.fishing_boating(town, building, index)
+            if boating:
+                crew = work_cycles.fishing_crew(town, building)
+                captain = town['villagers'][crew[0]]
+                voyage = captain.get('work_animation', {})
+                task = voyage.get('task', [])
+                if len(task) >= 7 and task[:4] == ['fishing', building['kind'], building['x'], building['y']] and (
+                        work_cycles.boat_load(town, building) or voyage.get('phase') in ('returning', 'depositing')):
+                    previous_source = town_spatial.nearby('water', task[5], task[6], 0)
+                    source = previous_source[0] if previous_source else {'kind': 'water', 'x': task[5], 'y': task[6], 'supply': 0}
+                    villager['work_target'] = source
+                depth = town_spatial.water_depths().get((source['x'], source['y']), 1)
+                boat_output = economy.fishing_catch(building, depth)
+                villager['boat_return_requested'] = bool(work_cycles.boat_load(town, building) and (
+                    villager.get('boat_return_requested') or finishing_output or source.get('supply', 1) <= 0
+                    or economy.local_room(building, boat_output) <= 1e-9
+                    or economy.production_room(town, boat_output) <= 0))
+            else:
+                villager.pop('boat_return_requested', None)
+            if villager.get('logistics_trip'):
+                villager.pop('work_animation', None)
+            elif work_cycles.advance(town, walking, villager, building, source, index, TICK_SECONDS):
+                if boating:
+                    for crew_index in work_cycles.fishing_crew(town, building):
+                        logistics.drop_off(town, building, town['villagers'][crew_index])
+                else:
+                    logistics.drop_off(town, building, villager)
+            if finishing_output:
+                villager['production_status'] = 'Returning gathered goods'
+                continue
+            if (building['kind'] == 'barn' and barn_cycles.get(id(building)) == 'Working'
+                    and not villager.get('logistics_trip')):
+                # Each keeper trains on its round; the herd clock advances separately.
+                villager['production_status'] = 'Working'
+                economy.practice(villager, job, TICK_SECONDS)
+                continue
+            if (job != 'farming' and not (job == 'butchery' and building.get('butchering'))
+                    and (not boating or villager.get('logistics_trip') or not work_cycles.boat_load(town, building))):
+                if logistics.worker(town, walking, villager, building, logistics_route, TICK_SECONDS):
+                    continue
+            productive_seconds = TICK_SECONDS
+            wood_status = 'Working'
+            if job == 'woodcutting':
+                animation = villager.get('work_animation', {})
+                playback = animation.get('playback', [])
+                productive_seconds = sum(b['time'] - a['time'] for a, b in zip(playback, playback[1:])
+                                         if a['phase'] == 'working')
+                wood_status = {'walking': 'Walking to tree', 'returning': 'Returning gathered wood',
+                               'depositing': 'Unloading wood', 'waiting': 'Waiting for a route'}.get(animation.get('phase'), 'Working')
+                if productive_seconds <= 1e-9:
+                    villager['production_status'] = wood_status
+                    continue
+            if boating and villager.get('work_animation', {}).get('phase') != 'working':
+                villager['production_status'] = 'Unloading boat' if villager.get('work_animation', {}).get('phase') == 'depositing' else 'Sailing'
+                continue
+            if job in economy.JOB_BUILDINGS:
+                if building['kind'] == 'butcher' and building.get('butchering'):
+                    marker = id(building)
                     reason = economy.qualification(villager, job)
                     if reason:
                         villager['production_status'] = reason
-                    elif job == 'woodcutting':
-                        camp_index = settler_building(town, index)
-                        if camp_index is not None:
-                            camp = town['buildings'][camp_index]
-                            if camp['kind'] == 'woodcutter' and completed(camp):
-                                nearby = lambda r: abs(r['x'] - camp['x']) + abs(r['y'] - camp['y']) <= WOODCUTTER_REACH
-                                if not town_spatial.nearby('tree', camp['x'], camp['y'], WOODCUTTER_REACH):
-                                    regrowing = any(nearby(r) for r in landscape.get('tree_stumps', []))
-                                    villager['production_status'] = ('Waiting for trees to regrow' if regrowing
-                                                                     else 'Waiting for trees within 10 tiles')
-                                else:
-                                    villager['production_status'] = 'Waiting for an available tree'
-                    continue
-                building = assignment[0]
-                if job == 'hauling':
-                    logistics.haul(town, walking, villager, building, logistics_route, TICK_SECONDS)
-                    continue
-                if job == 'trading':
-                    logistics.merchant(town, walking, villager, building, logistics_route, TICK_SECONDS)
-                    continue
-                if job == 'farming':
-                    advance_farmer(town, walking, villager, building, source, index, TICK_SECONDS, farm_reservations)
-                    farm_reservations.pop(index, None)
-                    continue
-                if job == 'butchery' and building.get('butchering'):
-                    # One butcher owns the animal; helpers must not duplicate its trip.
-                    crew = [i for i in assigned_settlers(town, villager['building_index'])[:settler_capacity(building)]
-                            if town['villagers'][i]['job'] == 'butchery'
-                            and not town['villagers'][i].get('construction_target')
-                            and not economy.qualification(town['villagers'][i], 'butchery')]
-                    if index != crew[0]:
-                        animation = villager.pop('work_animation', None)
-                        if animation:
-                            villager['logistics_position'] = {k: animation[k] for k in ('x', 'y') if k in animation}
-                        villager['production_status'] = 'Another butcher is handling the animal'
-                        continue
-                    logistics.cancel_trip(town, villager)
-                boating = job == 'fishing' and work_cycles.fishing_boating(town, building, index)
-                if boating:
-                    crew = work_cycles.fishing_crew(town, building)
-                    captain = town['villagers'][crew[0]]
-                    voyage = captain.get('work_animation', {})
-                    task = voyage.get('task', [])
-                    if len(task) >= 7 and task[:4] == ['fishing', building['kind'], building['x'], building['y']] and (
-                            work_cycles.boat_load(town, building) or voyage.get('phase') in ('returning', 'depositing')):
-                        previous_source = town_spatial.nearby('water', task[5], task[6], 0)
-                        source = previous_source[0] if previous_source else {'kind': 'water', 'x': task[5], 'y': task[6], 'supply': 0}
-                        villager['work_target'] = source
-                    depth = town_spatial.water_depths().get((source['x'], source['y']), 1)
-                    boat_output = economy.fishing_catch(building, depth)
-                    villager['boat_return_requested'] = bool(work_cycles.boat_load(town, building) and (
-                        villager.get('boat_return_requested') or finishing_output or source.get('supply', 1) <= 0
-                        or economy.local_room(building, boat_output) <= 1e-9
-                        or economy.production_room(town, boat_output) <= 0))
-                else:
-                    villager.pop('boat_return_requested', None)
-                if villager.get('logistics_trip'):
-                    villager.pop('work_animation', None)
-                elif work_cycles.advance(town, walking, villager, building, source, index, TICK_SECONDS):
-                    if boating:
-                        for crew_index in work_cycles.fishing_crew(town, building):
-                            logistics.drop_off(town, building, town['villagers'][crew_index])
+                    elif marker in butcher_cycles:
+                        villager['production_status'] = 'Animal already being butchered this cycle'
+                    elif villager.get('work_animation', {}).get('phase') != 'working':
+                        animation = villager.get('work_animation', {})
+                        task = building['butchering']
+                        villager['production_status'] = {'walking': 'Walking to butcher shop' if task.get('stage') == 'working' else 'Walking to barn',
+                            'finding_animal': 'Finding the animal', 'dragging': 'Dragging animal to butcher shop',
+                            'waiting': 'Waiting for a route'}.get(animation.get('phase'), 'Walking to butcher shop')
                     else:
-                        logistics.drop_off(town, building, villager)
-                if routes.is_waiting(villager) and job != 'woodcutting':
-                    villager['production_status'] = 'Waiting for a route'
+                        butcher_cycles.add(marker)
+                        playback = villager.get('work_animation', {}).get('playback')
+                        seconds = sum(b['time'] - a['time'] for a, b in zip(playback, playback[1:])
+                                      if a['phase'] == 'working') if playback else TICK_SECONDS
+                        villager['production_status'] = logistics.butcher_animal(town, building, villager, seconds)
                     continue
-                if finishing_output:
-                    villager['production_status'] = 'Returning gathered goods'
-                    continue
-                if (building['kind'] == 'barn' and barn_cycles.get(id(building)) == 'Working'
-                        and not villager.get('logistics_trip')):
-                    # Each keeper trains on its round; the herd clock advances separately.
-                    villager['production_status'] = 'Working'
-                    economy.practice(villager, job, TICK_SECONDS)
-                    continue
-                if (job != 'farming' and not (job == 'butchery' and building.get('butchering'))
-                        and (not boating or villager.get('logistics_trip') or not work_cycles.boat_load(town, building))):
-                    if logistics.worker(town, walking, villager, building, logistics_route, TICK_SECONDS):
+                if building['kind'] in {'barn', 'stable'}:
+                    marker = id(building)
+                    if marker in barn_cycles:
+                        villager['production_status'] = (barn_cycles[marker] if building['kind'] == 'barn'
+                                                         else 'Barn already tended this cycle')
+                        if building['kind'] == 'barn' and villager['production_status'] == 'Working':
+                            economy.practice(villager, job, TICK_SECONDS)
                         continue
-                productive_seconds = TICK_SECONDS
-                wood_status = 'Working'
-                if job == 'woodcutting':
-                    animation = villager.get('work_animation', {})
-                    playback = animation.get('playback', [])
-                    productive_seconds = sum(b['time'] - a['time'] for a, b in zip(playback, playback[1:])
-                                             if a['phase'] == 'working')
-                    wood_status = {'walking': 'Walking to tree', 'returning': 'Returning gathered wood',
-                                   'depositing': 'Unloading wood', 'waiting': 'Waiting for a route'}.get(animation.get('phase'), 'Working')
-                    if productive_seconds <= 1e-9:
-                        villager['production_status'] = wood_status
-                        continue
-                if boating and villager.get('work_animation', {}).get('phase') != 'working':
-                    villager['production_status'] = 'Unloading boat' if villager.get('work_animation', {}).get('phase') == 'depositing' else 'Sailing'
-                    continue
-                if job in economy.JOB_BUILDINGS:
-                    if building['kind'] == 'butcher' and building.get('butchering'):
-                        marker = id(building)
-                        reason = economy.qualification(villager, job)
-                        if reason:
-                            villager['production_status'] = reason
-                        elif marker in butcher_cycles:
-                            villager['production_status'] = 'Animal already being butchered this cycle'
-                        elif villager.get('work_animation', {}).get('phase') != 'working':
-                            animation = villager.get('work_animation', {})
-                            task = building['butchering']
-                            villager['production_status'] = {'walking': 'Walking to butcher shop' if task.get('stage') == 'working' else 'Walking to barn',
-                                'finding_animal': 'Finding the animal', 'dragging': 'Dragging animal to butcher shop',
-                                'waiting': 'Waiting for a route'}.get(animation.get('phase'), 'Walking to butcher shop')
-                        else:
-                            butcher_cycles.add(marker)
-                            playback = villager.get('work_animation', {}).get('playback')
-                            seconds = sum(b['time'] - a['time'] for a, b in zip(playback, playback[1:])
-                                          if a['phase'] == 'working') if playback else TICK_SECONDS
-                            villager['production_status'] = logistics.butcher_animal(town, building, villager, seconds)
-                        continue
-                    if building['kind'] in {'barn', 'stable'}:
-                        marker = id(building)
-                        if marker in barn_cycles:
-                            villager['production_status'] = (barn_cycles[marker] if building['kind'] == 'barn'
-                                                             else 'Barn already tended this cycle')
-                            if building['kind'] == 'barn' and villager['production_status'] == 'Working':
-                                economy.practice(villager, job, TICK_SECONDS)
-                            continue
-                    villager['production_status'] = logistics.produce(town, building, villager, TICK_SECONDS)
-                    if building['kind'] in {'barn', 'stable'}:
-                        barn_cycles[marker] = villager['production_status']
-                        if building['kind'] == 'stable' and villager['production_status'] == 'Working':
-                            economy.grow_animals(building, TICK_SECONDS)
-                    continue
-                output = 'wood' if job == 'woodcutting' else 'fish' if job == 'fishing' else source.get('crop', 'vegetables')
-                if job == 'fishing':
-                    depth = town_spatial.water_depths().get((source['x'], source['y']), 1)
-                    output = economy.fishing_catch(building, depth) if work_cycles.fishing_boating(town, building, index) else 'fish'
-                cap_room = economy.production_room(town, output)
-                if cap_room <= 0:
-                    villager['production_status'] = 'Production cap reached'
-                    continue
-                storage_room = economy.local_room(building, output)
-                room = min(storage_room, cap_room)
-                if boating:
-                    room = min(room, economy.fishing_boat_capacity(building) - work_cycles.boat_load(town, building))
-                if room <= 1e-9:
-                    if storage_room <= 1e-9:
-                        building['buffer_full'] = True
-                    villager['production_status'] = 'Workplace buffer full'
-                    continue
-                caught = True
-                if job == 'fishing':
-                    caught = secrets.randbelow(10) != 0
-                    villager['fishing_catch'] = {'attempt': villager.get('fishing_catch', {}).get('attempt', 0) + 1, 'caught': caught}
-                rate = economy.WOOD_PER_CYCLE * productive_seconds / TICK_SECONDS if job == 'woodcutting' else 1
-                bonus = production_bonus(building) + npcs.tool_bonus(villager, job)
-                if source['kind'] == 'acre':
-                    bonus += production_bonus(source)
-                upgrades = building.get('profession_upgrades', [])
-                bonus += .25 * sum(u in upgrades for u in ('nets', 'wool_nets'))
-                if job == 'fishing' and work_cycles.fishing_boating(town, building, index):
-                    bonus += .25 * max(0, economy.fishing_boat_level(building) - 1)
-                amount = min(room, rate * (1 + bonus) * economy.efficiency(villager, job))
-                amount = economy.take_supply(landscape, source, amount)
-                if amount <= 0:
-                    villager['production_status'] = 'Waiting for supply to regenerate'
-                    continue
-                if caught:
-                    orphan_room = max(0, economy.fishing_boat_capacity(building) - work_cycles.boat_load(town, building) - amount) if boating else None
-                    logistics.record_output(town, building, output, amount, villager, orphan_room=orphan_room)
-                if boating and source.get('supply', 1) <= 1e-9:
-                    for crew_index in work_cycles.fishing_crew(town, building):
-                        town['villagers'][crew_index]['boat_return_requested'] = True
-                if job != 'farming':
-                    economy.practice(villager, job, productive_seconds)
-                villager['production_status'] = ('Waiting for a route' if routes.is_waiting(villager) else
-                                                 wood_status if job == 'woodcutting' else 'Working' if caught else 'No catch — trying again')
+                villager['production_status'] = logistics.produce(town, building, villager, TICK_SECONDS)
+                if building['kind'] in {'barn', 'stable'}:
+                    barn_cycles[marker] = villager['production_status']
+                    if building['kind'] == 'stable' and villager['production_status'] == 'Working':
+                        economy.grow_animals(building, TICK_SECONDS)
+                continue
+            output = 'wood' if job == 'woodcutting' else 'fish' if job == 'fishing' else source.get('crop', 'vegetables')
+            if job == 'fishing':
+                depth = town_spatial.water_depths().get((source['x'], source['y']), 1)
+                output = economy.fishing_catch(building, depth) if work_cycles.fishing_boating(town, building, index) else 'fish'
+            cap_room = economy.production_room(town, output)
+            if cap_room <= 0:
+                villager['production_status'] = 'Production cap reached'
+                continue
+            storage_room = economy.local_room(building, output)
+            room = min(storage_room, cap_room)
+            if boating:
+                room = min(room, economy.fishing_boat_capacity(building) - work_cycles.boat_load(town, building))
+            if room <= 1e-9:
+                if storage_room <= 1e-9:
+                    building['buffer_full'] = True
+                villager['production_status'] = 'Workplace buffer full'
+                continue
+            caught = True
+            if job == 'fishing':
+                caught = secrets.randbelow(10) != 0
+                villager['fishing_catch'] = {'attempt': villager.get('fishing_catch', {}).get('attempt', 0) + 1, 'caught': caught}
+            rate = economy.WOOD_PER_CYCLE * productive_seconds / TICK_SECONDS if job == 'woodcutting' else 1
+            bonus = production_bonus(building) + npcs.tool_bonus(villager, job)
+            if source['kind'] == 'acre':
+                bonus += production_bonus(source)
+            upgrades = building.get('profession_upgrades', [])
+            bonus += .25 * sum(u in upgrades for u in ('nets', 'wool_nets'))
+            if job == 'fishing' and work_cycles.fishing_boating(town, building, index):
+                bonus += .25 * max(0, economy.fishing_boat_level(building) - 1)
+            amount = min(room, rate * (1 + bonus) * economy.efficiency(villager, job))
+            amount = economy.take_supply(landscape, source, amount)
+            if amount <= 0:
+                villager['production_status'] = 'Waiting for supply to regenerate'
+                continue
+            if caught:
+                orphan_room = max(0, economy.fishing_boat_capacity(building) - work_cycles.boat_load(town, building) - amount) if boating else None
+                logistics.record_output(town, building, output, amount, villager, orphan_room=orphan_room)
+            if boating and source.get('supply', 1) <= 1e-9:
+                for crew_index in work_cycles.fishing_crew(town, building):
+                    town['villagers'][crew_index]['boat_return_requested'] = True
+            if job != 'farming':
+                economy.practice(villager, job, productive_seconds)
+            villager['production_status'] = wood_status if job == 'woodcutting' else 'Working' if caught else 'No catch — trying again'
         feed_settlers(town)
         if (not town.get('sandbox') and len(town['villagers']) < housing_capacity(town) and town['food'] >= 20
                 and not town.get('arrival_delay_seconds')):

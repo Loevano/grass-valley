@@ -107,7 +107,7 @@ const ClientScene = (() => {
         const task=JSON.stringify([villager.job,villager.building_index,villager.work_target?tiles([villager.work_target]):null,
           villager.construction_target?tiles([villager.construction_target]):null,villager.job==='fishing'?[crew,huts]:null]);
         const trip=villager.logistics_trip;
-        scene.tasks.set(villager,{task,signature:JSON.stringify([task,trip?[trip.id,trip.operation,trip.workplace,trip.storage,trip.path]:villager.logistics_target,!!villager.route_waiting])});
+        scene.tasks.set(villager,{task,signature:JSON.stringify([task,trip?[trip.id,trip.operation,trip.workplace,trip.storage,trip.path]:villager.logistics_target])});
       }
       // Compare geometry once per snapshot, then use identity in worker frames.
       const layoutVersion=old?.layout===layout?old.layoutVersion:{};
