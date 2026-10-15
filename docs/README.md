@@ -15,6 +15,9 @@ headings, and formatting examples based on [Pathing decisions](PATHING.md).
 | Game design | Make town building and exploration fun, with connected stories, rewarding items, and cosmetics. | [Game design](GAME_DESIGN.md) |
 | Artwork | Give the game a cohesive, attractive appearance with readable characters, buildings, and landscapes. | [Artwork](ARTWORK.md) |
 
+Design SVGs live in [`svgs/`](svgs/). Icon files live in the root
+[`icons/`](../icons/) directory.
+
 ## Reading and updating the references
 
 | Label | Meaning |

@@ -981,12 +981,12 @@ Save files and terrain chunks stay at the root, outside version control.
 Town halls occupy 3×3 tiles. Mills, workshops (forgeries), butcher shops, bakeries,
 smokehouses, and tanneries occupy 2×2 tiles; sawpits occupy 3×2. Cottages,
 woodcutters, and farms retain their 1×1 footprints.
-The [updated building family](docs/building-style-family.svg) uses broad shaded
+The [updated building family](docs/svgs/building-style-family.svg) uses broad shaded
 faces, chunky supports, and fewer, larger profession props to match workers,
 trees, and rocks. Fine roof seams, masonry joints, and continuous outlines are
 removed. Structural, capacity, and equipment upgrades remain visible. Completed
 updated buildings have ground shadows; construction sites keep their lot pads.
-The [fishing and mining buildings](docs/fishing-mining-building-style.svg) share
+The [fishing and mining buildings](docs/svgs/fishing-mining-building-style.svg) share
 this style: fishing huts have fish counters and upgraded nets, ponds have open
 water basins and feed racks, mines have timbered rock entrances and ore carts,
 Forgery has an anvil and furnace, and steelworks has a larger furnace and twin
@@ -996,23 +996,23 @@ Their artwork retains the original angled style: the sawpit is an open timber
 shed with a pitched roof, half walls, a tool rack, and a lantern. Its sawing bench
 stands in front on braced trestles, with a toothed hand saw and separate stacks
 of incoming logs and finished boards, following the approved
-[concept C](docs/sawpit-c-refined.svg). Completed storage levels add boards;
+[concept C](docs/svgs/sawpit-c-refined.svg). Completed storage levels add boards;
 worker capacity and the saw upgrade keep their separate visual markers.
 The woodcutter has an olive timber shelter, round logs, axes, and a splitting
 block. The sage-roofed workshop has an open bench, hand tools, a
 vise, boards, and finished woodwork. The farm has an ochre roof, crop hatch,
 seed sacks, and a rake; planted acres remain separate. The mill yard holds grain
 bins and flour sacks. These follow the approved
-[village building concepts](docs/village-building-concepts.svg).
+[village building concepts](docs/svgs/village-building-concepts.svg).
 The butcher shop has a dusty rose roof, open counter, and chopping block.
 The bakery has an ochre roof, masonry oven, and bread display; the taller
 smokehouse has a sage slate roof, vented door, and hanging fish rack.
 The tannery has a low timber shed, stretched hide frame, and soaking vats,
-following the approved [production building concepts](docs/production-building-concepts.svg).
-The [village](docs/village-upgrade-concepts.svg) and
-[production](docs/production-upgrade-concepts.svg) upgrade designs add visible
+following the approved [production building concepts](docs/svgs/production-building-concepts.svg).
+The [village](docs/svgs/village-upgrade-concepts.svg) and
+[production](docs/svgs/production-upgrade-concepts.svg) upgrade designs add visible
 bracing at structural level 2 and masonry footings and gable vents at level 3.
-[Cottages](docs/house-upgrade-concepts.svg) progress through four structural
+[Cottages](docs/svgs/house-upgrade-concepts.svg) progress through four structural
 levels: timber, braced timber, a stone base with dormer, and full stone walls.
 Their separately purchased timber framing remains visible at every level.
 The blue slate town hall gains bracing, a stone base and dormer, a modest belfry,

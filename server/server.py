@@ -2089,6 +2089,11 @@ class Handler(SimpleHTTPRequestHandler):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, directory=str(ROOT / 'web'), **kwargs)
 
+    def translate_path(self, path):
+        if urlsplit(path).path == '/favicon.ico':
+            return str(ROOT / 'icons' / 'favicon.ico')
+        return super().translate_path(path)
+
     def handle(self):
         try:
             super().handle()

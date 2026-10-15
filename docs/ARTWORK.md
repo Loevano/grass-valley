@@ -37,7 +37,7 @@ existing footprints and visible upgrade conventions remain unchanged.
 
 **Implemented:** the updated building families use the landscape's broad,
 mostly unoutlined shapes and the workers' chunky proportions. The original
-[comparison sheet](building-style-prototype.svg) shows level-2 cottages, bakeries,
+[comparison sheet](svgs/building-style-prototype.svg) shows level-2 cottages, bakeries,
 and woodcutters beside the same existing workers, trees, and rocks. The left
 column captures the previous Canvas artwork; the right column is a vector
 sketch. Enlarged views and a 46px-tile reference strip compare readability.
@@ -54,13 +54,13 @@ sketch. Enlarged views and a 46px-tile reference strip compare readability.
 
 The accepted direction is implemented for cottages, town halls, woodcutters,
 farms, workshops, bakeries, butcher shops, smokehouses, tanneries,
-barns, and sawpits. The [implemented family sheet](building-style-family.svg)
+barns, and sawpits. The [implemented family sheet](svgs/building-style-family.svg)
 captures the renderer with existing trees and workers and every structural tier.
 
 ![The eleven simplified building families and their structural tiers.](building-style-family.png)
 
 The same treatment extends to fishing huts, fish ponds, mines, Forgery, and
-steelworks. The [fishing and mining sheet](fishing-mining-building-style.svg)
+steelworks. The [fishing and mining sheet](svgs/fishing-mining-building-style.svg)
 shows the implemented artwork and structural tiers. Fishing huts have blue-green
 roofs, fish counters, and coarse upgraded nets; boat-tier markers remain separate
 from their live boats and docks. Ponds are open stone basins with a low feed rack
@@ -88,7 +88,7 @@ and saved state; the artwork never changes those snapshots.
 
 The interface has dedicated SVG artwork for all 50 resource keys (including coins
 and aggregate food) and all 28 building types, including acres, roads, and
-decorations. The [complete icon sheet](resource-building-icons.svg) shows each at
+decorations. The [complete icon sheet](../icons/resource-building-icons.svg) shows each at
 an enlarged size and the 30px resource-list size. The artwork uses the existing
 32×32 view box, rounded brown outlines, and timber, sage, and lantern-gold palette.
 
@@ -106,7 +106,7 @@ broader visual improvements below remain open.
 
 ## Sawpit artwork
 
-The [SVG concept comparison](sawpit-concepts.svg) explored alternatives to the
+The [SVG concept comparison](svgs/sawpit-concepts.svg) explored alternatives to the
 previous sawpit, which was difficult to recognize.
 Each includes an enlarged view and an approximately normal-size view, using the
 current palette and 3×2 lot. Worker poses illustrate the work rather than specify
@@ -120,7 +120,7 @@ staffing or animation behavior.
 | B — Raised sawing deck | A timber platform with workers above and below | A taller silhouette, with more structure |
 | C — Saw bench + rear shed | A familiar hand-saw profile on an open workbench | Fits the building family, but is less literal as a pit |
 
-The approved [refined concept C](sawpit-c-refined.svg) is implemented in the canvas
+The approved [refined concept C](svgs/sawpit-c-refined.svg) is implemented in the canvas
 renderer: a pitched rear shed with half walls, a tool rack and lantern, an open
 bench on braced trestles, a proportionate hand saw, and separate log and board
 storage. The SVG remains the design reference, including a view at approximately
@@ -134,7 +134,7 @@ until moved to a clear site with the full 3×2 footprint.
 
 ## Barn and gate concepts
 
-The [SVG concept comparison](barn-concepts.svg) shows three proposed barn upgrades,
+The [SVG concept comparison](svgs/barn-concepts.svg) shows three proposed barn upgrades,
 each with the same 7×7 pen open and closed. The sketches retain the current angled
 view, timber palette, and shared door and animal scale. The selected concept C
 is implemented: a sage roof, stone base, braced timber fence, and sliding gate.
@@ -147,7 +147,7 @@ is implemented: a sage roof, stone base, braced timber fence, and sliding gate.
 | B — The hayloft barn | Ochre roof, hayloft hood, three fence rails | Two smaller leaves swing inward |
 | C — The stone-footed barn | Sage roof, stone base, braced fence rails | A timber leaf slides along a guide beside the fence |
 
-The [refined concept C](barn-c-refined.svg) replaces the tapered yard path with a
+The [refined concept C](svgs/barn-c-refined.svg) replaces the tapered yard path with a
 constant-width connection from the barn door to the gate. Its bend follows the
 isometric grid, so the long edges read as diagonal lines. The comparison sheet
 also includes this refinement.
@@ -168,7 +168,7 @@ their existing meaning. The SVG state icons remain diagram labels.
 
 ## Composition sketch
 
-![Proposed artwork reference: an angled cottage, founder, path, and palette, with a diagram of depth layers.](artwork-reference.svg)
+![Proposed artwork reference: an angled cottage, founder, path, and palette, with a diagram of depth layers.](svgs/artwork-reference.svg)
 
 | Sketch element | Purpose | Question to settle |
 | --- | --- | --- |
