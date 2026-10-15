@@ -178,6 +178,10 @@ Advanced woodcraft and metal sale values now cover ingredients, including fuel;
 higher workshop recipe tiers preserve or improve profit per active work second.
 
 Barn animal counts are configurable per species within shared capacity.
+Linked sliders sit below each species heading and above its individual animals.
+Their limits share the barn capacity without automatically reducing other species.
+Barn animals have persistent names, preserved through growth, count changes,
+and reloads; each new animal or last-animal replacement gets a fresh name.
 Base growth takes 60/120/240/360 seconds for chickens/sheep/pigs/cows without
 feed or workers; each assigned keeper adds one base growth speed.
 Growth is independent of animation, routes, output storage, and production caps.

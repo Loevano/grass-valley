@@ -83,6 +83,45 @@ def ensure_villager_names(town):
             villager['name'] = next_villager_name(town)
 
 
+ANIMAL_NAMES = (
+    'Poppy', 'Clover', 'Hazel', 'Biscuit', 'Mabel', 'Pip', 'Daisy', 'Fern',
+    'Buttercup', 'Pebble', 'Maple', 'Honey', 'Moss', 'Nellie', 'Pumpkin', 'Coco',
+    'Dottie', 'Juniper', 'Pickle', 'Rosie', 'Bramble', 'Olive', 'Chestnut', 'Sunny',
+    'Bonnie', 'Acorn', 'Ginger', 'Marigold', 'Basil', 'Bluebell', 'Toffee', 'Pearl',
+)
+
+
+def ensure_animal_names(town):
+    """Name barn animals once, keeping names aligned with their saved ages."""
+    used = {name for barn in town.get('buildings', []) if barn['kind'] == 'barn'
+            for names in barn.get('animal_names', {}).values() for name in names
+            if isinstance(name, str) and name.strip()}
+    seen = set()
+    sequence = town.get('animal_name_sequence', 0)
+    for barn in town.get('buildings', []):
+        if barn['kind'] != 'barn' or not barn.get('animals'):
+            continue
+        names = barn.setdefault('animal_names', {})
+        for animal, count in barn['animals'].items():
+            saved = names.get(animal, [])[:count]
+            saved += [''] * (count - len(saved))
+            for index, name in enumerate(saved):
+                if not isinstance(name, str) or not name.strip() or name in seen:
+                    while True:
+                        base = ANIMAL_NAMES[sequence % len(ANIMAL_NAMES)]
+                        generation = sequence // len(ANIMAL_NAMES) + 1
+                        name = base if generation == 1 else f'{base} {generation}'
+                        sequence += 1
+                        if name not in used:
+                            break
+                    saved[index] = name
+                used.add(name)
+                seen.add(name)
+            names[animal] = saved
+    if sequence != town.get('animal_name_sequence', 0):
+        town['animal_name_sequence'] = sequence
+
+
 def housing_capacity(town):
     # Existing cottages keep their current housing while an upgrade is built.
     return 5 + sum(max(2 * (building_level(b) + ('timber_frame' in b.get('profession_upgrades', []))),
@@ -1050,6 +1089,7 @@ def tick(world):
         world['shared_map']['chunk_clock'] += TICK_SECONDS
     for town in world['towns'].values():
         ensure_villager_names(town)
+        ensure_animal_names(town)
         ensure_resources(town)
         economy.ensure_inventory(town)
         npcs.advance_trades(town, TICK_SECONDS)
@@ -1760,9 +1800,11 @@ def command(town, data, world=None):
             others = sum(n for key, n in animals.items() if key != animal)
             if type(count) is not int or not 0 <= count <= 4 * building_level(building) - others:
                 raise ValueError('Choose an animal count within the barn capacity.')
+            ensure_animal_names(town)
             ages = economy.animal_growth(building, animal)
             building.setdefault('animal_growth', {})[animal] = (ages + [0] * count)[:count]
             building.setdefault('animals', {})[animal] = count
+            ensure_animal_names(town)
         elif action == 'butcher_animal':
             if building['kind'] != 'butcher':
                 raise ValueError('Choose a butcher shop.')
@@ -1781,12 +1823,15 @@ def command(town, data, world=None):
             if not any(v.get('building_index') == index and v['job'] == 'butchery'
                        and not economy.qualification(v, 'butchery') for v in town['villagers']):
                 raise ValueError('Assign a qualified butcher first.')
+            ensure_animal_names(town)
+            name = barn['animal_names'][animal].pop(adult)
             del ages[adult]
             if not ages:
                 ages = [0]
             barn['animals'][animal] = len(ages)
             barn.setdefault('animal_growth', {})[animal] = ages
-            building['butchering'] = {'animal': animal, 'amount': economy.ANIMAL_MEAT[animal],
+            ensure_animal_names(town)
+            building['butchering'] = {'animal': animal, 'name': name, 'amount': economy.ANIMAL_MEAT[animal],
                                       'remaining': economy.BUTCHER_SECONDS, 'id': secrets.token_hex(8),
                                       'pickup': {'kind': 'barn', 'x': barn['x'], 'y': barn['y']},
                                       'stage': 'fetching'}
@@ -1841,10 +1886,12 @@ def command(town, data, world=None):
             if not economy.afford(town, costs):
                 raise ValueError('Missing animal purchase or breeding supplies.')
             economy.spend(town, costs)
+            ensure_animal_names(town)
             ages = economy.animal_growth(building, animal)
             ages.append(0)
             building.setdefault('animal_growth', {})[animal] = ages
             building.setdefault('animals', {})[animal] = animals.get(animal, 0) + 1
+            ensure_animal_names(town)
         else:
             key = data.get('upgrade')
             spec = economy.PROFESSION_UPGRADES.get(key)
@@ -1955,6 +2002,7 @@ class Handler(SimpleHTTPRequestHandler):
                 prepare_landscapes(WORLD)
                 for town in WORLD['towns'].values():
                     ensure_resources(town)
+                    ensure_animal_names(town)
                     ensure_player(walking_map(WORLD, town) if 'shared_map' in WORLD else town)
                 snapshot = export_world(WORLD)
                 if WORLD.get('_chunks'):
@@ -2168,6 +2216,7 @@ def load():
         bind_map(entry['world'])
         for town in entry['world']['towns'].values():
             ensure_villager_names(town)
+            ensure_animal_names(town)
             for index, villager in enumerate(town['villagers']):
                 economy.ensure_talents(villager, index)
 

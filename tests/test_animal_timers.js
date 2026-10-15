@@ -62,12 +62,26 @@ assert.equal(client.run('timer.time.textContent'),'Awaiting host update…','A s
   client.run('world.towns.own.buildings[0].animal_growth.chicken=[30];');
   client.frame(12000);
   assert.equal(client.run('timer.time.textContent'),'Fully grown · Ready for butchery');
-  assert.equal(client.run('timer.label.textContent'),'Animal 1 · Fully grown');
+  assert.equal(client.run('timer.label.textContent'),'Chicken 1 · Fully grown');
   assert.equal(client.run('renderBarnAnimals.timers.state.textContent'),'0 growing · 1 fully grown · 2× speed');
   client.frame(60000);
   assert.equal(client.run('timer.time.textContent'),'Fully grown · Ready for butchery','Adults wait without restarting a countdown');
   client.run("viewed='elsewhere';timer.time.textContent='Detached';");
   client.frame(13000);
   assert.equal(client.run('timer.time.textContent'),'Detached','Leaving a town stops updating its old controls');
+  client.run(`
+    viewed='own';
+    const sliderTarget=document.createElement('div');
+    renderBarnAnimals(world.towns.own,world.towns.own.buildings[0],0,sliderTarget);
+    const descendants=node=>[node,...node.children.flatMap(descendants)];
+    const slider=descendants(sliderTarget).find(node=>node.id?.startsWith('barn-count-'));
+    document.activeElement=slider;slider.onpointerdown();
+  `);
+  const beforeDrag=client.run('renderCalls');
+  await client.run('refresh()');
+  assert.equal(client.run('renderCalls'),beforeDrag,'Polling preserves a slider during a drag');
+  client.run('slider.onpointercancel();document.activeElement=null;');
+  await client.run('refresh()');
+  assert.equal(client.run('renderCalls'),beforeDrag+1,'Polling resumes rendering after dragging ends');
   console.log('Animal countdown and focused-dropdown polling checks passed.');
 })().catch(error=>{console.error(error);process.exitCode=1;});

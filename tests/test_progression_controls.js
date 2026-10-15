@@ -39,6 +39,7 @@ const run=new Function('document','window','localStorage','setTimeout','clearTim
  const buy=label=>panelNodes().find(b=>b.tag==='button'&&(b.attributes['aria-label'] || b.textContent).startsWith(label));
  const herdCount=animal=>panelNodes().find(node=>node.tag==='input'&&node.attributes['aria-label']?.toLowerCase()===animal+' to keep');
  check(herdCount('chicken')&&!herdCount('sheep'),'Locked animals are omitted');
+ check(herdCount('chicken').type==='range','Animal counts use a slider');
  herdCount('chicken').value='3';herdCount('chicken').onchange();
  check(commands.at(-1).action==='set_animal_count'&&commands.at(-1).index===1&&commands.at(-1).count===3,'Count controls target the selected barn');
  check(panelNodes().some(c=>c.textContent?.includes('25 eggs per growth cycle')),'Fixed cycle output is visible');
@@ -66,6 +67,22 @@ const run=new Function('document','window','localStorage','setTimeout','clearTim
  check(!crops.children.some(b=>b.value==='fodder'),'Locked crops are omitted');
  crops.value='wheat';crops.onchange();check(commands.at(-1).crop==='wheat'&&commands.at(-1).index===2,'Crop selector targets the farm and all linked acres');
  town.level=3;inspect('building',1);check(!!herdCount('sheep'),'Animals appear when unlocked');
+ town.buildings[1].animals={chicken:2,sheep:1};town.buildings[1].animal_names={chicken:['Poppy','Clover'],sheep:['Fern']};render();
+ const namedBarn=JSON.stringify(town.buildings[1]),cards=panelNodes().filter(node=>node.className==='livestock-card');
+ check(cards[0].children[0].className==='livestock-heading'&&cards[0].children[1].className==='livestock-count'&&cards[0].children[2].className==='livestock-growth','Names, sliders, and individual animals appear in that order');
+ check(panelNodes().some(node=>node.textContent?.startsWith('Poppy ·'))&&panelNodes().some(node=>node.textContent?.startsWith('Clover ·'))&&panelNodes().some(node=>node.textContent?.startsWith('Fern ·')),'Saved individual names are displayed');
+ check(Number(herdCount('chicken').max)===3&&Number(herdCount('sheep').max)===2,'Sliders share the barn capacity');
+ const countCommands=commands.length;
+ herdCount('chicken').value='3';herdCount('chicken').oninput();
+ check(Number(herdCount('sheep').max)===1,'Increasing chickens reduces the sheep maximum immediately');
+ check(commands.length===countCommands,'Dragging previews counts until release');
+ herdCount('chicken').value='1';herdCount('chicken').oninput();
+ check(Number(herdCount('sheep').max)===3,'Reducing chickens immediately frees sheep spaces');
+ check(JSON.stringify(town.buildings[1])===namedBarn,'Slider previews leave authoritative animals and names unchanged');
+ herdCount('sheep').value='3';herdCount('sheep').onchange();
+ check(commands.at(-1).animal==='sheep'&&commands.at(-1).count===3,'Releasing a slider sends its count');
+ viewed='friend';render();check(!herdCount('chicken'),'Visitors cannot change counts');viewed='own';
+
  inspect('building',2);check(panelNodes().find(b=>b.attributes['aria-label']==='Crop for all acres').children.some(b=>b.value==='fodder'),'Crops appear when unlocked');
  check(jobs().includes('woodworking'),'Later professions appear when unlocked');
  town.buildings.push({kind:'woodcutter',x:6,y:6});

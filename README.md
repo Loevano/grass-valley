@@ -678,6 +678,11 @@ the Python host, refresh both browsers, and create a new world to use the shared
   growth clock, independently of their routes and animations.
 - Set how many chickens, sheep, pigs, and cows to keep in the barn's Animals panel,
   within hall unlocks and the shared capacity of four animals per building level.
+  Each species has a slider directly below its heading, followed by its named
+  animals. Sliders share the barn capacity: lowering one frees spaces for others;
+  increasing one stops at the available space without removing other species.
+  Every barn animal receives a saved name. Retained animals keep their names when
+  counts change; newly added animals and young replacements receive fresh names.
   Increasing a count adds free young animals; decreasing it removes animals while
   preserving the growth of those retained. Counts persist in saves.
   Animals grow without feed or workers. Base growth times are

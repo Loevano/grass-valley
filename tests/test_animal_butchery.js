@@ -7,7 +7,7 @@ const commands=[];
 const create=new Function('world','document','viewed','identity','goodName','jobRequirement','act',
   source.slice(source.indexOf('function animalAges('),source.indexOf('function renderProfession('))+
   'return {animalAges,renderAnimalButchery};');
-const town={buildings:[{kind:'barn',x:3,y:6,animals:{pig:2,chicken:1},animal_growth:{pig:[0,300],chicken:[10]}},{kind:'butcher'}],
+const town={buildings:[{kind:'barn',x:3,y:6,animals:{pig:2,chicken:1},animal_growth:{pig:[0,300],chicken:[10]},animal_names:{pig:['Biscuit','Poppy'],chicken:['Clover']}},{kind:'butcher'}],
   villagers:[{job:'butchery',building_index:1,husbandry:2}]};
 function panel(owner=true){
   const ui=create({progression},document,owner?'own':'visitor',{town_id:'own'},key=>key,
@@ -21,16 +21,16 @@ let p=panel();
 assert.equal(p.chooser.children.length,1,'Only mature animals appear');
 assert.equal(p.button.textContent,'Butcher');
 assert(p.preview.textContent.includes('8 meat')&&!p.preview.textContent.includes('free young'),'No replacement while another pig remains');
-assert.equal(p.chooser.children[0].textContent,'pig · 1 ready');
+assert.equal(p.chooser.children[0].textContent,'Poppy · pig · 1 ready');
 assert(p.note.textContent.includes('free young animal')&&p.note.textContent.includes('only when no others'),'Explain automatic replacement');
 p.chooser.value=p.chooser.children[0].value;p.button.onclick();
 assert.deepStrictEqual(commands.at(-1),{action:'butcher_animal',index:1,barn_index:0,animal:'pig'});
 town.buildings.push({kind:'barn',x:9,y:4,animals:{pig:1,cow:1}});
 p=panel();
-assert.equal(p.chooser.children[0].textContent,'pig · 1 ready · Barn (3, 6)');
+assert.equal(p.chooser.children[0].textContent,'Poppy · pig · 1 ready · Barn (3, 6)');
 const otherPig=p.chooser.children.find(option=>option.value==='2:pig');
-assert.equal(otherPig.textContent,'pig · 1 ready · Barn (9, 4)');
-assert.equal(p.chooser.children.find(option=>option.value==='2:cow').textContent,'cow · 1 ready');
+assert.equal(otherPig.textContent,'pig 1 · pig · 1 ready · Barn (9, 4)');
+assert.equal(p.chooser.children.find(option=>option.value==='2:cow').textContent,'cow 1 · cow · 1 ready');
 p.chooser.value='2:cow';p.chooser.onchange();assert(p.preview.textContent.includes('10 meat + 1 free young cow'));
 p.chooser.value=otherPig.value;p.button.onclick();
 assert.deepStrictEqual(commands.at(-1),{action:'butcher_animal',index:1,barn_index:2,animal:'pig'});

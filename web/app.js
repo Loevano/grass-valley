@@ -1548,6 +1548,9 @@ function animalAges(barn,animal){
   const duration=animalGrowthDuration(animal);
   return Array.from({length:barn.animals?.[animal] || 0},(_,i)=>barn.animal_growth?.[animal]?.[i] ?? duration);
 }
+function animalName(barn,animal,number){
+  return barn.animal_names?.[animal]?.[number] || `${goodName(animal)} ${number+1}`;
+}
 function animalGrowthDuration(animal){
   return world.progression?.animals?.[animal]?.growth_seconds || world.progression?.animal_growth_seconds || 300;
 }
@@ -1586,7 +1589,7 @@ function updateBarnTimers(now=performance.now()){
     const age=Math.min(duration,item.animal_growth?.[animal]?.[number] ?? duration);
     const seconds=barnGrowthSeconds(age,duration,speed,now);
     const text=age>=duration?'Fully grown · Ready for butchery':seconds?`${Math.floor(seconds/60)}m ${seconds%60}s until fully grown`:'Awaiting host update…';
-    const labelText=`Animal ${number+1} · ${age>=duration?'Fully grown':'Growing'}`;
+    const labelText=`${animalName(item,animal,number)} · ${age>=duration?'Fully grown':'Growing'}`;
     if(label.textContent!==labelText)label.textContent=labelText;
     if(time.textContent!==text)time.textContent=text;
     const value=`${Math.floor(age/duration*100)}%`;
@@ -1595,9 +1598,22 @@ function updateBarnTimers(now=performance.now()){
   }
 }
 function renderBarnAnimals(town,item,index,target){
+  renderBarnAnimals.dragging=false;
   const catalog=world.progression,owner=viewed===identity?.town_id,capacity=4*buildingLevel(item);
   const count=Object.values(item.animals || {}).reduce((sum,n)=>sum+n,0);
   const growing=Object.keys(item.animals || {}).reduce((sum,animal)=>sum+animalAges(item,animal).filter(age=>age<animalGrowthDuration(animal)).length,0);
+  const controls=[];
+  const validCount=input=>input.value!==''&&Number.isInteger(Number(input.value))&&Number(input.value)>=0&&Number(input.value)<=Number(input.max);
+  const updateSliders=()=>{
+    const hiddenCount=count-controls.reduce((sum,{animal})=>sum+(item.animals?.[animal] || 0),0);
+    const total=hiddenCount+controls.reduce((sum,{input})=>sum+Number(input.value),0);
+    for(const {input,amount} of controls){
+      input.max=capacity-total+Number(input.value);
+      amount.textContent=`${input.value} / ${input.max}`;
+      input.setAttribute('aria-valuetext',`${input.value} animals, maximum ${input.max}`);
+    }
+    spaces.textContent=`${total} / ${capacity} animal spaces`;
+  };
   const speed=barnGrowthSpeed(town,item,index);
   const timers={worldId:world.world_id,townId:viewed,index,x:item.x,y:item.y,rows:[],cycles:[]};
   renderBarnAnimals.timers=timers;
@@ -1618,17 +1634,34 @@ function renderBarnAnimals(town,item,index,target){
     const growing=ages.filter(age=>age<duration).length;
     const stock=document.createElement('span');stock.className='livestock-state';stock.textContent=ages.length?`${growing} growing · ${ages.length-growing} fully grown`:'Not stocked';
     heading.append(name,stock);card.append(heading);
+    if(owner){
+      const control=document.createElement('label');control.className='livestock-count';
+      const caption=document.createElement('span');caption.textContent='Animals to keep';
+      const amount=document.createElement('output');
+      const input=document.createElement('input');input.id=`barn-count-${viewed}-${index}-${animal}`;input.type='range';input.min=0;input.max=capacity-count+ages.length;input.step=1;input.value=ages.length;
+      input.setAttribute('aria-label',`${goodName(animal)} to keep`);amount.setAttribute('for',input.id);
+      controls.push({animal,input,amount});
+      input.onpointerdown=()=>{renderBarnAnimals.dragging=true;};
+      input.onpointerup=input.onpointercancel=input.onblur=()=>{renderBarnAnimals.dragging=false;};
+      input.oninput=()=>{if(validCount(input))updateSliders();};
+      input.onchange=()=>{
+        renderBarnAnimals.dragging=false;
+        if(viewed!==identity?.town_id||!validCount(input))return;
+        updateSliders();
+        act({action:'set_animal_count',index,animal,count:Number(input.value)});
+      };
+      control.append(caption,amount,input);card.append(control);
+    }
     const timing=document.createElement('p');timing.className='livestock-note';
-    timing.textContent=`${duration}s base cycle · ${Number((duration/speed).toFixed(1))}s average with current keepers`;timers.cycles.push({animal,timing,stock});card.append(timing);
+    timing.textContent=`${duration}s base cycle · ${Number((duration/speed).toFixed(1))}s average with current keepers`;timers.cycles.push({animal,timing,stock});
     const yieldNote=document.createElement('p');yieldNote.className='livestock-yield';
     yieldNote.textContent=animal==='pig'?'Raised for meat and hides':`${products} ${goodName(spec.output).toLowerCase()} per growth cycle`;
-    card.append(yieldNote);
-    const meat=document.createElement('small');meat.className='livestock-note';meat.textContent=`${catalog.animal_meat?.[animal] || 0} meat when butchered; free young ${animal} only when none remain in this barn`;card.append(meat);
+    const meat=document.createElement('small');meat.className='livestock-note';meat.textContent=`${catalog.animal_meat?.[animal] || 0} meat when butchered; free young ${animal} only when none remain in this barn`;
     ages.forEach((age,number)=>{
       const confirmed=Math.min(duration,age);
       const row=document.createElement('div');row.className='livestock-growth';
       const caption=document.createElement('div');caption.className='livestock-growth-caption';
-      const label=document.createElement('span');label.textContent=`Animal ${number+1} · ${confirmed>=duration?'Fully grown':'Growing'}`;
+      const label=document.createElement('span');label.textContent=`${animalName(item,animal,number)} · ${confirmed>=duration?'Fully grown':'Growing'}`;
       const percent=document.createElement('span');percent.textContent=`${Math.floor(confirmed/duration*100)}%`;
       caption.append(label,percent);row.append(caption);
       const progress=document.createElement('progress');progress.max=duration;progress.value=confirmed;
@@ -1637,19 +1670,10 @@ function renderBarnAnimals(town,item,index,target){
       time.textContent=confirmed>=duration?'Fully grown · Ready for butchery':seconds?`${Math.floor(seconds/60)}m ${seconds%60}s until fully grown`:'Awaiting host update…';
       timers.rows.push({animal,number,duration,time,percent,progress,label});row.append(time);card.append(row);
     });
-    if(owner){
-      const label=document.createElement('label');label.textContent='Animal count';
-      const input=document.createElement('input');input.id=`barn-count-${viewed}-${index}-${animal}`;input.type='number';input.min=0;input.max=capacity-count+ages.length;input.step=1;input.value=ages.length;
-      input.setAttribute('aria-label',`${goodName(animal)} to keep`);
-      input.onchange=()=>{
-        const value=Number(input.value);
-        if(viewed!==identity?.town_id||input.value===''||!Number.isInteger(value)||value<0||value>Number(input.max))return;
-        act({action:'set_animal_count',index,animal,count:value});
-      };
-      label.append(input);card.append(label);
-    }
+    card.append(timing,yieldNote,meat);
     target.append(card);
   }
+  updateSliders();
 }
 function renderAnimalButchery(town,item,index,target){
   const catalog=world.progression,owner=viewed===identity?.town_id;
@@ -1659,7 +1683,7 @@ function renderAnimalButchery(town,item,index,target){
   const task=item.butchering,duration=catalog.butcher_seconds || 60;
   if(task){
     const status=document.createElement('p');status.className='butchery-status';
-    status.textContent=`${goodName(task.animal)} → ${task.amount} meat · ${Math.ceil(task.remaining)}s of work remaining${task.remaining===0?' · Waiting for buffer space or production cap':''}`;card.append(status);
+    status.textContent=`${task.name || goodName(task.animal)} → ${task.amount} meat · ${Math.ceil(task.remaining)}s of work remaining${task.remaining===0?' · Waiting for buffer space or production cap':''}`;card.append(status);
     if(task.stage&&task.stage!=='working')status.textContent=`${task.stage==='dragging'?'Dragging animal to shop':'Collecting animal from barn'} · ${status.textContent}`;
     const progress=document.createElement('progress');progress.max=duration;progress.value=duration-task.remaining;progress.setAttribute('aria-label','Animal butchery progress');card.append(progress);
   }
@@ -1669,14 +1693,15 @@ function renderAnimalButchery(town,item,index,target){
   town.buildings.forEach((barn,barnIndex)=>{
     if(barn.kind!=='barn'||barn.construction&&!barn.construction.upgrade)return;
     for(const animal of Object.keys(catalog.animal_meat || {}).filter(animal=>animal!=='horse')){
-      const adults=animalAges(barn,animal).filter(age=>age>=animalGrowthDuration(animal)).length;
-      if(adults)choices.push({barn,barnIndex,animal,adults});
+      const ages=animalAges(barn,animal),adult=ages.findIndex(age=>age>=animalGrowthDuration(animal));
+      const adults=ages.filter(age=>age>=animalGrowthDuration(animal)).length;
+      if(adults)choices.push({barn,barnIndex,animal,adults,name:animalName(barn,animal,adult)});
     }
   });
-  for(const {barn,barnIndex,animal,adults} of choices){
+  for(const {barn,barnIndex,animal,adults,name} of choices){
     const option=document.createElement('option');option.value=`${barnIndex}:${animal}`;
     const multipleBarns=choices.some(choice=>choice.animal===animal&&choice.barnIndex!==barnIndex);
-    option.textContent=`${goodName(animal)} · ${adults} ready${multipleBarns?` · Barn (${barn.x}, ${barn.y})`:''}`;chooser.append(option);
+    option.textContent=`${name} · ${goodName(animal)} · ${adults} ready${multipleBarns?` · Barn (${barn.x}, ${barn.y})`:''}`;chooser.append(option);
   }
   if(choices.length)chooser.value=chooser.children[0].value;
   const label=document.createElement('label');label.hidden=!!task;label.textContent='Fully grown animal';label.append(chooser);card.append(label);
@@ -2236,8 +2261,9 @@ async function refresh(){
       players:Object.fromEntries(Object.entries(world.towns).filter(([,town])=>town.player).map(([id,town])=>[id,town.player]))});
     catalog=await request('/api/worlds');
     if(!world.towns[viewed]){viewed=identity?.town_id || Object.keys(world.towns)[0];selection=null;panel=null;tool=null;moveIndex=null;buildTile=null;hoverTile=null;keyboardTile=null;}
-    // Keep an open dropdown intact while snapshots and existing timers advance.
-    if(document.activeElement?.tagName!=='SELECT'||previousWorldId!==world.world_id){render();renderWorldMenu();}
+    // Keep dropdowns and a slider being dragged intact while snapshots advance.
+    const barnSliderDragging=renderBarnAnimals.dragging&&document.activeElement?.id?.startsWith('barn-count-');
+    if((document.activeElement?.tagName!=='SELECT'&&!barnSliderDragging)||previousWorldId!==world.world_id){render();renderWorldMenu();}
     else updateBarnTimers();
     if(!world.world_id){if(!$('world-menu').open)$('world-menu').showModal();menuStarted=true;}
   })();
