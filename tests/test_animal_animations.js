@@ -18,6 +18,10 @@ const cachedSprites=new Function('ClientScene',
 )(Scene);
 const animals=sprites([barn],0);
 assert.equal(animals.length,12,'Every animal appears, including upgraded barn capacity');
+for(const animal of animals){
+  const lone=sprites([{...barn,animals:{[animal.species]:1}}],0)[0];
+  assert.equal(animal.size,lone.size,'Adding animals does not shrink the existing herd');
+}
 const young=sprites([{...barn,animals:{pig:1},animal_growth:{pig:[0]}}],0)[0];
 const growingBarn={...barn,animals:{pig:1},animal_growth:{pig:[150]}};
 const growthBefore=JSON.stringify(growingBarn);
@@ -37,9 +41,9 @@ const timedSprites=new Function('world',
 for(const [species,duration] of [['chicken',30],['sheep',60],['pig',120],['cow',180]]){
   const growing={...barn,animals:{[species]:1},animal_growth:{[species]:[duration/2]}};
   const original=JSON.stringify(growing),half=timedSprites([growing],0)[0];
-  assert(Math.abs(half.size-.6)<1e-9,'Each species reaches half size on its own growth timer');
+  assert(Math.abs(half.size-.66)<1e-9,'Each species reaches its midpoint size on its own growth timer');
   growing.animal_growth[species]=[0];
-  assert.equal(timedSprites([growing],1)[0].size,.4,'Automatic replacement resets visible size');
+  assert.equal(timedSprites([growing],1)[0].size,.52,'Automatic replacement resets to a visible young animal');
   assert.equal(JSON.stringify({...growing,animal_growth:{[species]:[duration/2]}}),original,'Rendering preserves confirmed ages');
 }
 for(const species of Object.keys(barn.animals))assert.equal(animals.filter(a=>a.species===species).length,3);

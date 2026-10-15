@@ -3725,14 +3725,15 @@ function barnAnimalSprites(buildings,time,landscape={}){
         y:start.y+(end.y-start.y)*fraction+front-side,phase,walking,
         feeding:!walking&&((cycle>=walkSeconds+1&&cycle<walkSeconds+4)||cycle>=walkSeconds*2+6),
         facing:((end.x-start.x)-(end.y-start.y))*(returning?-1:1)>=0?1:-1,
-        size:(stock.length>4?.62:.8)*(.5+.5*growth)});
+        size:.8*(.65+.35*growth)});
     }
   }
   barnAnimalSprites.growthStates=nextGrowthStates;
   return sprites;
 }
 function drawBarnAnimal(animal){
-  const [x,top]=point(animal.x,animal.y),s=tileW/46*animal.size;
+  const speciesSize={chicken:.75,sheep:1,pig:1.05,cow:1.8,horse:1}[animal.species] || 1;
+  const [x,top]=point(animal.x,animal.y),s=tileW/46*animal.size*speciesSize;
   const chicken=animal.species==='chicken',cow=animal.species==='cow';
   const stride=animal.walking?Math.sin(animal.phase*12):0;
   const bob=animal.walking?Math.abs(stride)*.6:Math.sin(animal.phase*2)*.2;
