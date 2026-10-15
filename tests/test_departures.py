@@ -60,6 +60,9 @@ class SettlerDepartures(unittest.TestCase):
         self.assertAlmostEqual(housing_loyalty(self.town), .5)
         home['profession_upgrades'] = ['timber_frame']
         self.assertEqual(housing_loyalty(self.town), .75)
+        home['construction'] = {'progress': 0, 'total': 30, 'upgrade': {'settler_level': 3}}
+        self.assertEqual(housing_loyalty(self.town), .75)
+        self.assertEqual(housing_capacity(self.town), 13)
         home['construction'] = {'progress': 0, 'total': 30}
         self.assertEqual(housing_loyalty(self.town), 0)
 
@@ -105,6 +108,42 @@ class SettlerDepartures(unittest.TestCase):
             {'kind': 'home', 'level': 3, 'construction': {'progress': 0, 'total': 30}},
         ])
         self.assertEqual(housing_capacity(self.town), 17)
+
+    @patch('server.secrets.randbelow', return_value=0)
+    def test_cottage_upgrades_preserve_existing_housing_and_comfort(self, roll):
+        home = {'kind': 'home', 'level': 2, 'settler_level': 2}
+        self.town['buildings'].append(home)
+        self.town['villagers'].extend(
+            {'name': f'Resident {i}', 'job': 'idle'} for i in range(4))
+        for upgrade, spaces, loyalty in (
+                ({'level': 3}, 11, 1 / 3),
+                ({'settler_level': 3}, 9, 1 / 9),
+                ({'profession_upgrades': ['timber_frame']}, 11, 1 / 3)):
+            with self.subTest(upgrade=upgrade):
+                home.update(level=2, settler_level=2, profession_upgrades=[])
+                home['construction'] = {'progress': 0, 'total': 60, 'upgrade': upgrade}
+                self.town.update(food=100, housing_shortage_seconds=57)
+                self.assertEqual(housing_capacity(self.town), 9)
+                self.assertAlmostEqual(housing_loyalty(self.town), 1 / 9)
+                # An upgrade stalled beyond the grace period must not evict residents.
+                for _ in range(25):
+                    feed_settlers(self.town)
+                self.assertEqual(self.town['housing_shortage_seconds'], 0)
+                self.assertEqual(len(self.town['villagers']), 9)
+                roll.assert_not_called()
+                home.update(home.pop('construction')['upgrade'])
+                self.assertEqual(housing_capacity(self.town), spaces)
+                self.assertAlmostEqual(housing_loyalty(self.town), loyalty)
+
+    def test_sandbox_cottage_upgrade_preserves_existing_resident_spaces(self):
+        self.town['sandbox'] = True
+        home = {'kind': 'home', 'settler_level': 2,
+                'construction': {'progress': 0, 'total': 30,
+                                 'upgrade': {'settler_level': 3}}}
+        self.town['buildings'].append(home)
+        self.assertEqual(housing_capacity(self.town), 9)
+        home.update(home.pop('construction')['upgrade'])
+        self.assertEqual(housing_capacity(self.town), 11)
 
     @patch('server.secrets.randbelow', return_value=0)
     def test_lost_housing_causes_departures_despite_plentiful_food(self, roll):

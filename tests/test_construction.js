@@ -20,6 +20,7 @@ const run=new Function('document','window','localStorage','setTimeout','clearTim
   assert(panelNodes().some(c=>c.textContent?.includes('Waiting for a builder')));
   assert(panelNodes().some(c=>c.max===30&&c.value===0),'Construction has accessible progress');
   assert(!panelNodes().some(c=>c.textContent==='+2'),'Unfinished home has no housing benefit');
+  assert.strictEqual(housingCapacity(town),5,'New cottages provide no housing before completion');
   inspect('villager',0);
   const card=$('selection-details').children[0];
   assert(card.children.some(c=>c.className==='villager-activity'&&c.textContent==='Walking to construction'));
@@ -70,6 +71,21 @@ const run=new Function('document','window','localStorage','setTimeout','clearTim
   inspect('building',1);
   assert(panelNodes().some(c=>c.textContent?.includes('Upgrading · 40% complete · 18s remaining')));
   assert(panelNodes().some(c=>c.className==='upgrade-button'&&c.disabled),'Repeated upgrades are disabled');
+  site.level=2;
+  for(const upgrade of [{level:3},{settler_level:3},{profession_upgrades:['timber_frame']}]){
+    site.construction.upgrade=upgrade;render();
+    assert.strictEqual(housingCapacity(town),9,'Existing cottage housing remains during every upgrade');
+    assert.strictEqual($('resource-villagers').textContent,'1/9','Villager counter keeps existing housing');
+  }
+  site.level=3;delete site.construction;render();
+  assert.strictEqual($('resource-villagers').textContent,'1/11','Completed upgrades add new housing');
+  town.sandbox=true;site.level=1;site.settler_level=2;
+  site.construction={progress:0,total:30,upgrade:{settler_level:3}};
+  assert.strictEqual(housingCapacity(town),9,'Sandbox upgrades retain existing resident spaces');
+  site.settler_level=3;delete site.construction;
+  assert.strictEqual(housingCapacity(town),11,'Sandbox capacity increases after completion');
+  delete town.sandbox;delete site.settler_level;
+  site.construction={progress:12,total:30,upgrade:{level:3}};
   site.kind='workshop';world.progression={buildings:{workshop:{}},recipes:{},upgrades:{}};
   inspect('building',1);
   assert(panelNodes().some(c=>c.textContent?.includes('18s remaining')),'Profession buildings retain upgrade progress');

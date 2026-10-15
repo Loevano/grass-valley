@@ -456,7 +456,7 @@ function grainProduction(building,worker=null){
 }
 
 function housingCapacity(town){
-  return 5+town.buildings.filter(b=>b.kind==='home'&&!b.construction).reduce((sum,b)=>sum+Math.max(2*(buildingLevel(b)+(b.profession_upgrades?.includes('timber_frame')?1:0)),town.sandbox?settlerSpaces.home*(b.settler_level || 1):0),0);
+  return 5+town.buildings.filter(b=>b.kind==='home'&&(!b.construction||'upgrade' in b.construction)).reduce((sum,b)=>sum+Math.max(2*(buildingLevel(b)+(b.profession_upgrades?.includes('timber_frame')?1:0)),town.sandbox?settlerSpaces.home*(b.settler_level || 1):0),0);
 }
 function fishingBoatLevel(building){
   const upgrades=building.profession_upgrades || [];

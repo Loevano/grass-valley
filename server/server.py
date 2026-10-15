@@ -83,9 +83,11 @@ def ensure_villager_names(town):
 
 
 def housing_capacity(town):
+    # Existing cottages keep their current housing while an upgrade is built.
     return 5 + sum(max(2 * (building_level(b) + ('timber_frame' in b.get('profession_upgrades', []))),
                       settler_capacity(b) if town.get('sandbox') else 0)
-                   for b in town['buildings'] if b['kind'] == 'home' and completed(b))
+                   for b in town['buildings'] if b['kind'] == 'home'
+                   and (completed(b) or 'upgrade' in b['construction']))
 
 
 def housing_loyalty(town):
@@ -93,7 +95,7 @@ def housing_loyalty(town):
     population = len(town['villagers'])
     comfort = []
     for building in town['buildings']:
-        if building['kind'] != 'home' or not completed(building):
+        if building['kind'] != 'home' or (not completed(building) and 'upgrade' not in building['construction']):
             continue
         level = building_level(building) + ('timber_frame' in building.get('profession_upgrades', []))
         comfort.extend([min(.75, .25 * (level - 1))] * (2 * level))

@@ -472,9 +472,11 @@ the Python host, refresh both browsers, and create a new world to use the shared
   slots rather than comfort.
 - There is no fixed population limit. The town hall shelters five settlers;
   each finished cottage provides two housing spaces per building level, plus
-  two for timber framing. New arrivals wait for free housing and at least 20 food
-  after meals, consuming 10 food when they arrive. If housing is lost, a minute
-  without enough spaces puts settlers at a 5% departure risk per three-second tick.
+  two for timber framing. Existing cottages keep their housing and comfort during
+  upgrades; added benefits apply only when the upgrade finishes. New arrivals wait
+  for free housing and at least 20 food after meals, consuming 10 food when they
+  arrive. If housing is lost, a minute without enough spaces puts settlers at a
+  5% departure risk per three-second tick.
   Restoring enough housing resets this timer; a departure resets both shortage
   timers and delays arrivals for a minute. The last settler stays.
 - Use arrow keys and Enter on the focused map to inspect tiles or choose build locations.
