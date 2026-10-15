@@ -334,7 +334,7 @@ outputs, quantities, skills, and unfinished work are preserved.
 
 | Milestone from zero practice | Current neutral requirement | Ideal active time | Limitation |
 | --- | --- | --- | --- |
-| Qualify for butchery | 2 husbandry | 1.25 minutes | Requires successful animal tending. |
+| Qualify for butchery | 2 husbandry | About 48 seconds | Requires successful animal tending; neutral keepers gain 0.128 practice per three seconds, 60% faster than standard work. |
 | Unlock butcher recipe 2 | 2 butchery | One completed animal, or one minute of continuous prepared-meat processing | Starts after qualification; animals and ingredients must be available. |
 | Reach butcher recipe 5 | 5 butchery | Three completed animals, or 2.5 minutes of continuous processing | Animal growth, manual butchery, and hauling add elapsed time. |
 | First butchery efficiency step | 20 butchery | Ten completed animals, or ten minutes of continuous processing | The output multiplier changes at 20; recipe unlocks provide earlier milestones. |

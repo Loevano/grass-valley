@@ -127,7 +127,7 @@ class BarnFeedingWorkers(unittest.TestCase):
         self.assertAlmostEqual(self.town['produced']['manure'], .5)
         for worker in self.town['villagers']:
             self.assertEqual(worker['production_status'], 'Working')
-            self.assertAlmostEqual(worker['husbandry'], .08)
+            self.assertAlmostEqual(worker['husbandry'], .128)
             self.assertEqual(worker['work_animation']['task'][0], 'husbandry')
 
     def test_missing_feed_and_blocked_outputs_do_not_pause_or_duplicate_growth(self):

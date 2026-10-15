@@ -362,8 +362,8 @@ def efficiency(villager, job):
 
 
 def practice(villager, job, seconds=3):
-    # Butchery trains 25% faster than the standard practice rate.
-    rate = .1 if job == 'butchery' else .08
+    # Husbandry trains 60% faster and butchery 25% faster than standard work.
+    rate = .128 if job == 'husbandry' else .1 if job == 'butchery' else .08
     gain = rate * seconds / 3 * (1 + .25 * aptitude(villager, job))
     villager[job] = round(villager.get(job, 0) + gain, 3)
 
