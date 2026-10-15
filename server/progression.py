@@ -31,10 +31,10 @@ BUILDINGS = {
 }
 CROPS = {'vegetables': 1, 'wheat': 2, 'carrots': 3, 'fodder': 3}
 ANIMALS = {
-    'chicken': {'level': 2, 'coins': 0, 'output': 'eggs', 'feed': .15, 'growth_seconds': 30},
-    'sheep': {'level': 3, 'coins': 0, 'output': 'wool', 'feed': .25, 'growth_seconds': 60},
-    'pig': {'level': 4, 'coins': 0, 'output': 'meat', 'feed': .1, 'growth_seconds': 120},
-    'cow': {'level': 5, 'coins': 0, 'output': 'milk', 'feed': .5, 'growth_seconds': 180},
+    'chicken': {'level': 2, 'coins': 0, 'output': 'eggs', 'feed': .15, 'growth_seconds': 60},
+    'sheep': {'level': 3, 'coins': 0, 'output': 'wool', 'feed': .25, 'growth_seconds': 120},
+    'pig': {'level': 4, 'coins': 0, 'output': 'meat', 'feed': .1, 'growth_seconds': 240},
+    'cow': {'level': 5, 'coins': 0, 'output': 'milk', 'feed': .5, 'growth_seconds': 360},
 }
 ANIMALS['horse'] = {'level': 8, 'coins': 0, 'output': 'horse', 'feed': .5}
 ANIMAL_GROWTH_SECONDS = 300

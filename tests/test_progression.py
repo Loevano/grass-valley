@@ -224,7 +224,7 @@ class Progression(unittest.TestCase):
             command(self.town, {'action':'buy_animal','index':index,'animal':'sheep'})
         command(self.town, {'action':'assign_settler','index':1,'building_index':index})
         tick(self.world)
-        self.assertEqual(barn['output_buffer']['wool'],7.5)
+        self.assertEqual(barn['output_buffer']['wool'],3.75)
         self.assertEqual(barn['input_buffer']['fodder'],10)
         self.assertEqual(self.town['goods']['fodder'],10)
         for _ in range(2):

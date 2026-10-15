@@ -17,7 +17,7 @@ class LivestockBalance(unittest.TestCase):
         barn = dict(kind='barn', x=3, y=7, animals={'pig': 1}, animal_growth={'pig': [0]})
         shop = dict(kind='butcher', x=8, y=7)
         town['buildings'].extend([barn, shop])
-        logistics.advance_barn(town, barn, 120)
+        logistics.advance_barn(town, barn, 240)
         self.assertEqual(barn['animal_growth']['pig'], [0])
         self.assertEqual(economy.quantity(town, 'hides'), 2)
         self.assertEqual(barn['output_buffer']['meat'], 8)

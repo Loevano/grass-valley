@@ -270,7 +270,7 @@ minutes of flour production, with wheat already supplied.
 | -------------------------------- | ----------------------------------------------------- | ------------------------------------------- | ------------------------------------------------------- |
 | One butcher, prepared meat       | Six-second completed batch                            | 2 meat → 2 prepared meat; 0.1 practice      | Uses 20 meat/minute; makes 20 prepared meat/minute      |
 | Manually ordered animal butchery | 60 seconds at the shop, one animal per shop at a time | 1 butchery practice; meat varies by animal  | One completed animal/minute while continuously supplied |
-| Automatic animal replacement | Chicken 30s; sheep 60s; pig 120s; cow 180s | Meat and hides, then a young replacement | No feed required; speed is 1 + assigned keepers |
+| Automatic animal replacement | Chicken 60s; sheep 120s; pig 240s; cow 360s | Meat and hides, then a young replacement | No feed required; speed is 1 + assigned keepers |
 
 ### Total production time cost vs total reward
 
@@ -283,10 +283,10 @@ while existing herds continue at base speed during an upgrade.
 
 | Animal | Base cycle | Products during growth | Automatic reward at completion | Basic prepared meat work and reward |
 | --- | --- | --- | --- | --- |
-| Chicken | 30s | 25 eggs | 2 meat | 6 worker-seconds → 2 prepared meat (8 food) |
-| Sheep | 60s | 25 wool | 4 meat + 1 hide | 12 worker-seconds → 4 prepared meat (16 food) |
-| Pig | 120s | None | 8 meat + 2 hides | 24 worker-seconds → 8 prepared meat (32 food) |
-| Cow | 180s | 25 milk | 10 meat + 3 hides | 30 worker-seconds → 10 prepared meat (40 food) |
+| Chicken | 60s | 25 eggs | 2 meat | 6 worker-seconds → 2 prepared meat (8 food) |
+| Sheep | 120s | 25 wool | 4 meat + 1 hide | 12 worker-seconds → 4 prepared meat (16 food) |
+| Pig | 240s | None | 8 meat + 2 hides | 24 worker-seconds → 8 prepared meat (32 food) |
+| Cow | 360s | 25 milk | 10 meat + 3 hides | 30 worker-seconds → 10 prepared meat (40 food) |
 
 Manure accrues at 0.1 per animal per three base growth seconds. Product totals
 per cycle are fixed independently of keeper skill and talent. Meat and hides
@@ -298,7 +298,7 @@ on their next tick; existing manual butcher jobs can still finish normally.
 
 ### Grain staple and luxury meat
 
-A pig provides 8 raw meat per two-minute cycle without staffing, or every minute
+A pig provides 8 raw meat per four-minute cycle without staffing, or every two minutes
 with one keeper. That meat becomes **8 prepared meat worth 32 food**. Prepared
 meat provides 4 food and sells for 4 coins per item; raw meat provides 1 food
 and sells for 2. Hides and manure are additional rewards.

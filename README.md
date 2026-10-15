@@ -676,7 +676,7 @@ the Python host, refresh both browsers, and create a new world to use the shared
   Increasing a count adds free young animals; decreasing it removes animals while
   preserving the growth of those retained. Counts persist in saves.
   Animals always grow without feed or workers. Base replacement cycles are
-  **30 seconds for chickens, 60 for sheep, 120 for pigs, and 180 for cows**.
+  **60 seconds for chickens, 120 for sheep, 240 for pigs, and 360 for cows**.
   Each assigned keeper adds one base speed: one keeper gives 2× growth, two 3×,
   and so on. Workers helping construction do not add speed. New barns must finish
   construction; existing herds keep growing at base speed during upgrades.

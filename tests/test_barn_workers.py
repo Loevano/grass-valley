@@ -123,7 +123,7 @@ class BarnFeedingWorkers(unittest.TestCase):
         self.tick()
         self.assertEqual(self.barn['animal_growth']['chicken'], [15])
         self.assertEqual(self.barn['input_buffer']['fodder'], 20)
-        self.assertAlmostEqual(self.town['produced']['eggs'], 12.5, msg='Output advances once at the shared speed')
+        self.assertAlmostEqual(self.town['produced']['eggs'], 6.25, msg='Output advances once at the shared speed')
         self.assertAlmostEqual(self.town['produced']['manure'], .5)
         for worker in self.town['villagers']:
             self.assertEqual(worker['production_status'], 'Working')
@@ -135,7 +135,7 @@ class BarnFeedingWorkers(unittest.TestCase):
         self.town['rules'] = {'production_caps': {'eggs': 0, 'meat': 0, 'manure': 0}}
         for _ in range(3):
             self.tick()
-        self.assertEqual(self.barn['animal_growth']['chicken'], [15, 15])
+        self.assertEqual(self.barn['animal_growth']['chicken'], [45, 45])
         self.assertFalse(self.barn.get('output_buffer'))
         self.assertEqual(self.barn['input_buffer'], {})
 

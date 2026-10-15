@@ -174,7 +174,7 @@ Advanced woodcraft and metal sale values now cover ingredients, including fuel;
 higher workshop recipe tiers preserve or improve profit per active work second.
 
 Barn animal counts are configurable per species within shared capacity. Automatic
-replacement cycles run without feed or workers at 30/60/120/180 seconds for
+replacement cycles run without feed or workers at 60/120/240/360 seconds for
 chickens/sheep/pigs/cows; each assigned keeper adds one base growth speed.
 Growth is independent of animation, routes, output storage, and production caps.
 The inspector shows growth, current cycle times, and automatic collection of

@@ -46,7 +46,7 @@ class AnimalGrowth(unittest.TestCase):
         self.assertEqual(logistics.requirements(self.barn, self.worker), {})
 
     def test_species_timers_restart_automatically_and_yield_meat(self):
-        for animal, duration in [('chicken', 30), ('sheep', 60), ('pig', 120), ('cow', 180)]:
+        for animal, duration in [('chicken', 60), ('sheep', 120), ('pig', 240), ('cow', 360)]:
             with self.subTest(animal=animal):
                 self.setUp()
                 self.buy(animal)
@@ -64,11 +64,11 @@ class AnimalGrowth(unittest.TestCase):
         self.buy('sheep')
         self.tick()
         self.assertEqual(self.barn['animal_growth']['sheep'], [6])
-        self.assertEqual(self.barn['output_buffer']['wool'], 2.5)
+        self.assertEqual(self.barn['output_buffer']['wool'], 1.25)
         self.town['villagers'][2].update(job='husbandry', building_index=1)
         self.tick()
         self.assertEqual(self.barn['animal_growth']['sheep'], [15])
-        self.assertEqual(self.barn['output_buffer']['wool'], 6.25)
+        self.assertEqual(self.barn['output_buffer']['wool'], 3.125)
         self.assertEqual(self.barn['input_buffer']['fodder'], 40)
         self.town['villagers'][2]['construction_target'] = {'kind': 'road', 'x': 10, 'y': 10}
         with patch('server.construct'):
@@ -128,7 +128,7 @@ class AnimalGrowth(unittest.TestCase):
         self.buy('sheep')
         self.worker['job'] = 'idle'
         self.town['rules'] = {'production_caps': {'wool': 0, 'meat': 0, 'hides': 0, 'manure': 0}}
-        self.barn['animal_growth']['sheep'] = [59]
+        self.barn['animal_growth']['sheep'] = [119]
         self.tick()
         self.assertEqual(self.barn['animal_growth']['sheep'], [2])
         self.assertFalse(self.barn.get('output_buffer'))

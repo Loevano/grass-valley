@@ -41,7 +41,7 @@ const previous=commands.length;p.button.onclick();assert.equal(commands.length,p
 town.buildings[1].butchering.remaining=0;assert(panel().status.textContent.includes('Waiting for buffer space'));
 delete town.buildings[1].butchering;
 town.villagers[0].husbandry=0;assert(panel().button.disabled);
-town.villagers[0].husbandry=2;town.buildings[0].animal_growth.pig=[0,119];assert(panel().button.disabled);
+town.villagers[0].husbandry=2;town.buildings[0].animal_growth.pig=[0,239];assert(panel().button.disabled);
 assert(!panel(false).button,'Visitors cannot select animals');
-assert.deepStrictEqual(p.ui.animalAges({animals:{cow:2}},'cow'),[180,180],'Old saves keep adults');
+assert.deepStrictEqual(p.ui.animalAges({animals:{cow:2}},'cow'),[360,360],'Old saves keep adults');
 console.log('Animal butchery controls passed');
