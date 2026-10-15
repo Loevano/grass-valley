@@ -475,11 +475,17 @@ function fishingBoatLevel(building){
   return upgrades.includes('master_boat')?3:upgrades.includes('improved_boat')?2:upgrades.includes('boat')?1:0;
 }
 function fishingBoatCapacity(building){return [0,5,10,20][fishingBoatLevel(building)];}
-function fishingBoatLoad(town,building){
+function fishingBoatCargo(town,building){
   building=town.buildings.find(b=>b.kind==='fishing_hut'&&b.x===building.x&&b.y===building.y) || building;
-  return (town.villagers || []).reduce((load,worker,index)=>load+(worker.job==='fishing'&&WorkerAnimation.fishingBoating(town,building,index)
-    ?Object.entries(worker.pending_output || {}).reduce((sum,[key,amount])=>sum+(['fish','trout','salmon','sturgeon'].includes(key)?amount:0),0):0),0);
+  const cargo={};
+  for(const [index,worker] of (town.villagers || []).entries()){
+    if(worker.job!=='fishing'||!WorkerAnimation.fishingBoating(town,building,index))continue;
+    for(const [key,amount] of Object.entries(worker.pending_output || {}))
+      if(['fish','trout','salmon','sturgeon'].includes(key)&&amount>0)cargo[key]=(cargo[key] || 0)+amount;
+  }
+  return cargo;
 }
+function fishingBoatLoad(town,building){return Object.values(fishingBoatCargo(town,building)).reduce((sum,amount)=>sum+amount,0);}
 
 function resourceReach(building){
   if(building.kind==='mine')return 10;
@@ -2140,10 +2146,13 @@ function renderFishingBoat(town,item,index){
   $('selection-art').append(illustration('fishing'));
   $('selection-level').hidden=false;$('selection-level').textContent=`Tier ${level}`;
   if(item.construction)renderBuildingStatus(town,item,index,$('selection-details'));
-  const status=buildingSection(item.construction?'Cargo':'Status'),load=fishingBoatLoad(town,item),capacity=fishingBoatCapacity(item);
+  const cargo=fishingBoatCargo(town,item),load=Object.values(cargo).reduce((sum,amount)=>sum+amount,0),capacity=fishingBoatCapacity(item);
+  const status=buildingSection(item.construction?'Cargo':'Status');
   status.className='building-section building-status';
   const text=document.createElement('p');text.className='workplace-status';text.textContent=`Cargo · ${Number(load.toFixed(2))} / ${capacity} fish`;status.append(text);
   const progress=document.createElement('progress');progress.max=capacity;progress.value=load;progress.setAttribute('aria-label','Boat cargo');status.append(progress);
+  if(load)status.append(productionFacts(Object.entries(cargo).map(([key,amount])=>[goodName(key),String(Number(amount.toFixed(2)))])));
+  else{const empty=document.createElement('p');empty.textContent='No fish aboard.';status.append(empty);}
   $('selection-details').append(status);
   const details=buildingSection('Boat');details.append(productionFacts([['Crew',`${level} fisher${level===1?'':'s'}`],['Reach',`${resourceReach(item)} tiles`],['Maximum depth',String(level+1)]]));
   const back=document.createElement('button');back.textContent='Open fishing hut';back.onclick=()=>inspect('building',index);details.append(back);$('selection-details').append(details);

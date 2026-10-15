@@ -161,6 +161,23 @@ const run=new Function('document','window','localStorage','setTimeout','clearTim
  viewed='friend';const commandCount=commands.length;breadSale.onchange();
  check(commands.length===commandCount,'Reattached market controls cannot change another town');viewed='own';
  delete world.progression;
+ const boatTown={buildings:[{kind:'fishing_hut',x:2,y:2,profession_upgrades:['master_boat']},
+   {kind:'fishing_hut',x:4,y:2,profession_upgrades:['boat']}],map_resources:[{kind:'water',x:3,y:2}],
+   villagers:[{job:'fishing',building_index:0,pending_output:{fish:1,trout:2.25}},
+     {job:'fishing',building_index:0,pending_output:{trout:1.5,salmon:2,sturgeon:0}},
+     {job:'fishing',building_index:0,pending_output:{sturgeon:1,wood:5}},
+     {job:'fishing',building_index:0,pending_output:{fish:10}},
+     {job:'fishing',building_index:1,pending_output:{salmon:10}}]};
+ const boatSnapshot=JSON.stringify(boatTown);
+ $('selection-details').replaceChildren();renderFishingBoat(boatTown,boatTown.buildings[0],0);
+ const cargoFacts=panelNodes().find(c=>c.className==='production-facts');
+ check(cargoFacts.children.map(c=>c.textContent).join('|')==='Fish|1|Trout|3.75|Salmon|2|Sturgeon|1','Boat cargo names and counts each fish type, combining crew catches without dock or other boat stock');
+ check(panelNodes().some(c=>c.textContent==='Cargo · 7.75 / 20 fish'),'Boat total agrees with the species breakdown');
+ check(fishingBoatLoad(boatTown,{...boatTown.buildings[0]})===7.75,'Animation load agrees with the cargo panel using a copied hut');
+ check(JSON.stringify(boatTown)===boatSnapshot,'Displaying boat cargo preserves the host snapshot');
+ for(const worker of boatTown.villagers)worker.pending_output={};
+ $('selection-details').replaceChildren();renderFishingBoat(boatTown,boatTown.buildings[0],0);
+ check(panelNodes().some(c=>c.textContent==='No fish aboard.')&&panelNodes().some(c=>c.textContent==='Cargo · 0 / 20 fish'),'An empty boat explicitly reports no fish');
  const transportTown={map_size:12,terrain:['g'.repeat(12)].flatMap(r=>Array(12).fill(r)),buildings:[{kind:'hall',x:5,y:5}],map_resources:[]};
  const v={job:'hauling',logistics_position:{x:2,y:2},logistics_target:{x:3,y:2}};
  const state=WorkerAnimation.plan(transportTown,v,0);

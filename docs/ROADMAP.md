@@ -99,6 +99,7 @@ Registered players retain their names and PINs and reconnect to fresh villages.
 
 The smokehouse now retains species through one-to-one smoking, adding 0.5 food
 and 1 coin per fish. Storage and market panels show each raw and smoked species.
+Boat cargo lists the quantity of each fish type aboard, including mixed catches.
 Catch progression, storage scaling, and smokehouse staffing remain planned.
 
 ### Simple production upgrades
