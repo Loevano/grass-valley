@@ -239,7 +239,11 @@ def _advance(town, landscape, villager, building, source, index, seconds, stop_a
     pen_bounds = (max(0, building['x'] - 3), min(size - 1, building['x'] + 3),
                   max(0, building['y'] - 3), min(size - 1, building['y'] + 3)) if barn_keeper else None
     roads = {(r['x'], r['y']) for r in landscape.get('roads', []) if 'construction' not in r}
-    blocked = occupied_tiles(landscape['buildings'] + landscape['map_resources'] + landscape.get('npcs', []))
+    spatial = landscape.get('_spatial_index')
+    # Each worker edits its obstacles for fields, piers, and boat access.
+    # Reuse the tick's resource scan without changing the shared cache.
+    blocked = (spatial.blocked(landscape).copy() if spatial is not None else
+               occupied_tiles(landscape['buildings'] + landscape['map_resources'] + landscape.get('npcs', [])))
     fences = barns.fences(landscape['buildings'], size)
     bounds = walking_bounds(town, landscape)
     if farming_job:

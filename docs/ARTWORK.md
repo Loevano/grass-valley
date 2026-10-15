@@ -33,6 +33,32 @@ The workshop has a bench canopy and tool rack, and the hall is wider without
 scaling up its doors and windows. Their
 existing footprints and visible upgrade conventions remain unchanged.
 
+## Building style cohesion prototype
+
+**Proposed:** simplify the updated buildings to match the landscape's broad,
+mostly unoutlined shapes and the workers' chunky proportions. The
+[comparison sheet](building-style-prototype.svg) shows level-2 cottages, bakeries,
+and woodcutters beside the same existing workers, trees, and rocks. The left
+column captures the current Canvas artwork; the right column is a new vector
+sketch. Enlarged views and a 46px-tile reference strip compare readability.
+
+![Current buildings beside proposed simpler versions, using the same workers and scenery.](building-style-prototype.png)
+
+| Element | Proposed treatment |
+| --- | --- |
+| Surfaces | Broad light and dark faces; remove roof seams, plank lines, masonry joints, and continuous brown outlines. |
+| Structure | A few thick supports and braces, with a clear door and warm window shapes. |
+| Profession | Keep a few large cues: the bakery's chimney, oven, and bread counter; the woodcutter's open shelter, axe, and logs. |
+| Scale | Make doors and useful props readable beside the existing workers; avoid shrinking those anchors on compact sites. |
+| Grounding | Use a restrained green ground shadow rather than relying on a sharply outlined yard pad. |
+
+This is a review prototype, not an approved replacement or a runtime change.
+It does not specify every structural, capacity, or profession upgrade. Before
+implementation, compare those variants, the other building families, compact
+saved sites, selection states, and the full village at several zoom levels.
+The host must continue to own building footprints, worker positions, and state;
+workers and shadows should remain separate from authoritative snapshots.
+
 ## Resource and building icons
 
 The interface has dedicated SVG artwork for all 50 resource keys (including coins

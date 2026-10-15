@@ -1,8 +1,10 @@
 import json
 import unittest
+from unittest.mock import patch
 
 import logistics
 import server
+import work_cycles
 from spatial import SpatialIndex
 
 
@@ -96,6 +98,52 @@ class WorkerSpatialLookups(unittest.TestCase):
         server.tick(world)
         self.assertEqual(worker['work_target']['x'], 6)
         self.assertNotIn('_spatial_index', json.dumps(world))
+
+    def test_work_cycles_reuse_resource_scan_and_match_uncached_playback(self):
+        import copy
+
+        building = {'kind': 'woodcutter', 'x': 7, 'y': 7}
+        source = {'kind': 'tree', 'x': 9, 'y': 7, 'supply': 8}
+        self.town['buildings'].append(building)
+        self.town['map_resources'] = [source]
+        worker = self.town['villagers'][0]
+        worker.update(job='woodcutting', building_index=1,
+                      construction_position={'x': 8, 'y': 7})
+        uncached = copy.deepcopy(self.town)
+        index = SpatialIndex(self.town['map_resources'])
+        walking = dict(self.town, _spatial_index=index)
+        before = set(index.blocked(walking))
+        with patch('work_cycles.occupied_tiles', side_effect=AssertionError('Repeated obstacle scan')):
+            for _ in range(4):
+                work_cycles.advance(self.town, walking, worker, building, source, 0, .1)
+        for _ in range(4):
+            work_cycles.advance(uncached, uncached, uncached['villagers'][0],
+                                uncached['buildings'][1], uncached['map_resources'][0], 0, .1)
+        self.assertEqual(worker, uncached['villagers'][0])
+        self.assertEqual(index.blocked(walking), before)
+
+    def test_farmer_access_does_not_open_cached_fields_for_other_workers(self):
+        farm = {'kind': 'farm', 'x': 7, 'y': 7}
+        acre = {'kind': 'acre', 'x': 8, 'y': 7}
+        self.town['buildings'].extend([farm, acre])
+        worker = self.town['villagers'][0]
+        worker.update(job='farming', building_index=1,
+                      construction_position={'x': 8, 'y': 7})
+        index = SpatialIndex(self.town['map_resources'])
+        walking = dict(self.town, _spatial_index=index)
+        before = set(index.blocked(walking))
+        work_cycles.advance(self.town, walking, worker, farm, acre, 0, .1)
+        self.assertIn((8, 7), index.blocked(walking))
+        self.assertEqual(index.blocked(walking), before)
+
+    def test_cached_obstacles_preserve_resource_and_npc_footprints(self):
+        from spatial import occupied_tiles
+
+        self.town['map_resources'] = [{'kind': 'rock', 'x': 7, 'y': 7, 'footprint': [2, 2]}]
+        self.town['npcs'] = [{'x': 9, 'y': 9, 'footprint': [2, 1]}]
+        index = SpatialIndex(self.town['map_resources'])
+        self.assertEqual(index.blocked(self.town), occupied_tiles(
+            self.town['buildings'] + self.town['map_resources'] + self.town['npcs']))
 
 
 if __name__ == '__main__':

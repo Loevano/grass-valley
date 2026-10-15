@@ -610,7 +610,9 @@ def woodcutting_source(town, building, trees, worker_index, walking=None):
         # The normal delivery fallback finishes carried wood before retargeting.
         return retained
     walking = walking if walking is not None else town
-    blocked = occupied_tiles(walking['buildings'] + walking['map_resources'] + walking.get('npcs', []))
+    spatial = walking.get('_spatial_index')
+    blocked = (spatial.blocked(walking) if spatial is not None else
+               occupied_tiles(walking['buildings'] + walking['map_resources'] + walking.get('npcs', [])))
     position = work_cycles.starting_position(town, walking, worker, worker_index, blocked)
     if position is None:
         return None

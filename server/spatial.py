@@ -40,7 +40,7 @@ class SpatialIndex:
         for order, resource in enumerate(self.resources):
             x, y = resource['x'], resource['y']
             self.cells.setdefault((x // CELL_SIZE, y // CELL_SIZE), []).append((order, resource))
-            self.resource_tiles.add((x, y))
+            self.resource_tiles.update(footprint_tiles(resource))
         self.resource_count = len(self.resources)
         self.depths = None
         self.obstacles.clear()
@@ -77,7 +77,7 @@ class SpatialIndex:
     def blocked(self, landscape):
         self.refresh()
         buildings = tuple(sorted(occupied_tiles(landscape['buildings'])))
-        npcs = tuple((n['x'], n['y']) for n in landscape.get('npcs', []))
+        npcs = tuple(sorted(occupied_tiles(landscape.get('npcs', []))))
         key = buildings, npcs
         if key not in self.obstacles:
             self.obstacles[key] = self.resource_tiles.union(buildings, npcs)

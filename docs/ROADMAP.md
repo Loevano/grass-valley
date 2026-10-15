@@ -1,5 +1,14 @@
 # Roadmap
 
+## Building style cohesion
+
+**Status:** a [visual comparison prototype](building-style-prototype.svg) is ready
+for review; the game renderer is unchanged. See the
+[artwork reference](ARTWORK.md#building-style-cohesion-prototype) for the proposed
+rules. Remaining work: choose the direction, cover the other building families
+and upgrade variants, preserve readable doors and props on compact saved sites,
+and validate the complete village at multiple zoom levels before implementation.
+
 The roadmap starts with the cached zoomed-out map improvement. Design details
 and cache rules are in [Backend](BACKEND.md#cached-zoomed-out-map).
 
@@ -253,6 +262,10 @@ are collected in [Pathing decisions](PATHING.md).
 - Browser geometry updates refresh collision data without discarding valid paths.
   Roads change walking speed immediately and influence the next planned leg.
   Confirmed host playback does not perform a duplicate browser work-route search.
+- Host work travel and woodcutter target selection reuse the tick's shared
+  obstacle index, avoiding repeated landscape scans that delay player commands.
+  Field and pier access use private obstacle copies; resource removal refreshes
+  the shared index within the tick.
 - Host and browser each maintain bounded route caches that workers reuse.
   Terrain, obstacles, roads, and search bounds affect validity; crop growth does not.
   Search uses BFS for cardinal routes on uniform ground and travel-time A*
