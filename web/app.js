@@ -8,6 +8,7 @@ try {
 } catch { identities = {}; }
 let world = {towns:{}}, viewed = null, tool = null, moveIndex = null;
 let buildTile = null, building = false, hoverTile = null;
+let destroying = false;
 let acreFarmIndex = null;
 let orchardIndex = null;
 let panel = null, selection = null, hitTargets = [], keyboardTile = null;
@@ -2537,6 +2538,23 @@ for(const [index,[label,kinds]] of buildingCategories.entries()){
 }
 $('move').onclick=()=>{panel='build';selection=null;tool='move';moveIndex=null;buildTile=null;hoverTile=null;render();};
 $('cancel').onclick=()=>{tool=null;moveIndex=null;buildTile=null;hoverTile=null;render();};
+$('destroy').onclick=()=>{panel='build';selection=null;tool=tool==='destroy'?null:'destroy';moveIndex=null;buildTile=null;hoverTile=null;render();};
+async function destroyTarget(target){
+  const town=world.towns[viewed];
+  if(destroying || $('selection-destroy').disabled || viewed!==identity?.town_id || !town)return;
+  if(target?.townId && target.townId!==identity.town_id){notice('You can only destroy your own buildings and roads.');return;}
+  const item=target?.type==='building'?town.buildings[target.index]:target?.type==='road'?town.roads?.[target.index]:null;
+  if(!item){notice('Click one of your buildings or roads to destroy it.');return;}
+  if(item.kind==='hall'){notice('The town hall cannot be destroyed.');return;}
+  const data=target.type==='road'?{action:'remove_road',x:item.x,y:item.y}:{action:'destroy',index:target.index};
+  destroying=true;render();
+  try{
+    await request('/api/command',{...data,world_id:world.world_id});
+    if(data.action==='destroy')commandEffect(data);
+    await refresh({afterCommand:true});
+  }catch(e){notice(e.message);await refresh({afterCommand:true});}
+  finally{destroying=false;render();}
+}
 async function buildAt(x,y){
   const town=world.towns[viewed];
   if(building || !(tool in costs) || viewed!==identity?.town_id || !town || !town.sandbox&&town.wood<costs[tool])return;
@@ -2556,7 +2574,7 @@ async function buildAt(x,y){
 $('upgrade').onclick=()=>{if(!$('upgrade').disabled)showUpgrade({action:'upgrade'});};
 $('selection-destroy').onclick=async()=>{
   const town=world.towns[viewed],selected=selection,button=$('selection-destroy');
-  if(button.disabled || viewed!==identity?.town_id || selected?.type!=='building'
+  if(destroying || button.disabled || viewed!==identity?.town_id || selected?.type!=='building'
     || !town?.buildings[selected.index] || town.buildings[selected.index].kind==='hall')return;
   button.disabled=true;
   try{
@@ -2721,8 +2739,11 @@ function render(){
   $('items-button').disabled=!own;
   if(panel==='items')renderItems(own);
   $('move').textContent=!own?.sandbox&&own?.coins?'Move a building · 1 coin':'Move a building · Free';
-  $('mode-hint').textContent=tool==='move'?(moveIndex===null?'Moving: click a building. Escape to cancel.':'Moving: click open grass to move here. Escape to cancel.'):tool?`Building ${labels[tool].toLowerCase()}: hover over open grass and left-click to build. Escape to cancel.`:'';
-  if(tool&&tool!=='move'){
+  $('destroy').setAttribute('aria-pressed',String(tool==='destroy'));
+  $('destroy').classList.toggle('selected',tool==='destroy');
+  canvas.style.cursor=tool==='destroy'?'crosshair':'';
+  $('mode-hint').textContent=tool==='destroy'?(destroying?'Destroying…':'Destroy: click your buildings or roads. No refund. Escape to cancel.'):tool==='move'?(moveIndex===null?'Moving: click a building. Escape to cancel.':'Moving: click open grass to move here. Escape to cancel.'):tool?`Building ${labels[tool].toLowerCase()}: hover over open grass and left-click to build. Escape to cancel.`:'';
+  if(tool in costs){
     if(building)$('mode-hint').textContent='Building…';
     else if(!own?.sandbox&&own?.wood<costs[tool])$('mode-hint').textContent='Not enough wood.';
   }
@@ -6055,6 +6076,11 @@ async function selectTile(x,y){
   const town=world.towns[viewed];
   if(!town || x<0||y<0||x>=mapSize(town)||y>=mapSize(town))return;
   if(town.terrain?.[y]?.[x]==='v')return;
+  if(tool==='destroy'){
+    const index=town.buildings.findIndex(b=>occupies(b,x,y));
+    await destroyTarget(index>=0?{type:'building',index}:{type:'road',index:(town.roads || []).findIndex(r=>r.x===x&&r.y===y)});
+    return;
+  }
   if(mapOverview()){
     const entries=world.shared_map?Object.entries(world.towns):[[viewed,town]];
     for(const [id,t] of entries){const i=t.buildings.findIndex(b=>b.kind==='hall'&&occupies(b,x,y));if(i>=0){inspect('building',i,id);return;}}
@@ -6129,6 +6155,13 @@ canvas.onclick=async event=>{
   canvas.focus?.();
   const rect=canvas.getBoundingClientRect(),px=event.clientX-rect.left,py=event.clientY-rect.top;
   keyboardTile=null;
+  if(tool==='destroy'){
+    const hit=hitTargetAt(px,py);
+    if(hit){await destroyTarget(hit);return;}
+    const tile=tileAt(event),town=world.towns[viewed];
+    await destroyTarget({type:'road',index:(town?.roads || []).findIndex(r=>r.x===tile.x&&r.y===tile.y)});
+    return;
+  }
   if(!tool){
     const hit=hitTargetAt(px,py);
     if(hit){

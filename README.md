@@ -728,6 +728,11 @@ the Python host, refresh both browsers, and create a new world to use the shared
 - Click a building, then **Destroy building** to remove it without a resource
   refund. The town hall cannot be destroyed. Removing workplaces pauses affected
   workers until another suitable workplace is available; existing residents stay.
+  For repeated demolition, turn on **Destroy · No refund** at the bottom of Build,
+  then click your buildings or roads. It stays active until toggled off, cancelled,
+  or replaced by another tool. Escape also ends demolition. Natural trees and rocks
+  and other players' property are protected; farms and orchards retain their usual
+  linked-acre and fruit-tree removal behavior.
 - Click **Move** in a building’s information panel, then an empty tile.
   You can also use **Move a building** in the Build panel. Moving costs one coin,
   or is free if you have none, so rearranging is always possible.
