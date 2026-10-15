@@ -136,6 +136,22 @@ the Python host, refresh both browsers, and create a new world to use the shared
 - Window shortcuts follow the menu order: **1** Worlds, **2** Build, **3** Villagers,
   **4** Resources, **5** Items, **6** Valley, **7** Help, and **⌘,** Settings. Press a panel's number again to close it.
   **8–9** are reserved for future windows. Gameplay bindings can use letters or **0**.
+- **Resources (4)** opens a popup table with resource names and icons, total stock,
+  free stock, reserved stock, **Buy <**, **Sell >**, **In/min**, and **Out/min**.
+  Total stock includes workplace output and carried goods once; reserved stock
+  includes processor ingredients and cargo committed to sales. Pending output is
+  included in the total but becomes free only after delivery. Food summarizes
+  edible goods in food-value units; individual resource rows count items.
+  Activity records actual production, consumption, purchases, and sales during the
+  last 60 seconds of running game time, excluding internal hauling and reservation.
+  Thresholds save automatically; blank disables a rule. A completed market and an
+  assigned merchant are required. Merchants buy up to 10 items every 3 seconds at
+  twice the existing sale price, stopping at the free-stock target, available coins,
+  or available storage. Bought goods arrive directly in town storage and do not
+  count toward production milestones. Popup sale thresholds retain the requested
+  free stock and must be higher than the buy threshold. Existing market sale rules
+  retain their original trigger until edited in the popup. Close with **4**,
+  **Escape**, or **Close**; narrow screens can scroll the table horizontally.
 - Each new town has an irregular outline and random forests, ponds, meadows,
   sandy ground, and rocky areas. Ponds have shallow shores and deeper centers.
   The starting clearing has nearby wood and water. Terrain and resources are saved,

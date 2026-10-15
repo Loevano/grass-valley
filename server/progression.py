@@ -1,4 +1,5 @@
 """Town professions, finite renewable supplies, and founder activities (hall 1–10)."""
+import resource_activity
 from spatial import occupied_tiles, BUILDING_FOOTPRINTS
 from collections import deque
 from math import ceil
@@ -389,8 +390,13 @@ def sale_price(key):
     return FISH.get(key, {}).get('coins', SALE_PRICES.get(key, 1))
 
 
+def record_activity(town, key, amount, direction):
+    resource_activity.record(town, key, amount, direction, EDIBLE.get(key, 0))
+
+
 def record_sale(town, key, amount):
     town['coins'] += amount * sale_price(key)
+    record_activity(town, 'coins', amount * sale_price(key), 'in')
     town['market_sales'] = town.get('market_sales', 0) + amount
 
 
@@ -420,6 +426,7 @@ def spend(town, costs):
             eat(town, amount)
             continue
         withdraw(town, key, amount)
+        record_activity(town, key, amount, 'out')
         if key in {'wood', 'food', 'coins'}:
             town[key] -= amount
         else:
@@ -637,6 +644,7 @@ def deliver(town, key, amount, capacity, record=True):
                 remaining -= take
         amount -= remaining
         add_stock(town, key, amount)
+        record_activity(town, key, amount, 'in')
         if record:
             totals = town.setdefault('produced', {})
             totals[key] = totals.get(key, 0) + amount
@@ -646,6 +654,7 @@ def deliver(town, key, amount, capacity, record=True):
     room = (storage_room(town, key) if not town.get('_local_production')
             else capacity - quantity(town, key))
     amount = max(0, min(amount, room))
+    record_activity(town, key, amount, 'in')
     if key == 'wood':
         town['wood'] += amount
         if record:
@@ -666,11 +675,13 @@ def eat(town, amount):
     untyped = max(0, town['food'] - sum(quantity(town, k) * value for k, value in EDIBLE.items()))
     take = min(remaining, untyped)
     withdraw(town, 'food', take)
+    record_activity(town, 'food', take, 'out')
     remaining -= take
     for key, value in EDIBLE.items():
         take = min(quantity(town, key), remaining / value)
         if take:
             withdraw(town, key, take)
+            record_activity(town, key, take, 'out')
             town['goods'][key] -= take
             # Fractional servings can round slightly above the food still needed.
             remaining = max(0, remaining - take * value)
@@ -854,6 +865,7 @@ def start_activity(town, landscape, action):
         if chest:
             landscape['map_resources'].remove(chest)
             town['coins'] += 25
+            record_activity(town, 'coins', 25, 'in')
             found = find_item(player, chest)
             player.pop('activity', None)
             player['activity_status'] = f'Found 25 coins and {found.lower()}'
@@ -965,6 +977,7 @@ def public_catalog():
             'job_requirements': JOB_REQUIREMENTS, 'talent_roots': TALENT_ROOTS,
             'profession_recipes': PROFESSION_RECIPES, 'storage_keys': STORAGE_KEYS,
             'production_seconds': PRODUCTION_SECONDS, 'sale_prices': SALE_PRICES, 'sellable_goods': SELLABLE_GOODS,
+            'buyable_goods': tuple(k for k in STORAGE_KEYS if k != 'food'),
             'manual_sellable_goods': MANUAL_SELLABLE_GOODS,
             'boats': PLAYER_BOATS, 'fish': FISH, 'smoked_fish': SMOKED_FISH,
             'upgrades': PROFESSION_UPGRADES, 'recipes': RECIPES, 'edible': EDIBLE,

@@ -44,8 +44,43 @@ def configure_market_sale(town, data):
     amount = data.get('amount', previous.get('amount', 10))
     if type(amount) is not int or not 1 <= amount <= 10:
         raise ValueError('Choose a sale batch from 1 to 10 goods.')
+    buy = town.get('rules', {}).get('market_purchases', {}).get(key)
+    if enabled and buy is not None and buy >= cap:
+        raise ValueError('The sale cap must be higher than Buy <.')
     rules = town.setdefault('rules', {}).setdefault('market_sales', {})
     rules[key] = {'enabled': enabled, 'cap': cap, 'amount': amount}
+    if previous.get('strict'):
+        rules[key]['strict'] = True
+    return {}
+
+
+def configure_resource_trade(town, data):
+    """Configure both thresholds atomically; leave a gap to avoid trade loops."""
+    if not any(b['kind'] == 'market' and 'construction' not in b for b in town['buildings']):
+        raise ValueError('Finish a market stall first.')
+    key, buy, sell = data.get('resource'), data.get('buy_below'), data.get('sell_above')
+    if key not in economy.STORAGE_KEYS or key == 'food':
+        raise ValueError('Choose a resource that can be bought.')
+    for value in (buy, sell):
+        if value is not None and (type(value) not in (int, float) or not math.isfinite(value) or value < 0):
+            raise ValueError('Use a non-negative threshold, or leave it blank to disable.')
+    if sell is not None and key not in economy.SELLABLE_GOODS:
+        raise ValueError('This resource cannot be sold automatically.')
+    if buy is not None and sell is not None and buy >= sell:
+        raise ValueError('Sell > must be higher than Buy <.')
+    rules = town.setdefault('rules', {})
+    purchases = rules.setdefault('market_purchases', {})
+    if buy is None:
+        purchases.pop(key, None)
+    else:
+        purchases[key] = buy
+    sales = rules.setdefault('market_sales', {})
+    if sell is None:
+        if key in sales:
+            sales[key]['enabled'] = False
+    else:
+        sales[key] = {**sales.get(key, {}), 'enabled': True, 'cap': sell,
+                      'amount': sales.get(key, {}).get('amount', 10), 'strict': True}
     return {}
 
 
@@ -55,7 +90,8 @@ def sale_cargo(town, building, villager):
         if (key not in economy.SELLABLE_GOODS or not rule.get('enabled', True)
                 or economy.quantity(town, key) + 1e-9 < rule['cap']):
             continue
-        amount = math.floor(min(rule['amount'], production_stock(building, key), carry_capacity(villager)) + 1e-9)
+        surplus = max(0, economy.quantity(town, key) - rule['cap']) if rule.get('strict') else float('inf')
+        amount = math.floor(min(rule['amount'], surplus, production_stock(building, key), carry_capacity(villager)) + 1e-9)
         if amount > 0:
             return {key: amount}
     return {}
@@ -94,6 +130,7 @@ def output_fits(building, outputs):
 
 def record_output(town, building, key, amount, villager=None, orphan_room=None):
     economy.ensure_inventory(town)
+    economy.record_activity(town, key, amount, 'in')
     buffer = building.setdefault('pending_output' if villager is not None else 'output_buffer', {})
     buffer[key] = buffer.get(key, 0) + amount
     if villager is None:
@@ -302,6 +339,8 @@ def produce(town, building, villager, elapsed=3):
     if deposit:
         economy.take_supply(town, deposit, produced['iron_ore'])
     building['input_buffer'] = {k: max(0, economy.quantity(local, k) - produced.get(k, 0)) for k in inputs}
+    for key, amount in inputs.items():
+        economy.record_activity(town, key, amount - building['input_buffer'].get(key, 0), 'out')
     for key, amount in produced.items():
         record_output(town, building, key, amount, villager)
     villager[villager['job']] = worker[villager['job']]
@@ -494,10 +533,12 @@ def transfer(town, building, storage, operation, villager, planned=None):
             if rule is None or not rule.get('enabled', True):
                 unsold[key] = wanted
                 continue
-            amount = math.floor(min(wanted, rule['amount']) + 1e-9)
+            surplus = max(0, economy.quantity(town, key) + wanted - rule['cap']) if rule.get('strict') else float('inf')
+            amount = math.floor(min(wanted, rule['amount'], surplus) + 1e-9)
             unsold[key] = wanted - amount
             if amount <= 0:
                 continue
+            economy.record_activity(town, key, amount, 'out')
             economy.record_sale(town, key, amount)
             economy.practice(villager, 'trading')
             economy.practice(villager, 'hauling')
@@ -613,9 +654,44 @@ def haul(town, landscape, villager, storage, route, elapsed):
     villager['production_status'] = 'Waiting for goods or enabled storage resources'
 
 
+def purchase_batch(town, villager, elapsed):
+    """Buy at most ten items per merchant per three seconds, directly into storage."""
+    candidates = []
+    for key, threshold in town.get('rules', {}).get('market_purchases', {}).items():
+        if key not in economy.STORAGE_KEYS or key == 'food':
+            continue
+        price = 2 * economy.sale_price(key)
+        amount = math.floor(min(10, threshold - economy.quantity(town, key),
+                                economy.storage_room(town, key), town['coins'] / price) + 1e-9)
+        if amount > 0:
+            candidates.append((key, amount, price))
+    if not candidates:
+        villager.pop('market_purchase_work', None)
+        return False
+    work = villager.get('market_purchase_work', 0) + elapsed
+    if work < 3:
+        villager['market_purchase_work'] = work
+        villager['production_status'] = 'Buying supplies at the market'
+        return True
+    villager.pop('market_purchase_work', None)
+    # Rotate products so a large target cannot starve the other purchases.
+    previous = villager.get('market_last_purchase')
+    keys = [key for key, _, _ in candidates]
+    index = (keys.index(previous) + 1) % len(keys) if previous in keys else 0
+    key, amount, price = candidates[index]
+    delivered = economy.deliver(town, key, amount, float('inf'), record=False)
+    economy.spend(town, {'coins': delivered * price})
+    villager['market_last_purchase'] = key
+    economy.practice(villager, 'trading')
+    villager['production_status'] = f'Bought {delivered:g} {key.replace("_", " ")}'
+    return True
+
+
 def merchant(town, landscape, villager, market, route, elapsed):
     villager.pop('work_animation', None)
     if advance_trip(town, landscape, villager, elapsed):
+        return
+    if purchase_batch(town, villager, elapsed):
         return
     sources = [b for b in town['buildings'] if b['kind'] != 'market'
                and 'construction' not in b and sale_cargo(town, b, villager)]

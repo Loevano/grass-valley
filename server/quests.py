@@ -1,4 +1,5 @@
 """Saved cooperative quarry puzzle; positions are separate from the valley."""
+import resource_activity
 
 LAYOUT = [
     '###########',
@@ -103,6 +104,7 @@ def change(town, data, world):
         for town_id in quest['members']:
             recipient = world['towns'][town_id]
             recipient['coins'] += REWARD
+            resource_activity.record(recipient, 'coins', REWARD, 'in')
             recipient['player'].setdefault('keepsakes', []).append(KEEPSAKE)
     elif quest['runes_solved']:
         raise ValueError('The rune seal is already open.')

@@ -12,6 +12,7 @@ from pathlib import Path
 from urllib.parse import parse_qs, urlsplit
 
 import progression as economy
+import resource_activity
 import logistics
 import work_cycles
 import farming
@@ -807,6 +808,7 @@ def construct(town, landscape, workers=None, elapsed=TICK_SECONDS):
                 if upgrade:
                     town['level'] = upgrade['level']
                     town['coins'] += upgrade['coins']
+                    economy.record_activity(town, 'coins', upgrade['coins'], 'in')
                 town['upgrade_remaining'] = 0
         for villager in town['villagers']:
             villager.pop('construction_target', None)
@@ -927,6 +929,7 @@ def construct(town, landscape, workers=None, elapsed=TICK_SECONDS):
                     if upgrade:
                         town['level'] = upgrade['level']
                         town['coins'] += upgrade['coins']
+                        economy.record_activity(town, 'coins', upgrade['coins'], 'in')
                 villager.pop('construction_target', None)
                 villager.pop('construction_arrived', None)
                 villager.pop('construction_walk', None)
@@ -1092,6 +1095,7 @@ def tick(world):
         ensure_animal_names(town)
         ensure_resources(town)
         economy.ensure_inventory(town)
+        resource_activity.advance(town, TICK_SECONDS)
         npcs.advance_trades(town, TICK_SECONDS)
         if town.get('upgrade_remaining'):
             # Resume upgrades from saves made before construction required builders.
@@ -1467,6 +1471,8 @@ def command(town, data, world=None):
         return horses.change(town, data)
     if action == 'configure_rule':
         return logistics.configure_rules(town, data)
+    if action == 'configure_resource_trade':
+        return logistics.configure_resource_trade(town, data)
     if action == 'configure_market_sale':
         return logistics.configure_market_sale(town, data)
     if action in {'claim_local_gift', 'buy_worker_tool', 'trade_local', 'give_worker_tool', 'take_worker_tool', 'transfer_worker_tool',
@@ -1620,6 +1626,7 @@ def command(town, data, world=None):
             validate_acre(town, moved.get('farm_index'), x, y)
         # Rearranging must remain possible even after spending the starting coins.
         if not town.get('sandbox'):
+            economy.record_activity(town, 'coins', min(1, town['coins']), 'out')
             town['coins'] = max(0, town['coins'] - 1)
         moved_specs = [{k: b[k] for k in ('kind', 'x', 'y')} for _, b in group]
         for villager in town['villagers']:

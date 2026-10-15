@@ -19,6 +19,7 @@ def terms(data, prefix):
 def receive(town, key, amount):
     if key == 'coins':
         town['coins'] += amount
+        economy.record_activity(town, 'coins', amount, 'in')
     else:
         if economy.storage_room(town, key) + 1e-9 < amount:
             raise ValueError('Both towns need enough enabled storage for the incoming goods.')
@@ -72,7 +73,7 @@ def change(town, data, world):
     # Simulate outgoing stock first, including the storage it frees, before changing either town.
     for original, outgoing, outgoing_amount, incoming, incoming_amount in (
             (source, give, give_amount, want, want_amount), (town, want, want_amount, give, give_amount)):
-        trial = {**original, 'buildings': deepcopy(original['buildings']), 'goods': dict(original.get('goods', {}))}
+        trial = {**original, '_activity_preview': True, 'buildings': deepcopy(original['buildings']), 'goods': dict(original.get('goods', {}))}
         economy.spend(trial, {outgoing: outgoing_amount})
         receive(trial, incoming, incoming_amount)
     economy.spend(source, {give: give_amount})

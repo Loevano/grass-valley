@@ -1,5 +1,6 @@
 """Player clothing, exploration equipment, and local trading."""
 import math
+import resource_activity
 
 from terrain import ground_variant
 
@@ -62,12 +63,14 @@ def change(town, data):
             if town['coins'] < item['price']:
                 raise ValueError('Not enough coins for this item.')
             town['coins'] -= item['price']
+            resource_activity.record(town, 'coins', item['price'], 'out')
             player.setdefault('items', {})[key] = count + 1
         else:
             if count <= int(equipped):
                 raise ValueError('Unequip the item before selling it.')
             player['items'][key] = count - 1
             town['coins'] += item['price'] // 2
+            resource_activity.record(town, 'coins', item['price'] // 2, 'in')
     elif action == 'equip_item':
         if count < 1:
             raise ValueError('Find or buy this item first.')

@@ -204,6 +204,7 @@ def advance_story(town, npc, progress):
     progress['story_stage'] = stage + 1
     if stage + 1 == len(story['stages']) - 1:
         town['coins'] += story['reward']
+        economy.record_activity(town, 'coins', story['reward'], 'in')
         town['player'].setdefault('keepsakes', []).append(story['keepsake'])
     return {}
 
@@ -320,6 +321,7 @@ def change(town, data):
         if town['coins'] < price:
             raise ValueError('Not enough coins for this tool.')
         town['coins'] -= price
+        economy.record_activity(town, 'coins', price, 'out')
         tools = player.setdefault('worker_tools', {})
         tools[key] = tools.get(key, 0) + 1
     elif action == 'claim_local_gift':

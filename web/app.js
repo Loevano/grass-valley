@@ -163,7 +163,7 @@ function canControlPlayer(allowBuilding=false){
     && !world.quarry?.members?.[identity?.town_id]?.inside && !$('quarry-dialog')?.open
     && !world.lanterns?.members?.[identity?.town_id]?.inside && !$('lanterns-dialog')?.open
     && !$('world-menu').open && !$('delete-world-dialog').open && !$('regenerate-world-dialog').open && !$('upgrade-dialog').open
-    && !$('settings-panel').open && !document.activeElement?.isContentEditable
+    && !$('settings-panel').open && !$('resources-panel').open && !document.activeElement?.isContentEditable
     && !['INPUT','TEXTAREA','SELECT'].includes(document.activeElement?.tagName)
     && (allowBuilding || document.activeElement?.tagName!=='BUTTON');
 }
@@ -840,18 +840,112 @@ function resourceGroup(title){
   return group;
 }
 function amountOf(town,key){return ['wood','food','coins'].includes(key)?town[key] || 0:town.goods?.[key] || 0;}
-function renderResourceList(town){
-  $('resources-list').replaceChildren();
-  if(!town)return;
-  const edible=foodGoods();
-  const keys=new Set([...(world.progression?.storage_keys || storageKeys),'coins',...Object.keys(edible),...Object.keys(town.goods || {})]);
-  for(const [title,members] of resourceCategories(keys)){
-    const group=resourceGroup(title);
-    for(const key of members){
-      const amount=String(Math.floor(amountOf(town,key)));
-      group.append(fact(key==='coins'?amount:`${amount} / ${Math.floor(resourceStorage(town,key))}`,goodName(key)));
+function resourceStocks(town){
+  const edible=foodGoods(),stocks={};
+  const add=(key,field,amount)=>{
+    if(!amount)return;
+    const row=stocks[key] ||= {free:amountOf(town,key),reserved:0,pending:0};row[field]+=amount;
+    if(key in edible)add('food',field,amount*edible[key]);
+  };
+  for(const key of new Set([...(world.progression?.storage_keys || storageKeys),'coins',...Object.keys(edible),...Object.keys(town.goods || {})]))
+    stocks[key]={free:amountOf(town,key),reserved:0,pending:0};
+  for(const building of town.buildings || []){
+    for(const [key,amount] of Object.entries(building.input_buffer || {}))add(key,'reserved',amount);
+    // Carried and orphaned outputs are already included in the building total.
+    for(const [key,amount] of Object.entries(building.pending_output || {}))add(key,'pending',amount);
+  }
+  for(const villager of town.villagers || []){
+    const trip=villager.logistics_trip;
+    if(trip?.operation==='sell'&&trip.picked_up&&!trip.delivered)
+      for(const [key,amount] of Object.entries(trip.cargo || {}))add(key,'reserved',amount);
+  }
+  for(const row of Object.values(stocks))row.total=row.free+row.reserved+row.pending;
+  return stocks;
+}
+function resourceMinuteActivity(town){
+  const result={},history=town.resource_activity;
+  for(const bucket of history?.buckets || []){
+    if(bucket.at<=history.seconds-60)continue;
+    for(const direction of ['in','out'])for(const [key,amount] of Object.entries(bucket[direction] || {})){
+      const row=result[key] ||= {in:0,out:0};row[direction]+=amount;
     }
-    $('resources-list').append(group);
+  }
+  return result;
+}
+function resourceNumber(value){return String(Number(Math.max(0,value || 0).toFixed(2)));}
+function resourceArt(key){
+  if(iconPaths[key])return illustration(key);
+  const aliases={wheat:'food',flour:'resource_sack',fodder:'food',manure:'resource_sack',
+    planks:'resource_planks',tools:'crafted_axe',stone:'resource_stone',herbs:'gathering',
+    vegetables:'resource_carrot',carrots:'resource_carrot',berries:'resource_berries',fruit:'orcharding',
+    eggs:'resource_egg',milk:'resource_milk',wool:'husbandry',hides:'tannery',leather:'tannery',
+    iron_ore:'resource_stone',iron:'resource_ingot',steel:'resource_ingot',saddles:'saddler',trade_crates:'resource_crate',
+    wooden_bowls:'resource_bowl',crates:'resource_crate',furniture:'resource_chair',carved_furniture:'resource_chair'};
+  if(key.includes('fish')||world.progression?.fish?.[key]||world.progression?.smoked_fish?.[key]||['trout','salmon','sturgeon','smoked_trout','smoked_salmon','smoked_sturgeon'].includes(key))return illustration(key.startsWith('smoked_')?'preserving':'fishing');
+  if(['bread','bread_rolls','herb_bread','fruit_pies','cakes'].includes(key))return illustration('baking');
+  if(key.includes('meat')||key==='sausages')return illustration('resource_meat');
+  return illustration(aliases[key] || 'resource_crate');
+}
+function renderResourceList(town){
+  const target=$('resources-list');
+  if(!town){target.replaceChildren();renderResourceList.signature=null;return;}
+  const stocks=resourceStocks(town),activity=resourceMinuteActivity(town),catalog=world.progression || {};
+  const buyable=catalog.buyable_goods || [],sellable=marketSaleGoods(catalog);
+  const signature=JSON.stringify([world.world_id,identity?.town_id,Object.keys(stocks),buyable,sellable]);
+  if(renderResourceList.signature!==signature){
+    const table=document.createElement('table');table.className='resources-table';
+    const head=document.createElement('thead'),heading=document.createElement('tr');
+    for(const label of ['Resource','Icon','Stock (all)','Free','Reserved','Buy <','Sell >','In/min','Out/min']){
+      const cell=document.createElement('th');cell.scope='col';cell.textContent=label;heading.append(cell);
+    }
+    head.append(heading);table.append(head);
+    const body=document.createElement('tbody');table.append(body);
+    const rows=new Map(),worldId=world.world_id,townId=identity?.town_id;
+    for(const [title,members] of resourceCategories(Object.keys(stocks))){
+      const category=document.createElement('tr');category.className='resource-category';
+      const caption=document.createElement('th');caption.colSpan=9;caption.scope='rowgroup';caption.textContent=title;category.append(caption);body.append(category);
+      for(const key of members){
+        const row=document.createElement('tr');row.dataset && (row.dataset.resource=key);
+        const name=document.createElement('th');name.scope='row';name.textContent=goodName(key);row.append(name);
+        const art=document.createElement('td');art.className='resource-art';art.append(resourceArt(key));row.append(art);
+        const cells={};
+        for(const field of ['total','free','reserved','buy','sell','in','out']){
+          cells[field]=document.createElement('td');row.append(cells[field]);
+        }
+        cells.total.className='resource-stock';
+        const inputs={};
+        for(const [field,allowed] of [['buy',buyable.includes(key)],['sell',sellable.includes(key)]]){
+          if(!allowed){cells[field].textContent='—';continue;}
+          const input=document.createElement('input');input.type='number';input.min='0';input.step='any';input.placeholder='Off';
+          input.setAttribute('aria-label',`${goodName(key)} ${field==='buy'?'buy below':'sell above'}`);
+          input.setAttribute('aria-describedby','resources-trade-help');cells[field].append(input);inputs[field]=input;
+          input.onchange=()=>{
+            if(world.world_id!==worldId||identity?.town_id!==townId)return;
+            if(Object.values(inputs).some(node=>node.reportValidity&&!node.reportValidity()))return;
+            const value=field=>inputs[field]?.value?.trim()?Number(inputs[field].value):null;
+            const buy=value('buy'),sell=value('sell');
+            if(buy!==null&&sell!==null&&buy>=sell){notice('Sell > must be higher than Buy <.');return;}
+            act({action:'configure_resource_trade',resource:key,buy_below:buy,sell_above:sell});
+          };
+        }
+        rows.set(key,{cells,inputs});body.append(row);
+      }
+    }
+    renderResourceList.signature=signature;renderResourceList.table=table;renderResourceList.rows=rows;
+    target.replaceChildren(table);
+  }
+  const hasMarket=(town.buildings || []).some(b=>b.kind==='market'&&!b.construction);
+  for(const [key,{cells,inputs}] of renderResourceList.rows){
+    const stock=stocks[key],flow=activity[key] || {in:0,out:0};
+    for(const field of ['total','free','reserved'])cells[field].textContent=resourceNumber(stock[field]);
+    cells.total.title=`${resourceNumber(stock.pending)} awaiting workplace delivery; counted once in total stock`;
+    for(const field of ['in','out'])cells[field].textContent=resourceNumber(flow[field]);
+    const sale=town.rules?.market_sales?.[key],buy=town.rules?.market_purchases?.[key];
+    for(const [field,input] of Object.entries(inputs)){
+      input.disabled=!hasMarket;
+      input.title=!hasMarket?'Finish a market stall first':field==='buy'?`Buy below this free stock at ${2*(catalog.fish?.[key]?.coins ?? catalog.sale_prices?.[key] ?? 1)} coins per item; blank disables buying`:sale&&!sale.strict?`Existing market rule: starts at ${sale.cap} or more and sells batches. Editing here retains the threshold amount instead.`:'Sell surplus above this free stock; blank disables selling';
+      if(document.activeElement!==input)input.value=String((field==='buy'?buy:sale&&(sale.enabled ?? true)?sale.cap:null) ?? '');
+    }
   }
 }
 function renderRules(town){
@@ -1018,6 +1112,20 @@ Object.assign(iconPaths,{
   stable:'<path fill="#ac7a50" d="M4 14h17V5h6v15H9v8H5zm14 5h4v9h-4z"/><path d="M22 6V3m3 3V3M4 16H2v9"/>',
   tradehouse:'<path fill="#a1ab7e" d="M4 9h24v7H4z"/><path d="M6 16v13m20-13v13"/><path fill="#c9ac75" d="M8 19h16v10H8z"/><path d="m8 19 16 10m0-10L8 29"/>',
 });
+Object.assign(iconPaths,{
+  resource_sack:'<path fill="#cda875" d="m10 3 12 0-3 7q16 19-3 19T13 10z"/><path d="M12 10h8m-4 6v7m-3-3h6"/>',
+  resource_planks:'<path fill="#cda875" d="m3 10 22-6 4 6-22 6zm0 9 22-6 4 6-22 6z"/><path d="m9 11 12-3M9 20l12-3"/>',
+  resource_stone:'<path fill="#7f8c8c" d="m3 22 3-13 13-5 10 12-4 11H9z"/><path fill="#a6b3af" d="m6 9 13-5 3 14-12 2z"/><path d="m10 20-1 7m13-9 7-2"/>',
+  resource_carrot:'<path fill="#cc9956" d="m6 28 8-20 11 7z"/><path fill="#719451" d="M17 10Q7 0 16 2l5 6q-2-13 4-6l-1 8q12-7 5 1l-5 4z"/><path d="m12 17 4 2m0-7 4 2"/>',
+  resource_berries:'<path fill="#719451" d="M15 14Q2 2 10 2q10 0 9 12 8-15 12-7 0 7-12 9z"/><g fill="#a76770"><circle cx="10" cy="19" r="6"/><circle cx="22" cy="19" r="6"/><circle cx="16" cy="26" r="5"/></g>',
+  resource_egg:'<path fill="#e8dcc0" d="M26 21c0 13-20 13-20 0S16-4 20 4q6 8 6 17z"/><path stroke="#fff0d8" d="M11 14q-3 6-1 10"/>',
+  resource_milk:'<path fill="#dce2d4" d="M10 3h12v8l5 6v12H5V17l5-6z"/><path fill="#7899a2" d="M5 20h22v7H5z"/><path d="M10 7h12"/>',
+  resource_ingot:'<path fill="#bacac5" d="m7 8 17 0 5 13-22 6-5-9z"/><path fill="#758792" d="m7 18 22-6v9L7 27z"/><path d="m2 18 5 0 17-5"/>',
+  resource_crate:'<path fill="#a78454" d="M4 6h24v23H4z"/><path d="M4 6l24 23M28 6 4 29M4 12h24M4 23h24"/>',
+  resource_bowl:'<ellipse fill="#cda875" cx="16" cy="12" rx="13" ry="6"/><path fill="#94704c" d="M3 12q1 17 13 17t13-17q-13 9-26 0z"/>',
+  resource_chair:'<path fill="#a78454" d="M8 3h16v15H8zM5 18h22v5H5zM6 23h4v8H6zm16 0h4v8h-4z"/><path d="M12 6v10m8-10v10"/>',
+  resource_meat:'<path fill="#ba7e74" d="M4 9Q9 1 19 6l9 12q3 10-9 12L5 21Q0 17 4 9z"/><path fill="#dfb49b" d="M8 10q6-6 13 4t-2 11L8 19q-5-5 0-9z"/><circle fill="#e8dcc0" cx="16" cy="17" r="4"/>',
+});
 function illustration(kind){
   const cached=illustration.templates?.get(kind);if(cached)return cached.cloneNode(true);
   const span=document.createElement('span');span.className='illustration';span.setAttribute('aria-hidden','true');
@@ -1121,6 +1229,7 @@ function renderWorldMenu(){
   }
 }
 function openPanel(next){
+  if(next==='resources')clearWalk();
   if(world.shared_map && next==='build' && world.towns[identity?.town_id])viewed=identity.town_id;
   panel=next;selection=null;tool=null;moveIndex=null;buildTile=null;hoverTile=null;
   render();
@@ -1128,6 +1237,9 @@ function openPanel(next){
 for(const name of ['build','villagers','valley','help','resources','items','rules']){
   $(name+'-button').onclick=()=>openPanel(panel===name?null:name);
 }
+$('close-resources').onclick=()=>openPanel(null);
+$('resources-panel').addEventListener('cancel',event=>{event.preventDefault();openPanel(null);});
+$('resources-panel').addEventListener('close',()=>{if(panel==='resources')openPanel(null);});
 function updateSettingsButton(){
   const open=$('settings-panel').open;
   $('settings-button').setAttribute('aria-expanded',String(open));
@@ -1143,6 +1255,13 @@ $('close-settings').onclick=()=>{ $('settings-panel').close();updateSettingsButt
 $('settings-panel').addEventListener('close',updateSettingsButton);
 window.addEventListener('keydown',event=>{
   if($('quarry-dialog')?.open||$('lanterns-dialog')?.open)return;
+  if($('resources-panel').open){
+    if(event.key==='Escape'||(event.key==='4'&&!event.repeat&&!event.ctrlKey&&!event.metaKey&&!event.altKey&&!event.shiftKey
+      &&!document.activeElement?.isContentEditable&&!['INPUT','TEXTAREA','SELECT'].includes(document.activeElement?.tagName))){
+      event.preventDefault();openPanel(null);canvas.focus();
+    }
+    return;
+  }
   const key=event.key.toLowerCase();
   if(key===','&&event.metaKey&&!event.ctrlKey&&!event.altKey&&!event.shiftKey){
     event.preventDefault();
@@ -1157,7 +1276,7 @@ window.addEventListener('keydown',event=>{
         event.preventDefault();
         if(name==='world-menu')clearWalk();
         $(name+'-button').onclick();
-        if(name!=='world-menu')canvas.focus();
+        if(name!=='world-menu'&&name!=='resources')canvas.focus();
       }
     }
     return;
@@ -2322,8 +2441,12 @@ function render(){
   if(world.world_id&&!own){if(!$('login-dialog').open)$('login-dialog').showModal();}
   else if($('login-dialog').open)$('login-dialog').close();
   $('controls').hidden=panel!=='build' || !own || viewed!==identity?.town_id;
-  for(const name of ['selection','villagers','valley','help','resources','items','rules'])$(name+'-panel').hidden=panel!==name;
-  $('side-panel').hidden=!panel && $('join').hidden;
+  for(const name of ['selection','villagers','valley','help','items','rules'])$(name+'-panel').hidden=panel!==name;
+  if(panel==='resources'&&own){
+    renderResourceList(own);
+    if(!$('resources-panel').open)$('resources-panel').showModal();
+  }else if($('resources-panel').open)$('resources-panel').close();
+  $('side-panel').hidden=(!panel || panel==='resources') && $('join').hidden;
   $('side-panel').classList.toggle('villagers-overview',panel==='villagers');
   $('game').classList.toggle('panel-open',!$('side-panel').hidden);
   for(const name of ['build','villagers','valley','help','resources','items','rules']){
@@ -2337,7 +2460,6 @@ function render(){
   $('rules-button').disabled=!own;
   if(panel==='rules')renderRules(own);
   if(panel==='items')renderItems(own);
-  if(panel==='resources')renderResourceList(own);
   $('move').textContent=!own?.sandbox&&own?.coins?'Move a building · 1 coin':'Move a building · Free';
   $('mode-hint').textContent=tool==='move'?(moveIndex===null?'Moving: click a building. Escape to cancel.':'Moving: click open grass to move here. Escape to cancel.'):tool?`Building ${labels[tool].toLowerCase()}: hover over open grass and left-click to build. Escape to cancel.`:'';
   $('view-title').textContent=((world.shared_map?world.name:town?.name) || 'A place to call home')+(world.sandbox?' · Sandbox':'');

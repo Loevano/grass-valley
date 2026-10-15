@@ -6,7 +6,7 @@ function session(saved=null){
   const elements=new Map(),listeners={},storage=new Map([['lantern-settings',saved]]);
   function element(tagName){return {tagName,events:{},children:[],style:{},attributes:{},classList:{toggle(){}},
     append(...children){this.children.push(...children);for(const child of children)if(child.id)elements.set(child.id,child);},
-    replaceChildren(){this.children=[];},setAttribute(key,value){this.attributes[key]=value;},
+    replaceChildren(...children){this.children=children;},setAttribute(key,value){this.attributes[key]=value;},
     addEventListener(type,callback){this.events[type]=callback;},focus(){},showModal(){this.open=true;},close(){this.open=false;this.events.close?.();}};}
   const document={getElementById(id){if(!elements.has(id))elements.set(id,element());return elements.get(id);},createElement:element,querySelectorAll:()=>[]};
   const canvas=document.getElementById('world');
@@ -32,7 +32,7 @@ function session(saved=null){
   return {state,document,storage,key,rebind,listeners};
 }
 (async()=>{
-  for(const shortcut of ['2','3','4','5','6','7','8','b','f','c','g','m','i','y',' ','Escape','z']){
+  for(const shortcut of ['2','3','5','6','7','8','b','f','c','g','m','i','y',' ','Escape','z']){
     const walking=session();
     walking.key('d');walking.state.step(.1);for(let i=0;i<4;i++)await Promise.resolve();
     walking.key(shortcut);
@@ -191,19 +191,24 @@ function session(saved=null){
   windows.document.getElementById('build-button').disabled=true;windows.key('2');
   check(windows.state.panel==='villagers','Number shortcuts respect disabled toolbar buttons');
   windows.key('4');
-  check(windows.state.panel==='resources'&&!windows.document.getElementById('resources-panel').hidden,'4 opens Resources');
-  const resourceGroups=windows.document.getElementById('resources-list').children;
-  check(resourceGroups.map(group=>group.children[0].textContent).join(',')==='Overview,Baking,Fishing,Masonry,Timber,Farming,Orcharding and gathering,Livestock,Butchery','Resources have clear category headings');
-  const resources=resourceGroups.flatMap(group=>group.children.slice(1));
-  const resource=label=>resources.find(row=>row.children[1].textContent===label)?.children[0].textContent;
-  check(resource('Wood')==='50 / 0'&&resource('Food')==='30 / 0','Resources show stored amounts and allocated capacity');
-  check(resource('Coins')==='5','Coins do not have a storage limit');
-  check(resource('Fish')==='0 / 0'&&resource('Prepared meat')==='0 / 0'&&resource('Herbs')==='0 / 0','Unproduced resources remain visible');
-  check(resource('Trout')==='0 / 0'&&resource('Salmon')==='0 / 0'&&resource('Sturgeon')==='0 / 0','Premium fish appear in Resources');
-  check(resource('Smoked trout')==='0 / 0'&&resource('Smoked salmon')==='0 / 0'&&resource('Smoked sturgeon')==='0 / 0','Smoked species appear in Resources');
-  check(resources.length===29,'Resources include all storage categories, edible goods, and coins');
-  check(new Set(resources.map(row=>row.children[1].textContent)).size===29,'Each resource appears in exactly one section');
-  windows.key('4');check(windows.state.panel===null,'4 closes Resources');
+  check(windows.state.panel==='resources'&&windows.document.getElementById('resources-panel').open,'4 opens the Resources popup');
+  check(windows.document.getElementById('side-panel').hidden,'Resources does not open the sidebar');
+  const table=windows.document.getElementById('resources-list').children[0];
+  const resources=table.children[1].children.filter(row=>row.className!=='resource-category');
+  check(table.children[0].children[0].children.map(cell=>cell.textContent).join(',')==='Resource,Icon,Stock (all),Free,Reserved,Buy <,Sell >,In/min,Out/min','Resources has the requested columns');
+  const resource=label=>resources.find(row=>row.children[0].textContent===label)?.children[2].textContent;
+  check(resource('Wood')==='50'&&resource('Food')==='30','Resources shows total stock');
+  check(resource('Coins')==='5','Coins appear in Resources');
+  check(resource('Fish')==='0'&&resource('Prepared meat')==='0'&&resource('Herbs')==='0','Unproduced resources remain visible');
+  check(resource('Trout')==='0'&&resource('Salmon')==='0'&&resource('Sturgeon')==='0','Premium fish appear in Resources');
+  check(resource('Smoked trout')==='0'&&resource('Smoked salmon')==='0'&&resource('Smoked sturgeon')==='0','Smoked species appear in Resources');
+  check(resources.length===29,'Resources includes storage categories, edible goods, and coins');
+  check(new Set(resources.map(row=>row.children[0].textContent)).size===29,'Each resource appears once');
+  windows.key('f');check(windows.state.actions.length===0,'Resources blocks gameplay shortcuts');
+  windows.key('4');check(windows.state.panel===null&&!windows.document.getElementById('resources-panel').open,'4 closes Resources');
+  windows.key('d');check(windows.state.held.includes('d'),'Walking starts before opening Resources');
+  windows.key('4');check(windows.state.held.length===0,'Opening Resources stops held movement');
+  windows.key('Escape');check(windows.state.panel===null&&!windows.document.getElementById('resources-panel').open,'Escape closes Resources');
   windows.key('3');
   windows.key('8');
   check(windows.state.panel==='rules'&&!windows.document.getElementById('rules-panel').hidden,'8 opens town Rules');

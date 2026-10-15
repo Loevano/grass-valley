@@ -37,7 +37,11 @@ class PlayerMining(unittest.TestCase):
                                      economy.quantity(before, 'stone') + 10)
                     self.assertEqual(self.town['buildings'][0]['stored_goods']['stone'],
                                      economy.quantity(self.town, 'stone'))
-                    for key in before.keys() - {'player', 'map_resources', 'goods', 'buildings', 'produced'}:
+                    def mined(town):
+                        return sum(bucket['in'].get('stone', 0)
+                                   for bucket in town.get('resource_activity', {}).get('buckets', []))
+                    self.assertEqual(mined(self.town), mined(before) + 10)
+                    for key in before.keys() - {'player', 'map_resources', 'goods', 'buildings', 'produced', 'resource_activity'}:
                         self.assertEqual(self.town[key], before[key], key)
                     command(self.town, {'action': 'mine'})
                     self.assertEqual(self.town['map_resources'], [])

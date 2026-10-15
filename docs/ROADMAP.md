@@ -133,6 +133,13 @@ Markets also offer a quick-sale form at the top: choose 1, 5, 10, 50, 100, or
 200 goods and type or choose a resource before selling at the usual price.
 Wheat is available for one-time sales without changing automatic-sale rules;
 the form explains unsupported resources and insufficient stock.
+The Resources popup now compares total, free, and reserved stock alongside editable
+buy/sell thresholds and actual activity over the last minute of running game time.
+Host-recorded flows exclude hauling and ingredient reservation. Merchants can buy
+up to 10 goods per three seconds at twice their sale value, constrained by the
+free-stock target, coins, and enabled storage. Imported goods do not advance
+production milestones. Fishing balancing and storage scaling remain planned.
+
 Storage rows now follow hall, assigned-worker recipe, and owned fishing-boat
 unlocks while retaining goods already in stock. Hidden acceptance settings and
 capacities are preserved; Option/Alt-click toggles only the shown resources.
