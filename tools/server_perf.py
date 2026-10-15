@@ -1,6 +1,7 @@
 """Benchmark any source revision with the same harness and disposable saves."""
 import argparse
 from concurrent.futures import ThreadPoolExecutor
+from contextlib import nullcontext
 import http.client
 from http.server import ThreadingHTTPServer
 import importlib.util
@@ -20,6 +21,66 @@ def percentile(values, fraction):
     return values[min(len(values) - 1, int(len(values) * fraction))]
 
 
+def routing_scenarios(server, metrics, checks):
+    """Same mass-replan workload against synchronous and queued revisions.
+
+    Measure update responsiveness separately from total time to finish all
+    requests. Workers from four towns share the host allowance; completed paths
+    are retained, just as gameplay retains routes between task changes.
+    """
+    from navigation import routes
+    diagnostics = []
+    for count in (16, 64, 256):
+        workers = [{'job': 'building'} for _ in range(count)]
+        towns = []
+        for town in range(4):
+            towns.append({'map_size': 64, 'terrain': ['g' * 64] * 64,
+                          'buildings': [], 'npcs': [],
+                          'map_resources': [{'kind': 'rock', 'x': 30 + town, 'y': y}
+                                            for y in range(55)], 'roads': []})
+        world = {'towns': {str(i): town for i, town in enumerate(towns)}}
+        for state in ('cold', 'warm', 'obstacle'):
+            if state == 'cold':
+                routes.graphs.clear()
+            if state == 'obstacle':
+                for town in towns:
+                    town['map_resources'].append({'kind': 'rock', 'x': 29, 'y': 55})
+            results, timings, work = {}, [], []
+            started = time.perf_counter()
+            for update in range(4000):
+                before = time.perf_counter()
+                with routes.update(world) if hasattr(routes, 'update') else nullcontext():
+                    for index, worker in enumerate(workers):
+                        if index in results:
+                            continue
+                        town = towns[index % 4]
+                        start = (2 + index // 64, 2 + index % 16)
+                        target = {'x': 50 + index % 8, 'y': 5 + index // 16}
+                        with routes.worker(worker) if hasattr(routes, 'worker') else nullcontext():
+                            path = server.construction_route(town, start, target)
+                            results[index] = path
+                timings.append((time.perf_counter() - before) * 1000)
+                work.append(getattr(routes, 'work', 0))
+                if len(results) == count:
+                    break
+            duration = (time.perf_counter() - started) * 1000
+            valid = len(results) == count and all(path is not None for path in results.values())
+            for index, path in results.items():
+                if path is None:
+                    continue
+                blocked = {(r['x'], r['y']) for r in towns[index % 4]['map_resources']}
+                valid = valid and all(tuple(p) not in blocked for p in path)
+            bounded = not hasattr(routes, 'budget') or max(work) <= routes.budget
+            name = f'server.routing.{count}.{state}'
+            metrics[name + '.p95_ms'] = percentile(timings, .95)
+            metrics[name + '.max_ms'] = max(timings)
+            checks.append({'scenario': name, 'ok': valid and bounded})
+            diagnostics.append({'scenario': name, 'updates': len(timings),
+                                'all_routes_ms': duration, 'max_search_work': max(work),
+                                'completed': len(results)})
+    return diagnostics
+
+
 def run(source, cycles):
     sys.path.insert(0, str(source))
     # Support both the current layout and revisions before the server move.
@@ -33,6 +94,7 @@ def run(source, cycles):
     harness = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(harness)
     metrics, checks = {}, []
+    routing = routing_scenarios(server, metrics, checks)
     # Exercise an active worker too: idle-town timings cannot detect discarded
     # simulation time at a delivery handoff. Use the same fixture for both refs.
     movement_samples, unused_tick = [], []
@@ -141,7 +203,7 @@ def run(source, cycles):
             for operation, values in samples.items():
                 metrics[f'server.concurrent.{operation}.p95_ms'] = percentile(values, .95)
                 metrics[f'server.concurrent.{operation}.max_ms'] = max(values)
-    return {'schema': 1, 'metrics': metrics, 'checks': checks, 'errors': [],
+    return {'schema': 1, 'metrics': metrics, 'checks': checks, 'errors': [], 'routing': routing,
             'environment': {'python': sys.version.split()[0], 'platform': sys.platform}}
 
 

@@ -2322,7 +2322,7 @@ function renderSelection(town){
     $('selection-level').hidden=false;$('selection-level').textContent=`Lv ${item.kind==='hall'?town.level:buildingLevel(item)}`;
     const decoration=decorationKinds.includes(item.kind);
     const workers=buildingSection(decoration?'Decoration':item.kind==='well'?'Water':['hall','home'].includes(item.kind)?'Settlers':'Workers');
-    const production=decoration?document.createElement('div'):buildingSection(item.kind==='barn'?'Animals':item.kind==='butcher'?'Butchery':item.kind==='market'?'Trade':['hall','home','storehouse'].includes(item.kind)?'Benefits':'Production',!['barn','butcher'].includes(item.kind));
+    const production=decoration?document.createElement('div'):buildingSection(item.kind==='barn'?'Animals':item.kind==='butcher'?'Butchery':item.kind==='market'?'Trade':['hall','home','storehouse'].includes(item.kind)?'Benefits':'Production',item.kind!=='barn');
     const upgrades=decoration?document.createElement('div'):buildingSection('Upgrades'),details=buildingSection('Building details',true),storageOverview=decoration?document.createElement('div'):buildingSection('Storage');
     const boats=item.kind==='fishing_hut'?buildingSection('Fishing boats'):null;
     const unlockedUpgrades=decoration?document.createElement('div'):buildingSection('Unlocked upgrades',true);
@@ -2986,10 +2986,11 @@ function animatedVillagers(town, seconds, townId=viewed, frameLayout=null){
       villager.job==='fishing'?[town.villagers.map(v=>[v.job,v.building_index]),town.buildings.filter(b=>b.kind==='fishing_hut').map(b=>[b.level,b.profession_upgrades])]:null]);
     const trip=villager.logistics_trip;
     // Polling advances the host's step; keep the visible trip running continuously.
-    const signature=prepared?.signature ?? JSON.stringify([task,trip?[trip.id,trip.operation,trip.workplace,trip.storage,trip.path]:villager.logistics_target]);
+    const signature=prepared?.signature ?? JSON.stringify([task,trip?[trip.id,trip.operation,trip.workplace,trip.storage,trip.path]:villager.logistics_target,!!villager.route_waiting]);
     const workerKey=world.shared_map?`${townId}/${index}`:index;
     const hostWork=villager.work_animation;
-    const workPlayback=hostWork?.playback?.length&&!villager.logistics_target&&!villager.construction_target;
+    const workPlayback=hostWork?.playback?.length&&!villager.logistics_target&&!villager.construction_target
+      &&(!villager.route_waiting||hostWork.route_pending);
     let state=workers.get(workerKey);
     let finishingDelivery=state?.transport&&state.path.length&&state.task===task;
     if(state&&!state.pendingPlan&&!state.pendingAdvance&&state.layout!==layout
@@ -3027,6 +3028,7 @@ function animatedVillagers(town, seconds, townId=viewed, frameLayout=null){
     }
     state.roads=roads;
     if(state.transport&&trip?.cargo&&state.signature===signature)state.transportCargo=trip.cargo;
+    state.routeWaiting=!!villager.route_waiting;
     state.storagePaused=!!villager.production_status?.startsWith('Waiting for storage space');
     const confirmedPlayback=workPlayback&&!state.transport;
     if(!confirmedPlayback&&state.playbackQueue){

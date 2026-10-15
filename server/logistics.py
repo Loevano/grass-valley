@@ -2,6 +2,7 @@
 from spatial import occupied_tiles
 import math
 import barns
+from navigation import routes
 
 import progression as economy
 
@@ -415,6 +416,8 @@ def start_trip(town, landscape, villager, building, storage, operation, route, h
                  if b['kind'] != 'acre' or 'construction' in b]}
     position = villager.get('logistics_position', villager.get('construction_position', storage if hauler else building))
     first, last = (building, storage) if hauler else (storage, building)
+    if routes.active and operation == 'supply':
+        routes.priority = min(routes.priority, 1)
     outward = route(landscape, (round(position['x']), round(position['y'])), first)
     if outward is None:
         return False
@@ -425,6 +428,7 @@ def start_trip(town, landscape, villager, building, storage, operation, route, h
     villager['logistics_trip'] = {'id': villager['logistics_trip_id'], 'operation': operation, 'workplace': {k: building[k] for k in ('kind', 'x', 'y')},
                                  'storage': {k: storage[k] for k in ('kind', 'x', 'y')},
                                  'path': [list(p) for p in outward + back[1:]],
+                                 'turn_step': len(outward) - 1,
                                  'pickup_step': len(outward) - 1 if (operation in {'collect', 'sell'} and hauler)
                                  or (operation == 'supply' and not hauler) else 0,
                                  'cargo': planned_cargo(town, building, storage, operation, villager),
@@ -433,6 +437,35 @@ def start_trip(town, landscape, villager, building, storage, operation, route, h
                                  'delivered': False}
     villager['logistics_position'] = {'x': outward[0][0], 'y': outward[0][1]}
     return True
+
+
+def replan_trip(landscape, villager, building, storage, blocked, roads, fences):
+    """Replace only the remaining legs, preserving pickup and delivery state."""
+    trip = villager['logistics_trip']
+    step, path = trip.get('step', 0), trip['path']
+    turn = trip.get('turn_step', trip['pickup_step'] or trip['delivery_step'])
+    hauler = villager['job'] in ('hauling', 'trading')
+    first, last = (building, storage) if hauler else (storage, building)
+    start = tuple(path[step])
+    size, terrain = landscape.get('map_size', 120), landscape.get('terrain', [])
+
+    def leg(position, target):
+        points = routes.route(position, target, blocked, size, terrain, roads=roads,
+                              road_mode='arrival', diagonal=True, fences=fences)
+        return None if points is None else [position] + [(p['x'], p['y']) for p in points]
+
+    outward = leg(start, first) if step < turn else [start]
+    if outward is None:
+        return
+    back = leg(outward[-1], last)
+    if back is None:
+        return
+    new_path = outward + back[1:]
+    trip.update(path=[list(p) for p in new_path], step=0, travel_seconds=0,
+                pickup_step=len(outward) - 1 if step < trip['pickup_step'] else 0,
+                delivery_step=(len(outward) - 1 if trip['delivery_step'] == turn
+                               and step < turn else len(new_path) - 1),
+                turn_step=len(outward) - 1)
 
 
 def advance_trip(town, landscape, villager, elapsed, resume_work=False):
@@ -475,8 +508,14 @@ def advance_trip(town, landscape, villager, elapsed, resume_work=False):
         if (tile in blocked or barns.crosses(before, tile, fences)
                 or (terrain and terrain[tile[1]][tile[0]] == 'v')
                 or any(p in blocked or (terrain and terrain[p[1]][p[0]] == 'v') for p in corners)):
-            cancel_trip(town, villager)
+            # Save movement already completed in this update before a queued
+            # replan can suspend. Held sale cargo and the original assignment
+            # stay on the trip until delivery or explicit cancellation.
+            trip.update(step=step, travel_seconds=0)
+            villager['logistics_position'] = {'x': path[step][0], 'y': path[step][1]}
             villager['production_status'] = 'Delivery blocked; finding another route'
+            routes.priority = 0
+            replan_trip(landscape, villager, building, storage, blocked, roads, fences)
             return True
         duration = math.hypot(tile[0]-before[0], tile[1]-before[1]) / (travel_speed(villager) * (1.5 if tile in roads else 1))
         if remaining < duration:
