@@ -105,6 +105,8 @@ pending deliveries. Each edible good and fish species now has an independent
 item capacity in halls, storehouses, and workplaces. Storage filters and market
 lists are organized by production trade; Option/Alt-clicking a storage resource
 checkbox toggles all shown resources on or off. Legacy food filters expand without losing stock.
+Markets also offer a quick-sale form at the top: choose 1, 5, 10, 50, 100, or
+200 goods and type or choose a resource before selling at the usual price.
 Storage rows now follow hall, assigned-worker recipe, and owned fishing-boat
 unlocks while retaining goods already in stock. Hidden acceptance settings and
 capacities are preserved; Option/Alt-click toggles only the shown resources.

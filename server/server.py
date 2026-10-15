@@ -1837,8 +1837,8 @@ def command(town, data, world=None):
         key, amount = data.get('resource'), data.get('amount')
         if not any(b['kind'] == 'market' and completed(b) for b in town['buildings']):
             raise ValueError('Build a market stall first.')
-        if key not in economy.SELLABLE_GOODS or type(amount) is not int or not 1 <= amount <= 10:
-            raise ValueError('Choose goods and a quantity from 1 to 10.')
+        if key not in economy.SELLABLE_GOODS or type(amount) is not int or not 1 <= amount <= 200:
+            raise ValueError('Choose goods and a quantity from 1 to 200.')
         if not economy.afford(town, {key: amount}):
             raise ValueError('Not enough goods to sell.')
         economy.spend(town, {key: amount})

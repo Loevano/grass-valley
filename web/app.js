@@ -1422,6 +1422,47 @@ function renderTownTrades(town,target){
 function marketSaleGoods(catalog){
   return catalog.sellable_goods || [...new Set(['hides','leather','iron_ore','iron','saddles','steel','trade_crates','fish','trout','salmon','sturgeon','planks','wool','flour','smoked_fish','smoked_trout','smoked_salmon','smoked_sturgeon','tools','herbs','fruit','milk','eggs','meat','bread','prepared_meat',...Object.values(catalog.profession_recipes || {}).flat().map(recipe=>recipe.output)])];
 }
+function renderQuickMarketSale(town,target){
+  const keys=marketSaleGoods(world.progression),quantities=[1,5,10,50,100,200];
+  const signature=JSON.stringify([world.world_id,identity?.town_id,keys]);
+  if(renderQuickMarketSale.signature!==signature){
+    const worldId=world.world_id,townId=identity?.town_id;
+    const form=document.createElement('form');form.className='market-quick-sale';
+    const heading=document.createElement('h3');heading.textContent='Quick sale';form.append(heading);
+    const amountLabel=document.createElement('label');amountLabel.textContent='Amount';
+    const amount=document.createElement('select');amount.id='sale-quantity';amount.setAttribute('aria-label','Amount to sell');
+    for(const quantity of quantities){const option=document.createElement('option');option.value=String(quantity);option.textContent=String(quantity);amount.append(option);}
+    amount.value='1';amountLabel.append(amount);form.append(amountLabel);
+    const resourceLabel=document.createElement('label');resourceLabel.textContent='Resource';
+    const resource=document.createElement('input');resource.id='sale-resource';resource.type='text';resource.placeholder='Type or choose a resource';resource.autocomplete='off';
+    resource.setAttribute('list','sale-resource-options');resource.setAttribute('aria-label','Resource to sell');
+    const options=document.createElement('datalist');options.id='sale-resource-options';
+    for(const [,members] of resourceCategories(keys))for(const key of members){const option=document.createElement('option');option.value=goodName(key);options.append(option);}
+    resourceLabel.append(resource);form.append(resourceLabel,options);
+    const stock=document.createElement('small');stock.setAttribute('aria-live','polite');
+    const sell=document.createElement('button');sell.type='submit';sell.id='sale-submit';
+    form.append(stock,sell);
+    let currentTown=town;
+    const selectedResource=()=>keys.find(key=>goodName(key).toLowerCase()===resource.value.trim().toLowerCase());
+    const update=(latest=currentTown)=>{
+      currentTown=latest;
+      const key=selectedResource(),quantity=Number(amount.value),available=key?amountOf(currentTown,key):0;
+      const price=key?(world.progression.fish?.[key]?.coins ?? world.progression.sale_prices?.[key] ?? (key==='tools'?3:1)):0;
+      const total=quantity*price;
+      stock.textContent=key?`${Math.floor(available)} available`:'Choose a resource to sell.';
+      sell.textContent=key?`Sell ${quantity} · ${total} coin${total===1?'':'s'}`:'Sell';
+      sell.disabled=viewed!==townId||identity?.town_id!==townId||world.world_id!==worldId||!key||!quantities.includes(quantity)||available<quantity;
+    };
+    amount.onchange=()=>update();resource.oninput=()=>update();resource.onchange=()=>update();
+    form.onsubmit=event=>{
+      event.preventDefault();
+      update(world.towns[identity?.town_id] || currentTown);
+      if(!sell.disabled)act({action:'sell_goods',resource:selectedResource(),amount:Number(amount.value)});
+    };
+    renderQuickMarketSale.signature=signature;renderQuickMarketSale.editor=form;renderQuickMarketSale.update=update;
+  }
+  renderQuickMarketSale.update(town);target.append(renderQuickMarketSale.editor);
+}
 function renderMarketSales(town,target){
   const keys=marketSaleGoods(world.progression);
   const signature=JSON.stringify([world.world_id,identity?.town_id,town.rules?.market_sales,keys]);
@@ -1882,6 +1923,7 @@ function renderSelection(town){
     const foldKey=`${world.world_id}/${viewed}/${selection.index}/${item.kind}/${item.x},${item.y}`;
     if(buildingFolds.key!==foldKey)buildingFolds={key:foldKey,open:{}};
     $('selection-art').append(illustration(item.kind));
+    if(item.kind==='market'&&!item.construction&&viewed===identity?.town_id)renderQuickMarketSale(town,$('selection-details'));
     $('selection-level').hidden=false;$('selection-level').textContent=`Lv ${item.kind==='hall'?town.level:buildingLevel(item)}`;
     const decoration=decorationKinds.includes(item.kind);
     const workers=buildingSection(decoration?'Decoration':item.kind==='well'?'Water':['hall','home'].includes(item.kind)?'Settlers':'Workers');
