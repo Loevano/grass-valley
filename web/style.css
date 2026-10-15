@@ -58,8 +58,18 @@ canvas{cursor:pointer}button:focus-visible,canvas:focus-visible,select:focus-vis
 #help-panel summary{padding:12px 0;cursor:pointer;color:#e3d19b;font-weight:600;line-height:1.5}
 #help-panel summary:focus-visible{outline:2px solid #fff0b1;outline-offset:3px}
 #help-panel details[open] summary{border-bottom:1px solid #ffffff15}
-#help-panel li{margin:10px 0;line-height:1.7;color:#ccd5c3}
-#help-panel ul{padding-left:20px}
+#help-panel h3{margin:24px 0 10px;font:600 12px system-ui,sans-serif;letter-spacing:.08em;text-transform:uppercase;color:#b8c999}
+#help-panel h4{margin:18px 0 8px;color:#e3d19b;font-size:13px}
+#help-panel p,#help-panel li{font-size:13px;line-height:1.6;color:#ccd5c3}
+#help-panel li{margin:8px 0}
+#help-panel ul,#help-panel ol{padding-left:20px}
+.help-table{width:100%;table-layout:fixed;border-collapse:collapse;margin:14px 0;font-size:12px;line-height:1.5;text-align:left;overflow-wrap:anywhere}
+.help-table caption{text-align:left;font-weight:600;color:#e3d19b;margin-bottom:8px}
+.help-table th,.help-table td{padding:8px;vertical-align:top;border-bottom:1px solid #ffffff15}
+.help-table thead{background:#b8c99912;color:#e3d19b}
+.help-table tbody th{width:40%;font-weight:500;color:#e0e7d7}
+.help-table td{color:#bdcdb5}
+@media(min-width:761px){#side-panel.help-guide{width:400px}}
 #help-panel .help-chain{padding:10px;border-radius:6px;background:#b8c9990a;color:#e3d19b}
 
 /* Full roster popup: every resident's details stay visible together. */

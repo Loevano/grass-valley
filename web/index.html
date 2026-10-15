@@ -86,82 +86,269 @@
 <section id="valley-panel" hidden><h2>Across the valley</h2><div id="towns">Waiting for settlers…</div></section>
 <section id="help-panel" hidden aria-labelledby="help-title">
 <span class="eyebrow">THE VALLEY GUIDE</span><h2 id="help-title">Help</h2>
-<p class="muted">Open a topic for instructions. Select objects on the map for their current status, costs, and requirements.</p>
+<p class="muted">Choose a sector or topic. Open a building for current costs, recipes, and requirements.</p>
 <details open><summary>Start here</summary>
-<p>Build a <strong>woodcutter near trees</strong>, a <strong>farm or fishing hut near water</strong>, and a <strong>cottage</strong>. Assign villagers to work and leave an idle settler or Builder available for construction.</p>
-<p>Keep food and housing available so villagers stay. Select your hall to see the next milestone, its rewards, and upgrade requirements. Hall upgrades unlock new buildings and crops.</p>
-<p><strong>Build</strong> places buildings; <strong>Villagers</strong> manages jobs; <strong>Resources</strong> tracks stock and trade; <strong>Items</strong> assigns tools; <strong>Valley</strong> locates towns and wilderness villages; <strong>Rules</strong> sets production caps.</p>
+<ol>
+<li>Build a <strong>woodcutter</strong> near trees.</li>
+<li>Build a <strong>farm</strong> or <strong>fishing hut</strong> near water.</li>
+<li>Add a <strong>cottage</strong>. Assign workers to your buildings.</li>
+<li>Leave an idle settler or Builder free for construction.</li>
+<li>Keep food and housing available. Select your hall for the next milestone.</li>
+</ol>
 </details>
-<details><summary>Controls &amp; camera</summary>
-<p id="help-gameplay-controls">W/A/S/D walk · Y camera lock · F fish · C chop · G gather · M clear stone · B building mode · I interact.</p>
-<p>Click the map to focus it, then use your movement keys to walk. Work beside a source; move or press its action key again to stop. Interact opens a nearby local’s dialogue and trade. Clearing a grassland rock removes it permanently and needs room for its full stone yield.</p>
-<p>Scroll to pan; pinch or <strong>Alt/Option-scroll</strong> to zoom. Camera lock follows your player. <strong>Space</strong> centers on your town hall. Arrow keys choose a map tile; <strong>Enter</strong> inspects it. Click objects to inspect them; overlapping objects offer a selection list.</p>
-<p><strong>1</strong> Worlds · <strong>2</strong> Build · <strong>3</strong> Villagers · <strong>4</strong> Resources · <strong>5</strong> Items · <strong>6</strong> Valley · <strong>7</strong> Help · <strong>8</strong> Rules · <strong>⌘,</strong> Settings. Press a window’s number again to close it. <strong>Esc</strong> closes or cancels. Change gameplay keys in Settings; the bindings above follow your changes.</p>
+<h3>Production sectors</h3>
+<details><summary>Grain &amp; crops</summary>
+<table class="help-table"><caption>Grain chain</caption><thead><tr><th scope="col">Building</th><th scope="col">Makes</th></tr></thead><tbody>
+<tr><th scope="row">Farm + acres</th><td>Wheat</td></tr>
+<tr><th scope="row">Mill</th><td>Wheat → flour</td></tr>
+<tr><th scope="row">Bakery</th><td>Flour + wood → bread</td></tr>
+</tbody></table><ul>
+<li>Build acres from a farm. Choose the crop in the farm panel.</li>
+<li>Farmers plow all linked acres before seeding. They finish the field cycle before repeating.</li>
+<li>Each crop sprouts for <strong>15 seconds</strong>, needs one watering, then grows for <strong>15 seconds</strong>.</li>
+<li>Farmers fetch water. Keep nearby water or a well accessible.</li>
+<li>Base harvest: <strong>4.8 vegetables</strong> or <strong>10 other crops</strong> per acre. Bonuses apply.</li>
+<li>Assign a worker at every stage. Mills and bakeries each use one worker; equipment improves throughput.</li>
+<li><strong>Wheat and flour are ingredients.</strong> Bread feeds residents. Harvest becomes usable after delivery.</li>
+<li><strong>Moving or destroying a farm affects all linked acres.</strong> Farm upgrades also apply to its acres.</li>
+</ul><table class="help-table"><caption>Bakery recipe unlocks</caption><thead><tr><th scope="col">Recipe</th><th scope="col">Baking practice</th></tr></thead><tbody>
+<tr><th scope="row">Bread</th><td>Beginner</td></tr>
+<tr><th scope="row">Rolls</th><td>5</td></tr>
+<tr><th scope="row">Herb bread</th><td>10</td></tr>
+<tr><th scope="row">Fruit pies</th><td>15</td></tr>
+<tr><th scope="row">Cakes</th><td>20</td></tr>
+</tbody></table>
 </details>
-<details><summary>Building &amp; upgrades</summary>
-<p>Open <strong>Build</strong>, choose a building, and click a clear tile. Trees, water, rocks, and other buildings reserve their tiles. Placement previews show valid sites and working ranges. <strong>Esc</strong> cancels.</p>
-<p>Woodcutters need trees within <strong>10 horizontal or vertical tile steps</strong>; a diagonal counts as two. Farms and fishing huts need nearby water, initially within <strong>3 steps</strong>. Wells provide crop water without assigned workers; keep an adjacent tile accessible.</p>
-<p>New buildings normally need <strong>30 seconds of builder work</strong>. Idle villagers and Builders help construct them. Select a building to assign workers and preview upgrades, costs, work time, and requirements. Benefits apply when construction finishes. Worker capacity and storage upgrades are separate; mill and bakery equipment increases production with one worker.</p>
-<p>Your hall shows the building range. Construction must also stay near the original town site, so moving the hall does not extend your territory. Moving normally costs one coin when available. Destroying gives no refund. <strong>Moving or destroying a farm also moves or removes its linked acres.</strong> Farm upgrades apply to all linked acres. Barns reserve a fenced pen; choose an available fence orientation in their panel.</p>
-<p>Roads are free, need 10 seconds of builder work per tile, and make players and settlers walk 50% faster. Decorations provide no production bonus.</p>
+<details><summary>Wood</summary>
+<table class="help-table"><caption>Wood chain</caption><thead><tr><th scope="col">Building</th><th scope="col">Makes</th></tr></thead><tbody>
+<tr><th scope="row">Woodcutter</th><td>Trees → wood</td></tr>
+<tr><th scope="row">Sawpit</th><td>Wood → planks</td></tr>
+<tr><th scope="row">Workshop</th><td>Planks → tools and woodcraft</td></tr>
+</tbody></table><ul>
+<li>Place a woodcutter within <strong>10 tile steps</strong> of trees. A diagonal counts as two steps.</li>
+<li>Assign workers at each stage. Keep routes and output storage clear.</li>
+<li>Forest trees regrow when the tile stays empty. Grassland trees stay cleared.</li>
+<li>Wood also fuels bakeries, smokehouses, and metal production.</li>
+<li>Give matching workers better tools through <strong>Items</strong>.</li>
+</ul>
 </details>
-<details><summary>Villagers, jobs &amp; tools</summary>
-<p>Compare skills, talents, housing, and work status in <strong>Villagers</strong>. Assign jobs there or select a workplace and choose <strong>Add worker</strong>. Reassignment moves the worker from their previous workplace; <strong>Kick</strong> removes the assignment.</p>
-<p>Specialists need practice in earlier jobs. Workplace controls show exact requirements; working builds practice, unlocking recipes and improving production. Talent affects efficiency. The hall houses your controllable founder; other settlers live in cottages or workplaces. Housing and storage benefits are automatic, and resting settlers can help build.</p>
-<p><strong>Items</strong> assigns and transfers worker tools. Select a villager to equip a tool or <strong>Nobody</strong> to return it to inventory. Matching workers appear first. Each villager carries one tool; its output bonus applies only to its matching job. Hover or focus equipment icons to read the bonus.</p>
-<p>Collect gift tools from locals such as Sylva, Reed, and Fern; buy stronger tools from toolsmiths or find equipment through treasure and trades. Equip your own clothing and travel gear in the <strong>You</strong> panel. Keep food and housing available: shortages can make villagers leave in normal worlds.</p>
+<details><summary>Stone &amp; metal</summary>
+<table class="help-table"><caption>Sources and uses</caption><thead><tr><th scope="col">Resource</th><th scope="col">How to get it</th></tr></thead><tbody>
+<tr><th scope="row">Stone</th><td>Stand beside a grassland rock. Use Clear stone.</td></tr>
+<tr><th scope="row">Iron ore</th><td>Build a mine within 10 tile steps of an iron vein.</td></tr>
+<tr><th scope="row">Iron</th><td>Process ore with wood at a forgery.</td></tr>
+<tr><th scope="row">Advanced goods</th><td>Use iron in steel, saddle, and trade-crate production.</td></tr>
+</tbody></table><ul>
+<li><strong>Clearing a rock is permanent.</strong> Storage must fit the full stone yield.</li>
+<li>Ordinary rock outcrops are obstacles. Iron veins supply ore.</li>
+<li>Check each building for its exact ingredients, recipe unlocks, and worker requirements.</li>
+</ul>
 </details>
-<details><summary>Resources &amp; storage</summary>
-<p><strong>Resources</strong> compares total stock, free stock, reserved goods, trade thresholds, and activity. Stock includes stored goods, workplace output, reserved ingredients, and carried goods, counted once. <strong>Free</strong> is usable now; <strong>Reserved</strong> is committed to processing or sale. Pending output becomes free after delivery.</p>
-<p><strong>Food</strong> summarizes edible goods in food-value units; individual resource rows count items. Residents consume edible goods. Wheat and flour are ingredients rather than food. <strong>In/min</strong> and <strong>Out/min</strong> record actual production, use, purchases, and sales over the last 60 seconds of running game time; internal hauling and reservation do not count.</p>
-<p>Each resource has its own storage capacity. Select a building for stock and capacity by resource. Production buffers and processor input buffers hold goods awaiting work or delivery; full output storage pauses production. Storage upgrades raise limits independently of worker capacity.</p>
-<p>Storehouse haulers collect finished output and deliver processor inputs; producers also fetch required ingredients. Enable accepted resources in a storehouse. Disabled goods already stored remain usable. Category checkboxes toggle their shown resources; <strong>Option/Alt-click</strong> a resource checkbox to toggle all shown resources. Unlocks reveal more resources while existing stock stays visible.</p>
+<details><summary>Fruit &amp; herbs</summary>
+<table class="help-table"><caption>Gathering and growing</caption><thead><tr><th scope="col">Source</th><th scope="col">Use</th></tr></thead><tbody>
+<tr><th scope="row">Berry bush</th><td>Gather berries for food.</td></tr>
+<tr><th scope="row">Herb patch</th><td>Gather herbs for breeding and recipes.</td></tr>
+<tr><th scope="row">Orchard</th><td>Assign workers to grow fruit.</td></tr>
+<tr><th scope="row">Bakery</th><td>Combine fruit and flour for fruit pies.</td></tr>
+</tbody></table><ul>
+<li>Stand beside wild plants and use <strong>Gather</strong>.</li>
+<li>Orchards unlock at <strong>hall level 5</strong>. Orchard workers need farming practice.</li>
+<li>Fruit can feed residents directly or supply advanced food recipes.</li>
+<li>Check the bakery for recipe ingredients and baking requirements.</li>
+</ul>
 </details>
-<details><summary>Production &amp; farming</summary>
-<ul><li>Wood → sawpit → planks → workshop → tools.</li><li>Wheat → mill → flour → bakery → bread.</li><li>Fish → smokehouse → smoked fish of the same species, adding 0.5 food and 1 coin per fish.</li><li>Iron vein → mine → iron ore → forgery → iron → advanced metal goods.</li><li>Growing barn animals → eggs, wool, or milk; adults → butcher → meat and hides → prepared meat.</li></ul>
-<p>Assign workers at each stage and select production buildings for recipes. Recipe rows show ingredients, output, batch time, practice, food value, and required worker level. Skilled workers can make larger batches with matching ingredient demand.</p>
-<p>Build acres from a farm and choose its crop for all linked acres. Acres start unplowed. Farmers finish every acre’s cycle before repeating and plow all linked acres before seeding. Crops sprout for 15 seconds, need one watering with a water trip, then grow for 15 more seconds. Base harvest is 4.8 vegetables or 10 other crops per acre before bonuses; goods become available after delivery.</p>
-<p>Forest trees regrow if their tile stays clear; grassland trees stay cleared. Water supplies regenerate. Fishing boats extend reach; buy a boat at its hut, then select the boat on the map for cargo, crew, and upgrades.</p>
-</details>
-<details><summary>Production caps</summary>
-<p>Open <strong>Rules</strong> to pause production at a resource target. Leave blank for unlimited; use <strong>0</strong> to pause. Changes save automatically.</p>
-<p>Stored goods and output awaiting delivery count toward the cap. Reserved processor ingredients do not, so construction and upgrade stock can replenish. Production resumes as goods are used or reserved. Recipe and animal product batches wait until the whole batch fits.</p>
-</details>
-<details><summary>Markets &amp; trade</summary>
-<p>A completed market and assigned merchant enable automatic trade. In <strong>Resources</strong>, <strong>Buy at</strong> and <strong>Sell at</strong> use free stock; blank disables a rule. The sale threshold must exceed the buy threshold. Selling retains the threshold amount.</p>
-<p>Merchants buy up to 10 items every 3 seconds at twice the sale price, stopping at the free-stock target, available coins, or enabled storage. Bought goods arrive in town storage and do not count toward production milestones.</p>
-<p>The market’s <strong>Automatic sales</strong> controls enable products and set sale caps. When stock reaches a cap, merchants collect goods and return to sell batches. Existing market rules retain their original trigger until edited in Resources. Changes save automatically.</p>
-<p><strong>Quick sale</strong> sells a chosen amount at the displayed price without changing automatic rules. Choose or type a supported resource; the form shows available stock and the coin return.</p>
-<p>To trade with another town, both owners need completed markets. Choose the town, goods, and quantities, then create an offer. Stock is checked when accepted; incoming goods need enabled storage. Each offer can be accepted once; the sender can cancel an open offer.</p>
+<details><summary>Fish</summary>
+<table class="help-table"><caption>Fish chain</caption><thead><tr><th scope="col">Building</th><th scope="col">Role</th></tr></thead><tbody>
+<tr><th scope="row">Fishing hut</th><td>Catch fish from nearby water.</td></tr>
+<tr><th scope="row">Fish pond</th><td>Use fodder to produce fish.</td></tr>
+<tr><th scope="row">Smokehouse</th><td>Use raw fish and wood to make smoked fish.</td></tr>
+</tbody></table><ul>
+<li>Place the first fishing hut within <strong>3 tile steps</strong> of water.</li>
+<li>Assign fishers. Water supplies regenerate.</li>
+<li>Buy a boat at its hut to extend fishing reach. Select the boat for cargo, crew, and upgrades.</li>
+<li>Smoking keeps the fish species. Each fish gains <strong>0.5 food value</strong> and <strong>1 coin</strong> in sale value.</li>
+<li>Raw and smoked fish have separate storage allowances. Keep room for both.</li>
+</ul>
 </details>
 <details><summary>Animals &amp; horses</summary>
-<p>Barn sliders set animal counts within shared capacity. Animals grow without feed or workers; each keeper adds 1× base growth speed. Base growth takes 60 seconds for chickens, 120 for sheep, 240 for pigs, and 360 for cows. The panel shows current speed, individual progress, and average cycle times; countdowns wait for confirmed game updates.</p>
-<p>Eggs, wool, and milk are collected during growth as storage and production caps allow. Adults stop producing and stay until manually butchered. A <strong>free young animal appears only when no others of that species remain in the same barn</strong>. Setting a species count to zero leaves it unstocked.</p>
-<p>Select an adult at a butcher to see its rewards and start collection and processing. The butcher fetches the animal and brings it back before processing begins. Keep routes, output storage, and production caps clear.</p>
-<p>At hall level 8, lead a wild horse to a finished stable. Stand beside the stable to settle, saddle, or return a horse. Horses need fodder or vegetables; settling and growth take five minutes of full feeding. Breed two adults with the displayed supplies. Stables hold four horses per building level.</p>
-<p>A saddle lets you ride an adult for 75% more land speed; road bonuses also apply. Your saddle stays with you for later rides. Return a riding horse to the stable to use it for breeding.</p>
+<table class="help-table"><caption>Barn growth without keepers</caption><thead><tr><th scope="col">Animal</th><th scope="col">Base growth</th></tr></thead><tbody>
+<tr><th scope="row">Chicken</th><td>60 seconds</td></tr>
+<tr><th scope="row">Sheep</th><td>120 seconds</td></tr>
+<tr><th scope="row">Pig</th><td>240 seconds</td></tr>
+<tr><th scope="row">Cow</th><td>360 seconds</td></tr>
+</tbody></table><ul>
+<li>Use barn sliders to set animal counts within shared capacity.</li>
+<li>Barn animals need <strong>no feed or workers</strong> to grow. Each keeper adds 1× base growth speed.</li>
+<li>Eggs, wool, and milk arrive during growth. Storage and production caps still apply.</li>
+<li>Adults stop producing. Select an adult at a butcher to collect and process it.</li>
+<li>A free young replacement appears <strong>only when none of that species remain in the same barn</strong>. Setting its count to zero leaves it unstocked.</li>
+<li>The barn shows growth progress and average cycle times. Timers wait for confirmed game updates.</li>
+</ul><h4>Horses</h4><ul>
+<li>At hall level 8, lead a wild horse to a finished stable. Stand beside it to settle, saddle, or return horses.</li>
+<li>Feed horses fodder or vegetables. Settling and growth take <strong>5 minutes</strong> of full feeding.</li>
+<li>Breed two adults with the displayed supplies. Stables hold four horses per building level.</li>
+<li>A saddle gives <strong>75% more land speed</strong>. Road bonuses also apply. Keep the saddle for later rides.</li>
+<li>Return a riding horse to use it for breeding.</li>
+</ul>
 </details>
-<details><summary>Exploration, locals &amp; quests</summary>
-<p><strong>Valley</strong> centers the camera on a town or wilderness village in the shared world. Each town belongs to its founder; only its owner manages construction and workers. Walk between towns, explore biomes, and visit Reedhaven, Sunwell, and Frostbrook.</p>
-<p>Walk beside a local and click them or use Interact to talk, claim gifts, or trade. Offers show costs and equipment bonuses; gifts are once per town and trades restock after five minutes of running game time. Equip swamp boots to cross the darkest marsh; desert and ice ground are walkable without special gear. Nearby island treasure can be collected once per world.</p>
-<p>Moss, Tobin, and Flint offer stories. Accept beside them, follow the objectives, and return with the requested supplies. Flint’s survey requires examining three different rock outcrops from their panels. Select <strong>You</strong> to review objectives and keepsakes.</p>
-<p><strong>The Sealed Quarry</strong> in You opens a cooperative puzzle. Two founders enter to unlock movement. One holds the floor plate while another secures the gate, then follow the inscription’s rune order and recover the lantern stone. Close map keeps you inside; Leave expedition returns to the valley. A counterweight lets the last remaining founder finish. Completion grants each member 20 coins and a keepsake once per world.</p>
-<p><strong>The Falling Lanterns</strong> is a cooperative movement quest. Two founders must stay inside; fewer pauses movement and hazards. Avoid amber warnings and red debris, use column C as a checkpoint, and reach T together. Hits return you to a checkpoint without resource loss. Closing this map leaves the expedition; rejoining preserves progress. Completion grants 25 coins and a badge once per world.</p>
+<h3>Managing your town</h3>
+<details><summary>Resources &amp; storage</summary>
+<table class="help-table"><caption>Reading Resources</caption><thead><tr><th scope="col">Column</th><th scope="col">Meaning</th></tr></thead><tbody>
+<tr><th scope="row">Stock (all)</th><td>Stored, carried, reserved, and pending goods. Counted once.</td></tr>
+<tr><th scope="row">Free</th><td>Available to use now. Pending output becomes free after delivery.</td></tr>
+<tr><th scope="row">Reserved</th><td>Committed to processing or sale.</td></tr>
+<tr><th scope="row">Food</th><td>Edible stock in food-value units. Other rows count items.</td></tr>
+<tr><th scope="row">In/min · Out/min</th><td>Production, use, and trade in the last 60 seconds of running game time. Hauling and reservation are excluded.</td></tr>
+</tbody></table><ul>
+<li>Each resource has its <strong>own capacity</strong>. Select a building to see its stock and limits.</li>
+<li>Full output storage pauses production. Processors also hold input buffers.</li>
+<li>Storehouse haulers collect output and deliver ingredients. Producers also fetch inputs.</li>
+<li>Enable resources in a storehouse to accept deliveries. Disabled goods already stored stay usable.</li>
+<li>Use category checkboxes for a group. <strong>Option/Alt-click</strong> a resource checkbox to toggle all shown goods.</li>
+<li>Storage upgrades and worker capacity upgrades are separate.</li>
+</ul>
 </details>
-<details><summary>Worlds, saving &amp; sandbox</summary>
-<p>The host creates and opens worlds from <strong>Worlds</strong>; friends join the active world. Use your player name and four-digit PIN to recover your village. New players also choose a village name. This browser remembers your login token, never your PIN. Separate browser profiles let different founders play on one computer.</p>
-<p>Terrain, towns, player positions, and progress save with the world. Inactive worlds pause; keep the host running to play. Destroy world permanently removes every town and all progress after name confirmation.</p>
-<p><strong>Sandbox</strong> starts with a level-10 hall and all buildings and crops unlocked. Building, acres, roads, moving, and upgrades are free and instant. Cottages fill automatically; workers need no training and never leave for food or housing shortages. Talents, practice, production ingredients, hauling, storage, animals, and food consumption still run normally.</p>
-<p>The host can regenerate a sandbox with fresh terrain after name confirmation. This resets its towns and progress, preserves registered names and PINs, and reconnects founders to fresh villages with the same names. Other worlds remain saved.</p>
+<details><summary>Production caps</summary>
+<table class="help-table"><caption>Rules → Production caps</caption><thead><tr><th scope="col">Setting</th><th scope="col">Effect</th></tr></thead><tbody>
+<tr><th scope="row">Blank</th><td>Unlimited production.</td></tr>
+<tr><th scope="row">0</th><td>Pause production.</td></tr>
+<tr><th scope="row">A number</th><td>Pause when stock reaches this target.</td></tr>
+</tbody></table><ul>
+<li>Changes save automatically.</li>
+<li>Stored goods and output awaiting delivery count toward the cap. Reserved processor ingredients do not.</li>
+<li>Production resumes as goods are used or reserved.</li>
+<li>An entire recipe or animal-product batch must fit before it starts.</li>
+</ul>
 </details>
-<details><summary>Settings</summary>
-<p>Camera lock follows your character when on; turn it off to explore freely. Graphics <strong>Low</strong> reduces resolution, <strong>Medium</strong> uses standard resolution, and <strong>High</strong> uses full display resolution. Lower quality can help slower devices. Changes apply immediately and save in this browser.</p>
-<p>Select a keybinding and press a unique letter or <strong>0</strong>. Keys 1–9 are reserved for windows; arrow keys and Enter inspect tiles. Bindings save in this browser. <strong>Restore default keybindings</strong> resets gameplay keys. Escape closes Settings.</p>
+<details><summary>Markets &amp; trade</summary>
+<table class="help-table"><caption>Resources → trade thresholds</caption><thead><tr><th scope="col">Setting</th><th scope="col">Effect</th></tr></thead><tbody>
+<tr><th scope="row">Buy at</th><td>Buy when free stock is below this target.</td></tr>
+<tr><th scope="row">Sell at</th><td>Sell surplus while retaining this amount.</td></tr>
+<tr><th scope="row">Blank</th><td>Disable the rule.</td></tr>
+</tbody></table><ul>
+<li>Automatic trade needs a <strong>completed market and merchant</strong>. Changes save automatically.</li>
+<li>Set Sell at higher than Buy at.</li>
+<li>Merchants buy up to <strong>10 items every 3 seconds</strong>, at twice the sale price. Coins and enabled storage limit purchases.</li>
+<li>Bought goods arrive in storage. They do not advance production milestones.</li>
+</ul><h4>Other market controls</h4><ul>
+<li><strong>Automatic sales:</strong> enable products and set sale caps. Merchants collect and sell batches when stock reaches a cap. Older rules keep their trigger until edited in Resources.</li>
+<li><strong>Quick sale:</strong> choose a resource and amount. Review stock and the coin return, then sell.</li>
+<li><strong>Town trade:</strong> both owners need markets. Choose the town, goods, and amounts. Stock and incoming storage are checked on acceptance. Offers can be accepted once; senders can cancel them.</li>
+</ul>
+</details>
+<details><summary>Villagers, jobs &amp; tools</summary>
+<ul>
+<li><strong>Villagers:</strong> compare skills, talents, housing, and work status. Assign jobs here or use Add worker at a workplace.</li>
+<li>Reassigning moves a worker from the old workplace. Kick removes the assignment.</li>
+<li>Work earns practice. Specialists and advanced recipes need training; controls show exact requirements.</li>
+<li>The hall houses your founder. Other settlers use cottages or workplaces. Resting settlers can help build.</li>
+<li><strong>Items:</strong> select a villager to give or transfer a tool. Choose Nobody to return it. Matching workers appear first.</li>
+<li>Each villager carries one tool. Its bonus applies only to the matching job. Hover or focus its icon for details.</li>
+<li>Locals give or sell tools. Equip your own clothing and travel gear in <strong>You</strong>.</li>
+<li><strong>Food and housing shortages can make villagers leave</strong> in normal worlds.</li>
+</ul>
+</details>
+<details><summary>Building &amp; upgrades</summary>
+<ul>
+<li>Open <strong>Build</strong>. Choose a building, then click a clear tile. Press Esc to cancel.</li>
+<li>Placement previews show valid sites and working ranges. Trees, water, rocks, buildings, and barn pens reserve space.</li>
+<li>New buildings normally need <strong>30 seconds of builder work</strong>. Idle settlers and Builders help.</li>
+<li>Select a building to assign workers or preview upgrades. Benefits apply after construction finishes.</li>
+<li>Your hall shows the building range. Moving the hall does not extend the territory around your original town site.</li>
+<li>Moving normally costs one coin when available. <strong>Destroying gives no refund.</strong></li>
+<li>Wells supply crop water without workers. Keep an adjacent tile accessible.</li>
+<li>Roads are free and take 10 seconds of builder work per tile. Walking is <strong>50% faster</strong> on roads.</li>
+<li>Decorations give no production bonus. Barns offer a choice of available fence orientations.</li>
+</ul>
 </details>
 <details><summary>Work stopped?</summary>
-<p>Read the building’s status and worker warnings. Finish construction, assign qualified workers, keep a source in reach, supply ingredients, and clear routes to workplaces, water, and storage.</p>
-<p>If storage is full, spend goods, enable storage, add a storehouse and hauler, or upgrade capacity. If a production cap is reached, use stock or raise it in Rules. Recipe batches need room for the whole batch.</p>
-<p>Fully grown barn animals wait for manual butchery and stop making products. Horses need feed. Food and housing shortages appear in the toolbar and Villagers; address them before residents leave in normal worlds.</p>
+<table class="help-table"><caption>Quick checks</caption><thead><tr><th scope="col">Problem</th><th scope="col">Try this</th></tr></thead><tbody>
+<tr><th scope="row">Construction waiting</th><td>Free an idle settler or assign a Builder.</td></tr>
+<tr><th scope="row">No workers</th><td>Assign a qualified worker.</td></tr>
+<tr><th scope="row">Source out of reach</th><td>Move closer to trees or water.</td></tr>
+<tr><th scope="row">Missing ingredients</th><td>Supply inputs and clear delivery routes.</td></tr>
+<tr><th scope="row">Storage full</th><td>Spend goods, enable storage, or add capacity and haulers.</td></tr>
+<tr><th scope="row">Production cap reached</th><td>Use stock or raise the cap in Rules. Leave room for a whole batch.</td></tr>
+<tr><th scope="row">Barn adults idle</th><td>Select adults for butchery.</td></tr>
+<tr><th scope="row">Horses not growing</th><td>Supply fodder or vegetables.</td></tr>
+<tr><th scope="row">Residents leaving</th><td>Provide food and housing.</td></tr>
+</tbody></table>
+</details>
+<h3>Exploration &amp; worlds</h3>
+<details><summary>Exploration, locals &amp; quests</summary>
+<ul>
+<li><strong>Valley</strong> locates towns and wilderness villages. Walk between them. Only founders manage their own towns.</li>
+<li>Visit Reedhaven, Sunwell, and Frostbrook. Stand beside locals and click them or use Interact.</li>
+<li>Gifts are once per town. Trades restock after five minutes of running game time.</li>
+<li>Equip swamp boots for the darkest marsh. Desert and ice need no special gear.</li>
+<li>Collect nearby island treasure once per world.</li>
+<li>Accept stories from Moss, Tobin, and Flint. Review objectives and keepsakes in <strong>You</strong>.</li>
+<li>For Flint’s survey, examine three different rock outcrops from their panels.</li>
+</ul><h4>Cooperative adventures</h4><table class="help-table"><caption>Open adventures from You</caption><thead><tr><th scope="col">Adventure</th><th scope="col">Goal</th></tr></thead><tbody>
+<tr><th scope="row">The Sealed Quarry</th><td>Two founders enter. Hold the plate, secure the gate, solve the rune order, and open the chest. Reward: 20 coins and a keepsake.</td></tr>
+<tr><th scope="row">The Falling Lanterns</th><td>Two founders stay inside. Dodge warnings and debris, reach checkpoint C, then reach T together. Reward: 25 coins and a badge.</td></tr>
+</tbody></table><ul>
+<li><strong>Quarry:</strong> Close map keeps you inside. Leave expedition returns to the valley. A counterweight lets the final founder finish.</li>
+<li><strong>Lanterns:</strong> closing leaves the expedition. Rejoin at your saved position. Hits return you to a checkpoint. Fewer than two founders pauses movement and hazards.</li>
+<li>Progress saves. Rewards are once per world for each expedition member.</li>
+</ul>
+</details>
+<details><summary>Worlds, saving &amp; sandbox</summary>
+<ul>
+<li>The host creates and opens worlds in <strong>Worlds</strong>. Friends join the active world.</li>
+<li>Use your player name and four-digit PIN to return. New players also name their village.</li>
+<li>This browser remembers your login token, never your PIN. Use separate browser profiles for different founders.</li>
+<li>Terrain, towns, positions, and progress save. Inactive worlds pause. Keep the host running to play.</li>
+<li><strong>Destroy world permanently deletes every town and all progress.</strong> Type its name to confirm.</li>
+</ul><h4>Sandbox rules</h4><ul>
+<li>Start at hall level 10. All buildings and crops are unlocked.</li>
+<li>Building, moving, roads, acres, and upgrades are free and instant.</li>
+<li>Cottages fill automatically. Workers need no training and never leave for shortages.</li>
+<li>Production inputs, hauling, storage, food consumption, animals, talents, and practice still apply.</li>
+<li><strong>Regenerate world resets that sandbox’s towns and progress.</strong> Names and PINs stay. Founders reconnect to fresh villages; other worlds are untouched.</li>
+</ul>
+</details>
+<h3>Controls &amp; settings</h3>
+<details><summary>Controls &amp; camera</summary>
+<table class="help-table"><caption>Gameplay keys · follows your settings</caption><thead><tr><th scope="col">Action</th><th scope="col">Key</th></tr></thead><tbody>
+<tr><th scope="row">Walk</th><td><span id="help-walk-keys">W/A/S/D</span></td></tr>
+<tr><th scope="row">Camera lock</th><td><span id="help-key-camera">Y</span></td></tr>
+<tr><th scope="row">Fish</th><td><span id="help-key-fish">F</span></td></tr>
+<tr><th scope="row">Chop wood</th><td><span id="help-key-chop">C</span></td></tr>
+<tr><th scope="row">Gather</th><td><span id="help-key-gather">G</span></td></tr>
+<tr><th scope="row">Clear stone</th><td><span id="help-key-mine">M</span></td></tr>
+<tr><th scope="row">Building mode</th><td><span id="help-key-build">B</span></td></tr>
+<tr><th scope="row">Interact</th><td><span id="help-key-interact">I</span></td></tr>
+<tr><th scope="row">Center on town hall</th><td>Space</td></tr>
+<tr><th scope="row">Inspect a tile</th><td>Arrow keys, then Enter</td></tr>
+<tr><th scope="row">Close or cancel</th><td>Esc</td></tr>
+</tbody></table><ul>
+<li>Click the map to focus it. Stand beside a source to work; move or press the action key again to stop.</li>
+<li>Scroll to pan. Pinch or <strong>Alt/Option-scroll</strong> to zoom.</li>
+<li>Camera lock follows your character. Click objects to inspect them.</li>
+</ul><table class="help-table"><caption>Window shortcuts</caption><thead><tr><th scope="col">Key</th><th scope="col">Window</th></tr></thead><tbody>
+<tr><th scope="row">1</th><td>Worlds</td></tr>
+<tr><th scope="row">2</th><td>Build</td></tr>
+<tr><th scope="row">3</th><td>Villagers</td></tr>
+<tr><th scope="row">4</th><td>Resources</td></tr>
+<tr><th scope="row">5</th><td>Items</td></tr>
+<tr><th scope="row">6</th><td>Valley</td></tr>
+<tr><th scope="row">7</th><td>Help</td></tr>
+<tr><th scope="row">8</th><td>Rules</td></tr>
+<tr><th scope="row">⌘,</th><td>Settings</td></tr>
+</tbody></table><p>Press a window’s number again to close it.</p>
+</details>
+<details><summary>Settings</summary>
+<table class="help-table"><caption>Graphics quality</caption><thead><tr><th scope="col">Quality</th><th scope="col">Resolution</th></tr></thead><tbody>
+<tr><th scope="row">Low</th><td>Reduced. Useful on slower devices.</td></tr>
+<tr><th scope="row">Medium</th><td>Standard.</td></tr>
+<tr><th scope="row">High</th><td>Full display resolution.</td></tr>
+</tbody></table><ul>
+<li>Changes apply immediately and save in this browser.</li>
+<li>Select a keybinding. Press a unique letter or <strong>0</strong>. Keys 1–9 are reserved for windows.</li>
+<li><strong>Restore default keybindings</strong> resets gameplay keys.</li>
+<li>Help’s key table updates when you change a binding.</li>
+</ul>
 </details>
 </section>
 </aside>

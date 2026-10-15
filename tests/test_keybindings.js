@@ -71,7 +71,7 @@ function session(saved=null){
     home.document.getElementById(id).open=true;home.key(' ');check(home.state.camera.x===30,'Dialogs block the town hall shortcut');home.document.getElementById(id).open=false;
   }
   check(home.document.getElementById('movement-hint').textContent==='W/A/S/D to walk · 7 Help','Map footer keeps only movement and Help');
-  check(home.document.getElementById('help-gameplay-controls').textContent.includes('Space town hall'),'Help includes town hall shortcut');
+  check(home.document.getElementById('help-walk-keys').textContent==='W/A/S/D','Help table shows the movement bindings');
   const {state,document,storage,key,rebind,listeners}=session();
   key('w');key('B');check(state.panel==='build'&&state.held.includes('w'),'B opens building mode and preserves movement');
   listeners.keyup({key:'w'});
@@ -225,7 +225,7 @@ function session(saved=null){
   check(new Set(Object.values(numericBindings.state.bindings)).size===Object.keys(numericBindings.state.bindings).length,'Migrated bindings remain unique');
   check(state.bindings.interact==='i','NPC interaction defaults to I');
   rebind('interact','o');check(state.bindings.interact==='o','NPC interaction can be rebound');
-  check(document.getElementById('help-gameplay-controls').textContent.includes('O interact'),'Help reflects interaction binding');
+  check(document.getElementById('help-key-interact').textContent==='O','Help table reflects interaction binding');
   const malformed=session('{broken');check(malformed.state.bindings.camera==='y','Malformed storage falls back to defaults');
   const invalid=session(JSON.stringify({keybindings:{up:'w',left:'a',down:'s',right:'d',camera:'d'}}));
   check(invalid.state.bindings.camera==='y','Invalid stored duplicates fall back to defaults');

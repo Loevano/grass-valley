@@ -104,7 +104,9 @@ host-reported cycle progress, then explain
 blocked work before storage, worker assignments, and upgrades. Production and
 trade controls sit with worker assignments. General instructions now live in the
 Help tab under expandable topics; gameplay panels retain brief hints, current
-status, requirements, and action warnings. Help controls reflect custom keybindings.
+status, requirements, and action warnings. Help groups production by sector, with
+short steps, bullet lists, and reference tables. Its key table reflects custom
+keybindings.
 Barn panels retain their animal-first layout. Fishing huts sell the initial boat;
 clicking a boat opens its own cargo and upgrade panel. Fishing balance and storage work below remain planned.
 

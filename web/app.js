@@ -124,7 +124,8 @@ function renderSettings(){
   for(const action of Object.keys(defaultBindings))$('binding-'+action).value=keybindings[action].toUpperCase();
   $('world').setAttribute('aria-label',`Town grid. Use ${['up','left','down','right'].map(action=>keybindings[action].toUpperCase()).join(', ')} to walk. Press ${keybindings.camera.toUpperCase()} to toggle camera lock. Press ${keybindings.interact.toUpperCase()} to interact with a nearby NPC. Use arrow keys and Enter to inspect tiles.`);
   $('movement-hint').textContent=`${['up','left','down','right'].map(action=>keybindings[action].toUpperCase()).join('/')} to walk · 7 Help`;
-  $('help-gameplay-controls').textContent=`${['up','left','down','right'].map(action=>keybindings[action].toUpperCase()).join('/')} walk · ${keybindings.camera.toUpperCase()} camera lock · ${keybindings.fish.toUpperCase()} fish · ${keybindings.chop.toUpperCase()} chop · ${keybindings.gather.toUpperCase()} gather · ${keybindings.mine.toUpperCase()} clear stone · ${keybindings.build.toUpperCase()} building mode · ${keybindings.interact.toUpperCase()} interact · Space town hall`;
+  $('help-walk-keys').textContent=['up','left','down','right'].map(action=>keybindings[action].toUpperCase()).join('/');
+  for(const action of ['camera','fish','chop','gather','mine','build','interact'])$('help-key-'+action).textContent=keybindings[action].toUpperCase();
 }
 for(const action of Object.keys(defaultBindings)){
   const label=document.createElement('label');label.textContent=bindingLabels[action];label.setAttribute('for','binding-'+action);
@@ -2621,6 +2622,7 @@ function render(){
   }else if($('resources-panel').open)$('resources-panel').close();
   $('side-panel').hidden=(!panel || panel==='resources') && $('join').hidden;
   $('side-panel').classList.toggle('villagers-overview',panel==='villagers');
+  $('side-panel').classList.toggle('help-guide',panel==='help');
   $('game').classList.toggle('panel-open',!$('side-panel').hidden);
   for(const name of ['build','villagers','valley','help','resources','items','rules']){
     $(name+'-button').setAttribute('aria-expanded',String(panel===name));
