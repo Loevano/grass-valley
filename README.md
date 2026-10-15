@@ -686,8 +686,7 @@ the Python host, refresh both browsers, and create a new world to use the shared
   in every direction to match the farm's 7×7 range.
   The sage-roof barn has a stone base and a diagonal path to its sliding gate.
   People use the gate; solid rails block crossings. The gate opens automatically
-  for people heading through it, stays closed for nearby feeding rounds, and
-  closes after people clear the doorway. Use **Fence orientation** beside
+  on approach and closes after people leave. Use **Fence orientation** beside
   **Move** in your barn panel to choose any of four entrance sides for free.
   Orientation saves with the barn and survives moving it. Animals stay in the pen.
   Barn ranges appear when selected, while placing or moving, and in the Build

@@ -103,10 +103,8 @@ also includes this refinement.
 
 ![Concept C with a diagonal path connecting the barn door and sliding gate.](barn-c-refined.png)
 
-The fence blocks people, and the gate automatically slides open when founders,
-workers, or locals head through its entrance, then closes after they leave.
-Nearby keepers making rounds leave it closed. Someone occupying the doorway
-keeps it open until they clear the entrance. Animals remain within
+The fence blocks people, and the gate automatically slides open as founders,
+workers, or locals approach, then closes after they leave. Animals remain within
 the existing pen range. Host routes and player collision use the same entrance;
 browser prediction follows those boundaries without changing saved snapshots.
 The owner's **Fence orientation** selector beside **Move** places the entrance
