@@ -145,7 +145,7 @@ the Python host, refresh both browsers, and create a new world to use the shared
   **4** Resources, **5** Items, **6** Valley, **7** Help, and **⌘,** Settings. Press a panel's number again to close it.
   **8–9** are reserved for future windows. Gameplay bindings can use letters or **0**.
 - **Resources (4)** opens a popup table with resource names and icons, total stock,
-  free stock, reserved stock, **Buy at**, **Sell at**, **In/min**, and **Out/min**.
+  free stock, reserved stock, **Production cap**, **Buy at**, **Sell at**, **In/min**, and **Out/min**.
   Total stock includes workplace output and carried goods once; reserved stock
   includes processor ingredients, supplies in transit, and cargo committed to sales.
   Pending output is included in the total but becomes free only after delivery. Food summarizes
@@ -611,7 +611,8 @@ the Python host, refresh both browsers, and create a new world to use the shared
   from older saves appears as Provisions with its own capacity. The town Food total
   still measures meal value. Resources, storage, market sales, and trade selectors
   group goods by Baking, Fishing, Timber, and the other production trades.
-- Open **Rules** (8) to set production caps per resource for your own town.
+- Open **Resources** (4) to set production caps per resource for your own town.
+  Caps save automatically and do not require a market.
   Blank means unlimited; 0 pauses that resource. Workers and player gathering stop
   at the target and resume as stock is used or reserved for processing. Stored goods
   and undelivered output count once; reserved ingredients do not count, so processors

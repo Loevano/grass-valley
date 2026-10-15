@@ -845,6 +845,12 @@ function resourceGroup(title){
   return group;
 }
 function amountOf(town,key){return ['wood','food','coins'].includes(key)?town[key] || 0:town.goods?.[key] || 0;}
+function productionGoods(){
+  const catalog=world.progression || {};
+  return [...new Set(['wood',...Object.keys(catalog.crops || {}),...Object.keys(catalog.edible || {}),
+    ...Object.values(catalog.recipes || {}).map(recipe=>recipe[1]),
+    ...Object.values(catalog.profession_recipes || {}).flat().map(recipe=>recipe.output),'wool','manure','herbs','hides'])];
+}
 function resourceStocks(town){
   const edible=foodGoods(),stocks={};
   const add=(key,field,amount)=>{
@@ -887,12 +893,12 @@ function renderResourceList(town){
   const target=$('resources-list');
   if(!town){target.replaceChildren();renderResourceList.signature=null;return;}
   const stocks=resourceStocks(town),activity=resourceMinuteActivity(town),catalog=world.progression || {};
-  const buyable=catalog.buyable_goods || [],sellable=marketSaleGoods(catalog);
-  const signature=JSON.stringify([world.world_id,identity?.town_id,Object.keys(stocks),buyable,sellable]);
+  const buyable=catalog.buyable_goods || [],sellable=marketSaleGoods(catalog),producible=productionGoods();
+  const signature=JSON.stringify([world.world_id,identity?.town_id,Object.keys(stocks),buyable,sellable,producible]);
   if(renderResourceList.signature!==signature){
     const table=document.createElement('table');table.className='resources-table';
     const head=document.createElement('thead'),heading=document.createElement('tr');
-    for(const label of ['Resource','Icon','Stock (all)','Free','Reserved','Buy at','Sell at','In/min','Out/min']){
+    for(const label of ['Resource','Icon','Stock (all)','Free','Reserved','Production cap','Buy at','Sell at','In/min','Out/min']){
       const cell=document.createElement('th');cell.scope='col';cell.textContent=label;heading.append(cell);
     }
     head.append(heading);table.append(head);
@@ -900,17 +906,27 @@ function renderResourceList(town){
     const rows=new Map(),worldId=world.world_id,townId=identity?.town_id;
     for(const [title,members] of resourceCategories(Object.keys(stocks))){
       const category=document.createElement('tr');category.className='resource-category';
-      const caption=document.createElement('th');caption.colSpan=9;caption.scope='rowgroup';caption.textContent=title;category.append(caption);body.append(category);
+      const caption=document.createElement('th');caption.colSpan=10;caption.scope='rowgroup';caption.textContent=title;category.append(caption);body.append(category);
       for(const key of members){
         const row=document.createElement('tr');row.dataset && (row.dataset.resource=key);
         const name=document.createElement('th');name.scope='row';name.textContent=goodName(key);row.append(name);
         const art=document.createElement('td');art.className='resource-art';art.append(resourceArt(key));row.append(art);
         const cells={};
-        for(const field of ['total','free','reserved','buy','sell','in','out']){
+        for(const field of ['total','free','reserved','cap','buy','sell','in','out']){
           cells[field]=document.createElement('td');row.append(cells[field]);
         }
         cells.total.className='resource-stock';
         const inputs={};
+        if(producible.includes(key)){
+          const input=document.createElement('input');input.type='number';input.min='0';input.step='any';input.placeholder='Unlimited';
+          input.setAttribute('aria-label',`${goodName(key)} production cap`);
+          input.setAttribute('aria-describedby','resources-cap-help');cells.cap.append(input);inputs.cap=input;
+          input.onchange=()=>{
+            if(world.world_id!==worldId||identity?.town_id!==townId)return;
+            if(input.reportValidity&&!input.reportValidity())return;
+            act({action:'configure_rule',resource:key,cap:input.value.trim()===''?null:Number(input.value)});
+          };
+        }else cells.cap.textContent='—';
         for(const [field,allowed] of [['buy',buyable.includes(key)],['sell',sellable.includes(key)]]){
           if(!allowed){cells[field].textContent='—';continue;}
           const input=document.createElement('input');input.type='number';input.min='0';input.step='any';input.placeholder='Off';
@@ -918,7 +934,7 @@ function renderResourceList(town){
           input.setAttribute('aria-describedby','resources-trade-help');cells[field].append(input);inputs[field]=input;
           input.onchange=()=>{
             if(world.world_id!==worldId||identity?.town_id!==townId)return;
-            if(Object.values(inputs).some(node=>node.reportValidity&&!node.reportValidity()))return;
+            if([inputs.buy,inputs.sell].some(node=>node?.reportValidity&&!node.reportValidity()))return;
             const value=field=>inputs[field]?.value?.trim()?Number(inputs[field].value):null;
             const buy=value('buy'),sell=value('sell');
             if(buy!==null&&sell!==null&&buy>=sell){notice('Sell at must be higher than Buy at.');return;}
@@ -938,38 +954,15 @@ function renderResourceList(town){
     cells.total.title=`${resourceNumber(stock.pending)} awaiting workplace delivery; counted once in total stock`;
     for(const field of ['in','out'])cells[field].textContent=resourceNumber(flow[field]);
     const sale=town.rules?.market_sales?.[key],buy=town.rules?.market_purchases?.[key];
-    for(const [field,input] of Object.entries(inputs)){
+    if(inputs.cap){
+      inputs.cap.title='Production target: blank is unlimited; 0 pauses production';
+      if(document.activeElement!==inputs.cap)inputs.cap.value=String(town.rules?.production_caps?.[key] ?? '');
+    }
+    for(const [field,input] of Object.entries(inputs).filter(([field])=>field!=='cap')){
       input.disabled=!hasMarket;
       input.title=!hasMarket?'Finish a market stall first':field==='buy'?`Buy below this free stock at ${2*(catalog.fish?.[key]?.coins ?? catalog.sale_prices?.[key] ?? 1)} coins per item; blank disables buying`:sale&&!sale.strict?`Existing market rule: starts at ${sale.cap} or more and sells batches. Editing here retains the threshold amount instead.`:'Sell surplus above this free stock; blank disables selling';
       if(document.activeElement!==input)input.value=String((field==='buy'?buy:sale&&(sale.enabled ?? true)?sale.cap:null) ?? '');
     }
-  }
-}
-function renderRules(town){
-  const target=$('rules-list');
-  // Keep unfinished edits intact while snapshots refresh.
-  const signature=JSON.stringify([identity?.town_id,town?.rules?.production_caps,world.progression]);
-  if(renderRules.signature===signature)return;
-  if(target.contains?.(document.activeElement))return;
-  renderRules.signature=signature;target.replaceChildren();
-  if(!town)return;
-  const catalog=world.progression || {};
-  const keys=[...new Set(['wood',...Object.keys(catalog.crops || {}),...Object.keys(catalog.edible || {}),
-    ...Object.values(catalog.recipes || {}).map(recipe=>recipe[1]),
-    ...Object.values(catalog.profession_recipes || {}).flat().map(recipe=>recipe.output),'wool','manure','herbs','hides'])];
-  for(const key of keys){
-    const row=document.createElement('form');row.className='production-rule';
-    const label=document.createElement('label');label.textContent=goodName(key);label.setAttribute('for','cap-'+key);
-    const input=document.createElement('input');input.id='cap-'+key;input.type='number';input.min='0';input.step='any';
-    input.placeholder='Unlimited';input.value=town.rules?.production_caps?.[key] ?? '';
-    input.setAttribute('aria-label',`${goodName(key)} production cap`);
-    const save=document.createElement('button');save.textContent='Save';
-    row.onsubmit=event=>{event.preventDefault();
-      if(!row.reportValidity())return;
-      const cap=input.value.trim()===''?null:Number(input.value);
-      act({action:'configure_rule',resource:key,cap});
-    };
-    row.append(label,input,save);target.append(row);
   }
 }
 function materialCosts(spec){return Object.fromEntries(Object.entries(spec).filter(([k,v])=>v&&['wood','stone','coins','planks','wool','tools','leather','iron_ore','iron','saddles','steel','trade_crates','furniture','carved_furniture'].includes(k)));}
@@ -1308,7 +1301,7 @@ function openPanel(next){
   panel=next;selection=null;tool=null;moveIndex=null;buildTile=null;hoverTile=null;
   render();
 }
-for(const name of ['build','villagers','valley','help','resources','items','rules']){
+for(const name of ['build','villagers','valley','help','resources','items']){
   $(name+'-button').onclick=()=>openPanel(panel===name?null:name);
 }
 $('close-resources').onclick=()=>openPanel(null);
@@ -1345,7 +1338,7 @@ window.addEventListener('keydown',event=>{
   if(/^[1-9]$/.test(key)&&!event.ctrlKey&&!event.metaKey&&!event.altKey&&!event.shiftKey){
     if(!event.repeat&&!$('settings-panel').open&&!$('world-menu').open&&!$('delete-world-dialog').open && !$('regenerate-world-dialog').open && !$('upgrade-dialog').open
       &&!document.activeElement?.isContentEditable&&!['INPUT','TEXTAREA','SELECT'].includes(document.activeElement?.tagName)){
-      const name=['world-menu','build','villagers','resources','items','valley','help','rules'][Number(key)-1];
+      const name=['world-menu','build','villagers','resources','items','valley','help'][Number(key)-1];
       if(name&&!$(name+'-button').disabled){
         event.preventDefault();
         if(name==='world-menu')clearWalk();
@@ -2063,7 +2056,7 @@ function renderBuildingStatus(town,item,index,target){
     for(const {v} of assigned){
       const status=productionStatus(v,item);
       if(/waiting|requires|full|blocked|no |buy |cap reached|already tended|unavailable|cancelled/i.test(status)){
-        const help=/cap reached/i.test(status)?'Use stored goods or raise the production cap in Rules.':
+        const help=/cap reached/i.test(status)?'Use stored goods or raise the production cap in Resources.':
           /full/i.test(status)?'Haul, use or sell goods to free storage space.':
           /requires/i.test(status)?'Assign a qualified worker or train this worker.':
           /route|blocked|unavailable|cancelled/i.test(status)?'Keep paths and adjacent access tiles clear.':
@@ -2652,7 +2645,7 @@ function render(){
   if(world.world_id&&!own){if(!$('login-dialog').open)$('login-dialog').showModal();}
   else if($('login-dialog').open)$('login-dialog').close();
   $('controls').hidden=panel!=='build' || !own || viewed!==identity?.town_id;
-  for(const name of ['selection','villagers','valley','help','items','rules'])$(name+'-panel').hidden=panel!==name;
+  for(const name of ['selection','villagers','valley','help','items'])$(name+'-panel').hidden=panel!==name;
   if(panel==='resources'&&own){
     renderResourceList(own);
     if(!$('resources-panel').open)$('resources-panel').showModal();
@@ -2661,7 +2654,7 @@ function render(){
   $('side-panel').classList.toggle('villagers-overview',panel==='villagers');
   $('side-panel').classList.toggle('help-guide',panel==='help');
   $('game').classList.toggle('panel-open',!$('side-panel').hidden);
-  for(const name of ['build','villagers','valley','help','resources','items','rules']){
+  for(const name of ['build','villagers','valley','help','resources','items']){
     $(name+'-button').setAttribute('aria-expanded',String(panel===name));
     $(name+'-button').classList.toggle('selected',panel===name);
   }
@@ -2669,8 +2662,6 @@ function render(){
   $('villagers-button').disabled=!town;
   $('resources-button').disabled=!own;
   $('items-button').disabled=!own;
-  $('rules-button').disabled=!own;
-  if(panel==='rules')renderRules(own);
   if(panel==='items')renderItems(own);
   $('move').textContent=!own?.sandbox&&own?.coins?'Move a building · 1 coin':'Move a building · Free';
   $('mode-hint').textContent=tool==='move'?(moveIndex===null?'Moving: click a building. Escape to cancel.':'Moving: click open grass to move here. Escape to cancel.'):tool?`Building ${labels[tool].toLowerCase()}: hover over open grass and left-click to build. Escape to cancel.`:'';

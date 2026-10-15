@@ -196,7 +196,7 @@ function session(saved=null){
   check(windows.document.getElementById('side-panel').hidden,'Resources does not open the sidebar');
   const table=windows.document.getElementById('resources-list').children[0];
   const resources=table.children[1].children.filter(row=>row.className!=='resource-category');
-  check(table.children[0].children[0].children.map(cell=>cell.textContent).join(',')==='Resource,Icon,Stock (all),Free,Reserved,Buy at,Sell at,In/min,Out/min','Resources has the requested columns');
+  check(table.children[0].children[0].children.map(cell=>cell.textContent).join(',')==='Resource,Icon,Stock (all),Free,Reserved,Production cap,Buy at,Sell at,In/min,Out/min','Resources has the requested columns');
   const resource=label=>resources.find(row=>row.children[0].textContent===label)?.children[2].textContent;
   check(resource('Wood')==='50'&&resource('Food')==='30','Resources shows total stock');
   check(resource('Coins')==='5','Coins appear in Resources');
@@ -212,9 +212,8 @@ function session(saved=null){
   windows.key('Escape');check(windows.state.panel===null&&!windows.document.getElementById('resources-panel').open,'Escape closes Resources');
   windows.key('3');
   windows.key('8');
-  check(windows.state.panel==='rules'&&!windows.document.getElementById('rules-panel').hidden,'8 opens town Rules');
-  windows.key('8');check(windows.state.panel===null,'8 closes town Rules');
-  windows.key('3');windows.key('9');
+  check(windows.state.panel==='villagers','8 is reserved after production caps move to Resources');
+  windows.key('8');windows.key('9');
   check(windows.state.panel==='villagers','Reserved future shortcuts do not change the current panel');
   windows.key('1');check(windows.document.getElementById('world-menu').open,'1 opens Worlds');
   windows.rebind('up','1');windows.rebind('up','9');

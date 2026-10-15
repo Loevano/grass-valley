@@ -134,7 +134,7 @@ Markets also offer a quick-sale form at the top: choose 1, 5, 10, 50, 100, or
 All individual stored resources support quick and automatic sales;
 the form explains unsupported resources and insufficient stock.
 The Resources popup now compares total, free, and reserved stock alongside editable
-Buy at/Sell at thresholds and actual activity over the last minute of running game time.
+production caps, Buy at/Sell at thresholds, and actual activity over the last minute of running game time.
 Basic resources, including vegetables, berries, carrots, fodder, manure, stone,
 wheat, and wood, sell for 1 coin each.
 Host-recorded flows exclude hauling and ingredient reservation. Merchants can buy

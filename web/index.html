@@ -48,7 +48,8 @@
 </dialog>
 <dialog id="resources-panel" aria-labelledby="resources-title" aria-describedby="resources-description">
 <div class="resources-heading"><div><span class="eyebrow">YOUR SETTLEMENT</span><h2 id="resources-title">Resources</h2></div><button id="close-resources" class="quiet" aria-label="Close resources">Close · Esc</button></div>
-<p id="resources-description" class="muted">Stock, trade thresholds, and activity. Guide: Help (7) → Resources &amp; storage.</p>
+<p id="resources-description" class="muted">Stock, production caps, trade thresholds, and activity. Guide: Help (7) → Resources &amp; storage.</p>
+<p id="resources-cap-help" class="muted">Production cap: blank is unlimited; 0 pauses production. Saves automatically.</p>
 <p id="resources-trade-help" class="muted">Thresholds use free stock; blank disables. Requires a completed market and merchant.</p>
 <div id="resources-list" tabindex="0" role="region" aria-label="Resource stock and activity"></div>
 </dialog>
@@ -61,7 +62,6 @@
 <button id="items-button" aria-controls="items-panel" aria-expanded="false" aria-keyshortcuts="5" title="Items (5)">Items</button>
 <button id="valley-button" aria-controls="valley-panel" aria-expanded="false" aria-keyshortcuts="6" title="Valley (6)">Valley</button>
 <button id="help-button" aria-controls="help-panel" aria-expanded="false" aria-keyshortcuts="7" title="Help (7)">Help</button>
-<button id="rules-button" aria-controls="rules-panel" aria-expanded="false" aria-keyshortcuts="8" title="Rules (8)">Rules</button>
 <button id="settings-button" aria-haspopup="dialog" aria-controls="settings-panel" aria-expanded="false" aria-keyshortcuts="Meta+Comma" title="Settings (⌘,)">Settings</button>
 <span id="mode-hint" role="status" hidden></span>
 <div id="resources" aria-live="polite">
@@ -82,7 +82,6 @@
 <section id="selection-panel" hidden aria-labelledby="selection-title"><span class="eyebrow">A CLOSER LOOK</span><div class="selection-heading"><div id="selection-art"></div><h2 id="selection-title"></h2><span id="selection-level" hidden></span></div><div id="selection-details"></div><div id="hall-details" hidden><p id="progress"></p><progress id="hall-progress" max="30" value="0" aria-label="Timber roots: wood harvested out of 30"></progress><button id="upgrade">Choose hall upgrade · 40 wood</button></div><div class="building-management"><button id="selection-move" hidden>Move · 1 coin</button><label id="selection-fence" hidden>Fence orientation<select id="selection-fence-orientation" aria-label="Fence orientation"></select></label><button id="selection-destroy" class="danger" hidden>Destroy · No refund</button></div></section>
 <section id="villagers-panel" hidden><span class="eyebrow">THE HEART OF YOUR TOWN</span><h2>Villagers</h2><div id="villagers"></div></section>
 <section id="items-panel" hidden aria-labelledby="items-title"><span class="eyebrow">EQUIP YOUR TOWN</span><h2 id="items-title">Items</h2><div id="items-list"></div></section>
-<section id="rules-panel" hidden aria-labelledby="rules-title"><span class="eyebrow">YOUR TOWN</span><h2 id="rules-title">Rules</h2><h3>Production caps</h3><p class="muted">Blank: unlimited · 0: pause. Guide: Help (7) → Production caps.</p><div id="rules-list"></div></section>
 <section id="valley-panel" hidden><h2>Across the valley</h2><div id="towns">Waiting for settlers…</div></section>
 <section id="help-panel" hidden aria-labelledby="help-title">
 <span class="eyebrow">THE VALLEY GUIDE</span><h2 id="help-title">Help</h2>
@@ -197,6 +196,7 @@
 <tr><th scope="row">Stock (all)</th><td>Stored, carried, reserved, and pending goods. Counted once.</td></tr>
 <tr><th scope="row">Free</th><td>Available to use now. Pending output becomes free after delivery.</td></tr>
 <tr><th scope="row">Reserved</th><td>Committed to processing or sale.</td></tr>
+<tr><th scope="row">Production cap</th><td>Production target. Blank is unlimited; 0 pauses production. Does not require a market.</td></tr>
 <tr><th scope="row">Food</th><td>Edible stock in food-value units. Other rows count items.</td></tr>
 <tr><th scope="row">In/min · Out/min</th><td>Production, use, and trade in the last 60 seconds of running game time. Hauling and reservation are excluded.</td></tr>
 </tbody></table><ul>
@@ -209,7 +209,7 @@
 </ul>
 </details>
 <details><summary>Production caps</summary>
-<table class="help-table"><caption>Rules → Production caps</caption><thead><tr><th scope="col">Setting</th><th scope="col">Effect</th></tr></thead><tbody>
+<table class="help-table"><caption>Resources → Production cap</caption><thead><tr><th scope="col">Setting</th><th scope="col">Effect</th></tr></thead><tbody>
 <tr><th scope="row">Blank</th><td>Unlimited production.</td></tr>
 <tr><th scope="row">0</th><td>Pause production.</td></tr>
 <tr><th scope="row">A number</th><td>Pause when stock reaches this target.</td></tr>
@@ -268,7 +268,7 @@
 <tr><th scope="row">Source out of reach</th><td>Move closer to trees or water.</td></tr>
 <tr><th scope="row">Missing ingredients</th><td>Supply inputs and clear delivery routes.</td></tr>
 <tr><th scope="row">Storage full</th><td>Spend goods, enable storage, or add capacity and haulers.</td></tr>
-<tr><th scope="row">Production cap reached</th><td>Use stock or raise the cap in Rules. Leave room for a whole batch.</td></tr>
+<tr><th scope="row">Production cap reached</th><td>Use stock or raise the cap in Resources. Leave room for a whole batch.</td></tr>
 <tr><th scope="row">Barn adults idle</th><td>Select adults for butchery.</td></tr>
 <tr><th scope="row">Horses not growing</th><td>Supply fodder or vegetables.</td></tr>
 <tr><th scope="row">Residents leaving</th><td>Provide food and housing.</td></tr>
@@ -334,7 +334,6 @@
 <tr><th scope="row">5</th><td>Items</td></tr>
 <tr><th scope="row">6</th><td>Valley</td></tr>
 <tr><th scope="row">7</th><td>Help</td></tr>
-<tr><th scope="row">8</th><td>Rules</td></tr>
 <tr><th scope="row">⌘,</th><td>Settings</td></tr>
 </tbody></table><p>Press a window’s number again to close it.</p>
 </details>
