@@ -109,6 +109,16 @@ const {chromium}=require('playwright');
           check(selection===null,kind+' transparent corner does not select its building');
           check(JSON.stringify(world)===saved,kind+' drawing and picking preserve authoritative state');
         }
+        specialtyTown.buildings=[{kind:'hall',x:3,y:3}];specialtyTown.sandbox=true;specialtyTown.map_size=32;
+        openPanel('build');
+        [...$('buildings').children].flatMap(group=>[...group.children]).find(button=>button.buildingKind==='sawpit').onclick();
+        check(!$('build-facing').hidden&&$('build-orientation').options.length===4,'Build menu offers four facing directions');
+        $('build-orientation').value='1';$('build-orientation').dispatchEvent(new Event('change'));
+        const preview=placementBuilding({x:12,y:12},'sawpit');
+        check(preview.orientation===1&&preview.footprint.join(',')==='2,3','Build menu turns the footprint preview');
+        const commands=[];request=async(path,data)=>commands.push(data);refresh=async()=>{};
+        await buildAt(12,12);
+        check(commands.length===1&&commands[0].orientation===1,'Placed building uses the direction chosen in Build');
       });
       await page.close();
     }

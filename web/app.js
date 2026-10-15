@@ -8,6 +8,7 @@ try {
 } catch { identities = {}; }
 let world = {towns:{}}, viewed = null, tool = null, moveIndex = null;
 let buildTile = null, building = false, hoverTile = null;
+let buildOrientation = 0;
 let destroying = false;
 let acreFarmIndex = null;
 let orchardIndex = null;
@@ -2537,6 +2538,14 @@ for(const [index,[label,kinds]] of buildingCategories.entries()){
   for(const [kind,cost] of Object.entries(costs).filter(([kind])=>kinds.includes(kind))){const button=document.createElement('button');button.buildingKind=kind;button.textContent=`${labels[kind]} · ${cost} wood`;button.append(illustration(kind));button.onclick=()=>{panel='build';selection=null;tool=kind;moveIndex=null;buildTile=null;hoverTile=null;render();};group.append(button);}
   $('buildings').append(group);
 }
+$('build-orientation').onchange=()=>{
+  if(building)return;
+  const orientation=Number($('build-orientation').value);
+  if(!Number.isInteger(orientation)||orientation<0||orientation>3)return;
+  buildOrientation=orientation;
+  if(buildTile&&!placementValid(world.towns[viewed],buildTile,tool))buildTile=null;
+  render();
+};
 $('move').onclick=()=>{panel='build';selection=null;tool='move';moveIndex=null;buildTile=null;hoverTile=null;render();};
 $('cancel').onclick=()=>{tool=null;moveIndex=null;buildTile=null;hoverTile=null;render();};
 $('destroy').onclick=()=>{panel='build';selection=null;tool=tool==='destroy'?null:'destroy';moveIndex=null;buildTile=null;hoverTile=null;render();};
@@ -2565,7 +2574,7 @@ async function buildAt(x,y){
   if(kind==='acre'&&!acrePlacementValid(town,selected,acreFarmIndex)){notice('Place acres within 3 tiles of their farm in each direction.');return;}
   building=true;render();
   try{
-    await request('/api/command',{action:kind==='road'?'build_road':'build',kind,...selected,...(kind==='acre'?{farm_index:acreFarmIndex}:{}),...(kind==='orchard_tree'?{orchard_index:orchardIndex}:{}),world_id:world.world_id});
+    await request('/api/command',{action:kind==='road'?'build_road':'build',kind,...selected,...(kind!=='road'&&buildOrientation?{orientation:buildOrientation}:{}),...(kind==='acre'?{farm_index:acreFarmIndex}:{}),...(kind==='orchard_tree'?{orchard_index:orchardIndex}:{}),world_id:world.world_id});
     commandEffect({action:'build',...selected});
     if(tool===kind&&buildTile?.x===x&&buildTile?.y===y){buildTile=null;hoverTile=null;}
     await refresh();
@@ -2739,6 +2748,9 @@ function render(){
   $('resources-button').disabled=!own;
   $('items-button').disabled=!own;
   if(panel==='items')renderItems(own);
+  $('build-facing').hidden=!own || viewed!==identity?.town_id || !(tool in costs) || tool==='road';
+  $('build-orientation').value=String(buildOrientation);
+  $('build-orientation').disabled=building;
   $('move').textContent=!own?.sandbox&&own?.coins?'Move a building · 1 coin':'Move a building · Free';
   $('destroy').setAttribute('aria-pressed',String(tool==='destroy'));
   $('destroy').classList.toggle('selected',tool==='destroy');
@@ -4833,8 +4845,8 @@ function footprintTiles(building){
 function occupies(building,x,y){return footprintTiles(building).some(p=>p.x===x&&p.y===y);}
 function placementBuilding(tile,kind){
   const moving=tool==='move'?world.towns[viewed]?.buildings[moveIndex]:null;
-  const orientation=buildingOrientation(moving || {}),dimensions=(world.progression?.building_footprints || buildingFootprints)[kind] || [1,1];
-  return {...tile,kind,...(moving?{orientation}:{}),footprint:orientation%2?[...dimensions].reverse():dimensions};
+  const orientation=moving?buildingOrientation(moving):tool in costs&&tool!=='road'?buildOrientation:0,dimensions=(world.progression?.building_footprints || buildingFootprints)[kind] || [1,1];
+  return {...tile,kind,...(moving||orientation?{orientation}:{}),footprint:orientation%2?[...dimensions].reverse():dimensions};
 }
 function gameplayRange(building,town){
   if(building.kind==='hall')return {reach:buildingRange(town),square:false};

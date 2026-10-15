@@ -34,6 +34,54 @@ class BuildingRotation(unittest.TestCase):
                         footprint=dimensions[::-1] if orientation % 2 else dimensions))
                     self.assertEqual({key: self.town[key] for key in stock}, stock)
 
+    def test_new_buildings_start_with_the_chosen_direction_and_footprint(self):
+        for kind in ('sawpit', 'mill', 'home', 'wooden_bench'):
+            for orientation in range(4):
+                with self.subTest(kind=kind, orientation=orientation):
+                    self.setUp()
+                    server.command(self.town, dict(action='build', kind=kind, x=12, y=12,
+                                                   orientation=orientation))
+                    building = self.town['buildings'][-1]
+                    dimensions = BUILDING_FOOTPRINTS.get(kind, (1, 1))
+                    self.assertEqual(building.get('orientation', 0), orientation)
+                    self.assertEqual(tuple(building.get('footprint', (1, 1))),
+                                     dimensions[::-1] if orientation % 2 else dimensions)
+                    stored = json.loads(json.dumps(export_world(dict(towns=dict(own=self.town)))))
+                    self.assertEqual(stored['towns']['own']['buildings'][-1], building)
+
+    def test_non_sandbox_construction_starts_with_chosen_direction(self):
+        self.town['sandbox'] = False
+        server.command(self.town, dict(action='build', kind='sawpit', x=12, y=12,
+                                       orientation=1))
+        building = self.town['buildings'][-1]
+        self.assertEqual(building['orientation'], 1)
+        self.assertEqual(building['footprint'], [2, 3])
+        self.assertIn('construction', building)
+
+    def test_new_rotated_footprint_checks_added_and_released_tiles_before_spending(self):
+        for blocked, valid in (((12, 14), False), ((14, 12), True)):
+            with self.subTest(blocked=blocked):
+                self.setUp()
+                self.town['map_resources'] = [dict(kind='rock', x=blocked[0], y=blocked[1])]
+                data = dict(action='build', kind='sawpit', x=12, y=12, orientation=1)
+                if valid:
+                    server.command(self.town, data)
+                    self.assertEqual(self.town['buildings'][-1]['footprint'], [2, 3])
+                else:
+                    original = copy.deepcopy(self.town['buildings'])
+                    stock = {key: self.town[key] for key in ('wood', 'food', 'coins')}
+                    with self.assertRaises(ValueError):
+                        server.command(self.town, data)
+                    self.assertEqual(self.town['buildings'], original)
+                    self.assertEqual({key: self.town[key] for key in stock}, stock)
+
+    def test_invalid_new_building_directions_are_rejected_before_spending(self):
+        for orientation in (-1, 4, True, 1.0, '1', None):
+            with self.subTest(orientation=orientation), self.assertRaises(ValueError):
+                server.command(self.town, dict(action='build', kind='home', x=12, y=12,
+                                               orientation=orientation))
+        self.assertEqual(len(self.town['buildings']), 1)
+
     def test_failed_turns_are_atomic_for_each_obstacle(self):
         for obstacle in ('building', 'road', 'tree', 'water', 'rock', 'npc', 'player',
                          'boundary', 'edge', 'range', 'barn'):

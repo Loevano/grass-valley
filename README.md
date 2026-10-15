@@ -733,6 +733,8 @@ the Python host, refresh both browsers, and create a new world to use the shared
   or replaced by another tool. Escape also ends demolition. Natural trees and rocks
   and other players' property are protected; farms and orchards retain their usual
   linked-acre and fruit-tree removal behavior.
+- In **Build**, choose a building, then use **Facing · Free** to turn its preview
+  before placing it. Repeated placements keep the chosen direction.
 - Select any completed building and use **Facing · Free** to turn it in four
   directions. Rectangular footprints turn too: a 3×2 sawpit becomes 2×3. Turns
   need clear ground within your building area. Direction is saved and retained

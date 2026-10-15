@@ -222,7 +222,8 @@ queue is empty. Order controls and the request queue appear first in the worksho
 inspector. Workshop recipes supply benches, carved statues, lanterns, flower boxes,
 wooden tables, signposts, and garden arches. Recipe details and build buttons explain
 the crafting, delivery, and placement path. Decorations share buildings’ four free
-facing directions, with rotated footprints saved when moved or reloaded.
+facing directions, available in Build before placement and on completed buildings,
+with rotated footprints saved when moved or reloaded.
 Request cancellation preserves finished goods and releases
 unused ingredients. Delivered workshop pacing still needs play experience alongside
 the wood-chain balancing above.

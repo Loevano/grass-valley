@@ -1668,6 +1668,11 @@ def command(town, data, world=None):
         size = town.get('map_size', MAP_SIZE)
         if kind not in COSTS or type(x) is not int or type(y) is not int or not (0 <= x < size and 0 <= y < size):
             raise ValueError('Choose a building and a tile inside your town.')
+        orientation = data.get('orientation', 0)
+        if type(orientation) is not int or orientation not in range(4):
+            raise ValueError('Choose a building direction.')
+        proposed = {'kind': kind, 'x': x, 'y': y, 'orientation': orientation}
+        proposed['footprint'] = moved_footprint(proposed)
         if any(b['x'] == x and b['y'] == y for b in town['buildings']):
             raise ValueError('That tile is already occupied.')
         if any(r['kind'] not in {'berry_bush', 'herb_patch'} and r['x'] == x and r['y'] == y for r in town['map_resources']):
@@ -1676,8 +1681,7 @@ def command(town, data, world=None):
         if abs(player['x'] - x) < .68 and abs(player['y'] - y) < .68:
             raise ValueError('Walk away from this tile before building here.')
         validate_building_range(town, x, y)
-        validate_footprint(town, {'kind': kind, 'x': x, 'y': y,
-                                 'footprint': BUILDING_FOOTPRINTS.get(kind, (1, 1))}, world=world)
+        validate_footprint(town, proposed, world=world)
         spec = economy.BUILDINGS.get(kind, {'wood': COSTS[kind]})
         if town['level'] < spec.get('level', 1):
             raise ValueError(f"Requires town hall level {spec['level']}.")
@@ -1691,8 +1695,10 @@ def command(town, data, world=None):
         economy.spend(town, costs)
         building = {'kind': kind, 'x': x, 'y': y,
                     'construction': {'progress': 0, 'total': BUILD_SECONDS}}
+        if orientation:
+            building['orientation'] = orientation
         if kind in BUILDING_FOOTPRINTS:
-            building['footprint'] = list(BUILDING_FOOTPRINTS[kind])
+            building['footprint'] = list(proposed['footprint'])
         if kind in ('acre', 'orchard_tree') or kind in economy.DECORATIONS:
             building.pop('construction')
         if kind == 'acre':
