@@ -453,6 +453,10 @@ Movement and routing decisions for Lantern Vale.
     navigation identity preparation and ordinary simulation work remain outside it.
     Long searches and large backlogs can take multiple three-second ticks.
   - Direct routing helpers outside simulation updates retain synchronous behavior.
+    Player commands use a separate shared allowance of **128 work units** for
+    worker target selection and construction planning. Unfinished searches resume
+    during simulation ticks; a command does not cancel pending work or admission
+    reservations from other towns. Command planning shares one spatial index.
 - **Browser:** prepared-scene searches use resumable generators.\
   Reference: [web/animations.js](../web/animations.js): `routeSteps`; [web/scene.js](../web/scene.js): `Queue`
   - Route searches yield every **128 inspected entries**.

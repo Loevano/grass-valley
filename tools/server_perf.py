@@ -2,6 +2,7 @@
 import argparse
 from concurrent.futures import ThreadPoolExecutor
 from contextlib import nullcontext
+import copy
 import http.client
 from http.server import ThreadingHTTPServer
 import importlib.util
@@ -81,6 +82,50 @@ def routing_scenarios(server, metrics, checks):
     return diagnostics
 
 
+def command_scenarios(server, cycles, metrics, checks):
+    """Commands must acknowledge orders without finishing unrelated long routes."""
+    from navigation import routes
+    template = server.new_town('Command fixture')
+    template.update(map_size=40, terrain=['g' * 40] * 40, level=5, wood=1000,
+                    town_origin={'x': 5, 'y': 5}, npcs=[], roads=[], tree_stumps=[],
+                    forage_version=1, forage_halls=[[5, 5]])
+    template['buildings'] = [{'kind': 'hall', 'x': 5, 'y': 5},
+        {'kind': 'barn', 'x': 22, 'y': 22, 'animals': {'pig': 2},
+         'animal_growth': {'pig': [240, 240]}},
+        {'kind': 'butcher', 'x': 30, 'y': 30},
+        {'kind': 'home', 'x': 35, 'y': 2,
+         'construction': {'progress': 0, 'total': 30}}]
+    template['map_resources'] = [{'kind': 'rock', 'x': x, 'y': y}
+                                for x, y in ((34, 2), (36, 2), (35, 1), (35, 3))]
+    template['villagers'] = [{'name': f'Builder {i}', 'job': 'building',
+        'construction_position': {'x': 2 + i % 4, 'y': 2 + i // 4}}
+        for i in range(16)]
+    template['villagers'][0].update(job='butchery', building_index=2, husbandry=2, talents={})
+    for action in ('upgrade_capacity', 'butcher_animal'):
+        timings = []
+        valid = True
+        for _ in range(cycles):
+            town = copy.deepcopy(template)
+            world = {'towns': {'owner': town}}
+            routes.graphs.clear()
+            data = {'action': action, 'index': 2}
+            if action == 'butcher_animal':
+                data.update(barn_index=1, animal='pig')
+            started = time.perf_counter()
+            server.command(town, data, world)
+            timings.append((time.perf_counter() - started) * 1000)
+            shop = town['buildings'][2]
+            valid = valid and (shop.get('construction', {}).get('upgrade') == {'settler_level': 2}
+                if action == 'upgrade_capacity' else shop.get('butchering', {}).get('stage') == 'fetching'
+                and town['buildings'][1]['animals']['pig'] == 1)
+            if hasattr(server, 'COMMAND_ROUTE_BUDGET'):
+                valid = valid and routes.work <= server.COMMAND_ROUTE_BUDGET
+        name = f'server.command.{action}'
+        metrics[name + '.p95_ms'] = percentile(timings, .95)
+        metrics[name + '.max_ms'] = max(timings)
+        checks.append({'scenario': name, 'ok': valid})
+
+
 def run(source, cycles):
     sys.path.insert(0, str(source))
     # Support both the current layout and revisions before the server move.
@@ -95,6 +140,7 @@ def run(source, cycles):
     spec.loader.exec_module(harness)
     metrics, checks = {}, []
     routing = routing_scenarios(server, metrics, checks)
+    command_scenarios(server, cycles, metrics, checks)
     # Exercise an active worker too: idle-town timings cannot detect discarded
     # simulation time at a delivery handoff. Use the same fixture for both refs.
     movement_samples, unused_tick = [], []

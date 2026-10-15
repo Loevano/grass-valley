@@ -44,6 +44,7 @@ SETTLER_SPACES = {'hall': 1, 'home': 2, 'storehouse': 1, 'woodcutter': 1,
 BUILDING_JOBS = {'storehouse': 'hauling', 'woodcutter': 'woodcutting', 'farm': 'farming',
                  'fishing_hut': 'fishing', 'acre': 'farming'}
 TICK_SECONDS = 3
+COMMAND_ROUTE_BUDGET = 128
 NEXT_TICK_AT = None
 BUILD_SECONDS = 30
 ROAD_BUILD_SECONDS = 10
@@ -2086,11 +2087,21 @@ def command(town, data, world=None):
         hall['construction'] = {'progress': 0, 'total': upgrade['seconds']}
     else:
         raise ValueError('Unknown action.')
-    for index, villager in enumerate(town['villagers']):
-        villager['work_target'] = (work_source(town, villager['job'], index)
-                                   if villager['job'] != 'idle' else None)
-    construct(town, walking_map(world, town) if world and 'shared_map' in world else town,
-              elapsed=0)
+    # Commands must not run unbounded work or builder searches while holding
+    # the host lock. Preserve other towns' pending jobs until the next full tick
+    # can revalidate them, and share one obstacle index across this town's work.
+    landscape = walking_map(world, town) if world and 'shared_map' in world else town
+    spatial = SpatialIndex(landscape['map_resources'])
+    walking = dict(landscape, _spatial_index=spatial)
+    with routes.update(world if world is not None else town,
+                       budget=COMMAND_ROUTE_BUDGET, prune=False):
+        for index, villager in enumerate(town['villagers']):
+            with routes.worker(villager):
+                assignment = (work_assignment(town, villager['job'], index, spatial,
+                                              walking=walking)
+                              if villager['job'] != 'idle' else None)
+                villager['work_target'] = assignment[1] if assignment else None
+        construct(town, walking, elapsed=0)
     if town.get('sandbox'):
         fill_cottages(town)
 

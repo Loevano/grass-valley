@@ -31,8 +31,11 @@ class RouteCache:
         self.waiting = set()
 
     @contextmanager
-    def update(self, world):
+    def update(self, world, budget=None, prune=True):
         """One shared search allowance for every town in a simulation update."""
+        previous_budget = self.budget
+        if budget is not None:
+            self.budget = min(self.budget, budget)
         if world is not self.world:
             self.pending.clear()
             self.reservation = None
@@ -44,14 +47,16 @@ class RouteCache:
             yield
             # Only requests revalidated against this update's task/navigation
             # can run. Removed actors and changed tasks release their jobs.
-            for owner in list(self.pending):
-                if id(self.pending[owner]) not in self.seen:
-                    del self.pending[owner]
-            if not self.reservation_seen:
-                self.reservation = None
+            if prune:
+                for owner in list(self.pending):
+                    if id(self.pending[owner]) not in self.seen:
+                        del self.pending[owner]
+                if not self.reservation_seen:
+                    self.reservation = None
             self.drain(self.budget - self.work)
         finally:
             self.active, self.owner = False, None
+            self.budget = previous_budget
 
     @contextmanager
     def worker(self, worker, purpose='work', priority=None):

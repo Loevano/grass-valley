@@ -275,6 +275,10 @@ are collected in [Pathing decisions](PATHING.md).
   obstacle index, avoiding repeated landscape scans that delay player commands.
   Field and pier access use private obstacle copies; resource removal refreshes
   the shared index within the tick.
+  Commands now share one spatial index and a 128-unit routing allowance instead
+  of finishing builder and worker searches before acknowledging orders. Pending
+  searches and other towns' admission reservations survive until a full tick
+  revalidates them. Butchery and upgrade latency have dedicated host benchmarks.
 - Host and browser each maintain bounded route caches that workers reuse.
   Terrain, obstacles, roads, and search bounds affect validity; crop growth does not.
   Search uses BFS for cardinal routes on uniform ground and travel-time A*
