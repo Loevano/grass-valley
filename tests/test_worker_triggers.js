@@ -11,7 +11,7 @@ const harness=new Function('WorkerAnimation','ctx','polygon','point','tileW','ti
   ${source.slice(source.indexOf('function animatedVillagers('),source.indexOf('let npcClock='))}
   ${source.slice(source.indexOf('function villagerAccessories('),source.indexOf('function draw(seconds=0)'))}
   return {setWorld(value){world=value;},frame(town,seconds){
-    const sprites=animatedVillagers(town,seconds);sprites.forEach(drawVillager);return sprites;
+    const sprites=animatedVillagers(town,seconds);sprites.forEach(sprite=>drawVillager(sprite));return sprites;
   }};
 `)(WorkerAnimation,ctx,(_,color)=>colors.push(color),(x,y)=>[(x-y)*23,(x+y)*11.5],46,23,{});
 const town={map_size:12,food:40,wood:40,buildings:[

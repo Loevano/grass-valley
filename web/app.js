@@ -2517,7 +2517,7 @@ function render(){
   draw();
 }
 function point(x,y){return [originX+(x-y)*tileW/2,originY+(x+y)*tileH/2];}
-function polygon(points,fill,stroke){ctx.beginPath();points.forEach(([x,y],i)=>i?ctx.lineTo(x,y):ctx.moveTo(x,y));ctx.closePath();ctx.fillStyle=fill;ctx.fill();if(stroke){ctx.strokeStyle=stroke;ctx.stroke();}}
+function polygon(points,fill,stroke,target=ctx){target.beginPath();points.forEach(([x,y],i)=>i?target.lineTo(x,y):target.moveTo(x,y));target.closePath();target.fillStyle=fill;target.fill();if(stroke){target.strokeStyle=stroke;target.stroke();}}
 // Share static resource artwork across tiles and frames. Resolution buckets keep
 // zooming sharp without generating a new canvas for every wheel event.
 const resourceSprites=new Map();
@@ -2977,14 +2977,29 @@ function paintHorse(target,stride=0){
   target.fillStyle='#433428';target.fillRect(8,-24,3,16);target.fillRect(12,-28,2,6);target.fillRect(-17,-9,4,12);
   target.fillStyle='#efe3cb';target.fillRect(18,-19,3,2);
 }
-function drawVillager(b,highlighted=false){
-  if(b.state.butcherAnimal&&!b.state.construction&&!b.state.transport)drawButcherAnimal(b);
-  if(highlighted){
-    const [x,y]=point(b.x,b.y),scale=tileW/46;
-    const centerX=x+(b.index%3-1)*3,top=y+tileH*.65+Math.floor(b.index/3)-29*scale;
-    ctx.save();ctx.strokeStyle='#fff0b1';ctx.lineWidth=2;
-    ctx.beginPath();ctx.moveTo(centerX-6*scale,top);ctx.lineTo(centerX+6*scale,top);ctx.stroke();ctx.restore();
+const villagerMainContext=ctx;
+let workerOutlineCanvas=null;
+function drawWorkerOutline(b){
+  const surface=workerOutlineCanvas ||= document.createElement('canvas'),target=surface.getContext?.('2d');
+  if(!target)return;
+  const scale=tileW/46,ratio=renderPixelRatio(),[x,y]=point(b.x,b.y);
+  const width=128*scale+4,height=128*scale+4;
+  const left=x+(b.index%3-1)*3-64*scale-2,top=y+tileH*.65+Math.floor(b.index/3)-96*scale-2;
+  surface.width=Math.ceil(width*ratio);surface.height=Math.ceil(height*ratio);
+  target.setTransform(ratio,0,0,ratio,-left*ratio,-top*ratio);
+  // Render the complete pose once so the outline follows limbs, clothing and tools.
+  drawVillager(b,false,target);
+  target.setTransform(1,0,0,1,0,0);target.globalCompositeOperation='source-in';
+  target.fillStyle='#ffe45c';target.fillRect(0,0,surface.width,surface.height);
+  for(let step=0;step<8;step++){
+    const angle=step*Math.PI/4;
+    ctx.drawImage(surface,left+Math.cos(angle)*1.5,top+Math.sin(angle)*1.5,surface.width/ratio,surface.height/ratio);
   }
+}
+function drawVillager(b,highlighted=false,target=ctx){
+  const ctx=target,paintPolygon=(points,fill,stroke)=>polygon(points,fill,stroke,target);
+  if(target===villagerMainContext&&b.state.butcherAnimal&&!b.state.construction&&!b.state.transport)drawButcherAnimal(b);
+  if(highlighted)drawWorkerOutline(b);
   const accessories=villagerAccessories(b),outfit=accessories.outfit;
   if(tileW<32&&!(b.villager.job==='fishing'&&b.state.phase==='working'&&!b.state.path.length)){
     const [x,y]=point(b.x,b.y),scale=tileW/46;
@@ -3016,7 +3031,7 @@ function drawVillager(b,highlighted=false){
   const cast=Math.min(fishingTime/.55,1),reel=Math.max(0,Math.min((fishingTime-2.35)/.85,1));
   const swing=working?(Math.sin((s.elapsed || 0)*(chopping?5:7))+1)/2:0;
   ctx.save();ctx.translate(px+(b.index%3-1)*3,py+tileH*.65+Math.floor(b.index/3));ctx.scale(tileW/46,tileW/46);
-  if(!b.aboard){ctx.fillStyle='#223b2966';ctx.beginPath();ctx.ellipse(0,2,7,3,0,0,Math.PI*2);ctx.fill();}
+  if(target===villagerMainContext&&!b.aboard){ctx.fillStyle='#223b2966';ctx.beginPath();ctx.ellipse(0,2,7,3,0,0,Math.PI*2);ctx.fill();}
   const facingTarget=s.phase==='collecting_water'?s.waterSource:farming?(s.farmField || s.workSpot || s.source):fishing?(s.castTarget || s.source):s.source;
   const towardSource=facingTarget?(facingTarget.x-s.x)-(facingTarget.y-s.y):0;
   const facing=(working||fishing||farming)&&towardSource!==0?Math.sign(towardSource):s.facing;
@@ -3030,17 +3045,17 @@ function drawVillager(b,highlighted=false){
   ctx.fillStyle=b.kind==='npc'?npcColors[b.biome][0]:b.kind==='player'?'#d6b85d':outfit?.color || ['#7899a2','#b9866b','#a0a16b','#947ca0','#c6aa62'][b.index%5];ctx.fillRect(-4,-13,8,10);
   const gear=b.kind==='player'?b.equipment:null;
   if(gear?.feet==='swamp_boots'){ctx.fillStyle='#52715d';ctx.fillRect(-5,-5,4,6);ctx.fillRect(1,-5,4,6);}
-  if(gear?.body==='desert_clothing'){polygon([[-5,-13],[5,-13],[6,-2],[-6,-2]],'#ead8ae');}
+  if(gear?.body==='desert_clothing'){paintPolygon([[-5,-13],[5,-13],[6,-2],[-6,-2]],'#ead8ae');}
   if(accessories.blouse){
-    polygon([[-4,-13],[4,-13],[7,-9],[5,-7],[3,-10],[4,-3],[-4,-3],[-3,-10],[-5,-7],[-7,-9]],'#b8c6ad');
-    polygon([[-3,-13],[0,-10],[3,-13]],'#eee0bd');
+    paintPolygon([[-4,-13],[4,-13],[7,-9],[5,-7],[3,-10],[4,-3],[-4,-3],[-3,-10],[-5,-7],[-7,-9]],'#b8c6ad');
+    paintPolygon([[-3,-13],[0,-10],[3,-13]],'#eee0bd');
     ctx.strokeStyle='#6c8068';ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(0,-10);ctx.lineTo(0,-4);ctx.stroke();
     if(accessories.woodcuttingMaster){
       ctx.fillStyle='#e8bd55';ctx.fillRect(-4,-4,8,1);ctx.fillRect(-1,-9,2,2);
     }
   }
   if(outfit?.apron){
-    polygon([[-3,-12],[3,-12],[4,-3],[-4,-3]],outfit.apron);
+    paintPolygon([[-3,-12],[3,-12],[4,-3],[-4,-3]],outfit.apron);
     ctx.fillStyle=outfit.apron;ctx.fillRect(-4,-10,8,1);
     if(accessories.level>=10){ctx.fillStyle=outfit.color;ctx.fillRect(-2,-7,4,2);}
   }
@@ -3055,11 +3070,11 @@ function drawVillager(b,highlighted=false){
       ctx.beginPath();ctx.arc(-3,-23,3,0,Math.PI*2);ctx.arc(0,-24,3,0,Math.PI*2);ctx.arc(3,-23,3,0,Math.PI*2);ctx.fill();
     }else if(accessories.level>=10)ctx.fillRect(-6,-19,12,1);
   }
-  if(accessories.hat){polygon([[-6,-19],[0,-23],[6,-19]],'#ccb779');ctx.fillStyle='#ccb779';ctx.fillRect(-7,-19,14,2);}
+  if(accessories.hat){paintPolygon([[-6,-19],[0,-23],[6,-19]],'#ccb779');ctx.fillStyle='#ccb779';ctx.fillRect(-7,-19,14,2);}
   if(accessories.farmingMaster){ctx.fillStyle='#e8bd55';ctx.fillRect(-5,-20,10,1);}
   if(b.kind==='npc'){
     const accent=npcColors[b.biome][1];
-    if(b.biome==='b'||b.biome==='f')polygon([[-5,-18],[0,-25],[5,-18]],accent);
+    if(b.biome==='b'||b.biome==='f')paintPolygon([[-5,-18],[0,-25],[5,-18]],accent);
     else{ctx.fillStyle=accent;ctx.fillRect(-7,-21,14,2);ctx.fillRect(-4,-25,8,4);}
     ctx.fillStyle=accent;ctx.fillRect(-4,-12,8,2);
     ctx.fillStyle='#8b704b';ctx.fillRect(5,-7,5,6);
@@ -3067,7 +3082,7 @@ function drawVillager(b,highlighted=false){
   ctx.fillStyle='#ded2a6';ctx.fillRect(-4,-6,8,1);
   if(accessories.axe){
     ctx.strokeStyle='#a78454';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(-6,0);ctx.lineTo(-8,-10);ctx.stroke();
-    polygon([[-8,-11],[-13,-12],[-14,-7],[-7,-7]],'#e4ece7','#6b7d79');
+    paintPolygon([[-8,-11],[-13,-12],[-14,-7],[-7,-7]],'#e4ece7','#6b7d79');
   }
   if(accessories.sickle&&!farming){
     ctx.strokeStyle='#a78454';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(6,0);ctx.lineTo(7,-6);ctx.stroke();
@@ -3094,7 +3109,7 @@ function drawVillager(b,highlighted=false){
       ctx.strokeStyle=metal;ctx.beginPath();ctx.ellipse(-7,-12,4,5,0,0,Math.PI*2);ctx.stroke();
       ctx.beginPath();ctx.moveTo(-10,-12);ctx.lineTo(-4,-12);ctx.moveTo(-7,-16);ctx.lineTo(-7,-8);ctx.stroke();
     }else if(tool==='fish'){
-      polygon([[-10,-8],[-6,-10],[-3,-8],[-6,-5]],'#b8d8d5',metal);
+      paintPolygon([[-10,-8],[-6,-10],[-3,-8],[-6,-5]],'#b8d8d5',metal);
     }else{
       const color={bucket:'#879b9c',pack:'#70543e',sack:'#cbb58a',basket:'#ac895d'}[tool];
       ctx.fillStyle=color;ctx.fillRect(-11,-8,7,8);
@@ -3138,7 +3153,7 @@ function drawVillager(b,highlighted=false){
         ctx.moveTo(netX-8,netY+i*2);ctx.lineTo(netX+8,netY+i*2);ctx.stroke();
       }
       ctx.beginPath();ctx.moveTo(7,-10-reel*3);ctx.lineTo(netX,netY);ctx.stroke();
-      if(reel>0&&fishingCaught)polygon([[netX-4,netY],[netX,netY-3],[netX+5,netY],[netX,netY+3]],'#b8d8d5','#527f86');
+      if(reel>0&&fishingCaught)paintPolygon([[netX-4,netY],[netX,netY-3],[netX+5,netY],[netX,netY+3]],'#b8d8d5','#527f86');
     }else{
       ctx.strokeStyle=fishingMetal;ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(7,-10-reel*3);ctx.lineTo(tipX,tipY);ctx.stroke();
       ctx.strokeStyle='#d5dfd8';ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(tipX,tipY);ctx.lineTo(floatX,floatY);ctx.stroke();
@@ -3148,8 +3163,8 @@ function drawVillager(b,highlighted=false){
       ctx.fillStyle='#df785e';ctx.fillRect(floatX-2,floatY-2,4,3);
       ctx.fillStyle='#f3e5bc';ctx.fillRect(floatX-2,floatY+1,4,2);
       if(reel>0&&fishingCaught){
-        polygon([[floatX,floatY+3],[floatX+5,floatY+6],[floatX,floatY+9],[floatX-4,floatY+6]],'#b8d8d5','#527f86');
-        polygon([[floatX,floatY+9],[floatX-3,floatY+12],[floatX+3,floatY+12]],'#7899a2');
+        paintPolygon([[floatX,floatY+3],[floatX+5,floatY+6],[floatX,floatY+9],[floatX-4,floatY+6]],'#b8d8d5','#527f86');
+        paintPolygon([[floatX,floatY+9],[floatX-3,floatY+12],[floatX+3,floatY+12]],'#7899a2');
       }
     }
   }else if(working&&b.villager.job==='gathering'){
@@ -3167,11 +3182,11 @@ function drawVillager(b,highlighted=false){
       // Pull a hoe through the soil, with small clods at the blade.
       const bladeX=17-farmSwing*7;
       ctx.strokeStyle='#a78454';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(farmHandX,farmHandY);ctx.lineTo(bladeX,1);ctx.stroke();
-      polygon([[bladeX-2,0],[bladeX+6,0],[bladeX+5,4],[bladeX-2,3]],'#aab9b4','#6b7d79');
+      paintPolygon([[bladeX-2,0],[bladeX+6,0],[bladeX+5,4],[bladeX-2,3]],'#aab9b4','#6b7d79');
       ctx.fillStyle='#8b6845';for(let i=0;i<3;i++)ctx.fillRect(bladeX+3+i*3,3-farmSwing*(i+1),2,2);
     }else if(farmStage===1){
       // Scatter seeds from a pouch with an outward sweep of the hand.
-      polygon([[-7,-7],[-2,-7],[-1,-1],[-8,-1]],'#9b754e','#6d513b');
+      paintPolygon([[-7,-7],[-2,-7],[-1,-1],[-8,-1]],'#9b754e','#6d513b');
       ctx.fillStyle='#efd59a';
       for(let i=0;i<5;i++){
         const flight=((s.elapsed || 0)*2+i*.2)%1;
@@ -3182,8 +3197,8 @@ function drawVillager(b,highlighted=false){
       // Tilt the can and pour a moving stream of droplets.
       ctx.save();ctx.translate(farmHandX,farmHandY);ctx.rotate(.15+farmSwing*.35);
       ctx.strokeStyle='#607f83';ctx.lineWidth=2;ctx.beginPath();ctx.arc(-2,-3,4,Math.PI,Math.PI*2);ctx.stroke();
-      polygon([[-6,-3],[3,-3],[3,4],[-6,4]],'#7faeb2','#4f757b');
-      polygon([[3,0],[9,-4],[10,-2],[3,3]],'#7faeb2','#4f757b');ctx.restore();
+      paintPolygon([[-6,-3],[3,-3],[3,4],[-6,4]],'#7faeb2','#4f757b');
+      paintPolygon([[3,0],[9,-4],[10,-2],[3,3]],'#7faeb2','#4f757b');ctx.restore();
       const tilt=.15+farmSwing*.35;
       const spoutX=farmHandX+10*Math.cos(tilt)+2*Math.sin(tilt);
       const spoutY=farmHandY+10*Math.sin(tilt)-2*Math.cos(tilt);
@@ -3200,12 +3215,12 @@ function drawVillager(b,highlighted=false){
       ctx.strokeStyle='#dce5df';ctx.lineWidth=2;ctx.beginPath();ctx.arc(1,-8,5,-Math.PI/2,Math.PI/2);ctx.stroke();ctx.restore();
     }
   }else if(sawing||working&&['husbandry','milling','preserving','crafting','breeding','orcharding','baking','butchery'].includes(b.villager.job)){
-    drawProfessionAction(b.villager.job,s.elapsed || 0);
+    drawProfessionAction(b.villager.job,s.elapsed || 0,target);
   }else if(working){
     ctx.save();ctx.translate(chopping?6:5,chopping?-13+swing*4:-11);ctx.rotate(chopping?-1+swing*2.5:-1.4+swing*2);
     ctx.strokeStyle='#a78454';ctx.lineWidth=chopping?2.5:2;ctx.beginPath();ctx.moveTo(0,chopping?4:3);ctx.lineTo(0,chopping?-16:-10);ctx.stroke();
     ctx.fillStyle='#cbd7d2';
-    if(chopping)polygon([[-1,-17],[10,-18],[11,-10],[-1,-11]],'#e4ece7','#6b7d79');
+    if(chopping)paintPolygon([[-1,-17],[10,-18],[11,-10],[-1,-11]],'#e4ece7','#6b7d79');
     else ctx.fillRect(-1,-11,8,2);
     ctx.restore();
     if(chopping&&swing>.85){
@@ -3218,13 +3233,13 @@ function drawVillager(b,highlighted=false){
     if(s.phase!=='fetching_water'){ctx.fillStyle='#9fd8e5';ctx.fillRect(7,-9,6,2);}
   }
   if(['hauling','trading'].includes(b.villager.job)&&s.transport){
-    if(Object.values(s.cargo || {}).some(amount=>amount>0))drawHaulerCargo(s.cargo);
+    if(Object.values(s.cargo || {}).some(amount=>amount>0))drawHaulerCargo(s.cargo,target,target===villagerMainContext);
   }else if(s.transport||s.phase==='returning'||s.phase==='depositing'){
     ctx.save();
     if(s.phase==='depositing'){const progress=Math.min(1,(s.elapsed || 0)/.65);ctx.translate(progress*8,progress*3);ctx.globalAlpha=1-progress;}
     ctx.fillStyle=b.villager.job==='woodcutting'?'#997044':b.villager.job==='fishing'?'#7899a2':'#d6c478';ctx.fillRect(2,-8,11,5);
     ctx.fillStyle='#e1c593';ctx.beginPath();ctx.arc(13,-5.5,2.5,0,Math.PI*2);ctx.fill();
-    if(b.villager.job==='fishing')polygon([[5,-10],[9,-12],[13,-10],[9,-8]],'#b8d8d5','#527f86');
+    if(b.villager.job==='fishing')paintPolygon([[5,-10],[9,-12],[13,-10],[9,-8]],'#b8d8d5','#527f86');
     if(['woodworking','crafting'].includes(b.villager.job)){ctx.fillStyle='#b78b57';ctx.fillRect(2,-11,14,3);}
     if(['baking','butchery','preserving','orcharding','husbandry','breeding','milling'].includes(b.villager.job)){ctx.fillStyle='#ac895d';ctx.fillRect(3,-9,12,7);ctx.fillStyle={baking:'#d3ab69',butchery:'#b66e65',preserving:'#8ebbbd',orcharding:'#cc8962',husbandry:'#eee0bd',breeding:'#8ebbbd',milling:'#eee0bd'}[b.villager.job];ctx.beginPath();ctx.ellipse(9,-9,5,2,0,0,Math.PI*2);ctx.fill();}
     if(b.villager.job==='farming'){
@@ -3267,7 +3282,8 @@ function drawButcherAnimal(b){
     size:.8,facing:-facing,phase:s.clock || 0,walking:false,feeding:false,dragged:dragging||processing});
   ctx.restore();
 }
-function drawHaulerCargo(cargo){
+function drawHaulerCargo(cargo,target=ctx,showLabel=true){
+  const ctx=target;
   const entries=Object.entries(cargo).filter(([,amount])=>amount>0);
   // Open baskets expose their load; labels identify mixed batches precisely.
   ctx.fillStyle='#ac895d';ctx.fillRect(2,-8,14,9);
@@ -3279,12 +3295,14 @@ function drawHaulerCargo(cargo){
       fodder:'#9caa63',manure:'#806448',herbs:'#70906a',meat:'#b66e65',eggs:'#eee0bd'}[key] || '#d6c478';
     ctx.fillRect(x,-12,4,6);
   }
+  if(!showLabel)return;
   ctx.font='9px system-ui';ctx.textAlign='center';ctx.lineWidth=3;ctx.strokeStyle='#263a32';ctx.fillStyle='#fff3d6';
   const label=entries.map(([key,amount])=>`${Number(amount.toFixed(2))} ${goodName(key)}`).join(' · ');
   ctx.strokeText(label,0,-43);ctx.fillText(label,0,-43);
 }
 // Tools and materials are drawn in character coordinates; elapsed freezes on pauses.
-function drawProfessionAction(job,time){
+function drawProfessionAction(job,time,target=ctx){
+  const ctx=target,paintPolygon=(points,fill,stroke)=>polygon(points,fill,stroke,target);
   const motion=(Math.sin(time*7)+1)/2;
   ctx.fillStyle='#806448';ctx.fillRect(5,-3,17,3);
   ctx.strokeStyle='#d5dfd8';ctx.lineWidth=2;
@@ -3294,7 +3312,7 @@ function drawProfessionAction(job,time){
     ctx.fillStyle='#b78b57';ctx.fillRect(6,-7,20,4);
     ctx.strokeStyle='#725333';ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(16,-7);ctx.lineTo(16,-3);ctx.stroke();
     const handleX=4+Math.sin(time*7)*4;
-    polygon([[handleX+2,-12],[handleX+23,-12],[handleX+22,-8],
+    paintPolygon([[handleX+2,-12],[handleX+23,-12],[handleX+22,-8],
       ...Array.from({length:10},(_,i)=>[handleX+21-i*2,i%2?-8:-6]),[handleX+2,-8]],'#c4d2ce','#6b7d79');
     ctx.strokeStyle='#8b5e3b';ctx.lineWidth=2;ctx.strokeRect(handleX-1,-14,4,6);
     ctx.fillStyle='#e7c68c';ctx.fillRect(handleX-1,-13,3,3);
@@ -3313,7 +3331,7 @@ function drawProfessionAction(job,time){
     ctx.fillStyle='#eee0bd';ctx.beginPath();ctx.ellipse(13,-6,7+motion*2,3-motion,0,0,Math.PI*2);ctx.fill();
     ctx.strokeStyle='#a78454';ctx.lineWidth=3;ctx.beginPath();ctx.moveTo(7+motion*5,-8);ctx.lineTo(18+motion*5,-8);ctx.stroke();
   }else if(job==='preserving'){
-    polygon([[8,-9],[16,-12],[23,-9],[16,-6]],'#8ebbbd');
+    paintPolygon([[8,-9],[16,-12],[23,-9],[16,-6]],'#8ebbbd');
     ctx.strokeStyle='#a78454';ctx.beginPath();ctx.moveTo(7,-13-motion*4);ctx.lineTo(23,-13-motion*4);ctx.stroke();
     ctx.fillStyle='#c7c6af88';for(let i=0;i<3;i++){ctx.beginPath();ctx.arc(12+i*4,-17-((time+i*.3)%1)*10,2,0,Math.PI*2);ctx.fill();}
   }else if(job==='orcharding'){
