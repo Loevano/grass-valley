@@ -2420,10 +2420,10 @@ function renderSelection(town){
       button.onclick=()=>{acreFarmIndex=selection.index;openPanel('build');tool='acre';moveIndex=null;buildTile=null;hoverTile=null;render();};
       production.append(button);
     }
-    if(item.kind==='barn'&&production.children.length>1)$('selection-details').append(production);
+    if(['barn','butcher'].includes(item.kind)&&production.children.length>1)$('selection-details').append(production);
     if(!item.construction&&!['home','market','well',...decorationKinds].includes(item.kind))$('selection-details').append(storageOverview);
     $('selection-details').append(workers);
-    if(item.kind!=='barn'&&production.children.length>1)workers.append(production);
+    if(!['barn','butcher'].includes(item.kind)&&production.children.length>1)workers.append(production);
     if(item.kind!=='barn'&&boats?.children.length>1)upgrades.append(boats);
     if(item.kind==='hall'){
       const preview=upgradePreview({action:'upgrade'},town,item);

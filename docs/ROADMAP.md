@@ -102,7 +102,8 @@ Catch progression, storage scaling, and smokehouse staffing remain planned.
 Building panels now lead with one combined activity status and average
 host-reported cycle progress, then explain
 blocked work before storage, worker assignments, and upgrades. Production and
-trade controls sit with worker assignments. General instructions now live in the
+trade controls sit with worker assignments, except Butchery, which sits directly
+below the status area. General instructions now live in the
 Help tab under expandable topics; gameplay panels retain brief hints, current
 status, requirements, and action warnings. Help groups production by sector, with
 short steps, bullet lists, and reference tables. Its key table reflects custom
