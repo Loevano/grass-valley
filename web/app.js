@@ -479,10 +479,10 @@ function resourceReach(building){
 function buildingVisualLevel(building,town){
   return building.kind==='hall'?Math.min(5,town?.level || 1):Math.min(building.kind==='home'?4:3,buildingLevel(building));
 }
-const productionBuildingKinds=['butcher','bakery','smokehouse','tannery'];
+const detailedBuildingKinds=['butcher','bakery','smokehouse','tannery','woodcutter','workshop','farm','home','hall'];
 function buildingHeight(building,town){
   if(decorationKinds.includes(building.kind))return building.kind==='wooden_bench'?15:32;
-  return ({hall:42,woodcutter:23,mine:27,smelter:36,steelworks:38,stable:32,tannery:38,saddler:27,tradehouse:35,barn:53,mill:40,smokehouse:62,workshop:25,sawpit:28,market:17,fish_pond:18,orchard:20,bakery:58,butcher:44}[building.kind] || 27)+4*(buildingVisualLevel(building,town)-1)+(building.kind==='mill'&&footprintTiles(building).length>1?10:0);
+  return ({hall:62,woodcutter:44,mine:27,smelter:36,steelworks:38,stable:32,tannery:38,saddler:27,tradehouse:35,barn:53,mill:40,smokehouse:62,workshop:44,sawpit:28,market:17,fish_pond:18,orchard:20,bakery:58,butcher:44,home:46,farm:44}[building.kind] || 27)+4*(buildingVisualLevel(building,town)-1)+(building.kind==='mill'&&footprintTiles(building).length>1?10:0);
 }
 const storehouseCapacities=[50,75,100,150,200,250,300,350];
 function farmStorageCapacity(building){
@@ -4532,11 +4532,11 @@ function draw(seconds=0){
     const owner=world.towns[b.townId] || town;
     const simplifiedResource=tileW<32&&(b.kind==='tree'||b.kind==='rock');
     const height=simplifiedResource?tileH/(2*scale):b.kind==='tree'?(b.species==='ancient'?94:70):character?26:b.kind==='acre'?0:b.kind==='rock'?80:type==='building'?buildingHeight(b,owner)+(b.kind==='hall'?(owner?.level>=4?35:33):18):45;
-    const halfWidth=simplifiedResource?tileW*.45:character?9*scale:type==='resource'?30*scale:b.kind==='sawpit'&&footprintTiles(b).length===1?tileW*.65:tileW*.45;
+    const halfWidth=simplifiedResource?tileW*.45:character?9*scale:type==='resource'?30*scale:b.kind==='sawpit'&&footprintTiles(b).length===1?tileW*.65:detailedBuildingKinds.includes(b.kind)&&footprintTiles(b).length===1?tileW*.8:tileW*.45;
     const groundPoints=type==='building'&&footprintTiles(b).length>1?footprintTiles(b).map(p=>point(p.x,p.y)):[];
     hitTargets.push({type,index,townId:b.townId || viewed,
       left:Math.min(centerX-halfWidth,...groundPoints.map(p=>p[0]-tileW/2)),right:Math.max(centerX+halfWidth,...groundPoints.map(p=>p[0]+tileW/2)),
-      top:type==='resource'&&!simplifiedResource?py-80*scale:baseY-height*scale,bottom:Math.max(baseY+(character?5*scale:b.kind==='sawpit'?22*scale:tileH/2),...groundPoints.map(p=>p[1]+tileH)),
+      top:type==='resource'&&!simplifiedResource?py-80*scale:baseY-height*scale,bottom:Math.max(baseY+(character?5*scale:b.kind==='sawpit'?22*scale:detailedBuildingKinds.includes(b.kind)?18*scale:tileH/2),...groundPoints.map(p=>p[1]+tileH)),
       paint:target=>{
         if(character){drawVillager(b,false,target);return;}
         if(type==='building'){
@@ -4811,7 +4811,7 @@ function paintBuildingGround(b,target,paintPolygon){
   const corners=[[b.x-.5,b.y-.5],[b.x+width-.5,b.y-.5],[b.x+width-.5,b.y+depth-.5],[b.x-.5,b.y+depth-.5]]
     .map(([x,y])=>{const [px,py]=point(x,y);return [px,py+tileH/2];});
   paintPolygon(corners,b.kind==='hall'?'#929387':'#a48d66','#6c715c');
-  if(productionBuildingKinds.includes(b.kind))return;
+  if(detailedBuildingKinds.includes(b.kind))return;
   for(const tile of tiles){
     const [x,y]=point(tile.x,tile.y);
     if(b.kind==='hall'||b.kind==='sawpit'||b.construction||tile.y===b.y)continue;
@@ -4977,17 +4977,18 @@ function paintSawpit(b,town,target,paintPolygon,usable){
   target.fillStyle='#fff0b1';target.font=`${10*s}px sans-serif`;target.textAlign='center';
   target.fillText(labels.sawpit,x,top+tileH/2-(103.5-18)*scale-7*s);
 }
-function paintProductionBuilding(b,town,target,paintPolygon,usable){
-  // Canvas translation of the approved four-trade concept sheet. Saved legacy
-  // sites use a compact version until they can move to the full 2×2 workplace.
-  const [width,depth]=b.footprint || [1,1],fit=Math.min(width,depth)/2;
+function paintDetailedBuilding(b,town,target,paintPolygon,usable){
+  // Shared drawing primitives keep the approved village and trade artwork in
+  // one isometric style. Compact legacy sites retain their saved footprints.
+  const [width,depth]=b.footprint || [1,1];
+  const fit=['home','woodcutter','farm'].includes(b.kind)?1:Math.min(width,depth)/2;
   const [x,top]=point(b.x+(width-1)/2,b.y+(depth-1)/2),s=tileW/46;
-  const level=buildingVisualLevel(b,town),rise=6*(level-1),upgrades=b.profession_upgrades || [];
+  const level=buildingVisualLevel(b,town),rise=4*(level-1),upgrades=b.profession_upgrades || [];
   target.save();target.translate(x,top+tileH/2);target.scale(.46*s*fit,.46*s*fit);
   // Ground uses the game's 2:1 projection; doors stay at worker scale.
   const p=(x,y,z=0)=>[(x-y)*25,(x+y)*12.5-z*1.5];
-  const poly=(points,fill,stroke='#624b35',weight=.75)=>{
-    target.lineWidth=weight;paintPolygon(points,usable?fill:'#a34f49',stroke);
+  const poly=(points,fill,stroke='#624b35',weight=.75,warning='#a34f49')=>{
+    target.lineWidth=weight;paintPolygon(points,usable?fill:warning,stroke);
   };
   const line=(points,color='#735439',weight=1)=>{
     target.beginPath();points.forEach(([x,y],i)=>i?target.lineTo(x,y):target.moveTo(x,y));
@@ -4998,18 +4999,25 @@ function paintProductionBuilding(b,town,target,paintPolygon,usable){
     if(fill){target.fillStyle=fill;target.fill();}
     if(stroke){target.strokeStyle=stroke;target.lineWidth=.75;target.stroke();}
   };
-  const face=(coords,fill,stroke='#624b35',weight=.75)=>poly(coords.map(c=>p(...c)),fill,stroke,weight);
+  const face=(coords,fill,stroke='#624b35',weight=.75,warning='#a34f49')=>poly(coords.map(c=>p(...c)),fill,stroke,weight,warning);
   const edge=(a,end,color='#735439',weight=1)=>line([p(...a),p(...end)],color,weight);
   const walls=(x1=-.95,x2=.95,y1=-1.1,y2=.65,h=43+rise,light='#c6b28d',dark='#9b8b6c')=>{
-    face([[x1,y2,0],[x2,y2,0],[x2,y2,h],[x1,y2,h]],light);
+    face([[x1,y2,0],[x2,y2,0],[x2,y2,h],[x1,y2,h]],light,'#624b35',.75,'#c76d64');
     face([[x2,y1,0],[x2,y2,0],[x2,y2,h],[x2,y1,h]],dark);
     for(const x of [x1,x2])edge([x,y2,3],[x,y2,h],'#735439',2);
     edge([x2,y1,3],[x2,y1,h],'#735439',2);
     edge([x1,y2,22],[x2,y2,22],'#947044',1.4);edge([x2,y1,22],[x2,y2,22],'#735439',1.4);
-    const stone=6+3*(level-1);
+    if(level>=2){
+      const mid=(x1+x2)/2;
+      for(const x of [x1,mid,x2])edge([x,y2,7],[x,y2,h],'#674c33',1.8);
+      edge([x1,y2,h*.68],[x2,y2,h*.68],'#674c33',1.7);edge([x1,y2,h],[mid,y2,h*.68],'#947044',1.5);
+      edge([x2,y1,h*.68],[x2,y2,h*.68],'#674c33',1.5);edge([x2,y1,h],[x2,(y1+y2)/2,h*.68],'#947044',1.4);
+    }
+    const stone=level>=3?13:6;
     face([[x1,y2,0],[x2,y2,0],[x2,y2,stone],[x1,y2,stone]],'#a2a497');
     face([[x2,y1,0],[x2,y2,0],[x2,y2,stone],[x2,y1,stone]],'#767f73');
     for(let x=x1+.3;x<x2;x+=.45)edge([x,y2,0],[x,y2,stone-1],'#797e6e',.6);
+    if(level>=3)for(const z of [5,10]){edge([x1,y2,z],[x2,y2,z],'#8b9585',.65);edge([x2,y1,z],[x2,y2,z],'#6f7d70',.65);}
     const door=x1+.25;
     face([[door,y2+.015,4],[door+.42,y2+.015,4],[door+.42,y2+.015,29],[door,y2+.015,29]],'#594d38','#c4a477');
     edge([door+.11,y2+.025,7],[door+.11,y2+.025,26],'#947044',.7);
@@ -5032,7 +5040,12 @@ function paintProductionBuilding(b,town,target,paintPolygon,usable){
     }
     edge([x1,y2,h],[mid,y2,h+peak],'#dec498',1.25);
     edge([mid,y2,h+peak],[x2,y2,h],'#dec498',1.25);
-    edge([mid,y1,h+peak],[mid,y2,h+peak],'#c4a477',1.2);
+    edge([mid,y1,h+peak],[mid,y2,h+peak],'#c4a477',level>=2?1.6:1.2);
+    if(level>=2){edge([x1,y2,h],[mid,y2,h+peak],'#d6bc8c',1.8);edge([mid,y2,h+peak],[x2,y2,h],'#d6bc8c',1.8);}
+    if(level>=3&&!['home','hall'].includes(b.kind)){
+      face([[mid-.1,y2+.02,h+3],[mid+.1,y2+.02,h+3],[mid+.1,y2+.02,h+9],[mid-.1,y2+.02,h+9]],'#4b4a3a','#c4a477');
+      edge([mid,y2+.03,h+3],[mid,y2+.03,h+9],'#b69a70',.7);
+    }
   };
   const chimney=(z)=>{
     const x=.55,y=-.85;
@@ -5068,6 +5081,52 @@ function paintProductionBuilding(b,town,target,paintPolygon,usable){
     face([[-.2,.68,36],[1.05,.68,36],[1.05,1.5,29],[-.2,1.5,29]],color);
     for(const x of [.05,.5,.95])edge([x,.7,36],[x,1.5,29],'#d9c4a1',.8);
     edge([-.2,1.5,29],[1.05,1.5,29],'#c4a477',1.3);
+  };
+  const crate=(x,y)=>{
+    face([[x,y,0],[x+.45,y,0],[x+.45,y+.35,0],[x,y+.35,0]],'#ac895d');
+    face([[x,y+.35,0],[x+.45,y+.35,0],[x+.45,y+.35,9],[x,y+.35,9]],'#ac895d');
+    face([[x+.45,y,0],[x+.45,y+.35,0],[x+.45,y+.35,9],[x+.45,y,9]],'#947044');
+    face([[x,y,9],[x+.45,y,9],[x+.45,y+.35,9],[x,y+.35,9]],'#c4a477');
+    edge([x+.15,y+.35,1],[x+.15,y+.35,8],'#735439',.6);
+  };
+  const boards=(x,y)=>{
+    for(const z of [2,5,8,11]){
+      face([[x,y,z],[x+.75,y,z],[x+.75,y+.4,z],[x,y+.4,z]],'#c4a477');
+      face([[x,y+.4,z-2],[x+.75,y+.4,z-2],[x+.75,y+.4,z],[x,y+.4,z]],'#e0bd84');
+    }
+    edge([x+.36,y+.4,0],[x+.36,y+.4,13],'#68563e',1.5);
+  };
+  const shed=(light,dark,wide=false)=>{
+    const [x1,x2,y1,y2]=wide?[-1.05,1.05,-1.1,.35]:[-1.1,.55,-1.1,.3],h=38+rise;
+    face([[x2,y1,0],[x2,y2,0],[x2,y2,13],[x2,y1,13]],'#947e60');
+    face([[x1,y1,0],[x2,y1,0],[x2,y1,h],[x1,y1,h]],'#746e53','#624b35',.75,'#c76d64');
+    for(const z of [7,14,21,28])edge([x1,y1,z],[x2,y1,z],'#8c8261',.65);
+    for(const x of [x1,x2])edge([x,y2,0],[x,y2,h],'#735439',level>=2?2.8:2);
+    edge([x1,y1,0],[x1,y1,h],'#735439',2);
+    face([[x1,y2,0],[x1+.25,y2,0],[x1+.25,y2,15],[x1,y2,15]],'#b69a70');
+    if(level>=2){
+      edge([x1,y2,h-16],[x1+.55,y2,h-2],'#b48a56',2.3);
+      edge([x2,y2,h-16],[x2-.55,y2,h-2],'#b48a56',2.3);
+      edge([x2,y1,15],[x2,y2,29],'#947044',1.7);
+      edge([x1,y2,h-2],[x2,y2,h-2],'#c4a477',2);
+    }else{
+      edge([x1,y2,29],[x1+.35,y2,36],'#947044',1.6);edge([x2,y2,29],[x2-.35,y2,36],'#947044',1.6);
+    }
+    if(level>=3){
+      face([[x2,y1,0],[x2,y2,0],[x2,y2,12],[x2,y1,12]],'#858e86');
+      face([[x1,y2,0],[x1+.25,y2,0],[x1+.25,y2,12],[x1,y2,12]],'#b1b3a2');
+      edge([x2,y1,6],[x2,y2,6],'#6f7d70',.65);
+      for(const y of [y1+.3,y1+.8])edge([x2,y,0],[x2,y,6],'#6f7d70',.65);
+      for(const x of [x1,x2])edge([x,y2,3],[x,y2,9],'#84958e',3.8);
+    }
+    roof(x1-.15,x2+.15,y1-.15,y2+.15,h,17,light,dark);
+    edge([x1+.2,y2-.1,27],[x2-.15,y2-.1,27],'#735439',2);
+    for(const [i,x] of [x1+.4,(x1+x2)/2,x2-.35].entries()){
+      edge([x,y2-.1,27],[x,y2-.1,17],'#c4a477',1.4);
+      if(i===0)face([[x-.08,y2-.1,18],[x+.12,y2-.1,18],[x+.12,y2-.1,14],[x-.08,y2-.1,14]],'#98aaa7');
+      else edge([x-.13,y2-.1,17],[x+.14,y2-.1,17],i===1?'#98aaa7':'#c4d2ce',i===1?2:1);
+    }
+    lantern(x1,y2+.02,30);
   };
   if(b.kind==='butcher'){
     walls(-.95,.95,-1.1,.65,43+rise,'#c2aa90','#99816c');
@@ -5123,7 +5182,7 @@ function paintProductionBuilding(b,town,target,paintPolygon,usable){
       const [a,b]=p(1.4,-.35+i*.3);poly([[a-6,b-3],[a+4,b+2],[a+6,b-2],[a-4,b-7]],'#947044');oval(a+5,b,2.7,3,'#dbb580','#735439');
     }
     tub(1.25,.85,'#a39479',7,3.5);lantern(-.95,.7,34);
-  }else{
+  }else if(b.kind==='tannery'){
     walls(-1.3,-.05,-1.1,.45,34+rise,'#bda482','#947e60');
     roof(-1.45,.1,-1.25,.6,34+rise,16,'#a99066','#817052');
     for(const x of [.4,1.55])edge([x,-.12,0],[x,-.12,47],'#735439',2.5);
@@ -5136,11 +5195,118 @@ function paintProductionBuilding(b,town,target,paintPolygon,usable){
     face([[-1.12,.83,17],[-.52,.83,17],[-.52,1.05,12],[-1.12,1.05,12]],'#c69a64');edge([-.96,.94,17],[-.73,.94,19],'#c4d2ce',1.5);
     tub(.3,1.15,'#777a56',12,5.5);tub(1.25,.88,'#8c7755',10,5);
     edge([.35,1.18,4],[.45,1.18,26],'#c4a477',1.6);lantern(-1.3,.5,25);
+  }else if(b.kind==='woodcutter'){
+    shed('#8e8860','#706f4f');
+    for(const [x,y] of [[.7,-.65],[.9,-.1]])for(const [dx,z] of [[0,3],[.34,3],[.17,8]]){
+      face([[x+dx,y,z],[x+dx+.7,y,z],[x+dx+.7,y+.19,z],[x+dx,y+.19,z]],'#947044');
+      const [a,b]=p(x+dx+.7,y+.09,z);oval(a,b,3,3.8,'#dbb580','#735439');oval(a,b,1.5,2.2,null,'#b48a56');
+    }
+    const [a,bottom]=p(-1.27,.85);
+    poly([[a-8,bottom-18],[a-8,bottom],[a,bottom+4],[a+8,bottom],[a+8,bottom-18]],'#947044');
+    oval(a,bottom-18,8,4,'#dbb580','#735439');oval(a,bottom-18,4.8,2.3,null,'#b48a56');
+    edge([-1.25,.85,13],[-1.17,.85,30],'#c4a477',1.8);
+    face([[-1.17,.85,30],[-.85,.85,33],[-.85,.85,25],[-1.17,.85,26]],upgrades.includes('axe')?'#e8efdf':'#c4d2ce');
+    for(const [x,y] of [[-.35,1.3],[-.12,1.1],[-.56,1.55]])face([[x,y,.2],[x+.08,y,.2],[x+.13,y+.08,.2],[x+.03,y+.08,.2]],'#d3bc83',null);
+    edge([.5,.75,0],[.5,.75,26],'#c4a477',1.7);
+    face([[.5,.75,26],[.76,.75,29],[.76,.75,21],[.5,.75,22]],upgrades.includes('tools')?'#e8efdf':'#c4d2ce');
+  }else if(b.kind==='workshop'){
+    shed('#7f9990','#5d7c74',true);boards(1,-.7);crate(1,.1);bench(-.65,.85,1.45,.48,15);
+    face([[-.43,.91,17],[.49,.91,17],[.49,1.12,17],[-.43,1.12,17]],'#e0bd84');
+    face([[.48,1.1,16],[.72,1.1,16],[.72,1.1,23],[.48,1.1,23]],'#84958e');
+    edge([.6,1.1,19],[.6,1.1,28],'#c4d2ce',1);edge([-.23,1.12,18],[0,1.12,21],'#735439',1.8);
+    const [a,py]=p(-.1,1.1,20);poly([[a-3,py-2],[a+3,py-2],[a+4,py+2],[a-2,py+2]],'#98aaa7');
+    const [cx,cy]=p(.86,1.42,6);oval(cx,cy-2,5,3,'#b48a56','#735439');oval(cx,cy-4,5,2.5,'#e0bd84','#735439');
+  }else if(b.kind==='farm'){
+    walls(-.95,.95,-1.1,.65,37+rise,'#c6b080','#a68f65');
+    roof(-1.1,1.1,-1.25,.82,37+rise,18,'#b49b60','#958049');
+    face([[-.08,.67,13],[.78,.67,13],[.78,.67,29],[-.08,.67,29]],'#5a583c','#947044',1);bench(-.07,.85,.9,.38,13);
+    for(const [x,color] of [[.08,'#8da962'],[.3,'#d9bd70'],[.55,'#cc8962']]){const [a,b]=p(x,1.05,15);oval(a,b,3,2.3,color,'#735439');}
+    sack(-1.27,.45);sack(-1.22,.92);crate(1.08,.15);
+    for(const y of [-.12,.12])edge([1.05,y,0],[1.05,y,30],'#c4a477',1.5);
+    edge([1.05,-.32,30],[1.05,.09,30],'#98aaa7',1.4);
+    for(const y of [-.29,-.17,-.05,.07])edge([1.05,y,30],[1.05,y,26],'#98aaa7',.8);
+    tub(.75,1.24,'#bba475',7,3.4);lantern(-.95,.7,29);
+  }else if(b.kind==='home'){
+    const h=34+3*(level-1),timber=upgrades.includes('timber_frame');
+    const light=level===1?'#c4ae86':level===2?'#cbb68e':level===3?'#d1bea0':'#b8bcab';
+    const dark=level===1?'#a18c69':level===2?'#a99572':level===3?'#b2a285':'#8f9a8d';
+    walls(-.95,.95,-1.05,.65,h,light,dark);
+    if(level===1)for(const x of [-.8,-.55,-.3,-.05,.2,.45,.7,.9])edge([x,.65,7],[x,.65,h-1],'#a28a63',.4);
+    if(timber){
+      for(const x of [-.95,0,.95])edge([x,.65,6],[x,.65,h],'#735439',1.6);
+      edge([-.95,.65,h*.65],[.95,.65,h*.65],'#735439',1.4);
+      edge([.95,-1,12],[.95,-.4,25],'#674c33',2);edge([.95,-1,25],[.95,-.4,12],'#674c33',2);
+    }
+    if(level>=3){
+      const stone=level===3?12:h;
+      face([[-.95,.65,0],[.95,.65,0],[.95,.65,stone],[-.95,.65,stone]],'#b8bcab');
+      face([[.95,-1.05,0],[.95,.65,0],[.95,.65,stone],[.95,-1.05,stone]],'#8f9a8d');
+      for(let z=5;z<stone;z+=6){
+        edge([-.95,.65,z],[.95,.65,z],'#8d9686',.5);edge([.95,-1.05,z],[.95,.65,z],'#758273',.5);
+        for(const x of [-.6,-.05,.5])edge([x+(z%2)*.12,.65,z-5],[x+(z%2)*.12,.65,z],'#8d9686',.5);
+      }
+      face([[-.7,.67,4],[-.28,.67,4],[-.28,.67,29],[-.7,.67,29]],'#594d38','#d4c4a0');
+      face([[.96,-.8,23],[.96,-.4,23],[.96,-.4,33],[.96,-.8,33]],'#edc77d','#594d38',1.2);
+      edge([.97,-.6,23],[.97,-.6,33],'#735439',.8);
+      if(timber){edge([.97,-1,12],[.97,-.4,25],'#674c33',2);edge([.97,-1,25],[.97,-.4,12],'#674c33',2);}
+    }
+    face([[.22,.67,18],[.6,.67,18],[.6,.67,27],[.22,.67,27]],'#edc77d','#735439',1);edge([.41,.68,18],[.41,.68,27],'#735439',.7);
+    roof(-1.1,1.1,-1.2,.81,h,18,level<3?'#aa7b62':'#986d58',level<3?'#855c4d':'#795849');
+    face([[.53,-.78,h+9],[.75,-.78,h+9],[.75,-.78,h+25],[.53,-.78,h+25]],'#b1b3a2');
+    face([[.75,-1,h+9],[.75,-.78,h+9],[.75,-.78,h+25],[.75,-1,h+25]],'#858e86');
+    face([[.49,-1.04,h+25],[.79,-1.04,h+25],[.79,-.74,h+25],[.49,-.74,h+25]],'#c8c7b4');
+    if(level>=3){
+      face([[-.5,.83,h-4],[.1,.83,h-4],[-.2,.83,h+7]],'#cbb68c');
+      face([[-.58,.86,h-4],[-.2,.86,h+9],[.18,.86,h-4]],'#986d58');
+      face([[-.3,.87,h-3],[-.1,.87,h-3],[-.1,.87,h+2],[-.3,.87,h+2]],'#edc77d');
+    }
+    face([[-.86,.78,.1],[-.18,.78,.1],[-.18,1.03,.1],[-.86,1.03,.1]],'#b8bcab');lantern(-.95,.7,29);
+    const [a,py]=p(.6,1);oval(a,py,4.5,2.2,'#947044','#735439');oval(a,py-3,4,3.2,'#78945c');
+    for(const [dx,dy] of [[-2,-3],[1,-5],[3,-2]])oval(a+dx,py+dy,1,1,'#d6b879');
+    if(level>=2)bench(-1.5,.35,.42,.26,10);
+  }else if(b.kind==='hall'){
+    const h=43+3*(level-1),x1=-1.3,x2=1.3,y1=-1.2,y2=.8;
+    face([[x1,y2,0],[x2,y2,0],[x2,y2,h],[x1,y2,h]],level<3?'#c5b08b':'#c6bca2');
+    face([[x2,y1,0],[x2,y2,0],[x2,y2,h],[x2,y1,h]],level<3?'#9a896c':'#a39d87');
+    const stone=level<3?7:14;
+    face([[x1,y2,0],[x2,y2,0],[x2,y2,stone],[x1,y2,stone]],'#aeb1a0');
+    face([[x2,y1,0],[x2,y2,0],[x2,y2,stone],[x2,y1,stone]],'#7f8d7c');
+    for(const x of [x1,-.4,.4,x2])edge([x,y2,5],[x,y2,h],'#735439',1.6);
+    edge([x1,y2,h*.63],[x2,y2,h*.63],'#735439',1.6);
+    if(level>=2){edge([x1,y2,h],[-.4,y2,h*.63],'#947044',1.6);edge([.4,y2,h*.63],[x2,y2,h],'#947044',1.6);}
+    for(const y of [-1.1,-.5,.1,.7])edge([x2,y,6],[x2,y,h],'#735439',1.1);
+    face([[-.4,.82,4],[.15,.82,4],[.15,.82,30],[-.4,.82,30]],'#594d38','#d3bc8f',1.2);edge([-.12,.84,5],[-.12,.84,29],'#947044',.8);
+    for(const x of [-.96,.63]){
+      face([[x,.82,22],[x+.3,.82,22],[x+.3,.82,32],[x,.82,32]],'#edc77d','#735439',1);edge([x+.15,.83,22],[x+.15,.83,32],'#735439',.6);
+    }
+    for(const y of [-.8,0]){
+      face([[1.31,y,22],[1.31,y+.3,22],[1.31,y+.3,32],[1.31,y,32]],'#edc77d','#735439',1);edge([1.32,y+.15,22],[1.32,y+.15,32],'#735439',.6);
+    }
+    const roofColors=[['#7f9795','#5a747b'],['#748e91','#52767b'],['#6c8990','#476975'],['#637c8b','#405c70'],['#596f83','#374e65']][level-1];
+    roof(-1.47,1.47,-1.36,.96,h,23,...roofColors);
+    edge([0,-.85,h+23],[0,-.85,h+42],'#c4a477',1.5);face([[0,-.85,h+42],[.65,-.85,h+38],[0,-.85,h+32]],'#d6c478');
+    face([[-.65,.9,0],[.4,.9,0],[.4,1.18,0],[-.65,1.18,0]],'#aeb1a0');
+    face([[-.7,1.15,0],[.45,1.15,0],[.45,1.43,0],[-.7,1.43,0]],'#c0c1ae');lantern(-1.3,.85,31);
+    if(level>=3){
+      face([[-.5,.98,h-3],[.3,.98,h-3],[-.1,.98,h+9]],'#cbb68c');face([[-.6,1,h-3],[-.1,1,h+11],[.4,1,h-3]],roofColors[1]);
+      face([[-.2,1.01,h-2],[0,1.01,h-2],[0,1.01,h+3],[-.2,1.01,h+3]],'#edc77d');
+    }
+    if(level>=4){
+      face([[.58,-.55,h+9],[1.03,-.55,h+9],[1.03,-.55,h+41],[.58,-.55,h+41]],'#b1b3a2');
+      face([[1.03,-1,h+9],[1.03,-.55,h+9],[1.03,-.55,h+41],[1.03,-1,h+41]],'#858e86');
+      face([[.48,-1.1,h+41],[.48,-.45,h+41],[.8,-.45,h+51],[.8,-1.1,h+51]],roofColors[0]);
+      face([[.8,-1.1,h+51],[.8,-.45,h+51],[1.13,-.45,h+41],[1.13,-1.1,h+41]],roofColors[1]);
+      face([[.7,-.54,h+29],[.9,-.54,h+29],[.9,-.54,h+36],[.7,-.54,h+36]],'#473f32');
+      if(level===5){
+        face([[1.32,-.9,9],[1.32,-.62,9],[1.32,-.62,37],[1.32,-.9,37]],'#d6c478');
+        for(const y of [-.4,-.1,.2])edge([1.33,y,11],[1.33,y,14],'#d6c478',1.7);
+      }
+    }
   }
   // Keep structural and worker-capacity upgrades independent, as on the barn.
-  const [plaqueX,plaqueY]=p(b.kind==='tannery'?-.04:.97,-.05,20);
+  const [plaqueX,plaqueY]=p(b.kind==='tannery'?-.04:b.kind==='woodcutter'?.56:b.kind==='hall'?1.32:.97,-.05,20);
   target.fillStyle='#344b42';target.fillRect(plaqueX-5,plaqueY-7,13,9);
-  target.fillStyle='#fff0b1';target.font='bold 7px sans-serif';target.textAlign='center';target.fillText(String(buildingLevel(b)),plaqueX+1.5,plaqueY);
+  target.fillStyle='#fff0b1';target.font='bold 7px sans-serif';target.textAlign='center';target.fillText(String(b.kind==='hall'?town?.level || 1:buildingLevel(b)),plaqueX+1.5,plaqueY);
   if((b.settler_level || 1)>1){
     target.fillStyle='#6baeb5';target.fillRect(plaqueX-5,plaqueY+4,14,6);
     target.fillStyle='#eee0bd';for(let i=0;i<b.settler_level;i++){target.beginPath();target.arc(plaqueX-2+i*3,plaqueY+7,1,0,Math.PI*2);target.fill();}
@@ -5257,7 +5423,7 @@ function paintBuilding(b,town,farmState=null,target=ctx,usable=buildingUsable(to
   }
   if(b.kind==='sawpit'){paintSawpit(b,town,ctx,paintPolygon,usable);return;}
   if(b.kind==='barn'){paintBarn(b,town,ctx,paintPolygon,usable);return;}
-  if(productionBuildingKinds.includes(b.kind)){paintProductionBuilding(b,town,ctx,paintPolygon,usable);return;}
+  if(detailedBuildingKinds.includes(b.kind)){paintDetailedBuilding(b,town,ctx,paintPolygon,usable);return;}
   const largeHall=b.kind==='hall'&&footprintTiles(b).length===4;
   const [x,top]=point(b.x+(largeHall ? .5 : 0),b.y+(largeHall ? .5 : 0)),y=top+tileH/2,s=tileW/46;
   if(b.kind==='well'){
@@ -5435,7 +5601,7 @@ function drawBuildingAnimation(b,town,time){
     const [cx,cy]=point(b.x+(width-1)/2,b.y+(depth-1)/2);
     ctx.translate((cx-x)/s,(cy-top)/s);ctx.scale(fit,fit);
     const chimneyX=(.67+.975)*25*.46;
-    const chimneyY=((.67-.975)*12.5-((b.kind==='bakery'?71:77)+6*(buildingVisualLevel(b,town)-1))*1.5)*.46;
+    const chimneyY=((.67-.975)*12.5-((b.kind==='bakery'?71:77)+4*(buildingVisualLevel(b,town)-1))*1.5)*.46;
     ctx.fillStyle='#c7c6af66';
     for(let i=0;i<3;i++){
       const rise=(time*.4+i/3)%1;

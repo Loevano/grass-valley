@@ -954,7 +954,8 @@ Save files and terrain chunks stay at the root, outside version control.
 ## Building footprints and range previews
 
 Town halls, mills, woodworker's workshops (forgeries), butcher shops, bakeries,
-smokehouses, and tanneries occupy 2×2 tiles; sawpits occupy 3×2.
+smokehouses, and tanneries occupy 2×2 tiles; sawpits occupy 3×2. Cottages,
+woodcutters, and farms retain their 1×1 footprints.
 Production buildings include a covered workplace, outdoor workbench, and stock yard.
 Their artwork retains the original angled style: the sawpit is an open timber
 shed with a pitched roof, half walls, a tool rack, and a lantern. Its sawing bench
@@ -962,16 +963,29 @@ stands in front on braced trestles, with a toothed hand saw and separate stacks
 of incoming logs and finished boards, following the approved
 [concept C](docs/sawpit-c-refined.svg). Completed storage levels add boards;
 worker capacity and the saw upgrade keep their separate visual markers.
-The workshop has a sheltered
-bench and hanging tools, and the mill yard holds grain bins and flour sacks.
+The woodcutter has an olive timber shelter, round logs, axes, and a splitting
+block. The sage-roofed woodworker's workshop has an open bench, hand tools, a
+vise, boards, and finished woodwork. The farm has an ochre roof, crop hatch,
+seed sacks, and a rake; planted acres remain separate. The mill yard holds grain
+bins and flour sacks. These follow the approved
+[village building concepts](docs/village-building-concepts.svg).
 The butcher shop has a dusty rose roof, open counter, and chopping block.
 The bakery has an ochre roof, masonry oven, and bread display; the taller
 smokehouse has a sage slate roof, vented door, and hanging fish rack.
 The tannery has a low timber shed, stretched hide frame, and soaking vats,
 following the approved [production building concepts](docs/production-building-concepts.svg).
-These workplaces retain structural and worker-capacity plaques, with smoke aligned
-to the bakery and smokehouse chimneys. Crowded older sites use compact artwork
-until moved to a clear 2×2 site.
+The [village](docs/village-upgrade-concepts.svg) and
+[production](docs/production-upgrade-concepts.svg) upgrade designs add visible
+bracing at structural level 2 and masonry footings and gable vents at level 3.
+[Cottages](docs/house-upgrade-concepts.svg) progress through four structural
+levels: timber, braced timber, a stone base with dormer, and full stone walls.
+Their separately purchased timber framing remains visible at every level.
+The blue slate town hall gains bracing, a stone base and dormer, a modest belfry,
+and banners across its five visual stages; hall levels 5–10 share the final
+structure while the plaque reports the actual level. Structural and capacity
+plaques remain independent, and axes, tools, and bakery equipment retain their
+own markers. Smoke stays aligned to upgraded bakery and smokehouse chimneys.
+Crowded older sites use compact artwork until moved to a clear 2×2 site.
 Connected yard surfaces and
 cut timber stacks replace separate tiled pads. The hall is wider while its doors,
 windows, and lanterns stay at the same scale as other buildings.

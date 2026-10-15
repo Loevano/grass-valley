@@ -50,27 +50,6 @@ The existing world API still refreshes host state and interface data, including
 collision indexes used by founder movement. A lightweight overview request/change
 mechanism remains future work; this feature does not reduce snapshot traffic.
 
-## Village building artwork
-
-Approved base prototypes for the woodcutter, woodworking workshop, farm, and town
-hall are available in the [village building concept sheet](village-building-concepts.svg)
-([PNG preview](village-building-concepts.png)). The town hall includes its five
-existing visual stages. The [house upgrade sheet](house-upgrade-concepts.svg)
-([PNG preview](house-upgrade-concepts.png)) shows all four structural house levels
-and the separate timber-framing upgrade. These studies follow the approved
-production building palette and isometric style, retaining current footprints.
-The [village upgrade sheet](village-upgrade-concepts.svg)
-([PNG preview](village-upgrade-concepts.png)) adds three structural stages for the
-woodcutter, workshop, and farm, alongside the town hall's five existing visual
-stages (hall levels 5–10 share the final stage). The
-[production upgrade sheet](production-upgrade-concepts.svg)
-([PNG preview](production-upgrade-concepts.png)) extends the implemented butchery,
-bakery, smokehouse, and tannery base designs with three clearer structural stages.
-Upgrade design review and implementation remain, along with implementation of the
-approved village and house base designs. Preserve construction states, structural
-and capacity markers, equipment upgrades, worker access, and animation alignment;
-these artwork proposals do not change gameplay upgrade effects or footprints.
-
 ## Production line balancing
 
 **Status:** wood and grain chains and species-preserving smoking implemented.

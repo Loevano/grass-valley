@@ -30,7 +30,7 @@ const {chromium}=require('playwright');
         await click(px+20*scale,py-43*scale);
         check(selection===null,'Empty roof corner does not select the building');
         // This lies on the building ground tile, outside the painted structure.
-        const ground=[px+15*scale,py+tileH*.6];
+        const ground=[px,py+tileH*.9];
         const tile=tileAt(eventAt(...ground));
         check(tile.x===5&&tile.y===5,'Ground miss exercises the occupied-tile fallback');
         await click(...ground);

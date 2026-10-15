@@ -46,6 +46,9 @@ const run=new Function('document','window','localStorage','setTimeout','clearTim
   const hall={kind:'hall',x:5,y:5};
   const halls=[1,2,3,4,5].map(level=>appearance(hall,{...town,level}));
   assert.strictEqual(new Set(halls).size,5,'Each completed hall level has distinct artwork');
+  const finalHall=level=>JSON.parse(appearance({...hall,footprint:[2,2]},{...town,level}));
+  assert.deepStrictEqual(finalHall(5).filter(mark=>mark[0]!=='fillText'),finalHall(10).filter(mark=>mark[0]!=='fillText'),'Hall levels 5–10 share the final structural artwork');
+  assert.notDeepStrictEqual(finalHall(5),finalHall(10),'The hall plaque still reports its actual level');
   assert.strictEqual(appearance(hall,{...town,level:1,upgrade_remaining:10}),halls[0],'Hall keeps its completed level while upgrading');
   assert.notStrictEqual(appearance({...hall,settler_level:2}),halls[0],'Hall capacity upgrades add windows');
   assert.notStrictEqual(appearance({...hall,settler_level:2}),appearance({...hall,settler_level:3}),'Both hall capacity upgrades are visible');
@@ -54,8 +57,19 @@ const run=new Function('document','window','localStorage','setTimeout','clearTim
     assert.notStrictEqual(appearance(expanded),appearance({...expanded,footprint:[1,1]}),kind+' uses its enlarged lot for its workplace');
     assert.strictEqual(JSON.stringify(expanded),saved,'Workplace artwork preserves the authoritative footprint');
   }
-  const warmWindows=building=>JSON.parse(appearance(building)).filter(mark=>mark[0]==='fillRect'&&mark[5]==='#edc77d');
-  assert.deepStrictEqual(warmWindows({...hall,footprint:[2,2]})[0].slice(3,5),warmWindows(hall)[0].slice(3,5),'Wider halls retain the original human-sized windows');
+  const warmWindows=building=>{
+    let path=[];const windows=[];
+    for(const mark of JSON.parse(appearance(building))){
+      if(mark[0]==='beginPath')path=[];
+      else if(['moveTo','lineTo'].includes(mark[0]))path.push(mark.slice(1,3));
+      else if(mark[0]==='fill'&&mark[1]==='#edc77d'&&path.length===4){
+        windows.push(path.map(([x,y])=>[x-path[0][0],y-path[0][1]]));
+      }
+    }
+    return windows;
+  };
+  assert(warmWindows(hall).length>=4,'The new hall has warm windows on both visible walls');
+  assert.deepStrictEqual(warmWindows({...hall,footprint:[2,2]})[0],warmWindows(hall)[0],'Full and compact halls keep the same window design');
   for(const [kind,upgrade] of [['home','timber_frame'],['woodcutter','axe'],['woodcutter','tools'],['sawpit','saw'],['fishing_hut','nets'],['fishing_hut','wool_nets'],['fishing_hut','boat']]){
     const building={kind,x:5,y:5};
     assert.notStrictEqual(appearance(building),appearance({...building,profession_upgrades:[upgrade]}),upgrade+' adds visible equipment');

@@ -4,7 +4,11 @@ const results=JSON.parse(app.run(`
   const artTown={level:5,map_size:32,terrain:Array(32).fill('g'.repeat(32)),buildings:[],map_resources:[],villagers:[]};
   world={world_id:'production-art',towns:{own:artTown}};viewed='own';
   const cases=[];
-  for(const kind of ['butcher','bakery','smokehouse','tannery'])for(const zoom of [1,2])for(const footprint of [[2,2],[1,1]])for(const level of [1,2,3]){
+  for(const kind of ['butcher','bakery','smokehouse','tannery','woodcutter','workshop','farm','home','hall'])
+  for(const zoom of [1,2])
+  for(const footprint of (['woodcutter','farm','home'].includes(kind)?[[1,1]]:[[2,2],[1,1]]))
+  for(const level of (kind==='hall'?[1,2,3,4,5,10]:kind==='home'?[1,2,3,4]:[1,2,3])){
+    artTown.level=kind==='hall'?level:5;
     const building={kind,x:5,y:5,footprint,level,settler_level:2,profession_upgrades:[]};
     const snapshot=JSON.stringify(building);
     artTown.buildings=[building];cameraTown='production-art/own';camera={x:5,y:5,zoom:46/54*zoom};animationFrameRunning=true;
@@ -39,10 +43,10 @@ for(const result of results){
   for(const key of ['sprite','hit']){
     const bound=result[key],extent=result.extent;
     assert(extent.left>=bound.left&&extent.right<=bound.right&&extent.top>=bound.top&&extent.bottom<=bound.bottom,
-      `${name}: roof, work areas and materials fit the ${key} bounds`);
+      `${name}: artwork ${JSON.stringify(extent)} must fit ${key} ${JSON.stringify(bound)}`);
   }
 }
-console.log('Production artwork fits cache and selection bounds without mutating buildings');
+console.log('Detailed building artwork fits cache and selection bounds without mutating buildings');
 
 // Compare live smoke to the cap actually painted, including compact saved sites.
 app.run(`
