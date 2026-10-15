@@ -109,8 +109,10 @@ Storage rows now follow hall, assigned-worker recipe, and owned fishing-boat
 unlocks while retaining goods already in stock. Hidden acceptance settings and
 capacities are preserved; Option/Alt-click toggles only the shown resources.
 Producers haul when an allowance fills;
-existing excess stock is preserved. Workplace storage totals appear beside the
-Storage heading. Wood, mill, and bakery upgrades increase these allowances by 25% per
+existing excess stock is preserved. Production caps exclude reserved processor
+ingredients so usable construction and upgrade stock can replenish; stored goods
+and pending output still count toward the target. Workplace storage totals appear
+beside the Storage heading. Wood, mill, and bakery upgrades increase these allowances by 25% per
 level; farm crop storage scales with its building level. Individual acres are
 available immediately on placement, have no upgrades, and retain a fixed crop
 allowance. Fishing storage scaling remains planned.

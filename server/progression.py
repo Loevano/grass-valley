@@ -392,14 +392,13 @@ def record_sale(town, key, amount):
 
 
 def production_room(town, key):
-    """Count available stock, reserved inputs and outputs still being gathered once."""
+    """Count available stock and pending output once, excluding reserved ingredients."""
     cap = town.get('rules', {}).get('production_caps', {}).get(key)
     if cap is None:
         return float('inf')
     total = quantity(town, key)
     for building in town.get('buildings', []):
         total += building.get('pending_output', {}).get(key, 0)
-        total += building.get('input_buffer', {}).get(key, 0)
     for villager in town.get('villagers', []):
         trip = villager.get('logistics_trip', {})
         if trip.get('operation') == 'sell' and trip.get('picked_up') and not trip['delivered']:

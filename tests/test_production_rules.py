@@ -34,14 +34,40 @@ class ProductionRules(unittest.TestCase):
         self.assertEqual(self.town['rules']['production_caps'], {'planks': 100})
         self.assertEqual(economy.production_room(self.town, 'wood'), float('inf'))
 
-    def test_counts_reserved_and_pending_once_and_resumes_after_spending(self):
+    def test_excludes_reserved_inputs_counts_pending_once_and_resumes_after_spending(self):
         self.town['buildings'].append({'kind': 'sawpit', 'x': 3, 'y': 3,
                                       'input_buffer': {'wood': 2}, 'pending_output': {'wood': .5},
                                       'orphaned_output': {'wood': .5}})
-        self.rule('wood', self.town['wood'] + 2.5)
+        self.rule('wood', self.town['wood'] + .5)
         self.assertEqual(economy.production_room(self.town, 'wood'), 0)
         economy.spend(self.town, {'wood': 1})
         self.assertEqual(economy.production_room(self.town, 'wood'), 1)
+
+    def test_full_workshop_reserves_do_not_block_planks_for_construction(self):
+        workshop = {'kind': 'workshop', 'x': 4, 'y': 3,
+                    'input_buffer': {'planks': 20}, 'output_buffer': {'tools': 5}}
+        sawpit = {'kind': 'sawpit', 'x': 3, 'y': 3, 'input_buffer': {'wood': 50}}
+        self.town['buildings'].extend([workshop, sawpit])
+        worker = {'job': 'woodworking', 'woodworking': 0, 'woodcutting': 10, 'talents': {}}
+        self.town['villagers'].append(worker)
+        self.rule('planks', 20)
+        before = copy.deepcopy(workshop)
+
+        self.assertEqual(economy.production_room(self.town, 'planks'), 20)
+        for _ in range(20):
+            self.assertEqual(logistics.produce(self.town, sawpit, worker, elapsed=6), 'Working')
+        self.assertEqual(economy.production_room(self.town, 'planks'), 0)
+        self.assertFalse(economy.afford(self.town, {'planks': 20}))
+        logistics.drop_off(self.town, sawpit, worker)
+        self.assertEqual(economy.production_room(self.town, 'planks'), 0)
+        self.assertTrue(economy.afford(self.town, {'planks': 20}))
+        # Leave local space so the town cap alone blocks another batch.
+        sawpit['level'] = 2
+        self.assertEqual(logistics.produce(self.town, sawpit, worker, elapsed=6), 'Production cap reached')
+        economy.spend(self.town, {'planks': 20})
+        self.assertEqual(economy.production_room(self.town, 'planks'), 20)
+        self.assertEqual(logistics.produce(self.town, sawpit, worker, elapsed=6), 'Working')
+        self.assertEqual(workshop, before)
 
     def test_recipe_waits_without_consuming_inputs_or_gaining_practice(self):
         building = {'kind': 'sawpit', 'x': 3, 'y': 3, 'input_buffer': {'wood': 10}}

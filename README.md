@@ -559,9 +559,11 @@ the Python host, refresh both browsers, and create a new world to use the shared
   group goods by Baking, Fishing, Timber, and the other production trades.
 - Open **Rules** (8) to set production caps per resource for your own town.
   Blank means unlimited; 0 pauses that resource. Workers and player gathering stop
-  at the target and resume as stock is used. Stored goods, reserved inputs, and
-  undelivered output count once. Recipe and animal batches wait until the full
-  batch fits; hauling, purchases, and existing stock are preserved. Rules are saved
+  at the target and resume as stock is used or reserved for processing. Stored goods
+  and undelivered output count once; reserved ingredients do not count, so processors
+  cannot block replenishment of materials needed for construction and upgrades.
+  Recipe and animal batches wait until the full batch fits; hauling, purchases,
+  and existing stock are preserved. Rules are saved
   with the town and do not affect other towns.
 - Workplaces keep fixed storage for their relevant inputs and outputs within their
   resource allowances. Each food type uses the former food allowance independently
