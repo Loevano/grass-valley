@@ -314,6 +314,10 @@ are collected in [Pathing decisions](PATHING.md).
   Obsolete task/navigation requests are cancelled. Waiting workers retain their
   position, cargo, assignment, and movement leg; blocked deliveries retain their
   trip and pickup state. Queue data is derived and rebuilt after reload.
+  Pending searches now survive obstacle changes outside their examined tiles,
+  preventing distant tree removal or NPC movement from repeatedly restarting
+  long routes. Future expansions use current obstacles; changes to examined tiles
+  still restart the search. Completed-cache and other graph invalidation remain broad.
 - Gameplay movement remains authoritative on the host. Browser playback follows
   confirmed movement and reconnects missed updates at walking speed, with field
   changes aligned to completed farmer actions.
@@ -337,7 +341,7 @@ are collected in [Pathing decisions](PATHING.md).
 
 | Order | Improvement | Planned behavior |
 | --- | --- | --- |
-| 1 | Cache refinement | Limit shared-cache invalidation to affected navigation where practical. Route caches and host pending searches are bounded. |
+| 1 | Cache refinement | Pending searches retain progress across unexamined obstacle changes. Refine completed-cache invalidation and other graph inputs where practical; keep caches and searches bounded. |
 | 2 | Flow fields for shared destinations | Reuse a map of travel directions toward common wells, warehouses, and workplaces across many villagers. Account for road speeds and access rules, and retain individual searches for specific acres and other unique destinations. |
 
 Completion criteria:

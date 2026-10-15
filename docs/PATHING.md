@@ -396,7 +396,10 @@ Movement and routing decisions for Lantern Vale.
 
 - **Host:** graph identity covers supplied terrain and obstacles broadly.\
   Reference: [server/navigation.py](../server/navigation.py): `RouteCache.route`
-  - **Planned:** finer invalidation limited to affected navigation areas.
+  - Pending searches retain progress when obstacle changes affect only tiles they
+    have not examined. Future expansions use the updated obstacles; changes to
+    examined tiles restart the search, including diagonal corner clearance.
+  - **Planned:** finer invalidation for completed route caches and other graph inputs.
 - **Browser:** reuse collision sets when local geometry, terrain, and bounds match.\
   Reference: [web/scene.js](../web/scene.js): `prepare`, `Overlay`
   - Crop growth, inventories, and ordinary work progress do not change navigation occupancy.
@@ -439,7 +442,8 @@ Movement and routing decisions for Lantern Vale.
   - Multi-leg plans retain at most **16 earlier answers / 32,768 waypoint units**
     per pending actor, preventing shared-cache eviction from restarting a later leg.
   - Requests revalidate task, start, goals, obstacles, terrain/chunks, roads, bounds,
-    and access rules before resuming. Changed queries replace obsolete searches;
+    and access rules before resuming. Unexamined obstacle changes update the
+    pending search without restarting it; other changed queries replace obsolete searches;
     actors that stop requesting a route release their jobs. Switching worlds or
     loading a save discards pending searches. Terrain inputs are immutable copies.
   - Workers keep their position, cargo, assignment, and pending movement leg while

@@ -163,6 +163,62 @@ class HostSearchQueue(unittest.TestCase):
             pass
         self.assertFalse(self.cache.pending)
 
+    def test_distant_obstacle_churn_does_not_restart_pending_search(self):
+        worker = self.workers[0]
+        job = None
+        for update in range(40):
+            blocked = {(19, 0)} if update % 2 else set()
+            with self.cache.update(self.world):
+                result = self.request(worker, blocked=blocked)
+                current = self.cache.pending.get(('work', id(worker)))
+                if current:
+                    if job is not None:
+                        self.assertIs(current, job)
+                    job = current
+            self.assertLessEqual(self.cache.work, self.cache.budget)
+            if result != 'pending':
+                break
+        else:
+            self.fail('Unrelated obstacle changes starved the route')
+        expected = RouteCache.search((0, 0), {'x': 19, 'y': 19}, blocked, 20,
+                                     self.terrain, False, None, diagonal=True)
+        self.assertEqual(result, [{'x': x, 'y': y} for x, y in expected])
+
+    def test_unexamined_obstacle_is_applied_before_search_reaches_it(self):
+        worker = self.workers[0]
+        with self.cache.update(self.world):
+            self.request(worker)
+        job = next(iter(self.cache.pending.values()))
+        blocked = {(10, 10)}
+        self.assertTrue(blocked.isdisjoint(job['examined']))
+        for _ in range(60):
+            with self.cache.update(self.world):
+                result = self.request(worker, blocked=blocked)
+                current = self.cache.pending.get(('work', id(worker)))
+                if current:
+                    self.assertIs(current, job)
+            if result != 'pending':
+                break
+        else:
+            self.fail('Search did not complete around the new obstacle')
+        expected = RouteCache.search((0, 0), {'x': 19, 'y': 19}, blocked, 20,
+                                     self.terrain, False, None, diagonal=True)
+        self.assertEqual(result, [{'x': x, 'y': y} for x, y in expected])
+        self.assertNotIn({'x': 10, 'y': 10}, result)
+
+    def test_examined_obstacle_changes_restart_pending_search(self):
+        worker = self.workers[0]
+        for before, after in ((set(), {(1, 0)}), ({(1, 0)}, set())):
+            with self.subTest(before=before, after=after):
+                self.cache.pending.clear()
+                with self.cache.update(self.world):
+                    self.request(worker, blocked=before)
+                old = next(iter(self.cache.pending.values()))
+                self.assertIn((1, 0), old['examined'])
+                with self.cache.update(self.world):
+                    self.request(worker, blocked=after)
+                self.assertIsNot(next(iter(self.cache.pending.values())), old)
+
     def test_multileg_prefix_survives_shared_graph_eviction(self):
         self.cache.graph_limit = 1
         worker = self.workers[0]

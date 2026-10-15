@@ -155,6 +155,18 @@ class RouteCache:
         if self.active and self.owner is not None:
             identity = graph, key
             job = self.pending.get(self.owner)
+            if (job and job['key'] == key and job['identity'][0] != graph
+                    and job['identity'][0][0] == graph[0]
+                    and job['identity'][0][2:] == graph[2:]
+                    and (job['identity'][0][1] ^ graph[1]).isdisjoint(job['examined'])):
+                # Unexamined obstacle changes cannot affect earlier search
+                # decisions. Apply them to future expansions without throwing
+                # away progress whenever a distant tree or NPC moves.
+                job['blocked'].clear()
+                job['blocked'].update(graph[1])
+                job.update(identity=identity, paths=paths)
+                if 'result' in job:
+                    self.remember(paths, key, job['result'])
             if job and identity in job['prefix']:
                 path = job['prefix'][identity]
             elif job and job['identity'] == identity and 'result' in job:
@@ -191,11 +203,14 @@ class RouteCache:
                     else:
                         frozen = ground
                     self.sequence += 1
+                    search_blocked, examined = set(graph[1]), set()
                     job = {'identity': identity, 'key': key, 'paths': paths,
                            'priority': self.priority, 'order': self.sequence,
+                           'blocked': search_blocked, 'examined': examined,
                            'prefix': dict(self.prefix),
                            'search': self.search_steps(start, goals if isinstance(target, (set, frozenset)) else dict(target),
-                               graph[1], size, frozen, adjacent, bounds, roads, road_mode, diagonal, fences)}
+                               search_blocked, size, frozen, adjacent, bounds, roads, road_mode, diagonal, fences,
+                               examined)}
                     self.pending[self.owner] = job
                 if job:
                     self.seen.add(id(job))
@@ -235,7 +250,7 @@ class RouteCache:
                 return done.value
 
     @staticmethod
-    def search_steps(start, target, blocked, size, terrain, adjacent, bounds, roads=(), road_mode='smooth', diagonal=False, fences=()):
+    def search_steps(start, target, blocked, size, terrain, adjacent, bounds, roads=(), road_mode='smooth', diagonal=False, fences=(), examined=None):
         queue, previous = deque([start]), {start: None}
         costs, order = {start: 0}, 0
         weighted = bool(roads) or diagonal
@@ -250,6 +265,8 @@ class RouteCache:
             return (4 if roads else 6)*max(0, distance-int(adjacent))
 
         def open_tile(tile):
+            if examined is not None:
+                examined.add(tile)
             x, y = tile
             return (0 <= x < size and 0 <= y < size and tile not in blocked
                     and (not bounds or bounds[0] <= x <= bounds[1] and bounds[2] <= y <= bounds[3])
