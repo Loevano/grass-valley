@@ -5148,13 +5148,18 @@ function paintDetailedBuilding(b,town,target,paintPolygon,usable){
     face([[x2+.01,-.8,23],[x2+.01,-.25,23],[x2+.01,-.25,35],[x2+.01,-.8,35]],'#edc77d');
   };
   const roof=(x1=-1.1,x2=1.1,y1=-1.25,y2=.82,h=43+rise,peak=19,light='#a17e55',dark='#826642')=>{
+    // A steep far slope projects behind the near slope in this 2:1 view.
+    // Cap its rise by the span so both roof faces retain visible area.
+    peak=Math.min(peak,(x2-x1)*25/6);
     const mid=(x1+x2)/2;
     face([[x1,y2,h],[x2,y2,h],[mid,y2,h+peak]],'#bdab8c');
     face([[x1,y1,h],[x1,y2,h],[mid,y2,h+peak],[mid,y1,h+peak]],light);
     face([[mid,y1,h+peak],[mid,y2,h+peak],[x2,y2,h],[x2,y1,h]],dark);
     if(level>=3&&!['home','hall'].includes(b.kind)){
-      face([[mid-.1,y2+.02,h+3],[mid+.1,y2+.02,h+3],[mid+.1,y2+.02,h+9],[mid-.1,y2+.02,h+9]],'#4b4a3a');
+      const bottom=h+peak*.2,top=h+peak*.7;
+      face([[mid-.1,y2+.02,bottom],[mid+.1,y2+.02,bottom],[mid+.1,y2+.02,top],[mid-.1,y2+.02,top]],'#4b4a3a');
     }
+    return peak;
   };
   const chimney=(z)=>{
     const x=.55,y=-.85;
@@ -5461,8 +5466,8 @@ function paintDetailedBuilding(b,town,target,paintPolygon,usable){
       face([[1.31,y,22],[1.31,y+.3,22],[1.31,y+.3,32],[1.31,y,32]],'#edc77d');
     }
     const roofColors=[['#7f9795','#5a747b'],['#748e91','#52767b'],['#6c8990','#476975'],['#637c8b','#405c70'],['#596f83','#374e65']][level-1];
-    roof(-1.47,1.47,-1.36,.96,h,23,...roofColors);
-    edge([0,-.85,h+23],[0,-.85,h+42],'#c4a477',1.5);face([[0,-.85,h+42],[.65,-.85,h+38],[0,-.85,h+32]],'#d6c478');
+    const roofPeak=roof(-1.47,1.47,-1.36,.96,h,23,...roofColors);
+    edge([0,-.85,h+roofPeak],[0,-.85,h+42],'#c4a477',1.5);face([[0,-.85,h+42],[.65,-.85,h+38],[0,-.85,h+32]],'#d6c478');
     face([[-.65,.9,0],[.4,.9,0],[.4,1.18,0],[-.65,1.18,0]],'#aeb1a0');
     face([[-.7,1.15,0],[.45,1.15,0],[.45,1.43,0],[-.7,1.43,0]],'#c0c1ae');lantern(-1.3,.85,31);
     if(level>=3){
@@ -5472,8 +5477,7 @@ function paintDetailedBuilding(b,town,target,paintPolygon,usable){
     if(level>=4){
       face([[.58,-.55,h+9],[1.03,-.55,h+9],[1.03,-.55,h+41],[.58,-.55,h+41]],'#b1b3a2');
       face([[1.03,-1,h+9],[1.03,-.55,h+9],[1.03,-.55,h+41],[1.03,-1,h+41]],'#858e86');
-      face([[.48,-1.1,h+41],[.48,-.45,h+41],[.8,-.45,h+51],[.8,-1.1,h+51]],roofColors[0]);
-      face([[.8,-1.1,h+51],[.8,-.45,h+51],[1.13,-.45,h+41],[1.13,-1.1,h+41]],roofColors[1]);
+      roof(.48,1.13,-1.1,-.45,h+41,10,...roofColors);
       face([[.7,-.54,h+29],[.9,-.54,h+29],[.9,-.54,h+36],[.7,-.54,h+36]],'#473f32');
       if(level===5){
         face([[1.32,-.9,9],[1.32,-.62,9],[1.32,-.62,37],[1.32,-.9,37]],'#d6c478');
@@ -5511,9 +5515,10 @@ function paintBarn(b,town,target,paintPolygon,usable){
   poly([[-.35,.612,0],[.35,.612,0],[.35,.612,24],[-.35,.612,24]],'#633f34');
   line([0,.62,0],[0,.62,24],'#e3cba1');
   for(const [a,end] of [[-.35,0],[0,.35]])line([a,.63,23],[end,.63,1],'#d6bd90');
-  poly([[-.6,.6,35+rise],[.6,.6,35+rise],[0,.6,51+rise]],'#bdab8c');
-  poly([[-.75,-.76,35+rise],[-.75,.76,35+rise],[0,.76,53+rise],[0,-.76,53+rise]],'#6b8076');
-  poly([[0,-.76,53+rise],[0,.76,53+rise],[.75,.76,35+rise],[.75,-.76,35+rise]],'#52685f');
+  const roofPeak=44+rise;
+  poly([[-.6,.6,35+rise],[.6,.6,35+rise],[0,.6,roofPeak-1.5]],'#bdab8c');
+  poly([[-.75,-.76,35+rise],[-.75,.76,35+rise],[0,.76,roofPeak],[0,-.76,roofPeak]],'#6b8076');
+  poly([[0,-.76,roofPeak],[0,.76,roofPeak],[.75,.76,35+rise],[.75,-.76,35+rise]],'#52685f');
   poly([[-.13,.64,34+rise],[.13,.64,34+rise],[.13,.64,40+rise],[-.13,.64,40+rise]],'#403f30');
   poly([[.42,.67,16],[.58,.67,16],[.58,.67,23],[.42,.67,23]],'#edc77d');
   for(const x of [-.8,-1.1]){

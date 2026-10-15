@@ -75,6 +75,9 @@ Roofs and masonry use plain shaded faces. Structural levels retain their bracing
 stone bases, dormers, belfry, banners, and stock changes. Profession equipment and
 independent capacity plaques remain visible; smoke stays attached to the same
 chimney caps. Larger door shapes and fewer, larger goods improve readability.
+Pitched roof rise is limited by its width so the far slope stays visible in the
+2:1 projection, rather than collapsing behind the near slope. This also applies
+to the barn and hall belfry; gable vents fit inside the resulting roof height.
 Completed updated buildings use ground shadows rather than outlined lot pads;
 construction sites retain their lot surfaces. Compact saved sites keep their
 existing fit and footprints. Their small scale remains a constraint on prop
