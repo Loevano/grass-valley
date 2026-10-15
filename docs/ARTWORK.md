@@ -33,6 +33,26 @@ The workshop has a bench canopy and tool rack, and the hall is wider without
 scaling up its doors and windows. Their
 existing footprints and visible upgrade conventions remain unchanged.
 
+## Resource and building icons
+
+The interface has dedicated SVG artwork for all 50 resource keys (including coins
+and aggregate food) and all 28 building types, including acres, roads, and
+decorations. The [complete icon sheet](resource-building-icons.svg) shows each at
+an enlarged size and the 30px resource-list size. The artwork uses the existing
+32×32 view box, rounded brown outlines, and timber, sage, and lantern-gold palette.
+
+Build buttons and selection headings use the building artwork; the Resources
+popup uses the resource artwork. Baked goods, prepared meats, crafting products,
+and metals have distinct shapes. Raw and smoked fish retain species-specific
+profiles and markings, with warm colors and smoke distinguishing preserved fish.
+Existing illustrations for the core buildings and resources are retained where
+they already identify their subject. Unknown resource keys use a crate fallback.
+Map selection also has artwork for gathering patches, wild horses, treasure,
+wilderness buildings, and boats, alongside the existing tree, water, and rock icons.
+Definitions live in `iconPaths` in [web/app.js](../web/app.js); the sheet is a
+review reference. This completes interface icon coverage; map artwork and the
+broader visual improvements below remain open.
+
 ## Sawpit artwork
 
 The [SVG concept comparison](sawpit-concepts.svg) explored alternatives to the
@@ -83,8 +103,10 @@ also includes this refinement.
 
 ![Concept C with a diagonal path connecting the barn door and sliding gate.](barn-c-refined.png)
 
-The fence blocks people, and the gate automatically slides open as founders,
-workers, or locals approach, then closes after they leave. Animals remain within
+The fence blocks people, and the gate automatically slides open when founders,
+workers, or locals head through its entrance, then closes after they leave.
+Nearby keepers making rounds leave it closed. Someone occupying the doorway
+keeps it open until they clear the entrance. Animals remain within
 the existing pen range. Host routes and player collision use the same entrance;
 browser prediction follows those boundaries without changing saved snapshots.
 The owner's **Fence orientation** selector beside **Move** places the entrance

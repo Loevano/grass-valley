@@ -876,16 +876,8 @@ function resourceMinuteActivity(town){
 function resourceNumber(value){return String(Number(Math.max(0,value || 0).toFixed(2)));}
 function resourceArt(key){
   if(iconPaths[key])return illustration(key);
-  const aliases={wheat:'food',flour:'resource_sack',fodder:'food',manure:'resource_sack',
-    planks:'resource_planks',tools:'crafted_axe',stone:'resource_stone',herbs:'gathering',
-    vegetables:'resource_carrot',carrots:'resource_carrot',berries:'resource_berries',fruit:'orcharding',
-    eggs:'resource_egg',milk:'resource_milk',wool:'husbandry',hides:'tannery',leather:'tannery',
-    iron_ore:'resource_stone',iron:'resource_ingot',steel:'resource_ingot',saddles:'saddler',trade_crates:'resource_crate',
-    wooden_bowls:'resource_bowl',crates:'resource_crate',furniture:'resource_chair',carved_furniture:'resource_chair'};
-  if(key.includes('fish')||world.progression?.fish?.[key]||world.progression?.smoked_fish?.[key]||['trout','salmon','sturgeon','smoked_trout','smoked_salmon','smoked_sturgeon'].includes(key))return illustration(key.startsWith('smoked_')?'preserving':'fishing');
-  if(['bread','bread_rolls','herb_bread','fruit_pies','cakes'].includes(key))return illustration('baking');
-  if(key.includes('meat')||key==='sausages')return illustration('resource_meat');
-  return illustration(aliases[key] || 'resource_crate');
+  // Unknown goods from newer hosts retain a neutral, readable fallback.
+  return illustration('resource_crate');
 }
 function renderResourceList(town){
   const target=$('resources-list');
@@ -1127,6 +1119,82 @@ Object.assign(iconPaths,{
   resource_chair:'<path fill="#a78454" d="M8 3h16v15H8zM5 18h22v5H5zM6 23h4v8H6zm16 0h4v8h-4z"/><path d="M12 6v10m8-10v10"/>',
   resource_meat:'<path fill="#ba7e74" d="M4 9Q9 1 19 6l9 12q3 10-9 12L5 21Q0 17 4 9z"/><path fill="#dfb49b" d="M8 10q6-6 13 4t-2 11L8 19q-5-5 0-9z"/><circle fill="#e8dcc0" cx="16" cy="17" r="4"/>',
 });
+// Dedicated interface artwork: every buildable structure and stored good has
+// its own silhouette. Keep these in the existing 32px vector icon family.
+Object.assign(iconPaths,{
+  road:'<path fill="#a99573" d="m3 28 9-25h9L29 28z"/><path stroke="#d8c6a1" d="m12 25 2-5m2-5 1-5m7 16-1-4"/><path d="M5 28h24"/>',
+  barn:'<path fill="#bda780" d="M5 14h22v15H5z"/><path fill="#718579" d="m2 15 6-9 8-4 8 4 6 9z"/><path fill="#748078" d="M5 26h22v3H5z"/><path fill="#94704c" d="M11 18h10v11H11z"/><path stroke="#d8c6a1" d="m11 18 10 11m0-11L11 29"/><path d="M12 10h8"/>',
+  sawpit:'<path fill="#94704c" d="M4 12h24v10H4z"/><path fill="#718579" d="m2 12 14-9 14 9z"/><path fill="#cda875" d="M3 21h26v4H3z"/><path d="m6 25-2 5m22-5 2 5M9 25l14 5"/><path fill="#bacac5" d="m8 18 14-6 2 4-3 2-2-1-2 3-2-1-2 3z"/><path stroke="#94704c" stroke-width="3" d="m22 11 4 4"/>',
+  mill:'<path fill="#c5ad80" d="m11 12 10 0 5 17H6z"/><path fill="#80574b" d="m9 12 7-9 7 9z"/><g fill="#e8dcc0"><path d="M16 14 5 3h7l6 11zm2 2L29 5v7l-11 6zm-2 2 11 11h-7l-6-11zm-2-2L3 27v-7l11-6z"/></g><circle fill="#94704c" cx="16" cy="16" r="2"/>',
+  smokehouse:'<path d="M21 6q-4-2-1-5m6 7q-3-3 0-6"/><path fill="#8c8173" d="M5 14h22v15H5zM21 8V4h4v9"/><path fill="#647876" d="m2 15 14-9 14 9z"/><path fill="#473f32" d="M10 18h12v11H10z"/><path fill="#cda875" d="m12 22 3-3 4 3-4 3z"/><path d="M15 18v2"/>',
+  workshop:'<path fill="#a28c72" d="M5 12h22v17H5z"/><path fill="#718579" d="m2 13 14-10 14 10z"/><path fill="#d9bd70" d="M8 16h6v6H8z"/><path fill="#cda875" d="M3 23h26v3H3z"/><path d="M6 26v4m20-4v4m-7-12 5-2m-3-1 3 6"/>',
+  fish_pond:'<ellipse fill="#8c9b8b" cx="16" cy="21" rx="14" ry="9"/><ellipse fill="#6ba2af" cx="16" cy="20" rx="11" ry="6"/><path fill="#cda875" d="m9 20 4-3 6 3-6 3zm10 0 4-3v6z"/><path stroke="#719451" d="M5 17V6m0 7L2 9m3 2 3-5"/>',
+  orchard:'<path fill="#80764a" d="m2 26 14-6 14 6-14 4z"/><path stroke="#94704c" stroke-width="3" d="M16 26V12"/><path fill="#719451" d="M8 19C-1 15 4 5 10 6c0-7 13-7 13 0 10 1 10 14 1 14z"/><g fill="#ba7e74"><circle cx="10" cy="12" r="2.5"/><circle cx="22" cy="11" r="2.5"/><circle cx="17" cy="18" r="2.5"/></g>',
+  market:'<path fill="#cda875" d="M5 21h22v8H5z"/><path d="M6 21V10m20 11V10"/><path fill="#d9bd70" d="m6 4 20 0 4 9H2z"/><path fill="#80574b" d="M10 4h5l-1 9H7zm10 0h5l4 9h-7z"/><path fill="#719451" d="M8 21v-5h6v5z"/><path fill="#b9866b" d="M18 21v-5h6v5z"/>',
+  bakery:'<path fill="#c1a078" d="M4 14h24v15H4zM22 4h4v11h-4z"/><path fill="#80574b" d="m2 15 14-11 14 11z"/><path fill="#473f32" d="M17 29V20a4 4 0 0 1 8 0v9z"/><path fill="#f2ad52" d="m19 28 2-6 2 6z"/><path fill="#d9bd70" d="M6 21c0-5 8-5 8 0v3H6z"/><path d="m9 19-1 2m4-2-1 2"/>',
+  butcher:'<path fill="#b9866b" d="M5 14h22v15H5z"/><path fill="#80574b" d="m2 15 14-11 14 11z"/><path fill="#e8dcc0" d="M5 14h22v4H5z"/><path d="M9 25h14m-12 0v4m10-4v4"/><path fill="#bacac5" d="m15 20 2-7 7 3-3 6z"/><path stroke="#94704c" stroke-width="2.5" d="m15 21-3 4"/>',
+  tannery:'<path fill="#a28c72" d="M4 15h12v14H4z"/><path fill="#80574b" d="m2 16 8-9 9 9z"/><path stroke="#94704c" stroke-width="2" d="M19 29V6h10v23"/><path fill="#bc8a57" d="m20 10 4 2 4-2-1 6 1 8-4-2-4 2 1-8z"/><path d="M7 21h5v8H7"/>',
+  stable:'<path fill="#bda077" d="M4 14h24v15H4z"/><path fill="#718579" d="m2 15 14-11 14 11z"/><path fill="#473f32" d="M9 19h14v10H9z"/><path fill="#ac7a50" d="m14 25-1-5 3-4 5 2v5h-4v4z"/><path d="m17 17-1-3m3 3 1-3"/><path fill="#cda875" d="M7 25h18v4H7z"/>',
+  saddler:'<path fill="#b89268" d="M5 14h22v15H5z"/><path fill="#647876" d="m2 15 14-11 14 11z"/><path fill="#94704c" d="M9 24h14v3H9z"/><path fill="#cda875" d="M9 19q4 3 7-4 3 7 7 4l-2 5H11z"/><path d="M12 27v3m8-3v3"/>',
+  steelworks:'<path fill="#758792" d="M3 14h26v15H3zM22 3h5v13h-5z"/><path fill="#647876" d="m2 14 9-7 9 7z"/><path fill="#473f32" d="M6 20h9v9H6z"/><path fill="#f2ad52" d="m8 28 2-6 3 6z"/><path fill="#bacac5" d="M18 20h11l-3 4h-5zm3 4h5v5h-5z"/>',
+  tradehouse:'<path fill="#a1ab7e" d="M4 13h24v16H4z"/><path fill="#647876" d="m2 14 14-10 14 10z"/><path fill="#d9bd70" d="M16 4V1h10l-2 4h-8"/><path fill="#cda875" d="M7 20h8v9H7zm10-4h8v13h-8z"/><path d="m7 20 8 9m2-13 8 13m-8-9h8"/>',
+  wheat:'<path d="m12 29 7-25m-5 16-7-7m9 1 8-3"/><path fill="#d9bd70" d="M19 4q-7-5-7 1l5 5q10-3 7-7zM16 14q-9-9-10-2 0 5 8 8 12-1 12-8-4-4-10 2z"/><path stroke="#cda875" stroke-width="3" d="m7 24 15 3"/>',
+  flour:'<path fill="#e8dcc0" d="m9 4 14 0-3 6q11 10 7 18H5Q1 20 12 10z"/><path stroke="#94704c" d="M10 10h12"/><path fill="#cda875" d="M11 16h10v9H11z"/><path d="M16 23v-5m0 3-2-2m2 0 2-2"/>',
+  fodder:'<path fill="#b6ad6b" d="M4 10h24v17H4z"/><ellipse fill="#d9bd70" cx="9" cy="18" rx="6" ry="9"/><path d="M9 13q-7 5 0 10 6-5 0-7-3 1 0 4m11-10v17m4-17v17"/><path stroke="#719451" d="m16 9 2-6m4 6 5-5"/>',
+  manure:'<path fill="#94704c" d="M3 27q-1-7 6-8-2-6 5-7-1-6 4-8 0 6 5 8 7 2 4 8 6 2 3 7z"/><path stroke="#cda875" d="M9 20h13m-9-7h6"/>',
+  herbs:'<path stroke="#94704c" stroke-width="2" d="m10 29 8-20m-3 13 10-6m-13 6L6 12"/><g fill="#719451"><path d="M17 12q-9-5-4-10 9 0 4 10zm3 9q-2-10 8-10 4 8-8 10zM11 22Q0 24 3 14q8-3 8 8z"/></g><path stroke="#d9bd70" stroke-width="3" d="m8 26 9 2"/>',
+  vegetables:'<path fill="#719451" d="M5 12q-6-8 4-9l6 7q7-12 13-4l-8 9z"/><path fill="#b7c48b" d="M5 12q11-8 21 1l-5 13-6 4-7-6z"/><path d="m8 13 7 17 5-18M6 17l10 5 9-5"/>',
+  carrots:iconPaths.resource_carrot,
+  berries:iconPaths.resource_berries,
+  eggs:iconPaths.resource_egg,
+  milk:iconPaths.resource_milk,
+  planks:iconPaths.resource_planks,
+  stone:iconPaths.resource_stone,
+  wooden_bowls:iconPaths.resource_bowl,
+  crates:iconPaths.resource_crate,
+  furniture:iconPaths.resource_chair,
+  meat:iconPaths.resource_meat,
+  wool:'<path fill="#e8dcc0" d="M7 10C1 3 15 0 17 6c7-7 15 2 10 7 7 6-1 14-7 11-2 9-15 6-14-1-8-1-6-12 1-13z"/><path stroke="#bda780" d="M9 10q14-6 13 7-1 10-10 7-8-3-3-11 5-6 10 0 5 8-2 8-7 1-5-5 2-3 5 0"/>',
+  tools:'<path stroke="#94704c" stroke-width="3.5" d="m6 28 18-22m2 22L9 7"/><path fill="#bacac5" d="m2 8 5-6 11 8-5 6zm17-1 6-4 5 6-6 5z"/>',
+  fruit:'<path d="m16 10 2-7"/><path fill="#719451" d="M18 7q2-9 11-3-3 6-11 3z"/><path fill="#b9866b" d="M16 11C0 2 0 27 12 29h8c12-2 12-27-4-18z"/><path stroke="#dfb49b" d="M9 14q-4 4-1 10"/>',
+  hides:'<path fill="#bda780" d="m5 4 7 4 4-3 4 3 7-4-3 11 4 12-8-2-4 5-4-5-8 2 4-12z"/><path fill="#94704c" d="m12 11 6 2-2 8-5-4z"/>',
+  leather:'<path fill="#b9866b" d="M5 10h22v17H5z"/><path fill="#bc8a57" d="M5 5h22v17H5z"/><path stroke="#e8dcc0" stroke-dasharray="2 3" d="M8 8h16v11H8z"/><path d="M5 22h22"/>',
+  iron_ore:'<path fill="#7f8c8c" d="m3 23 5-16 12-3 9 13-5 11H10z"/><path fill="#b9866b" d="m8 7 8 4-5 9-8 3zm12 9 7-4 2 5-5 11-5-4z"/><path d="m16 11 4-7m-9 16 8 4"/>',
+  iron:iconPaths.resource_ingot,
+  steel:'<path fill="#dce8ed" d="m7 5 17 0 5 11-22 6-5-8z"/><path fill="#758792" d="m7 14 22-6v8L7 22z"/><path fill="#bacac5" d="m7 22 22-6v8L7 30l-5-8v-8z"/><path d="m7 22 0 8m5-19 10-3m-10 19 10-3"/>',
+  saddles:'<path fill="#bc8a57" d="M4 12q8 5 12-7 4 12 12 7l-3 11H7z"/><path fill="#94704c" d="M12 17h8v8h-8z"/><path d="M8 22v6h5v-5m11-1v6h-5v-3"/><path stroke="#e8dcc0" d="m9 15 3 6m11-6-3 6"/>',
+  trade_crates:'<path fill="#a78454" d="M4 7h24v22H4z"/><path fill="#758792" d="M8 7h3v22H8zm13 0h3v22h-3z"/><path fill="#e8dcc0" d="M13 11h9v10h-9z"/><path fill="#b9866b" d="m14 16 4-3 3 4-4 3z"/>',
+  carved_furniture:'<path fill="#94704c" d="M6 5q10-7 20 0l-2 13H8z"/><path fill="#cda875" d="M4 18h24v6H4z"/><path fill="#a78454" d="M7 24h4l-1 6H6zm14 0h4l1 6h-4z"/><path stroke="#d9bd70" d="m16 6 4 5-4 5-4-5zM8 21h16"/>',
+  bread:'<path fill="#cda875" d="M3 23v-8C3 3 29 3 29 15v8q-13 9-26 0z"/><path stroke="#e8dcc0" stroke-width="2" d="m10 11-3 7m10-8-3 8m10-7-3 7"/>',
+  bread_rolls:'<g fill="#d9bd70"><ellipse cx="11" cy="12" rx="8" ry="7"/><ellipse cx="22" cy="20" rx="8" ry="7"/><ellipse cx="9" cy="25" rx="7" ry="5"/></g><path stroke="#e8dcc0" d="m9 8 3 7m8 2 3 6m-16 0 3 4"/>',
+  herb_bread:'<path fill="#cda875" d="M4 26V15C4 4 28 4 28 15v11z"/><path d="m10 14-2 6m10-7-3 7m10-5-3 6"/><path fill="#719451" d="M15 10q-9-1-7-7 7-1 7 7 3-10 10-7 0 7-10 7z"/>',
+  fruit_pies:'<path fill="#a78454" d="m3 17 3 11h20l3-11z"/><ellipse fill="#b9866b" cx="16" cy="16" rx="13" ry="7"/><path stroke="#d9bd70" stroke-width="3" d="m7 12 15 9M6 18l13-9m-7 14 14-9m-13-4 14 8"/><ellipse cx="16" cy="16" rx="13" ry="7"/>',
+  cakes:'<path fill="#cda875" d="M4 14h24v14H4z"/><path fill="#e8dcc0" d="M4 12q12-5 24 0v8l-4-3-4 3-4-3-4 3-4-3-4 3z"/><path stroke="#b9866b" stroke-width="3" d="M5 24h22"/><circle fill="#b9866b" cx="16" cy="8" r="4"/><path stroke="#719451" d="m16 4 3-3"/>',
+  prepared_meat:'<ellipse fill="#bacac5" cx="16" cy="23" rx="14" ry="7"/><path fill="#94704c" d="M6 21q-3-12 8-12 8 0 10 12-7 7-18 0z"/><path stroke="#cda875" d="m12 12-2 7m8-6-2 7"/><path fill="#e8dcc0" d="m22 16 4-4q-1-4 2-3 5 2 2 5l-2 1-4 4z"/>',
+  herbed_meat:'<ellipse fill="#bacac5" cx="16" cy="24" rx="14" ry="6"/><path fill="#b9866b" d="M5 21Q2 8 15 9q12 0 12 12-12 9-22 0z"/><path stroke="#e8dcc0" d="m10 14-2 6m9-6-2 7"/><path fill="#719451" d="M18 14q-7-9 0-11l3 7q2-10 8-6-1 8-11 10z"/>',
+  smoked_meat:'<path d="M9 9q-4-3 0-7m8 6q-4-3 0-7m8 8q-4-3 0-7"/><path fill="#94704c" d="M4 16q8-8 16-3l8 9q1 7-9 7L5 24z"/><path fill="#cda875" d="M4 16q8-5 12 6l3 7L5 24z"/><path d="m9 17 3 6m7-8 3 4"/>',
+  sausages:'<path stroke="#cda875" stroke-width="2" d="m5 8 3 3m16 0 3-3M5 21l-2 3m24 0 2 3"/><path fill="#b9866b" d="M8 10q8 9 16 0l4 5q-12 13-24 0zm-3 9q10 10 20 2l3 5Q14 35 3 25z"/><path d="m11 15-2 3m13-3 2 3m-9 8-1 4"/>',
+  meat_pies:'<path fill="#a78454" d="m3 18 4 11h18l4-11z"/><path fill="#cda875" d="M3 18C1 2 31 2 29 18q-13 9-26 0z"/><path d="m12 10-2 6m7-6-2 6m7-5-2 6"/><path fill="#b9866b" d="m9 23 6-3 8 4-6 3z"/>',
+  berry_bush:'<path fill="#719451" d="M5 27C-1 23 2 15 7 15c-5-10 10-14 12-6 10-3 14 9 7 12 6 9-5 11-10 6z"/><g fill="#a76770"><circle cx="10" cy="18" r="3"/><circle cx="22" cy="17" r="3"/><circle cx="16" cy="24" r="3"/></g>',
+  herb_patch:'<path fill="#80764a" d="m2 26 14-6 14 6-14 4z"/><path stroke="#719451" stroke-width="2" d="M9 25V10m7 17V6m7 19V12M9 18l-5-5m12 7 5-6m2 7 5-5"/><g fill="#cfb7cd"><circle cx="9" cy="8" r="3"/><circle cx="16" cy="5" r="3"/><circle cx="24" cy="11" r="3"/></g>',
+  wild_horse:'<path fill="#ac7a50" d="M5 13h13l3-9 8 5-2 7h-6v7l-3 6h-3l1-10H9L7 29H4l1-10z"/><path fill="#705337" d="m18 13 1-10 4 1-2 12z"/><path d="m23 5 1-3M5 14l-3 9"/><circle fill="#e8dcc0" cx="26" cy="9" r="1"/>',
+  chest:'<path fill="#a78454" d="M3 15h26v14H3z"/><path fill="#cda875" d="M3 15V9C3 0 29 0 29 9v6z"/><path fill="#d9bd70" d="M7 5h3v24H7zm15 0h3v24h-3zM14 13h5v7h-5z"/><path d="M3 15h26m-13 0v3"/>',
+  village_hut:'<path fill="#bda780" d="M6 14h20v15H6z"/><path fill="#719451" d="m2 16 6-10 8-3 8 3 6 10z"/><path fill="#94704c" d="M13 20h6v9h-6z"/><path fill="#e4c980" d="M8 17h4v5H8zm12 0h4v5h-4z"/>',
+  village_market:'<path fill="#cda875" d="M5 21h22v8H5z"/><path d="M6 21V12m20 9V12"/><path fill="#719451" d="M3 5h26v9q-4 5-8 0-5 5-10 0-4 5-8 0z"/><path fill="#b9866b" d="M9 21v-4h6v4z"/><path fill="#d9bd70" d="M19 21v-4h5v4z"/>',
+  boat:'<path fill="#7899a2" d="M2 28q7 4 14 0 7 4 14 0"/><path fill="#94704c" d="m2 19 9 2h19l-7 7H9z"/><path stroke="#94704c" stroke-width="2" d="M16 21V2"/><path fill="#e8dcc0" d="m18 3 10 14H18z"/><path fill="#d9bd70" d="M13 5 5 17h8z"/>',
+});
+// Species keep different body shapes and markings after smoking, so the
+// silhouette identifies the fish even when the warm smoked palette is used.
+for(const [kind,body,color,marks] of [
+  ['fish','M8 17Q17 5 27 17 17 29 8 17z','#7899a2','M17 10l-4-5 8 3'],
+  ['trout','M7 18Q16 7 28 17 17 28 7 18z','#8c9b8b','M14 15h.1m4-2h.1m-2 7h.1m5-2h.1'],
+  ['salmon','M6 18Q18 7 29 16 21 26 6 18z','#b9866b','m12 17 11-1m-8-4 2-5 5 5'],
+  ['sturgeon','M6 19Q15 11 30 17L21 23 6 19z','#758792','m10 16 3-6 3 4 3-6 3 6m-10 3 11 1'],
+]){
+  for(const smoked of [false,true]){
+    iconPaths[(smoked?'smoked_':'')+kind]=`${smoked?'<path d="M11 7q-3-3 0-6m8 5q-3-3 0-5m7 6q-3-3 0-6"/>':''}<path fill="${smoked?'#cda875':color}" d="m8 17-6-5v12l6-5z"/><path fill="${smoked?'#a87850':color}" d="${body}"/><path d="${marks}"/><path d="M23 15q-3 3 0 5"/><circle fill="#e8dcc0" cx="25" cy="16" r="1.3"/>`;
+  }
+}
 function illustration(kind){
   const cached=illustration.templates?.get(kind);if(cached)return cached.cloneNode(true);
   const span=document.createElement('span');span.className='illustration';span.setAttribute('aria-hidden','true');
@@ -3946,11 +4014,44 @@ function drawBarnPath(b,size=120){
     if(i<points.length-1)polygon([ground(end.x-r,end.y-r),ground(end.x+r,end.y-r),ground(end.x+r,end.y+r),ground(end.x-r,end.y+r)],'#b1a078');
   }
 }
+function barnGatePassage(person,pen){
+  if(!person)return false;
+  const {a,nx,ny,tx,ty}=pen;
+  const normal=p=>(p.x-a.x)*nx+(p.y-a.y)*ny,tangent=p=>(p.x-a.x)*tx+(p.y-a.y)*ty;
+  const across=normal(person),along=tangent(person);
+  if(Math.abs(across)>=1.7||along<=-.6||along>=2.6)return false;
+  // Never close on somebody already occupying the doorway.
+  if(Math.abs(across)<.25&&along>.18&&along<1.82)return true;
+  const state=person.state || {};
+  if(state.playbackQueue?.length&&!state.path?.length)return false;
+  let route=state.path || [];
+  if(state.playbackQueue?.length)route=state.playbackQueue.flatMap(chunk=>chunk.samples.slice(chunk.index+1));
+  else if(state.segments?.length)route=state.segments.map(segment=>segment.target);
+  else if(state.waypoints?.length)route=state.waypoints;
+  let position=person,travelled=0;
+  for(const waypoint of route){
+    let next=Array.isArray(waypoint)?{x:waypoint[0],y:waypoint[1]}:waypoint;
+    let distance=Math.hypot(next.x-position.x,next.y-position.y);
+    if(distance<1e-9)continue;
+    // Founders publish short input steps; use their current approach direction.
+    if(person.kind==='player'&&route.length===1){
+      next={x:position.x+(next.x-position.x)*2.4/distance,y:position.y+(next.y-position.y)*2.4/distance};distance=2.4;
+    }
+    const before=normal(position),after=normal(next),delta=after-before;
+    if(Math.abs(delta)>1e-9){
+      const fraction=-before/delta,crossing=tangent(position)+(tangent(next)-tangent(position))*fraction;
+      if(fraction>=0&&fraction<=1&&travelled+distance*fraction<=2.4&&crossing>.18&&crossing<1.82)return true;
+    }
+    travelled+=distance;if(travelled>2.4)break;
+    position=next;
+  }
+  return false;
+}
 function barnFenceSprites(buildings,landscape={},people=[],seconds=0){
   const sprites=[],size=landscape.map_size || 120,previous=barnFenceSprites.states || new Map(),states=new Map();
   for(const barn of buildings){
     if(!barnActive(barn))continue;
-    const pen=barnPen(barn,size),{a,end,tx,ty,nx,ny}=pen;
+    const pen=barnPen(barn,size),{a,end,tx,ty}=pen;
     for(const [x,y,endX,endY] of pen.segments){
       const length=Math.max(Math.abs(endX-x),Math.abs(endY-y));
       for(let step=0;step<length-1e-6;step++){
@@ -3959,8 +4060,7 @@ function barnFenceSprites(buildings,landscape={},people=[],seconds=0){
         sprites.push({kind:'barn_fence',x:(start.x+finish.x)/2,y:(start.y+finish.y)/2,start,end:finish});
       }
     }
-    const nearby=people.some(p=>p&&Math.abs((p.x-a.x)*nx+(p.y-a.y)*ny)<1.7
-      &&(p.x-a.x)*tx+(p.y-a.y)*ty>-.6&&(p.x-a.x)*tx+(p.y-a.y)*ty<2.6);
+    const nearby=people.some(person=>barnGatePassage(person,pen));
     const key=`${world.world_id}/${barn.townId || viewed}/${barn.x},${barn.y}/${pen.orientation}`;
     const old=previous.get(key),hold=nearby ? .5 : Math.max(0,(old?.hold || 0)-seconds),target=Number(nearby||hold>0);
     const opening=old?Math.max(0,Math.min(1,old.opening+Math.sign(target-old.opening)*seconds*4)):target;
