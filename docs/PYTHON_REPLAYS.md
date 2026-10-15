@@ -1,8 +1,8 @@
 # Python replay fixtures (R03 slice 2)
 
 Five recorded synthetic scenarios replay on the unchanged Python game. This
-completes slice 2; the backend-neutral execution/comparison interface and paired
-reporting remain slice 3. The pure comparator remains in `tools/replay_contract.py`.
+completed slice 2; slice 3 adds the [backend-neutral execution/comparison
+interface and paired reporting](REPLAY_BACKENDS.md). The pure comparator remains in `tools/replay_contract.py`.
 No Rust adapter or Rust-host benchmark exists. `tools/server_perf.py` imports Python
 and cannot establish Rust performance. These are semantic fixtures, not load tests,
 a complete public snapshot contract, HTTP tests, or legacy-save acceptance.
@@ -17,7 +17,9 @@ python3 tools/check.py --tests tests/test_python_replay.py
 
 Default replay runs every fixture twice in fresh worlds and never changes a baseline.
 Every failure identifies the trace, step/operation and differing field or invariant.
-The CLI explicitly reports missing Rust and Rust-host benchmarks. Format validation
+The CLI explicitly reports missing Rust and Rust-host benchmarks. Its replay path
+now delegates to protocol v1 through `PythonBackend`; recording retains its explicit
+separate path. Format validation
 alone remains available through `tools/replay_contract.py`.
 
 ## Provenance, initial state and recording
@@ -152,4 +154,4 @@ modules and passed all 25 cases. Markdown/JSON reports are
 The standalone CLI also replayed all five traces twice (61 operations per pass). Performance checks
 were not run: this is new replay tooling/fixture coverage, with no performance
 investigation or optimization. No Rust performance, load budgets or LAN latency
-claim is made. R03 slice 3 and the other R01 audit gaps remain open.
+claim is made. R03 slice 3 is complete; the other R01 audit gaps remain open.

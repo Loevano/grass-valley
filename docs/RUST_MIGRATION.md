@@ -2,7 +2,7 @@
 
 A migration that can be completed one task at a time, with a prompt for each task.
 
-**Status:** R01 and R02 complete; R03 slices 1–2 (contract and Python traces) complete; Rust implementation has not started.
+**Status:** R01–R03 complete; R04 is next. Rust implementation has not started.
 **Initial plan revision:** `445ddddd675a87eb7adb50442b2dbf3c14ea6c6f`.
 **R01 audit revision:** `935db7b95885c101c62dfd6bf9e16f39b6a7a8fe`.
 **Scope:** replace the Python host first. Keep the browser playable during that
@@ -216,7 +216,7 @@ only after work is performed. Keep unfinished stages visible in the roadmap.
 | --- | --- | --- | --- |
 | R01 | Contracts, coverage inventory, decisions | This plan | Complete; [contracts and evidence](RUST_CONTRACTS.md), audited at `935db7b`; commit: `docs: define R01 migration contracts` (this change) |
 | R02 | Fix current relocation continuity | R01 | Complete; `fix: preserve worker continuity when relocating workplaces` (this change); evidence below |
-| R03 | Replay fixtures and comparison oracle | R02 | In progress: slices 1–2 complete; slice 1 `9637eb5`; slice 2 `test: record deterministic Python replay fixtures` (this change); [Python evidence](PYTHON_REPLAYS.md). Backend-neutral replay interface remains |
+| R03 | Replay fixtures and comparison oracle | R02 | Complete: slice 1 `9637eb5`; slice 2 `049fe10`; slice 3 `test: add backend-neutral replay comparison reports` (this change); [protocol and evidence](REPLAY_BACKENDS.md) |
 | R04 | Cargo workspace and applicable checks | R03 | Not started |
 | R05 | Typed state, IDs, units, and boundary DTOs | R04 | Not started |
 | R06 | Legacy import and read-only save inspection | R05 | Not started |
@@ -369,7 +369,7 @@ through its module/JSON dependencies; all 12 cases pass. Markdown/JSON reports:
 `performance-results/20261016-013120/report.{md,json}` (ignored local artifacts).
 Performance checks were not run: this defines new tooling contracts, with no performance
 investigation or optimization. The slice 2 evidence below supersedes the earlier
-remaining-work status; stage R03 is still unfinished.
+remaining-work status; all three R03 slices are now complete.
 
 **Slice 2 evidence:** [Python replay recipes and evidence](PYTHON_REPLAYS.md),
 `tools/python_replay.py`, five recorded JSON fixtures under `tests/replay/python/`,
@@ -382,7 +382,7 @@ and a three-town real-terrain quarry scenario with exact-once participant reward
 and an unrewarded spectator. Corrupted cargo/ownership/position/rewards fail with
 trace/step/field context. Missing/extra/changed random draws fail. Private saves
 were not accessed, and gameplay code is unchanged. Time, reload and projection
-limitations are explicit in the evidence. **Remaining:** slice 3 provides the
+limitations are explicit in the evidence. Slice 3 below completes the
 backend-neutral replay interface and paired reporting; Rust and Rust-host
 benchmarks remain unavailable. This is not HTTP/import/performance acceptance.
 
@@ -392,6 +392,32 @@ Slice 2 validation: `python3 tools/check.py` selected two tooling test modules; 
 per pass. Performance checks were not run because this adds semantic replay
 coverage, with no performance investigation or optimization. Environment and
 measurement limitations are recorded in the linked evidence.
+
+**Slice 3 evidence:** [Protocol v1 and paired reporting](REPLAY_BACKENDS.md),
+`tools/replay.py`, the `PythonBackend` adapter in `tools/python_replay.py`, and
+`tests/test_replay.py`. Adapters receive no expected observations, invariants or
+tolerances. Each run is compared to the recorded baseline and the independent
+other run; shape/count/identity validation rejects incomplete results. Existing
+Python replay uses the same interface, and recording still reproduces the unchanged
+baselines. Synthetic test adapters demonstrate protocol failures, corrupted cargo,
+ownership, positions and rewards, and shared bugs rejected by independent invariants.
+Rust is explicitly unavailable; missing candidates produce inconclusive comparisons,
+not passes. Python/Python is identified as repeatability evidence only. JSON and
+Markdown reports retain trace/step/field failures and baseline/runner revisions.
+No private save data was used, no gameplay code changed, and no golden was refreshed.
+All three R03 slices are complete. Remaining Rust implementation, transport/CLI,
+full migration coverage, and release performance acceptance belong to later stages.
+
+Slice 3 validation: `python3 tools/check.py` selected three tooling modules; all
+38 cases pass. Reports: `performance-results/20261016-014504/report.{md,json}`
+(ignored local artifacts). CLI JSON/Markdown evidence:
+`performance-results/r03-slice3-python/` passes all five Python/Python traces;
+`performance-results/r03-slice3-rust/` reports Python baselines passing and Rust
+unavailable, all paired comparisons inconclusive, exit 2. Both reports identify
+runner `049fe101d3a11ffec7d999682dc6e477ce3f83ec` plus the uncommitted slice 3 diff;
+fixtures retain producing revision `9637eb5bf982fa2342556feaa4059fcb3f0d4b17`.
+Performance checks were not run: this is semantic tooling work, not a performance
+investigation or optimization. No Rust or Rust-host measurement is claimed.
 
 **Deliver:** small synthetic scenarios containing initial state, explicit time
 advances, commands, controlled random inputs, expected public results, and selected

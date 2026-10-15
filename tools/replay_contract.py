@@ -1,4 +1,4 @@
-"""R03 v1 trace format and comparison primitives; no game/backend adapter yet."""
+"""R03 v1 trace format and independent comparison primitives (no game imports)."""
 import argparse
 import json
 import math
@@ -7,7 +7,7 @@ from pathlib import Path
 
 
 TOLERANCES = {'position': 1e-6, 'fraction': 1e-9}
-STATUS = ('Format validation only. Python recording/replay is available in tools/python_replay.py. '
+STATUS = ('Format validation only. Python recording/replay is in tools/python_replay.py; paired reports are in tools/replay.py. '
           'Rust adapter and Rust-host benchmarks do not exist yet; tools/server_perf.py '
           'measures Python only.')
 PRIVATE_KEYS = {'token', 'tokens', 'pin', 'pin_hash', 'password', 'credentials',
@@ -131,6 +131,31 @@ def compare_observation(expected, actual, numeric_fields=(), invariants=()):
     return failures
 
 
+def validate_operation(operation, prefix="operation"):
+    require(isinstance(operation, dict), f'{prefix}: operation required')
+    op = operation.get('kind')
+    keys = {'advance': {'kind', 'clock', 'seconds'},
+            'command': {'kind', 'town', 'data'}, 'reload': {'kind'}}
+    require(isinstance(op, str) and op in keys and set(operation) == keys[op], f'{prefix}: invalid operation')
+    if op == 'advance':
+        require(operation['clock'] in ('movement', 'economy', 'adventure') and
+                number(operation['seconds']) and operation['seconds'] >= 0,
+                f'{prefix}: invalid explicit time advance')
+    if op == 'command':
+        require(isinstance(operation['town'], str) and operation['town'] and
+                isinstance(operation['data'], dict) and
+                isinstance(operation['data'].get('action'), str), f'{prefix}: invalid command')
+
+
+def validate_draws(draws, prefix="random draws"):
+    require(isinstance(draws, list), f'{prefix}: draws must be ordered')
+    for draw in draws:
+        require(isinstance(draw, dict) and set(draw) == {'site', 'method', 'args', 'value'} and
+                isinstance(draw['site'], str) and draw['site'] and
+                isinstance(draw['method'], str) and draw['method'] and
+                isinstance(draw['args'], list), f'{prefix}: invalid random draw')
+
+
 def validate_trace(trace):
     json_value(trace)
     require(isinstance(trace, dict) and set(trace) == {
@@ -156,26 +181,8 @@ def validate_trace(trace):
         require(isinstance(step, dict) and set(step) == {
             'operation', 'random_draws', 'expected', 'numeric_fields', 'invariants'},
             f'{prefix}: invalid step envelope')
-        operation = step['operation']
-        require(isinstance(operation, dict), f'{prefix}: operation required')
-        op = operation.get('kind')
-        keys = {'advance': {'kind', 'clock', 'seconds'},
-                'command': {'kind', 'town', 'data'}, 'reload': {'kind'}}
-        require(op in keys and set(operation) == keys[op], f'{prefix}: invalid operation')
-        if op == 'advance':
-            require(operation['clock'] in ('movement', 'economy', 'adventure') and
-                    number(operation['seconds']) and operation['seconds'] >= 0,
-                    f'{prefix}: invalid explicit time advance')
-        if op == 'command':
-            require(isinstance(operation['town'], str) and operation['town'] and
-                    isinstance(operation['data'], dict) and
-                    isinstance(operation['data'].get('action'), str), f'{prefix}: invalid command')
-        require(isinstance(step['random_draws'], list), f'{prefix}: draws must be ordered')
-        for draw in step['random_draws']:
-            require(isinstance(draw, dict) and set(draw) == {'site', 'method', 'args', 'value'} and
-                    isinstance(draw['site'], str) and draw['site'] and
-                    isinstance(draw['method'], str) and draw['method'] and
-                    isinstance(draw['args'], list), f'{prefix}: invalid random draw')
+        validate_operation(step['operation'], prefix)
+        validate_draws(step['random_draws'], prefix)
         require(isinstance(step['expected'], dict) and set(step['expected']) == {'public', 'state'},
                 f'{prefix}: public and authoritative state projections required')
         require(isinstance(step['numeric_fields'], list) and isinstance(step['invariants'], list),

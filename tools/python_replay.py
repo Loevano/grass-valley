@@ -1,4 +1,4 @@
-"""Disposable Python-only recording/replay for R03 slice 2 (no backend protocol)."""
+"""Disposable Python recording and protocol-v1 replay adapter (R03)."""
 import argparse
 from contextlib import ExitStack
 import copy
@@ -28,7 +28,7 @@ from tools.replay_contract import (ContractError, canonical_json, compare_observ
 
 STATUS = ('Python synthetic replay only. Rust adapter and Rust-host benchmarks do not '
           'exist yet; tools/server_perf.py measures Python only. Backend-neutral '
-          'execution/reporting remains R03 slice 3.')
+          'execution/reporting is available in tools/replay.py.')
 FIXTURES = ROOT / 'tests/replay/python'
 RECIPES = ('relocation_v1', 'blocked_delivery_v1', 'workshop_v1', 'meals_v1', 'terrain_quarry_v1')
 
@@ -279,34 +279,62 @@ def execute(world, recipe, operation, inputs, directory):
     return world, {'result': None}
 
 
+class PythonBackend:
+    name = 'python'
+
+    def replay(self, request):
+        from tools.replay import validate_request
+        validate_request(request)
+        initial = copy.deepcopy(request['initial'])
+        # Expected initial state never crosses the backend boundary.
+        initial['parameters']['initial_state'] = {}
+        validate_initial(initial)
+        inputs = Inputs(initial['parameters']['seed'])
+        observations = []
+        with ExitStack() as stack, tempfile.TemporaryDirectory(prefix='lantern-replay-') as directory:
+            inputs.install(stack)
+            inputs.begin(initial['parameters']['setup_draws'])
+            world = setup(initial)
+            inputs.finish()
+            initial_state = project(world, {'result': None}, initial=True)['state']
+            for index, step in enumerate(request['steps']):
+                inputs.begin(step['random_draws'])
+                try:
+                    world, result = execute(world, initial['recipe'], step['operation'], inputs, directory)
+                    inputs.finish()
+                    observations.append(project(world, result))
+                except ContractError as error:
+                    raise ContractError(f"{request['trace_id']} step {index} {step['operation']}: {error}") from error
+        return {'protocol_version': 1, 'trace_id': request['trace_id'],
+                'initial_state': initial_state, 'observations': observations}
+
+
 def run_trace(trace, recording=False):
     if not recording:
-        validate_trace(trace)
-        require(trace['provenance']['kind'] == 'recorded_python', 'not a recorded Python baseline')
+        from tools.replay import replay_trace, baseline_differences, failure_message
+        response = replay_trace(PythonBackend(), trace)
+        failures = baseline_differences(trace, response)
+        require(not failures, failure_message(trace, failures))
+        return response['observations']
     initial = trace['initial']
     validate_initial(initial)
     inputs = Inputs(initial['parameters']['seed'])
     observations = []
     with ExitStack() as stack, tempfile.TemporaryDirectory(prefix='lantern-replay-') as directory:
         inputs.install(stack)
-        inputs.begin(None if recording else initial['parameters']['setup_draws'])
+        inputs.begin()
         world = setup(initial)
         draws = inputs.finish()
         initial_state = project(world, {'result': None}, initial=True)['state']
-        if recording:
-            initial['parameters']['setup_draws'] = draws
-            initial['parameters']['initial_state'] = initial_state
-        else:
-            failures = compare_observation(initial['parameters']['initial_state'], initial_state)
-            require(not failures, f"{trace['id']} initial state: " + '\n'.join(failures))
+        initial['parameters']['setup_draws'] = draws
+        initial['parameters']['initial_state'] = initial_state
         for index, step in enumerate(trace['steps']):
-            inputs.begin(None if recording else step['random_draws'])
+            inputs.begin()
             try:
                 world, result = execute(world, initial['recipe'], step['operation'], inputs, directory)
                 draws = inputs.finish()
                 actual = project(world, result)
-                if recording:
-                    step.update(expected=actual, random_draws=draws)
+                step.update(expected=actual, random_draws=draws)
                 failures = compare_observation(step['expected'], actual,
                                                step['numeric_fields'], step['invariants'])
                 require(not failures, '\n'.join(failures))

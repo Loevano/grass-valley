@@ -129,9 +129,14 @@ class PythonReplay(unittest.TestCase):
                  ('terrain_quarry_v1', ['state', 'towns', 'spectator', 'coins'], 40)]
         original = replay.project
         for recipe, path, value in cases:
+            corrupted = []
+
             def corrupt(*args, **kwargs):
                 observation = original(*args, **kwargs)
-                if not kwargs.get('initial'):
+                # Batch adapters collect the whole trace before comparison. Inject
+                # only step 0, while its cargo/trip still exists.
+                if not kwargs.get('initial') and not corrupted:
+                    corrupted.append(True)
                     target = observation
                     for key in path[:-1]:
                         target = target[key]

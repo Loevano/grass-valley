@@ -1,12 +1,13 @@
-# Replay contract v1 (R03 slices 1–2)
+# Replay contract v1 (R03 complete)
 
 This defines the disposable-fixture format and comparison contract. Slice 2 adds
-a [Python-only recorder/replayer](PYTHON_REPLAYS.md); the backend-neutral replay
-interface remains slice 3. `tools/replay_contract.py` validates the format and
+a [Python recorder/replayer](PYTHON_REPLAYS.md); slice 3 adds the
+[backend-neutral execution interface and reports](REPLAY_BACKENDS.md). `tools/replay_contract.py` validates the format and
 compares supplied observations without importing the game. `tests/replay/contract_v1.json` is a
 fabricated **contract example**, not a recorded Python baseline. Its revision
 identifies the Python source inspected when designing the format; no gameplay
-result in that example is claimed as measured evidence. R03 slice 3 remains.
+result in that example is claimed as measured evidence. All three R03 slices are
+complete; the Rust adapter arrives in a later stage.
 
 Run `python3 tools/replay_contract.py tests/replay/contract_v1.json` for format
 validation. The command points to `tools/python_replay.py` for Python execution
@@ -91,8 +92,9 @@ observation, e.g. `["state","position","x"]`. No wildcards or implicit ID remapp
 `compare_observation(expected, actual, numeric_fields, invariants)` returns useful
 field paths and invariant names on failure. It has no Python dependencies or
 snapshot-building logic, so its checks are independent of gameplay implementation.
-The Python runner supplies observations to it. The later backend interface
-remains unfinished; no Rust implementation is available.
+The Python adapter and backend-neutral harness supply observations to it.
+[Protocol v1](REPLAY_BACKENDS.md) keeps expected data out of execution requests.
+No Rust implementation is available.
 
 Normalization only canonicalizes object-key order and JSON whitespace. Arrays,
 IDs, integer quantities, ownership, rewards, null versus missing, phases, timers,
@@ -136,6 +138,8 @@ Slice 2 records and repeatedly replays five Python traces covering relocation,
 blocked/unreachable travel and recovery, reload mid-trip, exact-once cargo transfer,
 workshop queues, food/stock accounting, multiple towns and a quarry adventure on
 real generated terrain. [Python replay evidence](PYTHON_REPLAYS.md) records the
-producing revision, limitations and environment. Slice 3 still implements the
-backend-neutral replay interface and paired reporting, with Rust explicitly
-unavailable until implemented. These fixtures do not fill every R01 audit gap.
+producing revision, limitations and environment. Slice 3 implements the
+[backend-neutral replay interface and paired reporting](REPLAY_BACKENDS.md),
+validates complete actual responses, and checks each run against the recorded
+baseline and the other independent run. Rust remains explicitly unavailable.
+R03 is complete; these fixtures do not fill every R01 audit gap.
