@@ -14,6 +14,7 @@ from urllib.parse import parse_qs, urlsplit
 import progression as economy
 import resource_activity
 import logistics
+import barns
 import work_cycles
 import farming
 import equipment
@@ -195,11 +196,13 @@ def hall_upgrade(town):
     return upgrade
 
 
-def walkable(town, x, y, blocked=None, water=None):
+def walkable(town, x, y, blocked=None, water=None, fences=None):
     size = town.get('map_size', 12)
     radius = .18
     if not (radius - .5 <= x <= size - .5 - radius
             and radius - .5 <= y <= size - .5 - radius):
+        return False
+    if barns.blocked(x, y, barns.fences(town['buildings'], size) if fences is None else fences):
         return False
     if blocked is None:
         blocked = occupied_tiles(b for b in
@@ -254,16 +257,17 @@ def move_player(town, data):
                    if b['kind'] not in {'tree', 'berry_bush'} and not (b['kind'] == 'water' and player.get('boat')))
         # Small steps prevent tunnelling through obstacles; slide along walls.
         water = {(r['x'], r['y']) for r in town['map_resources'] if r['kind'] == 'water'}
+        fences = barns.fences(town['buildings'], town.get('map_size', 12))
         for _ in range(5):
             tile = (math.floor(player['x'] + .5), math.floor(player['y'] + .5))
             speed = (1 + .25 * max(0, economy.player_boat_level(player) - 1)) if tile in water else 1.5 if tile in roads else 1
             if tile not in water and player.get('mounted'):
                 speed *= 1.75
             x = player['x'] + dx / length * .06 * speed
-            if walkable(town, x, player['y'], blocked, water):
+            if walkable(town, x, player['y'], blocked, water, fences):
                 player['x'] = x
             y = player['y'] + dy / length * .06 * speed
-            if walkable(town, player['x'], y, blocked, water):
+            if walkable(town, player['x'], y, blocked, water, fences):
                 player['y'] = y
         if dx != dy:
             player['facing'] = 1 if dx > dy else -1
@@ -609,7 +613,8 @@ def woodcutting_source(town, building, trees, worker_index, walking=None):
         tree is not retained, abs(tree['x'] - building['x']) + abs(tree['y'] - building['y'])))
     for tree in candidates:
         if work_cycles.route(position, tree, blocked, walking.get('map_size', 120),
-                             walking.get('terrain', []), bounds=bounds, roads=roads) is not None:
+                             walking.get('terrain', []), bounds=bounds, roads=roads,
+                             fences=barns.fences(walking['buildings'], walking.get('map_size', 120))) is not None:
             return tree
     return None
 
@@ -787,7 +792,8 @@ def construction_route(town, start, target, road_mode='departure'):
     if start is None:
         return None
     roads = {(r['x'], r['y']) for r in town.get('roads', []) if completed(r)}
-    path = routes.route(start, target, blocked, size, terrain, roads=roads, road_mode=road_mode, diagonal=True)
+    path = routes.route(start, target, blocked, size, terrain, roads=roads, road_mode=road_mode,
+                        diagonal=True, fences=barns.fences(town['buildings'], size))
     return None if path is None else [start] + [(p['x'], p['y']) for p in path]
 
 
@@ -845,6 +851,7 @@ def construct(town, landscape, workers=None, elapsed=TICK_SECONDS):
     blocked = construction_blocked(landscape)
     size, terrain = landscape.get('map_size', MAP_SIZE), landscape.get('terrain', [])
     roads = {(r['x'], r['y']) for r in landscape.get('roads', []) if completed(r)}
+    fences = barns.fences(landscape['buildings'], size)
     def open_step(tile):
         x, y = tile
         return (0 <= x < size and 0 <= y < size and (x, y) not in blocked
@@ -884,7 +891,8 @@ def construct(town, landscape, workers=None, elapsed=TICK_SECONDS):
                         'path': [list(p) for p in path], 'step': 0}
             # Replan only when a step actually becomes impassable. Road edits
             # change walking time immediately but do not discard a valid route.
-            if walk['step'] + 1 < len(path) and not open_step(path[walk['step'] + 1]):
+            if walk['step'] + 1 < len(path) and (not open_step(path[walk['step'] + 1])
+                    or barns.crosses(start, path[walk['step'] + 1], fences)):
                 path = construction_route(landscape, start, site)
                 if path is None:
                     continue
@@ -898,7 +906,8 @@ def construct(town, landscape, workers=None, elapsed=TICK_SECONDS):
             remaining, reached = elapsed, walk['step']
             travelling = reached + 1 < len(path)
             while reached + 1 < len(path):
-                if not open_step(path[reached + 1]):
+                if (not open_step(path[reached + 1])
+                        or barns.crosses(path[reached], path[reached + 1], fences)):
                     # Leave the worker at the last reachable waypoint; the next
                     # update will find a detour from there.
                     break
@@ -1444,6 +1453,33 @@ def command(town, data, world=None):
         bind_map(world)
     ensure_resources(town)
     action = data.get('action')
+    if action == 'set_fence_orientation':
+        index, orientation = data.get('index'), data.get('orientation')
+        if type(index) is not int or not 0 <= index < len(town['buildings']):
+            raise ValueError('Choose a barn first.')
+        building = town['buildings'][index]
+        if not barns.active(building) or type(orientation) is not int or orientation not in range(4):
+            raise ValueError('Choose a completed barn and a fence orientation.')
+        size = town.get('map_size', MAP_SIZE)
+        candidate = dict(building, fence_orientation=orientation)
+        actual, _, _, segments = barns.pen(candidate, size)
+        if actual != orientation:
+            raise ValueError('The gate must face into the map.')
+        landscape = world.get('shared_map', town) if world else town
+        for npc in landscape.get('npcs', []):
+            position = npc.get('routine') or npc
+            if barns.blocked(position['x'], position['y'], segments):
+                raise ValueError('Wait until everyone has cleared the fence before turning the gate.')
+        towns = world['towns'].values() if world and 'shared_map' in world else [town]
+        for owner in towns:
+            positions = [owner.get('player', {})]
+            for worker in owner.get('villagers', []):
+                positions.append(worker.get('work_animation') or worker.get('logistics_position')
+                                 or worker.get('construction_position') or {})
+            if any('x' in p and barns.blocked(p['x'], p['y'], segments) for p in positions):
+                raise ValueError('Wait until everyone has cleared the fence before turning the gate.')
+        building['fence_orientation'] = orientation
+        return {}
     if action in {'join_lanterns', 'leave_lanterns', 'lanterns_walk', 'lanterns_collect'}:
         return lanterns.change(town, data, world)
     if world and lanterns.inside(world, town) and action in {'walk', 'fish', 'chop', 'gather', 'mine', 'join_quarry'}:

@@ -2,7 +2,8 @@
 from collections import OrderedDict, deque
 import heapq
 from math import sqrt
-from spatial import perimeter
+from spatial import perimeter, footprint_tiles
+import barns
 
 
 class RouteCache:
@@ -11,9 +12,12 @@ class RouteCache:
         self.graphs = OrderedDict()
 
     def route(self, start, target, blocked, size, terrain, adjacent=True, bounds=None,
-              roads=(), road_mode='smooth', diagonal=False):
+              roads=(), road_mode='smooth', diagonal=False, fences=()):
         if adjacent and isinstance(target, dict) and target.get('footprint'):
-            target = perimeter(target) - set(blocked)
+            tiles = footprint_tiles(target)
+            target = {p for p in perimeter(target) - set(blocked)
+                      if any(abs(p[0] - q[0]) + abs(p[1] - q[1]) == 1
+                             and not barns.crosses(p, q, fences) for q in tiles)}
         # Chunk records are sparse. Include loaded chunk keys as well as terrain
         # rows so loading/evicting terrain cannot reuse an obsolete route.
         if hasattr(terrain, 'records'):
@@ -22,7 +26,7 @@ class RouteCache:
         else:
             ground = tuple(terrain)
         roads = frozenset(roads)
-        graph = size, frozenset(blocked), ground, bounds, roads
+        graph = size, frozenset(blocked), ground, bounds, roads, fences
         if graph not in self.graphs:
             self.graphs[graph] = [OrderedDict(), 0]
             if len(self.graphs) > self.graph_limit:
@@ -35,7 +39,7 @@ class RouteCache:
             paths[0].move_to_end(key)
             path = paths[0][key]
         else:
-            path = self.search(start, target, blocked, size, terrain, adjacent, bounds, roads, road_mode, diagonal)
+            path = self.search(start, target, blocked, size, terrain, adjacent, bounds, roads, road_mode, diagonal, fences)
             cost = len(path) if path is not None else 1
             if cost <= self.step_limit:
                 paths[0][key] = path
@@ -47,7 +51,7 @@ class RouteCache:
         return None if path is None else [{'x': x, 'y': y} for x, y in path]
 
     @staticmethod
-    def search(start, target, blocked, size, terrain, adjacent, bounds, roads=(), road_mode='smooth', diagonal=False):
+    def search(start, target, blocked, size, terrain, adjacent, bounds, roads=(), road_mode='smooth', diagonal=False, fences=()):
         queue, previous = deque([start]), {start: None}
         costs, order = {start: 0}, 0
         weighted = bool(roads) or diagonal
@@ -77,6 +81,8 @@ class RouteCache:
             else:
                 tile = queue.popleft()
             reached = tile in target if isinstance(target, set) else abs(tile[0] - target['x']) + abs(tile[1] - target['y']) == int(adjacent)
+            if reached and adjacent and not isinstance(target, set):
+                reached = not barns.crosses(tile, (target['x'], target['y']), fences)
             if reached:
                 path = []
                 while previous[tile] is not None:
@@ -88,6 +94,8 @@ class RouteCache:
             if diagonal:
                 neighbors += ((x+1, y+1), (x-1, y+1), (x-1, y-1), (x+1, y-1))
             for next_tile in neighbors:
+                if barns.crosses(tile, next_tile, fences):
+                    continue
                 nx, ny = next_tile
                 slant = nx != x and ny != y
                 if slant and (not open_tile((nx, y)) or not open_tile((x, ny))):

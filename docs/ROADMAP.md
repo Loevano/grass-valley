@@ -8,24 +8,6 @@ and cache rules are in [Backend](BACKEND.md#cached-zoomed-out-map).
 | 1     | Cached zoomed-out town overview    | Implemented              | Show the landscape and city sizes without refreshing animated scene detail.                                      |
 | 2     | Production line balancing          | Wood and grain implemented; fishing remains | Develop clear fishing chains with capped staffing and simple upgrades. |
 | 3     | Scalable villager pathfinding       | Foundations implemented; host scheduling and shared navigation remain | Keep movement responsive as villager counts and towns grow, with bounded routing work. |
-| 4     | Barn artwork and working gate | Concept C selected; diagonal path refinement ready for review | Refine the selected barn and sliding gate, then implement an entrance that opens and closes. |
-
-## Barn artwork and working gate
-
-Three [SVG concepts](barn-concepts.svg) compare upgraded barns with single swing,
-paired swing, and sliding timber gates. Each shows the same 7×7 pen open and
-closed; details are in [Artwork](ARTWORK.md#barn-and-gate-concepts).
-Concept C is selected. The [refined SVG](barn-c-refined.svg) connects the barn door
-to the gate with a constant-width path following the isometric diagonals.
-The current decorative fence and game behavior are unchanged.
-
-Remaining work:
-
-- Review concept C's diagonal path refinement.
-- Agree on controls, opening triggers, animal and worker access, collision, and
-  whether gate state should persist before implementing gameplay changes.
-- Implement the chosen artwork and gate motion, preserving host authority over
-  gameplay and saved state, then validate the agreed behavior and visual layering.
 
 ## Cached zoomed-out town overview
 

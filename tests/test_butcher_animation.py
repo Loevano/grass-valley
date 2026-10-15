@@ -14,7 +14,8 @@ class ButcherAnimation(unittest.TestCase):
     def setUp(self):
         self.town = flat_town(size=24)
         self.town.update(level=5, arrival_delay_seconds=10000)
-        self.barn = {'kind': 'barn', 'x': 12, 'y': 12, 'animals': {'pig': 2},
+        # Face the entrance toward the shop, keeping this fixture's short trips.
+        self.barn = {'kind': 'barn', 'x': 12, 'y': 12, 'fence_orientation': 2, 'animals': {'pig': 2},
                      'animal_growth': {'pig': [240, 240]}}
         self.shop = {'kind': 'butcher', 'x': 5, 'y': 12}
         self.town['buildings'].extend([self.barn, self.shop])

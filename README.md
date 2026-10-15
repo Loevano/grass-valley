@@ -682,8 +682,13 @@ the Python host, refresh both browsers, and create a new world to use the shared
 - Barns show each chicken, sheep, pig, and cow with walking,
   pecking, and grazing animations. They roam throughout their barn's 7×7 range
   and return, avoiding buildings, resources, and impassable ground.
-  A decorative wooden fence surrounds each completed barn, extending three tiles
+  A braced wooden fence surrounds each completed barn, extending three tiles
   in every direction to match the farm's 7×7 range.
+  The sage-roof barn has a stone base and a diagonal path to its sliding gate.
+  People use the gate; solid rails block crossings. The gate opens automatically
+  on approach and closes after people leave. Use **Fence orientation** beside
+  **Move** in your barn panel to choose any of four entrance sides for free.
+  Orientation saves with the barn and survives moving it. Animals stay in the pen.
   Barn ranges appear when selected, while placing or moving, and in the Build
   panel. Building construction and moves reserve the enclosed tiles, including
   during barn construction. New or moved barns need a range free of other buildings.

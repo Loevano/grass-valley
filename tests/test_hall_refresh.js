@@ -23,7 +23,7 @@ const panel=attach('selection-panel');
 for(const id of ['selection-art','selection-level','selection-title','selection-details'])attach(id,panel);
 const hall=attach('hall-details',panel);
 for(const id of ['progress','hall-progress','upgrade'])attach(id,hall);
-for(const id of ['selection-move','selection-destroy'])attach(id,panel);
+for(const id of ['selection-move','selection-fence','selection-destroy'])attach(id,panel);
 const upgradeButton=find('upgrade');
 upgradeButton.onclick=()=>{};
 const upgradeHandler=upgradeButton.onclick;
@@ -38,6 +38,7 @@ const context={document:{createElement:element},$:find,
   renderSettlers(){},renderProfession(){},renderStorage(){}};
 const source=fs.readFileSync('web/app.js','utf8');
 vm.createContext(context);
+vm.runInContext(source.slice(source.indexOf('function barnActive('),source.indexOf('function drawBarnPath(')),context);
 vm.runInContext(source.slice(source.indexOf('function upgradePreview('),source.indexOf('function renderUpgradeDialog(')),context);
 const start=source.includes('let buildingFolds=')?source.indexOf('let buildingFolds='):source.indexOf('function renderSelection(');
 vm.runInContext(source.slice(start,source.indexOf('const buildingCategories=')),context);

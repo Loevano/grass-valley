@@ -4,6 +4,7 @@ import math
 
 import progression as economy
 import farming
+import barns
 from navigation import routes
 from spatial import SpatialIndex, occupied_tiles
 
@@ -61,7 +62,8 @@ def fishing_pier(building, landscape, blocked, size, terrain, bounds):
                    key=lambda r: (abs(r['x'] - building['x']) + abs(r['y'] - building['y']), r['y'], r['x']))
     pier_blocked = blocked - {(building['x'], building['y'])} - {(r['x'], r['y']) for r in water}
     for tile in water:
-        deck = route(building, tile, pier_blocked, size, terrain, False, bounds, diagonal=False)
+        deck = route(building, tile, pier_blocked, size, terrain, False, bounds, diagonal=False,
+                     fences=barns.fences(landscape['buildings'], size))
         if deck is not None and len(deck) <= 3:
             return [building, *deck]
     return []
@@ -76,17 +78,20 @@ def retained_pier(state, building, landscape, blocked, terrain, source=None):
         return None
     occupied = occupied_tiles(landscape['buildings'] + landscape.get('npcs', []))
     water = {(r['x'], r['y']) for r in landscape['map_resources'] if r['kind'] == 'water'}
-    for tile in pier[1:]:
+    fences = barns.fences(landscape['buildings'], landscape.get('map_size', 120))
+    for index, tile in enumerate(pier[1:], 1):
         p = tile['x'], tile['y']
-        if (p in occupied or (p in blocked and p not in water)
+        before = pier[index - 1]
+        if (p in occupied or barns.crosses((before['x'], before['y']), p, fences)
+                or (p in blocked and p not in water)
                 or (terrain and (not terrain[p[1]][p[0]] or terrain[p[1]][p[0]] == 'v'))):
             return None
     return pier
 
 
-def route(start, target, blocked, size, terrain, adjacent=True, bounds=None, roads=(), diagonal=True):
+def route(start, target, blocked, size, terrain, adjacent=True, bounds=None, roads=(), diagonal=True, fences=()):
     start = (round(start['x']), round(start['y']))
-    return routes.route(start, target, blocked, size, terrain, adjacent, bounds, roads, diagonal=diagonal)
+    return routes.route(start, target, blocked, size, terrain, adjacent, bounds, roads, diagonal=diagonal, fences=fences)
 
 
 def walking_bounds(town, landscape):
@@ -224,6 +229,7 @@ def _advance(town, landscape, villager, building, source, index, seconds, stop_a
                   max(0, building['y'] - 3), min(size - 1, building['y'] + 3)) if barn_keeper else None
     roads = {(r['x'], r['y']) for r in landscape.get('roads', []) if 'construction' not in r}
     blocked = occupied_tiles(landscape['buildings'] + landscape['map_resources'] + landscape.get('npcs', []))
+    fences = barns.fences(landscape['buildings'], size)
     bounds = walking_bounds(town, landscape)
     if farming_job:
         blocked.difference_update((b['x'], b['y']) for b in landscape['buildings'] if b['kind'] == 'acre' and 'construction' not in b)
@@ -259,7 +265,7 @@ def _advance(town, landscape, villager, building, source, index, seconds, stop_a
                                       if r['kind'] == 'water' and abs(r['x'] - building['x']) + abs(r['y'] - building['y']) <= 3)
         pier = retained_pier(state, building, landscape, blocked, terrain, source)
         if pier is None and abs(source['x'] - building['x']) + abs(source['y'] - building['y']) <= 3:
-            deck = route(building, source, pier_blocked, size, terrain, False, bounds, diagonal=False)
+            deck = route(building, source, pier_blocked, size, terrain, False, bounds, diagonal=False, fences=fences)
             pier = [building, *deck] if deck is not None and len(deck) <= 3 else []
         if pier:
             blocked.discard((building['x'], building['y']))
@@ -271,20 +277,20 @@ def _advance(town, landscape, villager, building, source, index, seconds, stop_a
             afloat = tile in water_tiles and (tile != (dock['x'], dock['y']) or tile == (berth['x'], berth['y']))
             outbound = target is source
             if outbound and afloat:
-                return route(start, source, sea_blocked, size, terrain, False, sea_bounds, diagonal=False)
+                return route(start, source, sea_blocked, size, terrain, False, sea_bounds, diagonal=False, fences=fences)
             if outbound:
-                approach = route(start, dock, boarding_blocked, size, terrain, False, bounds, roads)
+                approach = route(start, dock, boarding_blocked, size, terrain, False, bounds, roads, fences=fences)
                 if approach is not None and (dock['x'], dock['y']) != (berth['x'], berth['y']):
                     approach.append({'x': berth['x'], 'y': berth['y']})
-                sailing = route(berth, source, sea_blocked, size, terrain, False, sea_bounds, diagonal=False)
+                sailing = route(berth, source, sea_blocked, size, terrain, False, sea_bounds, diagonal=False, fences=fences)
             else:
-                approach = route(start, berth, sea_blocked, size, terrain, False, sea_bounds, diagonal=False) if afloat else []
-                sailing = [] if afloat else route(start, berth, land_blocked, size, terrain, False, bounds, roads)
+                approach = route(start, berth, sea_blocked, size, terrain, False, sea_bounds, diagonal=False, fences=fences) if afloat else []
+                sailing = [] if afloat else route(start, berth, land_blocked, size, terrain, False, bounds, roads, fences=fences)
             return None if approach is None or sailing is None else approach + sailing
         local_bounds = pen_bounds if barn_keeper and (
             pen_bounds[0] <= start['x'] <= pen_bounds[1]
             and pen_bounds[2] <= start['y'] <= pen_bounds[3]) else bounds
-        path = route(start, target, blocked, size, terrain, adjacent, local_bounds, roads)
+        path = route(start, target, blocked, size, terrain, adjacent, local_bounds, roads, fences=fences)
         if path is not None and butcher_trip and target is animal_target and butcher.get('position'):
             position = butcher['position']
             if (start['x'], start['y']) == (position['x'], position['y']):
@@ -377,6 +383,7 @@ def _advance(town, landscape, villager, building, source, index, seconds, stop_a
             target = state['path'][0]
             tile_x, tile_y = round(target['x']), round(target['y'])
             if ((tile_x, tile_y) in blocked
+                    or barns.crosses((state['x'], state['y']), (target['x'], target['y']), fences)
                     or not (0 <= target['x'] < size and 0 <= target['y'] < size)
                     or (terrain and (terrain[tile_y][tile_x] == 'v'
                                      or (bounds and not terrain[tile_y][tile_x])))):
@@ -515,7 +522,7 @@ def _advance(town, landscape, villager, building, source, index, seconds, stop_a
                     dx, dy = spots[(cursor + step) % len(spots)]
                     target = {'x': building['x'] + dx, 'y': building['y'] + dy}
                     round_path = route(state, target, blocked, size, terrain, False,
-                                       pen_bounds, roads)
+                                       pen_bounds, roads, fences=fences)
                     if round_path:
                         path = round_path
                         state['barn_round'] = (cursor + step + 1) % len(spots)

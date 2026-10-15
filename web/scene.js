@@ -7,7 +7,7 @@ const ClientScene = (() => {
     return tiles;
   };
 
-  const geometry = items => JSON.stringify(items.map(p => [p.kind,p.x,p.y,p.footprint,p.farm_index,!!p.construction]));
+  const geometry = items => JSON.stringify(items.map(p => [p.kind,p.x,p.y,p.footprint,p.farm_index,!!p.construction,p.fence_orientation]));
   class Overlay {
     constructor(base){this.base=base;this.added=new Set();this.removed=new Set();}
     has(key){return this.added.has(key)||(!this.removed.has(key)&&this.base.has(key));}

@@ -43,6 +43,7 @@ const WorkerAnimation = (() => {
     const waters=resources.filter(r=>r.kind==='water'&&distance(home,r)<=3&&!occupied.has(key(r)))
       .sort((a,b)=>distance(home,a)-distance(home,b)||a.y-b.y||a.x-b.x);
     const blocked=new Set([...occupied,...resources.map(key)]);
+    blocked.fences=typeof barnFenceSegments!=='undefined'?barnFenceSegments(town.obstacles || town.buildings,size):[];
     blocked.delete(key(home));
     for(const water of waters)if(town.terrain?.[water.y]?.[water.x]!=='v')blocked.delete(key(water));
     for(let x=bounds.minX;x<=bounds.maxX;x++)for(let y=bounds.minY;y<=bounds.maxY;y++)
@@ -76,13 +77,15 @@ const WorkerAnimation = (() => {
   }
   function* routeSteps(start, target, blocked, size=120, adjacent=true, bounds=null, roads=null, roadMode='smooth', diagonal=false) {
     if(adjacent&&!(target instanceof Set)&&target.footprint){
-      const tiles=new Set(footprint(target).map(key));
-      target=new Set(footprint(target).flatMap(neighbors).map(key).filter(p=>!tiles.has(p)&&!blocked.has(p)));
+      const positions=footprint(target),tiles=new Set(positions.map(key));
+      target=new Set(positions.flatMap(neighbors).filter(p=>!tiles.has(key(p))&&!blocked.has(key(p))
+        &&positions.some(q=>distance(p,q)===1&&(typeof barnFenceCrossed==='undefined'||!barnFenceCrossed(p,q,blocked.fences)))).map(key));
     }
+    const fences=blocked.fences || [],crosses=(a,b)=>typeof barnFenceCrossed!=='undefined'&&barnFenceCrossed(a,b,fences);
     const cache=cachedRoutes(blocked);
     const cacheKey=cache?JSON.stringify([key(start),target instanceof Set?[...target].sort():key(target),size,adjacent,
       bounds?[bounds.minX,bounds.maxX,bounds.minY,bounds.maxY]:null,[...blocked.added].sort(),[...blocked.removed].sort(),
-      roads?.size?[...roads].sort():[],roads?.size?roadMode:null,diagonal]):null;
+      roads?.size?[...roads].sort():[],roads?.size?roadMode:null,diagonal,fences]):null;
     const copy=path=>path===null?null:path.map(p=>({...p}));
     if(cache?.paths.has(cacheKey)){
       const path=cache.paths.get(cacheKey);cache.paths.delete(cacheKey);cache.paths.set(cacheKey,path);
@@ -135,7 +138,8 @@ const WorkerAnimation = (() => {
       if(++inspected%128===0)yield;
       const entry=weighted?pop():null,p=weighted?entry.p:queue[cursor++];
       if(weighted&&entry.cost!==costs.get(key(p)))continue;
-      if(target instanceof Set?target.has(key(p)):distance(p,target)===(adjacent?1:0)){
+      if((target instanceof Set?target.has(key(p)):distance(p,target)===(adjacent?1:0))
+          &&(!adjacent||target instanceof Set||!crosses(p,target))){
         const path=[];
         for(let step=p;previous.get(key(step));step=previous.get(key(step)))path.push(step);
         return remember(path.reverse());
@@ -143,7 +147,7 @@ const WorkerAnimation = (() => {
       const candidates=neighbors(p);
       if(diagonal)candidates.push({x:p.x+1,y:p.y+1},{x:p.x-1,y:p.y+1},{x:p.x-1,y:p.y-1},{x:p.x+1,y:p.y-1});
       for(const next of candidates){
-        if(!open(next)||(!weighted&&previous.has(key(next))))continue;
+        if(!open(next)||crosses(p,next)||(!weighted&&previous.has(key(next))))continue;
         const slant=next.x!==p.x&&next.y!==p.y;
         if(slant&&(!open({x:next.x,y:p.y})||!open({x:p.x,y:next.y})))continue;
         if(weighted){
@@ -177,6 +181,7 @@ const WorkerAnimation = (() => {
     const roads=town.navigation?.roads || new Set((town.roads || []).filter(r=>!r.construction).map(key));
     const roadMode=villager.construction_target?'departure':'smooth';
     const blocked=town.navigation?town.navigation.overlay():new Set([...(town.obstacles || town.buildings),...town.map_resources,...(town.npcs || [])].flatMap(footprint).map(key));
+    blocked.fences=typeof barnFenceSegments!=='undefined'?barnFenceSegments(town.obstacles || town.buildings,town.map_size || 120):[];
     if(villager.construction_target || villager.logistics_target || villager.job==='farming'){
       for(const acre of (town.obstacles || town.buildings).filter(b=>b.kind==='acre'&&!b.construction))blocked.delete(key(acre));
     }
@@ -260,6 +265,7 @@ const WorkerAnimation = (() => {
       const seaBounds={minX:Math.max(0,home.x-fishingReach(home)),maxX:Math.min(size-1,home.x+fishingReach(home)),
         minY:Math.max(0,home.y-fishingReach(home)),maxY:Math.min(size-1,home.y+fishingReach(home))};
       const seaBlocked=new Set(),landBlocked=new Set([...(town.obstacles || town.buildings),...town.map_resources,...(town.npcs || [])].flatMap(footprint).map(key));
+      seaBlocked.fences=blocked.fences;
       for(const tile of pier)landBlocked.delete(key(tile));
       landBlocked.delete(key(home));landBlocked.delete(key(berth));
       const connectedWater=new Set(connected.map(key));
@@ -269,13 +275,14 @@ const WorkerAnimation = (() => {
       // Preserve terrain blockers for the land approach to the berth.
       for(const tile of blocked)if(!water.has(tile))landBlocked.add(tile);
       landBlocked.delete(key(home));
-      const boardingBlocked=new Set(landBlocked);
+      landBlocked.fences=blocked.fences;
+      const boardingBlocked=new Set(landBlocked);boardingBlocked.fences=blocked.fences;
       if(key(dock)!==key(berth))boardingBlocked.add(key(berth));
       sailing={water:connectedWater,berth,dock,landBlocked,boardingBlocked,seaBlocked,seaBounds};
       blocked.delete(key(home));workSpot=source;
     }else if(!villager.construction_target&&villager.job==='fishing'&&source&&home?.kind==='fishing_hut'){
       // A hut can occupy the only bank tile; its pier provides access over water.
-      const pierBlocked=new Set(blocked);
+      const pierBlocked=new Set(blocked);pierBlocked.fences=blocked.fences;
       pierBlocked.delete(key(home));
       for(const water of town.map_resources.filter(r=>r.kind==='water'&&distance(home,r)<=3)){
         if(town.terrain?.[water.y]?.[water.x]!=='v')pierBlocked.delete(key(water));
@@ -324,7 +331,7 @@ const WorkerAnimation = (() => {
   function pathBlocked(state, next=state.path[0]) {
     if(!next)return false;
     const biome=state.terrain?.[next.y]?.[next.x];
-    return state.blocked?.has(key(next)) || next.x<0 || next.y<0 || next.x>=state.size || next.y>=state.size
+    return (typeof barnFenceCrossed!=='undefined'&&barnFenceCrossed(state,next,state.blocked?.fences)) || state.blocked?.has(key(next)) || next.x<0 || next.y<0 || next.x>=state.size || next.y>=state.size
       || biome==='v' || (state.bounds&&(!biome || next.x<state.bounds.minX || next.x>state.bounds.maxX
         || next.y<state.bounds.minY || next.y>state.bounds.maxY));
   }
@@ -336,7 +343,7 @@ const WorkerAnimation = (() => {
     const visited=new Set([key(position)]),steps=2+random()%3;
     for(let i=0;i<steps;i++){
       const choices=neighbors(position).filter(p=>p.x>=hall.x-4&&p.x<=hall.x+width+3
-        &&p.y>=hall.y-4&&p.y<=hall.y+depth+3&&!visited.has(key(p))&&!pathBlocked(state,p));
+        &&p.y>=hall.y-4&&p.y<=hall.y+depth+3&&!visited.has(key(p))&&!pathBlocked({...state,...position},p));
       if(!choices.length)break;
       position=choices[random()%choices.length];visited.add(key(position));state.path.push(position);
     }
@@ -347,6 +354,7 @@ const WorkerAnimation = (() => {
     // Geometry updates refresh collision data without changing an ongoing route.
     const blocked=town.navigation?town.navigation.overlay():new Set([...(town.obstacles || town.buildings),
       ...town.map_resources,...(town.npcs || [])].flatMap(footprint).map(key));
+    blocked.fences=typeof barnFenceSegments!=='undefined'?barnFenceSegments(town.obstacles || town.buildings,town.map_size || 120):[];
     if(state.farming || state.construction || state.transport)
       for(const acre of (town.obstacles || town.buildings).filter(b=>b.kind==='acre'&&!b.construction))blocked.delete(key(acre));
     const occupied=new Set([...(town.obstacles || town.buildings),...(town.npcs || [])].flatMap(footprint).map(key));
@@ -361,13 +369,15 @@ const WorkerAnimation = (() => {
     if(state.sailing){
       const sailing=state.sailing,landBlocked=new Set(blocked);
       landBlocked.delete(key(sailing.berth));
-      const boardingBlocked=new Set(landBlocked);
+      landBlocked.fences=blocked.fences;
+      const boardingBlocked=new Set(landBlocked);boardingBlocked.fences=blocked.fences;
       if(key(sailing.dock)!==key(sailing.berth))boardingBlocked.add(key(sailing.berth));
       const available=new Set([...sailing.water].filter(k=>{
         const [x,y]=k.split(',').map(Number),biome=town.terrain?.[y]?.[x];
         return water.has(k)&&!occupied.has(k)&&biome!=='v'&&(!town.chunked||biome);
       }));
       const seaBlocked=new Set(),bounds=sailing.seaBounds;
+      seaBlocked.fences=blocked.fences;
       for(let x=bounds.minX;x<=bounds.maxX;x++)for(let y=bounds.minY;y<=bounds.maxY;y++)
         if(!available.has(`${x},${y}`))seaBlocked.add(`${x},${y}`);
       for(const k of available)blocked.delete(k);

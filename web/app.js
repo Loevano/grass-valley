@@ -267,8 +267,9 @@ function predictPlayerStep(town,player,dx,dy){
       .filter(b=>b.kind!=='tree'&&b.kind!=='berry_bush'&&!(b.kind==='water'&&town.player?.boat)).flatMap(b=>footprintTiles(b).map(p=>`${p.x},${p.y}`)))};
   }
   const size=town.map_size || 12,terrain=town.terrain;
+  const fences=barnFenceSegments(world.shared_map?Object.values(world.towns).flatMap(t=>t.buildings || []):town.buildings || [],size);
   const open=(x,y)=>{
-    if(x<-.32 || y<-.32 || x>size-.68 || y>size-.68)return false;
+    if(x<-.32 || y<-.32 || x>size-.68 || y>size-.68 || barnFenceBlocked(x,y,fences))return false;
     for(let tx=Math.floor(x+.5)-1;tx<=Math.floor(x+.5)+1;tx++){
       for(let ty=Math.floor(y+.5)-1;ty<=Math.floor(y+.5)+1;ty++){
         const outside=tx>=0&&ty>=0&&tx<size&&ty<size&&(terrain?.[ty]?.[tx]==='v'||(town.chunked&&!terrain?.[ty]?.[tx]));
@@ -478,7 +479,7 @@ function buildingVisualLevel(building,town){
 }
 function buildingHeight(building,town){
   if(decorationKinds.includes(building.kind))return building.kind==='wooden_bench'?15:32;
-  return ({hall:42,woodcutter:23,mine:27,smelter:36,steelworks:38,stable:32,tannery:28,saddler:27,tradehouse:35,barn:34,mill:40,smokehouse:32,workshop:25,sawpit:28,market:17,fish_pond:18,orchard:20,bakery:30,butcher:25}[building.kind] || 27)+4*(buildingVisualLevel(building,town)-1)+(building.kind==='mill'&&footprintTiles(building).length>1?10:0);
+  return ({hall:42,woodcutter:23,mine:27,smelter:36,steelworks:38,stable:32,tannery:28,saddler:27,tradehouse:35,barn:53,mill:40,smokehouse:32,workshop:25,sawpit:28,market:17,fish_pond:18,orchard:20,bakery:30,butcher:25}[building.kind] || 27)+4*(buildingVisualLevel(building,town)-1)+(building.kind==='mill'&&footprintTiles(building).length>1?10:0);
 }
 const storehouseCapacities=[50,75,100,150,200,250,300,350];
 function farmStorageCapacity(building){
@@ -1962,7 +1963,7 @@ function renderSelection(town){
   // Park hall controls in the hidden attached container before rebuilding cards.
   $('hall-details').append($('upgrade'));
   $('selection-panel').append($('hall-details'));
-  $('selection-details').replaceChildren();$('hall-details').hidden=true;$('selection-move').hidden=true;$('selection-destroy').hidden=true;
+  $('selection-details').replaceChildren();$('selection-fence').hidden=true;$('hall-details').hidden=true;$('selection-move').hidden=true;$('selection-destroy').hidden=true;
   if(!selection)return;
   if(!town){selection=null;panel=null;return;}
   if(selection.type==='road'){
@@ -2195,6 +2196,16 @@ function renderSelection(town){
     $('selection-move').hidden=viewed!==identity?.town_id;
     $('selection-move').textContent=`${item.kind==='farm'?'Move farm & acres':'Move'} · ${!town.sandbox&&town.coins?'1 coin':'Free'}`;
     $('selection-move').onclick=()=>{const index=selection.index;openPanel('build');tool='move';moveIndex=index;render();};
+    if(barnActive(item)&&viewed===identity?.town_id){
+      const pen=barnPen(item,mapSize(town)),control=$('selection-fence-orientation');
+      $('selection-fence').hidden=false;control.replaceChildren();
+      for(const [orientation,label] of ['Lower right ↘','Lower left ↙','Upper left ↖','Upper right ↗'].entries()){
+        const option=document.createElement('option');option.value=String(orientation);option.textContent=label;option.disabled=!pen.available[orientation];control.append(option);
+      }
+      control.value=String(pen.orientation);
+      const index=selection.index;
+      control.onchange=()=>act({action:'set_fence_orientation',index,orientation:Number(control.value)});
+    }
     $('selection-destroy').hidden=viewed!==identity?.town_id || item.kind==='hall';
     $('selection-destroy').textContent=item.kind==='farm'?'Destroy farm & acres · No refund':'Destroy · No refund';
     if(item.kind==='farm'){
@@ -2782,7 +2793,7 @@ function animatedVillagers(town, seconds, townId=viewed, frameLayout=null){
   }
   const roads=animatedVillagers.roadSets.get(roadKey);
   const region=typeof ClientScene!=='undefined'?ClientScene.region(town):null;
-  const tiles=items=>items.map(({kind,x,y,footprint,farm_index,construction})=>[kind,x,y,footprint,farm_index,!!construction]);
+  const tiles=items=>items.map(({kind,x,y,footprint,farm_index,construction,fence_orientation})=>[kind,x,y,footprint,farm_index,!!construction,fence_orientation]);
   const layout=region?.layoutVersion ?? frameLayout ?? JSON.stringify([tiles(world.shared_map?Object.values(world.towns).flatMap(t=>t.buildings):town.buildings),tiles(town.map_resources),[...roads].sort()]);
   // Names are unique within a town and survive arrivals/departures. Remap the
   // index-based rendering slots without restarting surviving residents.
@@ -2899,7 +2910,7 @@ function townWorkerLayout(town,buildings,resources){
   if(townWorkerLayout.layouts.has(town))return townWorkerLayout.layouts.get(town);
   const center=town.town_origin || town.buildings.find(b=>b.kind==='hall');
   const near=item=>Math.abs(item.x-center.x)<=60&&Math.abs(item.y-center.y)<=60;
-  const tiles=items=>items.filter(near).map(({kind,x,y,footprint,farm_index,construction})=>[kind,x,y,footprint,farm_index,!!construction]);
+  const tiles=items=>items.filter(near).map(({kind,x,y,footprint,farm_index,construction,fence_orientation})=>[kind,x,y,footprint,farm_index,!!construction,fence_orientation]);
   const terrain=[];
   for(let y=Math.max(0,center.y-60);y<=Math.min(town.map_size-1,center.y+60);y++){
     let row='';
@@ -3883,37 +3894,109 @@ function villageAnimalBuildings(buildings,data){
   const result=barns.length?[...buildings,...barns]:buildings;
   villageAnimalBuildings.cache={buildings,barns,result};return result;
 }
-function barnFenceSprites(buildings,landscape={}){
-  const sprites=[],reach=gameplayRange({kind:'farm'}).reach,size=landscape.map_size || 120;
+function barnActive(b){return b.kind==='barn'&&(!b.construction||b.construction.upgrade);}
+function barnPen(b,size=120,orientation=b.fence_orientation ?? 0){
+  const left=Math.max(-.5,b.x-3.5),right=Math.min(size-.5,b.x+3.5),back=Math.max(-.5,b.y-3.5),front=Math.min(size-.5,b.y+3.5);
+  const sides=[[right,back,right,front],[right,front,left,front],[left,front,left,back],[left,back,right,back]];
+  const available=[right<size-.5,front<size-.5,left>-.5,back>-.5];
+  if(!Number.isInteger(orientation)||!available[orientation])orientation=Math.max(0,available.indexOf(true));
+  const [nx,ny]=[[1,0],[0,1],[-1,0],[0,-1]][orientation],tx=-ny,ty=nx,edge=sides[orientation];
+  const ends=[(edge[0]-b.x)*tx+(edge[1]-b.y)*ty,(edge[2]-b.x)*tx+(edge[3]-b.y)*ty];
+  const start=Math.max(Math.min(...ends)+2,Math.min(.5,Math.max(...ends)-2));
+  const distance=(edge[0]-b.x)*nx+(edge[1]-b.y)*ny;
+  const a={x:b.x+distance*nx+start*tx,y:b.y+distance*ny+start*ty},end={x:a.x+2*tx,y:a.y+2*ty};
+  const segments=sides.filter((_,i)=>i!==orientation).concat([[edge[0],edge[1],a.x,a.y],[end.x,end.y,edge[2],edge[3]]]);
+  return {orientation,a,end,nx,ny,tx,ty,segments,available};
+}
+function barnFenceSegments(buildings,size=120){return buildings.filter(barnActive).flatMap(b=>barnPen(b,size).segments);}
+function barnFenceBlocked(x,y,segments,radius=.18){
+  return segments.some(([x1,y1,x2,y2])=>x1===x2?
+    Math.abs(x-x1)<radius&&y>Math.min(y1,y2)-radius&&y<Math.max(y1,y2)+radius:
+    Math.abs(y-y1)<radius&&x>Math.min(x1,x2)-radius&&x<Math.max(x1,x2)+radius);
+}
+function barnFenceCrossed(a,b,segments=[]){
+  return segments.some(([x1,y1,x2,y2])=>{
+    if(x1===x2&&Math.abs(b.x-a.x)>1e-9){
+      const t=(x1-a.x)/(b.x-a.x),y=a.y+t*(b.y-a.y);
+      return t>=0&&t<=1&&y>=Math.min(y1,y2)-1e-9&&y<=Math.max(y1,y2)+1e-9;
+    }
+    if(y1===y2&&Math.abs(b.y-a.y)>1e-9){
+      const t=(y1-a.y)/(b.y-a.y),x=a.x+t*(b.x-a.x);
+      return t>=0&&t<=1&&x>=Math.min(x1,x2)-1e-9&&x<=Math.max(x1,x2)+1e-9;
+    }
+    return false;
+  });
+}
+function drawBarnPath(b,size=120){
+  const pen=barnPen(b,size),gate={x:(pen.a.x+pen.end.x)/2,y:(pen.a.y+pen.end.y)/2};
+  const exit={x:gate.x+pen.nx*.35,y:gate.y+pen.ny*.35};
+  let points=[{x:b.x,y:b.y+.6},{x:b.x,y:b.y+1.5}];
+  if(pen.orientation===0)points.push({x:b.x,y:gate.y});
+  if(pen.orientation===1)points.push({x:gate.x,y:b.y+1.5});
+  if(pen.orientation===2)points.push({x:b.x-1.5,y:b.y+1.5},{x:b.x-1.5,y:gate.y});
+  if(pen.orientation===3)points.push({x:gate.x,y:b.y+1.5});
+  points.push(exit);
+  const ground=(x,y)=>{const [px,py]=point(Math.max(-.5,Math.min(size-.5,x)),Math.max(-.5,Math.min(size-.5,y)));return [px,py+tileH/2];};
+  for(let i=1;i<points.length;i++){
+    const a=points[i-1],end=points[i],r=.45;
+    if(Math.abs(a.x-end.x)+Math.abs(a.y-end.y)<1e-6)continue;
+    const left=Math.min(a.x,end.x)-(a.x===end.x?r:0),right=Math.max(a.x,end.x)+(a.x===end.x?r:0);
+    const back=Math.min(a.y,end.y)-(a.y===end.y?r:0),front=Math.max(a.y,end.y)+(a.y===end.y?r:0);
+    polygon([ground(left,back),ground(right,back),ground(right,front),ground(left,front)],'#b1a078');
+    if(i<points.length-1)polygon([ground(end.x-r,end.y-r),ground(end.x+r,end.y-r),ground(end.x+r,end.y+r),ground(end.x-r,end.y+r)],'#b1a078');
+  }
+}
+function barnFenceSprites(buildings,landscape={},people=[],seconds=0){
+  const sprites=[],size=landscape.map_size || 120,previous=barnFenceSprites.states || new Map(),states=new Map();
   for(const barn of buildings){
-    if(barn.kind!=='barn'||(barn.construction&&!barn.construction.upgrade))continue;
-    const left=Math.max(-.5,barn.x-reach-.5),right=Math.min(size-.5,barn.x+reach+.5);
-    const back=Math.max(-.5,barn.y-reach-.5),front=Math.min(size-.5,barn.y+reach+.5);
-    const corners=[[left,back],[right,back],[right,front],[left,front]];
-    // Individual sections interleave with animals and characters by ground depth.
-    for(let side=0;side<4;side++){
-      const [x,y]=corners[side],[endX,endY]=corners[(side+1)%4];
+    if(!barnActive(barn))continue;
+    const pen=barnPen(barn,size),{a,end,tx,ty,nx,ny}=pen;
+    for(const [x,y,endX,endY] of pen.segments){
       const length=Math.max(Math.abs(endX-x),Math.abs(endY-y));
-      for(let step=0;step<length;step++){
+      for(let step=0;step<length-1e-6;step++){
         const start={x:x+(endX-x)*step/length,y:y+(endY-y)*step/length};
-        const end={x:x+(endX-x)*(step+1)/length,y:y+(endY-y)*(step+1)/length};
-        sprites.push({kind:'barn_fence',x:(start.x+end.x)/2,y:(start.y+end.y)/2,start,end});
+        const finish={x:x+(endX-x)*Math.min(length,step+1)/length,y:y+(endY-y)*Math.min(length,step+1)/length};
+        sprites.push({kind:'barn_fence',x:(start.x+finish.x)/2,y:(start.y+finish.y)/2,start,end:finish});
       }
     }
+    const nearby=people.some(p=>p&&Math.abs((p.x-a.x)*nx+(p.y-a.y)*ny)<1.7
+      &&(p.x-a.x)*tx+(p.y-a.y)*ty>-.6&&(p.x-a.x)*tx+(p.y-a.y)*ty<2.6);
+    const key=`${world.world_id}/${barn.townId || viewed}/${barn.x},${barn.y}/${pen.orientation}`;
+    const old=previous.get(key),hold=nearby ? .5 : Math.max(0,(old?.hold || 0)-seconds),target=Number(nearby||hold>0);
+    const opening=old?Math.max(0,Math.min(1,old.opening+Math.sign(target-old.opening)*seconds*4)):target;
+    states.set(key,{opening,hold});
+    const start={x:a.x-2.05*tx*opening,y:a.y-2.05*ty*opening},finish={x:end.x-2.05*tx*opening,y:end.y-2.05*ty*opening};
+    sprites.push({kind:'barn_gate',x:(start.x+finish.x)/2,y:(start.y+finish.y)/2,start,end:finish,pen,opening});
   }
-  return sprites;
+  barnFenceSprites.states=states;return sprites;
 }
 function drawBarnFence(section){
-  const s=tileW/46,[x,y]=point(section.start.x,section.start.y),[endX,endY]=point(section.end.x,section.end.y);
-  const base=y+tileH/2,endBase=endY+tileH/2;
+  const s=tileW/46;
+  const ground=(p,height)=>{const [x,y]=point(p.x,p.y);return [x,y+tileH/2-height*s];};
+  const rail=(a,b,height,color='#b68d59',width=2.8)=>{
+    const [x,y]=ground(a,height),[endX,endY]=ground(b,height);
+    ctx.strokeStyle='#624b35';ctx.lineWidth=(width+1.2)*s;ctx.beginPath();ctx.moveTo(x,y);ctx.lineTo(endX,endY);ctx.stroke();
+    ctx.strokeStyle=color;ctx.lineWidth=width*s;ctx.beginPath();ctx.moveTo(x,y-.5*s);ctx.lineTo(endX,endY-.5*s);ctx.stroke();
+  };
+  const line=(a,az,b,bz,color,width)=>{const [x,y]=ground(a,az),[ex,ey]=ground(b,bz);ctx.strokeStyle=color;ctx.lineWidth=width*s;ctx.beginPath();ctx.moveTo(x,y);ctx.lineTo(ex,ey);ctx.stroke();};
+  const post=(p,height=17)=>{const [x,y]=ground(p,0);ctx.lineWidth=.8*s;polygon([[x-2*s,y],[x-2*s,y-height*s],[x,y-(height+2)*s],[x+2*s,y-height*s],[x+2*s,y]],'#a57d4f','#624b35');line(p,1,p,height-1,'#dcba81',.8);};
   ctx.save();ctx.lineCap='round';
-  for(const height of [5,11]){
-    ctx.strokeStyle='#705236';ctx.lineWidth=3*s;
-    ctx.beginPath();ctx.moveTo(x,base-height*s);ctx.lineTo(endX,endBase-height*s);ctx.stroke();
-    ctx.strokeStyle='#c8a06a';ctx.lineWidth=1.5*s;
-    ctx.beginPath();ctx.moveTo(x,base-(height+1)*s);ctx.lineTo(endX,endBase-(height+1)*s);ctx.stroke();
+  const {start,end}=section;
+  if(section.kind==='barn_gate'){
+    const {a,end:closedEnd,tx,ty}=section.pen,guide={x:a.x-2.05*tx,y:a.y-2.05*ty};
+    rail(guide,closedEnd,24,'#967749',2.3);post(guide,26);post(a,26);post(closedEnd,26);
+    for(const height of [5,15])rail(start,end,height,'#d4b178',3.1);
+    line(start,4,end,16,'#6b5036',3);line(start,5,end,16,'#d4b178',1.7);
+    line(start,3,start,17,'#bb965e',2.7);line(end,3,end,17,'#bb965e',2.7);
+    for(const t of [.1,.9]){
+      const p={x:start.x+(end.x-start.x)*t,y:start.y+(end.y-start.y)*t};
+      line(p,16,p,25,'#53605b',1.1);const [x,y]=ground(p,24);
+      ctx.fillStyle='#53605b';ctx.beginPath();ctx.arc(x,y,2*s,0,Math.PI*2);ctx.fill();
+    }
+  }else{
+    for(const height of [6,13])rail(start,end,height);
+    line(start,4,end,15,'#6f573b',2);line(start,15,end,4,'#c4a477',1.5);post(start);post(end);
   }
-  polygon([[x-2*s,base],[x-2*s,base-15*s],[x,base-17*s],[x+2*s,base-15*s],[x+2*s,base]],'#a57d4f','#624b35');
   ctx.restore();
 }
 // Animals roam nearby open tiles; their motion is purely visual.
@@ -4107,7 +4190,8 @@ function draw(seconds=0){
     polygon([[px,py],[px+tileW/2,py+tileH/2],[px,py+tileH],[px-tileW/2,py+tileH/2]],'#fff0b133','#fff0b1');ctx.restore();
   }
   const buildings=(typeof ClientScene!=='undefined'&&ClientScene.current?.world===world?(world.shared_map?ClientScene.current.buildings:town?.buildings):null) ?? (world.shared_map?entries.flatMap(([id,t])=>t.buildings.map((b,index)=>({...b,townId:id,objectIndex:index}))):town?.buildings || [{kind:'hall',x:5,y:5}]);
-  const workerLayout=(typeof ClientScene!=='undefined'&&ClientScene.current?.world===world?ClientScene.current.geometry:null) ?? ('['+JSON.stringify(buildings.map(({kind,x,y,footprint,farm_index,construction})=>[kind,x,y,footprint,farm_index,!!construction]))+','+resourceData.layout+']');
+  for(const b of buildings)if(barnActive(b))drawBarnPath(b,mapSize(town));
+  const workerLayout=(typeof ClientScene!=='undefined'&&ClientScene.current?.world===world?ClientScene.current.geometry:null) ?? ('['+JSON.stringify(buildings.map(({kind,x,y,footprint,farm_index,construction,fence_orientation})=>[kind,x,y,footprint,farm_index,!!construction,fence_orientation]))+','+resourceData.layout+']');
   const villagers=frameActors?.world===world?frameActors.villagers:entries.flatMap(([id,t])=>animatedVillagers(t,seconds,id,
     t?.chunked?townWorkerLayout(t,buildings,resources):workerLayout));
   const selectedWorkers=new Set(selection?.type==='building'&&selected?villagers.filter(worker=>{
@@ -4160,15 +4244,16 @@ function draw(seconds=0){
   };
   const boats=fishingBoatSprites(entries,resources,villagers);
   const passengers=new Set(boats.flatMap(b=>b.crew));
-  const fences=barnFenceSprites(buildings,world.shared_map || town);
+  const locals=npcSprites(world.shared_map || town,typeof ClientScene==='undefined'?seconds:0);
+  const fences=barnFenceSprites(buildings,world.shared_map || town,[...villagers,...locals,...otherPlayers,...(hero?[hero]:[])],frameActors?.world===world?frameActors.seconds || 0:seconds);
   const objects=mergeDepthObjects([...buildings,...cropObjects,...boats,...fences].filter(visible),visibleResourceObjects(resourceData,rect),
-    [...villagers.filter(v=>!passengers.has(v)),...npcSprites(world.shared_map || town,typeof ClientScene==='undefined'?seconds:0),...barnAnimalSprites(villageAnimalBuildings(buildings,resourceData),animalClock,world.shared_map || town),...otherPlayers,...(hero?[hero]:[])].filter(visible));
+    [...villagers.filter(v=>!passengers.has(v)),...locals,...barnAnimalSprites(villageAnimalBuildings(buildings,resourceData),animalClock,world.shared_map || town),...otherPlayers,...(hero?[hero]:[])].filter(visible));
   for(const b of objects){
     const position=b.kind==='wild_horse'?wildHorsePosition(b):[b.x,b.y];
     const [px,py]=point(position[0],position[1]),scale=tileW/46;
     if(px < -tileW || px > rect.width+tileW || py < -tileH || py > rect.height+80*scale)continue;
     if(b.kind==='animal'){drawBarnAnimal(b);continue;}
-    if(b.kind==='barn_fence'){drawBarnFence(b);continue;}
+    if(b.kind==='barn_fence'||b.kind==='barn_gate'){drawBarnFence(b);continue;}
     if(b.kind==='crop'){drawFarmCrop(b);continue;}
     if(b.kind==='fishing_boat'){
       drawFishingBoat(b);
@@ -4625,6 +4710,50 @@ function paintSawpit(b,town,target,paintPolygon,usable){
   target.fillStyle='#fff0b1';target.font=`${10*s}px sans-serif`;target.textAlign='center';
   target.fillText(labels.sawpit,x,top+tileH/2-(103.5-18)*scale-7*s);
 }
+function paintBarn(b,town,target,paintPolygon,usable){
+  const s=tileW/46,level=buildingVisualLevel(b,town),rise=4*(level-1);
+  const p=(x,y,z=0)=>{const [px,py]=point(b.x+x,b.y+y);return [px,py+tileH/2-z*s];};
+  const poly=(coords,fill,stroke='#624b35',width=.8)=>{target.lineWidth=width*s;paintPolygon(coords.map(c=>p(...c)),usable?fill:'#a34f49',stroke);};
+  const line=(a,end,color,width=1)=>{const [x,y]=p(...a),[ex,ey]=p(...end);target.beginPath();target.moveTo(x,y);target.lineTo(ex,ey);target.strokeStyle=color;target.lineWidth=width*s;target.stroke();};
+  target.save();
+  poly([[-.6,-.65,0],[.65,-.65,0],[.65,.65,0],[-.6,.65,0]],'#314832');
+  poly([[-.6,.6,0],[.6,.6,0],[.6,.6,35+rise],[-.6,.6,35+rise]],'#bdab8c');
+  poly([[.6,-.6,0],[.6,.6,0],[.6,.6,35+rise],[.6,-.6,35+rise]],'#8b8069');
+  for(const t of [-.4,-.2,0,.2,.4]){
+    line([t,.6,4],[t,.6,34+rise],'#72553f',.5);line([.6,t,4],[.6,t,34+rise],'#65593e',.5);
+  }
+  const stone=8+2*(level-1);
+  poly([[-.6,.6,0],[.6,.6,0],[.6,.6,stone],[-.6,.6,stone]],'#a2a497');
+  poly([[.6,-.6,0],[.6,.6,0],[.6,.6,stone],[.6,-.6,stone]],'#767f73');
+  for(const t of [-.3,.15,.4])line([t,.6,0],[t,.6,stone-1],'#677064',.6);
+  for(const [x,y] of [[-.6,.6],[.6,.6],[.6,-.6]])line([x,y,2],[x,y,36+rise],'#604d36',2);
+  poly([[-.35,.612,0],[.35,.612,0],[.35,.612,24],[-.35,.612,24]],'#633f34','#e3cba1',1.2);
+  line([0,.62,0],[0,.62,24],'#e3cba1');
+  for(const [a,end] of [[-.35,0],[0,.35]])line([a,.63,23],[end,.63,1],'#d6bd90');
+  poly([[-.6,.6,35+rise],[.6,.6,35+rise],[0,.6,51+rise]],'#bdab8c');
+  poly([[-.75,-.76,35+rise],[-.75,.76,35+rise],[0,.76,53+rise],[0,-.76,53+rise]],'#6b8076');
+  poly([[0,-.76,53+rise],[0,.76,53+rise],[.75,.76,35+rise],[.75,-.76,35+rise]],'#52685f');
+  for(const y of [-.45,-.1,.25,.6])line([0,y,52+rise],[.73,y,35+rise],'#c3a282',.6);
+  line([-.75,.76,35+rise],[0,.76,53+rise],'#dec498',1.5);line([0,.76,53+rise],[.75,.76,35+rise],'#dec498',1.5);
+  line([0,-.76,53+rise],[0,.76,53+rise],'#d0b185');
+  poly([[-.13,.64,34+rise],[.13,.64,34+rise],[.13,.64,40+rise],[-.13,.64,40+rise]],'#403f30','#d6bc86');
+  poly([[.42,.67,16],[.58,.67,16],[.58,.67,23],[.42,.67,23]],'#edc77d','#594d38');
+  for(const x of [-.8,-1.1]){
+    poly([[x,.2,0],[x+.25,.2,0],[x+.25,.6,0],[x,.6,0]],'#aa8847');
+    poly([[x,.2,7],[x+.25,.2,7],[x+.25,.6,7],[x,.6,7]],'#d6b765');
+    poly([[x,.6,0],[x+.25,.6,0],[x+.25,.6,7],[x,.6,7]],'#bea15d');
+    line([x+.12,.6,0],[x+.12,.6,7],'#8e7547',.9);
+  }
+  const [x,y]=p(.6,-.2,22);
+  target.fillStyle='#344b42';target.fillRect(x-4*s,y-6*s,9*s,6*s);
+  target.fillStyle='#fff0b1';target.font=`bold ${5*s}px sans-serif`;target.textAlign='center';target.fillText(String(buildingLevel(b)),x+.5*s,y-1*s);
+  if((b.settler_level || 1)>1){
+    target.fillStyle='#6baeb5';target.fillRect(x-4*s,y+2*s,10*s,5*s);
+    target.fillStyle='#eee0bd';target.fillText(String(b.settler_level),x+s,y+6*s);
+  }
+  if(tileW>=32){const [px,py]=p(0,0,65+rise);target.fillStyle='#fff0b1';target.font=`${10*s}px sans-serif`;target.fillText(labels.barn,px,py);}
+  target.restore();
+}
 function paintBuilding(b,town,farmState=null,target=ctx,usable=buildingUsable(town,b)){
   const ctx=target;
   const paintPolygon=target===buildingMainContext?polygon:(points,fill,stroke)=>{
@@ -4675,6 +4804,7 @@ function paintBuilding(b,town,farmState=null,target=ctx,usable=buildingUsable(to
     ctx.restore();return;
   }
   if(b.kind==='sawpit'){paintSawpit(b,town,ctx,paintPolygon,usable);return;}
+  if(b.kind==='barn'){paintBarn(b,town,ctx,paintPolygon,usable);return;}
   const largeHall=b.kind==='hall'&&footprintTiles(b).length===4;
   const [x,top]=point(b.x+(largeHall ? .5 : 0),b.y+(largeHall ? .5 : 0)),y=top+tileH/2,s=tileW/46;
   if(b.kind==='well'){
@@ -5032,7 +5162,7 @@ function updateActors(seconds){
     ClientScene.region(t)?.layout ?? townWorkerLayout(t,buildings,t.map_resources || [])));
   animalClock+=seconds;npcClock+=seconds;
   for(let i=buildingEffects.length-1;i>=0;i--){buildingEffects[i].age+=seconds;if(buildingEffects[i].age>=1.2)buildingEffects.splice(i,1);}
-  frameActors={world,hero,villagers,otherPlayers};
+  frameActors={world,hero,villagers,otherPlayers,seconds};
 }
 function animate(now){
   updateBarnTimers(now);

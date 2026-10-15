@@ -65,8 +65,8 @@ until moved to a clear site with the full 3×2 footprint.
 
 The [SVG concept comparison](barn-concepts.svg) shows three proposed barn upgrades,
 each with the same 7×7 pen open and closed. The sketches retain the current angled
-view, timber palette, and shared door and animal scale. Concept C is the selected
-direction; the current game still uses a decorative fence without a working entrance.
+view, timber palette, and shared door and animal scale. The selected concept C
+is implemented: a sage roof, stone base, braced timber fence, and sliding gate.
 
 ![Three barn concepts with closed and open gates: single swing, paired swing, and sliding timber.](barn-concepts.png)
 
@@ -83,9 +83,15 @@ also includes this refinement.
 
 ![Concept C with a diagonal path connecting the barn door and sliding gate.](barn-c-refined.png)
 
-Controls, automatic opening, animal and worker access, collision,
-and persistence remain open gameplay decisions; the drawings do not specify them.
-The state icons are diagram labels, not proposed in-game controls.
+The fence blocks people, and the gate automatically slides open as founders,
+workers, or locals approach, then closes after they leave. Animals remain within
+the existing pen range. Host routes and player collision use the same entrance;
+browser prediction follows those boundaries without changing saved snapshots.
+The owner's **Fence orientation** selector beside **Move** places the entrance
+on any of the four sides for free. Its orientation persists with the barn and
+survives moves. At map edges, legacy entrances fall back to an accessible side.
+The diagonal path follows the chosen entrance. Level and capacity plaques retain
+their existing meaning. The SVG state icons remain diagram labels.
 
 ## Composition sketch
 

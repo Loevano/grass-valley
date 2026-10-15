@@ -70,7 +70,8 @@ const run=new Function('assert',`
   camera={x:1919,y:1919};assert(mapChunkKeys().every(key=>key.split(',').every(n=>Number(n)<48)));
 `);
 run(assert);
-const movement=source.slice(source.indexOf('function playerBoatLevel('),source.indexOf('function roadSpeed('))+source.slice(source.indexOf('function playerMovementDistance('),source.indexOf('function playerSprite('));
+const movement=source.slice(source.indexOf('function barnActive('),source.indexOf('function drawBarnPath('))+
+  source.slice(source.indexOf('function playerBoatLevel('),source.indexOf('function roadSpeed('))+source.slice(source.indexOf('function playerMovementDistance('),source.indexOf('function playerSprite('));
 new Function('assert',`
   let movementMap=null;
   const world={towns:{}},roadSpeed=()=>1,biomeProtected=()=>true;

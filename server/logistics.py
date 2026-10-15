@@ -1,6 +1,7 @@
 """Building inventories and host-controlled transport between workplaces and storage."""
 from spatial import occupied_tiles
 import math
+import barns
 
 import progression as economy
 
@@ -460,6 +461,7 @@ def advance_trip(town, landscape, villager, elapsed, resume_work=False):
     terrain = landscape.get('terrain', [])
     roads = {(r['x'], r['y']) for r in landscape.get('roads', []) if 'construction' not in r}
     path = trip['path']
+    fences = barns.fences(landscape['buildings'], landscape.get('map_size', 120))
     step = trip.get('step', 0)
     if (trip['operation'] == 'sell' and step >= trip['pickup_step']
             and not trip.get('picked_up') and not trip['delivered']):
@@ -470,7 +472,8 @@ def advance_trip(town, landscape, villager, elapsed, resume_work=False):
         tile = tuple(path[step + 1])
         before = path[step]
         corners = ((tile[0], before[1]), (before[0], tile[1])) if tile[0] != before[0] and tile[1] != before[1] else ()
-        if (tile in blocked or (terrain and terrain[tile[1]][tile[0]] == 'v')
+        if (tile in blocked or barns.crosses(before, tile, fences)
+                or (terrain and terrain[tile[1]][tile[0]] == 'v')
                 or any(p in blocked or (terrain and terrain[p[1]][p[0]] == 'v') for p in corners)):
             cancel_trip(town, villager)
             villager['production_status'] = 'Delivery blocked; finding another route'

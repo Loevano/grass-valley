@@ -148,3 +148,6 @@ canvas{cursor:pointer}button:focus-visible,canvas:focus-visible,select:focus-vis
 
 .resources-table input{width:88px;padding:7px;margin:0;text-align:right;font-size:12px}.resources-table input:focus-visible,#resources-list:focus-visible{outline:2px solid #fff0b1;outline-offset:-2px}
 .resources-heading,#resources-description,#resources-trade-help{flex:none}#resources-trade-help{line-height:1.5;margin:0 0 16px}#resources-list{flex:1}
+
+/* Barn entrance management beside Move. */
+.building-management{flex-wrap:wrap;align-items:center}.building-management #selection-fence{display:grid;gap:4px;font-size:11px;color:#bdcdb5}.building-management #selection-fence[hidden]{display:none}.building-management #selection-fence-orientation{width:auto;max-width:150px;margin:0;padding:6px;font-size:11px}

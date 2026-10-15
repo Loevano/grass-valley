@@ -2,6 +2,7 @@
 from spatial import occupied_tiles
 from collections import deque
 import math
+import barns
 
 from villages import BASE_BUILDINGS, EXTRA_BUILDINGS, LIFE_BUILDINGS, PLANTINGS
 
@@ -50,7 +51,7 @@ def blocked_tiles(world, village):
     return blocked
 
 
-def route(start, goal, blocked, village):
+def route(start, goal, blocked, village, fences=()):
     radius = 9 if village.get('layout_version') == 2 else 5
     queue = deque([start])
     parents = {start: None}
@@ -65,6 +66,7 @@ def route(start, goal, blocked, village):
         for dx, dy in ((1, 0), (0, 1), (-1, 0), (0, -1)):
             next_ = x+dx, y+dy
             if (next_ in parents or next_ in blocked
+                    or barns.crosses((x, y), next_, fences)
                     or max(abs(next_[0]-village['x']), abs(next_[1]-village['y'])) > radius):
                 continue
             parents[next_] = (x, y)
@@ -80,6 +82,8 @@ def advance(world, seconds):
     for village in landscape['villages']:
         residents = [n for n in landscape['npcs'] if n.get('village') == village['name']]
         blocked = blocked_tiles(world, village)
+        fences = barns.fences([b for town in world['towns'].values() for b in town['buildings']],
+                              landscape.get('map_size', 120))
         for index, npc in enumerate(residents):
             state = npc.setdefault('routine', dict(x=npc['x'], y=npc['y'], path=[],
                 stop=-1, wait=index*.8, elapsed=0, phase='idle', job='idle', facing=1,
@@ -94,10 +98,10 @@ def advance(world, seconds):
                 transitions += 1
                 if state['path']:
                     target = state['path'][0]
-                    if tuple(target) in blocked:
+                    if tuple(target) in blocked or barns.crosses((state['x'], state['y']), target, fences):
                         # Finish no further steps until a new safe route is found.
                         origin = tuple(state.get('origin', (npc['x'], npc['y'])))
-                        detour = route(origin, tuple(state['goal']), blocked, village)
+                        detour = route(origin, tuple(state['goal']), blocked, village, fences)
                         returning = [[*origin]] if (state['x'], state['y']) != origin else []
                         state['path'] = returning + detour
                         if not detour:
@@ -142,6 +146,6 @@ def advance(world, seconds):
                 state['source'] = dict(x=vx+source[0], y=vy+source[1]) if source and state['stop'] == 0 else None
                 state['wait'] = (8, 4, 3, 5)[state['stop']]
                 state['elapsed'] = 0
-                state['path'] = route((round(state['x']), round(state['y'])), tuple(state['goal']), blocked, village)
+                state['path'] = route((round(state['x']), round(state['y'])), tuple(state['goal']), blocked, village, fences)
                 state['phase'] = 'walking' if state['path'] else 'idle'
             state['x'], state['y'] = round(state['x'], 6), round(state['y'], 6)
