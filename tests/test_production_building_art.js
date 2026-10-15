@@ -4,10 +4,10 @@ const results=JSON.parse(app.run(`
   const artTown={level:5,map_size:32,terrain:Array(32).fill('g'.repeat(32)),buildings:[],map_resources:[],villagers:[]};
   world={world_id:'production-art',towns:{own:artTown}};viewed='own';
   const cases=[];
-  for(const kind of ['butcher','bakery','smokehouse','tannery','woodcutter','workshop','farm','home','hall','barn','sawpit'])
+  for(const kind of ['butcher','bakery','smokehouse','tannery','woodcutter','workshop','farm','home','hall','barn','sawpit','fishing_hut','fish_pond','mine','smelter','steelworks'])
   for(const zoom of [.7,1,2])
-  for(const footprint of (['woodcutter','farm','home','barn'].includes(kind)?[[1,1]]:kind==='sawpit'?[[3,2],[1,1]]:[[2,2],[1,1]]))
-  for(const profession_upgrades of [[],...({home:[['timber_frame']],woodcutter:[['axe','tools']],bakery:[['larger_oven','double_hearth_oven','masterwork_oven']],sawpit:[['saw']]}[kind] || [])])
+  for(const footprint of (['woodcutter','farm','home','barn','fishing_hut','fish_pond','mine','smelter','steelworks'].includes(kind)?[[1,1]]:kind==='sawpit'?[[3,2],[1,1]]:[[2,2],[1,1]]))
+  for(const profession_upgrades of [[],...({home:[['timber_frame']],woodcutter:[['axe','tools']],bakery:[['larger_oven','double_hearth_oven','masterwork_oven']],sawpit:[['saw']],mine:[['steel_pickaxe']],fishing_hut:[['nets'],['wool_nets'],['boat'],['boat','improved_boat'],['nets','boat','improved_boat','master_boat']]}[kind] || [])])
   for(const level of (kind==='hall'?[1,2,3,4,5,10]:kind==='home'?[1,2,3,4]:[1,2,3])){
     artTown.level=kind==='hall'?level:5;
     const building={kind,x:5,y:5,footprint,level,settler_level:3,profession_upgrades};

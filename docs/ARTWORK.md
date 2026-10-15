@@ -59,6 +59,18 @@ captures the renderer with existing trees and workers and every structural tier.
 
 ![The eleven simplified building families and their structural tiers.](building-style-family.png)
 
+The same treatment extends to fishing huts, fish ponds, mines, Forgery, and
+steelworks. The [fishing and mining sheet](fishing-mining-building-style.svg)
+shows the implemented artwork and structural tiers. Fishing huts have blue-green
+roofs, fish counters, and coarse upgraded nets; boat-tier markers remain separate
+from their live boats and docks. Ponds are open stone basins with a low feed rack
+and fish silhouettes, with the live ripple remaining on the water. Mines use
+faceted rock, a dark timbered entrance, ore carts, and a larger steel pickaxe
+head after its upgrade. Forgery has a sheltered anvil and furnace; steelworks
+has a larger furnace and twin stacks. Footprints and production remain unchanged.
+
+![Fishing and mining buildings with their structural tiers.](fishing-mining-building-style.png)
+
 Roofs and masonry use plain shaded faces. Structural levels retain their bracing,
 stone bases, dormers, belfry, banners, and stock changes. Profession equipment and
 independent capacity plaques remain visible; smoke stays attached to the same

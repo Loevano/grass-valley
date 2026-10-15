@@ -977,6 +977,11 @@ faces, chunky supports, and fewer, larger profession props to match workers,
 trees, and rocks. Fine roof seams, masonry joints, and continuous outlines are
 removed. Structural, capacity, and equipment upgrades remain visible. Completed
 updated buildings have ground shadows; construction sites keep their lot pads.
+The [fishing and mining buildings](docs/fishing-mining-building-style.svg) share
+this style: fishing huts have fish counters and upgraded nets, ponds have open
+water basins and feed racks, mines have timbered rock entrances and ore carts,
+Forgery has an anvil and furnace, and steelworks has a larger furnace and twin
+stacks. Boat tiers and steel pickaxe upgrades remain visible.
 Production buildings include a covered workplace, outdoor workbench, and stock yard.
 Their artwork retains the original angled style: the sawpit is an open timber
 shed with a pitched roof, half walls, a tool rack, and a lantern. Its sawing bench

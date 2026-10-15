@@ -70,7 +70,7 @@ const run=new Function('document','window','localStorage','setTimeout','clearTim
   };
   assert(warmWindows(hall).length>=4,'The new hall has warm windows on both visible walls');
   assert.deepStrictEqual(warmWindows({...hall,footprint:[2,2]})[0],warmWindows(hall)[0],'Full and compact halls keep the same window design');
-  for(const [kind,upgrade] of [['home','timber_frame'],['woodcutter','axe'],['woodcutter','tools'],['sawpit','saw'],['fishing_hut','nets'],['fishing_hut','wool_nets'],['fishing_hut','boat']]){
+  for(const [kind,upgrade] of [['mine','steel_pickaxe'],['home','timber_frame'],['woodcutter','axe'],['woodcutter','tools'],['sawpit','saw'],['fishing_hut','nets'],['fishing_hut','wool_nets'],['fishing_hut','boat']]){
     const building={kind,x:5,y:5};
     assert.notStrictEqual(appearance(building),appearance({...building,profession_upgrades:[upgrade]}),upgrade+' adds visible equipment');
     assert.notStrictEqual(appearance({...building,level:3}),appearance({...building,level:3,profession_upgrades:[upgrade]}),upgrade+' stays visible on upgraded buildings');

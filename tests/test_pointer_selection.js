@@ -9,6 +9,7 @@ const {chromium}=require('playwright');
       const html=fs.readFileSync('web/index.html','utf8').replace(/<script\b[^>]*>[\s\S]*?<\/script>/g,'').replace(/<link\b[^>]*>/g,'');
       await page.setContent(html);
       await page.addStyleTag({content:'#world {position:fixed;left:0;top:0;width:960px;height:660px}'});
+      await page.addScriptTag({content:fs.readFileSync('web/animations.js','utf8')});
       const source=fs.readFileSync('web/app.js','utf8');
       await page.addScriptTag({content:source.slice(0,source.lastIndexOf('requestAnimationFrame(animate);'))});
       await page.evaluate(async()=>{
@@ -78,6 +79,25 @@ const {chromium}=require('playwright');
         [px,py]=point(5,5);await click(px,py-25*scale);
         check(viewed==='friend'&&selection?.type==='building'&&selection.index===0,'Visible shared-map building selects the correct owner and index');
         check(JSON.stringify(world)===snapshot,'Pointer picking preserves authoritative world state');
+        const specialtyTown={...town,level:10,buildings:[],map_resources:[],roads:[],npcs:[]};
+        world={world_id:'fishing-mining-art',towns:{own:specialtyTown}};viewed='own';
+        for(const kind of ['fishing_hut','fish_pond','mine','smelter','steelworks']){
+          specialtyTown.buildings=[{kind,x:5,y:5,footprint:[1,1],level:3,settler_level:3,
+            profession_upgrades:kind==='fishing_hut'?['nets','wool_nets']:kind==='mine'?['steel_pickaxe']:[]}];
+          const saved=JSON.stringify(world);render();
+          const hit=hitTargets.find(target=>target.type==='building'&&target.index===0);
+          const [x,y]=point(5,5);let visible=null;
+          for(let dy=-25;dy<=8&&!visible;dy+=2)for(let dx=-16;dx<=16;dx+=2){
+            const point=[x+dx*scale,y+dy*scale];
+            if(hitTargetContains(hit,...point)){visible=point;break;}
+          }
+          check(visible,kind+' has a selectable painted surface');
+          await click(...visible);
+          check(selection?.type==='building'&&selection.index===0,kind+' painted surface selects its building');
+          await click(hit.left+scale,hit.top+scale);
+          check(selection===null,kind+' transparent corner does not select its building');
+          check(JSON.stringify(world)===saved,kind+' drawing and picking preserve authoritative state');
+        }
       });
       await page.close();
     }

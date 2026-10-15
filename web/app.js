@@ -479,10 +479,10 @@ function resourceReach(building){
 function buildingVisualLevel(building,town){
   return building.kind==='hall'?Math.min(5,town?.level || 1):Math.min(building.kind==='home'?4:3,buildingLevel(building));
 }
-const detailedBuildingKinds=['butcher','bakery','smokehouse','tannery','woodcutter','workshop','farm','home','hall'];
+const detailedBuildingKinds=['butcher','bakery','smokehouse','tannery','woodcutter','workshop','farm','home','hall','fishing_hut','fish_pond','mine','smelter','steelworks'];
 function buildingHeight(building,town){
   if(decorationKinds.includes(building.kind))return building.kind==='wooden_bench'?15:32;
-  return ({hall:62,woodcutter:44,mine:27,smelter:36,steelworks:38,stable:32,tannery:38,saddler:27,tradehouse:35,barn:53,mill:40,smokehouse:62,workshop:44,sawpit:28,market:17,fish_pond:18,orchard:20,bakery:58,butcher:44,home:46,farm:44}[building.kind] || 27)+4*(buildingVisualLevel(building,town)-1)+(building.kind==='mill'&&footprintTiles(building).length>1?10:0);
+  return ({hall:62,woodcutter:44,fishing_hut:44,mine:27,smelter:36,steelworks:38,stable:32,tannery:38,saddler:27,tradehouse:35,barn:53,mill:40,smokehouse:62,workshop:44,sawpit:28,market:17,fish_pond:32,orchard:20,bakery:58,butcher:44,home:46,farm:44}[building.kind] || 27)+4*(buildingVisualLevel(building,town)-1)+(building.kind==='mill'&&footprintTiles(building).length>1?10:0);
 }
 const storehouseCapacities=[50,75,100,150,200,250,300,350];
 function farmStorageCapacity(building){
@@ -5082,7 +5082,7 @@ function paintDetailedBuilding(b,town,target,paintPolygon,usable){
   // Broad unoutlined faces and a few chunky props match the scenery and workers.
   // Compact legacy sites retain their saved footprints and upgrade identities.
   const [width,depth]=b.footprint || [1,1];
-  const fit=['home','woodcutter','farm'].includes(b.kind)?1:Math.min(width,depth)/2;
+  const fit=['home','woodcutter','farm','fishing_hut','fish_pond','mine','smelter','steelworks'].includes(b.kind)?1:Math.min(width,depth)/2;
   const [x,top]=point(b.x+(width-1)/2,b.y+(depth-1)/2),s=tileW/46;
   const level=buildingVisualLevel(b,town),rise=4*(level-1),upgrades=b.profession_upgrades || [];
   target.save();target.translate(x,top+tileH/2);target.scale(.46*s*fit,.46*s*fit);
@@ -5198,7 +5198,97 @@ function paintDetailedBuilding(b,town,target,paintPolygon,usable){
     }
     lantern(x1,y2+.02,30);
   };
-  if(b.kind==='butcher'){
+  if(b.kind==='fishing_hut'){
+    // A low blue roof, open fish counter and chunky net distinguish the shore trade.
+    const h=34+rise;
+    face([[-1.05,-1.1,0],[1.05,-1.1,0],[1.05,.8,0],[-1.05,.8,0]],'#a38c63');
+    walls(-.9,.9,-1,.6,h,'#bcad87','#8e957e');
+    roof(-1.1,1.1,-1.18,.78,h,16,'#78968d','#526f6c');
+    bench(-.45,.92,1.1,.4,13);
+    for(const x of [-.15,.4]){
+      const [a,b]=p(x,1.1,16);
+      poly([[a-6,b],[a,b-3],[a+5,b],[a+9,b-3],[a+9,b+3],[a+5,b+1],[a,b+3]],'#c7d5ba');
+    }
+    tub(-1.2,.6,'#597e7b',9,4);lantern(-.9,.65,27);
+    const net=upgrades.includes('nets')||upgrades.includes('wool_nets');
+    if(net){
+      const color=upgrades.includes('wool_nets')?'#eee1bc':'#b7c8b0';
+      for(const y of [-.65,-.05])edge([1,y,3],[1,y,33],'#9c885e',3.6);
+      face([[1,-.65,7],[1,-.05,7],[1,-.05,29],[1,-.65,29]],'#647d6b');
+      for(const y of [-.65,-.35,-.05])edge([1.02,y,7],[1.02,y,29],color,2.8);
+      for(const z of [7,18,29])edge([1.02,-.65,z],[1.02,-.05,z],color,2.8);
+    }
+    const boatTier=fishingBoatLevel(b);
+    if(boatTier){
+      const [a,py]=p(.1,.65,27);
+      target.fillStyle=['','#c29a63','#ece3c5','#d4af6b'][boatTier];target.fillRect(a-5,py-5,10,10);
+      target.fillStyle='#493627';target.font='bold 8px sans-serif';target.textAlign='center';target.fillText(String(boatTier),a,py+3);
+    }
+  }else if(b.kind==='fish_pond'){
+    // The water is the main silhouette; the feed rack stays low and open.
+    for(const x of [-1.05,.15])edge([x,-.75,0],[x,-.75,26+rise],'#9c885e',4);
+    roof(-1.2,.3,-1.1,-.4,26+rise,10,'#78968d','#526f6c');
+    sack(-1.15,-.3);
+    oval(0,11,51,24,'#8b9580');oval(0,7,51,22,level>=3?'#b7baa5':'#a3aa91');
+    oval(0,7,43,16,'#477d86');oval(-5,4,33,10,'#62999a');
+    for(const [a,py] of [[-15,7],[16,11]])poly([[a-8,py],[a,py-4],[a+7,py],[a+12,py-4],[a+12,py+4],[a+7,py],[a,py+4]],'#dfbb78');
+    if(level>=2)edge([-1.15,.8,4],[.8,.8,4],'#bca47b',4);
+    lantern(-1.05,-.7,23+rise);
+  }else if(b.kind==='mine'){
+    // Broad rock faces match nearby boulders; the dark adit reads without a roof.
+    const h=38+rise;
+    face([[-1.3,.7,0],[1.1,.7,0],[1.1,.7,h-10],[.05,.7,h],[-1.1,.7,h-7]],'#929b88');
+    face([[1.1,-1,0],[1.1,.7,0],[1.1,.7,h-10],[1.1,-.5,h-6]],'#707e70');
+    face([[-1.1,.7,h-7],[.05,.7,h],[.4,-.65,h+2],[1.1,-.5,h-6],[1.1,.7,h-10]],'#b3b8a1');
+    face([[-.85,.72,0],[.45,.72,0],[.45,.72,25],[-.2,.72,32],[-.85,.72,25]],'#354438');
+    for(const x of [-.85,.45])edge([x,.75,0],[x,.75,29],'#ad9569',5);
+    edge([-.96,.75,29],[.56,.75,29],'#c1a575',5.5);
+    if(level>=2){
+      edge([-.85,.76,20],[-.5,.76,29],'#c1a575',4);edge([.45,.76,20],[.1,.76,29],'#c1a575',4);
+    }
+    if(level>=3)for(const x of [-1.1,.65])face([[x,.78,0],[x+.25,.78,0],[x+.25,.78,13],[x,.78,13]],'#b7baa5');
+    for(const x of [-.65,.25])edge([x,.8,0],[x,1.55,0],'#7b8477',3);
+    const [a,py]=p(1.1,-.2,2);
+    poly([[a-11,py-12],[a+9,py-12],[a+7,py],[a-9,py]],'#7f7353');
+    poly([[a-10,py-12],[a-5,py-20],[a+1,py-17],[a+6,py-22],[a+10,py-12]],'#b38c61');
+    for(const dx of [-6,6])oval(a+dx,py+1,3,3,'#465548');
+    edge([-1.23,.4,0],[-1.12,.4,25],'#b39b70',3.4);
+    const [pickX,pickY]=p(-1.12,.4,25);
+    const steelPick=upgrades.includes('steel_pickaxe');
+    poly([[pickX-9,pickY+2],[pickX-4,pickY-4],[pickX+7,pickY-4],[pickX+(steelPick?16:12),pickY+1],[pickX+3,pickY-1],[pickX-3,pickY-1]],steelPick?'#e0e9d5':'#9caca0');
+    lantern(-.85,.8,25);
+  }else if(b.kind==='smelter'||b.kind==='steelworks'){
+    const steel=b.kind==='steelworks',h=(steel?38:32)+rise;
+    // A sheltered anvil for the iron trade; a larger enclosed furnace for steel.
+    if(steel){
+      walls(-1,.8,-1,.6,h,'#a5aa96','#788574');
+      roof(-1.15,.95,-1.15,.78,h,14,'#718a86','#4d6c6b');
+    }else{
+      walls(-1.1,-.05,-1,.6,h,'#b5a17d','#89866d');
+      roof(-1.25,.1,-1.15,.78,h,14,'#a28c60','#7e7452');
+    }
+    const front=.65,x1=steel?-.5:.15,x2=steel?.65:1.2;
+    face([[x1,front,0],[x2,front,0],[x2,front,30+rise],[x1,front,30+rise]],'#9fa48e');
+    face([[x2,-.8,0],[x2,front,0],[x2,front,30+rise],[x2,-.8,30+rise]],'#707e70');
+    face([[x1,-.8,30+rise],[x2,-.8,30+rise],[x2,front,30+rise],[x1,front,30+rise]],'#b4b7a0');
+    face([[x1+.14,front+.02,3],[x2-.14,front+.02,3],[x2-.14,front+.02,20],[x1+.14,front+.02,20]],'#3c4638');
+    face([[x1+.23,front+.03,4],[x2-.23,front+.03,4],[x2-.23,front+.03,10],[x1+.23,front+.03,15]],'#dcaa5e');
+    chimney((steel?51:43)+rise);
+    if(steel){
+      edge([-.8,-.55,h-1],[-.8,-.55,h+17],'#7c8879',9);
+      crate(1,-.2);
+    }else{
+      bench(-1.1,.95,.8,.4,12);
+      const [a,py]=p(-.7,1.15,19);
+      poly([[a-10,py-6],[a+9,py-6],[a+5,py-2],[a+2,py-2],[a+2,py+4],[a+7,py+5],[a-7,py+5],[a-2,py+2],[a-2,py-2],[a-7,py-2]],'#5e7168');
+    }
+    for(let i=0;i<level;i++){
+      const [a,py]=p(.9,1.1,3+i*5);
+      poly([[a-7,py],[a+4,py],[a+7,py-4],[a-4,py-4]],steel?'#a9bcb5':'#a6ab94');
+      poly([[a-7,py],[a+4,py],[a+4,py+3],[a-7,py+3]],'#73867b');
+    }
+    lantern(-1,.65,27);
+  }else if(b.kind==='butcher'){
     walls(-.95,.95,-1.1,.65,43+rise,'#c2aa90','#99816c');
     roof(-1.1,1.1,-1.25,.82,43+rise,19,'#aa7a78','#855d64');
     face([[-.02,.67,13],[.79,.67,13],[.79,.67,30],[-.02,.67,30]],'#473f32');
@@ -5363,7 +5453,7 @@ function paintDetailedBuilding(b,town,target,paintPolygon,usable){
     }
   }
   // Keep structural and worker-capacity upgrades independent, as on the barn.
-  const [plaqueX,plaqueY]=p(b.kind==='tannery'?-.04:b.kind==='woodcutter'?.56:b.kind==='hall'?1.32:.97,-.05,20);
+  const [plaqueX,plaqueY]=p(b.kind==='fish_pond'?-.25:b.kind==='tannery'?-.04:b.kind==='woodcutter'?.56:b.kind==='hall'?1.32:.97,b.kind==='fish_pond'?-.75:-.05,20);
   target.fillStyle='#344b42';target.fillRect(plaqueX-5,plaqueY-7,13,9);
   target.fillStyle='#fff0b1';target.font='bold 7px sans-serif';target.textAlign='center';target.fillText(String(b.kind==='hall'?town?.level || 1:buildingLevel(b)),plaqueX+1.5,plaqueY);
   if((b.settler_level || 1)>1){
