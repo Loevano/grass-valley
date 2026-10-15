@@ -366,8 +366,8 @@ def efficiency(villager, job):
 
 
 def practice(villager, job, seconds=3):
-    # Husbandry trains 60% faster and butchery 25% faster than standard work.
-    rate = .128 if job == 'husbandry' else .1 if job == 'butchery' else .08
+    # Fishing trains three times as fast; husbandry is 60% faster and butchery 25%.
+    rate = .24 if job == 'fishing' else .128 if job == 'husbandry' else .1 if job == 'butchery' else .08
     gain = rate * seconds / 3 * (1 + .25 * aptitude(villager, job))
     villager[job] = round(villager.get(job, 0) + gain, 3)
 
@@ -922,7 +922,7 @@ def player_tick(town, landscape, capacity):
     caught = job != 'fishing' or secrets.randbelow(5) != 0
     if caught:
         deliver(town, key, amount, capacity)
-    player[job] = player.get(job, 0) + 2
+    player[job] = player.get(job, 0) + (6 if job == 'fishing' else 2)
     player['activity_status'] = 'Working' if caught else 'No catch — trying again'
 
 

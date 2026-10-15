@@ -212,6 +212,9 @@ grain equipment still need play experience.
 Settler and player skill gains are doubled, including butchery. Existing practice
 and unlock thresholds are preserved. Husbandry now trains a further 60% faster;
 delivered training pace still needs playtesting.
+Fishing XP now accrues a further three times as fast for settlers and the player;
+saved practice and unlock thresholds are preserved. Catch progression and the
+remaining fishing balance work above are still planned.
 Sawpit work is labeled Sawing throughout job and skill controls, with a hand-driven
 sawing animation during productive work. Saved practice and production rates are
 preserved. The wood and grain rates still need play experience across town layouts

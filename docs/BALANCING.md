@@ -25,8 +25,10 @@ work are assumed. Travel, supply regeneration, hauling, food, and storage limits
 make actual elapsed time longer. Practice means the game's saved skill points (XP).
 
 Skill gains are doubled for settlers and the player. Standard settler work earns
-1.6 practice per active minute; butchery earns 2. The player earns 2 practice
-per active three-second cycle. Saved practice and unlock thresholds are preserved.
+1.6 practice per active minute; butchery earns 2. Fishing earns a further 3× XP:
+settlers gain 4.8 practice per active minute, and the player earns 6 practice
+per active three-second fishing cycle (2 for other activities).
+Saved practice and unlock thresholds are preserved.
 
 Talents apply a 0.75× or 1.25× modifier to output and practice. Every 20 practice
 adds another base output multiplier. Processing expertise and the crafted saw
@@ -358,7 +360,7 @@ in parallel, so do not add the full growth duration to every animal when estimat
 
 | Activity | Base work | Output or practice | Ideal rate |
 | --- | --- | --- | --- |
-| Settler fishing, ordinary fish | Three-second productive attempt; 90% catch chance | 1 fish on success; 0.08 practice per supplied attempt, including misses | Expected 18 fish/minute; 1.6 practice/minute |
+| Settler fishing, ordinary fish | Three-second productive attempt; 90% catch chance | 1 fish on success; 0.24 practice per supplied attempt, including misses | Expected 18 fish/minute; 4.8 practice/minute |
 | One smokehouse worker | Three-second completed batch | 1 raw fish + 0.25 wood → 1 smoked fish of the same species; 0.08 practice | Uses 20 raw fish + 5 wood/minute; makes 20 smoked fish/minute |
 
 Smoking preserves species, adds 0.5 food and 1 coin per fish, and keeps a
@@ -370,7 +372,7 @@ and sell for 2, 3, 4, and 6 coins. The sale gain covers the 0.25 wood per fish.
 
 | Full chain | Work breakdown | Total production time cost | Total reward |
 | --- | --- | --- | --- |
-| Ordinary fish + wood → 1 smoked fish | Catch 1 fish: expected 3.33s; gather 0.25 wood: 1s; smoke: 3s | Expected 7.33 worker-seconds | 1 smoked fish (1.5 food value, 2 coins); expected 0.196 practice (0.089 fishing + 0.027 woodcutting + 0.08 preserving) |
+| Ordinary fish + wood → 1 smoked fish | Catch 1 fish: expected 3.33s; gather 0.25 wood: 1s; smoke: 3s | Expected 7.33 worker-seconds | 1 smoked fish (1.5 food value, 2 coins); expected 0.373 practice (0.267 fishing + 0.027 woodcutting + 0.08 preserving) |
 
 Expected fishing work is `required fish ÷ (fish per successful attempt × catch
 probability) × seconds per attempt`. Misses use work time and still earn practice;
@@ -381,8 +383,8 @@ fish, boats, and breeding ponds need their own chain totals.
 
 ### Training
 
-Qualifying for preserving requires 10 fishing practice: 6.25 ideal active minutes
-at neutral talent. Fish breeding requires 20 fishing practice: 12.5 ideal active
+Qualifying for preserving requires 10 fishing practice: about 2.08 ideal active minutes
+at neutral talent. Fish breeding requires 20 fishing practice: about 4.17 ideal active
 minutes. Productive supplied attempts earn practice even when they miss.
 
 ## Progression pacing to try

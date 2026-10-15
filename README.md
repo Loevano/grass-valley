@@ -767,7 +767,8 @@ the Python host, refresh both browsers, and create a new world to use the shared
 - Your character can fish with **F**, chop with **C**, and gather berries or herbs
   with **G** while standing beside the source. Actions repeat every three seconds
   until you move, press the same key again, or press Escape. Select **You** to see
-  fishing, woodcutting, and gathering levels. Each active cycle earns 2 practice. Every 20 practice raises a level;
+  fishing, woodcutting, and gathering levels. Each active cycle earns 6 fishing
+  practice or 2 woodcutting/gathering practice. Every 20 practice raises a level;
   work and practice pause when storage is full or supplies are empty. These keys
   can be changed in Settings without losing older movement preferences.
 - Edible goods are included in the Food total. Eating, recipes, and sales consume

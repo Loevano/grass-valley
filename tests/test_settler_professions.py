@@ -44,7 +44,7 @@ class SettlerProfessions(unittest.TestCase):
         self.town['map_resources'] = [{'kind': 'water', 'x': 4, 'y': 7}]
         index = self.workplace('fishing_hut')
         self.assign(index)
-        for talent, output, practice in [(1, 1.25, .1), (-1, .75, .06)]:
+        for talent, output, practice in [(1, 1.25, .3), (-1, .75, .18)]:
             self.worker.update(fishing=0, talents={'fishing': talent})
             self.town.update(food=10, goods={})
             server.tick({'towns': {'a': self.town}})
@@ -54,7 +54,7 @@ class SettlerProfessions(unittest.TestCase):
         roll.return_value = 0
         before = self.worker['fishing']
         server.tick({'towns': {'a': self.town}})
-        self.assertEqual(self.worker['fishing'], before + .06)
+        self.assertEqual(self.worker['fishing'], before + .18)
         self.assertEqual(self.town['produced'].get('fish', 0), 0)
 
     def test_bakery_and_butcher_batches_obey_inputs_storage_and_upkeep(self):

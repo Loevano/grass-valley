@@ -81,9 +81,9 @@ class Progression(unittest.TestCase):
             # Starting or spamming requests never grants production or practice.
             self.assertEqual(self.town['player'].get(job,0),0)
             tick(self.world)
-            self.assertEqual(self.town['player'][job],2)
+            self.assertEqual(self.town['player'][job],6 if job == 'fishing' else 2)
             tick(self.world)
-            self.assertEqual(self.town['player'][job],4)
+            self.assertEqual(self.town['player'][job],12 if job == 'fishing' else 4)
         saved = json.loads(json.dumps(self.world))
         self.assertEqual(saved['towns']['a']['player']['gathering'],4)
         command(self.town, {'action':'walk','dx':1,'dy':0}, self.world)

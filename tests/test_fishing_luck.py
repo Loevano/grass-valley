@@ -31,7 +31,7 @@ class FishingLuck(unittest.TestCase):
             self.assertEqual(self.fisher['fishing_catch'], {'attempt': 2, 'caught': False})
             self.assertEqual(roll.call_count, 2)
             roll.assert_called_with(10)
-        self.assertEqual(self.fisher['fishing'], .16, 'Practice earns skill even without a catch')
+        self.assertEqual(self.fisher['fishing'], .48, 'Practice earns skill even without a catch')
 
     def test_every_successful_roll_and_master_reward(self):
         self.fisher['fishing'] = 20
