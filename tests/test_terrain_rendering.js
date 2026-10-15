@@ -33,6 +33,17 @@ const run=new Function('document','window','localStorage','setTimeout','clearTim
   check(fills.includes('#a3ad74'),'Swamp water contains lily pads');
   fills.length=0;drawResource({kind:'tree',x:5,y:5});
   check(fills.includes('#64784c'),'Swamp trees render as willows');
+  for(const [surface,palette] of [['p',['#a18b67','#a58f6b','#9b8562']],
+    ['c',['#a5aa94','#adb09c','#9ca38d']],['w',['#a48a60','#b1986c','#9b8059']]]){
+    town.terrain=Array(12).fill(surface.repeat(12));town.map_resources=[];
+    const saved=JSON.stringify(town);
+    for(const width of [24,54]){
+      tileW=width;tileH=width/2;fills.length=0;
+      paintGround(ctx,town,new Set(),{minX:5,maxX:5,minY:5,maxY:5});
+      check(palette.some(color=>fills.includes(color)),'Village lanes have visible ground at every zoom');
+      check(JSON.stringify(town)===saved,'Lane artwork preserves authoritative terrain');
+    }
+  }
   town.terrain=Array(12).fill('vvvvvvvvvvvv');fills.length=0;draw();
   check(!fills.includes('#68865a')&&!fills.includes('#6299a1'),'Tiles outside the outline are not rendered');
   check(!placementValid(town,{x:5,y:5},'home'),'Cannot preview a building outside the outline');

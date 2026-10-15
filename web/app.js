@@ -3884,7 +3884,8 @@ function paintGround(target,landscape,water,bounds,offsetX=0,offsetY=0,region=nu
   const ctx=target,terrainSize=landscape?.map_size || 12;
   const detailed=tileW>=32;
   const palette={g:['#68865a','#69875b','#668358'],f:['#506f4a','#55764c','#5a7b50'],
-    m:['#83945e','#899b65','#80915b'],s:['#b4a575','#bdad7d','#b8a878'],r:['#8b8d7c','#969785','#858978'],b:['#59674b','#626f50','#536247'],d:['#d6b575','#dfbf80','#cfac6b'],i:['#c6e2e8','#d4e9ed','#bcd9e3']};
+    m:['#83945e','#899b65','#80915b'],s:['#b4a575','#bdad7d','#b8a878'],r:['#8b8d7c','#969785','#858978'],b:['#59674b','#626f50','#536247'],d:['#d6b575','#dfbf80','#cfac6b'],i:['#c6e2e8','#d4e9ed','#bcd9e3'],
+    p:['#a18b67','#a58f6b','#9b8562'],c:['#a5aa94','#adb09c','#9ca38d'],w:['#a48a60','#b1986c','#9b8059']};
   const land=(tx,ty)=>tx>=0&&ty>=0&&tx<terrainSize&&ty<terrainSize&&landscape?.terrain?.[ty]?.[tx]!=='v'
     &&(!landscape?.chunked||!!landscape.terrain?.[ty]?.[tx]);
   const {minX,maxX,minY,maxY}=bounds;
@@ -3922,6 +3923,34 @@ function paintGround(target,landscape,water,bounds,offsetX=0,offsetY=0,region=nu
       const waterColor=biome==='b'?(shallow?'#718565':'#4e6857'):(shallow?'#6299a1':'#447d91');
       const canopy=!detailed&&forest?.has(`${x},${y}`);
       polygon(diamond,wet?waterColor:canopy?(biome==='b'?'#4b6549':'#3f6045'):palette[biome][groundVariant(x,y)],null);
+      if(detailed&&!wet&&['p','c','w'].includes(biome)){
+        const q=(u,v)=>[px+(u-v)*tileW/2,py+(u+v)*tileH/2];
+        const line=(a,b,color,width=1)=>{ctx.strokeStyle=color;ctx.lineWidth=width*tileW/46;ctx.beginPath();ctx.moveTo(...a);ctx.lineTo(...b);ctx.stroke();};
+        if(biome==='w'){
+          // Continuous raised planks cross the canal without blocking movement.
+          for(let plank=1;plank<7;plank++)line(q(.02,plank/7),q(.98,plank/7),'#715d43',.8);
+          for(const u of [.08,.92]){
+            line(q(u,.04),q(u,.96),'#d0b582',1.4);
+            for(const v of [.16,.83]){const [x,y]=q(u,v);ctx.fillStyle='#5d5945';ctx.fillRect(x,y,tileW/50,tileW/50);}
+          }
+        }else if(biome==='c'){
+          for(let row=0;row<4;row++)for(let column=0;column<4;column++){
+            const u=column/4,v=row/4;
+            polygon([q(u+.025,v+.025),q(u+.23,v+.025),q(u+.23,v+.23),q(u+.025,v+.23)],
+              (row+column+variation)%3?'#b9b9a1':'#939e8b','#7b8875');
+          }
+        }else{
+          // Worn wheel tracks and pebbles make the main causeway read as a lane.
+          const alongX=['p','c','w'].includes(landscape?.terrain?.[y]?.[x+1]);
+          for(const v of [.27,.72])line(alongX?q(.08,v):q(v,.08),alongX?q(.92,v):q(v,.92),'#8e795b',.8);
+          const [sx,sy]=q(.25+(variation%3)*.2,.5);ctx.fillStyle='#c4b18a';ctx.fillRect(sx,sy,tileW/35,tileW/55);
+        }
+        const neighbors=[[x,y-1],[x+1,y],[x,y+1],[x-1,y]];
+        for(let edge=0;edge<4;edge++){
+          const [nx,ny]=neighbors[edge];
+          if(!['p','c','w'].includes(landscape?.terrain?.[ny]?.[nx]))line(diamond[edge],diamond[(edge+1)%4],biome==='w'?'#65523c':'#c2b28a',1.2);
+        }
+      }
       if(detailed&&!wet&&biome==='i'){
         // Stable, tile-local frost stays inside the cached ground footprint.
         const frost=((x*73856093)^(y*19349663)^(landscape?.terrain_seed || 0))>>>0;
@@ -3999,7 +4028,7 @@ function paintGround(target,landscape,water,bounds,offsetX=0,offsetY=0,region=nu
         for(let reed=0;reed<3;reed++){const rx=px+(reed-1)*tileW*.07,ry=py+tileH*.7;ctx.beginPath();ctx.moveTo(rx,ry);ctx.lineTo(rx+(reed-1)*tileW*.025,ry-tileH*.4);ctx.stroke();}
         if(wet){ctx.fillStyle='#a3ad74';ctx.beginPath();ctx.ellipse(px+tileW*.17,py+tileH*.55,tileW*.065,tileH*.075,0,0,Math.PI*2);ctx.fill();}
       }
-      if(detailed&&!wet&&!['d','i'].includes(biome)&&variation===0){ctx.fillStyle='#8fa574';ctx.fillRect(px-5*tileW/46,py+tileH*.5,2*tileW/46,2*tileW/46);ctx.fillStyle='#d7c78a';ctx.fillRect(px+4*tileW/46,py+tileH*.65,2*tileW/46,2*tileW/46);}
+      if(detailed&&!wet&&!['d','i','p','c','w'].includes(biome)&&variation===0){ctx.fillStyle='#8fa574';ctx.fillRect(px-5*tileW/46,py+tileH*.5,2*tileW/46,2*tileW/46);ctx.fillStyle='#d7c78a';ctx.fillRect(px+4*tileW/46,py+tileH*.65,2*tileW/46,2*tileW/46);}
       if(detailed&&!wet&&biome!=='i'&&(x===0||y===0||x===terrainSize-1||y===terrainSize-1)&&variation%2===0){ctx.strokeStyle='#9caf77';ctx.lineWidth=tileW/46;ctx.beginPath();ctx.moveTo(px-6*tileW/46,py+tileH*.65);ctx.lineTo(px-9*tileW/46,py+tileH*.4);ctx.moveTo(px-6*tileW/46,py+tileH*.65);ctx.lineTo(px-4*tileW/46,py+tileH*.35);ctx.stroke();}
       if(detailed&&wet){
         ctx.strokeStyle='#b4d7ce99';ctx.lineWidth=tileW/46;

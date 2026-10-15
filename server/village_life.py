@@ -39,8 +39,12 @@ def blocked_tiles(world, village):
         blocked.update((vx+dx, vy+dy) for _, dx, dy, _, _ in LIFE_BUILDINGS)
         blocked.update((vx+dx, vy+dy) for _, dx, dy in PLANTINGS)
     radius = 19 if swamp_village.expanded(village) else 9
+    if swamp_village.organic(village):
+        radius = swamp_village.RADIUS
     if swamp_village.expanded(village):
-        blocked.update((vx+r['x'], vy+r['y']) for r in swamp_village.additions())
+        blocked.update((vx+r['x'], vy+r['y']) for r in swamp_village.additions(village['swamp_version']))
+    if swamp_village.organic(village):
+        blocked.update((vx+x, vy+y) for x, y in swamp_village.layout()['water'])
     # Read only already active chunks. Sleeping village life never loads terrain.
     manager = world.get('_chunks')
     if manager:
@@ -57,8 +61,14 @@ def blocked_tiles(world, village):
     return blocked
 
 
-def route(start, goal, blocked, village, fences=()):
-    radius = 19 if swamp_village.expanded(village) else 9 if village.get('layout_version') == 2 else 5
+def route(start, goal, blocked, village, fences=(), lanes_only=True):
+    radius = 9 if village.get('layout_version') == 2 else 5
+    if swamp_village.expanded(village):
+        radius = swamp_village.RADIUS if swamp_village.organic(village) else 19
+    allowed = None
+    if swamp_village.organic(village):
+        data = swamp_village.layout()
+        allowed = data['roads'] if lanes_only else data['footprint'] - data['water']
     queue = deque([start])
     parents = {start: None}
     while queue:
@@ -73,10 +83,13 @@ def route(start, goal, blocked, village, fences=()):
             next_ = x+dx, y+dy
             if (next_ in parents or next_ in blocked
                     or barns.crosses((x, y), next_, fences)
-                    or max(abs(next_[0]-village['x']), abs(next_[1]-village['y'])) > radius):
+                    or max(abs(next_[0]-village['x']), abs(next_[1]-village['y'])) > radius
+                    or (allowed is not None and (next_[0]-village['x'], next_[1]-village['y']) not in allowed)):
                 continue
             parents[next_] = (x, y)
             queue.append(next_)
+    if allowed is not None and lanes_only:
+        return route(start, goal, blocked, village, fences, lanes_only=False)
     return []
 
 

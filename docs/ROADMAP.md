@@ -274,8 +274,11 @@ are collected in [Pathing decisions](PATHING.md).
   per barn on an independent clock, sped up by keeper count.
 - Reedhaven's expanded marsh quarters have 56 buildings, 32 residents, custom
   stilt architecture, tavern patrons, lanterns, seating, and varied marsh plants.
-  Walking residents follow saved host routes; sleeping patrons stay beside buildings.
-  Existing player construction prevents expansion into occupied settlement ground.
+  Giethoorn-inspired lanes, paved gathering places, and canal boardwalks connect
+  irregular residential clusters, preserving marsh pockets between the branches.
+  Residents follow saved lane routes; sleeping patrons stay beside buildings.
+  Square-layout upgrades preserve visits and central harvests; existing player
+  construction prevents reshaping occupied settlement ground.
 - Idle town villagers take short strolls with staggered pauses near their hall,
   avoiding occupied and impassable tiles. These ambient browser routes leave
   authoritative state untouched and stop when work or construction is assigned.

@@ -70,6 +70,23 @@ class VillageLife(unittest.TestCase):
         village_life.advance(restored, .5)
         self.assertEqual(self.world['shared_map']['npcs'], restored['shared_map']['npcs'])
 
+    def test_swamp_residents_follow_lanes_and_cross_boardwalks(self):
+        import swamp_village
+        village = self.world['shared_map']['villages'][0]
+        vx, vy = village['x'], village['y']
+        blocked = village_life.blocked_tiles(self.world, village)
+        roads = swamp_village.layout()['roads']
+        start, goal = (vx+15, vy+7), (vx+20, vy+7)
+        path = village_life.route(start, goal, blocked, village)
+        self.assertTrue(path)
+        self.assertTrue(all((x-vx, y-vy) in roads for x, y in path))
+        self.assertTrue(any(roads[x-vx, y-vy] == 'w' for x, y in path))
+        for name in swamp_village.NAMES:
+            npc = next(n for n in self.locals if n['name'] == name)
+            path = village_life.route((npc['x'], npc['y']), (vx+2, vy+3), blocked, village)
+            self.assertTrue(path)
+            self.assertTrue(all((x-vx, y-vy) in roads for x, y in path))
+
     def test_new_building_on_a_route_is_avoided(self):
         npc = next(n for n in self.locals if n['name'] == 'Hakon')
         for _ in range(8):

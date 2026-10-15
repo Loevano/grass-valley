@@ -108,13 +108,20 @@ Frostbrook each have eight themed cottages and workshops, an inn, a village hall
 an animal shelter, a three-stall market square, and eight residents. Willows, oasis palms, winter
 pines, herb beds, berry shrubs, and a small fishing pool fill pockets between
 the buildings.
-Reedhaven spreads across four times its former settled area, with 56 buildings and
-32 residents. Raised plank cottages, reed roofs, mossy houses, net-drying sheds,
+Reedhaven's 56 buildings and 32 residents cluster along crooked lanes, with an
+irregular marsh edge inspired by [Giethoorn's canal-side layout](https://www.giethoornvillage.com/giethoorn-from-north-to-south/).
+A broad dirt causeway branches into smaller residential lanes; cobbled market
+and tavern squares and timber boardwalks connect neighborhoods across a canal.
+Willow groves and wet pockets remain between the branches. Residents follow
+these lanes and crossings between their homes and gathering places. Raised plank
+cottages, reed roofs, mossy houses, net-drying sheds,
 and the Crooked Candle tavern fill its crowded quarters. Benches, candle lanterns,
 ale barrels, ferns, cattails, mushrooms, and reeds decorate the lanes. Four sleepy
 tavern patrons lie beside the buildings while the other residents circulate.
-Existing Reedhaven saves gain this quarter when its full expansion area is free
-of player buildings, roads, and other locals; existing traders and visits stay intact.
+Existing Reedhaven saves gain this layout when its affected ground is free of
+player buildings, roads, and other locals. Earlier square quarters reshape safely,
+keeping harvested central plants and resident visits; occupied quarters keep
+their existing layout.
 Restart the host and refresh the browser to load the update.
 Residents walk between home, work, the market, and their hall. Boatwrights and
 winter woodworkers chop, fishers cast their rods, herbalists gather, and keepers
