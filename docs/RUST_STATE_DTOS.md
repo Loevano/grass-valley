@@ -221,3 +221,19 @@ comparison and scalar retention without a 2^53 restriction. `LoadedChunk` expose
 exact private clock bytes separately from its explicitly fallible binary64 inspection
 view. This private terrain boundary does not widen the general typed DTO time
 conversion domain described above, nor does it expose arbitrary integers on public wire DTOs.
+
+
+R08 slice 1 adds `legacy::PrivateSpatialCopy`, an immutable source-retaining private
+landscape geometry decoder without Debug/Serialize. Unknown kinds/fields remain in
+original bytes; nonpositive/noninteger saved dimensions explicitly reject (Python
+zero/negative dimensions yield empty sets); other malformed or unsupported geometry
+also rejects (1,000,000 expanded-tile limit and representable i32 perimeter halo). Its typed footprints,
+structures, resources, NPCs and roads derive `lantern_core::spatial::SpatialIndex`;
+string-bearing core `Structure`/`Resource` types omit Debug as well (compile-fail
+privacy doctests prevent implicit formatting of arbitrary private kind names);
+actor acre/pier/boat overlays never mutate that index. This is an offline geometry
+boundary, not gameplay hydration or a second mutable world authority. Saved
+footprints are already oriented, with missing dimensions remaining 1×1. Barn fences
+and road costs are implemented; founder collision/access, shared-world assembly,
+terrain/bounds checks and recovery remain R08 slices 2/3. Durable construction,
+rotation/road commands and public geometry DTOs remain R12/R21.

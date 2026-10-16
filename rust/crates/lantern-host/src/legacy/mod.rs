@@ -16,6 +16,7 @@ mod lifecycle;
 mod loaded;
 mod materialized;
 mod ordinary;
+mod spatial;
 mod validation;
 mod village_overlay;
 
@@ -29,6 +30,7 @@ pub use loaded::{
     ChunkReader, LoadedChunk, LoadedResource, LoadedStump, LoadedTile, MAX_LOADED_CHUNKS,
 };
 pub use materialized::{PostOverlayTerrain, ResidentChunkCopy, TerrainRecord};
+pub use spatial::PrivateSpatialCopy;
 pub use village_overlay::{
     LegacySwampOverlay, OrdinaryVillageMetadata, OrdinaryVillageOverlay, SwampCachePlan,
     SwampOverlay, SwampVillageMetadata,

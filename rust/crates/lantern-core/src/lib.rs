@@ -12,6 +12,7 @@ pub mod legacy_map;
 pub mod model;
 pub mod python_random;
 pub mod seed_material;
+pub mod spatial;
 pub mod starter;
 pub mod terrain;
 pub mod units;

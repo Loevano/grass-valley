@@ -3,7 +3,7 @@
 A migration that can be completed one task at a time, with a prompt for each task.
 
 **Status:** R01–R07 complete as experimental migration foundations; R08 spatial
-rules and founder movement is next. R07 includes saved-first terrain versions 1–7,
+rules and founder movement is in progress (slice 1 geometry complete). R07 includes saved-first terrain versions 1–7,
 nonchunked maps, authored starter/town sites, ordinary/swamp metadata and overlays,
 post-overlay water repair, private authoritative chunk lifecycle/resource renewal,
 and exact Python integer/float clock arithmetic. See the [completion audit](#r07-slice-3civ-exact-clocks-and-completion-audit).
@@ -228,7 +228,7 @@ only after work is performed. Keep unfinished stages visible in the roadmap.
 | R05 | Typed state, IDs, units, and boundary DTOs | R04 | Complete: slice 1 `f271ff4`; slice 2 `b5fa931`; slice 3 `508b396`; [boundary/coverage audit](RUST_STATE_DTOS.md), evidence below |
 | R06 | Legacy import and read-only save inspection | R05 | Complete: slice 1 `3312d5d`; slice 2 `4513bec`; slice 3 `041caee`; [staging scope/coverage](RUST_LEGACY_IMPORT.md), evidence below |
 | R07 | Terrain versions and chunk generation | R06 | Complete as private terrain/chunk foundation; [scope, slice evidence and completion audit](RUST_TERRAIN.md); exact clocks finish 3c.iv; finite platform-math vectors retain the R23 release gate |
-| R08 | Spatial rules and founder movement | R07 | Not started |
+| R08 | Spatial rules and founder movement | R07 | In progress: slice 1 geometry complete; slices 2 founder collision/access and 3 shared boundaries/recovery remain; evidence below |
 | R09 | Search algorithms and library decision | R08 | Not started |
 | R10 | Request scheduler and cache invalidation | R09 | Not started |
 | R11 | Persistent worker movement and playback | R10 | Not started |
@@ -1582,6 +1582,55 @@ candidate `7ba9bd0` plus this task's worktree, correctness pass, performance `no
 
 **Slices:** (1) footprints, occupancy, roads, fences; (2) founder collision and access;
 (3) shared-town/chunk boundaries and position recovery.
+
+### R08 slice 1 — footprints, occupancy, roads and fences
+
+Implemented behind the experimental boundary in `lantern_core::spatial` and
+`legacy::PrivateSpatialCopy`. Pure geometry preserves supported positive saved dimensions verbatim,
+missing 1×1 footprints, cardinal perimeters, placement-only catalog rotation,
+resource/building/NPC occupancy, completed-road sets, three edge-cost modes and
+`sqrt(2)` worker diagonals with both side tiles open. Moving villagers never enter
+the index. Completed acre exceptions remove only anchors; pier/deck/boarding and
+sailing exceptions are explicit per-query overlays, without mutating the index.
+Barn layouts preserve fallback gate orientations, clipping, strict radius checks,
+corner-contact crossings, active empty/upgrade construction quirks and seven-tile
+construction protection including unfinished barns.
+
+`PrivateSpatialCopy` decodes a supplied private landscape copy, retaining all
+original bytes, unknown fields and kind names. It is neither an imported-world
+migration nor live authority: indexes rebuild from its immutable typed geometry.
+Nonpositive/noninteger dimensions and malformed construction/coordinates reject
+explicitly. Python itself yields empty geometry for zero/negative range dimensions;
+this offline adapter deliberately rejects that saved-input domain, without changing
+R06/R07 source retention or lifecycle handling. Eager decoding
+rejects total expanded geometry above 1,000,000 tiles and footprints without a
+representable i32 perimeter halo; it never clips unsupported imported footprints.
+The source archive, lifecycle authority and public DTOs remain untouched.
+
+Independent vectors execute actual Python `spatial`, `barns` and navigation
+searches: saved/rotated/legacy footprints, occupancy, acres, roads, 54 pen layouts,
+4,374 point/radius checks plus 4,374 crossing checks, and 24 road-edge mode cases.
+Core invariants cover corner prevention, gate passage, full-footprint pen protection,
+immutable actor overlays and coordinate overflow. Existing targeted Python spatial,
+footprint/rotation, fence and road scenarios passed (64 tests across six files).
+Final affected `python3 tools/check.py` passed all six commands for both Rust
+crates (formatting, tests and clippy with warnings denied): 26 core and 121 host
+cases/doc tests. Reports: `performance-results/20261016-185210/report.md`
+(targeted Python) and `performance-results/20261016-185349/report.md` (Rust affected
+set). Python vectors regenerate byte-for-byte; `git diff --check` passes.
+A final privacy review removed implicit `Debug` formatting from string-bearing
+`Structure`/`Resource` geometry. Two compile-fail privacy doctests pass; targeted
+core checks pass all three commands (28 cases/doc tests), and host all-target
+compilation passes. Report: `performance-results/20261016-185557/report.md`.
+The earlier complete affected-set report covers unchanged runtime behavior.
+
+**Remaining:** slice 2 founder radius/sliding/substeps, screen-projection metric,
+clothing/boat access and prediction compatibility; slice 3 shared-town/chunk
+assembly, terrain/search bounds, unloaded tiles and blocked-position recovery.
+Fishing planner validation of pier/boat overlays, search algorithms and scheduling
+remain later R08/R09–11 work. Python stays default; no HTTP, save writes, cutover,
+performance optimization or measured speed claim. Performance comparisons are not
+needed for this compatibility-only port.
 
 **Deliver:** one authoritative spatial representation and explicit movement profiles.
 Preserve farmer acre access, pier/boat exceptions, founder clothing and water rules,
