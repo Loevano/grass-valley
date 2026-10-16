@@ -252,3 +252,15 @@ DTO or live command dispatcher. Standalone scenes require supplied already-activ
 records and rebound resources; chunk flags are boolean or integer 0/1 and recovery
 enumeration rejects above 1,000,000 candidates explicitly. Durable construction,
 rotation/road commands and public geometry DTOs remain R12/R21.
+
+
+R09 completes the experimental actor-independent search boundary: immutable owned
+queries freeze derived index/terrain/access inputs, and retained searches return
+arrived/unreachable/pending/cancelled/completed outcomes without actor mutations.
+Actual Python route/access/cost vectors cover stable paths, explicit task-derived
+pier/permitted-water overlays and assembled shared geometry. Empty ordinary terrain
+containers normalize to absent terrain; present missing cells and unloaded chunks
+remain distinct. No live search DTO/adapter, public serialization or durable route
+state is added. Existing R08 private decoders keep their explicit typed rejection
+policies. Request generations, cache validity and service ownership remain R10;
+travel/cargo/task integration remains R11 and later gameplay stages.

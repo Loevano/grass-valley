@@ -1,7 +1,8 @@
 # R09 search backend evaluation
 
-**Current status:** slice 2 has promoted the custom solver to no_std core; see
-[the slice 2 record](#r09-slice-2-promoted-core-backend). The slice 1 text and
+**Current status:** R09 is complete at the experimental core boundary: the custom
+no_std backend matches actual Python route/access/cost contracts; see
+[the slice 3 audit](#r09-slice-3-python-compatibility-and-current-remaining-work). The slice 1 text and
 `evidence.json` below describe the historical prototype at `9426ef4` (the
 completed slice 1 revision). Use that revision for exact slice 1 reproduction.
 The current example invokes core Search and prepares an owned query, so rerunning
@@ -179,7 +180,7 @@ HTTP/save contention, process peak memory, arbitrary world sizes, or browser wor
 W1–W6 require the later scheduler/host integration. Small fixture search speed
 and a bounded number of explicit operations cannot establish those budgets.
 
-## Validation and remaining work
+## Slice 1 validation and historical remaining work
 
 Validation results and the required legacy Python/browser performance comparison
 are recorded beside the R09 stage in [RUST_MIGRATION.md](RUST_MIGRATION.md#r09--search-and-library-decision).
@@ -249,7 +250,7 @@ permitted-water/exemption ownership, fence-sensitive arrival/perimeter admission
 terrain validation and extreme coordinates. Goal conversion and fence primitives
 retain the oracle-sharing limitations documented in slice 1.
 
-Slice 3 must pair actual Python `RouteCache.route/search_steps` and actor access
+Remaining at slice 2 (completed below): slice 3 must pair actual Python `RouteCache.route/search_steps` and actor access
 contracts over exhaustive and adversarial fixtures, including exact returned tie
 paths and all cost modes. R10 and R11 retain scheduling/cache and worker travel.
 
@@ -298,3 +299,43 @@ promotion, with no optimization or production-host performance claim; that suite
 cannot measure the promoted Rust solver. Slice 1's required legacy run and its
 inconclusive result remain historical evidence. The release experiment above
 measures this slice's actual Rust implementation, outside simultaneous checks.
+
+
+## R09 slice 3: Python compatibility and current remaining work
+
+Starting revision: `98e6eceea2870a996e4b576592d067a77225ee63`. The selected custom
+core backend matches 418 frozen actual Python `RouteCache.route` cases. See the
+[completion audit and validation](RUST_MIGRATION.md#r09-slice-3--actual-python-parity-and-completion-audit).
+The fixture generator's `--check` mode recomputes production Python routes and an
+independent dense minimum-scan Dijkstra without updating the frozen JSON. The oracle
+has separate search, access and cost arithmetic; it shares Python perimeter/fence
+geometry, covered independently in R08. Exact deterministic paths and terminal
+states are mandatory; costs use absolute `1e-9` tolerance, with no coordinate/path
+normalization or permissive alternative-path comparison.
+
+The 288-way matrix crosses targets, actor access, directed road modes, diagonal
+travel and terrain/bounds. Another 96 varied topologies and focused cases exercise
+arrival/blocked starts, final fences, actor-specific perimeter admission, absent and
+missing ordinary terrain, actual sparse loaded/unloaded chunks, real pier/water
+helpers and multi-town walking-map assembly. All cases run four quantum partitions,
+zero-work advances and pending cancellation. Empty ordinary terrain (`[]`) maps to
+`Terrain.cells=None`; a truthy grid with empty cells maps to `Some` with missing cells,
+which is permissive unbounded and unavailable bounded. Unloaded chunks map to `v`.
+Actual caller-owned water/exemption inputs do not port fishing gameplay or silently
+change the builder fallback NPC-anchor behavior. Private bytes/indexes remain intact.
+No concrete core discrepancy was found, so runtime code is unchanged.
+
+R09 is complete at the experimental core boundary. R10 must still supply request
+identity/generations, examined dependencies, cache invalidation, admission/fairness,
+memory caps and service cadence. R11 owns persistent travel/playback; later stages
+own gameplay planners, authoritative HTTP/save integration and platform validation.
+The prior decision/release evidence files are untouched and remain inconclusive for
+stable latency/gain estimates. No performance rerun is needed for this parity-only
+test/documentation slice; no W1–W6 or production Rust speed claim follows.
+
+Reproduce frozen contracts independently of Cargo:
+
+```sh
+python3 rust/crates/lantern-host/tests/fixtures/search/generate.py --check
+cargo test --manifest-path rust/Cargo.toml -p lantern-host --test search_python --locked --offline
+```
