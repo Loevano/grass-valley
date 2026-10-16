@@ -2,8 +2,7 @@
 
 A migration that can be completed one task at a time, with a prompt for each task.
 
-**Status:** R01–R04 complete; R05 slices 1–2 (IDs/units and actor/building/task
-model) complete; public/save DTO conversion and feature coverage (slice 3) is next.
+**Status:** R01–R05 complete; R06 legacy save import and inspection is next.
 Rust contains an experimental workspace and transport smoke CLI; gameplay is not ported.
 **Initial plan revision:** `445ddddd675a87eb7adb50442b2dbf3c14ea6c6f`.
 **R01 audit revision:** `935db7b95885c101c62dfd6bf9e16f39b6a7a8fe`.
@@ -220,7 +219,7 @@ only after work is performed. Keep unfinished stages visible in the roadmap.
 | R02 | Fix current relocation continuity | R01 | Complete; `fix: preserve worker continuity when relocating workplaces` (this change); evidence below |
 | R03 | Replay fixtures and comparison oracle | R02 | Complete: slice 1 `9637eb5`; slice 2 `049fe10`; slice 3 `test: add backend-neutral replay comparison reports` (this change); [protocol and evidence](REPLAY_BACKENDS.md) |
 | R04 | Cargo workspace and applicable checks | R03 | Complete: slice 1 `732619a`; slice 2 `c7cf3e2`; slice 3 `feat: add Rust replay transport smoke CLI` (this change); evidence below |
-| R05 | Typed state, IDs, units, and boundary DTOs | R04 | In progress: slice 1 `f271ff4`; slice 2 `feat: add Rust actor building and task models` (this change); evidence below. Slice 3 remains |
+| R05 | Typed state, IDs, units, and boundary DTOs | R04 | Complete: slice 1 `f271ff4`; slice 2 `b5fa931`; slice 3 `feat: add explicit Rust state DTO boundaries` (this change); [boundary/coverage audit](RUST_STATE_DTOS.md), evidence below |
 | R06 | Legacy import and read-only save inspection | R05 | Not started |
 | R07 | Terrain versions and chunk generation | R06 | Not started |
 | R08 | Spatial rules and founder movement | R07 | Not started |
@@ -688,7 +687,7 @@ integration, two compile-fail doc tests and six host tests). Markdown/JSON repor
 at `performance-results/r05-slice2/` were inspected. Performance comparison was
 not run: this is model implementation, not a performance investigation/optimization.
 
-**Remaining:** slice 3 must implement separate public/save DTO conversion,
+**Remaining at slice 2:** slice 3 must implement separate public/save DTO conversion,
 fractional/large-ID JSON roundtrips, private credential/derived search exclusion,
 the queued-index boundary policy above and an explicit feature coverage audit.
 Freeze D05 seed derivation with golden vectors before RNG adoption (still pending
@@ -696,6 +695,61 @@ in R05). Models are foundations: catalog fields, resident traits, farm claims,
 boats, animals, reservations and feature-specific task payloads remain unported
 and cannot be defaulted away during import. Python remains the playable host;
 legacy import, durable saves, HTTP and all simulation rules remain later stages.
+
+### R05 slice 3 evidence and remaining work
+
+The host library now provides separate explicit model save/public DTO conversion,
+strict duplicate/unknown-field rejection and sanitized path/location diagnostics.
+`ModelWorld` validates ownership and all town/entity identities against the
+world-wide allocator and preserves synthetic private account/token material in
+save conversion. Public projection is a Serialize-only allowlist without private
+credentials, allocator/generation counters, route requests, paths or search data.
+Internal world/town/credential types have no Serialize implementation.
+
+The model format is deliberately labeled `lantern-model` v1 and the public
+observation `lantern-model-observation-v1`. Neither is a Python save importer,
+durable store or complete browser response. Unknown gameplay fields are rejected,
+never discarded into this minimal schema. Existing Python/HTTP/browser behavior
+is unchanged. The [field coverage and remaining-feature audit](RUST_STATE_DTOS.md)
+maps every current internal fact and assigns all R01 gameplay gaps to later stages.
+
+All new IDs/counters/seeds use canonical decimal strings. Fractional values remain
+finite binary64 without rounding/clamping. New tests exposed bit changes from the
+default JSON parser and unknown-field acceptance on tagged unit variants; these
+new-boundary failures were fixed with the pinned serde_json `float_roundtrip`
+feature and empty struct variants. Externally tagged DTOs with `raw_value` numeric
+decoding also reject integer amounts outside the exact binary64 range before
+conversion. No new dependency or version/lockfile update was needed. Duplicate
+goods/token/account keys cannot silently overwrite earlier data.
+
+Indexed actor/building references now require the expected stable ID at the
+observed slot. Admission validates it and the authenticated owner, then queues
+only the typed ID. Execution revalidates owner/existence; a reordered collection
+keeps the original target, while deletion fails. This implements R05's ID-validation
+alternative to the earlier proposed collection revision, as documented in the
+audit. Real HTTP/queue/browser integration remains R12/R20–21.
+
+D05 gameplay seed-material v1 is frozen with explicit typed/length-prefixed
+big-endian UTF-8 encoding and three independent Python-generated byte goldens.
+The audit records reference Python MT19937 draws for future adoption. Rust seed
+material tests cover type/namespace/framing/Unicode distinctions; no RNG or terrain
+generation is ported or activated by this change.
+
+Validation passed (6/6 commands, 43 tests), recorded in the inspected Markdown/JSON
+reports at `performance-results/r05-slice3/`: applicable core and reverse-dependent
+host formatting, tests and Clippy with warnings denied. Twelve host boundary tests
+cover JSON reload/reorder/relocation, private-field exclusion, all modeled task
+phases, 256 representative binary64 samples plus extremes, malformed/foreign IDs,
+duplicate/stale allocation data, and before/after-queue index changes/deletion.
+Two core seed-material tests and three host compile-fail serialization tests were
+added. Performance comparison was not run for boundary/model correctness work;
+this is not a performance investigation or optimization.
+
+**R05 is complete as a foundation stage.** R06 must import/inspect copies with
+explicit coverage of unsupported data. R07 must implement compatible RNG/terrain
+semantics before using the frozen seed material. Simulation, complete feature
+DTOs, durable saves and browser/HTTP integration remain unported in their named
+later stages. No existing gameplay feature is marked verified or removed.
 
 ## R06 — Legacy save import and inspection
 

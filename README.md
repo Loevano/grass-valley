@@ -853,9 +853,12 @@ priorities, balancing theory, game design, and artwork, with tables and diagrams
 
 ## Experimental Rust workspace
 
-R05 slices 1–2 provide `rust/crates/lantern-core` (a `no_std` library with typed
+R05 provides `rust/crates/lantern-core` (a `no_std` library with typed
 persistent IDs, units and actor/building/task/route models, using `alloc`)
-and `rust/crates/lantern-host` (an offline replay transport executable).
+and `rust/crates/lantern-host` (an offline replay transport executable and explicit
+model DTO boundary library). The [boundary/coverage audit](docs/RUST_STATE_DTOS.md)
+documents the experimental model formats, privacy and stale-index guards; these
+are not a Python save importer or the browser's HTTP protocol.
 The core has no external dependencies or I/O; it compiles and its test harness
 runs without a listener. The replay adapter supports only a transport smoke
 fixture; no gameplay rules or HTTP host are implemented. Start the playable game
@@ -887,8 +890,10 @@ latest patch. A direct Homebrew installation ignores the rustup file: verify
 
 Commit `rust/Cargo.lock`; `rust/target/` is ignored. The host uses Serde 1.0.229
 and serde_json 1.0.151 (MIT OR Apache-2.0; declared minimum Rust 1.56 and 1.71
-respectively), locked with their transitive dependencies. These cached releases
-were checked against the official [Serde derive](https://serde.rs/derive.html),
+respectively), locked with their transitive dependencies. The host enables
+`serde_json`'s `float_roundtrip` and `raw_value` features to preserve binary64
+values and reject oversized integer quantities before lossy conversion.
+These cached releases were checked against the official [Serde derive](https://serde.rs/derive.html),
 [strict deserialization](https://serde.rs/container-attrs.html), and
 [serde_json APIs](https://docs.rs/serde_json/1.0.151/serde_json/); the core has
 no dependencies. Checks run offline after installing the toolchain and fetching
