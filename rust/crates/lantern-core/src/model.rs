@@ -209,6 +209,34 @@ pub struct RouteRequest {
 }
 
 impl RouteRequest {
+    pub fn actor(&self) -> &ActorId {
+        &self.actor
+    }
+    pub fn task_generation(&self) -> TaskGeneration {
+        self.task_generation
+    }
+    pub fn route_generation(&self) -> RouteGeneration {
+        self.route_generation
+    }
+    pub fn navigation(&self) -> NavigationRevision {
+        self.navigation
+    }
+    /// Retained identity bytes, including an optional building destination.
+    pub fn identity_bytes(&self) -> usize {
+        let owner = self.actor.identity().owner();
+        let mut bytes = owner
+            .world
+            .as_str()
+            .len()
+            .saturating_add(owner.town.as_str().len());
+        if let Destination::Building(id) = &self.destination {
+            let owner = id.identity().owner();
+            bytes = bytes
+                .saturating_add(owner.world.as_str().len())
+                .saturating_add(owner.town.as_str().len());
+        }
+        bytes
+    }
     pub fn origin(&self) -> Position {
         self.origin
     }
@@ -451,6 +479,15 @@ impl Town {
         actor.state.route_generation = generation;
         actor.route = RouteState::Pending(request.clone());
         Ok(request)
+    }
+
+    /// Read-only bridge for the derived navigation service. It owns no actor facts.
+    pub fn route_is_current(&self, request: &RouteRequest, navigation: NavigationRevision) -> bool {
+        self.actor(request.actor()).is_ok_and(|actor| {
+            matches!(&actor.route, RouteState::Pending(pending) if pending == request)
+                && request.navigation == navigation
+                && request.origin == actor.state.position
+        })
     }
 
     /// A result can be accepted once, only for the current pending request and

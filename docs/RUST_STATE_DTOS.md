@@ -157,8 +157,10 @@ No omitted feature is approved for removal. The saved subsystem matrix assigns:
 - R07–11/R22: terrain seeds/versions/resources/chunks, spatial/collision/access,
   navigation service, legal paths, movement and confirmed playback. R09 slice 2
   now supplies pure bounded-operation search over immutable derived queries; it
-  has no DTO/save/actor ownership and still needs slice 3 Python compatibility
-  and R10 admission, generations, dependencies and memory/service limits.
+  has no DTO/save/actor ownership; R09 slice 3 pairs actual Python route vectors.
+  R10 slice 1 adds bounded derived service/admission using the existing model's
+  request generations. Local dependency validity and service cadence remain
+  R10 slices 2–3.
 - R12–13: complete buildings/footprints/roads/links, residents/assignments, stock,
   costs/capacities, skills, food/progression, hall unlocks and balance migrations.
 - R14–17: trips/reservations/accounting, markets/resource activity, every production
@@ -262,5 +264,11 @@ pier/permitted-water overlays and assembled shared geometry. Empty ordinary terr
 containers normalize to absent terrain; present missing cells and unloaded chunks
 remain distinct. No live search DTO/adapter, public serialization or durable route
 state is added. Existing R08 private decoders keep their explicit typed rejection
-policies. Request generations, cache validity and service ownership remain R10;
-travel/cargo/task integration remains R11 and later gameplay stages.
+policies. R10 slice 1 now owns derived service jobs keyed by these existing model
+requests; read-only Town validation and guarded completion keep actor authority in
+one place. Capacity/query/identity/resource waits never overwrite actor facts or
+become unreachable results. Resident/query/lifetime-work limits include terminal
+answers; a leased single retry reservation avoids an overflow queue. No clock,
+public service DTO or persisted frontier is introduced. Cache/local dependency
+validity and service cadence remain R10 slices 2–3; travel/cargo/task integration
+remains R11 and later gameplay stages.

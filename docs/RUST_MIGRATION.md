@@ -230,7 +230,7 @@ only after work is performed. Keep unfinished stages visible in the roadmap.
 | R07 | Terrain versions and chunk generation | R06 | Complete as private terrain/chunk foundation; [scope, slice evidence and completion audit](RUST_TERRAIN.md); exact clocks finish 3c.iv; finite platform-math vectors retain the R23 release gate |
 | R08 | Spatial rules and founder movement | R07 | Complete as experimental geometry/movement foundation; slices 1–3 and boundary audit below; Python remains default |
 | R09 | Search algorithms and library decision | R08 | Complete at experimental core boundary: library/custom decision, bounded no_std backend and actual Python route/access/cost parity; [evaluation/evidence](RUST_SEARCH_EVALUATION.md) |
-| R10 | Request scheduler and cache invalidation | R09 | Not started |
+| R10 | Request scheduler and cache invalidation | R09 | Slice 1 complete; slices 2–3 remain |
 | R11 | Persistent worker movement and playback | R10 | Not started |
 | R12 | Construction and building operations | R11 | Not started |
 | R13 | Resource ledger, storage, and progression rules | R12 | Not started |
@@ -1987,6 +1987,112 @@ navigation service from production cadence. Measure queue waits, restarts, memor
 and CPU under the agreed workloads. Follow performance comparison rules, update
 coverage/progress, and commit the completed slice.
 ```
+
+### R10 slice 1 — Request ownership, bounded admission and fair service
+
+The experimental `lantern_core::navigation::Service` now owns derived jobs only.
+`RouteRequest` supplies the existing typed actor/task/route identity, origin,
+destination and navigation revision; `Town::route_is_current` is the read-only
+validation bridge. The host validates every retained job/reservation on each
+service call. `Completion::apply` rechecks the authoritative pending request before
+allocating waypoints or accepting arrived/ready/unreachable. Reassignment,
+repositioning, cancellation and changed navigation reject old work/results without
+clearing transform, cargo or task. No second actor registry or save/HTTP DTO is
+introduced. The host still supplies correct task-specific query/access/goal policy.
+
+Admission defaults to 128 resident jobs, including terminal answers and explicit
+resource waits. There is no overflow list. One bounded retry reservation protects
+the next admission from a fresh or replacing stream; its owner must retry between
+service calls. Stale/cancelled reservations release immediately, and a reservation
+that was not retried since the previous service call expires even if its actor
+remains current. Retained terminal answers must be consumed/cancelled by the owner.
+This is conditional retry fairness, not a promise for abandoned requests or owners
+that never drain terminal slots. Each unchanged admitted search receives FIFO
+service within its lane; the persistent lane cycle is blocked 4 / cargo 2 /
+ordinary 1. Retrying may promote urgency but cannot demote it, reorder the lane or
+restart progress. Each `advance(allowance, current)` honors the exact search work
+allowance, with a default quantum of 128; it introduces no production clock.
+
+Waiting reasons are capacity, reserved admission, query limit, identity limit and
+search resource limit. Capacity/resource limits never become `Unreachable`.
+The resource-limit state releases its query/frontier immediately, retains the
+request/slot, and leaves the model pending until the owner cancels or replaces it.
+A fresh generation may retry with a different configured resource policy; there is
+no automatic unlimited restart loop. Explicit cancel/stale pruning drops all
+service-retained work/results for that generation. Cancellation does not cancel a
+newer generation accidentally. A completed search releases its frontier/query
+while its terminal path continues to count against the resident job cap.
+
+**Retained-memory contract:** each job admits at most 65,536 query/index records
+(shared indexes charged in full per job), 1,024 identity string bytes, and 32,768
+lifetime search operations. All terrain, goals, access sets, index sets and allocated
+fence capacity are counted. There are at most eight successful neighbor insertions
+per operation: each predecessor/cost tree has at most `1 + 8W` entries, the heap
+has at most `1 + 8W` inserted entries and normal geometric backing capacity, and
+trace/result storage at most `W` tiles with normal vector backing capacity, for
+configured lifetime allowance `W`. Jobs, queries, terminal results, reservation
+identity and queue capacity therefore have finite retained bounds; this is not an
+allocator-independent byte/RSS ceiling or a claim that worst-case capacity is cheap.
+Query/index construction, perimeter enumeration, allocation/tree/fence operations,
+result application, cancellation and destruction remain outside the operation
+meter. Oversized source preparation must be bounded by the host before Query
+construction; admission cannot retroactively bound caller-owned preparation or
+results taken out of the service. Defaults are experimental resource policy,
+not accepted production memory/latency budgets.
+
+**Coverage:** eleven service regressions exercise stale/changed-navigation results,
+replacement and late cancellation, actor fact preservation, input limits, exact
+allowance exhaustion, release of queries/frontiers, terminal slot retention,
+reservation retry/expiry, 256-request finite retry completion, FIFO 4/2/1 service
+under continuing blocked/cargo replacement streams, and monotonic urgency promotion.
+The normal R09 Search path/algorithm is unchanged. Frozen Python path parity and
+core diagonal/fence/unreachable cases remain part of the affected Rust checks;
+cache/negative-result dependency validity is explicitly slice 2.
+
+**Release evidence:** `cargo run --release -p lantern-host --example
+navigation_service -- ../../performance-results/r10-slice1-service/report.json`
+(from `rust/`) runs three repetitions of four-town 64×64 wall-detour/sealed-wall
+fixtures at 16/64/256 requests. Markdown and JSON were inspected at
+`performance-results/r10-slice1-service/report.{md,json}`; process CPU evidence is
+`process-time.txt`. Every scenario passed finite/correct terminal outcomes,
+per-call work ≤2,048, resident jobs ≤128, cancellation query release and zero final
+tracked live allocations. Deterministic first-service maxima are 3/10/391 rounds
+for detours and 3/10/193 for sealed walls; 256-request totals are 540/257 rounds.
+Peak tracked fixture/query/service memory is 23,196,315 bytes for 256 detours and
+11,538,771 for sealed walls (measurement vectors excluded). Per-scenario setup,
+first-service/route-ready p50/p95/p99/max, service CPU-wall elapsed time, allocation
+calls/bytes and cancellation cost are in JSON. Waits are observed when each
+allowance pass ends (and terminal answers are polled), so they include that
+observation granularity rather than instrumenting an exact in-quantum instant. The final local run took 3.93s real,
+3.17s user and 0.07s system across all 18 scenarios; the 256-detour repeats took
+0.601–0.673s of tight-loop service elapsed time. These noisy candidate-only timings
+are **inconclusive** for W1–W6; rounds have no assigned duration and there is no
+baseline service to compare. They justify testing the proposed allowance/admission
+mechanics, not a real-time cadence, universal completion deadline, speedup or budget
+pass. No restarted generation was introduced by these unchanged-request workloads.
+
+**Validation:** `python3 tools/check.py --list` selected core and host only.
+The final affected run passed 53 core and 140 host test/doc cases, including all
+11 new service regressions and the 418 frozen Python route fixtures. Both format
+checks and core clippy passed. Host clippy initially rejected the release example's
+constant assertion; the guard was changed to the existing `if cfg!`/exit convention.
+Targeted host all-target clippy and format checks then passed, with no application
+code changes or repeat of the already-passing tests. The original failure report
+is retained beside the successful follow-up logs; the inspected validation union
+is `performance-results/r10-slice1-correctness/final-validation.{md,json}`.
+Final diff/whitespace review passed. No unrelated Python HTTP fixture issue was
+selected or modified.
+
+Baseline for the continuing three-slice R10 performance stage remains
+`67f3a58b26b1f389bfbd5726ee87715ec1238be2`; candidate is that revision plus this
+slice's working diff (record the final slice commit separately). Final R10 slice 3
+will run `python3 tools/check.py --performance-only --baseline 67f3a58` once after
+final correctness; that existing harness measures Python/browser behavior, so
+independent Rust release evidence remains necessary. It was not run at this
+intermediate slice. Warm/negative caches, local examined dependency invalidation,
+diagonal/fence edit recovery and independent clock/cadence diagnostics remain
+slices 2–3, with the complete W1–W6 workload/budget acceptance still outstanding.
+Python remains the playable default; no authoritative runtime integration is added.
 
 ## R11 — Persistent worker movement and playback
 

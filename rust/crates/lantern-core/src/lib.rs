@@ -11,6 +11,7 @@ pub mod founder;
 pub mod ids;
 pub mod legacy_map;
 pub mod model;
+pub mod navigation;
 pub mod python_random;
 pub mod search;
 pub mod seed_material;

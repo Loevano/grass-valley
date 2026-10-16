@@ -8,7 +8,7 @@ and cache rules are in [Backend](BACKEND.md#cached-zoomed-out-map).
 | 1     | Cached zoomed-out town overview    | Implemented              | Show the landscape and city sizes without refreshing animated scene detail.                                      |
 | 2     | Production line balancing          | Wood and grain implemented; fishing remains | Develop clear fishing chains with capped staffing and simple upgrades. |
 | 3     | Scalable villager pathfinding       | Host queue implemented; cache refinement and shared navigation remain | Keep movement responsive as villager counts and towns grow, with bounded routing work. |
-| 4     | Rust migration | R01–R09 experimental foundations complete; R10 scheduling/cache is next | Follow the [staged plan and prompts](RUST_MIGRATION.md), preserving playable checkpoints and saved worlds. |
+| 4     | Rust migration | R01–R09 foundations and R10 slice 1 fair service complete; R10 cache/cadence remains | Follow the [staged plan and prompts](RUST_MIGRATION.md), preserving playable checkpoints and saved worlds. |
 
 ## Rust migration
 
@@ -24,7 +24,9 @@ saves and external chunk copies; see the [staging scope](RUST_LEGACY_IMPORT.md).
 R08 geometry, founder movement, shared-town/chunk boundaries and position recovery
 are complete behind the experimental private-copy boundary; see the
 [completion audit](RUST_MIGRATION.md#r08-slice-3--shared-boundaries-recovery-and-completion-audit).
-R10 scheduling/cache invalidation and R11 persistent worker travel remain. Completed R07
+R10 slice 1 request generations, bounded admission and deterministic fair service are
+complete experimentally. R10 slices 2–3 cache/local invalidation and independent
+cadence/diagnostics, and R11 persistent worker travel remain. Completed R07
 terrain/chunk behavior and its compatibility evidence are recorded in the
 [terrain scope](RUST_TERRAIN.md) and [completion audit](RUST_MIGRATION.md#r07-slice-3civ-exact-clocks-and-completion-audit).
 The [state/DTO boundary audit](RUST_STATE_DTOS.md) identifies later gameplay work.

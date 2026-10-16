@@ -119,6 +119,20 @@ impl Query {
         }
         Ok(query)
     }
+    /// Conservative record count: shared indexes are charged in full per job.
+    /// Query construction (including perimeter generation) precedes admission;
+    /// callers must bound source preparation separately.
+    pub fn retained_records(&self) -> usize {
+        [
+            self.index.retained_records(),
+            self.terrain.cells.as_ref().map_or(0, BTreeMap::len),
+            self.access.exemptions.len(),
+            self.access.only.as_ref().map_or(0, BTreeSet::len),
+            self.goals.len(),
+        ]
+        .into_iter()
+        .fold(0usize, usize::saturating_add)
+    }
     fn occupied(&self, t: Tile) -> bool {
         self.index.occupied_for(
             t,

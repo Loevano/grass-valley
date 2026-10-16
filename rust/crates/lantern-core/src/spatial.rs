@@ -205,6 +205,20 @@ impl SpatialIndex {
             }
         }
     }
+    /// Retained input records (including allocated fence capacity) for admission.
+    pub fn retained_records(&self) -> usize {
+        [
+            self.blocked.len(),
+            self.completed_acres.len(),
+            self.roads.len(),
+            self.fences.capacity(),
+            self.founder_land.len(),
+            self.founder_boat.len(),
+            self.water.len(),
+        ]
+        .into_iter()
+        .fold(0usize, usize::saturating_add)
+    }
     pub fn size(&self) -> u32 {
         self.size
     }
