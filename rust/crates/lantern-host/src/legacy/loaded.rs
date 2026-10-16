@@ -197,7 +197,7 @@ fn decode(bytes: &[u8], key: ChunkKey) -> Result<LoadedChunk<'_>, BoundaryError>
     {
         let rp = format!("{path}.terrain[{index}]");
         let row = row.string(&rp)?;
-        if !row.bytes().all(|byte| b"gfmsrbdiv".contains(&byte)) {
+        if !row.bytes().all(|byte| b"gfmsrbdivpwc".contains(&byte)) {
             return Err(BoundaryError::invalid(rp, "unsupported terrain code"));
         }
         rows.push(row);

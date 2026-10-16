@@ -1,5 +1,6 @@
 //! Ordinary village phase only: Python villages._apply_villages, not apply_villages.
-//! No placement, swamp edits, water repair, activation, supply defaults or writes.
+//! Also exposes the independent swamp-v1 phase; no placement, organic upgrades,
+//! water repair, activation, supply defaults or writes.
 use super::{ChunkKey, json::Node, loaded::decode_resources};
 use crate::BoundaryError;
 use std::collections::BTreeSet;
@@ -72,9 +73,9 @@ impl OrdinaryVillageOverlay {
         version(&record, "terrain_version", 7, PATH)?;
         let left = key.x as i32 * 40;
         let top = key.y as i32 * 40;
-        rows(&record)?;
+        rows(&record, PATH)?;
         let mut pending_rows: Option<Vec<Vec<u8>>> = None;
-        validate_resources(&record, left, top)?;
+        validate_resources(&record, left, top, PATH)?;
         if let Some(clock) = record.optional("clock", PATH)? {
             clock.nonnegative_number(&format!("{PATH}.clock"))?;
         }
@@ -83,7 +84,7 @@ impl OrdinaryVillageOverlay {
             .array(&format!("{PATH}.villages"))?
             .iter()
             .enumerate()
-            .map(|(i, n)| Village::parse(n, i, world_size))
+            .map(|(i, n)| Village::parse(n, i, world_size, PATH))
             .collect::<Result<Vec<_>, _>>()?;
         // Validate even a completed marker: unsupported metadata must not become
         // silently accepted simply because no edits happen for this record.
@@ -94,7 +95,7 @@ impl OrdinaryVillageOverlay {
                         // Python edits record terrain in this branch without
                         // updating any pending expansion buffer from a prior
                         // village. Keep that ordering even for mixed layouts.
-                        let mut life_rows = rows(&record)?;
+                        let mut life_rows = rows(&record, PATH)?;
                         add_life(&mut record, &mut life_rows, &village, left, top)?;
                         commit_rows(&mut record, &life_rows);
                     }
@@ -105,7 +106,7 @@ impl OrdinaryVillageOverlay {
                     continue;
                 }
                 if pending_rows.is_none() {
-                    pending_rows = Some(rows(&record)?);
+                    pending_rows = Some(rows(&record, PATH)?);
                 }
                 let rows = pending_rows.as_mut().unwrap();
                 let mut cleared = BTreeSet::new();
@@ -194,8 +195,8 @@ struct Village {
     landmarks: [&'static str; 3],
 }
 impl Village {
-    fn parse(node: &Node, index: usize, size: u32) -> Result<Self, BoundaryError> {
-        let path = format!("{PATH}.villages[{index}]");
+    fn parse(node: &Node, index: usize, size: u32, root: &str) -> Result<Self, BoundaryError> {
+        let path = format!("{root}.villages[{index}]");
         let name = node
             .required("name", &path)?
             .string(&format!("{path}.name"))?;
@@ -274,20 +275,20 @@ fn position(node: &Node, path: &str) -> Result<(i32, i32), BoundaryError> {
         node.required("y", path)?.tile(&format!("{path}.y"))?,
     ))
 }
-fn rows(node: &Node) -> Result<Vec<Vec<u8>>, BoundaryError> {
+fn rows(node: &Node, path: &str) -> Result<Vec<Vec<u8>>, BoundaryError> {
     let rows = node
-        .required("terrain", PATH)?
-        .array(&format!("{PATH}.terrain"))?;
+        .required("terrain", path)?
+        .array(&format!("{path}.terrain"))?;
     if rows.len() != 40 {
         return Err(BoundaryError::invalid(
-            format!("{PATH}.terrain"),
+            format!("{path}.terrain"),
             "invalid row count",
         ));
     }
     rows.iter()
         .enumerate()
         .map(|(i, row)| {
-            let path = format!("{PATH}.terrain[{i}]");
+            let path = format!("{path}.terrain[{i}]");
             let row = row.string(&path)?;
             if row.len() != 40 || !row.bytes().all(|b| b"gfmsrbdivpwc".contains(&b)) {
                 return Err(BoundaryError::invalid(path, "unsupported terrain row"));
@@ -296,11 +297,11 @@ fn rows(node: &Node) -> Result<Vec<Vec<u8>>, BoundaryError> {
         })
         .collect()
 }
-fn validate_resources(node: &Node, left: i32, top: i32) -> Result<(), BoundaryError> {
-    decode_resources(node, PATH)?;
+fn validate_resources(node: &Node, left: i32, top: i32, path: &str) -> Result<(), BoundaryError> {
+    decode_resources(node, path)?;
     for field in ["map_resources", "tree_stumps"] {
-        for (index, item) in node.required(field, PATH)?.array(PATH)?.iter().enumerate() {
-            let path = format!("{PATH}.{field}[{index}]");
+        for (index, item) in node.required(field, path)?.array(path)?.iter().enumerate() {
+            let path = format!("{path}.{field}[{index}]");
             let (x, y) = position(item, &path)?;
             if !inside(x, y, left, top) {
                 return Err(BoundaryError::invalid(
@@ -458,5 +459,181 @@ fn write_node(node: &Node, output: &mut Vec<u8>) {
             }
             output.push(b'}');
         }
+    }
+}
+
+/// Independent private `swamp_village.apply` phase for version 1 only.
+/// Metadata must already have been selected and migrated. Version 2 is rejected,
+/// including completed records, rather than silently skipping organic geometry.
+/// This never edits the imported archive, active records or input metadata.
+/// ```compile_fail
+/// use lantern_host::legacy::LegacySwampOverlay;
+/// fn leak(view: &LegacySwampOverlay) { serde_json::to_string(view).unwrap(); }
+/// ```
+pub struct LegacySwampOverlay {
+    source: Vec<u8>,
+    record: Vec<u8>,
+}
+impl LegacySwampOverlay {
+    pub fn materialize(
+        source: &[u8],
+        villages: &[u8],
+        key: ChunkKey,
+        world_size: u32,
+    ) -> Result<Self, BoundaryError> {
+        const ROOT: &str = "$.legacy_swamp_overlay";
+        if ![480, 1920].contains(&world_size)
+            || key.x >= world_size / 40
+            || key.y >= world_size / 40
+        {
+            return Err(BoundaryError::invalid(
+                ROOT,
+                "unsupported world bounds or chunk key",
+            ));
+        }
+        let mut record = Node::parse(source, ROOT)?;
+        let previous = version(&record, "swamp_version", 1, ROOT)?.unwrap_or(0);
+        version(&record, "village_version", 3, ROOT)?;
+        version(&record, "terrain_version", 7, ROOT)?;
+        let (left, top) = (key.x as i32 * 40, key.y as i32 * 40);
+        let mut terrain = rows(&record, ROOT)?;
+        validate_resources(&record, left, top, ROOT)?;
+        if let Some(clock) = record.optional("clock", ROOT)? {
+            clock.nonnegative_number(&format!("{ROOT}.clock"))?;
+        }
+        let nodes = Node::parse(villages, &format!("{ROOT}.villages"))?;
+        let mut selected = Vec::new();
+        for (index, node) in nodes.array(&format!("{ROOT}.villages"))?.iter().enumerate() {
+            let path = format!("{ROOT}.villages[{index}]");
+            let village = Village::parse(node, index, world_size, ROOT)?;
+            let swamp = version(node, "swamp_version", 1, &path)?;
+            if village.expanded && swamp == Some(1) {
+                selected.push(village);
+            }
+        }
+        // Python's wrapper calls apply_legacy only for an expanded v1 village
+        // when the record is older, passing only that first village and returning
+        // immediately even if its square misses this chunk.
+        if previous == 0 {
+            let mut touched = false;
+            for village in selected.into_iter().take(1) {
+                let (vx, vy) = (village.x, village.y);
+                if left > vx + 18 || left + 40 <= vx - 19 || top > vy + 18 || top + 40 <= vy - 19 {
+                    continue;
+                }
+                touched = true;
+                let mut cleared = BTreeSet::new();
+                for y in top.max(vy - 19)..(top + 40).min(vy + 19) {
+                    for x in left.max(vx - 19)..(left + 40).min(vx + 19) {
+                        if (x - vx).abs().max((y - vy).abs()) > 9 {
+                            terrain[(y - top) as usize][(x - left) as usize] = b'g';
+                            cleared.insert((x, y));
+                        }
+                    }
+                }
+                for field in ["map_resources", "tree_stumps"] {
+                    field_mut(&mut record, field).retain(|item| {
+                        let point = position(item, ROOT).unwrap();
+                        !cleared.contains(&point)
+                            || item.optional("village", ROOT).unwrap().is_some_and(|n| {
+                                n.string(ROOT).is_ok_and(|name| name == village.name)
+                            })
+                    });
+                }
+                for (index, (x, y)) in legacy_swamp_sites().into_iter().enumerate() {
+                    let (kind, variant, label) = if (x, y) == (12, 4) {
+                        ("village_hut", "tavern", "The Crooked Candle")
+                    } else if index % 7 == 0 {
+                        ("village_market", "stall", "Marsh market stall")
+                    } else if index % 5 == 0 {
+                        ("village_hut", "workshop", "Reedworker’s shed")
+                    } else {
+                        (
+                            "village_hut",
+                            ["reed_house", "net_house", "moss_house"][index % 3],
+                            "Stilt cottage",
+                        )
+                    };
+                    let mut items = vec![(kind, x, y, variant, label)];
+                    let plant = ["ferns", "cattails", "mushrooms", "reeds"][index % 4];
+                    let plant_label = ["Ferns", "Cattails", "Mushrooms", "Reeds"][index % 4];
+                    items.extend([
+                        ("village_decor", x + 1, y, "bench", "Bench"),
+                        (
+                            "village_decor",
+                            x - 1,
+                            y + 1,
+                            "candle_lantern",
+                            "Candle lantern",
+                        ),
+                        ("village_decor", x, y - 1, plant, plant_label),
+                    ]);
+                    for (kind, x, y, variant, label) in items {
+                        append_swamp_item(
+                            &mut record,
+                            &village,
+                            left,
+                            top,
+                            (kind, x, y, variant, label),
+                        );
+                    }
+                }
+                for (x, y) in [(10, 5), (14, 4), (14, 8), (-10, 8)] {
+                    append_swamp_item(
+                        &mut record,
+                        &village,
+                        left,
+                        top,
+                        ("village_decor", x, y, "barrels", "Ale barrels"),
+                    );
+                }
+            }
+            if touched {
+                commit_rows(&mut record, &terrain);
+                set(&mut record, "swamp_version", scalar(1));
+            }
+        }
+        let mut output = Vec::new();
+        write_node(&record, &mut output);
+        Ok(Self {
+            source: source.to_vec(),
+            record: output,
+        })
+    }
+    pub fn private_source_bytes(&self) -> &[u8] {
+        &self.source
+    }
+    pub fn private_record_bytes(&self) -> &[u8] {
+        &self.record
+    }
+}
+fn legacy_swamp_sites() -> Vec<(i32, i32)> {
+    let mut sites = Vec::new();
+    for y in [-16, -12, 12, 16] {
+        for x in [-16, -12, -8, -4, 4, 8, 12, 16] {
+            sites.push((x, y));
+        }
+    }
+    for x in [-12, 12] {
+        for y in [-8, -4, 4, 8] {
+            sites.push((x, y));
+        }
+    }
+    sites.extend([(-16, -4), (16, -4)]);
+    sites
+}
+fn append_swamp_item(
+    record: &mut Node,
+    village: &Village,
+    left: i32,
+    top: i32,
+    (kind, x, y, variant, label): (&str, i32, i32, &str, &str),
+) {
+    let (x, y) = (village.x + x, village.y + y);
+    if inside(x, y, left, top) {
+        let mut item = structure(kind, x, y, village, true);
+        set(&mut item, "variant", scalar(variant));
+        set(&mut item, "label", scalar(label));
+        append(record, item);
     }
 }

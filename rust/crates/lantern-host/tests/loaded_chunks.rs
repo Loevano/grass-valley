@@ -528,3 +528,59 @@ fn typed_seed_starter_reconstruction_matches_real_python_raw_reads_and_preserves
         );
     }
 }
+
+#[test]
+fn actual_saved_organic_lanes_canals_courtyards_load_without_edits() {
+    let overlays: Vec<Value> =
+        serde_json::from_slice(include_bytes!("fixtures/terrain/village_overlays.json")).unwrap();
+    let mut seen = std::collections::BTreeSet::new();
+    let mut count = 0;
+    for case in overlays
+        .iter()
+        .filter(|c| c["before"]["swamp_version"] == 2)
+    {
+        count += 1;
+        let mut golden = goldens().remove(0);
+        golden.record = case["before"].clone();
+        golden.key = case["key"].as_str().unwrap().into();
+        golden.size = case["size"].as_u64().unwrap() as u32;
+        golden.version = 7;
+        let key = golden.key();
+        let copy = Copy::new(&golden);
+        copy.write(key, &golden.record);
+        let archive = copy.import();
+        let mut reader = ChunkReader::new(&archive.worlds()[0]).unwrap();
+        let loaded = reader.read(key).unwrap();
+        let rows: Vec<_> = golden.record["terrain"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .map(|r| r.as_str().unwrap())
+            .collect();
+        assert_eq!(loaded.terrain(), rows);
+        assert_eq!(
+            serde_json::from_slice::<Value>(loaded.private_bytes()).unwrap(),
+            golden.record
+        );
+        assert_eq!(
+            loaded.resources().len(),
+            golden.record["map_resources"].as_array().unwrap().len()
+        );
+        for (y, row) in rows.iter().enumerate() {
+            for (x, code) in row.chars().enumerate() {
+                seen.insert(code);
+                assert_eq!(
+                    reader.tile(Tile {
+                        x: key.x as i32 * 40 + x as i32,
+                        y: key.y as i32 * 40 + y as i32
+                    }),
+                    LoadedTile::Saved(code)
+                );
+            }
+        }
+        reader.unload(key);
+        assert_eq!(reader.read(key).unwrap().terrain(), rows);
+    }
+    assert_eq!(count, 4);
+    assert!(['p', 'w', 'c'].iter().all(|code| seen.contains(code)));
+}

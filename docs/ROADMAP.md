@@ -8,7 +8,7 @@ and cache rules are in [Backend](BACKEND.md#cached-zoomed-out-map).
 | 1     | Cached zoomed-out town overview    | Implemented              | Show the landscape and city sizes without refreshing animated scene detail.                                      |
 | 2     | Production line balancing          | Wood and grain implemented; fishing remains | Develop clear fishing chains with capped staffing and simple upgrades. |
 | 3     | Scalable villager pathfinding       | Host queue implemented; cache refinement and shared navigation remain | Keep movement responsive as villager counts and towns grow, with bounded routing work. |
-| 4     | Rust migration | R07 saved chunks, raw generators and nonchunked terrain-only hydration complete; authored starter geometry and typed-seed reconstruction complete; ordinary village phase complete; placement/swamp/water integration and activation remain | Follow the [staged plan and prompts](RUST_MIGRATION.md), preserving playable checkpoints and saved worlds. |
+| 4     | Rust migration | R07 saved chunks, raw generators and nonchunked terrain-only hydration complete; authored starter geometry and typed-seed reconstruction complete; ordinary village and legacy swamp-v1 phases complete; organic v2/placement migrations, water integration and activation remain | Follow the [staged plan and prompts](RUST_MIGRATION.md), preserving playable checkpoints and saved worlds. |
 
 ## Rust migration
 
@@ -30,8 +30,10 @@ pure authored starter terrain/resources and exact town-site selection/separation
 Slice 3b.ii integrates typed-seed saved-first starter reconstruction with exact
 legacy/current offsets and source preservation. Slice 3b.iii.a adds the explicit
 private ordinary village phase (150 paired Python cases), without changing raw
-reads or claiming complete overlays. Next bounded task 3b.iii.b must complete
-obstacle-safe placement/layout/life/swamp migrations and swamp v1/v2 geometry;
+reads or claiming complete overlays. Slice 3b.iii.b.i adds private legacy swamp-v1
+materialization (43 real Python pairs) and saved organic `p/w/c` decoding. Next
+bounded tasks port organic v2 geometry/v1-to-v2 upgrades, then obstacle-safe
+placement/layout/life/swamp metadata migrations and moved visit keys;
 then 3b.iii.c must integrate complete saved-first materialization and v7 water
 repair sampling neighbors after starter/village/swamp edits;
 slice 3c must complete authoritative activation/sleeping/dirty state,

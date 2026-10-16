@@ -178,6 +178,9 @@ feature port and its tests. Durable save versioning/migrations remain R19.
 R07 slice 3b.iii.a additionally exposes an independent private ordinary village
 phase. Its materialized payload and original bytes have no Debug/Serialize;
 retained resource/extension numbers keep exact scalar lexemes. It is neither a
-public DTO nor authoritative hydrated gameplay state. Village placement/swamp
-upgrades and post-overlay water integration remain 3b.iii.b–c; see the
+public DTO nor authoritative hydrated gameplay state. Slice 3b.iii.b.i adds the
+same private/source-preserving boundary for legacy swamp-v1 materialization;
+v2 records/metadata explicitly fail. Saved-only decoding accepts real organic
+`p/w/c` terrain. Organic v2 upgrades, obstacle-safe placement/metadata migrations
+and post-overlay water integration remain 3b.iii.b–c; see the
 [terrain compatibility boundary](RUST_TERRAIN.md#ordinary-village-overlay-phase-slice-3biiia).

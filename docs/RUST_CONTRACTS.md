@@ -268,7 +268,10 @@ water seams remain 3b.iii.b–c. The isolated 3b.iii.a ordinary village phase
 now matches 150 actual Python pairs, preserving record markers, ordered life
 geometry, saved edits and private scalar lexemes/extensions. It does not change
 raw reads or the inspection CLI; placement/swamp migrations and complete
-post-overlay neighbor sampling remain required. No NPC gameplay or complete R07
+post-overlay neighbor sampling remain required. Slice 3b.iii.b.i supplies an
+independent private swamp-v1 phase (43 actual Python pairs) and valid saved
+organic `p/w/c` decoding (four real saved chunks); organic v2 upgrades and
+obstacle-safe placement/metadata migrations remain. No NPC gameplay or complete R07
 readiness is claimed.
 Saved records take precedence over regeneration; seeded base generation and
 idempotent legacy repairs/overlays are separate operations. `ChunkMap.read` can
