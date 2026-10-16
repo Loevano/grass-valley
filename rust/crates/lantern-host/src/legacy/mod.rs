@@ -11,6 +11,7 @@ mod catch_up;
 mod chunks;
 mod json;
 mod landscapes;
+mod lifecycle;
 mod loaded;
 mod materialized;
 mod ordinary;
@@ -22,6 +23,7 @@ pub use chunks::{
     ChunkDirectory, ChunkKey, ChunkMetadata, ChunkMetadataReport, ImportedChunk, RawChunk,
 };
 pub use landscapes::{HydratedLandscape, HydratedLandscapes};
+pub use lifecycle::{ChunkLifecycle, ChunkWriteIntent, PrivateChunkSnapshot};
 pub use loaded::{
     ChunkReader, LoadedChunk, LoadedResource, LoadedStump, LoadedTile, MAX_LOADED_CHUNKS,
 };

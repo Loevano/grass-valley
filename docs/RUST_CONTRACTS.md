@@ -294,9 +294,14 @@ simulation-clock scalar and already expanded authoritative obstacle tiles, keeps
 source/untouched numeric lexemes/extensions exact, and performs no production,
 active tree regrowth, archive writes or lifecycle installation. Its explicit
 finite nonnegative clock domain is ≤2^53; exact larger integer clocks remain a
-compatibility gate. Authoritative lifecycle, ordered swamp-plan cache writes and
-resource rebind/invalidation, bounded caches/snapshots, promotion/eviction/reload,
-obstacle extraction and active versioned regrowth remain 3c. Python stays default.
+compatibility gate. Slice 3c.ii adds a private authoritative `ChunkLifecycle` owner:
+ordered resident swamp-plan installation, initial active aggregate ownership,
+desired chunks/occupied footprints, active/camera precedence, 49-camera LRU,
+active-plus-49 private snapshot copies and edited flush/evict/reload through
+in-memory archive/write intents (19 actual Python traces). Failed operations
+publish no partial state; imported sources remain immutable. R19 owns real
+persistence/recovery and later protocol stages own public wire snapshots. Exact
+larger integer clocks and active versioned renew/regrowth remain 3c. Python stays default.
 
 Saved records take precedence over regeneration; seeded base generation and
 idempotent legacy repairs/overlays are separate operations. `ChunkMap.read` can

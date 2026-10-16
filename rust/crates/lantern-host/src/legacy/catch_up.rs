@@ -207,7 +207,7 @@ impl CaughtUpChunk {
         &self.record
     }
 }
-fn time(node: &Node) -> Result<f64, BoundaryError> {
+pub(super) fn time(node: &Node) -> Result<f64, BoundaryError> {
     let path = format!("{PATH}.clock");
     let value = node.nonnegative_number(&path)?;
     if let Node::Scalar(raw) = node {

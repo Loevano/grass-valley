@@ -22,6 +22,16 @@ pub struct ResidentChunkCopy<'a> {
     bytes: &'a [u8],
 }
 impl<'a> ResidentChunkCopy<'a> {
+    pub(super) fn copy(&self) -> Self {
+        Self {
+            world: self.world,
+            key: self.key,
+            bytes: self.bytes,
+        }
+    }
+    pub(super) fn key(&self) -> ChunkKey {
+        self.key
+    }
     pub fn new(world: &'a WorldId, key: ChunkKey, bytes: &'a [u8]) -> Self {
         Self { world, key, bytes }
     }
@@ -154,14 +164,22 @@ impl PostOverlayTerrain<'_> {
         &self.plan
     }
     pub fn read(&self, key: ChunkKey) -> Result<TerrainRecord, BoundaryError> {
+        self.read_owned(key, &self.residents, &BTreeMap::new())
+    }
+    pub(super) fn read_owned(
+        &self,
+        key: ChunkKey,
+        residents: &BTreeMap<ChunkKey, Vec<u8>>,
+        archive: &BTreeMap<ChunkKey, Vec<u8>>,
+    ) -> Result<TerrainRecord, BoundaryError> {
         key.validate(self.world.chunk_metadata().unwrap(), ROOT)?;
-        if let Some(record) = self.residents.get(&key) {
+        if let Some(record) = residents.get(&key) {
             return Ok(TerrainRecord {
                 key,
                 bytes: record.clone(),
             });
         }
-        let record = self.post_overlay(key)?;
+        let record = self.post_overlay(key, residents, archive)?;
         if self.generator < 7 {
             return Ok(TerrainRecord { key, bytes: record });
         }
@@ -217,7 +235,7 @@ impl PostOverlayTerrain<'_> {
                     {
                         // No recursive repair: sample selected raw/starter/saved
                         // records AFTER ordinary/swamp edits, or resident copies.
-                        let bytes = self.post_overlay(other)?;
+                        let bytes = self.post_overlay(other, residents, archive)?;
                         entry.insert(waters(&Node::parse(&bytes, ROOT)?)?);
                     }
                     if neighbors[&other].contains(&next) {
@@ -253,13 +271,22 @@ impl PostOverlayTerrain<'_> {
             bytes: bytes(&node),
         })
     }
-    fn post_overlay(&self, key: ChunkKey) -> Result<Vec<u8>, BoundaryError> {
-        if let Some(record) = self.residents.get(&key) {
+    fn post_overlay(
+        &self,
+        key: ChunkKey,
+        residents: &BTreeMap<ChunkKey, Vec<u8>>,
+        archive: &BTreeMap<ChunkKey, Vec<u8>>,
+    ) -> Result<Vec<u8>, BoundaryError> {
+        if let Some(record) = residents.get(&key) {
             return Ok(record.clone());
         }
-        let raw = match self.world.raw_chunk(key)? {
-            RawChunk::Saved(record) => record.private_bytes().to_vec(),
-            RawChunk::Generated(record) => generated(record),
+        let raw = if let Some(record) = archive.get(&key) {
+            record.clone()
+        } else {
+            match self.world.raw_chunk(key)? {
+                RawChunk::Saved(record) => record.private_bytes().to_vec(),
+                RawChunk::Generated(record) => generated(record),
+            }
         };
         // These phases validate even completed/no-op records before editing.
         let ordinary = OrdinaryVillageOverlay::materialize(&raw, &self.villages, key, self.size)?;

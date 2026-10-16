@@ -203,6 +203,12 @@ preparation retains exact private source/untouched scalar extensions and returns
 owned industry/resource/sleeping-stump catch-up output for a supplied simulation
 clock and expanded obstacle tiles. It neither installs authoritative state nor
 modifies archive/world/client DTOs or production. The clock domain is explicitly
-finite/nonnegative ≤2^53; larger exact integer clocks, world obstacle extraction,
-active/sleeping ownership, ordered swamp cache-plan consumption/rebinding,
-eviction/reload and active regrowth remain required by 3c.
+finite/nonnegative ≤2^53. Slice 3c.ii adds private `ChunkLifecycle`,
+`ChunkWriteIntent` and `PrivateChunkSnapshot` without Debug/Serialize: one owner
+installs ordered resident cache-plan results, bootstraps active aggregates, extracts
+desired chunks/occupied footprints and retains edited eviction/reload through an
+in-memory archive plus explicit intents. Camera views are bounded to 49 and private
+snapshots to active+49; returned copies never alias authority. Input archive/client
+DTOs stay unchanged. Real persistence/acknowledgement/recovery remains R19; public
+wire filtering/versioning remains later protocol work. Exact larger integer clocks
+and active renew/regrowth remain required by 3c.

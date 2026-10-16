@@ -11,7 +11,8 @@ reconstruction) complete; 3b.iii.a ordinary village overlay phase complete;
 3b.iii.b.iv swamp world metadata/visit relocation and ordered deferred cache plans
 complete; 3b.iii.c immutable saved-first overlay/water integration complete;
 3c.i private supplied-clock chunk catch-up preparation complete within its explicit
-clock domain; authoritative lifecycle/cache-plan consumption and active regrowth remain.
+clock domain; 3c.ii private authoritative lifecycle/cache-plan integration complete;
+exact larger integer clocks and active regrowth remain.
 Rust contains an experimental workspace, transport smoke CLI and read-only copy
 inspection CLI; gameplay is not ported.
 **Initial plan revision:** `445ddddd675a87eb7adb50442b2dbf3c14ea6c6f`.
@@ -231,7 +232,7 @@ only after work is performed. Keep unfinished stages visible in the roadmap.
 | R04 | Cargo workspace and applicable checks | R03 | Complete: slice 1 `732619a`; slice 2 `c7cf3e2`; slice 3 `feat: add Rust replay transport smoke CLI` (this change); evidence below |
 | R05 | Typed state, IDs, units, and boundary DTOs | R04 | Complete: slice 1 `f271ff4`; slice 2 `b5fa931`; slice 3 `508b396`; [boundary/coverage audit](RUST_STATE_DTOS.md), evidence below |
 | R06 | Legacy import and read-only save inspection | R05 | Complete: slice 1 `3312d5d`; slice 2 `4513bec`; slice 3 `041caee`; [staging scope/coverage](RUST_LEGACY_IMPORT.md), evidence below |
-| R07 | Terrain versions and chunk generation | R06 | In progress: slice 1 complete (`31fcf91`); [scope and evidence](RUST_TERRAIN.md); slice 2 complete (`dc0d400`); slice 3a complete (`4762909`); slice 3b.i complete (`9b08f25`); slice 3b.ii complete (`b925488`); slice 3b.iii.a ordinary village phase complete (`085c64b`); 3b.iii.b.i–ii legacy/organic swamp phases complete; 3b.iii.b.iii ordinary placement/layout/life metadata complete (`37f2a84`); 3b.iii.b.iv swamp world metadata/visits and ordered deferred cache plans complete (`7feec7b`); 3b.iii.c immutable post-overlay terrain and seam water repair complete (`6c4bbe9`); 3c.i private supplied-clock catch-up preparation complete (this change); authoritative lifecycle and active regrowth remain |
+| R07 | Terrain versions and chunk generation | R06 | In progress: slice 1 complete (`31fcf91`); [scope and evidence](RUST_TERRAIN.md); slice 2 complete (`dc0d400`); slice 3a complete (`4762909`); slice 3b.i complete (`9b08f25`); slice 3b.ii complete (`b925488`); slice 3b.iii.a ordinary village phase complete (`085c64b`); 3b.iii.b.i–ii legacy/organic swamp phases complete; 3b.iii.b.iii ordinary placement/layout/life metadata complete (`37f2a84`); 3b.iii.b.iv swamp world metadata/visits and ordered deferred cache plans complete (`7feec7b`); 3b.iii.c immutable post-overlay terrain and seam water repair complete (`6c4bbe9`); 3c.i private supplied-clock catch-up preparation complete (`725e089`); 3c.ii private authoritative lifecycle integration complete (this change); exact larger integer clocks and active regrowth remain |
 | R08 | Spatial rules and founder movement | R07 | Not started |
 | R09 | Search algorithms and library decision | R08 | Not started |
 | R10 | Request scheduler and cache invalidation | R09 | Not started |
@@ -1418,17 +1419,74 @@ Clippy with warnings denied. Markdown/JSON reports at
 `performance-results/r07-slice3ci/` were inspected (candidate `6c4bbe9` plus dirty
 task worktree); performance is explicitly `not_run`.
 
-**Remaining 3c:** a single authoritative host owner; active/sleeping/dirty state;
+**Remaining at completion of 3c.i (subsequent integration below):** a single authoritative host owner; active/sleeping/dirty state;
 world-derived desired chunks and obstacle extraction; ordered actual swamp-plan
 application to active/camera records followed by resource/stump rebind and
 membership/index invalidation; bounded derived views/snapshots; promotion,
 eviction and reload preserving edited records, quantities, stumps and metadata
-through an in-memory durable archive/write intents; integration of this explicit
+through an in-memory archive/write intents; integration of this explicit
 catch-up boundary; exact large integer clocks; and active versioned regrowth with
 paired lifecycle traces. R19 owns persistence destinations/crash recovery. R07 is
 incomplete, Python remains the playable default, and R08, HTTP, live-save writes
 and cutover have not started. Performance comparisons are not needed for this
 compatibility port; no performance problem or optimization was investigated.
+
+### R07 slice 3c.ii evidence and remaining work
+
+Starting revision: `725e089`. `ChunkLifecycle::prepare` creates one explicit private
+owner over immutable registry materialization and supplied active/camera copies.
+It installs the ordered single-village swamp cache-plan results exactly once,
+preserving active insertion order for that aggregate rebind. Constructor bootstrap
+always establishes aggregate ownership from active records, even without upgrades:
+R06 archives omit runtime resource arrays. This is an explicit ownership bootstrap,
+not a change to Python `ChunkMap.read` or permission to accept inline chunk payloads.
+
+The owner extracts desired chunks from town origins/founders or fallback sites,
+expands building/road/NPC footprints and uses Python ties-to-even founder rounding
+for catch-up occupancy. Coordinates use the existing finite i32 tile domain;
+only in-world obstacle footprint tiles can affect generation. Active reads and an
+unchanged desired set bypass catch-up. Camera hits update LRU order and catch up
+only at a changed/missing record clock; promotion consumes the existing record.
+Activation flushes before eviction, loads new keys in Python lexical order and
+rebinds active aggregates. Explicit full-record host edits validate before install.
+No alias-based membership/resource index is retained; rebinding invalidates derived
+snapshot copies. All fallible operations publish owned state only after success.
+
+Flush retains edited resources, stumps, ground, clocks, metadata and extensions in
+an in-memory archive plus explicit private write intents. Reload selects that archive
+before imported saved bytes or generation, with live resident precedence for water
+neighbors. Untouched full supplies do not acquire a new clock each flush. Repeated
+unchanged flushes emit no duplicate intent. No file write/acknowledgement, durable
+conversion or crash recovery is implemented; R19 owns those contracts. Camera views
+are bounded to 49; derived private snapshots retain only active keys plus the current
+request's at-most-49 camera keys. Snapshot/read outputs are independent copies, not
+public/client DTOs. Total authority/archive memory is not claimed to be bounded to 49.
+
+19 frozen actual Python lifecycle traces compare complete records and aggregates
+through versions 1–7, 480/1920 dimensions, typed seeds/default offsets, promotion,
+unchanged-set behavior, active versus sleeping clocks, edited flush/evict/reload,
+ordered overlapping swamp upgrades with nonlexical active insertion order,
+constructor binding without upgrades, site/edge selection and absent camera clocks.
+The Python harness establishes real manager ownership and invokes actual methods;
+all terrain/world traces use real generation. Four Rust integration tests additionally
+check 49-view LRU eviction, active-plus-camera snapshot bounds, independent copies,
+source/huge-integer/scalar-lexeme retention, duplicate flush suppression and sanitized
+failed-read/edit/clock/movement/activation atomicity. Fixture payload references only
+deduplicate frozen oracle data; they are never game JSON. The independent verifier is
+`python3 rust/crates/lantern-host/tests/fixtures/terrain/generate_lifecycle.py --check`.
+
+Validation passed the independent frozen oracle check (19 traces), affected
+formatting, 96 host tests plus 16 compile-fail doctests, and Clippy with warnings
+denied. The final Markdown/JSON reports at `performance-results/r07-slice3cii/`
+were inspected: candidate `725e089` plus the task worktree, correctness pass and
+performance `not_run`. No unknown runtime files selected unrelated checks.
+
+**Remaining 3c:** exact clocks above 2^53 and active versioned renew/regrowth with
+paired traces. Supplied clocks still reject outside the existing catch-up domain;
+active reads never simulate sleeping recovery. Public wire snapshot filtering/version
+protocol, real persistence, HTTP and playable-host integration remain their later
+stages. Python stays playable/default and R07 remains incomplete. No performance
+comparison was run: this is compatibility work, not a performance investigation.
 
 ## R08 — Spatial rules and founder movement
 

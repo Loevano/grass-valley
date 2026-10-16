@@ -544,8 +544,8 @@ needed for this compatibility port and no speedup is claimed.
 | D05 byte seed material → compatible reference RNG draws | Complete; gameplay adoption/state serialization remain later work |
 | Authored starter ground/resources and new-world town sites/separation | Slices 3b.i–ii complete; 49 authored starter and 86 raw selection Python goldens |
 | Village/swamp placement and versioned overlays | 3b.iii.a ordinary and 3b.iii.b.i–ii legacy/organic swamp phases complete (150 + 43 + 100 Python pairs); 3b.iii.b.iii ordinary obstacle-safe placement/layout/life metadata complete (105 Python worlds); 3b.iii.b.iv swamp world metadata/home/routine/visit migration complete (264 Python worlds plus explicit ordered cache plans) |
-| Post-overlay v7 tiny-water repair and boundaries | 3b.iii.c immutable integration complete; 35 actual Python worlds, including resident plans and post-overlay edges/corners; authoritative lifecycle remains 3c |
-| Active/sleeping chunks, dirty resources, regrowth and clock catch-up | 3c.i private chunk catch-up preparation complete within finite nonnegative clock domain ≤2^53 (65 actual Python cases); authoritative lifecycle integration, exact larger integer clocks and active regrowth remain |
+| Post-overlay v7 tiny-water repair and boundaries | 3b.iii.c immutable integration complete; 35 actual Python worlds, including resident plans and post-overlay edges/corners; 3c.ii consumes these results in the private owner |
+| Active/sleeping chunks, dirty resources, regrowth and clock catch-up | 3c.i private chunk catch-up preparation complete within finite nonnegative clock domain ≤2^53 (65 actual Python cases); 3c.ii authoritative private owner/catch-up/cache-plan integration complete (19 actual Python lifecycle traces); exact larger integer clocks and active regrowth remain |
 | Ordinary/independent/shared nonchunked terrain-only hydration and `generate_map` | Slice 3a complete; 35 real maps and six paired hydration goldens; gameplay preparation remains later stages |
 
 No whole R07 completion, playable-world readiness, performance gain, runtime
@@ -579,11 +579,63 @@ refreshing it. Three Rust tests cover full records, repeats, private source and
 quantity preservation and sanitized rejection; a compile-fail doctest prevents
 serialization of this private result.
 
-This is an independent prerequisite, not a live chunk lifecycle. Remaining 3c
-must extract authoritative obstacles/desired chunks, consume ordered swamp cache
-plans with actual rebinding/invalidation, own active/sleeping/dirty resources,
-bound derived caches/snapshots, preserve edits through eviction/reload/write
-intents, integrate catch-up, support larger exact integer clocks, and implement
+This is an independent prerequisite, not a live chunk lifecycle. At completion
+of 3c.i, remaining work included extracting authoritative obstacles/desired chunks,
+consuming ordered swamp cache plans with actual rebinding/invalidation, owning active/sleeping/dirty resources,
+bounding derived caches/snapshots, preserving edits through eviction/reload/write
+intents, integrating catch-up, supporting larger exact integer clocks, and implementing
 active versioned regrowth. No R07 completion or playable Rust load is claimed.
 Performance comparison was not run because this is a compatibility port, not a
 performance investigation or optimization.
+
+
+## Private authoritative lifecycle (slice 3c.ii)
+
+`ChunkLifecycle` owns private active/camera records and world metadata independently
+of its immutable imported archive. Constructor bootstrap establishes active resource
+and stump aggregates even when the registry omits those arrays and no swamp upgrade
+is needed. Ordered per-village plan results are installed once before publication;
+its aggregate order follows Python active insertion order. Later activation uses
+Python lexical chunk-key order. Direct record authority avoids stale alias-based
+membership/resource indexes; full-record edits rebind aggregates and invalidate
+private snapshot copies.
+
+World-derived desired chunks, building/road/NPC footprints and Python-rounded
+founders feed sleeping catch-up. Active reads and unchanged active sets bypass it;
+camera promotion retains resident precedence. Flush/evict/reload retains edits,
+private extensions, resources, stumps and clocks through an owned in-memory archive
+and explicit `ChunkWriteIntent`s. Untouched full supplies retain their old timestamps
+and repeated unchanged flushes emit no duplicate intent. The imported source and
+chunk files never change. R19 still owns persistence, acknowledgements and recovery;
+these intents do not promise disk durability.
+
+Camera LRU is bounded to 49 records. Independent private snapshot copies retain
+only active keys plus the current request's at-most-49 camera keys; the total bound
+is active+49, not 49 including authority/archive. Public wire filtering/versions
+remain later protocol work. Fallible reads, edits, snapshots and activation publish
+no partial state/intents. Private owner/intents/snapshots have no Debug/Serialize.
+
+19 actual Python traces use real generation across terrain versions 1–7, current
+and legacy dimensions, typed seeds/default offsets, active versus camera clocks,
+promotion, repeated flushes, edited eviction/reload, ordered overlapping swamp
+plans, nonlexical active insertion order, constructor bootstrap without upgrades,
+world sites/edges and absent camera clocks. Four Rust tests also exercise LRU and
+snapshot bounds, returned-copy isolation, source/scalar retention, sanitized
+rejection and transactional failure atomicity. The deduplicated fixture encoding
+is only test storage and never enters imported world payloads.
+
+```sh
+python3 rust/crates/lantern-host/tests/fixtures/terrain/generate_lifecycle.py --check
+```
+
+Starting revision: `725e089`. Exact larger integer clocks and active versioned
+renew/regrowth remain the next R07 work; finite nonnegative supplied clocks still
+must be ≤2^53. This owner does not run production or become a playable host.
+Python remains default. Performance comparisons were not run because no performance
+problem or optimization was investigated.
+
+Validation: the independent frozen oracle check passed all 19 traces. The final
+affected check selected only `rust:lantern-host` and passed formatting, 96 host
+tests plus 16 compile-fail doctests, and Clippy with warnings denied. Markdown and
+JSON reports at `performance-results/r07-slice3cii/` were inspected: candidate
+`725e089` plus the task worktree, correctness pass, performance `not_run`.
