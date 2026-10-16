@@ -210,5 +210,9 @@ desired chunks/occupied footprints and retains edited eviction/reload through an
 in-memory archive plus explicit intents. Camera views are bounded to 49 and private
 snapshots to active+49; returned copies never alias authority. Input archive/client
 DTOs stay unchanged. Real persistence/acknowledgement/recovery remains R19; public
-wire filtering/versioning remains later protocol work. Exact larger integer clocks
-and active renew/regrowth remain required by 3c.
+wire filtering/versioning remains later protocol work. Slice 3c.iii adds explicit
+transactional active renewal with immediate aggregate/membership synchronization
+and snapshot invalidation. Conversion preserves stump metadata and aggregate append
+order; stocks/groups, versioned eligibility and timers match Python. No clock,
+production, town inventory or client DTO is changed. Exact larger integer clocks
+remain required by 3c.

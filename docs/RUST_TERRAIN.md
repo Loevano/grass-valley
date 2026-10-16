@@ -545,7 +545,7 @@ needed for this compatibility port and no speedup is claimed.
 | Authored starter ground/resources and new-world town sites/separation | Slices 3b.i–ii complete; 49 authored starter and 86 raw selection Python goldens |
 | Village/swamp placement and versioned overlays | 3b.iii.a ordinary and 3b.iii.b.i–ii legacy/organic swamp phases complete (150 + 43 + 100 Python pairs); 3b.iii.b.iii ordinary obstacle-safe placement/layout/life metadata complete (105 Python worlds); 3b.iii.b.iv swamp world metadata/home/routine/visit migration complete (264 Python worlds plus explicit ordered cache plans) |
 | Post-overlay v7 tiny-water repair and boundaries | 3b.iii.c immutable integration complete; 35 actual Python worlds, including resident plans and post-overlay edges/corners; 3c.ii consumes these results in the private owner |
-| Active/sleeping chunks, dirty resources, regrowth and clock catch-up | 3c.i private chunk catch-up preparation complete within finite nonnegative clock domain ≤2^53 (65 actual Python cases); 3c.ii authoritative private owner/catch-up/cache-plan integration complete (19 actual Python lifecycle traces); exact larger integer clocks and active regrowth remain |
+| Active/sleeping chunks, dirty resources, regrowth and clock catch-up | 3c.i private chunk catch-up preparation complete within finite nonnegative clock domain ≤2^53 (65 actual Python cases); 3c.ii authoritative private owner/catch-up/cache-plan integration complete (19 actual Python lifecycle traces); 3c.iii active versioned renew/regrowth complete (14 new actual Python traces); exact larger integer clocks remain |
 | Ordinary/independent/shared nonchunked terrain-only hydration and `generate_map` | Slice 3a complete; 35 real maps and six paired hydration goldens; gameplay preparation remains later stages |
 
 No whole R07 completion, playable-world readiness, performance gain, runtime
@@ -639,3 +639,47 @@ affected check selected only `rust:lantern-host` and passed formatting, 96 host
 tests plus 16 compile-fail doctests, and Clippy with warnings denied. Markdown and
 JSON reports at `performance-results/r07-slice3cii/` were inspected: candidate
 `725e089` plus the task worktree, correctness pass, performance `not_run`.
+
+## Private active renewal (slice 3c.iii)
+
+`ChunkLifecycle::renew_active()` is an explicit single three-second resource batch.
+It applies invalid-tree cleanup followed by Python's versioned stump renewal and
+supply-group rules over authoritative active records. No clock is advanced: the
+host supplies time separately, matching Python's renewal-before-clock-increment
+ordering. Passive reads/snapshots/activation never perform online renewal or
+production. Sleeping catch-up retains its separate no-tree-spawn behavior.
+
+Versions 1–5 retain green-ground legacy stumps; versions 6–7 retain only forest/
+swamp stumps. Conversion removes only `remaining`, retains ordered custom metadata,
+and appends resources in stump order; occupied stumps keep their timers. Decimal
+round-to-nine uses the same correctly rounded formatting path as sleeping catch-up.
+Active occupancy matches Python origins for buildings/roads/NPCs and floor(x+.5)
+founders, deliberately distinct from sleeping footprint/ties-to-even occupancy.
+Water components cross active chunk boundaries with Python insertion/BFS ordering,
+last-water-at-duplicate-coordinate membership and lexical stock roots. Per-kind
+caps, regeneration, swamp/ancient tree limits and tree capacity rescaling match
+`source_limits`/`renew`. Duplicate nonwater sources keep individual stocks.
+
+Renewal publishes transactionally, syncs chunk membership immediately, preserves
+aggregate append order and untouched scalar lexemes/extensions, and invalidates
+private snapshots. Existing flush handles dirty records, timestamps, archive and
+write intents. Returned snapshots/import/client state never become authority; town
+inventories, cargo and production are untouched. Real persistence remains R19.
+
+Starting revision: `4fbd2eec91e799c057a18875a70cbf728e8fcdc1`. The lifecycle oracle now
+contains 33 actual Python traces, including 14 new active-renewal traces across
+versions 1–7 and both dimensions using real generated geometry and isolated authored
+rule cells. Repeated renewal/passive reads/flush/eviction/sleep/reload compare full
+records and aggregates. Five Rust lifecycle tests also cover renewal atomicity,
+private numeric retention, cache invalidation and inventory/clock invariance.
+Exact integer clocks above 2^53 remain rejected and required before R07 completion;
+the finite libm platform gate remains. Python stays default. No performance comparison
+was run because this is compatibility work without a performance investigation.
+
+Validation passed the independent frozen oracle check (33 actual Python traces;
+all original 19 traces unchanged), affected formatting, 97 host tests plus 16
+compile-fail doctests, and Clippy with warnings denied. The final Markdown/JSON
+reports at `performance-results/r07-slice3ciii-final/` were inspected: candidate
+`4fbd2ee` plus the task worktree, correctness pass, performance `not_run`.
+The affected set selected only `rust:lantern-host`; it was rerun after a final
+rule-field validation refinement. No unknown runtime files selected unrelated checks.

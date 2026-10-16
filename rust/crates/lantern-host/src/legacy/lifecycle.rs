@@ -54,7 +54,7 @@ struct Owned {
 /// Owns all mutable records separately from immutable import and returned copies.
 /// Active records are authoritative; camera/snapshot records are disposable.
 /// Supplied clocks retain CaughtUpChunk's explicit <=2^53 compatibility domain.
-/// Active renew/regrowth, public wire snapshots and real persistence remain gated.
+/// Public wire snapshots and real persistence remain gated.
 /// ```compile_fail
 /// use lantern_host::legacy::ChunkLifecycle;
 /// fn leak(owner: &ChunkLifecycle<'_>) { serde_json::to_string(owner).unwrap(); }
@@ -259,6 +259,15 @@ impl<'a> ChunkLifecycle<'a> {
         self.state = state;
         Ok(())
     }
+    /// One explicit Python three-second renewable-resource batch. Does not advance
+    /// the clock or run production; the host increments time after this phase.
+    /// Passive reads, snapshots and activation never invoke this method.
+    pub fn renew_active(&mut self) -> Result<(), BoundaryError> {
+        let mut state = self.state.clone();
+        renew(&mut state, self.generator)?;
+        self.state = state;
+        Ok(())
+    }
     pub fn flush(&mut self) -> Result<(), BoundaryError> {
         let mut state = self.state.clone();
         flush(&mut state)?;
@@ -327,6 +336,246 @@ impl<'a> ChunkLifecycle<'a> {
             })
             .collect()
     }
+}
+fn renew(state: &mut Owned, generator: u32) -> Result<(), BoundaryError> {
+    let mut terrain = BTreeMap::new();
+    for (&key, record) in &state.active {
+        terrain.insert(
+            key,
+            super::village_overlay::rows(&Node::parse(record, PATH)?, PATH)?,
+        );
+    }
+    let biome = |r: &Node| -> Result<u8, BoundaryError> {
+        let (x, y) = position(r, PATH)?;
+        let key = ChunkKey {
+            x: (x / 40) as u32,
+            y: (y / 40) as u32,
+        };
+        terrain
+            .get(&key)
+            .and_then(|rows| rows.get((y % 40) as usize))
+            .and_then(|row| row.get((x % 40) as usize))
+            .copied()
+            .ok_or_else(|| invalid("resource outside active terrain"))
+    };
+    let mut obstacles = BTreeSet::new();
+    for (_, town) in state.world.required("towns", PATH)?.object(PATH)? {
+        for field in ["buildings", "roads"] {
+            if let Some(items) = town.optional(field, PATH)? {
+                for r in items.array(PATH)? {
+                    obstacles.insert(position(r, PATH)?);
+                }
+            }
+        }
+        if let Some(player) = town.optional("player", PATH)? {
+            let (x, y) = float_position(player)?;
+            obstacles.insert(((x + 0.5).floor() as i32, (y + 0.5).floor() as i32));
+        }
+    }
+    let map = landscape(&mut state.world)?;
+    if let Some(npcs) = map.optional("npcs", PATH)? {
+        for r in npcs.array(PATH)? {
+            obstacles.insert(position(r, PATH)?);
+        }
+    }
+    let mut resources = map.required("map_resources", PATH)?.array(PATH)?.to_vec();
+    let mut stumps = map.required("tree_stumps", PATH)?.array(PATH)?.to_vec();
+    // Reject malformed rule fields even when a later terrain filter would drop
+    // the resource, or an update would overwrite them.
+    for r in resources.iter().chain(&stumps) {
+        if !matches!(
+            resource_kind(r)?.as_str(),
+            "tree" | "water" | "rock" | "berry_bush" | "herb_patch"
+        ) {
+            continue;
+        }
+        for field in ["supply", "supply_max", "regeneration"] {
+            number_or(r, field, 0.0)?;
+        }
+    }
+    for stump in &stumps {
+        stump
+            .required("remaining", PATH)?
+            .nonnegative_number(PATH)?;
+    }
+    // Match prepare_landscapes' remove_invalid_trees before renew.
+    for (items, allowed) in [
+        (
+            &mut resources,
+            if generator < 6 {
+                &b"gfmb"[..]
+            } else {
+                &b"gfb"[..]
+            },
+        ),
+        (
+            &mut stumps,
+            if generator < 6 {
+                &b"gfmb"[..]
+            } else {
+                &b"fb"[..]
+            },
+        ),
+    ] {
+        let mut kept = Vec::new();
+        for r in items.drain(..) {
+            if resource_kind(&r)? != "tree" || allowed.contains(&biome(&r)?) {
+                kept.push(r);
+            }
+        }
+        *items = kept;
+    }
+    let mut occupied = obstacles;
+    for r in &resources {
+        occupied.insert(position(r, PATH)?);
+    }
+    let mut remaining = Vec::new();
+    for mut stump in stumps {
+        let p = position(&stump, PATH)?;
+        if generator >= 6 && !b"fb".contains(&biome(&stump)?) {
+            continue;
+        }
+        if occupied.contains(&p) {
+            remaining.push(stump);
+            continue;
+        }
+        let timer = stump
+            .required("remaining", PATH)?
+            .nonnegative_number(PATH)?;
+        let timer: f64 = format!("{:.9}", timer - 3.0 * 0.9).parse().unwrap();
+        if timer <= 0.0 {
+            let Node::Object(fields) = &mut stump else {
+                unreachable!()
+            };
+            fields.retain(|(k, _)| k != "remaining");
+            resources.push(stump);
+            occupied.insert(p);
+        } else {
+            set(&mut stump, "remaining", scalar(timer));
+            remaining.push(stump);
+        }
+    }
+    // Python dict assignment keeps the first coordinate's insertion position but
+    // replaces its value with the LAST water resource at a duplicate coordinate.
+    let mut water_order = Vec::new();
+    let mut waters = BTreeMap::new();
+    for (i, r) in resources.iter().enumerate() {
+        if resource_kind(r)? == "water" {
+            let p = position(r, PATH)?;
+            if !waters.contains_key(&p) {
+                water_order.push(p);
+            }
+            waters.insert(p, i);
+        }
+    }
+    let mut groups = Vec::new();
+    for start in water_order {
+        if !waters.contains_key(&start) {
+            continue;
+        }
+        let mut queue = VecDeque::from([start]);
+        let mut members = Vec::new();
+        while let Some(p) = queue.pop_front() {
+            if let Some(i) = waters.remove(&p) {
+                members.push(i);
+                let (x, y) = p;
+                for q in [(x + 1, y), (x - 1, y), (x, y + 1), (x, y - 1)] {
+                    if waters.contains_key(&q) {
+                        queue.push_back(q);
+                    }
+                }
+            }
+        }
+        groups.push(members);
+    }
+    for (i, r) in resources.iter().enumerate() {
+        if matches!(
+            resource_kind(r)?.as_str(),
+            "tree" | "rock" | "berry_bush" | "herb_patch"
+        ) {
+            groups.push(vec![i]);
+        }
+    }
+    for members in groups {
+        let first = &resources[members[0]];
+        let kind = resource_kind(first)?;
+        let (maximum, regeneration) = match kind.as_str() {
+            "tree" => {
+                let ancient = first
+                    .optional("species", PATH)?
+                    .map(|n| n.string(PATH))
+                    .transpose()?
+                    .is_some_and(|s| s == "ancient");
+                (
+                    if biome(first)? == b'b' || ancient {
+                        40.0
+                    } else {
+                        8.0
+                    },
+                    0.0,
+                )
+            }
+            "water" => (12.0, 3.2),
+            "rock" => (60.0, 0.15),
+            "berry_bush" => (6.0, 0.3),
+            "herb_patch" => (4.0, 0.2),
+            _ => unreachable!(),
+        };
+        let root = *members
+            .iter()
+            .min_by_key(|&&i| position(&resources[i], PATH).unwrap())
+            .unwrap();
+        let supply = number_or(&resources[root], "supply", maximum)?;
+        let mut available = (supply + regeneration).min(maximum);
+        let old_max = number_or(&resources[root], "supply_max", maximum)?;
+        if kind == "tree" && old_max != maximum {
+            if old_max == 0.0 {
+                return Err(invalid("invalid tree supply maximum"));
+            }
+            available = (supply * maximum / old_max).min(maximum);
+        }
+        for i in members {
+            let r = &mut resources[i];
+            // Python updates all three only when some value differs. Preserve
+            // untouched numeric lexemes and arbitrary private extensions.
+            if number_or(r, "supply", f64::NAN)? != available
+                || number_or(r, "supply_max", f64::NAN)? != maximum
+                || number_or(r, "regeneration", f64::NAN)? != regeneration
+            {
+                set(r, "supply", scalar(available));
+                set(r, "supply_max", scalar(maximum));
+                set(r, "regeneration", scalar(regeneration));
+            }
+        }
+    }
+    set(map, "map_resources", Node::Array(resources.clone()));
+    set(map, "tree_stumps", Node::Array(remaining.clone()));
+    // Sync membership immediately while retaining Python's aggregate append order.
+    for (&key, record) in &mut state.active {
+        let mut node = Node::parse(record, PATH)?;
+        for (field, items) in [("map_resources", &resources), ("tree_stumps", &remaining)] {
+            let mut local = Vec::new();
+            for r in items {
+                let (x, y) = position(r, PATH)?;
+                if x / 40 == key.x as i32 && y / 40 == key.y as i32 {
+                    local.push(r.clone());
+                }
+            }
+            set(&mut node, field, Node::Array(local));
+        }
+        *record = bytes(&node);
+    }
+    state.snapshots.clear();
+    Ok(())
+}
+fn resource_kind(node: &Node) -> Result<String, BoundaryError> {
+    node.required("kind", PATH)?.string(PATH)
+}
+fn number_or(node: &Node, field: &str, default: f64) -> Result<f64, BoundaryError> {
+    node.optional(field, PATH)?
+        .map(|n| n.nonnegative_number(PATH))
+        .transpose()
+        .map(|n| n.unwrap_or(default))
 }
 fn flush(state: &mut Owned) -> Result<(), BoundaryError> {
     let clock = Node::parse(&clock(&state.world)?, PATH)?;

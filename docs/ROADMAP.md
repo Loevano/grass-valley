@@ -8,7 +8,7 @@ and cache rules are in [Backend](BACKEND.md#cached-zoomed-out-map).
 | 1     | Cached zoomed-out town overview    | Implemented              | Show the landscape and city sizes without refreshing animated scene detail.                                      |
 | 2     | Production line balancing          | Wood and grain implemented; fishing remains | Develop clear fishing chains with capped staffing and simple upgrades. |
 | 3     | Scalable villager pathfinding       | Host queue implemented; cache refinement and shared navigation remain | Keep movement responsive as villager counts and towns grow, with bounded routing work. |
-| 4     | Rust migration | R07 saved chunks, raw generators and nonchunked terrain-only hydration complete; authored starter geometry and typed-seed reconstruction complete; ordinary village and legacy/organic swamp phases complete; ordinary and swamp metadata plus immutable post-overlay water integration complete; private supplied-clock chunk catch-up preparation complete within its explicit clock domain; private authoritative lifecycle/cache-plan integration complete; exact larger integer clocks and active regrowth remain | Follow the [staged plan and prompts](RUST_MIGRATION.md), preserving playable checkpoints and saved worlds. |
+| 4     | Rust migration | R07 saved chunks, raw generators and nonchunked terrain-only hydration complete; authored starter geometry and typed-seed reconstruction complete; ordinary village and legacy/organic swamp phases complete; ordinary and swamp metadata plus immutable post-overlay water integration complete; private supplied-clock chunk catch-up preparation complete within its explicit clock domain; private authoritative lifecycle/cache-plan integration complete; active versioned renewal complete; exact larger integer clocks remain | Follow the [staged plan and prompts](RUST_MIGRATION.md), preserving playable checkpoints and saved worlds. |
 
 ## Rust migration
 
@@ -46,8 +46,10 @@ cases), with exact source/quantity preservation and no production. Clocks above
 authoritative private lifecycle owner with desired chunks/obstacles, ordered swamp
 plan installation, active aggregate bootstrap/rebinding, bounded camera/snapshot
 copies and edited flush/evict/reload through in-memory archive/write intents
-(19 actual Python lifecycle traces). Active versioned renew/regrowth and exact
-larger integer clocks remain required; R19 retains real persistence/recovery. The completed
+(19 initial actual Python lifecycle traces). Slice 3c.iii adds transactional active
+renewal and immediate membership sync with 14 additional actual Python traces covering
+versioned stump eligibility/ordering, blocked regrowth, group stocks/caps and sleeping
+transitions. Exact larger integer clocks remain required; R19 retains real persistence/recovery. The completed
 [state/DTO boundary audit](RUST_STATE_DTOS.md) identifies unsupported features;
 gameplay remains unported. Release hardware metadata, Rust gameplay RNG stream
 adoption and R24 rollback acceptance remain gated as documented in the contracts. Later navigation stages cover bounded waiting, cache

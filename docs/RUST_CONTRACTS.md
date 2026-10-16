@@ -301,7 +301,14 @@ active-plus-49 private snapshot copies and edited flush/evict/reload through
 in-memory archive/write intents (19 actual Python traces). Failed operations
 publish no partial state; imported sources remain immutable. R19 owns real
 persistence/recovery and later protocol stages own public wire snapshots. Exact
-larger integer clocks and active versioned renew/regrowth remain 3c. Python stays default.
+larger integer clocks remain 3c. Slice 3c.iii adds explicit transactional active
+renewal, invalid-tree cleanup and immediate chunk membership sync. Fourteen new actual
+Python traces cover versioned stumps, round-nine timers, occupied ordered conversion,
+water groups/duplicate coordinates across seams, current limits and tree cap rescaling,
+passive reads and active/sleeping transitions (33 lifecycle traces total). No clock or
+production advances; metadata and private extensions remain owned and exact. Active
+obstacles preserve Python origin/floor-founder behavior, separately from sleeping
+footprints/ties-to-even founders. Python stays default.
 
 Saved records take precedence over regeneration; seeded base generation and
 idempotent legacy repairs/overlays are separate operations. `ChunkMap.read` can

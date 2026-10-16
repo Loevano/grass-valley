@@ -11,6 +11,9 @@ sys.path.insert(0,str(ROOT/'server'))
 from chunk_world import ChunkMap, generate_chunk
 from villages import ensure_villages
 from spatial import occupied_tiles
+from progression import renew
+from terrain import remove_invalid_trees
+from chunk_world import ChunkTerrain
 
 
 def build():
@@ -41,6 +44,13 @@ def build():
             kind=action['op'];record=None
             if kind=='read':record=deepcopy(m.read(action['key']))
             elif kind=='activate':m.activate()
+            elif kind=='renew':
+                runtime['shared_map']['terrain']=ChunkTerrain(m.records,m.size)
+                remove_invalid_trees(runtime['shared_map'])
+                obstacles=[b for t in runtime['towns'].values() for b in t['buildings']+t.get('roads',[])]
+                import math
+                obstacles += [dict(x=math.floor(t['player']['x']+.5),y=math.floor(t['player']['y']+.5)) for t in runtime['towns'].values()]
+                renew(runtime['shared_map'],obstacles+runtime['shared_map'].get('npcs',[]));m.sync()
             elif kind=='clock':runtime['shared_map']['chunk_clock']=action['clock']
             elif kind=='move':runtime['towns']['synthetic-town']['player'].update(x=action['x'],y=action['y'])
             elif kind=='edit':
@@ -65,7 +75,7 @@ def build():
             # Every step checks aggregates and source ownership; active full
             # records need only be frozen when activation/edit can change them.
             output=state()
-            if kind not in ('activate','edit'):output.pop('records')
+            if kind not in ('activate','edit','renew'):output.pop('records')
             if record is not None:output['read']=record
             output['memory']={k:json.loads(v) for k,v in m.memory.items() if k not in saved or json.loads(v)!=saved[k]}
             outputs.append(output)
@@ -107,6 +117,49 @@ def build():
     # Supplied camera with absent clock must catch up at zero (None != 0).
     w=world();r=generate_chunk('00042','2,5',7);r.pop('clock')
     add('camera-no-clock',w,[dict(op='read',key='2,5')],camera={'2,5':r})
+    for version in range(1,8):
+        for size,offset,seed in [(480,160,'00042'),(1920,None,-(2**130+17))]:
+            w=world(version,size,seed,offset)
+            # Real generated records retain all geometry except explicitly authored
+            # rule cells. Isolated resources exercise stock groups across the seam.
+            active={k:generate_chunk(seed,k,version,size) for k in ['0,0','1,0']}
+            resources=[dict(kind='water',x=39,y=10,supply=9),
+                dict(kind='water',x=39,y=10,supply=1,private='duplicate-shadow'),
+                dict(kind='water',x=38,y=10,supply=.25,private='lexical-root'),
+                dict(kind='tree',x=10,y=10,supply=4,supply_max=8,species='ancient'),
+                dict(kind='tree',x=11,y=10,supply=20,supply_max=40),
+                dict(kind='tree',x=12,y=10,supply=2,supply_max=8),
+                dict(kind='tree',x=18,y=10,supply=4,supply_max=8),
+                dict(kind='rock',x=13,y=10,supply=59.95),
+                dict(kind='berry_bush',x=14,y=10,supply=.125),
+                dict(kind='berry_bush',x=14,y=10,supply=1.25),
+                dict(kind='herb_patch',x=15,y=10,supply=3.95),
+                dict(kind='chest',x=16,y=10,quantity=123456789012345678901234567890),
+                dict(kind='water',x=40,y=10,supply=11)]
+            stumps=[dict(kind='tree',x=x,y=11,remaining=timer,species='oak',
+                extension={'quantity':123456789012345678901234567890})
+                for x,timer in [(10,2.70000000049),(10,1),(11,2.70000000051),
+                    (12,5.4),(18,2.7),(13,2.7),(14,2.7),(15,2.7),(16,2.7),(17,2.7),(40,2.7)]]
+            resources.append(dict(kind='rock',x=13,y=11,supply=0))
+            w['towns']['synthetic-town']['buildings'].append(dict(kind='hall',x=14,y=11,footprint=[2,2]))
+            w['towns']['synthetic-town']['roads'].append(dict(x=16,y=11))
+            w['towns']['synthetic-town']['player'].update(x=16.5,y=11)
+            for k,r in active.items():
+                left=int(k.split(',')[0])*40
+                r['map_resources']=[v for v in resources if left<=v['x']<left+40]
+                r['tree_stumps']=[v for v in stumps if left<=v['x']<left+40]
+                rows=r['terrain']
+                for item in r['map_resources']+r['tree_stumps']:
+                    x,y=item['x']-left,item['y']
+                    ground='g' if item['x']==12 else ('m' if item['x']==15 else ('b' if item['x']==18 else 'f'))
+                    rows[y]=rows[y][:x]+ground+rows[y][x+1:]
+                r.update(industry_version=2,mineral_version=1)
+            add(f'active-renew-{version}-{size}',w,[dict(op='snapshot',keys=[]),
+                dict(op='renew'),dict(op='read',key='0,0'),dict(op='renew'),dict(op='renew'),
+                dict(op='clock',clock=9),dict(op='flush'),dict(op='flush'),
+                dict(op='move',x=size-1,y=size-1),dict(op='activate'),
+                dict(op='clock',clock=30),dict(op='read',key='1,0'),
+                dict(op='move',x=1.5,y=2.5),dict(op='activate'),dict(op='renew')],active=active)
     # Deduplicate repeated private record/aggregate payloads; source worlds and
     # resident inputs stay literal. References are fixture encoding, never game JSON.
     payloads=[];index={}

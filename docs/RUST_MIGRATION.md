@@ -12,7 +12,7 @@ reconstruction) complete; 3b.iii.a ordinary village overlay phase complete;
 complete; 3b.iii.c immutable saved-first overlay/water integration complete;
 3c.i private supplied-clock chunk catch-up preparation complete within its explicit
 clock domain; 3c.ii private authoritative lifecycle/cache-plan integration complete;
-exact larger integer clocks and active regrowth remain.
+3c.iii active versioned renew/regrowth complete; exact larger integer clocks remain.
 Rust contains an experimental workspace, transport smoke CLI and read-only copy
 inspection CLI; gameplay is not ported.
 **Initial plan revision:** `445ddddd675a87eb7adb50442b2dbf3c14ea6c6f`.
@@ -232,7 +232,7 @@ only after work is performed. Keep unfinished stages visible in the roadmap.
 | R04 | Cargo workspace and applicable checks | R03 | Complete: slice 1 `732619a`; slice 2 `c7cf3e2`; slice 3 `feat: add Rust replay transport smoke CLI` (this change); evidence below |
 | R05 | Typed state, IDs, units, and boundary DTOs | R04 | Complete: slice 1 `f271ff4`; slice 2 `b5fa931`; slice 3 `508b396`; [boundary/coverage audit](RUST_STATE_DTOS.md), evidence below |
 | R06 | Legacy import and read-only save inspection | R05 | Complete: slice 1 `3312d5d`; slice 2 `4513bec`; slice 3 `041caee`; [staging scope/coverage](RUST_LEGACY_IMPORT.md), evidence below |
-| R07 | Terrain versions and chunk generation | R06 | In progress: slice 1 complete (`31fcf91`); [scope and evidence](RUST_TERRAIN.md); slice 2 complete (`dc0d400`); slice 3a complete (`4762909`); slice 3b.i complete (`9b08f25`); slice 3b.ii complete (`b925488`); slice 3b.iii.a ordinary village phase complete (`085c64b`); 3b.iii.b.i–ii legacy/organic swamp phases complete; 3b.iii.b.iii ordinary placement/layout/life metadata complete (`37f2a84`); 3b.iii.b.iv swamp world metadata/visits and ordered deferred cache plans complete (`7feec7b`); 3b.iii.c immutable post-overlay terrain and seam water repair complete (`6c4bbe9`); 3c.i private supplied-clock catch-up preparation complete (`725e089`); 3c.ii private authoritative lifecycle integration complete (this change); exact larger integer clocks and active regrowth remain |
+| R07 | Terrain versions and chunk generation | R06 | In progress: slice 1 complete (`31fcf91`); [scope and evidence](RUST_TERRAIN.md); slice 2 complete (`dc0d400`); slice 3a complete (`4762909`); slice 3b.i complete (`9b08f25`); slice 3b.ii complete (`b925488`); slice 3b.iii.a ordinary village phase complete (`085c64b`); 3b.iii.b.i–ii legacy/organic swamp phases complete; 3b.iii.b.iii ordinary placement/layout/life metadata complete (`37f2a84`); 3b.iii.b.iv swamp world metadata/visits and ordered deferred cache plans complete (`7feec7b`); 3b.iii.c immutable post-overlay terrain and seam water repair complete (`6c4bbe9`); 3c.i private supplied-clock catch-up preparation complete (`725e089`); 3c.ii private authoritative lifecycle integration complete (`4fbd2ee`); 3c.iii active versioned renew/regrowth complete (this change); exact larger integer clocks remain |
 | R08 | Spatial rules and founder movement | R07 | Not started |
 | R09 | Search algorithms and library decision | R08 | Not started |
 | R10 | Request scheduler and cache invalidation | R09 | Not started |
@@ -1487,6 +1487,54 @@ active reads never simulate sleeping recovery. Public wire snapshot filtering/ve
 protocol, real persistence, HTTP and playable-host integration remain their later
 stages. Python stays playable/default and R07 remains incomplete. No performance
 comparison was run: this is compatibility work, not a performance investigation.
+
+### R07 slice 3c.iii active renewal evidence and remaining work
+
+Starting revision: `4fbd2eec91e799c057a18875a70cbf728e8fcdc1`.
+`ChunkLifecycle::renew_active` explicitly runs one three-second renewable-resource
+batch over owned active records, matching `prepare_landscapes` invalid-tree cleanup,
+`progression.renew`, and immediate chunk membership sync. It neither advances
+`chunk_clock` nor runs production; Python advances the clock after this phase.
+Active reads, snapshots, clock updates and activation never invoke active renewal.
+
+Version 1–5 legacy stump eligibility and version 6–7 forest/swamp-only eligibility,
+Python decimal round-to-nine timer boundaries, occupied stump retention, ordered
+conversion with metadata retention, and aggregate append order are preserved.
+Connected water groups span active chunk seams; coordinate insertion order, duplicate
+water overwrite semantics and lexical stock-root choice match Python. Trees retain
+swamp/ancient limits and supply-cap rescaling; other resources retain current caps
+and per-batch regeneration. Active obstacles use building/road/NPC origins and
+floor(x+.5) founders, matching active Python renewal rather than sleeping catch-up's
+expanded footprints/ties-to-even founders. No supply index is retained across batches.
+
+Renewal is transactional, synchronously repartitions resource/stump membership,
+invalidates private snapshot copies, and leaves dirty records for existing flush/
+write-intent handling. Imported archives, unrelated private data, town inventory,
+workers and production remain unchanged. R19 still owns durable writes/recovery.
+Fourteen new actual Python traces (33 lifecycle traces total) use real generation
+for versions 1–7, 480/1920 dimensions, typed seeds and offsets, then author isolated
+rule cells for groups, duplicate coordinates, caps, swamp/ancient trees, timer
+boundaries, obstacle/resource conflicts and retained stump metadata. They compare
+complete aggregates/records through repeated batches, passive reads, flushes,
+eviction, sleeping catch-up and reactivation. A fifth Rust test checks transactional
+renewal failure, scalar/private integer retention, snapshot invalidation, no clock/
+production changes and duplicate-intent suppression. Frozen oracle verification
+remains `generate_lifecycle.py --check`; it never updates expected data.
+
+**Remaining 3c:** exact integer clocks above 2^53 still reject explicitly and remain
+the final known R07 compatibility gate. Finite libm platform/release coverage also
+remains gated as documented. No whole R07 completion, playable host, HTTP, public
+wire snapshots or persistence readiness is claimed. Python remains default.
+Performance comparison was not run because this compatibility port did not
+investigate a performance problem or optimization.
+
+Validation passed the independent frozen oracle check (33 actual Python traces;
+all original 19 traces unchanged), affected formatting, 97 host tests plus 16
+compile-fail doctests, and Clippy with warnings denied. The final Markdown/JSON
+reports at `performance-results/r07-slice3ciii-final/` were inspected: candidate
+`4fbd2ee` plus the task worktree, correctness pass, performance `not_run`.
+The affected set selected only `rust:lantern-host`; it was rerun after a final
+rule-field validation refinement. No unknown runtime files selected unrelated checks.
 
 ## R08 — Spatial rules and founder movement
 

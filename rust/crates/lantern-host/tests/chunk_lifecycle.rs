@@ -176,7 +176,7 @@ fn state(owner: &ChunkLifecycle<'_>, records: bool) -> Value {
 #[test]
 fn actual_python_lifecycle_traces_preserve_owned_edits_promotion_clocks_and_ordered_swamp_plans() {
     let oracle = oracle();
-    assert_eq!(oracle.cases.len(), 19);
+    assert_eq!(oracle.cases.len(), 33);
     for case in &oracle.cases {
         let copy = Copy::new(case);
         let before = copy.disk();
@@ -205,6 +205,7 @@ fn actual_python_lifecycle_traces_preserve_owned_edits_promotion_clocks_and_orde
                     ))
                 }
                 "activate" => owner.activate().unwrap(),
+                "renew" => owner.renew_active().unwrap(),
                 "clock" => owner
                     .set_clock(action["clock"].to_string().as_bytes())
                     .unwrap(),
@@ -254,7 +255,7 @@ fn actual_python_lifecycle_traces_preserve_owned_edits_promotion_clocks_and_orde
                 assert_eq!(intent.world(), &copy.owner);
                 memory.insert(text(intent.key()), value(intent.private_record_bytes()));
             }
-            let mut actual = state(&owner, matches!(op, "activate" | "edit"));
+            let mut actual = state(&owner, matches!(op, "activate" | "edit" | "renew"));
             actual["memory"] = Value::Object(memory.clone());
             if let Some(read) = read {
                 actual["read"] = read;
@@ -406,4 +407,66 @@ fn owner_retains_private_scalar_lexemes_and_source_after_clock_and_edit_cycles()
     assert!(String::from_utf8_lossy(owner.private_active_bytes(k).unwrap()).contains("0.000e0"));
     assert_eq!(registry.private_source_bytes().unwrap(), copy.source);
     assert_error(owner.set_clock(b"1e309"));
+}
+
+#[test]
+fn active_renew_is_transactional_and_preserves_private_extensions_and_numeric_lexemes() {
+    let oracle = oracle();
+    let case = oracle
+        .cases
+        .iter()
+        .find(|c| c.label == "active-renew-7-480")
+        .unwrap();
+    let copy = Copy::new(case);
+    let registry = copy.import();
+    let active = residents(&case.active, &copy.owner);
+    let mut owner = ChunkLifecycle::prepare(&registry, &copy.owner, &active, &[]).unwrap();
+    let k = key("0,0");
+    let mut record = value(owner.private_active_bytes(k).unwrap());
+    record["map_resources"].as_array_mut().unwrap().push(serde_json::from_str(
+        r#"{"kind":"tree","x":20,"y":10,"supply":4,"supply_max":0,"private":{"quantity":123456789012345678901234567890}}"#
+    ).unwrap());
+    let mut row = record["terrain"][10].as_str().unwrap().to_string();
+    row.replace_range(20..21, "f");
+    record["terrain"][10] = json!(row);
+    owner
+        .replace_active(k, record.to_string().as_bytes())
+        .unwrap();
+    owner.snapshot(&[]).unwrap();
+    let before = state(&owner, true);
+    let cached = owner.snapshot_cache_len();
+    assert_error(owner.renew_active());
+    equal(&state(&owner, true), &before, "failed renewal");
+    assert_eq!(owner.snapshot_cache_len(), cached);
+    assert!(owner.take_write_intents().is_empty());
+    record["map_resources"]
+        .as_array_mut()
+        .unwrap()
+        .last_mut()
+        .unwrap()["supply_max"] = json!(8);
+    record["private_lexeme"] = json!(0.125);
+    record["private_exact"] = json!("EXACT_INTEGER");
+    let text = record
+        .to_string()
+        .replace("\"private_lexeme\":0.125", "\"private_lexeme\":1.2500e-1")
+        .replace("\"EXACT_INTEGER\"", "123456789012345678901234567890");
+    owner.replace_active(k, text.as_bytes()).unwrap();
+    let wood_before = value(&owner.private_world_bytes())["towns"].clone();
+    owner.renew_active().unwrap();
+    assert_eq!(owner.snapshot_cache_len(), 0);
+    assert!(String::from_utf8_lossy(owner.private_active_bytes(k).unwrap()).contains("1.2500e-1"));
+    assert!(
+        String::from_utf8_lossy(owner.private_active_bytes(k).unwrap())
+            .contains("123456789012345678901234567890")
+    );
+    assert_eq!(value(&owner.private_world_bytes())["towns"], wood_before);
+    assert_eq!(
+        value(&owner.private_world_bytes())["shared_map"]["chunk_clock"],
+        json!(0)
+    );
+    owner.flush().unwrap();
+    assert!(!owner.take_write_intents().is_empty());
+    owner.flush().unwrap();
+    assert!(owner.take_write_intents().is_empty());
+    assert_eq!(registry.private_source_bytes().unwrap(), copy.source);
 }
