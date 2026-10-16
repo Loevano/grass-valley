@@ -24,6 +24,7 @@ pub struct GeneratedChunk {
 pub enum GenerationError {
     UnsupportedVersion,
     UnsupportedSize,
+    UnsupportedSeed,
     OutsideWorld,
 }
 

@@ -9,6 +9,7 @@
 
 mod chunks;
 mod json;
+mod landscapes;
 mod loaded;
 mod ordinary;
 mod validation;
@@ -16,6 +17,7 @@ mod validation;
 pub use chunks::{
     ChunkDirectory, ChunkKey, ChunkMetadata, ChunkMetadataReport, ImportedChunk, RawChunk,
 };
+pub use landscapes::{HydratedLandscape, HydratedLandscapes};
 pub use loaded::{
     ChunkReader, LoadedChunk, LoadedResource, LoadedStump, LoadedTile, MAX_LOADED_CHUNKS,
 };

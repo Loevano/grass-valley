@@ -202,13 +202,36 @@ fn decode(bytes: &[u8], key: ChunkKey) -> Result<LoadedChunk<'_>, BoundaryError>
         }
         rows.push(row);
     }
+    let (resources, stumps) = decode_resources(&node, path)?;
+    Ok(LoadedChunk {
+        key,
+        bytes,
+        rows,
+        resources,
+        stumps,
+        clock: number(&node, "clock", path)?,
+    })
+}
+
+/// Decode source values without defaults, supply clamping or resource migrations.
+pub(super) fn decode_resources(
+    node: &Node,
+    path: &str,
+) -> Result<(Vec<LoadedResource>, Vec<LoadedStump>), BoundaryError> {
+    decode_resource_arrays(
+        node.required("map_resources", path)?,
+        node.required("tree_stumps", path)?,
+        path,
+    )
+}
+
+pub(super) fn decode_resource_arrays(
+    resources_node: &Node,
+    stumps_node: &Node,
+    path: &str,
+) -> Result<(Vec<LoadedResource>, Vec<LoadedStump>), BoundaryError> {
     let mut resources = Vec::new();
-    for (index, item) in node
-        .required("map_resources", path)?
-        .array(path)?
-        .iter()
-        .enumerate()
-    {
+    for (index, item) in resources_node.array(path)?.iter().enumerate() {
         let rp = format!("{path}.map_resources[{index}]");
         resources.push(LoadedResource {
             tile: position(item, &rp)?,
@@ -223,12 +246,7 @@ fn decode(bytes: &[u8], key: ChunkKey) -> Result<LoadedChunk<'_>, BoundaryError>
         });
     }
     let mut stumps = Vec::new();
-    for (index, item) in node
-        .required("tree_stumps", path)?
-        .array(path)?
-        .iter()
-        .enumerate()
-    {
+    for (index, item) in stumps_node.array(path)?.iter().enumerate() {
         let rp = format!("{path}.tree_stumps[{index}]");
         stumps.push(LoadedStump {
             tile: position(item, &rp)?,
@@ -237,12 +255,5 @@ fn decode(bytes: &[u8], key: ChunkKey) -> Result<LoadedChunk<'_>, BoundaryError>
                 .nonnegative_number(&format!("{rp}.remaining"))?,
         });
     }
-    Ok(LoadedChunk {
-        key,
-        bytes,
-        rows,
-        resources,
-        stumps,
-        clock: number(&node, "clock", path)?,
-    })
+    Ok((resources, stumps))
 }

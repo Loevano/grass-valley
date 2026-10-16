@@ -1,7 +1,8 @@
 # R07 terrain compatibility
 
-R07 slices 1–2 provide experimental **read-only saved-chunk loading** and **raw
-versioned chunk generation**, separate from R06 staging and its unchanged
+R07 slices 1–3a provide experimental **read-only saved-chunk loading**, **raw
+versioned chunk generation**, and **nonchunked terrain-only hydration**, separate
+from R06 staging and its unchanged
 `preserved_only` inspection CLI. They do not create a playable authoritative world.
 Python remains the normal host.
 
@@ -130,6 +131,62 @@ ranges, shuffle and choice for six integer/text seeds. Recheck without refreshin
 python3 rust/crates/lantern-host/tests/fixtures/terrain/generate_parity.py --check
 ```
 
+## Nonchunked maps and terrain-only hydration (slice 3a)
+
+`lantern_core::legacy_map::generate_map` reproduces Python `terrain.generate_map`,
+including five sequential random fields, shape/swamp samples, conditional tree
+species draws (even when subsequently rejected), the authored corner clearing,
+starter trees, three independently sampled pond widths and ordered starter rocks.
+`MapSeed::Integer` uses absolute arbitrary-size integer magnitude;
+`MapSeed::Text` uses unchanged UTF-8 text. Numeric text, leading zeroes, empty text,
+Unicode and strings unsuitable as chunk directory names retain their own meanings.
+The generator supports integer dimensions 1–1920; zero/larger sizes and malformed
+integer seeds explicitly fail. This is the legacy map generator, not a switch to
+regional generation when a landscape carries a newer version marker.
+
+`ImportedRegistry::hydrate_nonchunked(world_id)` is an explicit, immutable,
+terrain-only operation. It accepts ordinary legacy and registry envelopes, keeps
+independent maps separate, and constructs one shared map bound to all of its
+towns using world-and-town `Owner` identity. Stale town-local shared fields are
+ignored as in Python `bind_map`; foreign-world owners cannot resolve a binding.
+Each call owns independent decoded data. No cache, clock, snapshot or authoritative
+archive mutation is involved, and the inspection CLI remains unchanged.
+
+Ground follows deterministic `ensure_terrain(new=False)` behavior: missing
+`map_size` defaults to 12, saved rows of matching height win, and absent or
+wrong-height rows regenerate from the supplied seed with void replaced by grass.
+Matching-height saved rows must have supported codes and the declared width;
+malformed rows explicitly fail. **Ground regeneration never replaces or inserts
+resources.** Existing resource order, kind/species, optional quantities/limits and
+stump timers remain unchanged, including missing supply fields. Missing stumps
+produce an empty decoded view while absence remains in source bytes. Required
+resources, missing seeds needed for reconstruction, unsupported seed types,
+nonfinite/negative values, bad positions and chunked worlds are explicitly refused.
+No entropy is invented. Seeds not needed for valid saved ground remain source-only.
+
+All extensions, arbitrary integers, numeric spellings and other metadata remain
+in the borrowed **whole private source registry bytes**, including credentials;
+these bytes must never enter public snapshots. Hydration types have no Debug or
+Serialize implementation. This is not `ensure_resources` or `prepare_landscapes`:
+map expansion/bootstrap, resource/industry/forage/NPC migrations, invalid-tree
+repair, supply initialization, town gameplay and offline production are not applied.
+Those feature-specific preparations remain R08–18 as applicable; tree/regrowth
+and chunk lifecycle rules needed by R07 remain slice 3c.
+
+`fixtures/terrain/maps.json` freezes 35 real Python maps at sizes 1/12/13/40/120
+for seven integer/text seeds, and six real `ensure_terrain` cases covering saved,
+missing and wrong-height terrain at sizes 12/120. Eight Rust integration tests
+compare every row and ordered resource, apply the hydration cases to independent
+and shared layouts, check owner bindings and world selection, all saved version
+markers 1–7, arbitrary-size integer reconstruction, exact extensions/lexemes,
+missing values and failure/source immutability. These finite vectors share the
+platform libm release limitation described above. Larger supported map sizes are
+not exhaustively golden-covered. Recheck without refreshing:
+
+```sh
+python3 rust/crates/lantern-host/tests/fixtures/terrain/generate_maps.py --check
+```
+
 ## Compatibility matrix and remaining work
 
 | Behavior | Coverage |
@@ -137,10 +194,10 @@ python3 rust/crates/lantern-host/tests/fixtures/terrain/generate_parity.py --che
 | Immutable saved chunks, quantities/extensions and decoded LRU | Slice 1 complete; unchanged |
 | Raw generator versions 1–7, legacy seeds/dimensions and unexplored nonstarter selection | Slice 2 complete; exact 226-record and RNG parity |
 | D05 byte seed material → compatible reference RNG draws | Complete; gameplay adoption/state serialization remain later work |
-| Starter/new-world town and village placement/separation | Slice 3 remaining |
-| Post-overlay v7 tiny-water repair and boundaries | Slice 3 remaining; raw boundaries covered here |
-| Active/sleeping chunks, dirty resources, regrowth and clock catch-up | Slice 3 remaining |
-| Ordinary/shared nonchunked terrain hydration and `generate_map` | Slice 3 remaining; required before R07 completion |
+| Starter/new-world town and village placement/separation | Slice 3b remaining |
+| Post-overlay v7 tiny-water repair and boundaries | Slice 3b remaining; raw boundaries covered here |
+| Active/sleeping chunks, dirty resources, regrowth and clock catch-up | Slice 3c remaining |
+| Ordinary/independent/shared nonchunked terrain-only hydration and `generate_map` | Slice 3a complete; 35 real maps and six paired hydration goldens; gameplay preparation remains later stages |
 
 No whole R07 completion, playable-world readiness, performance gain, runtime
 memory bound, durable save conversion or HTTP integration is claimed.
