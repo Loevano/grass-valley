@@ -187,6 +187,12 @@ Saved-only decoding accepts real organic `p/w/c` terrain. Slice 3b.iii.b.iii add
 private `OrdinaryVillageMetadata`, preserving complete world source, scalar lexemes
 and ordered extensions while independently migrating ordinary placement/dialogue/
 layout/life metadata. Its output is not prepared authoritative state or a public DTO;
-it stops before swamp ensure. Swamp world metadata/NPC homes/routines/visit keys
-remain 3b.iii.b.iv; complete post-overlay water integration remains 3b.iii.c; see the
+it stops before swamp ensure. Slice 3b.iii.b.iv adds separate private
+`SwampVillageMetadata` for swamp world metadata/NPC homes/routine repair/visit keys,
+retaining world source/scalar/order and sanitized validation even on no-op worlds.
+It exposes an ordinal-only ordered cache plan; runtime manager inputs reject and
+actual active/view overlays, resource rebinding and index invalidation remain
+deferred to the authoritative lifecycle boundary. Neither private payload has
+Debug/Serialize or becomes a public DTO. Complete post-overlay water integration
+remains 3b.iii.c; see the
 [terrain compatibility boundary](RUST_TERRAIN.md#ordinary-village-overlay-phase-slice-3biiia).

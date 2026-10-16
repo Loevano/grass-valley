@@ -5,7 +5,7 @@ use serde::Deserialize;
 
 const PATH: &str = "$.ordinary_village_metadata";
 #[derive(Deserialize)]
-struct Theme {
+pub(super) struct Theme {
     name: String,
     biome: String,
     dx: i32,
@@ -76,7 +76,7 @@ impl OrdinaryVillageMetadata {
                 .iter()
                 .enumerate()
             {
-                validate_village(village, i, size, &themes)?;
+                validate_village(village, &format!("{lp}.villages[{i}]"), size, &themes)?;
             }
         }
         let mut npc_obstacles = Vec::new();
@@ -231,32 +231,31 @@ impl OrdinaryVillageMetadata {
         &self.world
     }
 }
-fn validate_village(
+pub(super) fn validate_village(
     node: &Node,
-    i: usize,
+    path: &str,
     size: u64,
     themes: &[Theme],
 ) -> Result<(), BoundaryError> {
-    let path = format!("{PATH}.shared_map.villages[{i}]");
     let name = node
-        .required("name", &path)?
+        .required("name", path)?
         .string(&format!("{path}.name"))?;
     let biome = node
-        .required("biome", &path)?
+        .required("biome", path)?
         .string(&format!("{path}.biome"))?;
     if !themes.iter().any(|t| t.name == name && t.biome == biome) {
         return Err(BoundaryError::invalid(
-            &path,
+            path,
             "unsupported village theme or biome",
         ));
     }
-    let (x, y) = position(node, &path)?;
+    let (x, y) = position(node, path)?;
     if x < 0 || y < 0 || x as u64 >= size || y as u64 >= size {
-        return Err(BoundaryError::invalid(&path, "village outside world"));
+        return Err(BoundaryError::invalid(path, "village outside world"));
     }
-    version(node, "layout_version", 2, &path)?;
-    version(node, "life_version", 1, &path)?;
-    version(node, "swamp_version", 2, &path)?;
+    version(node, "layout_version", 2, path)?;
+    version(node, "life_version", 1, path)?;
+    version(node, "swamp_version", 2, path)?;
     Ok(())
 }
 fn npc(name: &str, role: &str, dialogue: &str, theme: &Theme, x: i64, y: i64) -> Node {
@@ -284,27 +283,31 @@ fn append_npc(landscape: &mut Node, npc: Node) {
     let value = &mut fields.iter_mut().find(|(key, _)| key == "npcs").unwrap().1;
     array_mut(value).push(npc);
 }
-fn field_mut<'a>(node: &'a mut Node, key: &str, path: &str) -> Result<&'a mut Node, BoundaryError> {
+pub(super) fn field_mut<'a>(
+    node: &'a mut Node,
+    key: &str,
+    path: &str,
+) -> Result<&'a mut Node, BoundaryError> {
     node.required(key, path)?;
     let Node::Object(fields) = node else {
         unreachable!()
     };
     Ok(&mut fields.iter_mut().find(|(k, _)| k == key).unwrap().1)
 }
-fn array_mut(node: &mut Node) -> &mut Vec<Node> {
+pub(super) fn array_mut(node: &mut Node) -> &mut Vec<Node> {
     let Node::Array(items) = node else {
         unreachable!()
     };
     items
 }
-struct Rect {
+pub(super) struct Rect {
     x: i64,
     y: i64,
     w: i64,
     h: i64,
 }
 impl Rect {
-    fn parse(node: &Node, path: &str) -> Result<Self, BoundaryError> {
+    pub(super) fn parse(node: &Node, path: &str) -> Result<Self, BoundaryError> {
         let (x, y) = position(node, path)?;
         let (w, h) = if let Some(fp) = node.optional("footprint", path)? {
             let fp = fp.array(&format!("{path}.footprint"))?;
@@ -328,7 +331,7 @@ impl Rect {
             h: h as i64,
         })
     }
-    fn contains(&self, x: i64, y: i64) -> bool {
+    pub(super) fn contains(&self, x: i64, y: i64) -> bool {
         self.w > 0
             && self.h > 0
             && self.x <= x

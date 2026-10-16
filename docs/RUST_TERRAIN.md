@@ -414,11 +414,61 @@ The fixed text catalog and frozen oracle independently verify against Python:
 python3 rust/crates/lantern-host/tests/fixtures/terrain/generate_village_metadata.py --check
 ```
 
-Next **3b.iii.b.iv** must port swamp ensure's bounds/obstacle metadata, home/ambient
-stops, routine repair and moved visit keys, with cache effects kept explicit.
+Slice **3b.iii.b.iv** below completes the separate swamp ensure metadata phase
+and exposes its ordered deferred cache effects.
 Then 3b.iii.c integrates all phases and post-overlay neighbor water repair; 3c
-retains lifecycle/resources/regrowth. This is not full metadata or R07 completion.
+retains lifecycle/resources/regrowth. These independent phases do not complete R07.
 Performance comparison was not run: no performance issue was investigated.
+
+## Swamp world metadata (slice 3b.iii.b.iv)
+
+`SwampVillageMetadata::materialize(world_bytes)` independently copies the exact
+`swamp_village.ensure` phase after ordinary metadata. Reedhaven upgrades only when
+layout/life markers permit and the actual organic footprint/water (plus the old
+square for swamp-v1 worlds) contains no occupied player building/road or foreign
+NPC tile and fits the world bounds. Own residents, empty footprints and unchanged
+organic villages follow Python condition order. Existing named locals retain saved
+roles/dialogue/extensions while their homes/ambient stops move and routines reset;
+missing locals and sleepers receive the Python names/roles/dialogue in Python order.
+Other saved residents repair routines using ties-to-even rounding and the first
+nearest road in insertion order. Duplicate names retain Python's last-value,
+first-key-order behavior. Visit transfers preserve progress/opaque extensions,
+destination overwrite, pop/reinsert order and repeated-village chaining.
+
+Source bytes, original number lexemes, private quantities/credentials, unknown
+extensions and complete object/list order survive. Relevant malformed metadata and
+future versions reject at sanitized ordinal paths even on no-op worlds. Routine
+coordinates must be finite with rounded values in the existing i32 tile domain;
+unrepresentable coordinates reject explicitly. Sizes 120/480/1920 are supported.
+Independent maps and runtime `_chunks` objects reject. This is a private copy,
+without Debug/Serialize, not an automatic import migration or prepared gameplay.
+
+`cache_plan().village_ordinals` records each upgraded village in iteration order.
+At an authoritative lifecycle boundary, for **each** ordinal, apply the single
+upgraded village to every active and camera-cached record, then rebind landscape
+resources/stumps from active records and invalidate membership/resource indexes.
+The returned plan performs none of these mutations. Applying all upgraded villages
+in a single call is not an equivalent replacement for Python's ordered effects.
+Actual mutable lifecycle integration remains 3c; no cache effect is silently dropped.
+
+264 frozen actual Python worlds check exact output/order and repeat behavior,
+including ordinary-phase composition, typed seeds, terrain versions 1–7, obstacle
+footprints/shape holes/legacy corners, bounds, duplicate residents, routines and
+visit collisions/chaining. A Python manager-call trace independently verifies the
+ordered plan and resource/index invalidation contract. Geometry metadata does not
+sample terrain/RNG; a retained real v7 generated record proves opaque preservation.
+Four Rust integration tests cover these oracles, scalar/source preservation and
+sanitized rejection. The frozen oracle independently recomputes without writing:
+
+```sh
+python3 rust/crates/lantern-host/tests/fixtures/terrain/generate_swamp_metadata.py --check
+```
+
+Next 3b.iii.c integrates saved-first metadata/overlays, retaining and honoring the
+ordered plan in immutable materialization, and post-overlay v7 neighbor water repair.
+Slice 3c consumes actual authoritative cache effects and retains
+lifecycle/resources/regrowth. R07 remains incomplete and Python remains the playable default. No performance comparison was
+run: this bounded compatibility port does not investigate a performance problem.
 
 ## Compatibility matrix and remaining work
 
@@ -428,7 +478,7 @@ Performance comparison was not run: no performance issue was investigated.
 | Raw generator versions 1–7, legacy seeds/dimensions and unexplored nonstarter selection | Slice 2 complete; exact 226-record and RNG parity |
 | D05 byte seed material → compatible reference RNG draws | Complete; gameplay adoption/state serialization remain later work |
 | Authored starter ground/resources and new-world town sites/separation | Slices 3b.i–ii complete; 49 authored starter and 86 raw selection Python goldens |
-| Village/swamp placement and versioned overlays | 3b.iii.a ordinary and 3b.iii.b.i–ii legacy/organic swamp phases complete (150 + 43 + 100 Python pairs); 3b.iii.b.iii ordinary obstacle-safe placement/layout/life metadata complete (105 Python worlds); 3b.iii.b.iv swamp world metadata/visits remaining |
+| Village/swamp placement and versioned overlays | 3b.iii.a ordinary and 3b.iii.b.i–ii legacy/organic swamp phases complete (150 + 43 + 100 Python pairs); 3b.iii.b.iii ordinary obstacle-safe placement/layout/life metadata complete (105 Python worlds); 3b.iii.b.iv swamp world metadata/home/routine/visit migration complete (264 Python worlds plus explicit ordered cache plans) |
 | Post-overlay v7 tiny-water repair and boundaries | 3b.iii.c complete integration/neighbor repair remaining; raw and ordinary-phase boundaries covered |
 | Active/sleeping chunks, dirty resources, regrowth and clock catch-up | Slice 3c remaining |
 | Ordinary/independent/shared nonchunked terrain-only hydration and `generate_map` | Slice 3a complete; 35 real maps and six paired hydration goldens; gameplay preparation remains later stages |

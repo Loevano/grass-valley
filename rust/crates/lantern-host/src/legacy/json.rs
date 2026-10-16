@@ -9,6 +9,7 @@ use serde::{
 use serde_json::value::RawValue;
 use std::{collections::BTreeSet, fmt};
 
+#[derive(Clone)]
 pub(super) enum Node {
     Object(Vec<(String, Node)>),
     Array(Vec<Node>),

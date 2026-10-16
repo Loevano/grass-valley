@@ -8,6 +8,8 @@ use std::collections::BTreeSet;
 mod metadata;
 pub use metadata::OrdinaryVillageMetadata;
 
+mod swamp_metadata;
+pub use swamp_metadata::{SwampCachePlan, SwampVillageMetadata};
 mod swamp;
 pub use swamp::SwampOverlay;
 

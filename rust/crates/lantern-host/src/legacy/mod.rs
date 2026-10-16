@@ -23,7 +23,8 @@ pub use loaded::{
     ChunkReader, LoadedChunk, LoadedResource, LoadedStump, LoadedTile, MAX_LOADED_CHUNKS,
 };
 pub use village_overlay::{
-    LegacySwampOverlay, OrdinaryVillageMetadata, OrdinaryVillageOverlay, SwampOverlay,
+    LegacySwampOverlay, OrdinaryVillageMetadata, OrdinaryVillageOverlay, SwampCachePlan,
+    SwampOverlay, SwampVillageMetadata,
 };
 
 use crate::{BoundaryError, ErrorKind, state::PrivateCredentials};

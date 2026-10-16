@@ -161,11 +161,12 @@ impl SwampOverlay {
     }
 }
 
-struct Layout {
-    roads: Vec<(Point, u8)>, // Python dict insertion order, including overwrites.
+pub(super) struct Layout {
+    pub(super) roads: Vec<(Point, u8)>, // Python dict insertion order, including overwrites.
     decor: Vec<Addition>,
-    footprint: BTreeSet<Point>,
-    water: BTreeSet<Point>,
+    pub(super) footprint: BTreeSet<Point>,
+    pub(super) water: BTreeSet<Point>,
+    pub(super) homes: Vec<Point>,
 }
 fn road(roads: &mut Vec<(Point, u8)>, point: Point, code: u8) {
     if let Some(entry) = roads.iter_mut().find(|entry| entry.0 == point) {
@@ -206,7 +207,7 @@ fn connect(
     }
     unreachable!("static Reedhaven lane is unreachable")
 }
-fn layout() -> &'static Layout {
+pub(super) fn layout() -> &'static Layout {
     static LAYOUT: std::sync::OnceLock<Layout> = std::sync::OnceLock::new();
     LAYOUT.get_or_init(|| {
         let mut blocked: BTreeSet<Point> = BASE
@@ -320,7 +321,7 @@ fn layout() -> &'static Layout {
         let mut reserved = blocked.clone();
         reserved.extend(roads.iter().map(|r| r.0));
         reserved.extend(&canal);
-        reserved.extend(homes);
+        reserved.extend(&homes);
         let offsets = [
             (-1, 0),
             (1, 0),
@@ -386,6 +387,7 @@ fn layout() -> &'static Layout {
             .collect();
         Layout {
             roads,
+            homes,
             decor,
             footprint,
             water,
