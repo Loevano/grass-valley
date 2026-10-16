@@ -1,0 +1,71 @@
+{
+  "worlds": {
+    "z-world": {
+      "name": "Synthetic independent world",
+      "world": {
+        "towns": {
+          "z-town": {
+            "name": "Synthetic first town",
+            "wood": 9007199254740993,
+            "food": 12.345678901234567,
+            "goods": {"planks": 0.125, "wheat": 1.2345600e-3},
+            "terrain_version": 1,
+            "map_size": 4,
+            "terrain_seed": 18446744073709551615,
+            "terrain": ["gggg", "gggg", "gggg", "gggg"],
+            "map_resources": [{"kind": "tree", "x": 3, "y": 3}],
+            "tree_stumps": [],
+            "buildings": [
+              {"kind": "hall", "x": 0, "y": 0},
+              {"kind": "farm", "x": 1, "y": 0, "stored_goods": {"wheat": 0.3333333333333333}},
+              {"kind": "acre", "x": 2, "y": 0, "farm_index": 1, "crop": "wheat", "farm_state": {"pass": "watering", "progress": 0.125}},
+              {"kind": "orchard", "x": 1, "y": 1},
+              {"kind": "orchard_tree", "x": 2, "y": 1, "orchard_index": 3, "growth": 0.5}
+            ],
+            "villagers": [
+              {"name": "Synthetic Ada", "job": "farming", "building_index": 1,
+               "pending_output": {"wheat": 0.125},
+               "pending_workplace": {"kind": "farm", "x": 1, "y": 0},
+               "work_animation": {"phase": "returning", "x": 2.125, "y": 1.75, "elapsed": 0.1, "path": [{"x": 1, "y": 0}]}},
+              {"job": "idle", "building_index": null}
+            ],
+            "player": {"x": 0.125, "y": 0.25, "inventory": {"wood": 0.0625}},
+            "trade_offers": [{"id": "opaque-offer-kept", "target": "a-town", "wood": 0.125}],
+            "future_payload": {"future_field": ["kept", {"huge_integer": 123456789012345678901234567890}]}
+          },
+          "a-town": {
+            "name": "Synthetic second town",
+            "wood": 0.0625,
+            "buildings": [{"kind": "hall", "x": 3, "y": 3}],
+            "villagers": [{"job": "idle"}],
+            "terrain_seed": "text-seed-kept",
+            "terrain_version": 7,
+            "terrain": ["ssss", "ssss", "ssss", "ssss"],
+            "map_resources": [{"kind": "water", "x": 0, "y": 0}]
+          }
+        },
+        "quest": {"elapsed": 0.125, "participants": ["z-town"]}
+      },
+      "tokens": {"SYNTHETIC_TOKEN_Z": "z-town", "SYNTHETIC_TOKEN_A": "a-town"},
+      "players": {
+        "synthetic-é": {"name": "  Synthetic É  ", "town_id": "z-town", "salt": "SYNTHETIC_SALT_MAIN", "pin_hash": "SYNTHETIC_HASH_MAIN", "unknown_private": {"SYNTHETIC_PRIVATE_KEY": "SYNTHETIC_PRIVATE_VALUE"}}
+      },
+      "unknown_entry": {"clock": 0.12345678901234567}
+    },
+    "a-world": {
+      "name": "Synthetic shared world",
+      "world": {
+        "towns": {
+          "z-town": {"name": "Same opaque town ID, different world", "buildings": [{"kind": "hall", "x": 0, "y": 0}], "villagers": []}
+        },
+        "shared_map": {"terrain_version": 6, "terrain_seed": 42, "map_size": 2, "terrain": ["mm", "ff"], "map_resources": [{"kind": "tree", "x": 1, "y": 1}]},
+        "town_sites": [{"x": 0, "y": 0}],
+        "sandbox": true
+      },
+      "tokens": {},
+      "players": {}
+    }
+  },
+  "active_world": "a-world",
+  "unrecognized_registry_data": {"must_survive": true}
+}

@@ -1,0 +1,8 @@
+{
+  "z-world": {
+    "synthetic-é": {"name": "Ignored duplicate", "town_id": "z-town", "salt": "SYNTHETIC_SALT_OVERRIDE", "pin_hash": "SYNTHETIC_HASH_OVERRIDE"},
+    "second-player": {"name": "Synthetic second", "town_id": "a-town", "salt": "SYNTHETIC_SALT_SECOND", "pin_hash": "SYNTHETIC_HASH_SECOND"},
+    "departed-player": {"town_id": "missing-town", "preserve_but_ignore": "SYNTHETIC_IGNORED_SECRET"}
+  },
+  "absent-world": {"malformed_but_ignored": true}
+}

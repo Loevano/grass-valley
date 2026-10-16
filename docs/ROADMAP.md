@@ -8,7 +8,7 @@ and cache rules are in [Backend](BACKEND.md#cached-zoomed-out-map).
 | 1     | Cached zoomed-out town overview    | Implemented              | Show the landscape and city sizes without refreshing animated scene detail.                                      |
 | 2     | Production line balancing          | Wood and grain implemented; fishing remains | Develop clear fishing chains with capped staffing and simple upgrades. |
 | 3     | Scalable villager pathfinding       | Host queue implemented; cache refinement and shared navigation remain | Keep movement responsive as villager counts and towns grow, with bounded routing work. |
-| 4     | Rust migration | R01–R05 foundations complete; R06 legacy save import/inspection next | Follow the [staged plan and prompts](RUST_MIGRATION.md), preserving playable checkpoints and saved worlds. |
+| 4     | Rust migration | R06 ordinary-save staging complete; external chunk references next | Follow the [staged plan and prompts](RUST_MIGRATION.md), preserving playable checkpoints and saved worlds. |
 
 ## Rust migration
 
@@ -19,7 +19,9 @@ The proposed sequence keeps Python as the normal
 host while the Rust core, feature coverage, save compatibility, and browser contract
 are verified on disposable worlds. Default-host cutover follows the release gates.
 
-Remaining work starts with R06 legacy save import and inspection. The completed
+R06 slice 1 stages ordinary legacy saves privately without mutation. Remaining
+R06 work is external chunk references, broader validation and the inspection CLI;
+see the [staging scope](RUST_LEGACY_IMPORT.md). The completed
 [state/DTO boundary audit](RUST_STATE_DTOS.md) identifies unsupported features;
 gameplay remains unported. Release hardware metadata, Rust gameplay RNG
 implementation and R24 rollback acceptance remain gated as

@@ -1,0 +1,18 @@
+{
+  "world": {
+    "towns": {
+      "old-town": {
+        "name": "Synthetic old town",
+        "wood": 12.125,
+        "food": 0.0625,
+        "buildings": [{"kind": "hall", "x": 0, "y": 0}, {"kind": "woodcutter", "x": 2, "y": 1}],
+        "villagers": [{"job": "woodcutting", "building_index": 1, "pending_output": {"wood": 0.125}}],
+        "map_size": 3,
+        "terrain": ["ggg", "ggg", "ggg"],
+        "map_resources": [{"kind": "tree", "x": 2, "y": 2}]
+      }
+    }
+  },
+  "tokens": {"SYNTHETIC_LEGACY_TOKEN": "old-town"},
+  "unknown_legacy_data": {"opaque_request_id": "request-kept"}
+}

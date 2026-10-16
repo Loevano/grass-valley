@@ -2,7 +2,8 @@
 
 A migration that can be completed one task at a time, with a prompt for each task.
 
-**Status:** R01–R05 complete; R06 legacy save import and inspection is next.
+**Status:** R01–R05 complete; R06 slice 1 (registry/accounts/ordinary-world
+staging) complete; slice 2 (chunked world references) is next.
 Rust contains an experimental workspace and transport smoke CLI; gameplay is not ported.
 **Initial plan revision:** `445ddddd675a87eb7adb50442b2dbf3c14ea6c6f`.
 **R01 audit revision:** `935db7b95885c101c62dfd6bf9e16f39b6a7a8fe`.
@@ -219,8 +220,8 @@ only after work is performed. Keep unfinished stages visible in the roadmap.
 | R02 | Fix current relocation continuity | R01 | Complete; `fix: preserve worker continuity when relocating workplaces` (this change); evidence below |
 | R03 | Replay fixtures and comparison oracle | R02 | Complete: slice 1 `9637eb5`; slice 2 `049fe10`; slice 3 `test: add backend-neutral replay comparison reports` (this change); [protocol and evidence](REPLAY_BACKENDS.md) |
 | R04 | Cargo workspace and applicable checks | R03 | Complete: slice 1 `732619a`; slice 2 `c7cf3e2`; slice 3 `feat: add Rust replay transport smoke CLI` (this change); evidence below |
-| R05 | Typed state, IDs, units, and boundary DTOs | R04 | Complete: slice 1 `f271ff4`; slice 2 `b5fa931`; slice 3 `feat: add explicit Rust state DTO boundaries` (this change); [boundary/coverage audit](RUST_STATE_DTOS.md), evidence below |
-| R06 | Legacy import and read-only save inspection | R05 | Not started |
+| R05 | Typed state, IDs, units, and boundary DTOs | R04 | Complete: slice 1 `f271ff4`; slice 2 `b5fa931`; slice 3 `508b396`; [boundary/coverage audit](RUST_STATE_DTOS.md), evidence below |
+| R06 | Legacy import and read-only save inspection | R05 | In progress: slice 1 `feat: stage ordinary legacy saves without mutation` (this change); [staging scope/coverage](RUST_LEGACY_IMPORT.md), evidence below. Slices 2–3 remain |
 | R07 | Terrain versions and chunk generation | R06 | Not started |
 | R08 | Spatial rules and founder movement | R07 | Not started |
 | R09 | Search algorithms and library decision | R08 | Not started |
@@ -774,6 +775,50 @@ and unported data, or fail explicitly. Never write to a source save or print pri
 credentials. Validate successful and failed imports, update coverage/progress,
 and commit the completed slice.
 ```
+
+### R06 slice 1 evidence and remaining work
+
+`lantern_host::legacy` imports explicit synthetic bytes or reads explicit copies
+without invoking Python load/ensure/migration functions. It supports the old
+`{world,tokens}` envelope, registries/active selection/inactive worlds, exact
+account/token ownership and optional provisioning precedence. Independent and
+shared ordinary landscapes remain preserved source records. Missing saves produce
+an empty registry; malformed data, ambiguous envelopes, known future versions,
+dangling account/building references and chunked inputs fail explicitly.
+
+The result is immutable private staging, not a playable core world or the R05 model
+save format. Original source/provisioning bytes retain all inventories, fractional
+positions/cargo, large integers, IDs and unported fields without rounding, clock
+advancement, defaults or migration. An ordered private JSON reader rejects
+duplicate keys/nonfinite values without exposing raw parser messages. A separate
+allowlisted report returns only counts, public world IDs, layouts and safe ordinal
+preservation paths; archives and imported worlds have no Debug/Serialize.
+
+One allocator per world assigns building/villager/founder IDs in recorded order
+across towns. A sidecar overlay binds assignments and farm/orchard links to typed
+owned IDs while the raw records remain unchanged. Other gameplay references and
+NPC/animal identity remain preserved, not hydrated or claimed validated. All
+references must be mapped before raw entities may be reordered for playable use.
+The [staging audit](RUST_LEGACY_IMPORT.md) lists exact accepted schemas/version
+bounds, privacy behavior and remaining coverage.
+
+Nine integration tests use three committed synthetic fixtures and disposable
+read-only copies. They cover repeated import identity, source-order/world scope,
+stock/cargo preservation, credential/provisioning precedence, missing active IDs,
+old/ordinary shared maps, safe reports/errors, malformed references/versions,
+duplicate/nonfinite/deep JSON and unchanged source bytes/mtime/directory contents
+after success and failure. A compile-fail doc test guards archive serialization.
+Applicable checks passed (3/3 commands: host formatting, 31 tests and Clippy with
+warnings denied). Markdown/JSON reports at `performance-results/r06-slice1/` were
+inspected. Performance comparison was not run for read-only import correctness,
+with no performance investigation or optimization.
+
+**Remaining:** slice 2 must handle external chunk references/metadata and preserve
+edited chunk copies without loading/generating/catching up terrain. Slice 3 must
+complete broader migration/reference validation, capability diagnostics and the
+inspection CLI. No source/destination writes, production-save inspection or new
+generation are enabled. Core feature hydration, terrain/RNG parity, durable
+destination conversion and runtime authentication remain later stages.
 
 ## R07 — Terrain and chunks
 

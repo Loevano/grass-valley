@@ -1,4 +1,4 @@
-//! Experimental offline model boundaries. Not Python save import or HTTP support.
+//! Experimental offline model boundaries and legacy staging import. No HTTP support.
 //!
 //! Authoritative state is deliberately not serializable:
 //! ```compile_fail
@@ -15,6 +15,7 @@
 //! ```
 
 pub mod dto;
+pub mod legacy;
 pub mod references;
 pub mod state;
 

@@ -859,6 +859,10 @@ and `rust/crates/lantern-host` (an offline replay transport executable and expli
 model DTO boundary library). The [boundary/coverage audit](docs/RUST_STATE_DTOS.md)
 documents the experimental model formats, privacy and stale-index guards; these
 are not a Python save importer or the browser's HTTP protocol.
+R06 slice 1 adds a separate [read-only legacy staging library](docs/RUST_LEGACY_IMPORT.md)
+for explicit synthetic ordinary-save copies, including private accounts and
+lossless unported payloads. External chunks, a CLI and playable conversion remain
+unfinished; no normal save is inspected or rewritten by the Rust launcher.
 The core has no external dependencies or I/O; it compiles and its test harness
 runs without a listener. The replay adapter supports only a transport smoke
 fixture; no gameplay rules or HTTP host are implemented. Start the playable game

@@ -232,11 +232,11 @@ functions on production data. Preserve source bytes and report each conversion.
 
 | Input / discriminator | Required interpretation and conversion | Existing evidence / future acceptance | Rust status / stage |
 | --- | --- | --- | --- |
-| No save file | Empty registry, no selected world; create explicitly | `tests/test_http.py`; fresh-root fixture | unported / R06/R20 |
-| Legacy `{world,tokens}` | Wrap as world ID `legacy`, name `My first world`; ownership tokens preserved | `tests/test_http.py:test_legacy_save_migration_preserves_progress_and_ownership` | unported / R06 |
-| Registry `{worlds,active_world}` | All entries, names, worlds, tokens, optional players; missing selected ID means no active world; inactive worlds retained | `tests/test_http.py`; multiple-world round trip | unported / R06/R19 |
-| Independent town landscapes, no `shared_map` | Keep independent terrain/resources/NPCs; no automatic shared-map conversion | `tests/test_shared_world.py:test_old_world_is_not_converted`, `tests/test_terrain.py` | unported / R06–07 |
-| Shared nonchunked landscape | Single map persisted, town map fields rebound; retain 120-tile and saved legacy dimensions | `tests/test_shared_world.py`, `tests/test_chunk_world.py` | unported / R06–07 |
+| No save file | Empty registry, no selected world; create explicitly | `tests/test_http.py`; fresh-root fixture | implemented read-only staging / R06 slice 1; runtime R20 unported |
+| Legacy `{world,tokens}` | Wrap as world ID `legacy`, name `My first world`; ownership tokens preserved | `tests/test_http.py:test_legacy_save_migration_preserves_progress_and_ownership`; Rust `legacy_import.rs` | implemented private staging / R06 slice 1; playable hydration unported |
+| Registry `{worlds,active_world}` | All entries, names, worlds, tokens, optional players; missing selected ID means no active world; inactive worlds retained | `tests/test_http.py`; Rust `legacy_import.rs` repeated-byte import and metadata/ownership tests | implemented private staging / R06 slice 1; durable conversion R19 unported |
+| Independent town landscapes, no `shared_map` | Keep independent terrain/resources/NPCs; no automatic shared-map conversion | `tests/test_shared_world.py:test_old_world_is_not_converted`, `tests/test_terrain.py`; Rust `legacy_import.rs` | source preserved / R06 slice 1; terrain/feature hydration R07+ unported |
+| Shared nonchunked landscape | Single map persisted, town map fields rebound; retain 120-tile and saved legacy dimensions | `tests/test_shared_world.py`, `tests/test_chunk_world.py`; Rust `legacy_import.rs` | source preserved without rebinding / R06 slice 1; core hydration R07+ unported |
 | Chunked landscape (`chunked`, `chunk_size`) | Registry omits terrain/resources/stumps; require associated chunk directory, seed, dimensions, starter offset, clock; default missing starter offset 880, not current 160. Retain legacy 1920 and current 480 dimensions, 40-tile chunks | `tests/test_chunk_world.py`; import active and evicted edited chunks | unported / R06–07 |
 | Terrain version absent or 1 | Original starter/map generator and legacy chunks; Python seed/sample semantics. Never substitute latest | `tests/test_regional_terrain.py` v1 digest, `tests/test_terrain.py` | unported / R07 |
 | Terrain version 2 | First regional layout, connected rivers/lake, original per-chunk RNG | `tests/test_regional_terrain.py` v2 digest and connectivity | unported / R07 |
@@ -245,8 +245,8 @@ functions on production data. Preserve source bytes and report each conversion.
 | Terrain version 5 | v4 plus open farmland | Reconstruction test covers v5; add distinguishing golden fixtures | unported / R07 |
 | Terrain version 6 | v5 plus green habitats, forest-only regrowth and meadow clearings | `tests/test_terrain.py`, reconstruction; preserve old grassland regrowth for older versions | unported / R07 |
 | Terrain version 7 | v6 plus removal of water components smaller than three tiles, including seams **after** starter/village edits; current new explorable worlds | `tests/test_chunk_world.py`, `tests/test_regional_terrain.py` | unported / R07 |
-| Unsupported/future versions or malformed references | Reject with location/reason before writes; never default an explicit unknown version to 1 or 7 | Add negative synthetic import fixtures R06/R07 | unported / R06–07 |
-| Optional `<save-stem>.players.json` | Private world→normalized account map; merge only known worlds/towns; existing account wins; archive with backup | `tests/test_http.py` provisioning and legacy claim cases | unported / R06/R20 |
+| Unsupported/future versions or malformed references | Reject with location/reason before writes; never default an explicit unknown version to 1 or 7 | Rust `legacy_import.rs` rejects known version bounds and registry/account/assignment/farm/orchard references | partial validation / R06 slice 1; chunk/all gameplay reference coverage remains R06–07+ |
+| Optional `<save-stem>.players.json` | Private world→normalized account map; merge only known worlds/towns; existing account wins; archive with backup | `tests/test_http.py` provisioning and legacy claim cases; Rust `legacy_import.rs` | implemented explicit-copy staging / R06 slice 1; CLI discovery/authentication/durable backup unported |
 | Rust schema (future) | Explicit schema and RNG versions, supported-reader range and conversion log; legacy inputs converted to a new root, never overwritten | R06/R19 crash/reload and version refusal fixtures | unported / R06/R19 |
 
 All versions 1–7 remain required even for **unvisited** chunks: importing only
@@ -255,6 +255,14 @@ Saved records take precedence over regeneration; seeded base generation and
 idempotent legacy repairs/overlays are separate operations. `ChunkMap.read` can
 catch up resources and apply village/terrain repair, so it is not a raw inspection
 API. Preserve changes to mined resources, trees/stumps, and village ground.
+
+R06 slice 1 evidence is `rust/crates/lantern-host/tests/legacy_import.rs` and its
+three synthetic fixtures. [Staging scope and remaining validation](RUST_LEGACY_IMPORT.md)
+distinguish preserved private source data from validated metadata and playable
+core state. Original numeric lexemes and all unknown gameplay data remain in an
+immutable archive; no inventories, phases, NPCs or animals are hydrated into the
+minimal R05 model or silently discarded. The report always says `preserved_only`.
+All existing gameplay subsystem rows below still require their runtime ports.
 
 ## Saved subsystem coverage and feature/test mapping
 
