@@ -5,7 +5,9 @@ A migration that can be completed one task at a time, with a prompt for each tas
 **Status:** R01–R06 complete; R07 slices 1–2 (saved-chunk reading/loading and raw
 supported legacy generators) and slice 3a (maps/nonchunked terrain-only hydration)
 complete; slices 3b.i–ii (authored starter geometry and typed-seed saved-first
-reconstruction) complete; slices 3b.iii (overlays) and 3c (activation/regrowth) remain.
+reconstruction) complete; 3b.iii.a ordinary village overlay phase complete;
+3b.iii.b placement/swamp, 3b.iii.c integrated water repair and 3c
+(activation/regrowth) remain.
 Rust contains an experimental workspace, transport smoke CLI and read-only copy
 inspection CLI; gameplay is not ported.
 **Initial plan revision:** `445ddddd675a87eb7adb50442b2dbf3c14ea6c6f`.
@@ -225,7 +227,7 @@ only after work is performed. Keep unfinished stages visible in the roadmap.
 | R04 | Cargo workspace and applicable checks | R03 | Complete: slice 1 `732619a`; slice 2 `c7cf3e2`; slice 3 `feat: add Rust replay transport smoke CLI` (this change); evidence below |
 | R05 | Typed state, IDs, units, and boundary DTOs | R04 | Complete: slice 1 `f271ff4`; slice 2 `b5fa931`; slice 3 `508b396`; [boundary/coverage audit](RUST_STATE_DTOS.md), evidence below |
 | R06 | Legacy import and read-only save inspection | R05 | Complete: slice 1 `3312d5d`; slice 2 `4513bec`; slice 3 `041caee`; [staging scope/coverage](RUST_LEGACY_IMPORT.md), evidence below |
-| R07 | Terrain versions and chunk generation | R06 | In progress: slice 1 complete (`31fcf91`); [scope and evidence](RUST_TERRAIN.md); slice 2 complete (`dc0d400`); slice 3a complete (`4762909`); slice 3b.i complete (`9b08f25`); slice 3b.ii complete (`feat: reconstruct missing starter chunks with typed seeds`, this change); slices 3b.iii and 3c remain |
+| R07 | Terrain versions and chunk generation | R06 | In progress: slice 1 complete (`31fcf91`); [scope and evidence](RUST_TERRAIN.md); slice 2 complete (`dc0d400`); slice 3a complete (`4762909`); slice 3b.i complete (`9b08f25`); slice 3b.ii complete (`b925488`); slice 3b.iii.a ordinary village phase complete (this change); 3b.iii.b–c and 3c remain |
 | R08 | Spatial rules and founder movement | R07 | Not started |
 | R09 | Search algorithms and library decision | R08 | Not started |
 | R10 | Request scheduler and cache invalidation | R09 | Not started |
@@ -911,7 +913,7 @@ hydration; (3b) authored starter reconstruction, new-world town-site selection a
 separation, village/swamp layouts, post-overlay v7 tiny-water repair including
 neighbor seams (bounded subparts: 3b.i pure authored 120×120 starter and town
 sites; 3b.ii typed-seed saved-first reconstruction integration; 3b.iii village/
-swamp placement/overlays and post-overlay water repair); (3c) authoritative
+swamp placement/overlays and post-overlay water repair, subdivided below); (3c) authoritative
 active/sleeping and dirty resource state,
 bounded decoded/snapshot caches, eviction/reload, supplied simulation-time catch-up
 and versioned regrowth without offline production. R07 remains in progress until
@@ -1101,6 +1103,58 @@ initial new test Clippy warning was corrected before this final run.
 post-overlay v7 tiny-water repair including neighbor seams; 3c owns authoritative
 lifecycle, resources and regrowth. R07 remains incomplete. Performance checks were
 not run because this is a compatibility integration, not a performance problem.
+
+### R07 slice 3b.iii.a evidence and remaining work
+
+Completed the **ordinary village phase only**, matching Python
+`villages._apply_villages` through explicit private
+`OrdinaryVillageOverlay::materialize`. It accepts an already selected/versioned
+village array and a real raw/saved record. Version 0 establishes the biome circle
+and approaches; version 1 adds expanded layouts; version 2 adds life geometry;
+version 3 preserves subsequent saved edits. Life structures/plantings retain
+Python order, theme landmarks, palm species and barn animal metadata. Surviving
+resources/stumps/clock/extensions retain values, list order and scalar numeric
+lexemes; the exact original source bytes remain separate. This is not village
+placement, `apply_villages`, `ChunkMap.read` or an authoritative gameplay load.
+It is not connected to `ImportedWorld::raw_chunk`, the saved-only reader, or the
+inspection CLI. No source, archive, cache or gameplay snapshot is mutated.
+Relevant unknown versions, unsupported themes/biomes, invalid record shape and
+out-of-chunk positions fail with sanitized ordinal schema paths.
+
+150 frozen actual Python `_apply_villages` pairs begin with real generation,
+including genuinely earlier overlay states then synthetic player edits. They
+cover absent/0–3 record markers, absent/1/2 layouts, absent/0/1 life markers,
+all three themes, complete neighboring chunks, circular clipping, overlapping
+village order (including mixed-layout pending terrain-buffer behavior), four
+already organic saved chunks with `p/w/c`, current/legacy bounds, ordered quantities/extensions and repeated
+materialization. Additional Rust tests verify exact huge-integer/float lexemes,
+completed-marker edits and malformed inputs. The frozen verifier
+`generate_village_overlays.py --check` recomputes actual Python without refreshing.
+
+Validation: four targeted Rust integration tests and all 150 Python fixture
+comparisons pass. Affected selection contains only `rust:lantern-host`; final
+formatting, host tests and Clippy validation is recorded in
+`performance-results/r07-slice3biiia-verified` (Markdown/JSON). Performance checks are not
+needed: this is a compatibility port, not a performance problem.
+
+**Next bounded tasks, in order:**
+
+1. **3b.iii.b:** village placement and obstacle-safe layout/life/swamp migration,
+   including swamp versions 1/2 and organic lane/canal/decor geometry. Preserve
+   imported metadata and player-built obstacles; test actual Python placement and
+   every versioned overlay. Ordinary phase above is ready to precede swamp edits.
+   Extend saved-only decoding to valid organic `p/w/c` terrain with paired tests;
+   that older reader currently rejects these codes.
+2. **3b.iii.c:** integrate a complete saved-first, immutable post-overlay terrain
+   materialization boundary and v7 tiny-water repair. Sample neighbors **after**
+   starter/village/swamp edits, preserve record precedence and validate real seams,
+   missing chunks and legacy dimensions/offsets. Never call the partial ordinary
+   phase complete `ChunkMap.read` behavior.
+3. **3c:** authoritative active/sleeping/dirty resource state, bounded caches,
+   eviction/reload, supplied simulation-time catch-up and versioned regrowth.
+
+R07 and 3b.iii remain incomplete. No next stage, HTTP, live save or cutover work
+is authorized by this bounded implementation.
 
 ## R08 — Spatial rules and founder movement
 

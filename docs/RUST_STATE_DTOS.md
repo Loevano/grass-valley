@@ -174,3 +174,10 @@ of hydrating model v1. Its explicit inspection CLI reports capabilities, audited
 version markers and unsupported field locations without advancing simulation.
 Public/API DTOs and private save DTOs must expand deliberately with each later
 feature port and its tests. Durable save versioning/migrations remain R19.
+
+R07 slice 3b.iii.a additionally exposes an independent private ordinary village
+phase. Its materialized payload and original bytes have no Debug/Serialize;
+retained resource/extension numbers keep exact scalar lexemes. It is neither a
+public DTO nor authoritative hydrated gameplay state. Village placement/swamp
+upgrades and post-overlay water integration remain 3b.iii.b–c; see the
+[terrain compatibility boundary](RUST_TERRAIN.md#ordinary-village-overlay-phase-slice-3biiia).

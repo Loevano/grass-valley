@@ -13,6 +13,7 @@ mod landscapes;
 mod loaded;
 mod ordinary;
 mod validation;
+mod village_overlay;
 
 pub use chunks::{
     ChunkDirectory, ChunkKey, ChunkMetadata, ChunkMetadataReport, ImportedChunk, RawChunk,
@@ -21,6 +22,7 @@ pub use landscapes::{HydratedLandscape, HydratedLandscapes};
 pub use loaded::{
     ChunkReader, LoadedChunk, LoadedResource, LoadedStump, LoadedTile, MAX_LOADED_CHUNKS,
 };
+pub use village_overlay::OrdinaryVillageOverlay;
 
 use crate::{BoundaryError, ErrorKind, state::PrivateCredentials};
 use json::Node;

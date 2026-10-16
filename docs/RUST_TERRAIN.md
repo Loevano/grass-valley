@@ -261,6 +261,56 @@ water repair remain 3b.iii; authoritative activation/resources/regrowth remain
 platform-math vectors retain the libm cutover gate above. Performance checks were
 not run because this integrates compatibility rather than fixes performance.
 
+## Ordinary village overlay phase (slice 3b.iii.a)
+
+`OrdinaryVillageOverlay::materialize(source, villages, key, world_size)` is an
+explicit independent private phase matching **`villages._apply_villages` only**.
+It takes already selected/versioned village JSON and a real raw/saved chunk;
+it does not select or migrate village metadata. The ordinary phase runs before
+swamp edits in Python. This helper does not perform those swamp edits, integrate
+with `ImportedWorld::raw_chunk`/`ChunkReader`, or claim `ChunkMap.read` semantics.
+
+Missing/zero record marker paints the radius-24 biome circle and clears the
+village square and approaches; marker 1 adds expanded layouts where applicable;
+marker 2 adds life structures/plantings; marker 3 preserves player changes.
+The exact conditional Python traversal/resource ordering, landmark names, palm
+species and barn animal metadata are retained. Surviving resource quantities,
+extensions, clock and stump values remain unchanged; scalar numeric lexemes
+(including arbitrary-size integers) never pass through floating-point storage.
+Materialized JSON container whitespace may change, but exact original source
+bytes remain separately available. Payloads have no Debug/Serialize and must
+never enter public snapshots. No inputs, imported archive or authoritative state
+are mutated. No supply initialization, resource regrowth or NPC routines run.
+
+Relevant unsupported marker values, themes/biomes, dimensions, record shapes,
+resource quantities/species, clocks and owning-chunk positions fail with static
+schema/ordinal paths. Valid saved organic road/canal/courtyard codes `p/w/c` survive this phase.
+The saved-only reader still rejects those codes: complete saved-reader terrain
+code support and corresponding real-swamp cases remain integration work in
+3b.iii.b–c. Known swamp markers remain untouched for a later phase;
+accepting one does not mean its geometry has been applied. Unknown extensions
+remain private; they are not interpreted as new gameplay capabilities.
+
+150 actual Python `_apply_villages` paired records start from real raw terrain
+or earlier Python overlays with synthetic saved edits. Full cells and ordered
+resource/metadata equality covers all three themes, markers 0–3, layout/life
+combinations, overlap order, an entire 3×3 seam neighborhood, world corners and
+legacy dimensions, mixed-layout terrain-buffer ordering, and four already
+organic saved records. Four Rust tests also check idempotence, completed saved edits,
+exact source scalar lexemes/extensions and sanitized rejection. Recheck without
+refreshing:
+
+```sh
+python3 rust/crates/lantern-host/tests/fixtures/terrain/generate_village_overlays.py --check
+```
+
+**Remaining:** 3b.iii.b must supply actual obstacle-safe village placement and
+layout/life/swamp migrations plus versioned swamp geometry. Then 3b.iii.c must
+integrate complete immutable saved-first materialization and tiny-water repair
+sampling post-overlay neighbors. Slice 3c still owns authoritative lifecycle and
+regrowth. The ordinary helper alone is not old-world exploration readiness.
+Performance checks were not run for this compatibility port.
+
 ## Compatibility matrix and remaining work
 
 | Behavior | Coverage |
@@ -269,8 +319,8 @@ not run because this integrates compatibility rather than fixes performance.
 | Raw generator versions 1–7, legacy seeds/dimensions and unexplored nonstarter selection | Slice 2 complete; exact 226-record and RNG parity |
 | D05 byte seed material → compatible reference RNG draws | Complete; gameplay adoption/state serialization remain later work |
 | Authored starter ground/resources and new-world town sites/separation | Slices 3b.i–ii complete; 49 authored starter and 86 raw selection Python goldens |
-| Village/swamp placement and versioned overlays | Slice 3b.iii remaining |
-| Post-overlay v7 tiny-water repair and boundaries | Slice 3b.iii remaining; raw boundaries covered here |
+| Village/swamp placement and versioned overlays | 3b.iii.a ordinary phase complete; 150 Python paired cases; 3b.iii.b placement/migrations/swamp remaining |
+| Post-overlay v7 tiny-water repair and boundaries | 3b.iii.c complete integration/neighbor repair remaining; raw and ordinary-phase boundaries covered |
 | Active/sleeping chunks, dirty resources, regrowth and clock catch-up | Slice 3c remaining |
 | Ordinary/independent/shared nonchunked terrain-only hydration and `generate_map` | Slice 3a complete; 35 real maps and six paired hydration goldens; gameplay preparation remains later stages |
 

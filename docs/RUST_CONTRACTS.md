@@ -264,7 +264,12 @@ Slice 3b.i adds pure authored 120×120 ground/resources and ordered town sites
 for versions 1–7, verified against 49 real Python new-world goldens; typed-seed
 saved-first reconstruction integration in 3b.ii adds 86 real Python raw-read
 goldens with legacy/current dimensions and offsets. Village/swamp and post-overlay
-water seams remain 3b.iii. No NPC gameplay or complete R07 readiness is claimed.
+water seams remain 3b.iii.b–c. The isolated 3b.iii.a ordinary village phase
+now matches 150 actual Python pairs, preserving record markers, ordered life
+geometry, saved edits and private scalar lexemes/extensions. It does not change
+raw reads or the inspection CLI; placement/swamp migrations and complete
+post-overlay neighbor sampling remain required. No NPC gameplay or complete R07
+readiness is claimed.
 Saved records take precedence over regeneration; seeded base generation and
 idempotent legacy repairs/overlays are separate operations. `ChunkMap.read` can
 catch up resources and apply village/terrain repair, so it is not a raw inspection
