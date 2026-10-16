@@ -9,5 +9,7 @@ extern crate alloc;
 
 pub mod ids;
 pub mod model;
+pub mod python_random;
 pub mod seed_material;
+pub mod terrain;
 pub mod units;

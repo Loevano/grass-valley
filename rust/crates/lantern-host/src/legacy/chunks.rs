@@ -429,3 +429,47 @@ pub(super) fn attach(
     }
     Ok(())
 }
+
+/// Explicit raw pre-overlay source selection. Generated data is not a playable
+/// ChunkMap view: village overlays, tiny-water repair and catch-up are slice 3.
+/// Saved bytes always win, including in the unported starter region.
+pub enum RawChunk<'a> {
+    Saved(&'a ImportedChunk),
+    Generated(lantern_core::terrain::GeneratedChunk),
+}
+
+impl super::ImportedWorld {
+    pub fn raw_chunk(&self, key: ChunkKey) -> Result<RawChunk<'_>, BoundaryError> {
+        let path = "$.raw_chunks.key";
+        let metadata = self
+            .chunk_metadata()
+            .ok_or_else(|| BoundaryError::invalid(path, "world is not chunked"))?;
+        key.validate(metadata, path)?;
+        if let Ok(index) = self
+            .chunks()
+            .binary_search_by_key(&key, |chunk| chunk.key())
+        {
+            return Ok(RawChunk::Saved(&self.chunks()[index]));
+        }
+        let (left, top) = (key.x * CHUNK_SIZE, key.y * CHUNK_SIZE);
+        if left >= metadata.starter_offset
+            && left - metadata.starter_offset < 120
+            && top >= metadata.starter_offset
+            && top - metadata.starter_offset < 120
+        {
+            return Err(BoundaryError::invalid(
+                path,
+                "starter reconstruction unported",
+            ));
+        }
+        let generated = lantern_core::terrain::generate_chunk(
+            metadata.private_seed_namespace(),
+            key.x,
+            key.y,
+            metadata.generator_version,
+            metadata.map_size,
+        )
+        .map_err(|_| BoundaryError::invalid(path, "unsupported raw chunk generation"))?;
+        Ok(RawChunk::Generated(generated))
+    }
+}

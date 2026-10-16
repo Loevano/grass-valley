@@ -2,8 +2,8 @@
 
 A migration that can be completed one task at a time, with a prompt for each task.
 
-**Status:** R01–R06 complete; R07 slice 1 (saved-chunk reading/loading) complete;
-slice 2 (supported legacy generators) is next.
+**Status:** R01–R06 complete; R07 slices 1–2 (saved-chunk reading/loading and raw
+supported legacy generators) complete; slice 3 (placement/activation/regrowth) is next.
 Rust contains an experimental workspace, transport smoke CLI and read-only copy
 inspection CLI; gameplay is not ported.
 **Initial plan revision:** `445ddddd675a87eb7adb50442b2dbf3c14ea6c6f`.
@@ -222,8 +222,8 @@ only after work is performed. Keep unfinished stages visible in the roadmap.
 | R03 | Replay fixtures and comparison oracle | R02 | Complete: slice 1 `9637eb5`; slice 2 `049fe10`; slice 3 `test: add backend-neutral replay comparison reports` (this change); [protocol and evidence](REPLAY_BACKENDS.md) |
 | R04 | Cargo workspace and applicable checks | R03 | Complete: slice 1 `732619a`; slice 2 `c7cf3e2`; slice 3 `feat: add Rust replay transport smoke CLI` (this change); evidence below |
 | R05 | Typed state, IDs, units, and boundary DTOs | R04 | Complete: slice 1 `f271ff4`; slice 2 `b5fa931`; slice 3 `508b396`; [boundary/coverage audit](RUST_STATE_DTOS.md), evidence below |
-| R06 | Legacy import and read-only save inspection | R05 | Complete: slice 1 `3312d5d`; slice 2 `4513bec`; slice 3 `feat: inspect legacy save copies with capability reports` (this change); [staging scope/coverage](RUST_LEGACY_IMPORT.md), evidence below |
-| R07 | Terrain versions and chunk generation | R06 | In progress: slice 1 complete (`feat: load immutable saved terrain chunk views`, this change); [scope and evidence](RUST_TERRAIN.md); slices 2–3 remain |
+| R06 | Legacy import and read-only save inspection | R05 | Complete: slice 1 `3312d5d`; slice 2 `4513bec`; slice 3 `041caee`; [staging scope/coverage](RUST_LEGACY_IMPORT.md), evidence below |
+| R07 | Terrain versions and chunk generation | R06 | In progress: slice 1 complete (`31fcf91`); [scope and evidence](RUST_TERRAIN.md); slice 2 complete (`feat: reproduce legacy Python chunk generators`, this change); slice 3 remains |
 | R08 | Spatial rules and founder movement | R07 | Not started |
 | R09 | Search algorithms and library decision | R08 | Not started |
 | R10 | Request scheduler and cache invalidation | R09 | Not started |
@@ -961,6 +961,42 @@ chunks and all old seeds/versions. Slice 3 must implement new-world/starter/vill
 placement, tiny-water repair after overlays, activation/sleeping/dirty resources,
 and regrowth/catch-up. Ordinary/nonchunked hydration is still unported. The reader
 is experimental, read-only and not a playable authoritative world; R07 is not complete.
+
+### R07 slice 2 evidence and remaining work
+
+Pure `no_std` core raw generators now match Python versions 1–7, exact formatted
+seed namespaces, variable-length BLAKE2b coordinate noise, Python SHA-512/MT19937
+seeding/draw order and regional/river/habitat/resource rules. CPython float floor
+division is reproduced explicitly; straightforward `floor(x / scale)` changed a
+real biome boundary. Raw v6/v7 generation intentionally matches. An opt-in
+`ImportedWorld::raw_chunk` selects original saved bytes first and generates only
+missing nonstarter raw chunks. It refuses missing authored starter terrain and
+never applies overlays, supplies, catch-up, writes or snapshot mutation.
+
+Five new generator/RNG tests compare all cells and ordered resources across 226
+real Python raw records (168 new distinguishing/seed/boundary cases plus original
+58), six integer/text RNG vectors through a complete twist, rejection/bit APIs,
+choice/shuffle, and the frozen D05 byte-material reference draws. A sixth new
+adapter test checks saved version selection, repeated deterministic generation,
+world bounds, immutable archives and saved precedence inside the unported starter.
+The real Python verifiers independently recheck both fixture files. Dependencies
+and platform math limits are recorded in [terrain compatibility](RUST_TERRAIN.md).
+
+Validation: both real Python fixture verifiers pass. `tools/check.py --list`
+selects only `rust:lantern-core` and its dependent `rust:lantern-host`, with no
+unknown runtime files. The affected run passes 6/6 commands: formatting, 20 core
+and 53 host tests plus eight compile-fail doctests, and Clippy. Report:
+`performance-results/20261016-065334/report.md`. An initial run caught an
+explicit-auto-deref lint in the new generator; it was corrected before the passing
+run. Performance checks were not run because this is a compatibility port, not a
+performance investigation or optimization.
+
+**Remaining:** slice 3 owns starter/new-world town/village placement and separation,
+post-overlay tiny-water repair, activation/sleeping/dirty resources and resource
+regrowth/catch-up. Slice 3 also owns ordinary/shared nonchunked terrain hydration and `generate_map`,
+which remain unimplemented. Gameplay
+RNG stream adoption and serialized state remain later subsystem work. Python stays
+the playable default; the inspection CLI remains `preserved_only`.
 
 ## R08 — Spatial rules and founder movement
 

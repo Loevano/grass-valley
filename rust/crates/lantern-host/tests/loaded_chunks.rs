@@ -369,3 +369,53 @@ fn unsupported_decoding_fails_without_corrupting_existing_views_or_archive() {
     let archive = import_bytes(Some(br#"{"world":{"towns":{}},"tokens":{}}"#), None).unwrap();
     assert!(ChunkReader::new(&archive.worlds()[0]).is_err());
 }
+
+#[test]
+fn unexplored_raw_chunks_use_saved_version_seed_and_boundaries_without_starter_fallback() {
+    for golden in goldens().into_iter().take(7) {
+        let copy = Copy::new(&golden);
+        // Copy helper omits starter_offset, preserving the legacy default 880.
+        let archive = copy.import();
+        let world = &archive.worlds()[0];
+        let key = golden.key();
+        let RawChunk::Generated(generated) = world.raw_chunk(key).unwrap() else {
+            panic!("unexpected saved record")
+        };
+        assert_eq!(json!(generated.terrain), golden.record["terrain"]);
+        let resources: Vec<_> = generated
+            .resources
+            .iter()
+            .map(|r| json!({"kind":r.kind,"x":r.x,"y":r.y}))
+            .collect();
+        assert_eq!(json!(resources), golden.record["map_resources"]);
+        assert!(world.raw_chunk(ChunkKey { x: 12, y: 0 }).is_err());
+        assert!(world.chunks().is_empty());
+        // Independent source selection has no traversal or cache state.
+        let RawChunk::Generated(again) = world.raw_chunk(key).unwrap() else {
+            panic!("unexpected saved record")
+        };
+        assert!(generated == again);
+    }
+    let mut golden = goldens().remove(0);
+    golden.size = 1920;
+    let copy = Copy::new(&golden);
+    let key = ChunkKey { x: 22, y: 22 };
+    let archive = copy.import();
+    let error = archive.worlds()[0].raw_chunk(key).err().unwrap();
+    assert_eq!(
+        error.kind,
+        lantern_host::ErrorKind::Invalid("starter reconstruction unported")
+    );
+    // Saved edits take precedence even inside the starter region.
+    let mut record = golden.record.clone();
+    record["map_resources"] = json!([]);
+    copy.write(key, &record);
+    let archive = copy.import();
+    let RawChunk::Saved(saved) = archive.worlds()[0].raw_chunk(key).unwrap() else {
+        panic!("saved chunk regenerated")
+    };
+    assert_eq!(
+        serde_json::from_slice::<Value>(saved.private_bytes()).unwrap(),
+        record
+    );
+}

@@ -13,7 +13,9 @@ mod loaded;
 mod ordinary;
 mod validation;
 
-pub use chunks::{ChunkDirectory, ChunkKey, ChunkMetadata, ChunkMetadataReport, ImportedChunk};
+pub use chunks::{
+    ChunkDirectory, ChunkKey, ChunkMetadata, ChunkMetadataReport, ImportedChunk, RawChunk,
+};
 pub use loaded::{
     ChunkReader, LoadedChunk, LoadedResource, LoadedStump, LoadedTile, MAX_LOADED_CHUNKS,
 };

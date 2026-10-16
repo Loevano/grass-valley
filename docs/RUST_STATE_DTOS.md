@@ -144,7 +144,8 @@ these Python reference first three `getrandbits(64)` draws (decimal strings):
 
 R05 tests check byte vectors, source-type separation, subsystem/world separation,
 length framing and Unicode distinctions. The reference draws were generated
-with Python, not a Rust RNG; Rust draw/state compatibility is still R07 work.
+with Python, not a Rust RNG. R07 slice 2 now checks those exact draws with its
+compatible RNG; gameplay stream adoption and serialized RNG state remain later subsystem work.
 
 ## Remaining feature coverage
 
