@@ -9,3 +9,8 @@ publish.workspace = true
 lantern-core = { path = "../lantern-core" }
 serde = { version = "1.0.229", features = ["derive"] }
 serde_json = { version = "1.0.151", features = ["float_roundtrip", "raw_value"] }
+
+[dev-dependencies]
+# R09 offline comparison only; not part of the authoritative host.
+pathfinding = "=4.16.0"
+num-traits = "0.2.19"

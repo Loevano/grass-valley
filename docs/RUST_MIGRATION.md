@@ -229,7 +229,7 @@ only after work is performed. Keep unfinished stages visible in the roadmap.
 | R06 | Legacy import and read-only save inspection | R05 | Complete: slice 1 `3312d5d`; slice 2 `4513bec`; slice 3 `041caee`; [staging scope/coverage](RUST_LEGACY_IMPORT.md), evidence below |
 | R07 | Terrain versions and chunk generation | R06 | Complete as private terrain/chunk foundation; [scope, slice evidence and completion audit](RUST_TERRAIN.md); exact clocks finish 3c.iv; finite platform-math vectors retain the R23 release gate |
 | R08 | Spatial rules and founder movement | R07 | Complete as experimental geometry/movement foundation; slices 1–3 and boundary audit below; Python remains default |
-| R09 | Search algorithms and library decision | R08 | Not started |
+| R09 | Search algorithms and library decision | R08 | In progress: slice 1 executable dev-only library/custom comparison and dependency decision complete; [evaluation/evidence](RUST_SEARCH_EVALUATION.md); slices 2/3 remain |
 | R10 | Request scheduler and cache invalidation | R09 | Not started |
 | R11 | Persistent worker movement and playback | R10 | Not started |
 | R12 | Construction and building operations | R11 | Not started |
@@ -1811,6 +1811,61 @@ than assuming it. Compare correctness with an independent reference and measure
 release-build search/setup costs on identical fixtures. Record the starting commit,
 decision, limitations, coverage, and validation before committing the slice.
 ```
+
+### R09 slice 1 — executable comparison and dependency decision
+
+Starting revision: `8cc78b4e5420063e9c3349c4d7245bb687dd6aec`.
+Candidate is the working tree in the commit carrying this slice; Python remains
+the playable default. [Full decision, source review, limitations and reproduction](RUST_SEARCH_EVALUATION.md)
+and [release JSON](../rust/crates/lantern-host/examples/search_support/evidence.json)
+record twelve identical fixture families, cold graph rebuild/warm graph reuse,
+41 paired rotating-order rounds after eight warmups, setup/search/result conversion,
+allocation calls/bytes/peak requested heap, and expansion/work counts.
+
+**Decision:** promote the custom bounded incremental solver in slice 2. Keep
+`pathfinding 4.16.0` and its direct `num-traits` cost adapter dev-only. Library A*
+has lower observed medians here, but its completion-only API and larger-g tie
+preference do not
+meet the bounded stable-discovery contract. The real `dijkstra_reach` iterator
+retains a frontier (verified by an executable pause/continue test); `next()` can
+consume unmetered stale pops, its heap omits a discovery serial, and its lack of
+A* heuristic floods the multi-goal/chunk fixture. This is a scheduling/compatibility
+choice, not a production Rust speed claim.
+
+**Coverage:** the evaluation-only actor-independent graph/interface/custom job
+uses existing R08 access/edge/cost primitives. Ten search tests cover independent
+array/scan Dijkstra reachability and costs, legal returned paths, exact/perimeter/
+multiple goals, road modes, terrain/bounds/chunk absence, fences/corners,
+actor-specific footprint goals and acre-anchor/overlap access, edits, stable tie
+order, quantum/cancellation/outcome separation, and actual library resumability.
+The oracle independently implements access/cost arithmetic and search, while goal
+conversion and the low-level R08 fence intersection primitive are shared and
+supplemented by explicit goal-set tests. No authoritative runtime is changed.
+
+**Validation:** affected selection is both Rust crates because the dev dependency
+changes the workspace lockfile. `python3 tools/check.py --list` selected those two
+crates; the final affected run passed all six fmt/test/clippy commands (34 core and
+138 host tests/doc tests, including ten new search tests), recorded in
+`performance-results/r09-correctness-final/report.{md,json}`. Final diff whitespace
+checks pass. Required `--performance-only --baseline 8cc78b4...` completed five
+paired baseline/candidate runs and returned **inconclusive** (exit 2): 126 pass,
+25 inconclusive comparisons, no regressions; all 790 browser/server scenario
+assertions and all 22 absolute frame budgets passed (maximum scored frame p95
+2.8 ms / 8 ms). Markdown/JSON, scenario files and absolute budgets were inspected
+in `performance-results/r09-legacy-performance/`. Final affected Rust checks
+overlapped part of that legacy run, adding a contention limitation. It measures
+Python/browser only and establishes no Rust gain. The final Rust release comparison
+ran after both completed; its raw samples still have substantial host jitter,
+so timing remains exploratory/inconclusive for stable latency/gain estimates.
+Deterministic allocations/expansions and the structural tie/resumability evidence
+support the decision. No thresholds or baselines were changed.
+
+**Remaining:** slice 2 promotes/tests the chosen backend in no_std core; slice 3
+pairs full Python route/access/cost compatibility, including the distinct raw-anchor
+adjacent form, permitted-water profiles and absent ordinary terrain omitted by
+this explicit-footprint evaluation. R10 request scheduling/cache
+invalidation and R11 persistent worker travel/playback remain unimplemented.
+No W1–W6 queue, movement, contention, memory-bound or end-to-end gain is claimed.
 
 ## R10 — Scheduling and cache invalidation
 
