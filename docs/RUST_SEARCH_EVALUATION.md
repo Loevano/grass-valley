@@ -339,3 +339,20 @@ Reproduce frozen contracts independently of Cargo:
 python3 rust/crates/lantern-host/tests/fixtures/search/generate.py --check
 cargo test --manifest-path rust/Cargo.toml -p lantern-host --test search_python --locked --offline
 ```
+
+
+## R10 slice 2 current search boundary
+
+The current core retains compact executed-prefix certificates: arrival-tested and
+expanded tiles, representing every attempted edge including failures. A current
+query must preserve global heuristic/access/goal policy and all observed arrival
+and edge openness/cost results before retained work or an optimal positive/negative
+cache answer is reused. Expanded neighbors are derived during validation rather
+than stored as eight separate edge records. Unseen edits enter future expansions
+through a replaced immutable Query. First/last completed road changes conservatively
+restart because they affect global heuristic policy. See the
+[R10 slice 2 audit](RUST_MIGRATION.md#r10-slice-2--bounded-cache-and-local-navigation-validity)
+for limits, actor-authority bridge, tests and release measurements. This adds real
+CPU/memory overhead to cold search; cache reuse and retained progress must be
+measured including preparation/maintenance. W1–W6/cadence acceptance remains
+inconclusive until R10 slice 3; worker movement remains R11.

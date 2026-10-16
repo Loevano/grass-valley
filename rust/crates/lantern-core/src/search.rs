@@ -25,7 +25,7 @@ pub enum Target {
     Perimeter(Footprint),
     Multiple(BTreeSet<Tile>),
 }
-#[derive(Clone)]
+#[derive(Clone, PartialEq, Eq)]
 pub struct Access {
     pub land: LandAccess,
     pub exemptions: BTreeSet<Tile>,
@@ -133,6 +133,39 @@ impl Query {
         .into_iter()
         .fold(0usize, usize::saturating_add)
     }
+    // Global algorithm inputs: changing any can alter every frontier estimate.
+    fn compatible(&self, other: &Self) -> bool {
+        self.start == other.start
+            && self.goals == other.goals
+            && self.anchor == other.anchor
+            && self.goal_bounds == other.goal_bounds
+            && self.diagonal == other.diagonal
+            && self.mode == other.mode
+            && self.access == other.access
+            && self.terrain.bounds == other.terrain.bounds
+            && self.index.size() == other.index.size()
+            && self.index.roads().is_empty() == other.index.roads().is_empty()
+    }
+    fn edge(&self, a: Tile, b: Tile) -> Option<f64> {
+        self.index
+            .edge_open(a, b, self.diagonal, |t| self.open(t))
+            .then(|| spatial::edge_cost(a, b, self.index.roads(), self.mode))
+    }
+    /// Safety of an already accepted remaining route, deliberately independent
+    /// of road costs and global heuristic policy. The host owns progress/origin.
+    pub fn route_safe(&self, origin: Tile, remaining: &[Tile]) -> bool {
+        if !self.open(origin) {
+            return false;
+        }
+        let mut at = origin;
+        for &next in remaining {
+            if self.edge(at, next).is_none() {
+                return false;
+            }
+            at = next;
+        }
+        self.reached(at)
+    }
     fn occupied(&self, t: Tile) -> bool {
         self.index.occupied_for(
             t,
@@ -238,6 +271,69 @@ impl Outcome {
         }
     }
 }
+/// An executed search prefix certificate. Each expanded tile represents all
+/// attempted edges, including blocked ones: removing a blocker may expose a
+/// cheaper path even off the returned route. Revalidation derives the same
+/// at-most-eight neighbors; each operation adds at most two stored tile records.
+#[derive(Clone)]
+pub struct Dependencies {
+    query: Rc<Query>,
+    expanded: BTreeSet<Tile>,
+    reached: BTreeSet<Tile>,
+}
+impl Dependencies {
+    pub(crate) fn refreshed(&self, query: Rc<Query>) -> Self {
+        Self {
+            query,
+            expanded: self.expanded.clone(),
+            reached: self.reached.clone(),
+        }
+    }
+    pub(crate) fn replace_query(&mut self, query: Rc<Query>) {
+        self.query = query;
+    }
+    pub fn validation_records(&self, query: &Query) -> usize {
+        if core::ptr::eq(self.query.as_ref(), query) {
+            0
+        } else {
+            self.records()
+        }
+    }
+    pub fn records(&self) -> usize {
+        self.expanded.len() + self.reached.len()
+    }
+    pub fn query(&self) -> &Rc<Query> {
+        &self.query
+    }
+    /// Full bounded semantic comparison, outside Search::advance's meter.
+    /// Equal observations and global policy imply identical executed prefixes;
+    /// future expansions then use the new immutable query, including unseen edits.
+    pub fn valid_for(&self, next: &Query) -> bool {
+        core::ptr::eq(self.query.as_ref(), next)
+            || (self.query.compatible(next)
+                && self
+                    .reached
+                    .iter()
+                    .all(|&p| self.query.reached(p) == next.reached(p))
+                && self.expanded.iter().all(|&at| {
+                    CARDINAL
+                        .iter()
+                        .chain(if self.query.diagonal {
+                            DIAGONAL.iter()
+                        } else {
+                            [].iter()
+                        })
+                        .all(|&(dx, dy)| {
+                            let (Some(x), Some(y)) = (at.x.checked_add(dx), at.y.checked_add(dy))
+                            else {
+                                return true;
+                            };
+                            let neighbor = Tile { x, y };
+                            self.query.edge(at, neighbor) == next.edge(at, neighbor)
+                        })
+                }))
+    }
+}
 #[derive(Clone, Copy)]
 enum Phase {
     Search,
@@ -252,6 +348,7 @@ enum Phase {
 /// insertions per simple-path relaxation over the finite map).
 pub struct Search {
     query: Rc<Query>,
+    dependencies: Dependencies,
     heap: BinaryHeap<Reverse<(Cost, u128, Cost, Tile)>>,
     previous: BTreeMap<Tile, Option<Tile>>,
     costs: BTreeMap<Tile, Cost>,
@@ -264,6 +361,21 @@ pub struct Search {
     pub work: usize,
 }
 impl Search {
+    pub fn dependencies(&self) -> &Dependencies {
+        &self.dependencies
+    }
+    /// Returns false without altering the search if any observed dependency changed.
+    pub fn refresh(&mut self, query: Rc<Query>) -> bool {
+        if !self.dependencies.valid_for(&query) {
+            return false;
+        }
+        self.dependencies.query = query.clone();
+        self.query = query;
+        true
+    }
+    pub fn into_parts(self) -> (Outcome, Dependencies) {
+        (self.outcome, self.dependencies)
+    }
     pub fn outcome(&self) -> &Outcome {
         &self.outcome
     }
@@ -281,6 +393,11 @@ impl Search {
             Outcome::Pending
         };
         Self {
+            dependencies: Dependencies {
+                query: query.clone(),
+                expanded: BTreeSet::new(),
+                reached: BTreeSet::from([start]),
+            },
             heap: BinaryHeap::from([Reverse((query.heuristic(start), 0, Cost(0.0), start))]),
             previous: BTreeMap::from([(start, None)]),
             costs: BTreeMap::from([(start, Cost(0.0))]),
@@ -299,6 +416,8 @@ impl Search {
     pub fn cancel(&mut self) {
         if self.outcome == Outcome::Pending {
             self.outcome = Outcome::Cancelled;
+            self.dependencies.expanded = BTreeSet::new();
+            self.dependencies.reached = BTreeSet::new();
             self.heap = BinaryHeap::new();
             self.previous = BTreeMap::new();
             self.costs = BTreeMap::new();
@@ -322,12 +441,14 @@ impl Search {
                     if self.costs[&at] != cost {
                         continue;
                     }
+                    self.dependencies.reached.insert(at);
                     if self.query.reached(at) {
                         self.result_cost = cost.0;
                         self.phase = Phase::Trace(at);
                         continue;
                     }
                     self.expansions = self.expansions.saturating_add(1);
+                    self.dependencies.expanded.insert(at);
                     for &(dx, dy) in CARDINAL.iter().chain(if self.query.diagonal {
                         DIAGONAL.iter()
                     } else {
@@ -338,22 +459,10 @@ impl Search {
                             continue;
                         };
                         let next = Tile { x, y };
-                        if !self
-                            .query
-                            .index
-                            .edge_open(at, next, self.query.diagonal, |t| self.query.open(t))
-                        {
+                        let Some(edge_cost) = self.query.edge(at, next) else {
                             continue;
-                        }
-                        let candidate = Cost(
-                            cost.0
-                                + spatial::edge_cost(
-                                    at,
-                                    next,
-                                    self.query.index.roads(),
-                                    self.query.mode,
-                                ),
-                        );
+                        };
+                        let candidate = Cost(cost.0 + edge_cost);
                         if self.costs.get(&next).is_some_and(|old| candidate >= *old) {
                             continue;
                         }
@@ -432,6 +541,7 @@ mod tests {
         assert!(!search.heap.is_empty());
         assert!(!search.previous.is_empty());
         search.cancel();
+        assert_eq!(search.dependencies.records(), 0);
         assert_eq!(search.heap.capacity(), 0);
         assert!(search.previous.is_empty());
         assert!(search.costs.is_empty());

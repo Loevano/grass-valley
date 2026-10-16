@@ -159,8 +159,8 @@ No omitted feature is approved for removal. The saved subsystem matrix assigns:
   now supplies pure bounded-operation search over immutable derived queries; it
   has no DTO/save/actor ownership; R09 slice 3 pairs actual Python route vectors.
   R10 slice 1 adds bounded derived service/admission using the existing model's
-  request generations. Local dependency validity and service cadence remain
-  R10 slices 2–3.
+  request generations. R10 slice 2 adds bounded dependency-certified caches and
+  local query refresh; independent cadence remains R10 slice 3.
 - R12–13: complete buildings/footprints/roads/links, residents/assignments, stock,
   costs/capacities, skills, food/progression, hall unlocks and balance migrations.
 - R14–17: trips/reservations/accounting, markets/resource activity, every production
@@ -267,8 +267,10 @@ state is added. Existing R08 private decoders keep their explicit typed rejectio
 policies. R10 slice 1 now owns derived service jobs keyed by these existing model
 requests; read-only Town validation and guarded completion keep actor authority in
 one place. Capacity/query/identity/resource waits never overwrite actor facts or
-become unreachable results. Resident/query/lifetime-work limits include terminal
+become unreachable results. Resident/query/per-search-attempt work limits include terminal
 answers; a leased single retry reservation avoids an overflow queue. No clock,
-public service DTO or persisted frontier is introduced. Cache/local dependency
-validity and service cadence remain R10 slices 2–3; travel/cargo/task integration
+public service DTO or persisted frontier is introduced. R10 slice 2 adds bounded positive/negative caches and search-prefix certificates;
+`submit_current`/`apply_current` require current actor-specific query validation and
+model-owned generation/origin checks. These are derived APIs, with no new DTO or
+saved revision schema. Independent cadence remains R10 slice 3; travel/cargo/task integration
 remains R11 and later gameplay stages.

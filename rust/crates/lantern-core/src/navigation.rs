@@ -5,7 +5,7 @@
 //! There is no overflow queue: denied callers retain their own request and retry.
 use crate::{
     model::{ModelError, NavigationRevision, RouteOutcome, RouteRequest, Town},
-    search::{Outcome, Query, Search},
+    search::{Dependencies, Outcome, Query, Search},
     units::Position,
 };
 use alloc::{collections::VecDeque, rc::Rc};
@@ -35,11 +35,19 @@ pub enum Status {
 pub struct Limits {
     pub jobs: usize,
     pub quantum: usize,
-    /// Maximum lifetime search operations, not a wall-clock timeout. Each
+    /// Maximum operations per search attempt, reset after relevant refresh,
+    /// not cumulative work across a request generation or a wall-clock timeout. Each
     /// operation inserts at most eight frontier/map records or one path tile.
     pub work_per_job: usize,
     pub query_records: usize,
     pub identity_bytes: usize,
+    /// Maximum observation records per job, checked before each search operation
+    /// with room reserved for its worst-case expansion and arrival records.
+    pub dependency_records: usize,
+    pub cache_entries: usize,
+    /// Aggregate cache units: query input records + dependencies + waypoints.
+    pub cache_records: usize,
+    pub cache_waypoints: usize,
 }
 impl Default for Limits {
     fn default() -> Self {
@@ -49,13 +57,17 @@ impl Default for Limits {
             work_per_job: 32768,
             query_records: 65536,
             identity_bytes: 1024,
+            dependency_records: 65536,
+            cache_entries: 64,
+            cache_records: 262144,
+            cache_waypoints: 32768,
         }
     }
 }
 enum State {
     Searching(Search),
-    Ready(Outcome),
-    Limited,
+    Ready(Outcome, Dependencies),
+    Limited(Waiting),
 }
 struct Job {
     request: RouteRequest,
@@ -67,8 +79,8 @@ impl Job {
     fn status(&self) -> Status {
         match self.state {
             State::Searching(_) => Status::Searching,
-            State::Ready(_) => Status::Ready,
-            State::Limited => Status::Waiting(Waiting::ResourceLimit),
+            State::Ready(..) => Status::Ready,
+            State::Limited(reason) => Status::Waiting(reason),
         }
     }
 }
@@ -77,6 +89,7 @@ impl Job {
 pub struct Completion {
     request: RouteRequest,
     outcome: Outcome,
+    dependencies: Dependencies,
 }
 impl Completion {
     pub fn request(&self) -> &RouteRequest {
@@ -84,6 +97,19 @@ impl Completion {
     }
     pub fn outcome(&self) -> &Outcome {
         &self.outcome
+    }
+    /// Validate current graph observations, then use the original model token.
+    /// Host must supply current actor-specific query inputs; no global revision
+    /// equality is needed after this proof. Stale generation/origin still rejects.
+    pub fn apply_current(self, town: &mut Town, query: &Query) -> Result<(), ModelError> {
+        if !town.route_generation_is_current(&self.request) || !self.dependencies.valid_for(query) {
+            return Err(ModelError::StaleRoute);
+        }
+        let revision = self.request.navigation();
+        self.apply(town, revision)
+    }
+    pub fn valid_for(&self, query: &Query) -> bool {
+        self.dependencies.valid_for(query)
     }
     pub fn apply(self, town: &mut Town, navigation: NavigationRevision) -> Result<(), ModelError> {
         if !town.route_is_current(&self.request, navigation) {
@@ -102,12 +128,28 @@ impl Completion {
         town.accept_route(self.request.actor(), &self.request, navigation, result)
     }
 }
+struct Cached {
+    outcome: Outcome,
+    dependencies: Dependencies,
+    units: usize,
+    waypoints: usize,
+}
+#[derive(Clone, Copy, Debug, Default)]
+pub struct Diagnostics {
+    pub restarts: usize,
+    pub retained: usize,
+    pub cache_hits: usize,
+    pub cache_evictions: usize,
+    pub validation_records: usize,
+}
 pub struct Service {
     limits: Limits,
     jobs: VecDeque<Job>,
     reservation: Option<RouteRequest>,
     reservation_seen: bool,
     turn: usize,
+    cache: VecDeque<Cached>,
+    diagnostics: Diagnostics,
 }
 impl Service {
     pub fn new(limits: Limits) -> Self {
@@ -118,10 +160,83 @@ impl Service {
             reservation: None,
             reservation_seen: false,
             turn: 0,
+            cache: VecDeque::new(),
+            diagnostics: Diagnostics::default(),
         }
     }
-    /// Metered operations consumed by this retained generation (also after
-    /// completion/resource exhaustion). Zero means it has not received work.
+    pub fn diagnostics(&self) -> Diagnostics {
+        self.diagnostics
+    }
+    pub fn cache_usage(&self) -> (usize, usize, usize) {
+        (
+            self.cache.len(),
+            self.cache.iter().map(|c| c.units).sum(),
+            self.cache.iter().map(|c| c.waypoints).sum(),
+        )
+    }
+    /// Bridge for local invalidation: owner checks generation/origin independently
+    /// of the world-wide revision; refresh performs the navigation proof.
+    pub fn submit_current(
+        &mut self,
+        town: &Town,
+        request: &RouteRequest,
+        query: Rc<Query>,
+        priority: Priority,
+    ) -> Status {
+        if !town.route_generation_is_current(request) {
+            return Status::Stale;
+        }
+        if self.status(request).is_some() {
+            self.refresh(request, query.clone());
+        }
+        self.submit(town, request, request.navigation(), query, priority)
+    }
+    /// Replace immutable graph data while preserving only proven unchanged work.
+    /// Validation/preparation/destruction is synchronous maintenance, not charged
+    /// to the search allowance. Oversized replacement releases the old job.
+    pub fn refresh(&mut self, request: &RouteRequest, query: Rc<Query>) -> Option<Status> {
+        let job = self.jobs.iter_mut().find(|j| &j.request == request)?;
+        if query.retained_records() > self.limits.query_records {
+            job.state = State::Limited(Waiting::QueryLimit);
+            return Some(Status::Waiting(Waiting::QueryLimit));
+        }
+        let valid = match &mut job.state {
+            State::Searching(search) => {
+                self.diagnostics.validation_records +=
+                    search.dependencies().validation_records(&query);
+                search.refresh(query.clone())
+            }
+            State::Ready(_, deps) => {
+                self.diagnostics.validation_records += deps.validation_records(&query);
+                let valid = deps.valid_for(&query);
+                if valid {
+                    deps.replace_query(query.clone());
+                }
+                valid
+            }
+            State::Limited(_) => return Some(job.status()),
+        };
+        if valid {
+            self.diagnostics.retained += 1;
+        } else {
+            self.diagnostics.restarts += 1;
+            job.state = Self::search_state(query);
+            job.work = 0;
+        }
+        Some(job.status())
+    }
+    fn search_state(query: Rc<Query>) -> State {
+        let search = Search::new(query);
+        if search.outcome() == &Outcome::Pending {
+            State::Searching(search)
+        } else {
+            let (outcome, deps) = search.into_parts();
+            State::Ready(outcome, deps)
+        }
+    }
+    /// Metered operations in this generation's current search attempt (also after
+    /// completion/resource exhaustion). Relevant refresh resets this to zero;
+    /// advance returns actual work across calls, and diagnostics count restarts.
     pub fn work(&self, request: &RouteRequest) -> Option<usize> {
         self.jobs
             .iter()
@@ -179,6 +294,9 @@ impl Service {
         if request.identity_bytes() > self.limits.identity_bytes {
             return Status::Waiting(Waiting::IdentityLimit);
         }
+        if self.limits.dependency_records == 0 {
+            return Status::Waiting(Waiting::ResourceLimit);
+        }
         if query.retained_records() > self.limits.query_records {
             return Status::Waiting(Waiting::QueryLimit);
         }
@@ -195,11 +313,18 @@ impl Service {
             return Status::Waiting(Waiting::Reserved);
         }
         self.reservation = None;
-        let search = Search::new(query);
-        let state = if search.outcome() == &Outcome::Pending {
-            State::Searching(search)
+        let hit = self
+            .cache
+            .iter()
+            .position(|c| c.dependencies.valid_for(&query));
+        let state = if let Some(i) = hit {
+            let cached = self.cache.remove(i).expect("cache hit");
+            let state = State::Ready(cached.outcome.clone(), cached.dependencies.refreshed(query));
+            self.cache.push_back(cached);
+            self.diagnostics.cache_hits += 1;
+            state
         } else {
-            State::Ready(search.into_outcome())
+            Self::search_state(query)
         };
         self.jobs.push_back(Job {
             request: request.clone(),
@@ -261,18 +386,31 @@ impl Service {
             let mut job = self.jobs.remove(index).expect("selected job");
             if let State::Searching(search) = &mut job.state {
                 let remaining = self.limits.work_per_job - search.work;
-                used += search.advance(self.limits.quantum.min(allowance - used).min(remaining));
+                let mut quantum = self.limits.quantum.min(allowance - used).min(remaining);
+                while quantum > 0 && search.outcome() == &Outcome::Pending {
+                    if search.dependencies().records().saturating_add(2)
+                        > self.limits.dependency_records
+                    {
+                        break;
+                    }
+                    used += search.advance(1);
+                    quantum -= 1;
+                }
                 job.work = search.work;
                 if search.outcome() != &Outcome::Pending {
                     let State::Searching(search) =
-                        core::mem::replace(&mut job.state, State::Limited)
+                        core::mem::replace(&mut job.state, State::Limited(Waiting::ResourceLimit))
                     else {
                         unreachable!()
                     };
-                    job.state = State::Ready(search.into_outcome());
-                } else if search.work == self.limits.work_per_job {
+                    let (outcome, deps) = search.into_parts();
+                    job.state = State::Ready(outcome, deps);
+                } else if search.work == self.limits.work_per_job
+                    || search.dependencies().records().saturating_add(2)
+                        > self.limits.dependency_records
+                {
                     // Capacity exhaustion is not a proof of unreachability.
-                    job.state = State::Limited;
+                    job.state = State::Limited(Waiting::ResourceLimit);
                 }
             }
             self.jobs.push_back(job);
@@ -283,14 +421,48 @@ impl Service {
         let index = self
             .jobs
             .iter()
-            .position(|j| &j.request == request && matches!(j.state, State::Ready(_)))?;
+            .position(|j| &j.request == request && matches!(j.state, State::Ready(..)))?;
         let job = self.jobs.remove(index)?;
-        let State::Ready(outcome) = job.state else {
+        let State::Ready(outcome, dependencies) = job.state else {
             unreachable!()
         };
+        let waypoints = match &outcome {
+            Outcome::Completed { path, .. } => path.len(),
+            _ => 0,
+        };
+        self.cache
+            .retain(|cached| !cached.dependencies.valid_for(dependencies.query()));
+        let units = dependencies
+            .query()
+            .retained_records()
+            .saturating_add(dependencies.records())
+            .saturating_add(waypoints);
+        if self.limits.cache_entries > 0
+            && units <= self.limits.cache_records
+            && waypoints <= self.limits.cache_waypoints
+        {
+            loop {
+                let (entries, records, paths) = self.cache_usage();
+                if entries < self.limits.cache_entries
+                    && records <= self.limits.cache_records - units
+                    && paths <= self.limits.cache_waypoints - waypoints
+                {
+                    break;
+                }
+                self.cache.pop_front();
+                self.diagnostics.cache_evictions += 1;
+            }
+            self.cache.push_back(Cached {
+                outcome: outcome.clone(),
+                dependencies: dependencies.clone(),
+                units,
+                waypoints,
+            });
+        }
         Some(Completion {
             request: job.request,
             outcome,
+            dependencies,
         })
     }
 }

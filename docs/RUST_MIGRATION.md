@@ -230,7 +230,7 @@ only after work is performed. Keep unfinished stages visible in the roadmap.
 | R07 | Terrain versions and chunk generation | R06 | Complete as private terrain/chunk foundation; [scope, slice evidence and completion audit](RUST_TERRAIN.md); exact clocks finish 3c.iv; finite platform-math vectors retain the R23 release gate |
 | R08 | Spatial rules and founder movement | R07 | Complete as experimental geometry/movement foundation; slices 1–3 and boundary audit below; Python remains default |
 | R09 | Search algorithms and library decision | R08 | Complete at experimental core boundary: library/custom decision, bounded no_std backend and actual Python route/access/cost parity; [evaluation/evidence](RUST_SEARCH_EVALUATION.md) |
-| R10 | Request scheduler and cache invalidation | R09 | Slice 1 complete; slices 2–3 remain |
+| R10 | Request scheduler and cache invalidation | R09 | Slices 1–2 complete experimentally; slice 3 cadence/acceptance remains |
 | R11 | Persistent worker movement and playback | R10 | Not started |
 | R12 | Construction and building operations | R11 | Not started |
 | R13 | Resource ledger, storage, and progression rules | R12 | Not started |
@@ -2575,3 +2575,115 @@ work. Review and commit task-only changes, then report the commit and validation
 Library references were checked while preparing the plan on 2026-10-16. Revalidate
 them when implementing. No Rust speedup, dependency compatibility, or migration
 acceptance result is claimed by this document.
+
+
+### R10 slice 2 — Bounded cache and local navigation validity
+
+`lantern-core::search::Dependencies` now certifies an executed deterministic search
+prefix. It stores arrival-tested and expanded tiles, including the initial arrival
+test. Every expanded tile represents **all** attempted cardinal/diagonal edges,
+including rejected edges, diagonal side clearance, fence crossings/endpoints and
+road costs. Revalidation derives the identical neighbor set, skipping the same
+coordinate overflows, and compares old/new effective edge results and arrival
+checks. It also compares global start/goals/anchor/bounds/map-size/access/road-mode/
+diagonal policy and whether any completed road exists. The last dependency is
+required because the heuristic changes globally when the first/last road changes.
+
+Identical observations prove that replaying the executed prefix would produce the
+same frontier, predecessor/cost maps and stable tie order. `Search::refresh` then
+replaces its immutable derived query so future expansions see previously unseen
+edits. Changed observations restart through `Service::refresh`; distant obstacle,
+road and terrain edits retain progress when this proof succeeds. A blocked edge
+opening is relevant even when it lies outside the previously returned path.
+Unreachable/arrived answers retain the same certificate. Goal preprocessing is
+represented by its resulting complete goal set and global policy; a changed goal
+set conservatively restarts. No assumption that arbitrary obstacle removal is safe
+is made. Same immutable query pointers bypass comparison without replay work.
+
+`Service` adds a shared bounded positive/negative LRU. Default limits are 64 cache
+entries, 262144 aggregate units (query/index input records + dependency records +
+waypoints), and 32768 aggregate cached waypoints; inputs are also bounded by the
+existing per-job query limit. Equivalent valid entries are replaced/promoted rather
+than duplicated. Nonadmissible results are returned without caching. Per-job
+observations default to 65536 records; each search operation reserves its worst-case
+two new tile records before running. Dependency exhaustion releases query/frontier
+and reports resource waiting, never unreachable. Search cancellation clears the
+logs as well as the frontier. Terminal jobs retain bounded certificates until taken.
+There is no unbounded invalidation history or overflow queue.
+
+`Town::route_generation_is_current`, `Service::submit_current` and
+`Completion::apply_current` form the explicit future host bridge: validate the
+model-owned pending request/origin, validate a **current actor-specific Query**,
+then apply through the original guarded model token. Existing strict revision
+APIs remain available. A whole-world revision need not discard unrelated work.
+`Query::route_safe` separately checks current origin openness, remaining edge
+clearance/access and final arrival; road-only cost improvements do not reject a
+valid already accepted route. It does not move actors or choose blocked-start
+recovery. Caller preparation must supply correct current goals/access and loaded
+terrain. No private imported snapshot, actor position/cargo/task, client cache,
+public DTO or save state is mutated by these derived APIs.
+
+Work accounting remains explicit: search allowance meters search operations,
+including logging at most two records each; query/index construction, certificate
+comparison (up to eight edges per expanded tile), LRU scans/clones/eviction,
+result conversion/destruction and allocation are synchronous **unmetered
+maintenance**, separately measured. Bounded records do not promise wall-clock
+latency or RSS. Returned completions and caller-owned query allocations are outside
+resident service limits. Each relevant restart resets Search and `job.work` under the same request token:
+`work_per_job` is a **per-search-attempt** cap, superseding slice 1's generation-lifetime
+wording. There is no cumulative per-generation CPU cap across arbitrary edits.
+State and each service-call operation allowance remain bounded; `work(request)`
+reports the current attempt, `advance` returns consumed work, and diagnostics
+count restarts.
+
+Coverage: `navigation_dependencies.rs` checks 96 adversarial edited graphs against
+fresh search and an independent sorted-distance Dijkstra; negative/opened boundary,
+loaded terrain, bounds, diagonal side clearance, fence edits, goal footprint/access
+changes, first-road invalidation, distant churn and active route road stability.
+`navigation.rs` covers positive/negative LRU reuse, exact cached results, relevant
+edit replanning, distinct query admission, waypoint refusal, dependency/query limits,
+local work retention/restarts, stale model tokens and cargo/position preservation.
+The R09 frozen 418 actual Python path/outcome vectors are unchanged.
+
+Release comparison/evidence and final affected-check results are recorded below.
+R10 remains incomplete: slice 3 must choose and integrate cadence/work allowance,
+measure actual waits against W1–W6 including contention, and run the continuing
+legacy performance gate once against `67f3a58b26b1f389bfbd5726ee87715ec1238be2`.
+Python remains playable default; host gameplay integration, R11 movement, R19
+persistence and R23 release/platform gates remain unimplemented.
+
+
+Slice 2 validation: `python3 tools/check.py --list` selected core+host; the affected
+run passed 64 core and 140 host cases (including 418 frozen Python paths), format and
+core clippy. Two new benchmark-only host clippy findings were fixed; the required
+host all-target clippy and format checks passed on targeted follow-up. The explicit
+cancellation-log release assertion also passed its targeted test. Original failure
+and successful follow-up evidence are preserved in ignored
+`performance-results/r10-slice2-correctness/report.{md,json}`; no unrelated Python
+checks or full-suite run was selected.
+
+Release evidence: ignored `performance-results/r10-slice2-service/report.{md,json}`
+compares starting `24fcaa722e9e7c4e6bd2cf849dd939b039fd1519` with this working tree,
+three repeated identical no-cache workloads at 16/64/256 requests/four towns. At 256
+wall detour, median service wall time increased 468.6→654.2ms and requested peak
+heap 23.20→34.83MB; sealed-wall 226.7→318.7ms and 11.54→17.17MB. Complete compiled
+process user CPU was 2.70→3.76s (system 0.01→0.03s). This is a measured cold-search
+cost of dependency tracking, not a performance gain. Compact expanded-tile storage
+replaced an intermediate explicit-edge prototype (~71.9MB peak 256 detour), retained
+separately in `r10-slice2-intermediate-edge-log`. Per-call operation rounds remain
+unchanged: 256 detour 540 rounds, maximum first-service 391 rounds, still with no
+assigned real cadence. These figures do not establish responsiveness.
+
+`performance-results/r10-slice2-cache/report.{md,json}` contains cold/warm positive
+and negative answers, opened negative cache, unchanged/distant/relevant obstacle,
+road/fence/terrain edits and first-road transitions, including preparation,
+maintenance, waits/restarts, allocations and requested peak live heap. Warm cases
+exercise 64 hits; unchanged immutable-query refresh replays zero dependency records;
+distant edits retain progress; relevant observations restart; first-road restarts
+all 16 jobs. Local wall timing is noisy (cache diagnostic process real 1.59s vs user
+0.67s/system 0.02s), so no stable latency/gain inference is made. All scenario/cleanup
+assertions passed; absolute W1–W6 budgets remain **inconclusive**, with no cadence,
+HTTP/save/browser contention or RSS measurement. The legacy Python/browser-only
+performance gate is intentionally not run for this intermediate Rust slice; final
+R10 slice 3 must run it once against the continuing baseline 67f3a58 and separately
+measure the actual Rust service/cadence.

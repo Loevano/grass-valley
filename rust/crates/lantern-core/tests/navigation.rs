@@ -98,6 +98,7 @@ fn terminal_result_is_guarded_and_holds_capacity_until_taken() {
     let other = request(&mut t, &ids[1]);
     let mut s = Service::new(Limits {
         jobs: 1,
+        cache_entries: 0,
         ..Limits::default()
     });
     let q = query(2); // finite exhausted search, not a capacity failure
@@ -126,6 +127,7 @@ fn changed_navigation_rejects_completion_and_prunes_reservation() {
     let other = request(&mut t, &ids[1]);
     let mut s = Service::new(Limits {
         jobs: 1,
+        cache_entries: 0,
         ..Limits::default()
     });
     submit(&mut s, &t, &r, query(2), Priority::Ordinary);
@@ -169,6 +171,7 @@ fn saturation_reserves_retry_against_new_and_replacing_streams() {
     let rs: Vec<_> = ids.iter().map(|id| request(&mut t, id)).collect();
     let mut s = Service::new(Limits {
         jobs: 1,
+        cache_entries: 0,
         ..Limits::default()
     });
     submit(&mut s, &t, &rs[0], query(2), Priority::Blocked);
@@ -377,6 +380,7 @@ fn abandoned_current_reservation_expires_without_an_overflow_registry() {
     let rs: Vec<_> = ids.iter().map(|id| request(&mut t, id)).collect();
     let mut s = Service::new(Limits {
         jobs: 1,
+        cache_entries: 0,
         ..Limits::default()
     });
     submit(&mut s, &t, &rs[0], query(2), Priority::Ordinary);
@@ -394,4 +398,217 @@ fn abandoned_current_reservation_expires_without_an_overflow_registry() {
         submit(&mut s, &t, &rs[2], query(2), Priority::Blocked),
         Status::Searching
     );
+}
+
+#[test]
+fn bounded_negative_lru_reuses_without_duplicate_entries() {
+    let (mut t, ids) = fixture(1);
+    let mut s = Service::new(Limits {
+        cache_entries: 2,
+        cache_records: 1000,
+        cache_waypoints: 10,
+        ..Limits::default()
+    });
+    for size in [2, 3] {
+        let r = request(&mut t, &ids[0]);
+        submit(&mut s, &t, &r, query(size), Priority::Ordinary);
+        advance(&mut s, &t, 1000);
+        assert_eq!(s.take(&r).unwrap().outcome(), &Outcome::Unreachable);
+    }
+    assert_eq!(s.cache_usage().0, 2);
+    for _ in 0..5 {
+        let r = request(&mut t, &ids[0]);
+        assert_eq!(
+            submit(&mut s, &t, &r, query(2), Priority::Ordinary),
+            Status::Ready
+        );
+        assert_eq!(s.work(&r), Some(0));
+        s.take(&r).unwrap();
+        assert_eq!(s.cache_usage().0, 2);
+    }
+    assert_eq!(s.diagnostics().cache_hits, 5);
+    assert_eq!(s.diagnostics().cache_evictions, 0);
+    let r = request(&mut t, &ids[0]);
+    submit(&mut s, &t, &r, query(4), Priority::Ordinary);
+    advance(&mut s, &t, 1000);
+    s.take(&r).unwrap();
+    assert_eq!(s.diagnostics().cache_evictions, 1);
+    let r = request(&mut t, &ids[0]);
+    assert_eq!(
+        submit(&mut s, &t, &r, query(2), Priority::Ordinary),
+        Status::Ready
+    );
+    let (_, records, paths) = s.cache_usage();
+    assert!(records <= 1000 && paths <= 10);
+}
+#[test]
+fn refresh_limits_dependencies_and_current_completion_bridge() {
+    let (mut t, ids) = fixture(1);
+    let r = request(&mut t, &ids[0]);
+    let mut s = Service::new(Limits {
+        dependency_records: 12,
+        ..Limits::default()
+    });
+    submit(&mut s, &t, &r, query(64), Priority::Ordinary);
+    advance(&mut s, &t, 50);
+    assert_eq!(s.status(&r), Some(Status::Waiting(Waiting::ResourceLimit)));
+    assert!(s.take(&r).is_none());
+    let mut s = Service::new(Limits::default());
+    let q = query(2);
+    s.submit_current(&t, &r, q.clone(), Priority::Ordinary);
+    advance(&mut s, &t, 100);
+    let completion = s.take(&r).unwrap();
+    assert!(!completion.valid_for(&query(64))); // opens a cached negative boundary
+    let facts = t.actor(&ids[0]).unwrap().state().clone();
+    assert!(!t.route_is_current(&r, NavigationRevision(99)));
+    completion.apply_current(&mut t, &q).unwrap();
+    assert_eq!(t.actor(&ids[0]).unwrap().state(), &facts);
+}
+#[test]
+fn oversized_refresh_reports_stable_query_wait_and_releases_old_input() {
+    let (mut t, ids) = fixture(1);
+    let r = request(&mut t, &ids[0]);
+    let mut s = Service::new(Limits {
+        query_records: 1,
+        ..Limits::default()
+    });
+    let q = query(64);
+    submit(&mut s, &t, &r, q.clone(), Priority::Ordinary);
+    let terrain = Terrain {
+        cells: Some([(Tile { x: 0, y: 0 }, 'g'), (Tile { x: 1, y: 0 }, 'g')].into()),
+        bounds: None,
+    };
+    let big = Rc::new(
+        Query::new(
+            Rc::new(SpatialIndex::derive(&[], &[], &[], &[], 64).unwrap()),
+            terrain,
+            Access::default(),
+            Tile { x: 0, y: 0 },
+            Target::Exact(Tile { x: 63, y: 63 }),
+            false,
+            RoadMode::Smooth,
+        )
+        .unwrap(),
+    );
+    assert_eq!(
+        s.refresh(&r, big),
+        Some(Status::Waiting(Waiting::QueryLimit))
+    );
+    assert_eq!(s.status(&r), Some(Status::Waiting(Waiting::QueryLimit)));
+    assert_eq!(Rc::strong_count(&q), 1);
+}
+
+#[test]
+fn positive_cache_respects_aggregate_waypoint_admission_and_stale_tokens() {
+    let (mut t, ids) = fixture(1);
+    let r = request(&mut t, &ids[0]);
+    let q = query(64);
+    let mut s = Service::new(Limits {
+        cache_waypoints: 10,
+        ..Limits::default()
+    });
+    submit(&mut s, &t, &r, q.clone(), Priority::Ordinary);
+    advance(&mut s, &t, 32768);
+    let done = s.take(&r).unwrap();
+    assert!(matches!(done.outcome(), Outcome::Completed { .. }));
+    assert_eq!(s.cache_usage(), (0, 0, 0));
+    let facts = t.actor(&ids[0]).unwrap().state().clone();
+    request(&mut t, &ids[0]);
+    let now = t.actor(&ids[0]).unwrap().state().clone();
+    assert_eq!(done.apply_current(&mut t, &q), Err(ModelError::StaleRoute));
+    assert_eq!(t.actor(&ids[0]).unwrap().state(), &now);
+    assert_eq!(facts.position, now.position);
+    assert_eq!(facts.cargo, now.cargo);
+    let r = request(&mut t, &ids[0]);
+    let mut s = Service::new(Limits::default());
+    submit(&mut s, &t, &r, q.clone(), Priority::Ordinary);
+    advance(&mut s, &t, 32768);
+    let expected = s.take(&r).unwrap().outcome().clone();
+    assert_eq!(s.cache_usage().0, 1);
+    let r = request(&mut t, &ids[0]);
+    assert_eq!(submit(&mut s, &t, &r, q, Priority::Ordinary), Status::Ready);
+    assert_eq!(s.work(&r), Some(0));
+    assert_eq!(s.take(&r).unwrap().outcome(), &expected);
+    let r = request(&mut t, &ids[0]);
+    let changed = Rc::new(
+        Query::new(
+            Rc::new(
+                SpatialIndex::derive(
+                    &[],
+                    &[Resource {
+                        footprint: Footprint::saved(Tile { x: 1, y: 0 }, None).unwrap(),
+                        kind: "stone".into(),
+                    }],
+                    &[],
+                    &[],
+                    64,
+                )
+                .unwrap(),
+            ),
+            Terrain::default(),
+            Access::default(),
+            Tile { x: 0, y: 0 },
+            Target::Exact(Tile { x: 63, y: 63 }),
+            false,
+            RoadMode::Smooth,
+        )
+        .unwrap(),
+    );
+    assert_eq!(
+        submit(&mut s, &t, &r, changed.clone(), Priority::Ordinary),
+        Status::Searching
+    );
+    advance(&mut s, &t, 32768);
+    let mut fresh = Search::new(changed);
+    fresh.advance(32768);
+    assert_eq!(s.take(&r).unwrap().outcome(), fresh.outcome());
+    let r = request(&mut t, &ids[0]);
+    assert_eq!(
+        submit(&mut s, &t, &r, query(63), Priority::Ordinary),
+        Status::Searching
+    );
+}
+#[test]
+fn local_service_refresh_preserves_work_or_restarts_on_observed_change() {
+    let (mut t, ids) = fixture(1);
+    let r = request(&mut t, &ids[0]);
+    let mut s = Service::new(Limits::default());
+    let q = query(64);
+    submit(&mut s, &t, &r, q.clone(), Priority::Ordinary);
+    advance(&mut s, &t, 3);
+    assert_eq!(s.refresh(&r, q), Some(Status::Searching));
+    assert_eq!(s.work(&r), Some(3));
+    assert_eq!(s.diagnostics().validation_records, 0);
+    let make = |tile| {
+        Rc::new(
+            Query::new(
+                Rc::new(
+                    SpatialIndex::derive(
+                        &[],
+                        &[Resource {
+                            footprint: Footprint::saved(tile, None).unwrap(),
+                            kind: "stone".into(),
+                        }],
+                        &[],
+                        &[],
+                        64,
+                    )
+                    .unwrap(),
+                ),
+                Terrain::default(),
+                Access::default(),
+                Tile { x: 0, y: 0 },
+                Target::Exact(Tile { x: 63, y: 63 }),
+                false,
+                RoadMode::Smooth,
+            )
+            .unwrap(),
+        )
+    };
+    s.refresh(&r, make(Tile { x: 63, y: 0 }));
+    assert_eq!(s.work(&r), Some(3));
+    s.refresh(&r, make(Tile { x: 1, y: 0 }));
+    assert_eq!(s.work(&r), Some(0));
+    assert_eq!(s.diagnostics().retained, 2);
+    assert_eq!(s.diagnostics().restarts, 1);
 }

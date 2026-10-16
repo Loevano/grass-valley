@@ -481,6 +481,12 @@ impl Town {
         Ok(request)
     }
 
+    /// Owner token check for dependency-validated navigation. Revision alone is
+    /// not a dependency proof; the service must additionally validate its query.
+    pub fn route_generation_is_current(&self, request: &RouteRequest) -> bool {
+        self.route_is_current(request, request.navigation())
+    }
+
     /// Read-only bridge for the derived navigation service. It owns no actor facts.
     pub fn route_is_current(&self, request: &RouteRequest, navigation: NavigationRevision) -> bool {
         self.actor(request.actor()).is_ok_and(|actor| {

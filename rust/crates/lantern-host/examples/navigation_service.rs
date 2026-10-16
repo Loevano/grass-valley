@@ -160,7 +160,10 @@ fn run(n: usize, sealed: bool) -> Value {
             .collect();
         let q = query(sealed);
         setup_us = setup.elapsed().as_secs_f64() * 1e6;
-        let mut s = Service::new(Limits::default());
+        let mut s = Service::new(Limits {
+            cache_entries: 0,
+            ..Limits::default()
+        });
         let mut done = vec![false; n];
         let start = Instant::now();
         for round in 1..=10000 {
