@@ -1,4 +1,13 @@
-# R09 slice 1: search backend evaluation
+# R09 search backend evaluation
+
+**Current status:** slice 2 has promoted the custom solver to no_std core; see
+[the slice 2 record](#r09-slice-2-promoted-core-backend). The slice 1 text and
+`evidence.json` below describe the historical prototype at `9426ef4` (the
+completed slice 1 revision). Use that revision for exact slice 1 reproduction.
+The current example invokes core Search and prepares an owned query, so rerunning
+it at a later revision does not reproduce the historical setup costs.
+
+## Historical slice 1: backend evaluation
 
 Starting revision: `8cc78b4e5420063e9c3349c4d7245bb687dd6aec`.
 Candidate: the working tree carried by the commit containing this document and
@@ -86,7 +95,7 @@ the returned cost. Goal conversion and the already paired R08 low-level fence
 intersection geometry are shared with the evaluation graph; direct expected
 footprint goal-set and corner tests supplement this boundary. This is a search
 oracle, not a second full geometry implementation or a Python gameplay replay.
-Full backend promotion and Python route/access compatibility remain slices 2/3.
+At slice 1, backend promotion and Python route/access compatibility remained slices 2/3.
 In particular, evaluation `Adjacent` always means an explicit saved footprint.
 Python's raw single-anchor adjacent request is a distinct later adapter contract:
 it checks Manhattan distance == 1 plus the fence before validating a blocked
@@ -186,3 +195,106 @@ performance conclusion. No thresholds or baselines were changed. R09 slice 2 mus
 promote/validate the chosen solver in the no_std core; slice 3 must pair the route/access/cost contracts with Python. R10 owns
 request identity, admission, scheduling, invalidation and service instrumentation;
 R11 owns persistent worker travel and playback.
+
+
+## R09 slice 2: promoted core backend
+
+Starting revision: `9426ef493942802293412948f146570b1b5e6c20`.
+Candidate: the working tree in the commit carrying this section. The slice 1
+production dependency decision is unchanged. No production search dependency,
+HTTP/save behavior, host scheduler, or playable-default change is introduced.
+
+`lantern-core::search` now owns the chosen implementation. `Query::new` validates
+bounds before creating retained search state; typed geometry/cost modes exclude
+invalid dimensions and nonfinite caller costs. Query owns immutable terrain,
+access and targets and shares immutable derived `SpatialIndex` through `Rc`.
+`Search::new(Rc<Query>)`, `advance(quantum)`, `outcome()`, `cancel()` and consuming
+`into_outcome()` form the actor-independent interface. There is no borrowed
+self-reference to a host owner. `Rc` deliberately restricts this version to a
+single owner thread; parallel workers require an explicit later boundary decision.
+
+Exact, raw-anchor-adjacent, explicit saved-footprint perimeter and multiple goals
+are separate inputs. Raw adjacency checks Manhattan distance one and the final
+fence before start passability; its weighted heuristic subtracts one from the
+anchor metric. Explicit perimeters subtract actor occupancy and reject fenced
+footprint edges, then use a goal bounding box. The implementation uses R08's
+access, terrain, edge and cost rules, including acre-anchor subtraction from the
+whole occupancy union, exemptions, permitted-water `only` sets, diagonal side
+clearance, void/missing terrain and inclusive bounds. Checked neighbor arithmetic
+and i64 distance differences support the entire i32 coordinate representation.
+The heap orders estimated cost then discovery serial; strictly better relaxation
+and E,S,W,N then SE,SW,NW,NE order preserve stable ties, including cardinal BFS
+ordering when no roads exist. Paths exclude start and all five outcomes remain
+distinct. These are implemented semantics; exhaustive actual Python compatibility
+is still slice 3, not established by the synthetic core tests.
+
+Each advance charges stale or current heap pops, predecessor visits, reverse swaps
+and terminal phase checks; each expansion examines at most eight edges. A zero
+quantum performs no work. Cancellation immediately releases heap/predecessor/cost/
+path storage and cannot resume. Consuming the job moves the result path and drops
+all remaining frontier storage. Allocation and tree/heap/fence operations, query
+preparation, cancellation and destruction have no wall-clock deadline. R10 must
+account for these costs and add memory/admission caps, dependency tracking
+(including examined terrain, diagonal side tiles and fences), validity checks,
+and refresh after proven-irrelevant edits. This slice intentionally freezes query
+data and does not change an in-flight query.
+
+The evaluation's `Incremental` is now an alias for the core Search; its disconnected
+prototype was removed. The ten existing integration tests run actual core search
+against the independent dense/scan Dijkstra and retained library comparators on
+12 representative and 48 varied small graphs. Eight new core cases verify quantum
+partition equivalence and zero work, forced consecutive stale pops, cancellation
+storage release, raw/perimeter heuristic differences, arrival before passability,
+permitted-water/exemption ownership, fence-sensitive arrival/perimeter admission,
+terrain validation and extreme coordinates. Goal conversion and fence primitives
+retain the oracle-sharing limitations documented in slice 1.
+
+Slice 3 must pair actual Python `RouteCache.route/search_steps` and actor access
+contracts over exhaustive and adversarial fixtures, including exact returned tie
+paths and all cost modes. R10 and R11 retain scheduling/cache and worker travel.
+
+
+### Slice 2 validation and release evidence
+
+`python3 tools/check.py --list` selected the two Rust crates. The final affected
+run (`--output performance-results/r09-slice2-correctness`) passed all six fmt,
+test and clippy commands: 42 core and 138 host tests/doc tests. Both Markdown and
+JSON were inspected, with no failing commands. `git diff --check` passes.
+
+After correctness completed, run from `rust/`:
+
+```sh
+cargo run --release -p lantern-host --example search_compare -- /private/tmp/r09-slice2-search-raw.json
+```
+
+[Core-only JSON evidence](../rust/crates/lantern-host/examples/search_support/evidence-core.json)
+retains the 24 `backend == "custom"` rows (12 identical fixture families × cold/warm)
+from the raw 72-row example output, annotated with this scope. To inspect a fresh
+run's equivalent rows, filter its JSON `rows` on `backend == "custom"`. The
+starting revision and candidate description are in the artifact. Historical
+`evidence.json` is unchanged. The harness still rotates all three backends across
+41 rounds after eight warmups, but this slice makes **no new library cost
+comparison**: shared cold preparation now additionally builds the owned core
+query/terrain for every backend, so current library cold costs cannot describe
+library-only setup. The retained core cold setup also includes duplicate evaluation
+fixture/goal data; it measures this complete adapter request, not minimal pure-core
+preparation. Warm requests reuse the immutable Query. Totals include search,
+result transfer and destruction; allocations are measured separately from timings.
+
+On macOS/aarch64, cold core wall-detour total p50/p95/p99/max was
+2456.12/3630.08/4812.92/4812.92 µs; warm p50 was 2330.75 µs. Cold setup p50 was
+136.08 µs and search/result-transfer p50 was 2308.25 µs. It expanded 3452 nodes
+in 3626 work units; cold/warm allocation calls were 1623/1167 and peak requested
+live heap bytes were 326715/264872. These values include the adapter scope above
+and are not process RSS. Every fixture passed independent reachability/cost
+checks before timing. The experiment has no absolute acceptance budgets or
+baseline/candidate speed comparison. Raw samples show substantial jitter (for
+example local-cardinal cold p95 1008.92 µs versus p50 356.96 µs), so timing is
+**inconclusive for stable latency or improvement**, rather than an acceptance pass.
+No thresholds were introduced or relaxed.
+
+The legacy Python/browser performance suite was not repeated: this is backend
+promotion, with no optimization or production-host performance claim; that suite
+cannot measure the promoted Rust solver. Slice 1's required legacy run and its
+inconclusive result remain historical evidence. The release experiment above
+measures this slice's actual Rust implementation, outside simultaneous checks.

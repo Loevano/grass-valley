@@ -104,23 +104,23 @@ fn varied_small_graphs_cover_corners_access_bounds_and_modes() {
 fn incremental_quantum_counts_pops_and_reconstruction_and_cancellation() {
     let f = Fixture::open("quantum", 20, tile(0, 0), tile(19, 19));
     let graph = Graph::prepare(&f);
-    let mut job = Incremental::new(&graph);
+    let mut job = Incremental::new(graph.query.clone());
     assert_eq!(job.advance(0), 0);
-    assert_eq!(job.outcome, Outcome::Pending);
-    while job.outcome == Outcome::Pending {
+    assert_eq!(job.outcome(), &Outcome::Pending);
+    while job.outcome() == &Outcome::Pending {
         let before = job.work;
         assert_eq!(job.advance(1), 1);
         assert_eq!(job.work, before + 1);
     }
     assert!(job.work > job.expansions + 38); // reconstruction is charged
-    assert_eq!(job.outcome, solve(&graph, Backend::Custom).outcome);
-    let mut cancelled = Incremental::new(&graph);
+    assert_eq!(job.outcome(), &solve(&graph, Backend::Custom).outcome);
+    let mut cancelled = Incremental::new(graph.query.clone());
     cancelled.advance(3);
     cancelled.cancel();
     let work = cancelled.work;
     assert_eq!(cancelled.advance(100), 0);
     assert_eq!(cancelled.work, work);
-    assert_eq!(cancelled.outcome, Outcome::Cancelled);
+    assert_eq!(cancelled.outcome(), &Outcome::Cancelled);
 }
 
 #[test]

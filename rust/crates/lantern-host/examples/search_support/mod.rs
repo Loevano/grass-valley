@@ -10,9 +10,10 @@ use num_traits::Zero;
 use pathfinding::prelude::{astar, dijkstra_reach};
 use std::{
     cell::Cell,
-    cmp::{Ordering, Reverse},
-    collections::{BTreeMap, BTreeSet, BinaryHeap},
+    cmp::Ordering,
+    collections::{BTreeMap, BTreeSet},
     ops::Add,
+    rc::Rc,
 };
 
 pub fn tile(x: i32, y: i32) -> Tile {
@@ -107,13 +108,15 @@ impl Fixture {
 /// cold preparation includes spatial/terrain/goal conversion, warm reuses this view.
 pub struct Graph {
     pub fixture: Fixture,
-    pub index: SpatialIndex,
+    pub index: Rc<SpatialIndex>,
+    pub query: Rc<lantern_core::search::Query>,
     pub goals: BTreeSet<Tile>,
     goal_bounds: Option<(i32, i32, i32, i32)>,
 }
 impl Graph {
     pub fn prepare(f: &Fixture) -> Self {
-        let index = SpatialIndex::derive(&f.structures, &[], &[], &f.roads, f.size).unwrap();
+        let index =
+            Rc::new(SpatialIndex::derive(&f.structures, &[], &[], &f.roads, f.size).unwrap());
         let goals = match &f.target {
             Target::Exact(t) => BTreeSet::from([*t]),
             Target::Multiple(ts) => ts.clone(),
@@ -147,7 +150,45 @@ impl Graph {
                 goals.iter().map(|p| p.y).max().unwrap(),
             )
         });
+        let target = match &f.target {
+            Target::Exact(t) => lantern_core::search::Target::Exact(*t),
+            Target::Adjacent(fp) => lantern_core::search::Target::Perimeter(*fp),
+            Target::Multiple(ts) => lantern_core::search::Target::Multiple(ts.clone()),
+        };
+        let cells = (0..f.size as i32)
+            .flat_map(|y| (0..f.size as i32).map(move |x| tile(x, y)))
+            .map(|t| {
+                (
+                    t,
+                    if f.void.contains(&t) || f.unavailable.contains(&t) {
+                        'v'
+                    } else {
+                        'g'
+                    },
+                )
+            })
+            .collect();
+        let query = Rc::new(
+            lantern_core::search::Query::new(
+                index.clone(),
+                lantern_core::search::Terrain {
+                    cells: Some(cells),
+                    bounds: f.bounds,
+                },
+                lantern_core::search::Access {
+                    land: f.land,
+                    exemptions: f.exemptions.clone(),
+                    only: None,
+                },
+                f.start,
+                target,
+                f.diagonal,
+                f.mode,
+            )
+            .unwrap(),
+        );
         Self {
+            query,
             fixture: f.clone(),
             index,
             goals,
@@ -225,23 +266,8 @@ impl Graph {
     }
 }
 
-#[derive(Clone, Debug, PartialEq)]
-pub enum Outcome {
-    Arrived,
-    Unreachable,
-    Pending,
-    Cancelled,
-    Completed { path: Vec<Tile>, cost: f64 },
-}
-impl Outcome {
-    pub fn cost(&self) -> Option<f64> {
-        match self {
-            Self::Arrived => Some(0.0),
-            Self::Completed { cost, .. } => Some(*cost),
-            _ => None,
-        }
-    }
-}
+pub use lantern_core::search::Outcome;
+pub type Incremental = lantern_core::search::Search;
 #[derive(Clone, Copy, Debug)]
 pub enum Backend {
     Custom,
@@ -284,14 +310,14 @@ pub fn solve(graph: &Graph, backend: Backend) -> Answer {
     }
     match backend {
         Backend::Custom => {
-            let mut job = Incremental::new(graph);
-            while job.outcome == Outcome::Pending {
+            let mut job = Incremental::new(graph.query.clone());
+            while job.outcome() == &Outcome::Pending {
                 job.advance(128);
             }
             Answer {
-                outcome: job.outcome,
                 expansions: job.expansions,
                 work: job.work,
+                outcome: job.into_outcome(),
             }
         }
         Backend::LibraryAstar => {
@@ -358,120 +384,6 @@ pub fn reach<'a>(
         expansions.set(expansions.get() + 1);
         graph.successors(*t)
     })
-}
-
-#[derive(Clone, Copy)]
-enum Phase {
-    Search,
-    Trace(Tile),
-    Reverse(usize),
-}
-/// Evaluation implementation: one counted work unit is one heap pop (including
-/// stale entries), one predecessor, or one reverse swap. ≤8 edges per expansion.
-/// Setup, allocation, final destruction are not real-time bounded by this quantum.
-pub struct Incremental<'a> {
-    graph: &'a Graph,
-    heap: BinaryHeap<Reverse<(Cost, u64, Cost, Tile)>>,
-    previous: BTreeMap<Tile, Option<Tile>>,
-    costs: BTreeMap<Tile, Cost>,
-    order: u64,
-    phase: Phase,
-    path: Vec<Tile>,
-    result_cost: f64,
-    pub outcome: Outcome,
-    pub expansions: usize,
-    pub work: usize,
-}
-impl<'a> Incremental<'a> {
-    pub fn new(graph: &'a Graph) -> Self {
-        let start = graph.fixture.start;
-        Self {
-            graph,
-            heap: BinaryHeap::from([Reverse((graph.heuristic(start), 0, Cost(0.0), start))]),
-            previous: BTreeMap::from([(start, None)]),
-            costs: BTreeMap::from([(start, Cost(0.0))]),
-            order: 0,
-            phase: Phase::Search,
-            path: vec![],
-            result_cost: 0.0,
-            outcome: if graph.goals.contains(&start) {
-                Outcome::Arrived
-            } else if graph.goals.is_empty() {
-                Outcome::Unreachable
-            } else {
-                Outcome::Pending
-            },
-            expansions: 0,
-            work: 0,
-        }
-    }
-    pub fn cancel(&mut self) {
-        if self.outcome == Outcome::Pending {
-            self.outcome = Outcome::Cancelled;
-        }
-    }
-    pub fn advance(&mut self, quantum: usize) -> usize {
-        let before = self.work;
-        for _ in 0..quantum {
-            if self.outcome != Outcome::Pending {
-                break;
-            }
-            self.work += 1;
-            match self.phase {
-                Phase::Search => {
-                    let Some(Reverse((_, _, cost, at))) = self.heap.pop() else {
-                        self.outcome = Outcome::Unreachable;
-                        break;
-                    };
-                    if self.costs[&at] != cost {
-                        continue;
-                    }
-                    if self.graph.goals.contains(&at) {
-                        self.result_cost = cost.0;
-                        self.phase = Phase::Trace(at);
-                        continue;
-                    }
-                    self.expansions += 1;
-                    for (next, weight) in self.graph.successors(at) {
-                        let candidate = cost + weight;
-                        if self.costs.get(&next).is_some_and(|old| candidate >= *old) {
-                            continue;
-                        }
-                        self.costs.insert(next, candidate);
-                        self.previous.insert(next, Some(at));
-                        self.order += 1;
-                        self.heap.push(Reverse((
-                            candidate + self.graph.heuristic(next),
-                            self.order,
-                            candidate,
-                            next,
-                        )));
-                    }
-                }
-                Phase::Trace(at) => {
-                    if let Some(parent) = self.previous[&at] {
-                        self.path.push(at);
-                        self.phase = Phase::Trace(parent);
-                    } else {
-                        self.phase = Phase::Reverse(0);
-                    }
-                }
-                Phase::Reverse(i) => {
-                    if i < self.path.len() / 2 {
-                        let j = self.path.len() - i - 1;
-                        self.path.swap(i, j);
-                        self.phase = Phase::Reverse(i + 1);
-                    } else {
-                        self.outcome = Outcome::Completed {
-                            path: std::mem::take(&mut self.path),
-                            cost: self.result_cost,
-                        };
-                    }
-                }
-            }
-        }
-        self.work - before
-    }
 }
 
 /// Independent O(V²) Dijkstra oracle: no shared heap, heuristic, successors,

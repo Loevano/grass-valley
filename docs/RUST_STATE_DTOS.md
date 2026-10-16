@@ -155,7 +155,10 @@ No omitted feature is approved for removal. The saved subsystem matrix assigns:
 - R06/R19–20: registry, active world, credentials/provisioning, inactive worlds,
   chunks, unknown legacy state, import/migrations, crash recovery and shutdown.
 - R07–11/R22: terrain seeds/versions/resources/chunks, spatial/collision/access,
-  navigation service, bounded search, legal paths, movement and confirmed playback.
+  navigation service, legal paths, movement and confirmed playback. R09 slice 2
+  now supplies pure bounded-operation search over immutable derived queries; it
+  has no DTO/save/actor ownership and still needs slice 3 Python compatibility
+  and R10 admission, generations, dependencies and memory/service limits.
 - R12–13: complete buildings/footprints/roads/links, residents/assignments, stock,
   costs/capacities, skills, food/progression, hall unlocks and balance migrations.
 - R14–17: trips/reservations/accounting, markets/resource activity, every production

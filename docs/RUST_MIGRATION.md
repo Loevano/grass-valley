@@ -229,7 +229,7 @@ only after work is performed. Keep unfinished stages visible in the roadmap.
 | R06 | Legacy import and read-only save inspection | R05 | Complete: slice 1 `3312d5d`; slice 2 `4513bec`; slice 3 `041caee`; [staging scope/coverage](RUST_LEGACY_IMPORT.md), evidence below |
 | R07 | Terrain versions and chunk generation | R06 | Complete as private terrain/chunk foundation; [scope, slice evidence and completion audit](RUST_TERRAIN.md); exact clocks finish 3c.iv; finite platform-math vectors retain the R23 release gate |
 | R08 | Spatial rules and founder movement | R07 | Complete as experimental geometry/movement foundation; slices 1–3 and boundary audit below; Python remains default |
-| R09 | Search algorithms and library decision | R08 | In progress: slice 1 executable dev-only library/custom comparison and dependency decision complete; [evaluation/evidence](RUST_SEARCH_EVALUATION.md); slices 2/3 remain |
+| R09 | Search algorithms and library decision | R08 | In progress: slices 1/2 comparison/decision and no_std core backend complete; [evaluation/evidence](RUST_SEARCH_EVALUATION.md); slice 3 actual Python route/access/cost compatibility remains |
 | R10 | Request scheduler and cache invalidation | R09 | Not started |
 | R11 | Persistent worker movement and playback | R10 | Not started |
 | R12 | Construction and building operations | R11 | Not started |
@@ -1866,6 +1866,43 @@ adjacent form, permitted-water profiles and absent ordinary terrain omitted by
 this explicit-footprint evaluation. R10 request scheduling/cache
 invalidation and R11 persistent worker travel/playback remain unimplemented.
 No W1–W6 queue, movement, contention, memory-bound or end-to-end gain is claimed.
+
+### R09 slice 2 — selected no_std search backend
+
+Starting revision: `9426ef493942802293412948f146570b1b5e6c20`.
+The custom solver now lives in `lantern-core::search`, with an immutable owned
+`Query`, single-threaded shared derived geometry, and actor-independent retained
+`Search`. The evaluation adapter uses this backend directly; its separate custom
+prototype is removed. The frozen dev-only library decision and slice 1 evidence
+are unchanged. See the [API, invariants, evidence and limits](RUST_SEARCH_EVALUATION.md#r09-slice-2-promoted-core-backend).
+
+Separate exact/raw-anchor/perimeter/multiple targets support existing access,
+bounds/terrain, diagonal/fence, and directed road costs. Heap pops (including stale
+entries), tracing and reversal are quantum-metered. Cancellation releases retained
+frontier storage; zero budget is a true no-op. Setup, allocations, cancellation,
+destruction and collection operations remain outside a wall-clock bound. Query
+validity/request generations, examined dependencies, irrelevant-edit refresh,
+service fairness and retained-memory caps belong to R10. No actor travel,
+authoritative snapshot mutation, HTTP/save integration or playable cutover occurs.
+
+**Validation:** `python3 tools/check.py --list` selected both Rust crates; the
+final affected run passed six fmt/test/clippy commands (42 core, 138 host cases).
+Markdown/JSON reports were inspected at
+`performance-results/r09-slice2-correctness/report.{md,json}`. The isolated release
+experiment then measured the actual core solver on the same 12 synthetic fixtures,
+cold and warm, with setup/search/result/destruction and allocation observations;
+[core-only JSON](../rust/crates/lantern-host/examples/search_support/evidence-core.json)
+keeps historical slice 1 evidence untouched. Cold preparation includes duplicate
+evaluation adapter data; new library setup comparisons are not claimed. Samples
+remain jittery and timing is inconclusive for stable latency/improvements, with no
+new absolute budgets. Legacy Python/browser performance was not repeated because
+this promotion makes no optimization/host gain claim and that harness does not
+measure Rust. No thresholds or baselines changed.
+
+**Remaining:** R09 slice 3 must exhaustively compare actual Python route/access/
+cost contracts and deterministic paths, including raw-anchor adjacency, sailing
+profiles and absent/missing terrain. R10 scheduling/cache and R11 travel remain.
+No W1–W6 or production speed acceptance is claimed.
 
 ## R10 — Scheduling and cache invalidation
 

@@ -85,10 +85,10 @@ fn main() {
     let output = std::env::args().nth(1).expect("report JSON path");
     let fixtures = fixtures();
     let cancellation_graph = Graph::prepare(&fixtures[0]);
-    let mut cancelled = Incremental::new(&cancellation_graph);
+    let mut cancelled = Incremental::new(cancellation_graph.query.clone());
     cancelled.advance(1);
     cancelled.cancel();
-    assert_eq!(cancelled.outcome, Outcome::Cancelled);
+    assert_eq!(cancelled.outcome(), &Outcome::Cancelled);
     // Correctness is required before any timed measurements. The reference is
     // intentionally not timed against optimized search implementations.
     for f in &fixtures {
