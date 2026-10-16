@@ -2,9 +2,9 @@
 
 A migration that can be completed one task at a time, with a prompt for each task.
 
-**Status:** R01–R05 complete; R06 slices 1–2 (ordinary saves and external chunk
-staging) complete; slice 3 (migration validation and inspection CLI) is next.
-Rust contains an experimental workspace and transport smoke CLI; gameplay is not ported.
+**Status:** R01–R06 complete; R07 slice 1 (terrain chunk reading/loading) is next.
+Rust contains an experimental workspace, transport smoke CLI and read-only copy
+inspection CLI; gameplay is not ported.
 **Initial plan revision:** `445ddddd675a87eb7adb50442b2dbf3c14ea6c6f`.
 **R01 audit revision:** `935db7b95885c101c62dfd6bf9e16f39b6a7a8fe`.
 **Scope:** replace the Python host first. Keep the browser playable during that
@@ -221,7 +221,7 @@ only after work is performed. Keep unfinished stages visible in the roadmap.
 | R03 | Replay fixtures and comparison oracle | R02 | Complete: slice 1 `9637eb5`; slice 2 `049fe10`; slice 3 `test: add backend-neutral replay comparison reports` (this change); [protocol and evidence](REPLAY_BACKENDS.md) |
 | R04 | Cargo workspace and applicable checks | R03 | Complete: slice 1 `732619a`; slice 2 `c7cf3e2`; slice 3 `feat: add Rust replay transport smoke CLI` (this change); evidence below |
 | R05 | Typed state, IDs, units, and boundary DTOs | R04 | Complete: slice 1 `f271ff4`; slice 2 `b5fa931`; slice 3 `508b396`; [boundary/coverage audit](RUST_STATE_DTOS.md), evidence below |
-| R06 | Legacy import and read-only save inspection | R05 | In progress: slice 1 `3312d5d`; slice 2 `feat: stage legacy external chunk copies` (this change); [staging scope/coverage](RUST_LEGACY_IMPORT.md), evidence below. Slice 3 remains |
+| R06 | Legacy import and read-only save inspection | R05 | Complete: slice 1 `3312d5d`; slice 2 `4513bec`; slice 3 `feat: inspect legacy save copies with capability reports` (this change); [staging scope/coverage](RUST_LEGACY_IMPORT.md), evidence below |
 | R07 | Terrain versions and chunk generation | R06 | Not started |
 | R08 | Spatial rules and founder movement | R07 | Not started |
 | R09 | Search algorithms and library decision | R08 | Not started |
@@ -850,11 +850,55 @@ reports at `performance-results/r06-slice2/` were inspected. Performance compari
 was not run for read-only import correctness; there is no performance investigation
 or optimization.
 
-**Remaining:** R06 slice 3 must complete broader migration/reference validation,
+**Remaining at slice 2:** R06 slice 3 must complete broader migration/reference validation,
 capability diagnostics and the read-only inspection CLI. Sparse-copy completeness
 needs an external manifest; imported raw records are not a playable world. Terrain
 hydration/generation, resource/animal identities, migration effects, durable
 copy-based destination writes and runtime authentication remain later stages.
+
+### R06 slice 3 evidence and remaining work
+
+`lantern-host inspect-copy --source FILE` now stages and inspects explicit synthetic
+copies, with optional `--provision FILE`, repeated `--chunks WORLD SEED_DIRECTORY`
+and caller-declared `--require-chunk WORLD X Y`. No production/default root or
+sidecar discovery occurs. Success emits one allowlisted JSON report; argument,
+read and validation failures emit sanitized diagnostics and a nonzero exit without
+raw input, credential data, unknown names or private paths. Missing CLI sources
+fail instead of using the library's empty-registry initialization behavior. Replay
+transport behavior remains available and separately tested.
+
+Reports list capabilities, preserved-only/unvalidated categories, identity counters,
+reference counts, unsupported field locations and explicit known version markers.
+Older migration markers are reported without running their effects; accepted
+legacy terrain versions never become an implicit upgrade. Missing markers retain
+unverified applicability. Unknown field diagnostics now also cover direct world
+and shared-map fields, using ordinals rather than arbitrary private names. Raw
+inventories, timers, construction, trip/position/cargo, NPCs, IDs and unknown data
+remain exact private bytes. Typed bindings/quantities are not rewritten or inferred
+from unsupported gameplay.
+
+Additional validation checks canonical same-world trade targets and adventure
+member ownership, plus nonempty/unique offer and per-building craft request IDs.
+Other task, coordinate, claim and NPC/animal references are explicitly reported
+as preserved/unvalidated until their feature hydration stages. The inspector does
+not claim playable import, phase/accounting parity or completed migrations.
+
+Seven integration tests add a committed synthetic migration/gameplay fixture and
+end-to-end CLI coverage for both envelopes, provisioning, sparse/required chunks,
+private output on success/failure, malformed inputs/arguments, future versions,
+cross-world/dangling references, duplicate IDs, stable identities/counts/totals,
+exact fractional/large stocks and unchanged bytes/mtime/directory contents.
+Applicable checks passed (3/3 commands: host formatting, 48 tests including doc
+tests, and Clippy with warnings denied). Markdown/JSON reports at
+`performance-results/r06-slice3/` were inspected. Performance comparison was not
+run for read-only import/inspection correctness, with no performance investigation
+or optimization.
+
+**R06 is complete as an inspection/staging foundation.** R07 starts terrain loading
+and generator parity. Gameplay feature hydration and full reference bindings remain
+R08–18, durable copy-based destination writes/crash recovery R19, and runtime
+accounts/HTTP R20–21. Sparse completeness still requires an external key manifest.
+No production writes, world generation or simulation are enabled by this stage.
 
 ## R07 — Terrain and chunks
 

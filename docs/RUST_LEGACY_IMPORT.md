@@ -1,9 +1,9 @@
 # R06 legacy staging import
 
-Slices 1–2 implement read-only registry/account/ordinary-world and external-chunk
-staging in `lantern_host::legacy`. It does not create a playable core world, invoke Python,
-run migrations, generate terrain/names, advance clocks, authenticate players or
-write a destination save. Python remains the normal playable host.
+R06 implements read-only registry/account/ordinary-world and external-chunk
+staging in `lantern_host::legacy`, with an explicit inspection CLI. It does not
+create a playable core world, invoke Python, run migrations, generate terrain/names,
+advance clocks, authenticate players or write a destination save. Python remains the normal playable host.
 
 ## Entry points and privacy
 
@@ -17,7 +17,7 @@ explicit provisioning path is an error. Chunked worlds require the separate
 `ChunkDirectory::new(&world_id, &seed_directory_copy)` bindings. Every chunked world,
 including inactive worlds, must have exactly one binding. Ordinary worlds reject
 chunk bindings. There is no sidecar/root discovery, output directory creation or
-production-root inspection. CLI integration belongs to slice 3.
+implicit production-root inspection. The CLI also requires explicit copy paths.
 
 The result is an immutable `ImportedRegistry` with typed world/town ownership,
 effective private credentials and an identity/reference overlay. Original source
@@ -29,7 +29,8 @@ imported worlds/towns, chunk metadata, raw chunks or credential records. Compile
 tests protect archive and chunk serialization boundaries.
 
 `report()` returns a separate Serialize/Debug allowlist: effective active world,
-public world IDs, landscape layout, counts, numeric chunk metadata, sparse coverage,
+public world IDs, landscape layout, counts, identity high-water marks, reference
+counts, audited version markers, numeric chunk metadata, sparse coverage,
 preserved-field paths and ignored provisioning counts. Its readiness is always
 `preserved_only`, never playable. Raw JSON, filesystem paths, seeds, tokens,
 account/login names, salts, hashes, inventory values and unknown field names are
@@ -76,6 +77,16 @@ typed target bindings. Indices must be integral, local and in range; farm/orchar
 links must target their matching building kind. Null links remain absent links,
 without rewriting the source. Building tiles must be exact i32 integers.
 
+Saved canonical trade `target_town` values must name a different town in the same
+world. Adventure `quarry.members` and `lanterns.members` keys must belong to that
+world and their records must be objects. Offer IDs are nonempty and unique within
+each town's offer list; craft request IDs are nonempty and unique within each
+building's `craft_queue`. IDs remain opaque and are never regenerated. Historical
+or unknown offer aliases (such as `target`) are preserved without guessed binding;
+missing canonical target fields are not evidence of a validated trade target.
+The report counts only canonical town links actually checked. These checks do not
+validate trade terms, recipes, rewards or adventure phase consistency.
+
 This is an immutable staging overlay, not a partially rewritten gameplay save.
 Other task/coordinate references remain in the preserved payload. Do not reorder
 or hydrate raw entities until *all* relevant references have been mapped. NPCs,
@@ -109,6 +120,16 @@ Unknown explicit values of these known markers are rejected, including in
 inactive worlds. Unknown other fields/markers are preserved as unsupported
 payload, not approved as compatible. Marker acceptance does not run or validate
 the migration's economic effects.
+
+`worlds[].versions` lists explicit audited markers with ordinal schema paths,
+saved/supported versions and a status. Terrain versions use `supported_generator;
+never upgrade implicitly`; an older terrain algorithm is not a pending upgrade.
+Other older markers use `older_marker; migration not applied`, while current
+markers use `current_marker; effects unverified`. Missing markers are not inferred:
+applicability and effects remain unverified. Unknown marker names remain privately
+preserved fields, without copying their names into diagnostics. The inspector
+never applies refunds, reassignments, inventory normalization or other migration
+effects merely because a marker is absent or old.
 
 Malformed shapes, duplicate keys, nonfinite JSON constants/exponent values and
 excessive nesting are rejected before exposing any imported registry. Arbitrary
@@ -161,6 +182,51 @@ file counts, required keys checked and `sparse_copy_only; absent files unverifie
 it never claims that an unmanifested sparse copy is complete. An empty explicit
 directory is valid sparse input. Neither success nor failure creates missing files.
 
+## Inspection command (slice 3)
+
+From `rust/`, inspect explicit synthetic copies:
+
+```sh
+cargo run -p lantern-host --locked --offline -- inspect-copy \
+  --source /tmp/lantern-copy/registry.json \
+  --provision /tmp/lantern-copy/private.players.json \
+  --chunks current /tmp/lantern-copy/current/18446744073709551615 \
+  --chunks old /tmp/lantern-copy/old/text-seed \
+  --require-chunk current 0 0
+```
+
+`--source` is required exactly once; `--provision` is optional and not discovered.
+For ordinary saves omit `--chunks` and `--require-chunk`. Repeat `--chunks WORLD
+SEED_DIRECTORY` once per chunked world; repeat `--require-chunk WORLD X Y` for a
+caller-supplied required-key set. Required options may precede their bindings.
+`inspect-copy --help` documents the command. Unknown options, duplicate source/
+provision options, invalid owner/key arguments and missing option values fail
+without echoing arguments. Path arguments use OS strings. Unlike the library's
+missing-save initialization semantics, a nonexistent CLI source is an error.
+There is no default save root, provisioning discovery or automatic chunk discovery.
+
+Exit 0 means read-only staging/inspection succeeded, **not** playable conversion.
+Stdout contains one JSON `InspectionReport`; stderr is empty on success. Exit 1
+means argument, read, validation or output failure; input/validation errors leave
+stdout empty and emit only a static reason or sanitized `BoundaryError` on stderr.
+Report fields never include raw input, credential keys/values, account/NPC/display
+names, seeds, unknown field names or filesystem paths. Public world IDs are
+intentionally included. `preserved` paths use ordinals for unsupported fields,
+including fields directly under worlds and shared maps; their reason is `field
+retained privately; not hydrated`. A whole-record preservation marker additionally
+covers nested unported payloads. Unknown data is retained, not approved as valid
+Rust gameplay.
+
+`capabilities` lists checked reference/schema categories separately from
+`preserved_only` categories. It explicitly sets `migrations_applied`,
+`simulation_advanced`, `writes_enabled` and `playable` to false. Counts and identity
+high-water marks are repeatable; private resource/cargo/inventory values remain
+in exact source bytes instead of being summed through floating point for output.
+The command calls the staging library only; it never starts the replay runner,
+Python loader, gameplay clocks or an HTTP listener. There are no output-save,
+conversion, generation or production-write options. Source bytes/mtime and copied
+directory contents remain unchanged on successful and rejected inspection.
+
 ## Validation and remaining work
 
 `rust/crates/lantern-host/tests/legacy_import.rs` uses only committed synthetic
@@ -179,8 +245,16 @@ report stability, explicit owner/namespace bindings, active/evicted/inactive chu
 missing/required/sparse copies, malformed metadata/records, unexpected files and
 symlinks, private report/error exclusion and unchanged source bytes/mtime/entries.
 
-Slice 3 still owns broader migration/reference validation, capability diagnostics,
-fixture coverage and the inspection CLI. Core hydration, feature migrations,
-complete NPC/animal/task bindings, terrain/RNG behavior, durable copy-based destination writes and
-runtime authentication remain their named later stages. No existing gameplay
-feature is marked verified or removed by this staging importer.
+`tests/legacy_inspect.rs` adds a synthetic migration/gameplay fixture and end-to-end
+CLI checks. Coverage includes pending/current/generator marker diagnostics,
+canonical trade/adventure ownership, duplicate offer/craft IDs, cross-world
+rejection, opaque field locations, preserved construction/trip cargo and exact
+stocks, repeatable identities/reports, explicit provisioning/chunks/required keys,
+argument and malformed-input privacy, unchanged filesystem state and OS-string
+error handling. Existing replay transport tests remain applicable.
+
+R06 is complete as a read-only inspection/staging stage. Core hydration, applied
+feature migrations, complete NPC/animal/task bindings, terrain/RNG behavior,
+durable copy-based destination writes and runtime authentication remain their
+named later stages. No existing gameplay feature is marked verified or removed by
+this staging importer.

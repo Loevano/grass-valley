@@ -228,9 +228,10 @@ fn validate_record(
     metadata: &ChunkMetadata,
     path: &str,
     preserved: &mut Vec<PreservedField>,
+    versions: &mut Vec<super::VersionReport>,
 ) -> Result<(), BoundaryError> {
     let node = Node::parse(bytes, path)?;
-    ordinary::versions(&node, path)?;
+    versions.extend(ordinary::versions(&node, path)?);
     if flag(&node, path)? {
         return Err(BoundaryError::invalid(path, "nested chunked record"));
     }
@@ -397,7 +398,14 @@ pub(super) fn attach(
             key.validate(metadata, &cp)?;
             let bytes = fs::read(entry.path())
                 .map_err(|_| BoundaryError::invalid(&cp, "missing or unreadable chunk file"))?;
-            validate_record(&bytes, key, metadata, &cp, &mut registry.preserved)?;
+            validate_record(
+                &bytes,
+                key,
+                metadata,
+                &cp,
+                &mut registry.preserved,
+                &mut world.versions,
+            )?;
             found.insert(key);
             world.chunks.push(ImportedChunk { key, bytes });
         }

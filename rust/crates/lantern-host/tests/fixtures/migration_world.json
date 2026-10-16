@@ -1,0 +1,36 @@
+{
+  "world": {
+    "towns": {
+      "first": {
+        "wood": 12.125,
+        "goods": {"wheat": 1.2345600e-3, "ore": 123456789012345678901234567890},
+        "inventory_version": 0,
+        "food_balance_version": 1,
+        "buildings": [{"kind": "workshop", "x": 0, "y": 0,
+          "stored_goods": {"wood": 0.0625},
+          "craft_queue": [{"id": "SYNTHETIC_REQUEST", "recipe": "planks", "amount": 3, "remaining": 2}],
+          "construction": {"remaining": 0.125, "upgrade": {"level": 2}}}],
+        "villagers": [{"building_index": 0, "pending_output": {"wood": 0.125},
+          "work_animation": {"phase": "returning", "x": 0.125, "y": 0.25, "elapsed": 0.0625},
+          "logistics_trip": {"id": 42, "cargo": {"wood": 0.03125},
+            "workplace": {"kind": "retired", "x": 10, "y": 10}, "path": [[0,0],[0,1]]}}],
+        "player": {"inventory": {"wood": 0.015625}, "equipment": {"hat": "linen"}},
+        "trade_offers": [{"id": "SYNTHETIC_OFFER", "target_town": "second",
+          "give_resource": "wood", "give_amount": 1, "want_resource": "coins", "want_amount": 2}],
+        "npcs": [{"name": "SYNTHETIC_PRIVATE_NPC", "routine": {"phase": "sleeping"}}],
+        "barn_animals": {"future_species": [{"health": 0.125}]},
+        "SYNTHETIC_PRIVATE_EXTENSION": {"SYNTHETIC_PRIVATE_KEY": "SYNTHETIC_PRIVATE_VALUE"}
+      },
+      "second": {"buildings": [], "villagers": []}
+    },
+    "shared_map": {"terrain_version": 1, "terrain_seed": "SYNTHETIC_SEED", "map_size": 2,
+      "terrain": ["gg", "gg"], "map_resources": [], "tree_stumps": [],
+      "npc_roster_version": 0, "npc_placement_version": 0,
+      "SYNTHETIC_PRIVATE_MAP_FIELD": "SYNTHETIC_PRIVATE_MAP_VALUE"},
+    "quarry": {"members": {"first": {"x": 1, "y": 3, "inside": true}}, "sequence": ["sun"]},
+    "lanterns": {"members": {"second": {"x": 1, "y": 2, "inside": true}}, "elapsed": 0.1234500},
+    "SYNTHETIC_PRIVATE_WORLD_FIELD": "SYNTHETIC_PRIVATE_WORLD_VALUE"
+  },
+  "tokens": {"SYNTHETIC_TOKEN": "first"},
+  "SYNTHETIC_PRIVATE_ENVELOPE": true
+}

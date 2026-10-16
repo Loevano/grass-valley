@@ -1,6 +1,6 @@
 use super::{
     BoundReference, BuildingLink, ImportedTown, ImportedWorld, LandscapeLayout, PreservedField,
-    json::Node, opaque_town, preserved_fields,
+    VersionReport, json::Node, opaque_town, preserved_fields,
 };
 use crate::{
     BoundaryError, ErrorKind,
@@ -9,7 +9,8 @@ use crate::{
 use lantern_core::ids::{BuildingId, IdAllocator, Owner, TownId, WorldId};
 use std::collections::BTreeSet;
 
-pub(super) fn versions(node: &Node, path: &str) -> Result<(), BoundaryError> {
+pub(super) fn versions(node: &Node, path: &str) -> Result<Vec<VersionReport>, BoundaryError> {
+    let mut reports = Vec::new();
     for (field, minimum, maximum) in [
         ("terrain_version", 1, 7),
         ("forage_version", 0, 1),
@@ -34,9 +35,21 @@ pub(super) fn versions(node: &Node, path: &str) -> Result<(), BoundaryError> {
                     "unsupported explicit version",
                 ));
             }
+            reports.push(VersionReport {
+                path: location,
+                saved: version,
+                supported: maximum,
+                status: if field == "terrain_version" {
+                    "supported_generator; never upgrade implicitly"
+                } else if version < maximum {
+                    "older_marker; migration not applied"
+                } else {
+                    "current_marker; effects unverified"
+                },
+            });
         }
     }
-    Ok(())
+    Ok(reports)
 }
 
 fn reference_index(
@@ -57,10 +70,21 @@ pub(super) fn import_world(
     payload: &Node,
     path: &str,
     preserved: &mut Vec<PreservedField>,
-) -> Result<(LandscapeLayout, Vec<ImportedTown>, IdAllocator), BoundaryError> {
-    versions(payload, path)?;
+) -> Result<
+    (
+        LandscapeLayout,
+        Vec<ImportedTown>,
+        IdAllocator,
+        Vec<VersionReport>,
+    ),
+    BoundaryError,
+> {
+    let mut reports = versions(payload, path)?;
+    preserved_fields(payload, &["towns", "shared_map"], path, preserved)?;
     let layout = if let Some(shared) = payload.optional("shared_map", path)? {
-        versions(shared, &format!("{path}.shared_map"))?;
+        let sp = format!("{path}.shared_map");
+        reports.extend(versions(shared, &sp)?);
+        preserved_fields(shared, &[], &sp, preserved)?;
         LandscapeLayout::Shared
     } else {
         LandscapeLayout::Independent
@@ -76,7 +100,7 @@ pub(super) fn import_world(
     });
     for (index, (key, town)) in entries.iter().enumerate() {
         let tp = format!("{path}.towns[{index}]");
-        versions(town, &tp)?;
+        reports.extend(versions(town, &tp)?);
         let owner = Owner {
             world: world.clone(),
             town: opaque_town(key, &tp)?,
@@ -183,7 +207,7 @@ pub(super) fn import_world(
             references,
         });
     }
-    Ok((layout, towns, allocator))
+    Ok((layout, towns, allocator, reports))
 }
 
 fn account(

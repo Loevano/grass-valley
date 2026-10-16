@@ -1,14 +1,20 @@
-//! Offline replay transport smoke test. No gameplay, saves, or HTTP listener.
+//! Offline replay smoke test and read-only copy inspection. No gameplay or HTTP.
 
+mod inspect;
 mod replay;
 
 use std::io::{self, Read, Write};
 use std::process::ExitCode;
 
 fn main() -> ExitCode {
-    let args: Vec<_> = std::env::args().skip(1).collect();
-    if args != ["replay"] {
-        eprintln!("Usage: lantern-host replay < request.json (transport smoke only; no gameplay)");
+    let args: Vec<_> = std::env::args_os().skip(1).collect();
+    if args.first().is_some_and(|arg| arg == "inspect-copy") {
+        return inspect::run(&args[1..]);
+    }
+    if args != [std::ffi::OsString::from("replay")] {
+        eprintln!(
+            "Usage: lantern-host replay < request.json (transport smoke only; no gameplay)\n       lantern-host inspect-copy --help (read-only synthetic copies)"
+        );
         return ExitCode::FAILURE;
     }
     let mut input = String::new();

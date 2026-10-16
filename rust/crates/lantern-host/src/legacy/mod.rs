@@ -1,4 +1,4 @@
-//! R06 slices 1–2: read-only, lossless staging of Python saves and chunk copies.
+//! R06: read-only, lossless staging of Python saves and chunk copies.
 //! This archive is not a playable world or a Rust model save. Unported payloads
 //! remain private, in their original bytes/order; no migrations or clock updates.
 //!
@@ -10,6 +10,7 @@
 mod chunks;
 mod json;
 mod ordinary;
+mod validation;
 
 pub use chunks::{ChunkDirectory, ChunkKey, ChunkMetadata, ChunkMetadataReport, ImportedChunk};
 
@@ -82,6 +83,8 @@ pub struct ImportedWorld {
     chunk_metadata: Option<ChunkMetadata>,
     chunks: Vec<ImportedChunk>,
     required_chunks: usize,
+    versions: Vec<VersionReport>,
+    town_references: usize,
 }
 
 impl ImportedWorld {
@@ -128,6 +131,26 @@ pub struct PreservedField {
     pub reason: &'static str,
 }
 
+/// Only audited marker names/values and ordinal schema paths enter this DTO.
+#[derive(Clone, Debug, PartialEq, Eq, Serialize)]
+pub struct VersionReport {
+    pub path: String,
+    pub saved: u64,
+    pub supported: u64,
+    pub status: &'static str,
+}
+
+#[derive(Debug, PartialEq, Eq, Serialize)]
+pub struct Capabilities {
+    pub validated: &'static [&'static str],
+    pub preserved_only: &'static [&'static str],
+    pub missing_migration_markers: &'static str,
+    pub migrations_applied: bool,
+    pub simulation_advanced: bool,
+    pub writes_enabled: bool,
+    pub playable: bool,
+}
+
 #[derive(Debug, PartialEq, Eq, Serialize)]
 pub struct WorldReport {
     pub world_id: String,
@@ -137,6 +160,10 @@ pub struct WorldReport {
     pub villagers: usize,
     pub founders: usize,
     pub accounts: usize,
+    pub identity_high_water: u64,
+    pub bound_entity_references: usize,
+    pub validated_town_references: usize,
+    pub versions: Vec<VersionReport>,
     pub chunk_files: usize,
     pub required_chunks_checked: usize,
     pub chunk_coverage: &'static str,
@@ -147,6 +174,7 @@ pub struct WorldReport {
 #[derive(Debug, PartialEq, Eq, Serialize)]
 pub struct InspectionReport {
     pub format: &'static str,
+    pub capabilities: Capabilities,
     pub readiness: &'static str,
     pub active_world: Option<String>,
     pub worlds: Vec<WorldReport>,
@@ -173,6 +201,29 @@ impl ImportedRegistry {
         InspectionReport {
             format: "lantern-legacy-inspection-v1",
             readiness: "preserved_only",
+            capabilities: Capabilities {
+                validated: &[
+                    "registry_and_account_ownership",
+                    "building_assignment_farm_orchard_links",
+                    "trade_targets_and_adventure_members",
+                    "offer_and_craft_queue_id_uniqueness",
+                    "known_version_bounds",
+                    "external_chunk_metadata_keys_and_positions",
+                ],
+                preserved_only: &[
+                    "inventories_and_fractional_quantities",
+                    "task_route_trip_claim_references",
+                    "npc_and_animal_identities",
+                    "terrain_and_resource_behavior",
+                    "migration_effects",
+                    "all_other_gameplay_and_unknown_fields",
+                ],
+                missing_migration_markers: "not inferred; applicability and effects unverified",
+                migrations_applied: false,
+                simulation_advanced: false,
+                writes_enabled: false,
+                playable: false,
+            },
             active_world: self.active_world.as_ref().map(|id| id.as_str().into()),
             worlds: self
                 .worlds
@@ -185,6 +236,10 @@ impl ImportedRegistry {
                     villagers: world.towns.iter().map(|t| t.villagers.len()).sum(),
                     founders: world.towns.iter().filter(|t| t.founder.is_some()).count(),
                     accounts: world.credentials.players.len(),
+                    identity_high_water: world.high_water(),
+                    bound_entity_references: world.towns.iter().map(|t| t.references.len()).sum(),
+                    validated_town_references: world.town_references,
+                    versions: world.versions.clone(),
                     chunk_files: world.chunks.len(),
                     required_chunks_checked: world.required_chunks,
                     chunk_coverage: if world.chunk_metadata.is_some() {
@@ -220,7 +275,7 @@ fn preserved_fields(
         if !known.contains(&key.as_str()) {
             preserved.push(PreservedField {
                 path: format!("{path}.fields[{index}]"),
-                reason: "unrecognized field retained privately",
+                reason: "field retained privately; not hydrated",
             });
         }
     }
@@ -237,13 +292,14 @@ fn world(
     preserved: &mut Vec<PreservedField>,
 ) -> Result<ImportedWorld, BoundaryError> {
     let chunk_metadata = chunks::metadata(payload, &format!("{path}.world"))?;
-    let (layout, towns, allocator) =
+    let (layout, towns, allocator, versions) =
         ordinary::import_world(&id, payload, &format!("{path}.world"), preserved)?;
     let owners = towns
         .iter()
         .map(|t| t.owner.town.clone())
         .collect::<BTreeSet<_>>();
     let credentials = ordinary::credentials(tokens, players, &owners, path, preserved)?;
+    let town_references = validation::world(payload, &format!("{path}.world"))?;
     Ok(ImportedWorld {
         id,
         name,
@@ -258,6 +314,8 @@ fn world(
         chunk_metadata,
         chunks: Vec::new(),
         required_chunks: 0,
+        versions,
+        town_references,
     })
 }
 

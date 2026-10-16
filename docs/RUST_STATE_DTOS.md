@@ -167,8 +167,9 @@ No omitted feature is approved for removal. The saved subsystem matrix assigns:
 The v1 model decoder rejects these extra fields rather than claiming a successful
 import of them. R06 must inspect copies and preserve or explicitly reject every
 unported legacy feature; it must never discard them into this minimal schema.
-R06 slices 1–2 now provide [separate private staging](RUST_LEGACY_IMPORT.md) for
+R06 now provides [separate private staging](RUST_LEGACY_IMPORT.md) for
 ordinary saves and explicit chunk copies, retaining their source bytes instead
-of hydrating model v1.
+of hydrating model v1. Its explicit inspection CLI reports capabilities, audited
+version markers and unsupported field locations without advancing simulation.
 Public/API DTOs and private save DTOs must expand deliberately with each later
 feature port and its tests. Durable save versioning/migrations remain R19.
