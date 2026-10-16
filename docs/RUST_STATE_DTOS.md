@@ -196,3 +196,13 @@ deferred to the authoritative lifecycle boundary. Neither private payload has
 Debug/Serialize or becomes a public DTO. Complete post-overlay water integration
 remains 3b.iii.c; see the
 [terrain compatibility boundary](RUST_TERRAIN.md#ordinary-village-overlay-phase-slice-3biiia).
+
+
+R07 slice 3c.i exposes private `CaughtUpChunk` without Debug/Serialize. Explicit
+preparation retains exact private source/untouched scalar extensions and returns
+owned industry/resource/sleeping-stump catch-up output for a supplied simulation
+clock and expanded obstacle tiles. It neither installs authoritative state nor
+modifies archive/world/client DTOs or production. The clock domain is explicitly
+finite/nonnegative ≤2^53; larger exact integer clocks, world obstacle extraction,
+active/sleeping ownership, ordered swamp cache-plan consumption/rebinding,
+eviction/reload and active regrowth remain required by 3c.

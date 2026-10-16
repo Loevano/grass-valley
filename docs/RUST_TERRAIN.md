@@ -545,8 +545,45 @@ needed for this compatibility port and no speedup is claimed.
 | Authored starter ground/resources and new-world town sites/separation | Slices 3b.i–ii complete; 49 authored starter and 86 raw selection Python goldens |
 | Village/swamp placement and versioned overlays | 3b.iii.a ordinary and 3b.iii.b.i–ii legacy/organic swamp phases complete (150 + 43 + 100 Python pairs); 3b.iii.b.iii ordinary obstacle-safe placement/layout/life metadata complete (105 Python worlds); 3b.iii.b.iv swamp world metadata/home/routine/visit migration complete (264 Python worlds plus explicit ordered cache plans) |
 | Post-overlay v7 tiny-water repair and boundaries | 3b.iii.c immutable integration complete; 35 actual Python worlds, including resident plans and post-overlay edges/corners; authoritative lifecycle remains 3c |
-| Active/sleeping chunks, dirty resources, regrowth and clock catch-up | Slice 3c remaining |
+| Active/sleeping chunks, dirty resources, regrowth and clock catch-up | 3c.i private chunk catch-up preparation complete within finite nonnegative clock domain ≤2^53 (65 actual Python cases); authoritative lifecycle integration, exact larger integer clocks and active regrowth remain |
 | Ordinary/independent/shared nonchunked terrain-only hydration and `generate_map` | Slice 3a complete; 35 real maps and six paired hydration goldens; gameplay preparation remains later stages |
 
 No whole R07 completion, playable-world readiness, performance gain, runtime
 memory bound, durable save conversion or HTTP integration is claimed.
+
+
+## Explicit sleeping-chunk catch-up preparation (slice 3c.i)
+
+`CaughtUpChunk::prepare` accepts private record bytes, validated generator/bounds,
+a supplied JSON simulation-clock scalar and expanded obstacle tiles. It returns
+private owned bytes while retaining the exact source. It independently ports
+`ChunkMap.catch_up`: industry/mineral migration and captured-horse thinning,
+obstacle/stump-aware horse additions, versioned invalid-tree removal, individual
+sleeping resource limits/defaults and capped regeneration, and sleeping stump
+round-nine timers floored at `3 * .9`. Future stored clocks produce zero elapsed
+time but still receive the supplied clock. It never spawns regrown trees, runs
+production, installs an authoritative record or mutates input/archive/source.
+
+Known nonsupply chest/village records survive unchanged; unknown kinds/versions
+and malformed records reject with sanitized paths. Untouched extensions/scalar
+lexemes remain exact, including arbitrary-size private integers. The explicit
+clock domain is finite nonnegative values ≤2^53; larger integer clocks reject
+without lossy conversion and remain an R07 compatibility gate. Float spellings
+use Python binary64 semantics; the supplied clock's original lexeme is retained.
+
+65 actual Python cases use real generated chunks and authored chest-containing
+starter chunks across versions 1–7, 480/1920 dimensions and typed seeds, with
+isolated rule fixtures for migration/occupancy/supply/tree/timer boundaries.
+`generate_catch_up.py --check` independently recomputes the oracle without
+refreshing it. Three Rust tests cover full records, repeats, private source and
+quantity preservation and sanitized rejection; a compile-fail doctest prevents
+serialization of this private result.
+
+This is an independent prerequisite, not a live chunk lifecycle. Remaining 3c
+must extract authoritative obstacles/desired chunks, consume ordered swamp cache
+plans with actual rebinding/invalidation, own active/sleeping/dirty resources,
+bound derived caches/snapshots, preserve edits through eviction/reload/write
+intents, integrate catch-up, support larger exact integer clocks, and implement
+active versioned regrowth. No R07 completion or playable Rust load is claimed.
+Performance comparison was not run because this is a compatibility port, not a
+performance investigation or optimization.

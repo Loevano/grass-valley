@@ -10,7 +10,8 @@ reconstruction) complete; 3b.iii.a ordinary village overlay phase complete;
 3b.iii.b.iii ordinary obstacle-safe placement/layout/life metadata complete;
 3b.iii.b.iv swamp world metadata/visit relocation and ordered deferred cache plans
 complete; 3b.iii.c immutable saved-first overlay/water integration complete;
-3c (authoritative activation/regrowth) remains.
+3c.i private supplied-clock chunk catch-up preparation complete within its explicit
+clock domain; authoritative lifecycle/cache-plan consumption and active regrowth remain.
 Rust contains an experimental workspace, transport smoke CLI and read-only copy
 inspection CLI; gameplay is not ported.
 **Initial plan revision:** `445ddddd675a87eb7adb50442b2dbf3c14ea6c6f`.
@@ -230,7 +231,7 @@ only after work is performed. Keep unfinished stages visible in the roadmap.
 | R04 | Cargo workspace and applicable checks | R03 | Complete: slice 1 `732619a`; slice 2 `c7cf3e2`; slice 3 `feat: add Rust replay transport smoke CLI` (this change); evidence below |
 | R05 | Typed state, IDs, units, and boundary DTOs | R04 | Complete: slice 1 `f271ff4`; slice 2 `b5fa931`; slice 3 `508b396`; [boundary/coverage audit](RUST_STATE_DTOS.md), evidence below |
 | R06 | Legacy import and read-only save inspection | R05 | Complete: slice 1 `3312d5d`; slice 2 `4513bec`; slice 3 `041caee`; [staging scope/coverage](RUST_LEGACY_IMPORT.md), evidence below |
-| R07 | Terrain versions and chunk generation | R06 | In progress: slice 1 complete (`31fcf91`); [scope and evidence](RUST_TERRAIN.md); slice 2 complete (`dc0d400`); slice 3a complete (`4762909`); slice 3b.i complete (`9b08f25`); slice 3b.ii complete (`b925488`); slice 3b.iii.a ordinary village phase complete (`085c64b`); 3b.iii.b.i–ii legacy/organic swamp phases complete; 3b.iii.b.iii ordinary placement/layout/life metadata complete (`37f2a84`); 3b.iii.b.iv swamp world metadata/visits and ordered deferred cache plans complete (`7feec7b`); 3b.iii.c `feat: materialize post-overlay terrain with seam water repair` (this change); 3c remains |
+| R07 | Terrain versions and chunk generation | R06 | In progress: slice 1 complete (`31fcf91`); [scope and evidence](RUST_TERRAIN.md); slice 2 complete (`dc0d400`); slice 3a complete (`4762909`); slice 3b.i complete (`9b08f25`); slice 3b.ii complete (`b925488`); slice 3b.iii.a ordinary village phase complete (`085c64b`); 3b.iii.b.i–ii legacy/organic swamp phases complete; 3b.iii.b.iii ordinary placement/layout/life metadata complete (`37f2a84`); 3b.iii.b.iv swamp world metadata/visits and ordered deferred cache plans complete (`7feec7b`); 3b.iii.c immutable post-overlay terrain and seam water repair complete (`6c4bbe9`); 3c.i private supplied-clock catch-up preparation complete (this change); authoritative lifecycle and active regrowth remain |
 | R08 | Spatial rules and founder movement | R07 | Not started |
 | R09 | Search algorithms and library decision | R08 | Not started |
 | R10 | Request scheduler and cache invalidation | R09 | Not started |
@@ -1368,6 +1369,66 @@ compatibility port, not a performance investigation or optimization.
 implement active/sleeping/dirty state, bounded caches, eviction/reload and supplied
 simulation-time catch-up/versioned regrowth without offline production. R07 remains
 in progress; R08, HTTP, live-save writes and cutover are outside this slice.
+
+### R07 slice 3c.i evidence and remaining work
+
+Starting revision: `6c4bbe9`. The first bounded lifecycle prerequisite is private
+`CaughtUpChunk::prepare`: an explicit owned implementation of the chunk-local
+Python `ChunkMap.catch_up` rules. It accepts a supplied simulation-clock JSON
+scalar, generator version, chunk bounds and already expanded occupied footprint
+tiles. It never reads a wall clock, installs records, mutates an imported archive,
+changes production/cargo, or writes source files. The caller must supply building,
+road and NPC footprints plus Python-rounded founder tiles exactly as Python does;
+world extraction/authority ownership remains the lifecycle integration task.
+
+Preparation applies mineral/industry migrations before invalid-tree filtering,
+keeps captured horse thinning/version markers, tests new horse occupancy before
+stump removal, applies v1–5 versus v6–7 resource/stump terrain rules, and defaults
+and caps individual sleeping resource supplies. Swamp/ancient trees have maximum
+40, ordinary trees 8, and all trees have zero regeneration. Elapsed time is clamped
+to zero for future stored clocks while the record clock is still replaced with
+the supplied clock. Sleeping stumps use decimal `round(value, 9)` and the Python
+`3 * .9` minimum; they never become trees during catch-up. Source bytes and
+untouched ordered fields/numeric lexemes/extensions remain private and exact.
+Unsupported kinds/versions, malformed fields and foreign chunk positions reject
+with sanitized structural paths. Known nonsupply resources, including authored
+chests and village structures/decor, are retained.
+
+The explicit accepted clock domain is finite nonnegative clocks at most 2^53;
+integer lexemes above that bound reject before float conversion rather than
+silently changing elapsed time. JSON float spellings retain Python binary64
+semantics. **Lifting this domain restriction with exact integer-clock arithmetic
+is still required before claiming full Python clock compatibility.** Arbitrary
+private extension/quantity integers remain lossless and are not subject to this
+clock-only bound.
+
+65 frozen actual Python `ChunkMap.catch_up` cases cover real generated terrain
+versions 1–7, typed seeds, 480/1920 dimensions, authored starter chunks containing
+chests, migration markers, depleted/default supplies, invalid saved trees/stumps,
+occupied horse spawns, absent/future clocks, long supplied-clock jumps, decimal
+rounding boundaries and repeated preparation. The oracle verifies that world
+production/cargo stay unchanged. Three Rust integration tests compare complete
+records, source preservation, huge private integers, clock lexemes and sanitized
+rejections; a compile-fail doctest protects the private result. The independent
+`generate_catch_up.py --check` recomputes actual Python without updating fixtures.
+The independent verifier passed all 65 cases. The affected selection contained
+only `rust:lantern-host`, with no unknown runtime files. The final affected check
+passed 3/3 commands: formatting, 92 host tests plus 15 compile-fail doctests, and
+Clippy with warnings denied. Markdown/JSON reports at
+`performance-results/r07-slice3ci/` were inspected (candidate `6c4bbe9` plus dirty
+task worktree); performance is explicitly `not_run`.
+
+**Remaining 3c:** a single authoritative host owner; active/sleeping/dirty state;
+world-derived desired chunks and obstacle extraction; ordered actual swamp-plan
+application to active/camera records followed by resource/stump rebind and
+membership/index invalidation; bounded derived views/snapshots; promotion,
+eviction and reload preserving edited records, quantities, stumps and metadata
+through an in-memory durable archive/write intents; integration of this explicit
+catch-up boundary; exact large integer clocks; and active versioned regrowth with
+paired lifecycle traces. R19 owns persistence destinations/crash recovery. R07 is
+incomplete, Python remains the playable default, and R08, HTTP, live-save writes
+and cutover have not started. Performance comparisons are not needed for this
+compatibility port; no performance problem or optimization was investigated.
 
 ## R08 — Spatial rules and founder movement
 

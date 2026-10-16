@@ -284,8 +284,20 @@ reject; authoritative cache writes/rebinding/invalidation remain at the later
 lifecycle boundary. Slice 3b.iii.c now composes immutable saved-first metadata,
 ordinary/swamp overlays, ordered resident-copy plans and v7 post-overlay neighbor
 water repair (35 actual Python worlds with complete record/insertion-order checks).
-Resource catch-up, authoritative caches/rebinding and regrowth remain 3c. No NPC
+Resource catch-up integration, authoritative caches/rebinding and regrowth remain 3c. No NPC
 gameplay or complete R07 readiness is claimed.
+
+R07 slice 3c.i adds independent private `CaughtUpChunk::prepare` for the actual
+chunk-local Python `ChunkMap.catch_up` industry/mineral, invalid-tree, individual
+supply and sleeping-stump rules (65 actual Python cases). It accepts a supplied
+simulation-clock scalar and already expanded authoritative obstacle tiles, keeps
+source/untouched numeric lexemes/extensions exact, and performs no production,
+active tree regrowth, archive writes or lifecycle installation. Its explicit
+finite nonnegative clock domain is ≤2^53; exact larger integer clocks remain a
+compatibility gate. Authoritative lifecycle, ordered swamp-plan cache writes and
+resource rebind/invalidation, bounded caches/snapshots, promotion/eviction/reload,
+obstacle extraction and active versioned regrowth remain 3c. Python stays default.
+
 Saved records take precedence over regeneration; seeded base generation and
 idempotent legacy repairs/overlays are separate operations. `ChunkMap.read` can
 catch up resources and apply village/terrain repair, so it is not a raw inspection

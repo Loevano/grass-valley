@@ -7,6 +7,7 @@
 //! fn unsafe_report(imported: &ImportedRegistry) { serde_json::to_string(imported).unwrap(); }
 //! ```
 
+mod catch_up;
 mod chunks;
 mod json;
 mod landscapes;
@@ -16,6 +17,7 @@ mod ordinary;
 mod validation;
 mod village_overlay;
 
+pub use catch_up::CaughtUpChunk;
 pub use chunks::{
     ChunkDirectory, ChunkKey, ChunkMetadata, ChunkMetadataReport, ImportedChunk, RawChunk,
 };

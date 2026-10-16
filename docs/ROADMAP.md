@@ -8,7 +8,7 @@ and cache rules are in [Backend](BACKEND.md#cached-zoomed-out-map).
 | 1     | Cached zoomed-out town overview    | Implemented              | Show the landscape and city sizes without refreshing animated scene detail.                                      |
 | 2     | Production line balancing          | Wood and grain implemented; fishing remains | Develop clear fishing chains with capped staffing and simple upgrades. |
 | 3     | Scalable villager pathfinding       | Host queue implemented; cache refinement and shared navigation remain | Keep movement responsive as villager counts and towns grow, with bounded routing work. |
-| 4     | Rust migration | R07 saved chunks, raw generators and nonchunked terrain-only hydration complete; authored starter geometry and typed-seed reconstruction complete; ordinary village and legacy/organic swamp phases complete; ordinary and swamp metadata plus immutable post-overlay water integration complete; authoritative activation/regrowth remain | Follow the [staged plan and prompts](RUST_MIGRATION.md), preserving playable checkpoints and saved worlds. |
+| 4     | Rust migration | R07 saved chunks, raw generators and nonchunked terrain-only hydration complete; authored starter geometry and typed-seed reconstruction complete; ordinary village and legacy/organic swamp phases complete; ordinary and swamp metadata plus immutable post-overlay water integration complete; private supplied-clock chunk catch-up preparation complete within its explicit clock domain; authoritative activation/regrowth remain | Follow the [staged plan and prompts](RUST_MIGRATION.md), preserving playable checkpoints and saved worlds. |
 
 ## Rust migration
 
@@ -40,7 +40,11 @@ metadata (105 actual Python worlds with repeat and insertion-order checks). Slic
 moved visit keys (264 actual Python worlds plus ordered deferred cache plans).
 Slice 3b.iii.c composes saved-first metadata/overlays, honors ordered resident-copy
 plans and repairs v7 water using post-overlay neighbors (35 actual Python worlds).
-Slice 3c must complete authoritative activation/sleeping/dirty state,
+Slice 3c.i adds private supplied-clock chunk catch-up preparation (65 actual Python
+cases), with exact source/quantity preservation and no production. Clocks above
+2^53 explicitly reject pending exact integer-clock support. Slice 3c must still
+complete authoritative activation/sleeping/dirty state, ordered swamp-plan writes
+and resource rebind/invalidation, obstacle extraction, active versioned regrowth,
 bounded caches and simulation-time resource recovery without offline production. The completed
 [state/DTO boundary audit](RUST_STATE_DTOS.md) identifies unsupported features;
 gameplay remains unported. Release hardware metadata, Rust gameplay RNG stream
