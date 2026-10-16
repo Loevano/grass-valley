@@ -11,6 +11,7 @@ mod chunks;
 mod json;
 mod landscapes;
 mod loaded;
+mod materialized;
 mod ordinary;
 mod validation;
 mod village_overlay;
@@ -22,6 +23,7 @@ pub use landscapes::{HydratedLandscape, HydratedLandscapes};
 pub use loaded::{
     ChunkReader, LoadedChunk, LoadedResource, LoadedStump, LoadedTile, MAX_LOADED_CHUNKS,
 };
+pub use materialized::{PostOverlayTerrain, ResidentChunkCopy, TerrainRecord};
 pub use village_overlay::{
     LegacySwampOverlay, OrdinaryVillageMetadata, OrdinaryVillageOverlay, SwampCachePlan,
     SwampOverlay, SwampVillageMetadata,

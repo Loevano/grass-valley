@@ -464,11 +464,76 @@ sanitized rejection. The frozen oracle independently recomputes without writing:
 python3 rust/crates/lantern-host/tests/fixtures/terrain/generate_swamp_metadata.py --check
 ```
 
-Next 3b.iii.c integrates saved-first metadata/overlays, retaining and honoring the
-ordered plan in immutable materialization, and post-overlay v7 neighbor water repair.
+Slice 3b.iii.c below integrates saved-first metadata/overlays, retaining and honoring
+the ordered plan in immutable materialization, and post-overlay v7 neighbor water repair.
 Slice 3c consumes actual authoritative cache effects and retains
 lifecycle/resources/regrowth. R07 remains incomplete and Python remains the playable default. No performance comparison was
 run: this bounded compatibility port does not investigate a performance problem.
+
+## Immutable post-overlay terrain (slice 3b.iii.c)
+
+`ImportedRegistry::materialize_chunked(&world_id, &resident_copies)` explicitly
+prepares ordinary then swamp metadata on a private copy of that registry world's
+payload. `PostOverlayTerrain::read(key)` selects supplied resident records first,
+then saved archive bytes, then typed-seed raw/starter reconstruction. Fresh records
+receive ordinary and swamp overlays, followed by v7 tiny-water repair. Public
+inspection readiness and raw/saved-only reader behavior stay unchanged. Independent
+and nonchunked worlds reject here rather than being converted.
+
+`ResidentChunkCopy::new(&world_id, key, bytes)` declares an existing active OR
+camera record copy; duplicate keys and foreign owners reject. Each ordinal in the
+swamp metadata plan is applied separately to each resident copy before reads.
+Combining all upgraded villages into one apply is observably different for
+mixed/overlapping versions and is tested against the actual Python ensure path.
+Residents bypass fresh-read overlays and water repair, matching Python's existing
+active/view precedence. The ordinal plan is retained via `cache_plan()`; actual
+authoritative cache writes, active-resource/stump rebinding and index invalidation
+remain explicitly required in slice 3c. The private prepared world is the
+manager-free metadata result; it does not claim those aggregate runtime effects
+have happened. No resident input or imported archive is edited.
+
+Tiny-water repair checks cardinal connectivity of at least three tiles. It first
+checks the target's unchanged local water set, avoiding any neighbor reads when
+three local tiles suffice. For smaller components it samples neighbors after
+saved/starter/village/swamp edits and resident upgrades, without recursively
+repairing them. Edge/corner crossings and world boundaries match Python. Removal
+filters only target water resources: terrain, stumps, resource order, fractional
+supply, extension scalars and clocks retain their values/lexemes. Versions 1–6
+skip water repair. Relevant invalid neighbor records fail the read instead of
+silently generating replacement terrain. Scratch water sets last only for one
+read; no authoritative decoded/snapshot cache or runtime memory-bound claim is
+introduced.
+
+`TerrainRecord` and `PostOverlayTerrain` have no Debug/Serialize implementations;
+explicit private-byte accessors are for later controlled hydration, not public
+DTOs. Sources retain exact bytes. Materialized metadata/records preserve object
+and list insertion order and retained scalar spellings, including arbitrary-size
+integers. This integration corrected inherited ordering of swamp addition fields
+and barn animal maps to match Python's resource snapshot order. Returns are not
+automatically installed. Repeated calls on the same inputs are stable; no wall
+clock, catch-up, regrowth, industry/supply migration, production or writes occur.
+
+35 frozen actual Python worlds compare real generated ground/resources, saved
+edits, all terrain versions, arbitrary-size integer/text seeds, legacy/current
+bounds and missing version/offset defaults, ordinary/organic swamp composition,
+active/camera plan effects, seam singleton/pair/three-tile bodies, diagonal-chunk
+samples reached by cardinal paths, life-added water and neighbor clearing, world
+edges and resident-over-saved precedence. Five Rust tests compare full records
+and exact insertion order, repeated reads, preserved scalar/source data, private
+output exclusion, failure atomicity and filesystem immutability. The oracle runs
+actual `ChunkMap.read` with **only** catch-up explicitly disabled, not a replacement
+water or terrain implementation. Its manager-free metadata output and actual
+resident upgrade results are separately checked.
+
+```sh
+python3 rust/crates/lantern-host/tests/fixtures/terrain/generate_materialized.py --check
+```
+
+The verifier never refreshes fixtures in check mode. Activation/sleeping/dirty
+resources, authoritative ordered cache effects and aggregate rebinding, cache
+bounds/eviction/reload and supplied-time catch-up/regrowth remain slice 3c. Python
+remains the playable default; R07 is incomplete. Performance comparison is not
+needed for this compatibility port and no speedup is claimed.
 
 ## Compatibility matrix and remaining work
 
@@ -479,7 +544,7 @@ run: this bounded compatibility port does not investigate a performance problem.
 | D05 byte seed material → compatible reference RNG draws | Complete; gameplay adoption/state serialization remain later work |
 | Authored starter ground/resources and new-world town sites/separation | Slices 3b.i–ii complete; 49 authored starter and 86 raw selection Python goldens |
 | Village/swamp placement and versioned overlays | 3b.iii.a ordinary and 3b.iii.b.i–ii legacy/organic swamp phases complete (150 + 43 + 100 Python pairs); 3b.iii.b.iii ordinary obstacle-safe placement/layout/life metadata complete (105 Python worlds); 3b.iii.b.iv swamp world metadata/home/routine/visit migration complete (264 Python worlds plus explicit ordered cache plans) |
-| Post-overlay v7 tiny-water repair and boundaries | 3b.iii.c complete integration/neighbor repair remaining; raw and ordinary-phase boundaries covered |
+| Post-overlay v7 tiny-water repair and boundaries | 3b.iii.c immutable integration complete; 35 actual Python worlds, including resident plans and post-overlay edges/corners; authoritative lifecycle remains 3c |
 | Active/sleeping chunks, dirty resources, regrowth and clock catch-up | Slice 3c remaining |
 | Ordinary/independent/shared nonchunked terrain-only hydration and `generate_map` | Slice 3a complete; 35 real maps and six paired hydration goldens; gameplay preparation remains later stages |
 

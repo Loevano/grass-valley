@@ -264,7 +264,12 @@ fn commit_rows(record: &mut Node, rows: &[Vec<u8>]) {
     );
 }
 
-fn version(node: &Node, field: &str, max: u64, path: &str) -> Result<Option<u64>, BoundaryError> {
+pub(super) fn version(
+    node: &Node,
+    field: &str,
+    max: u64,
+    path: &str,
+) -> Result<Option<u64>, BoundaryError> {
     let value = node
         .optional(field, path)?
         .map(|n| n.unsigned(&format!("{path}.{field}")))
@@ -277,13 +282,13 @@ fn version(node: &Node, field: &str, max: u64, path: &str) -> Result<Option<u64>
     }
     Ok(value)
 }
-fn position(node: &Node, path: &str) -> Result<(i32, i32), BoundaryError> {
+pub(super) fn position(node: &Node, path: &str) -> Result<(i32, i32), BoundaryError> {
     Ok((
         node.required("x", path)?.tile(&format!("{path}.x"))?,
         node.required("y", path)?.tile(&format!("{path}.y"))?,
     ))
 }
-fn rows(node: &Node, path: &str) -> Result<Vec<Vec<u8>>, BoundaryError> {
+pub(super) fn rows(node: &Node, path: &str) -> Result<Vec<Vec<u8>>, BoundaryError> {
     let rows = node
         .required("terrain", path)?
         .array(&format!("{path}.terrain"))?;
@@ -305,7 +310,12 @@ fn rows(node: &Node, path: &str) -> Result<Vec<Vec<u8>>, BoundaryError> {
         })
         .collect()
 }
-fn validate_resources(node: &Node, left: i32, top: i32, path: &str) -> Result<(), BoundaryError> {
+pub(super) fn validate_resources(
+    node: &Node,
+    left: i32,
+    top: i32,
+    path: &str,
+) -> Result<(), BoundaryError> {
     decode_resources(node, path)?;
     for field in ["map_resources", "tree_stumps"] {
         for (index, item) in node.required(field, path)?.array(path)?.iter().enumerate() {
@@ -402,15 +412,20 @@ fn add_life(
         set(&mut item, "label", scalar(label));
         if variant == "barn" {
             let animals = match village.biome {
-                b'b' => serde_json::json!({"chicken":3,"pig":1}),
-                b'd' => serde_json::json!({"horse":2,"chicken":2}),
-                b'i' => serde_json::json!({"sheep":3,"chicken":1}),
+                b'b' => [("chicken", 3), ("pig", 1)],
+                b'd' => [("horse", 2), ("chicken", 2)],
+                b'i' => [("sheep", 3), ("chicken", 1)],
                 _ => unreachable!(),
             };
             set(
                 &mut item,
                 "animals",
-                Node::parse(&serde_json::to_vec(&animals).unwrap(), PATH)?,
+                Node::Object(
+                    animals
+                        .into_iter()
+                        .map(|(kind, amount)| (kind.into(), scalar(amount)))
+                        .collect(),
+                ),
             );
         }
         additions.push(item);
@@ -442,7 +457,7 @@ fn add_life(
 }
 // Preserve arbitrary-size integer and floating scalar spelling; never roundtrip
 // retained source fields through serde_json::Value or a numeric representation.
-fn write_node(node: &Node, output: &mut Vec<u8>) {
+pub(super) fn write_node(node: &Node, output: &mut Vec<u8>) {
     match node {
         Node::Scalar(raw) => output.extend_from_slice(raw.get().as_bytes()),
         Node::Array(items) => {
@@ -565,9 +580,17 @@ fn append_swamp_item(
 ) {
     let (x, y) = (village.x + x, village.y + y);
     if inside(x, y, left, top) {
-        let mut item = structure(kind, x, y, village, true);
-        set(&mut item, "variant", scalar(variant));
-        set(&mut item, "label", scalar(label));
+        // Python copies the addition's kind/x/y/variant/label first, then
+        // appends biome/village. Preserve this order for resource snapshots.
+        let item = Node::Object(vec![
+            ("kind".into(), scalar(kind)),
+            ("x".into(), scalar(x)),
+            ("y".into(), scalar(y)),
+            ("variant".into(), scalar(variant)),
+            ("label".into(), scalar(label)),
+            ("biome".into(), scalar((village.biome as char).to_string())),
+            ("village".into(), scalar(&village.name)),
+        ]);
         append(record, item);
     }
 }

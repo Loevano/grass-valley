@@ -281,7 +281,10 @@ separate private `SwampVillageMetadata` for obstacle/bounds-safe swamp ensure,
 NPC homes/routine repair and moved visit keys (264 complete actual Python worlds,
 order/repeat checks and ordered deferred active/view cache plans). Runtime managers
 reject; authoritative cache writes/rebinding/invalidation remain at the later
-lifecycle boundary. Complete overlay/water integration remains 3b.iii.c. No NPC
+lifecycle boundary. Slice 3b.iii.c now composes immutable saved-first metadata,
+ordinary/swamp overlays, ordered resident-copy plans and v7 post-overlay neighbor
+water repair (35 actual Python worlds with complete record/insertion-order checks).
+Resource catch-up, authoritative caches/rebinding and regrowth remain 3c. No NPC
 gameplay or complete R07 readiness is claimed.
 Saved records take precedence over regeneration; seeded base generation and
 idempotent legacy repairs/overlays are separate operations. `ChunkMap.read` can

@@ -8,7 +8,7 @@ and cache rules are in [Backend](BACKEND.md#cached-zoomed-out-map).
 | 1     | Cached zoomed-out town overview    | Implemented              | Show the landscape and city sizes without refreshing animated scene detail.                                      |
 | 2     | Production line balancing          | Wood and grain implemented; fishing remains | Develop clear fishing chains with capped staffing and simple upgrades. |
 | 3     | Scalable villager pathfinding       | Host queue implemented; cache refinement and shared navigation remain | Keep movement responsive as villager counts and towns grow, with bounded routing work. |
-| 4     | Rust migration | R07 saved chunks, raw generators and nonchunked terrain-only hydration complete; authored starter geometry and typed-seed reconstruction complete; ordinary village and legacy/organic swamp phases complete; ordinary and swamp obstacle-safe metadata/visit migration complete; water integration and activation remain | Follow the [staged plan and prompts](RUST_MIGRATION.md), preserving playable checkpoints and saved worlds. |
+| 4     | Rust migration | R07 saved chunks, raw generators and nonchunked terrain-only hydration complete; authored starter geometry and typed-seed reconstruction complete; ordinary village and legacy/organic swamp phases complete; ordinary and swamp metadata plus immutable post-overlay water integration complete; authoritative activation/regrowth remain | Follow the [staged plan and prompts](RUST_MIGRATION.md), preserving playable checkpoints and saved worlds. |
 
 ## Rust migration
 
@@ -38,9 +38,9 @@ geometry and record upgrades (100 real Python pairs plus exact layout). Slice
 metadata (105 actual Python worlds with repeat and insertion-order checks). Slice
 3b.iii.b.iv adds independent swamp world metadata, NPC home/routine relocation and
 moved visit keys (264 actual Python worlds plus ordered deferred cache plans).
-Next 3b.iii.c must integrate complete saved-first materialization, retain/honor the
-ordered migration plan and repair v7 water using post-overlay neighbors;
-slice 3c must complete authoritative activation/sleeping/dirty state,
+Slice 3b.iii.c composes saved-first metadata/overlays, honors ordered resident-copy
+plans and repairs v7 water using post-overlay neighbors (35 actual Python worlds).
+Slice 3c must complete authoritative activation/sleeping/dirty state,
 bounded caches and simulation-time resource recovery without offline production. The completed
 [state/DTO boundary audit](RUST_STATE_DTOS.md) identifies unsupported features;
 gameplay remains unported. Release hardware metadata, Rust gameplay RNG stream

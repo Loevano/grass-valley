@@ -9,7 +9,8 @@ reconstruction) complete; 3b.iii.a ordinary village overlay phase complete;
 3b.iii.b.i legacy swamp and 3b.iii.b.ii organic v2/record upgrades complete;
 3b.iii.b.iii ordinary obstacle-safe placement/layout/life metadata complete;
 3b.iii.b.iv swamp world metadata/visit relocation and ordered deferred cache plans
-complete; 3b.iii.c integrated water repair and 3c (activation/regrowth) remain.
+complete; 3b.iii.c immutable saved-first overlay/water integration complete;
+3c (authoritative activation/regrowth) remains.
 Rust contains an experimental workspace, transport smoke CLI and read-only copy
 inspection CLI; gameplay is not ported.
 **Initial plan revision:** `445ddddd675a87eb7adb50442b2dbf3c14ea6c6f`.
@@ -229,7 +230,7 @@ only after work is performed. Keep unfinished stages visible in the roadmap.
 | R04 | Cargo workspace and applicable checks | R03 | Complete: slice 1 `732619a`; slice 2 `c7cf3e2`; slice 3 `feat: add Rust replay transport smoke CLI` (this change); evidence below |
 | R05 | Typed state, IDs, units, and boundary DTOs | R04 | Complete: slice 1 `f271ff4`; slice 2 `b5fa931`; slice 3 `508b396`; [boundary/coverage audit](RUST_STATE_DTOS.md), evidence below |
 | R06 | Legacy import and read-only save inspection | R05 | Complete: slice 1 `3312d5d`; slice 2 `4513bec`; slice 3 `041caee`; [staging scope/coverage](RUST_LEGACY_IMPORT.md), evidence below |
-| R07 | Terrain versions and chunk generation | R06 | In progress: slice 1 complete (`31fcf91`); [scope and evidence](RUST_TERRAIN.md); slice 2 complete (`dc0d400`); slice 3a complete (`4762909`); slice 3b.i complete (`9b08f25`); slice 3b.ii complete (`b925488`); slice 3b.iii.a ordinary village phase complete (`085c64b`); 3b.iii.b.i–ii legacy/organic swamp phases complete; 3b.iii.b.iii ordinary placement/layout/life metadata complete (`37f2a84`); 3b.iii.b.iv swamp world metadata/visits and ordered deferred cache plans complete; 3b.iii.c and 3c remain |
+| R07 | Terrain versions and chunk generation | R06 | In progress: slice 1 complete (`31fcf91`); [scope and evidence](RUST_TERRAIN.md); slice 2 complete (`dc0d400`); slice 3a complete (`4762909`); slice 3b.i complete (`9b08f25`); slice 3b.ii complete (`b925488`); slice 3b.iii.a ordinary village phase complete (`085c64b`); 3b.iii.b.i–ii legacy/organic swamp phases complete; 3b.iii.b.iii ordinary placement/layout/life metadata complete (`37f2a84`); 3b.iii.b.iv swamp world metadata/visits and ordered deferred cache plans complete (`7feec7b`); 3b.iii.c `feat: materialize post-overlay terrain with seam water repair` (this change); 3c remains |
 | R08 | Spatial rules and founder movement | R07 | Not started |
 | R09 | Search algorithms and library decision | R08 | Not started |
 | R10 | Request scheduler and cache invalidation | R09 | Not started |
@@ -1320,6 +1321,53 @@ neighbors. Slice 3c retains actual authoritative plan consumption (active/view
 writes, rebinding and invalidation), active/sleeping/dirty/cache/catch-up/resource regrowth.
 R07 remains incomplete, Python remains the playable default, and no next stage,
 HTTP, live save discovery/writes or cutover is included.
+
+### R07 slice 3b.iii.c evidence and remaining work
+
+Starting revision: `7feec7b`. `ImportedRegistry::materialize_chunked(world, resident_copies)`
+now composes private ordinary/swamp metadata, typed-seed saved-first raw/starter
+selection, ordinary then swamp record overlays, and v7 tiny-water repair. It is
+an immutable pre-catch-up terrain boundary, not a live `ChunkMap` or playable load.
+Neighbor samples select resident/saved/generated records after overlays without
+recursive repair. Local three-tile bodies avoid neighbor loading; smaller bodies
+use cardinal connectivity across edges/corners and strict world bounds. Versions
+1–6 do not trim water, and absent version/offset retain defaults 1/880.
+
+Optional explicitly owned resident copies model active/camera precedence. Each
+single-village swamp upgrade is applied to those copies in the recorded plan
+order; residents bypass fresh-read ordinary overlays and repair. The plan remains
+available for later authoritative writes/rebinding/invalidation. No actual active
+cache, aggregate landscape resource list, source, archive, inspection report,
+clock, stock, cargo or authoritative snapshot is mutated. Returned records are
+private owned values, never automatically installed. No supply/industry defaults,
+resource catch-up, production, lifecycle cache or persistence is introduced.
+Foreign/duplicate resident keys, malformed relevant records/metadata and unsupported
+markers reject explicitly; bad saved neighbors never silently regenerate.
+
+35 frozen actual Python worlds exercise real terrain generation and the actual
+`ensure_villages`, `ChunkMap._read`, overlays and `ChunkMap.read` water path, with
+only catch-up explicitly excluded. Five Rust integration tests check complete
+records and insertion order, versions 1–7, typed seeds, absent defaults, current/
+legacy dimensions, saved edits, active/camera precedence, ordered overlapping
+swamp upgrades, local/edge/corner and outer-world water, post-overlay added/removed
+connections, unknown quantities/extensions, stable repeated reads, sanitized errors
+and unchanged source bytes/mtime/directory contents. Exact comparison caught and
+fixed prior phase output ordering for swamp addition fields and village barn
+animal maps; resource values/list order and existing phase semantics remain intact.
+Two compile-fail doctests protect the new private boundaries. The independent
+Python `generate_materialized.py --check` recomputes the oracle without refreshing.
+The independent Python verifier passed all 35 cases. `tools/check.py --list`
+selected only `rust:lantern-host`, with no unknown runtime files or broader
+Python/browser checks. The affected run passed 3/3 commands: formatting, 89 host
+tests plus 14 compile-fail doctests, and Clippy with warnings denied. Markdown/JSON
+reports at `performance-results/r07-slice3biiic/` were inspected (candidate
+`7feec7b` plus dirty task worktree). Performance comparison was not run: this is a
+compatibility port, not a performance investigation or optimization.
+
+**Remaining:** R07 slice 3c must consume actual authoritative cache effects and
+implement active/sleeping/dirty state, bounded caches, eviction/reload and supplied
+simulation-time catch-up/versioned regrowth without offline production. R07 remains
+in progress; R08, HTTP, live-save writes and cutover are outside this slice.
 
 ## R08 — Spatial rules and founder movement
 
