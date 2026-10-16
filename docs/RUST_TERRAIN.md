@@ -12,7 +12,7 @@ After explicit R06 copy import, construct
 `lantern_host::legacy::ChunkReader::new(&archive.worlds()[index])`. Only chunked
 worlds are accepted. `read(ChunkKey { x, y })` decodes the owning world's saved
 record. Saved records always take precedence: a missing record returns an explicit
-`saved chunk unavailable; generation and starter reconstruction unported` error.
+saved-only unavailable error.
 No RNG, latest-version fallback, Python subprocess or reconstructed starter is used.
 Unknown versions, conflicting record versions, dimensions, keys and positions are
 rejected by the R06 boundary before a reader can be constructed.
@@ -101,9 +101,10 @@ stepped ranges). D05's three gameplay seed-material vectors now reproduce their
 reference draws; gameplay streams and serialized RNG state are not yet adopted.
 
 `ImportedWorld::raw_chunk` selects immutable saved bytes first. Only absent
-nonstarter chunks use the saved seed, version and dimensions. Missing starter
-chunks explicitly fail; using raw regional terrain there would erase authored
-landscapes. The result is explicitly `RawChunk::Saved` or `RawChunk::Generated`,
+nonstarter chunks use the saved seed, version and dimensions. Slice 3b.ii now
+reconstructs absent starter chunks with the original typed seed and authored
+landscape, as detailed below. The result is explicitly `RawChunk::Saved` or
+`RawChunk::Generated`,
 with no decoded-view cache, overlays, tiny-water repair, catch-up, supplies,
 activation, identity allocation or save writes. The slice-1 saved-only reader
 remains saved-only. An absent sparse copy is not proof that its original file
@@ -216,13 +217,49 @@ python3 rust/crates/lantern-host/tests/fixtures/terrain/generate_starters.py --c
 ```
 
 This is geometry/resources only: no NPC roster/gameplay, registry hydration, chunk
-expansion or overlays are returned. Existing imported raw selection still refuses
-missing starter chunks. **3b.ii remains:** retain exact registry seed type and
-integrate saved-first authored reconstruction with legacy/current dimensions and
-offsets. **3b.iii remains:** village/swamp placement and versioned overlays,
+expansion or overlays are returned. Slice 3b.ii integrates this base into explicit
+raw imported selection below. **3b.iii remains:** village/swamp placement and
+versioned overlays,
 followed by v7 tiny-water repair sampling neighbors after all edits. Slice 3c
 still owns authoritative lifecycle/regrowth. Finite goldens retain the platform
 libm release gate described above; this slice is not whole R07 completion.
+
+## Saved-first starter reconstruction (slice 3b.ii)
+
+`ImportedWorld::raw_chunk` now reconstructs a missing starter record using the
+registry's original integer or text seed type. `ChunkMetadata` privately retains
+that type with the validated namespace; it has no Debug/Serialize implementation
+and adds no seed to reports. Numeric and leading-zero text remain text. Original
+saved chunks always win, including edited starter ground/resources/extensions.
+The saved-only `ChunkReader`, inspection CLI and their capabilities do not change.
+
+The host crops the matching 40×40 authored starter area, replaces `v` with `g`,
+and filters/translates resources in their existing order. Generated raw data has
+no saved clocks/stumps or private extensions; Python's corresponding raw records
+start at clock zero with empty stumps. Current 480 and legacy 1920 dimensions
+remain bounded before arithmetic; absent `starter_offset` stays 880 even in a
+480 world. Explicit current offset 160 selects the modern starter. Regional
+bases always sample 480 terrain at 160–279 even when placed at legacy 880.
+Missing terrain versions remain v1; unsupported types/versions/offsets fail at
+the import boundary with sanitized diagnostics. No namespace type inference,
+RNG substitution, generator upgrade, Python subprocess or archive mutation occurs.
+
+`fixtures/terrain/starter_chunks.json` freezes 86 actual Python `ChunkMap._read`
+records across all versions and six integer/text seeds, all nine starter chunk
+positions, current/legacy placement, missing version and offset defaults.
+`loaded_chunks.rs` compares every row and ordered resource/species field twice,
+partial saved siblings, saved starter edits, world bounds and immutable source
+registry/archive/files. The fixture verifier does not refresh on `--check`:
+
+```sh
+python3 rust/crates/lantern-host/tests/fixtures/terrain/generate_starter_chunks.py --check
+```
+
+This remains pre-overlay geometry: village/swamp edits and v7 neighbor-aware
+water repair remain 3b.iii; authoritative activation/resources/regrowth remain
+3c. No playable landscape or whole R07 completion is claimed. Existing finite
+platform-math vectors retain the libm cutover gate above. Performance checks were
+not run because this integrates compatibility rather than fixes performance.
 
 ## Compatibility matrix and remaining work
 
@@ -231,9 +268,9 @@ libm release gate described above; this slice is not whole R07 completion.
 | Immutable saved chunks, quantities/extensions and decoded LRU | Slice 1 complete; unchanged |
 | Raw generator versions 1–7, legacy seeds/dimensions and unexplored nonstarter selection | Slice 2 complete; exact 226-record and RNG parity |
 | D05 byte seed material → compatible reference RNG draws | Complete; gameplay adoption/state serialization remain later work |
-| Authored starter ground/resources and new-world town sites/separation | Slice 3b.i complete; 49 real Python goldens; saved reconstruction integration remains 3b.ii |
+| Authored starter ground/resources and new-world town sites/separation | Slices 3b.i–ii complete; 49 authored starter and 86 raw selection Python goldens |
 | Village/swamp placement and versioned overlays | Slice 3b.iii remaining |
-| Post-overlay v7 tiny-water repair and boundaries | Slice 3b remaining; raw boundaries covered here |
+| Post-overlay v7 tiny-water repair and boundaries | Slice 3b.iii remaining; raw boundaries covered here |
 | Active/sleeping chunks, dirty resources, regrowth and clock catch-up | Slice 3c remaining |
 | Ordinary/independent/shared nonchunked terrain-only hydration and `generate_map` | Slice 3a complete; 35 real maps and six paired hydration goldens; gameplay preparation remains later stages |
 

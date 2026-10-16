@@ -151,7 +151,7 @@ impl<'a> ChunkReader<'a> {
                 .map_err(|_| {
                     BoundaryError::invalid(
                         "$.loaded_chunks.key",
-                        "saved chunk unavailable; generation and starter reconstruction unported",
+                        "saved chunk unavailable; saved-only reader does not generate",
                     )
                 })?;
             let source = &self.world.chunks()[index];

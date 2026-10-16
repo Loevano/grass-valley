@@ -8,7 +8,7 @@ and cache rules are in [Backend](BACKEND.md#cached-zoomed-out-map).
 | 1     | Cached zoomed-out town overview    | Implemented              | Show the landscape and city sizes without refreshing animated scene detail.                                      |
 | 2     | Production line balancing          | Wood and grain implemented; fishing remains | Develop clear fishing chains with capped staffing and simple upgrades. |
 | 3     | Scalable villager pathfinding       | Host queue implemented; cache refinement and shared navigation remain | Keep movement responsive as villager counts and towns grow, with bounded routing work. |
-| 4     | Rust migration | R07 saved chunks, raw generators and nonchunked terrain-only hydration complete; authored starter geometry complete; reconstruction, overlays and activation remain | Follow the [staged plan and prompts](RUST_MIGRATION.md), preserving playable checkpoints and saved worlds. |
+| 4     | Rust migration | R07 saved chunks, raw generators and nonchunked terrain-only hydration complete; authored starter geometry and typed-seed reconstruction complete; overlays and activation remain | Follow the [staged plan and prompts](RUST_MIGRATION.md), preserving playable checkpoints and saved worlds. |
 
 ## Rust migration
 
@@ -27,8 +27,9 @@ see the [terrain scope and evidence](RUST_TERRAIN.md). Slice 3a adds exact legac
 map generation and explicit ordinary/independent/shared nonchunked terrain-only
 hydration, preserving saved resources and private source bytes. Slice 3b.i adds
 pure authored starter terrain/resources and exact town-site selection/separation.
-Slice 3b.ii must integrate typed-seed saved-first starter reconstruction; 3b.iii
-must complete village/swamp placement/overlays and post-overlay water repair;
+Slice 3b.ii integrates typed-seed saved-first starter reconstruction with exact
+legacy/current offsets and source preservation. Slice 3b.iii must complete
+village/swamp placement/overlays and post-overlay water repair;
 slice 3c must complete authoritative activation/sleeping/dirty state,
 bounded caches and simulation-time resource recovery without offline production. The completed
 [state/DTO boundary audit](RUST_STATE_DTOS.md) identifies unsupported features;

@@ -182,7 +182,7 @@ fn boundaries_seams_missing_chunks_and_lru_eviction_are_explicit() {
     );
     let missing = ChunkKey { x: 11, y: 11 };
     let error = rejected(reader.read(missing));
-    assert!(format!("{error:?}").contains("generation and starter reconstruction unported"));
+    assert!(format!("{error:?}").contains("saved-only reader does not generate"));
     assert_eq!(reader.loaded_keys().count(), 0);
     // Both sides of a real generated seam retain their own saved tile/water data.
     for key in [ChunkKey { x: 0, y: 0 }, ChunkKey { x: 1, y: 0 }] {
@@ -371,7 +371,7 @@ fn unsupported_decoding_fails_without_corrupting_existing_views_or_archive() {
 }
 
 #[test]
-fn unexplored_raw_chunks_use_saved_version_seed_and_boundaries_without_starter_fallback() {
+fn unexplored_raw_chunks_use_saved_version_seed_and_boundaries() {
     for golden in goldens().into_iter().take(7) {
         let copy = Copy::new(&golden);
         // Copy helper omits starter_offset, preserving the legacy default 880.
@@ -401,11 +401,10 @@ fn unexplored_raw_chunks_use_saved_version_seed_and_boundaries_without_starter_f
     let copy = Copy::new(&golden);
     let key = ChunkKey { x: 22, y: 22 };
     let archive = copy.import();
-    let error = archive.worlds()[0].raw_chunk(key).err().unwrap();
-    assert_eq!(
-        error.kind,
-        lantern_host::ErrorKind::Invalid("starter reconstruction unported")
-    );
+    assert!(matches!(
+        archive.worlds()[0].raw_chunk(key).unwrap(),
+        RawChunk::Generated(_)
+    ));
     // Saved edits take precedence even inside the starter region.
     let mut record = golden.record.clone();
     record["map_resources"] = json!([]);
@@ -418,4 +417,114 @@ fn unexplored_raw_chunks_use_saved_version_seed_and_boundaries_without_starter_f
         serde_json::from_slice::<Value>(saved.private_bytes()).unwrap(),
         record
     );
+}
+
+#[test]
+fn typed_seed_starter_reconstruction_matches_real_python_raw_reads_and_preserves_sources() {
+    #[derive(Deserialize)]
+    struct Case {
+        landscape: Box<RawValue>,
+        key: String,
+        record: Value,
+    }
+    #[derive(Deserialize)]
+    struct Metadata {
+        terrain_seed: Box<RawValue>,
+        terrain_version: Option<u32>,
+        map_size: u32,
+    }
+    let cases: Vec<Case> =
+        serde_json::from_slice(include_bytes!("fixtures/terrain/starter_chunks.json")).unwrap();
+    assert_eq!(cases.len(), 86);
+    for case in cases {
+        let metadata: Metadata = serde_json::from_str(case.landscape.get()).unwrap();
+        let golden = Golden {
+            seed: metadata.terrain_seed,
+            version: metadata.terrain_version.unwrap_or(1),
+            key: case.key,
+            size: metadata.map_size,
+            sha256: String::new(),
+            record: case.record,
+        };
+        let copy = Copy::new(&golden);
+        let source = format!(
+            r#"{{"world":{{"towns":{{}},"shared_map":{}}},"tokens":{{}}}}"#,
+            case.landscape.get()
+        );
+        let source_path = copy.0.parent().unwrap().join("source.json");
+        fs::write(&source_path, &source).unwrap();
+        let key = golden.key();
+        // One saved edited sibling leaves the target sparse and reconstructed.
+        let sibling = ChunkKey {
+            x: if key.x.is_multiple_of(3) {
+                key.x - 1
+            } else {
+                key.x + 1
+            },
+            y: key.y,
+        };
+        let saved = json!({"terrain":vec!["v".repeat(40);40],"map_resources":[],"tree_stumps":[],"clock":1.25,"private_extension":"SYNTHETIC_SECRET"});
+        copy.write(sibling, &saved);
+        let archive = copy.import();
+        let world = &archive.worlds()[0];
+        let saved_bytes = fs::read(copy.0.join(sibling.file_name())).unwrap();
+        for _ in 0..2 {
+            let RawChunk::Generated(chunk) = world.raw_chunk(key).unwrap() else {
+                panic!("missing starter not reconstructed")
+            };
+            assert_eq!(json!(chunk.terrain), golden.record["terrain"]);
+            let resources: Vec<_> = chunk
+                .resources
+                .iter()
+                .map(|r| {
+                    let mut value = json!({"kind":r.kind,"x":r.x,"y":r.y});
+                    if let Some(species) = r.species {
+                        value["species"] = json!(species);
+                    }
+                    value
+                })
+                .collect();
+            assert_eq!(json!(resources), golden.record["map_resources"]);
+            assert_eq!(golden.record["clock"], 0);
+            assert_eq!(golden.record["tree_stumps"], json!([]));
+            let RawChunk::Saved(record) = world.raw_chunk(sibling).unwrap() else {
+                panic!("saved sibling regenerated")
+            };
+            assert_eq!(record.private_bytes(), saved_bytes);
+        }
+        assert_eq!(archive.private_source_bytes().unwrap(), source.as_bytes());
+        assert_eq!(world.chunks().len(), 1);
+        assert!(
+            world
+                .raw_chunk(ChunkKey {
+                    x: metadata.map_size / 40,
+                    y: 0
+                })
+                .is_err()
+        );
+        assert!(
+            world
+                .raw_chunk(ChunkKey {
+                    x: u32::MAX,
+                    y: u32::MAX
+                })
+                .is_err()
+        );
+        assert_eq!(fs::read(&source_path).unwrap(), source.as_bytes());
+        assert_eq!(
+            fs::read(copy.0.join(sibling.file_name())).unwrap(),
+            saved_bytes
+        );
+        assert!(!copy.0.join(key.file_name()).exists());
+        // Saving an edit at the previously missing starter key always wins.
+        copy.write(key, &saved);
+        let edited = copy.import();
+        let RawChunk::Saved(record) = edited.worlds()[0].raw_chunk(key).unwrap() else {
+            panic!("starter edit regenerated")
+        };
+        assert_eq!(
+            serde_json::from_slice::<Value>(record.private_bytes()).unwrap(),
+            saved
+        );
+    }
 }

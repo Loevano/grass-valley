@@ -4,8 +4,8 @@ A migration that can be completed one task at a time, with a prompt for each tas
 
 **Status:** R01–R06 complete; R07 slices 1–2 (saved-chunk reading/loading and raw
 supported legacy generators) and slice 3a (maps/nonchunked terrain-only hydration)
-complete; slice 3b.i (authored starter geometry) complete; slices 3b.ii–iii
-(reconstruction integration/overlays) and 3c (activation/regrowth) remain.
+complete; slices 3b.i–ii (authored starter geometry and typed-seed saved-first
+reconstruction) complete; slices 3b.iii (overlays) and 3c (activation/regrowth) remain.
 Rust contains an experimental workspace, transport smoke CLI and read-only copy
 inspection CLI; gameplay is not ported.
 **Initial plan revision:** `445ddddd675a87eb7adb50442b2dbf3c14ea6c6f`.
@@ -225,7 +225,7 @@ only after work is performed. Keep unfinished stages visible in the roadmap.
 | R04 | Cargo workspace and applicable checks | R03 | Complete: slice 1 `732619a`; slice 2 `c7cf3e2`; slice 3 `feat: add Rust replay transport smoke CLI` (this change); evidence below |
 | R05 | Typed state, IDs, units, and boundary DTOs | R04 | Complete: slice 1 `f271ff4`; slice 2 `b5fa931`; slice 3 `508b396`; [boundary/coverage audit](RUST_STATE_DTOS.md), evidence below |
 | R06 | Legacy import and read-only save inspection | R05 | Complete: slice 1 `3312d5d`; slice 2 `4513bec`; slice 3 `041caee`; [staging scope/coverage](RUST_LEGACY_IMPORT.md), evidence below |
-| R07 | Terrain versions and chunk generation | R06 | In progress: slice 1 complete (`31fcf91`); [scope and evidence](RUST_TERRAIN.md); slice 2 complete (`dc0d400`); slice 3a complete (`4762909`); slice 3b.i complete (`feat: generate authored starter landscapes`, this change); slices 3b.ii–iii and 3c remain |
+| R07 | Terrain versions and chunk generation | R06 | In progress: slice 1 complete (`31fcf91`); [scope and evidence](RUST_TERRAIN.md); slice 2 complete (`dc0d400`); slice 3a complete (`4762909`); slice 3b.i complete (`9b08f25`); slice 3b.ii complete (`feat: reconstruct missing starter chunks with typed seeds`, this change); slices 3b.iii and 3c remain |
 | R08 | Spatial rules and founder movement | R07 | Not started |
 | R09 | Search algorithms and library decision | R08 | Not started |
 | R10 | Request scheduler and cache invalidation | R09 | Not started |
@@ -1068,6 +1068,39 @@ resource authority, bounded caches, eviction/reload and supplied-time catch-up/
 regrowth. Existing raw imported starter refusal remains explicit until 3b.ii;
 R07 is in progress. No performance checks were run: this is a compatibility port,
 not a performance investigation or optimization.
+
+### R07 slice 3b.ii evidence and remaining work
+
+Completed explicit immutable `ImportedWorld::raw_chunk` starter reconstruction.
+Private metadata retains the original validated registry integer/text seed kind;
+numeric-looking namespaces never determine seed type. Saved bytes/edits win
+before generation. Missing starter chunks crop the authored 120×120 base,
+replace void with grass and translate ordered resources using the saved offset.
+Legacy 1920 and current 480 dimensions retain missing-offset default 880;
+regional bases still sample current 480 terrain at 160 regardless of placement.
+No overlay, gameplay preparation, activation or source write is introduced.
+
+86 frozen actual Python `ChunkMap._read` cases cover versions 1–7, six typed
+integer/text seeds (numeric, leading-zero, Unicode, arbitrary negative integer),
+all nine starter positions, current/legacy dimensions, missing version and absent
+versus explicit offsets. Rust compares full rows and ordered resource/species
+metadata, repeated reads, partial saved siblings, saved starter edits, bounds and
+source/archive/file immutability. The saved-only reader and inspection capability
+reports retain their saved-only/preserved-only behavior; the missing-record
+error now accurately names the saved-only boundary. See
+[terrain compatibility](RUST_TERRAIN.md).
+
+Validation: `generate_starter_chunks.py --check` matches all 86 frozen records.
+`python3 tools/check.py --list` selects only `rust:lantern-host`; the final
+`python3 tools/check.py --output performance-results/r07-slice3bii` run passes
+3/3 commands: formatting, host tests and Clippy with warnings denied. The
+Markdown/JSON reports were inspected; no correctness failures remain. The
+initial new test Clippy warning was corrected before this final run.
+
+**Remaining:** 3b.iii owns village/swamp placement/versioned overlays and
+post-overlay v7 tiny-water repair including neighbor seams; 3c owns authoritative
+lifecycle, resources and regrowth. R07 remains incomplete. Performance checks were
+not run because this is a compatibility integration, not a performance problem.
 
 ## R08 — Spatial rules and founder movement
 

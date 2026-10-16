@@ -74,9 +74,17 @@ impl<'a> ChunkDirectory<'a> {
 /// Private seed namespace is kept off public reports and Debug/Serialize output.
 pub struct ChunkMetadata {
     seed_namespace: String,
+    seed_kind: SeedKind,
     map_size: u32,
     starter_offset: u32,
     generator_version: u32,
+}
+
+// Retain the registry's JSON type: Random(42) and Random("42") differ.
+// This metadata must never enter Debug/Serialize reports.
+enum SeedKind {
+    Integer,
+    Text,
 }
 
 #[derive(Debug, PartialEq, Eq, Serialize)]
@@ -182,9 +190,14 @@ pub(super) fn metadata(payload: &Node, path: &str) -> Result<Option<ChunkMetadat
             "unsupported chunked map dimensions",
         ));
     }
-    let seed_namespace = shared
-        .required("terrain_seed", &path)?
-        .seed_namespace(&format!("{path}.terrain_seed"))?;
+    let seed = shared.required("terrain_seed", &path)?;
+    let seed_path = format!("{path}.terrain_seed");
+    let seed_namespace = seed.seed_namespace(&seed_path)?;
+    let seed_kind = if seed.string(&seed_path).is_ok() {
+        SeedKind::Text
+    } else {
+        SeedKind::Integer
+    };
     let offset = shared
         .optional("starter_offset", &path)?
         .map(|n| n.unsigned(&format!("{path}.starter_offset")))
@@ -220,6 +233,7 @@ pub(super) fn metadata(payload: &Node, path: &str) -> Result<Option<ChunkMetadat
     }
     Ok(Some(ChunkMetadata {
         seed_namespace,
+        seed_kind,
         map_size: map_size as u32,
         starter_offset: offset as u32,
         generator_version: generator as u32,
@@ -432,7 +446,7 @@ pub(super) fn attach(
 
 /// Explicit raw pre-overlay source selection. Generated data is not a playable
 /// ChunkMap view: village overlays, tiny-water repair and catch-up are slice 3.
-/// Saved bytes always win, including in the unported starter region.
+/// Saved bytes always win, including in the authored starter region.
 pub enum RawChunk<'a> {
     Saved(&'a ImportedChunk),
     Generated(lantern_core::terrain::GeneratedChunk),
@@ -457,10 +471,33 @@ impl super::ImportedWorld {
             && top >= metadata.starter_offset
             && top - metadata.starter_offset < 120
         {
-            return Err(BoundaryError::invalid(
-                path,
-                "starter reconstruction unported",
-            ));
+            use lantern_core::{
+                legacy_map::MapSeed, starter::generate_starter, terrain::GeneratedChunk,
+            };
+            let seed = match metadata.seed_kind {
+                SeedKind::Integer => MapSeed::Integer(&metadata.seed_namespace),
+                SeedKind::Text => MapSeed::Text(&metadata.seed_namespace),
+            };
+            let base = generate_starter(seed, metadata.generator_version)
+                .map_err(|_| BoundaryError::invalid(path, "unsupported starter reconstruction"))?
+                .landscape;
+            let x = left - metadata.starter_offset;
+            let y = top - metadata.starter_offset;
+            let terrain = base.terrain[y as usize..(y + CHUNK_SIZE) as usize]
+                .iter()
+                .map(|row| row[x as usize..(x + CHUNK_SIZE) as usize].replace('v', "g"))
+                .collect();
+            let resources = base
+                .resources
+                .into_iter()
+                .filter(|r| r.x >= x && r.x < x + CHUNK_SIZE && r.y >= y && r.y < y + CHUNK_SIZE)
+                .map(|mut r| {
+                    r.x += metadata.starter_offset;
+                    r.y += metadata.starter_offset;
+                    r
+                })
+                .collect();
+            return Ok(RawChunk::Generated(GeneratedChunk { terrain, resources }));
         }
         let generated = lantern_core::terrain::generate_chunk(
             metadata.private_seed_namespace(),
