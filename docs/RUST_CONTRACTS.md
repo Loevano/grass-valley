@@ -259,6 +259,10 @@ missing starter terrain; post-overlay playable exploration remains slices 3b–3
 Slice 3a implements pure legacy maps and immutable nonchunked terrain-only
 hydration with exact source retention and shared/independent bindings; full
 resource/bootstrap/industry/NPC preparation remains with its gameplay stages.
+Slice 3b.i adds pure authored 120×120 ground/resources and ordered town sites
+for versions 1–7, verified against 49 real Python new-world goldens; typed-seed
+saved reconstruction integration remains 3b.ii, village/swamp and post-overlay
+water seams remain 3b.iii. No NPC gameplay or complete R07 readiness is claimed.
 Saved records take precedence over regeneration; seeded base generation and
 idempotent legacy repairs/overlays are separate operations. `ChunkMap.read` can
 catch up resources and apply village/terrain repair, so it is not a raw inspection

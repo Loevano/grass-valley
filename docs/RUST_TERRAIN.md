@@ -187,6 +187,43 @@ not exhaustively golden-covered. Recheck without refreshing:
 python3 rust/crates/lantern-host/tests/fixtures/terrain/generate_maps.py --check
 ```
 
+## Authored starter geometry (slice 3b.i)
+
+`lantern_core::starter::generate_starter(MapSeed, version)` reproduces the
+120×120 ground, ordered resources and four ordered town sites from Python
+`shared_world.new_world` for versions 1–7. Integer and text seeds remain explicit;
+integer namespaces are canonicalized as Python `str(int)` (including negative
+zero/leading zero spelling), without changing text seeds. The caller supplies
+seed/entropy; the pure core performs no random seed invention or filesystem work.
+
+Version 1 uses the legacy map; versions 2–7 assemble the nine raw regional chunks
+in Python insertion order, always sampling the current 480-wide landscape at
+160–279 as Python `regional_starter` does. Authored edits preserve the shuffled
+site order, 11×11 hall clearings, connecting three-wide paths, timber patches,
+starter trees/water, fishing ponds, broad lake and three treasure islands/chests.
+Ground and resource traversal order match Python; all four hall sites remain at
+least 40 tiles apart. V6+ meadow/forest edits remain version-specific.
+
+`fixtures/terrain/starters.json` freezes 49 actual Python `new_world` results:
+every version for seven integer/text seeds, including arbitrary-size negative
+integers, numeric and leading-zero text, empty text and Unicode. Two Rust tests
+compare every ground cell, ordered resource/metadata and site, assert separation,
+hall ground and chests, and test typed/canonical integer input and invalid inputs.
+The independent verifier reruns actual Python without replacing frozen records:
+
+```sh
+python3 rust/crates/lantern-host/tests/fixtures/terrain/generate_starters.py --check
+```
+
+This is geometry/resources only: no NPC roster/gameplay, registry hydration, chunk
+expansion or overlays are returned. Existing imported raw selection still refuses
+missing starter chunks. **3b.ii remains:** retain exact registry seed type and
+integrate saved-first authored reconstruction with legacy/current dimensions and
+offsets. **3b.iii remains:** village/swamp placement and versioned overlays,
+followed by v7 tiny-water repair sampling neighbors after all edits. Slice 3c
+still owns authoritative lifecycle/regrowth. Finite goldens retain the platform
+libm release gate described above; this slice is not whole R07 completion.
+
 ## Compatibility matrix and remaining work
 
 | Behavior | Coverage |
@@ -194,7 +231,8 @@ python3 rust/crates/lantern-host/tests/fixtures/terrain/generate_maps.py --check
 | Immutable saved chunks, quantities/extensions and decoded LRU | Slice 1 complete; unchanged |
 | Raw generator versions 1–7, legacy seeds/dimensions and unexplored nonstarter selection | Slice 2 complete; exact 226-record and RNG parity |
 | D05 byte seed material → compatible reference RNG draws | Complete; gameplay adoption/state serialization remain later work |
-| Starter/new-world town and village placement/separation | Slice 3b remaining |
+| Authored starter ground/resources and new-world town sites/separation | Slice 3b.i complete; 49 real Python goldens; saved reconstruction integration remains 3b.ii |
+| Village/swamp placement and versioned overlays | Slice 3b.iii remaining |
 | Post-overlay v7 tiny-water repair and boundaries | Slice 3b remaining; raw boundaries covered here |
 | Active/sleeping chunks, dirty resources, regrowth and clock catch-up | Slice 3c remaining |
 | Ordinary/independent/shared nonchunked terrain-only hydration and `generate_map` | Slice 3a complete; 35 real maps and six paired hydration goldens; gameplay preparation remains later stages |

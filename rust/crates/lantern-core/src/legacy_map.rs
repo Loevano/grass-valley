@@ -6,6 +6,7 @@ use crate::{
 use alloc::{string::String, vec::Vec};
 
 /// Direct Random(seed) distinguishes integers from text, unlike formatted chunk seeds.
+#[derive(Clone, Copy)]
 pub enum MapSeed<'a> {
     Integer(&'a str),
     Text(&'a str),

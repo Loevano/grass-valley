@@ -4,7 +4,8 @@ A migration that can be completed one task at a time, with a prompt for each tas
 
 **Status:** R01–R06 complete; R07 slices 1–2 (saved-chunk reading/loading and raw
 supported legacy generators) and slice 3a (maps/nonchunked terrain-only hydration)
-complete; slices 3b (placement/overlays) and 3c (activation/regrowth) remain.
+complete; slice 3b.i (authored starter geometry) complete; slices 3b.ii–iii
+(reconstruction integration/overlays) and 3c (activation/regrowth) remain.
 Rust contains an experimental workspace, transport smoke CLI and read-only copy
 inspection CLI; gameplay is not ported.
 **Initial plan revision:** `445ddddd675a87eb7adb50442b2dbf3c14ea6c6f`.
@@ -224,7 +225,7 @@ only after work is performed. Keep unfinished stages visible in the roadmap.
 | R04 | Cargo workspace and applicable checks | R03 | Complete: slice 1 `732619a`; slice 2 `c7cf3e2`; slice 3 `feat: add Rust replay transport smoke CLI` (this change); evidence below |
 | R05 | Typed state, IDs, units, and boundary DTOs | R04 | Complete: slice 1 `f271ff4`; slice 2 `b5fa931`; slice 3 `508b396`; [boundary/coverage audit](RUST_STATE_DTOS.md), evidence below |
 | R06 | Legacy import and read-only save inspection | R05 | Complete: slice 1 `3312d5d`; slice 2 `4513bec`; slice 3 `041caee`; [staging scope/coverage](RUST_LEGACY_IMPORT.md), evidence below |
-| R07 | Terrain versions and chunk generation | R06 | In progress: slice 1 complete (`31fcf91`); [scope and evidence](RUST_TERRAIN.md); slice 2 complete (`dc0d400`); slice 3a complete (`feat: hydrate legacy nonchunked terrain`, this change); slices 3b–3c remain |
+| R07 | Terrain versions and chunk generation | R06 | In progress: slice 1 complete (`31fcf91`); [scope and evidence](RUST_TERRAIN.md); slice 2 complete (`dc0d400`); slice 3a complete (`4762909`); slice 3b.i complete (`feat: generate authored starter landscapes`, this change); slices 3b.ii–iii and 3c remain |
 | R08 | Spatial rules and founder movement | R07 | Not started |
 | R09 | Search algorithms and library decision | R08 | Not started |
 | R10 | Request scheduler and cache invalidation | R09 | Not started |
@@ -908,7 +909,10 @@ No production writes, world generation or simulation are enabled by this stage.
 (3a) Python `generate_map` and ordinary/independent/shared nonchunked terrain-only
 hydration; (3b) authored starter reconstruction, new-world town-site selection and
 separation, village/swamp layouts, post-overlay v7 tiny-water repair including
-neighbor seams; (3c) authoritative active/sleeping and dirty resource state,
+neighbor seams (bounded subparts: 3b.i pure authored 120×120 starter and town
+sites; 3b.ii typed-seed saved-first reconstruction integration; 3b.iii village/
+swamp placement/overlays and post-overlay water repair); (3c) authoritative
+active/sleeping and dirty resource state,
 bounded decoded/snapshot caches, eviction/reload, supplied simulation-time catch-up
 and versioned regrowth without offline production. R07 remains in progress until
 3b and 3c pass; do not begin R08 from a partial terrain implementation.
@@ -1038,6 +1042,32 @@ terrain/town/village placement with post-overlay tiny-water seams; 3c owns activ
 sleeping and dirty resource authority, bounded caches, saved edits after eviction,
 catch-up/regrowth using supplied simulation time and no offline production. Full
 subsystem gameplay preparation remains assigned to R08–18; R07 is not complete.
+
+### R07 slice 3b.i evidence and remaining work
+
+Completed bounded pure authored starter geometry: exact town-site RNG/shuffle,
+versioned 120×120 base assembly and authored clearing/path/timber/pond/lake/island
+terrain and ordered resources. Explicit `MapSeed` retains integer/text semantics;
+no entropy, NPC gameplay, archive mutation or runtime Python bridge is introduced.
+49 real Python `shared_world.new_world` goldens cover seven seed types/values for
+all versions 1–7. Two targeted Rust tests pass full cell/resource/site parity,
+separation, hall/chest invariants, integer canonicalization and invalid inputs.
+Validation: `generate_starters.py --check` independently matches all 49 frozen
+records. `python3 tools/check.py --list` selects only `rust:lantern-core` and
+reverse-dependent `rust:lantern-host`, with no unknown runtime files. The final
+affected run passes 6/6 commands (formatting, tests and Clippy with warnings
+denied). Markdown/JSON reports at `performance-results/r07-slice3bi/` were
+inspected; no correctness failures remain. See
+[terrain compatibility](RUST_TERRAIN.md) for exact boundaries.
+
+**Remaining:** 3b.ii must integrate absent-starter reconstruction with exact typed
+registry seeds, saved-first selection and legacy/current dimensions/offsets.
+3b.iii must port village/swamp placement and multi-version terrain overlays then
+v7 tiny-water repair including neighbor seams. 3c still owns active/sleeping/dirty
+resource authority, bounded caches, eviction/reload and supplied-time catch-up/
+regrowth. Existing raw imported starter refusal remains explicit until 3b.ii;
+R07 is in progress. No performance checks were run: this is a compatibility port,
+not a performance investigation or optimization.
 
 ## R08 — Spatial rules and founder movement
 
