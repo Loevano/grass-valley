@@ -1,6 +1,5 @@
 //! Private source-retaining geometry adapter. This decodes a supplied landscape
-//! copy only; shared-world assembly, terrain access and founder rules are later
-//! R08 slices. Unknown fields/kinds remain in the immutable original bytes.
+//! copy only; founder_world composes shared-world/terrain access and founder rules. Unknown fields/kinds remain in the immutable original bytes.
 use super::json::Node;
 use crate::BoundaryError;
 use lantern_core::{

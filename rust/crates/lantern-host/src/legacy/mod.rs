@@ -11,6 +11,7 @@ mod catch_up;
 mod chunks;
 mod clock;
 mod founder;
+mod founder_world;
 mod json;
 mod landscapes;
 mod lifecycle;
@@ -26,6 +27,7 @@ pub use chunks::{
     ChunkDirectory, ChunkKey, ChunkMetadata, ChunkMetadataReport, ImportedChunk, RawChunk,
 };
 pub use founder::PrivateFounderCopy;
+pub use founder_world::PrivateFounderWorldCopy;
 pub use landscapes::{HydratedLandscape, HydratedLandscapes};
 pub use lifecycle::{ChunkLifecycle, ChunkWriteIntent, PrivateChunkSnapshot};
 pub use loaded::{

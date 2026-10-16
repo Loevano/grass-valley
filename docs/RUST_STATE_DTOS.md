@@ -238,6 +238,14 @@ and road costs are implemented. R08 slice 2 adds founder collision/access, local
 bounds, ordered fixed-command movement and an immutable `PrivateFounderCopy`
 adapter. Results carry only transform/facing and an activity-clear effect; exact
 source bytes retain every unported founder field/quantity. No implicit Debug or
-Serialize exposes this private copy. Shared-world/chunk assembly, unavailable
-terrain and blocked-start recovery remain R08 slice 3. Durable construction,
+Serialize exposes this private copy. R08 slice 3 adds immutable shared/independent
+world assembly and active chunk terrain, unavailable-tile rules and stable recovery
+through `PrivateFounderWorldCopy`. `ChunkLifecycle::founder_scene` supplies the
+rebound active aggregate; `preview_founder_batch` evaluates activation/recovery and
+resource-window refresh per command on disposable owner state, preserving imported
+bytes, live records, caches and write intents. Results still contain only transform,
+facing and activity-clear effect. This is read-only evaluation, not a saved player
+DTO or live command dispatcher. Standalone scenes require supplied already-active
+records and rebound resources; chunk flags are boolean or integer 0/1 and recovery
+enumeration rejects above 1,000,000 candidates explicitly. Durable construction,
 rotation/road commands and public geometry DTOs remain R12/R21.

@@ -2,8 +2,8 @@
 
 A migration that can be completed one task at a time, with a prompt for each task.
 
-**Status:** R01–R07 complete as experimental migration foundations; R08 spatial
-rules and founder movement is in progress (slices 1 geometry and 2 local founder movement complete). R07 includes saved-first terrain versions 1–7,
+**Status:** R01–R08 complete as experimental migration foundations. R08 spatial
+rules and founder movement is complete as an experimental private-copy foundation. R07 includes saved-first terrain versions 1–7,
 nonchunked maps, authored starter/town sites, ordinary/swamp metadata and overlays,
 post-overlay water repair, private authoritative chunk lifecycle/resource renewal,
 and exact Python integer/float clock arithmetic. See the [completion audit](#r07-slice-3civ-exact-clocks-and-completion-audit).
@@ -228,7 +228,7 @@ only after work is performed. Keep unfinished stages visible in the roadmap.
 | R05 | Typed state, IDs, units, and boundary DTOs | R04 | Complete: slice 1 `f271ff4`; slice 2 `b5fa931`; slice 3 `508b396`; [boundary/coverage audit](RUST_STATE_DTOS.md), evidence below |
 | R06 | Legacy import and read-only save inspection | R05 | Complete: slice 1 `3312d5d`; slice 2 `4513bec`; slice 3 `041caee`; [staging scope/coverage](RUST_LEGACY_IMPORT.md), evidence below |
 | R07 | Terrain versions and chunk generation | R06 | Complete as private terrain/chunk foundation; [scope, slice evidence and completion audit](RUST_TERRAIN.md); exact clocks finish 3c.iv; finite platform-math vectors retain the R23 release gate |
-| R08 | Spatial rules and founder movement | R07 | In progress: slices 1 geometry and 2 local founder collision/access complete; slice 3 shared boundaries/recovery remains; evidence below |
+| R08 | Spatial rules and founder movement | R07 | Complete as experimental geometry/movement foundation; slices 1–3 and boundary audit below; Python remains default |
 | R09 | Search algorithms and library decision | R08 | Not started |
 | R10 | Request scheduler and cache invalidation | R09 | Not started |
 | R11 | Persistent worker movement and playback | R10 | Not started |
@@ -1690,6 +1690,82 @@ blocked-start recovery, including refresh of local obstacles between batched hos
 commands. Founder equipment/boat/horse acquisition and other activity commands
 remain their later feature stages; worker route/search/scheduling remains R09–11.
 Python stays the playable default.
+
+### R08 slice 3 — shared boundaries, recovery and completion audit
+
+Implemented `legacy::PrivateFounderWorldCopy`: immutable independent/shared-town
+assembly binds landscape terrain/resources/NPCs and aggregates every town's
+buildings/roads only for shared worlds. Other founders and moving villagers remain
+nonblocking. Ordinary absent terrain is permissive; unavailable active chunk tiles
+are explicit void. Stable Manhattan recovery preserves ordinary x-major order,
+ChunkTerrain record insertion order and y-major cells, fractional valid starts,
+facing and unrelated founder fields. If no candidate is open, Python still attempts
+axis substeps from its blocked position; core exposes that explicit host continuation.
+Recovery uses the pre-recovery movement resource window, including Python's local
+window quirk, rather than silently broadening its collision authority.
+
+The standalone scene accepts explicitly already-active R07 records in insertion
+order; its supplied shared-map resources must be the rebound authoritative aggregate,
+including in-place edits and excluding camera-only resources. It never generates or
+activates terrain. `ChunkLifecycle::founder_scene` supplies that boundary directly.
+`preview_founder_batch` validates all directions first, then runs existing R07
+activation and rebuilds nearby resources before each command on a disposable owned
+state clone. Actual Python `command` recursively calls `attach_chunks` between batch
+inputs; Rust preserves saved-first generation/catch-up, activation order and terrain
+refresh without publishing changes to owner records, source, camera caches or write
+intents, including late failures. This is a read-only preview, not command dispatch,
+player persistence, activity acquisition or public wire integration. R07 owner
+preparation already requires a player for desired-chunk selection; the standalone
+ordinary adapter additionally supports Python's missing-player default.
+
+`search_terrain_open` ports only `navigation.search_steps.open_tile` terrain/bounds
+rules: map/inclusive bounds, explicit void, permissive absent ordinary terrain and
+truthy-cell requirement when bounded terrain is supplied. Occupancy/profiles remain
+in the single spatial index; goal/start handling and actual search are R09. No
+new solver, scheduler or derived persistent authority is introduced.
+
+Independent frozen Python evidence executes actual `walking_map`, `bind_map`,
+`ChunkMap.movement`, `ChunkTerrain`, `move_player`/`walkable`, and the full recursive
+`command`/attach chain. Nineteen static scenarios cover shared/independent ownership,
+all-town roads/buildings/fences, defaults, valid fractional starts, ties, no recovery,
+map/void/unavailable edges and batched window refresh; three full command scenarios
+cover terrain activation between inputs. Twelve actual Python searches isolate
+terrain/bounds truthiness. Rust invariants cover source/owner immutability, private
+errors, invalid batches, camera exclusion, and a second-input sleeping-clock failure
+that proves activation refresh without partial owner mutation. Frozen generators
+support `--check` and never refresh when verifying.
+
+The supplied-copy adapter explicitly accepts chunk flags booleans or integer 0/1,
+rejects other truthy/container forms, and bounds recovery enumeration to 1,000,000
+tiles (ordinary map area or total active chunk area). Chunk rows are 40×40 strings;
+unsupported geometry/access retains slice 1/2 rejection boundaries. Exact imported
+archives remain untouched. Paired finite vectors are platform evidence only; the
+R23 libm gate and existing saved zero/negative boat-level JS discrepancy remain.
+
+Final affected `python3 tools/check.py` passed all six formatting/test/clippy
+commands for both crates, warnings denied; Markdown and JSON reports inspected:
+`performance-results/20261016-191343/report.md`. Core/host counts are recorded by
+that report's test logs. Frozen Python generators recompute exactly; the existing
+actual browser predictor still agrees with 455 supported Python movement samples,
+and `git diff --check` passes.
+
+Targeted existing player/shared-world/chunk-world/navigation checks ran 56 Python
+cases. Fifty-five pass, including two HTTP scenarios after the required loopback
+sandbox escalation. One existing HTTP payload-size assertion fails: 20,293 bytes
+exceeds its 20,000-byte limit (`tests/test_chunk_world.py:332`). The untouched
+starting revision `02d29fa1cd880e35d52168d93df6244ded9e8146`, extracted with
+`git archive` into a disposable directory, also fails the same assertion (20,454
+bytes); no Python application code or payload threshold changed. Reports:
+`performance-results/20261016-191241/report.md` (53 pass, three sandbox socket
+errors), `performance-results/20261016-191353/report.md` (two HTTP pass, one
+pre-existing payload failure); baseline timing evidence is
+`/private/tmp/lantern-r08-baseline-timings.json`. Both report formats were inspected.
+The payload-size issue remains outside this slice.
+No performance comparison is needed for this compatibility slice; no speed claim
+is made. **R08 is complete at this experimental private-copy boundary.** Founder
+activity/equipment/boat/horse acquisition, adventure restrictions, actual searches,
+HTTP command handling and durable writes remain their already assigned R09–21
+stages. Python remains the playable default; R09 has not been started here.
 
 **Deliver:** one authoritative spatial representation and explicit movement profiles.
 Preserve farmer acre access, pier/boat exceptions, founder clothing and water rules,

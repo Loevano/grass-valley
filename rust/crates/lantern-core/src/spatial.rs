@@ -412,3 +412,25 @@ pub fn violates_pen(candidate: Footprint, candidate_is_barn: bool, others: &[Str
             || (candidate_is_barn && b.footprint.tiles().any(|t| near(t, candidate.origin)))
     })
 }
+
+/// Terrain/bounds part of navigation.search_steps.open_tile, before occupancy.
+/// Outer None is absent ordinary terrain; inner None is an unavailable/missing
+/// cell. A bounded search requires a truthy cell; unbounded search only excludes
+/// explicit void. Chunk adapters supply Some(Some('v')) for unavailable chunks.
+/// Goal/start handling and corner expansion remain the search caller's contract.
+pub fn search_terrain_open(
+    tile: Tile,
+    size: u32,
+    bounds: Option<(i32, i32, i32, i32)>,
+    terrain: Option<Option<char>>,
+) -> bool {
+    tile.x >= 0
+        && tile.y >= 0
+        && (tile.x as u32) < size
+        && (tile.y as u32) < size
+        && bounds.is_none_or(|(min_x, max_x, min_y, max_y)| {
+            min_x <= tile.x && tile.x <= max_x && min_y <= tile.y && tile.y <= max_y
+        })
+        && terrain != Some(Some('v'))
+        && (bounds.is_none() || terrain != Some(None))
+}

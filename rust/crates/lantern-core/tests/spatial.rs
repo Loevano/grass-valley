@@ -98,3 +98,18 @@ fn task_access_is_derived_and_does_not_change_shared_obstacles() {
     );
     assert!(index.blocked().contains(&tile(3, 3)));
 }
+
+#[test]
+fn terrain_search_bounds_preserve_missing_and_void_rules() {
+    use lantern_core::spatial::search_terrain_open;
+    let tile = Tile { x: 2, y: 3 };
+    let bounds = Some((2, 4, 1, 3));
+    assert!(search_terrain_open(tile, 8, bounds, None));
+    assert!(search_terrain_open(tile, 8, None, Some(None)));
+    assert!(!search_terrain_open(tile, 8, bounds, Some(None)));
+    assert!(search_terrain_open(tile, 8, bounds, Some(Some('g'))));
+    assert!(!search_terrain_open(tile, 8, None, Some(Some('v'))));
+    assert!(!search_terrain_open(tile, 8, Some((3, 4, 1, 3)), None));
+    assert!(!search_terrain_open(Tile { x: -1, y: 3 }, 8, None, None));
+    assert!(!search_terrain_open(Tile { x: 8, y: 3 }, 8, None, None));
+}

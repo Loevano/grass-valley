@@ -155,6 +155,25 @@ impl<'a> ChunkLifecycle<'a> {
     pub fn private_world_bytes(&self) -> Vec<u8> {
         bytes(&self.state.world)
     }
+    /// Assemble a read-only movement scene from current active records only.
+    /// Camera records remain unavailable. This captures the already-active
+    /// snapshot; preview_founder_batch also activates between commands.
+    pub fn founder_scene(
+        &self,
+        town: &str,
+    ) -> Result<super::PrivateFounderWorldCopy, BoundaryError> {
+        let records: Vec<_> = self
+            .state
+            .active_order
+            .iter()
+            .map(|key| (*key, self.state.active[key].as_slice()))
+            .collect();
+        super::PrivateFounderWorldCopy::with_active_chunks(
+            &self.private_world_bytes(),
+            town,
+            &records,
+        )
+    }
     pub fn active_keys(&self) -> Vec<ChunkKey> {
         sorted(self.state.active.keys().copied())
     }
@@ -291,12 +310,17 @@ impl<'a> ChunkLifecycle<'a> {
     /// Matches Python's unchanged-set early return, lexical activation order and
     /// flush-before-eviction. Failure never publishes partial records/write intents.
     pub fn activate(&mut self) -> Result<(), BoundaryError> {
-        let desired = self.desired()?;
-        if desired == self.state.active.keys().copied().collect() {
+        let mut state = self.state.clone();
+        self.activate_into(&mut state)?;
+        self.state = state;
+        Ok(())
+    }
+    fn activate_into(&self, state: &mut Owned) -> Result<(), BoundaryError> {
+        let desired = desired(&state.world, self.size)?;
+        if desired == state.active.keys().copied().collect() {
             return Ok(());
         }
-        let mut state = self.state.clone();
-        flush(&mut state)?;
+        flush(state)?;
         for key in state.active.keys().copied().collect::<Vec<_>>() {
             if !desired.contains(&key) {
                 state.active.remove(&key);
@@ -308,7 +332,7 @@ impl<'a> ChunkLifecycle<'a> {
         }
         for key in sorted(desired.iter().copied()) {
             if !state.active.contains_key(&key) {
-                let record = self.read_into(&mut state, key)?;
+                let record = self.read_into(state, key)?;
                 state.camera.remove(&key);
                 state.order.retain(|k| *k != key);
                 state.saved.insert(key, record.clone());
@@ -316,9 +340,63 @@ impl<'a> ChunkLifecycle<'a> {
                 state.active_order.push(key);
             }
         }
-        rebind(&mut state)?;
-        self.state = state;
+        rebind(state)?;
         Ok(())
+    }
+    /// Evaluate authoritative founder movement on a disposable owner clone.
+    /// Whole-batch validation precedes activation/recovery. Python attaches its
+    /// manager on every recursive command, so refresh active terrain between
+    /// inputs, including saved-first reads/catch-up and source-resource rebinding.
+    /// No owner records, caches, world, clocks or pending write intents change.
+    pub fn preview_founder_batch(
+        &self,
+        town: &str,
+        inputs: &[(i32, i32)],
+    ) -> Result<lantern_core::founder::MovementResult, BoundaryError> {
+        use lantern_core::founder::{Direction, MovementResult};
+        if inputs.is_empty() || inputs.len() > 5 {
+            return Err(invalid("invalid movement batch"));
+        }
+        for &(x, y) in inputs {
+            Direction::new(x, y).map_err(|_| invalid("invalid movement direction"))?;
+        }
+        let mut state = self.state.clone();
+        let mut result: Option<MovementResult> = None;
+        for &input in inputs {
+            self.activate_into(&mut state)?;
+            let records: Vec<_> = state
+                .active_order
+                .iter()
+                .map(|key| (*key, state.active[key].as_slice()))
+                .collect();
+            let scene = super::PrivateFounderWorldCopy::with_active_chunks(
+                &bytes(&state.world),
+                town,
+                &records,
+            )?;
+            let next = scene.walk_batch(&[input])?;
+            let clear_activity = next.clear_activity || result.is_some_and(|r| r.clear_activity);
+            result = Some(MovementResult {
+                clear_activity,
+                ..next
+            });
+            let player = field_mut(
+                field_mut(field_mut(&mut state.world, "towns")?, town)?,
+                "player",
+            )?;
+            set(
+                player,
+                "x",
+                scalar(coordinate(next.state.position.x.get())?),
+            );
+            set(
+                player,
+                "y",
+                scalar(coordinate(next.state.position.y.get())?),
+            );
+            set(player, "facing", scalar(next.state.facing));
+        }
+        Ok(result.unwrap())
     }
     /// Bounded private snapshot preparation, not a public/client snapshot DTO.
     pub fn snapshot(&mut self, camera: &[ChunkKey]) -> Result<PrivateChunkSnapshot, BoundaryError> {

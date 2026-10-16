@@ -13,10 +13,10 @@ use lantern_core::{
 /// fn leak(value: &PrivateFounderCopy) { std::format!("{value:?}"); }
 /// ```
 pub struct PrivateFounderCopy {
-    geometry: PrivateSpatialCopy,
+    pub(super) geometry: PrivateSpatialCopy,
     terrain: Vec<Vec<char>>,
-    state: FounderState,
-    access: FounderAccess,
+    pub(super) state: FounderState,
+    pub(super) access: FounderAccess,
 }
 impl PrivateFounderCopy {
     pub fn decode(source: &[u8]) -> Result<Self, BoundaryError> {
@@ -111,7 +111,7 @@ impl PrivateFounderCopy {
     pub fn state(&self) -> FounderState {
         self.state
     }
-    fn terrain_at(&self, tile: Tile) -> Option<char> {
+    pub(super) fn terrain_at(&self, tile: Tile) -> Option<char> {
         usize::try_from(tile.y)
             .ok()
             .and_then(|y| self.terrain.get(y))

@@ -94,7 +94,7 @@ fn protected(tile: Tile, biome: Option<char>, access: FounderAccess) -> bool {
     biome != Some('b') || (x * 17 + y * 31 + x * y * 7).rem_euclid(7) % 3 != 2 || access.swamp_boots
 }
 /// Local scene. None means absent terrain in an ordinary legacy map, as Python;
-/// a chunk adapter must explicitly return 'v' for unavailable tiles (slice 3).
+/// a chunk adapter must explicitly return 'v' for unavailable tiles.
 pub struct FounderScene<'a, T: Fn(Tile) -> Option<char>> {
     pub spatial: &'a SpatialIndex,
     pub terrain: T,
@@ -137,13 +137,23 @@ impl<T: Fn(Tile) -> Option<char>> FounderScene<'_, T> {
     }
     pub fn walk(
         &self,
-        mut state: FounderState,
+        state: FounderState,
         direction: Direction,
         access: FounderAccess,
     ) -> Result<MovementResult, MovementError> {
         if !self.walkable(state.position, access) {
             return Err(MovementError::NeedsRecovery);
         }
+        self.walk_after_recovery(state, direction, access)
+    }
+    /// Host-only continuation after an exhaustive recovery found no open tile.
+    /// Python still attempts its axis substeps from that blocked position.
+    pub fn walk_after_recovery(
+        &self,
+        mut state: FounderState,
+        direction: Direction,
+        access: FounderAccess,
+    ) -> Result<MovementResult, MovementError> {
         let (dx, dy) = (f64::from(direction.dx), f64::from(direction.dy));
         let length = screen_distance(dx, dy);
         if length != 0.0 {
