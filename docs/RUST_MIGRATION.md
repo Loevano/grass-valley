@@ -6,8 +6,8 @@ A migration that can be completed one task at a time, with a prompt for each tas
 supported legacy generators) and slice 3a (maps/nonchunked terrain-only hydration)
 complete; slices 3b.i–ii (authored starter geometry and typed-seed saved-first
 reconstruction) complete; 3b.iii.a ordinary village overlay phase complete;
-3b.iii.b.i legacy swamp phase complete; remaining 3b.iii.b organic/placement
-migrations, 3b.iii.c integrated water repair and 3c
+3b.iii.b.i legacy swamp and 3b.iii.b.ii organic v2/record upgrades complete;
+remaining 3b.iii.b obstacle-safe placement/metadata migrations, 3b.iii.c integrated water repair and 3c
 (activation/regrowth) remain.
 Rust contains an experimental workspace, transport smoke CLI and read-only copy
 inspection CLI; gameplay is not ported.
@@ -228,7 +228,7 @@ only after work is performed. Keep unfinished stages visible in the roadmap.
 | R04 | Cargo workspace and applicable checks | R03 | Complete: slice 1 `732619a`; slice 2 `c7cf3e2`; slice 3 `feat: add Rust replay transport smoke CLI` (this change); evidence below |
 | R05 | Typed state, IDs, units, and boundary DTOs | R04 | Complete: slice 1 `f271ff4`; slice 2 `b5fa931`; slice 3 `508b396`; [boundary/coverage audit](RUST_STATE_DTOS.md), evidence below |
 | R06 | Legacy import and read-only save inspection | R05 | Complete: slice 1 `3312d5d`; slice 2 `4513bec`; slice 3 `041caee`; [staging scope/coverage](RUST_LEGACY_IMPORT.md), evidence below |
-| R07 | Terrain versions and chunk generation | R06 | In progress: slice 1 complete (`31fcf91`); [scope and evidence](RUST_TERRAIN.md); slice 2 complete (`dc0d400`); slice 3a complete (`4762909`); slice 3b.i complete (`9b08f25`); slice 3b.ii complete (`b925488`); slice 3b.iii.a ordinary village phase complete (`085c64b`); 3b.iii.b.i legacy swamp phase complete; organic v2/placement migrations, 3b.iii.c and 3c remain |
+| R07 | Terrain versions and chunk generation | R06 | In progress: slice 1 complete (`31fcf91`); [scope and evidence](RUST_TERRAIN.md); slice 2 complete (`dc0d400`); slice 3a complete (`4762909`); slice 3b.i complete (`9b08f25`); slice 3b.ii complete (`b925488`); slice 3b.iii.a ordinary village phase complete (`085c64b`); 3b.iii.b.i–ii legacy/organic swamp phases complete; placement/metadata migrations, 3b.iii.c and 3c remain |
 | R08 | Spatial rules and founder movement | R07 | Not started |
 | R09 | Search algorithms and library decision | R08 | Not started |
 | R10 | Request scheduler and cache invalidation | R09 | Not started |
@@ -1141,8 +1141,8 @@ needed: this is a compatibility port, not a performance problem.
 **Next bounded tasks, in order:**
 
 1. **3b.iii.b:** legacy swamp-v1 phase and saved `p/w/c` decoding are complete
-   in 3b.iii.b.i below. Next port organic v2 lane/canal/decor geometry and v1-to-v2
-   upgrades, then village placement and obstacle-safe layout/life/swamp metadata
+   in 3b.iii.b.i below. Organic v2 geometry and record upgrades are complete
+   in 3b.iii.b.ii. Next port village placement and obstacle-safe layout/life/swamp metadata
    migrations, including moved visit keys. Preserve player-built obstacles and
    imported metadata; test actual Python placement and every versioned overlay.
 2. **3b.iii.c:** integrate a complete saved-first, immutable post-overlay terrain
@@ -1177,12 +1177,46 @@ recompute actual Python without refreshing. Affected selection is only
 `performance-results/r07-slice3biiibi` (Markdown/JSON). No performance comparison:
 this is a compatibility port, not a performance problem.
 
-**Remaining, in order:** 3b.iii.b organic v2 geometry and v1-to-v2 upgrades; then
-obstacle-safe village placement/layout/life/swamp metadata migrations and moved
-visit keys. 3b.iii.c must subsequently integrate complete saved-first immutable
+**Remaining at this checkpoint:** organic v2 geometry and record upgrades
+(now complete in 3b.iii.b.ii below), then obstacle-safe village placement/
+layout/life/swamp world metadata migrations and moved visit keys. 3b.iii.c must subsequently integrate complete saved-first immutable
 post-overlay materialization and neighbor-aware v7 tiny-water repair. 3c retains
 authoritative lifecycle/cache/activation/regrowth. R07 remains incomplete; Python
 remains the playable default, with no HTTP, live-save writes or cutover.
+
+### R07 slice 3b.iii.b.ii evidence and remaining work
+
+Starting revision: `7bc00815396efef4d100d348d905399f653d1dd0`. Completed independent
+private `SwampOverlay::materialize` for already selected metadata, including the
+full supported v1/v2 apply phase and missing/zero/v1-to-v2 record upgrades.
+BFS neighbor/path insertion order, causeway widening, home/tavern access,
+canal/bridges/courtyards, decor reservations and footprint match actual Python.
+The original record marker stays captured throughout the loop; first eligible
+v1 metadata returns even outside the chunk. Mixed v2→v1 metadata can downgrade a
+record marker and require another pass, exactly as Python does. No claimed
+blanket idempotence hides this behavior. Saved center progress, quantities,
+stumps, extensions, numeric lexemes and original source bytes survive.
+Unknown versions/malformed data fail with sanitized paths even on no-op records.
+The v1 helper shares its existing geometry without changing its v2 refusal.
+
+100 frozen real Python full-cell/ordered-resource pairs cover real generators
+1–7, typed seeds, neighboring chunks, current/legacy bounds and clipped corners,
+missing/0/1/2 record markers, eligible/ineligible metadata, saved edits and mixed/
+overlapping/no-touch-first order. Repeated calls match Python, including four
+non-idempotent mixed cases; a separate frozen oracle checks exact ordered roads,
+decor, footprint and water. Rust additionally checks private scalar/source
+retention and sanitized rejection. The ordinary, legacy-swamp and organic-swamp frozen verifiers recompute actual
+Python without refreshing. Affected selection is only `rust:lantern-host`;
+formatting, host tests and Clippy pass. Evidence:
+`performance-results/r07-slice3biiibii` (Markdown/JSON). Performance comparison was
+not run: this is compatibility work, not a performance investigation.
+
+**Remaining:** obstacle-safe village placement/layout/life/swamp **world metadata**
+migrations and moved visit keys remain 3b.iii.b. Record upgrades here do not
+implement `ensure(world)`. Then 3b.iii.c must integrate complete saved-first
+immutable post-overlay materialization and neighbor-aware v7 tiny-water repair;
+3c retains lifecycle/cache/activation/regrowth. R07 remains incomplete. Python
+remains the playable default; no HTTP, live-save writes or cutover.
 
 ## R08 — Spatial rules and founder movement
 

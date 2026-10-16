@@ -1,9 +1,12 @@
 //! Ordinary village phase only: Python villages._apply_villages, not apply_villages.
-//! Also exposes the independent swamp-v1 phase; no placement, organic upgrades,
+//! Also exposes independent versioned swamp phases; no placement,
 //! water repair, activation, supply defaults or writes.
 use super::{ChunkKey, json::Node, loaded::decode_resources};
 use crate::BoundaryError;
 use std::collections::BTreeSet;
+
+mod swamp;
+pub use swamp::SwampOverlay;
 
 const PATH: &str = "$.ordinary_village_overlay";
 const BASE: [(&str, i32, i32); 4] = [
@@ -496,7 +499,7 @@ impl LegacySwampOverlay {
         version(&record, "village_version", 3, ROOT)?;
         version(&record, "terrain_version", 7, ROOT)?;
         let (left, top) = (key.x as i32 * 40, key.y as i32 * 40);
-        let mut terrain = rows(&record, ROOT)?;
+        rows(&record, ROOT)?;
         validate_resources(&record, left, top, ROOT)?;
         if let Some(clock) = record.optional("clock", ROOT)? {
             clock.nonnegative_number(&format!("{ROOT}.clock"))?;
@@ -514,84 +517,10 @@ impl LegacySwampOverlay {
         // Python's wrapper calls apply_legacy only for an expanded v1 village
         // when the record is older, passing only that first village and returning
         // immediately even if its square misses this chunk.
-        if previous == 0 {
-            let mut touched = false;
-            for village in selected.into_iter().take(1) {
-                let (vx, vy) = (village.x, village.y);
-                if left > vx + 18 || left + 40 <= vx - 19 || top > vy + 18 || top + 40 <= vy - 19 {
-                    continue;
-                }
-                touched = true;
-                let mut cleared = BTreeSet::new();
-                for y in top.max(vy - 19)..(top + 40).min(vy + 19) {
-                    for x in left.max(vx - 19)..(left + 40).min(vx + 19) {
-                        if (x - vx).abs().max((y - vy).abs()) > 9 {
-                            terrain[(y - top) as usize][(x - left) as usize] = b'g';
-                            cleared.insert((x, y));
-                        }
-                    }
-                }
-                for field in ["map_resources", "tree_stumps"] {
-                    field_mut(&mut record, field).retain(|item| {
-                        let point = position(item, ROOT).unwrap();
-                        !cleared.contains(&point)
-                            || item.optional("village", ROOT).unwrap().is_some_and(|n| {
-                                n.string(ROOT).is_ok_and(|name| name == village.name)
-                            })
-                    });
-                }
-                for (index, (x, y)) in legacy_swamp_sites().into_iter().enumerate() {
-                    let (kind, variant, label) = if (x, y) == (12, 4) {
-                        ("village_hut", "tavern", "The Crooked Candle")
-                    } else if index % 7 == 0 {
-                        ("village_market", "stall", "Marsh market stall")
-                    } else if index % 5 == 0 {
-                        ("village_hut", "workshop", "Reedworker’s shed")
-                    } else {
-                        (
-                            "village_hut",
-                            ["reed_house", "net_house", "moss_house"][index % 3],
-                            "Stilt cottage",
-                        )
-                    };
-                    let mut items = vec![(kind, x, y, variant, label)];
-                    let plant = ["ferns", "cattails", "mushrooms", "reeds"][index % 4];
-                    let plant_label = ["Ferns", "Cattails", "Mushrooms", "Reeds"][index % 4];
-                    items.extend([
-                        ("village_decor", x + 1, y, "bench", "Bench"),
-                        (
-                            "village_decor",
-                            x - 1,
-                            y + 1,
-                            "candle_lantern",
-                            "Candle lantern",
-                        ),
-                        ("village_decor", x, y - 1, plant, plant_label),
-                    ]);
-                    for (kind, x, y, variant, label) in items {
-                        append_swamp_item(
-                            &mut record,
-                            &village,
-                            left,
-                            top,
-                            (kind, x, y, variant, label),
-                        );
-                    }
-                }
-                for (x, y) in [(10, 5), (14, 4), (14, 8), (-10, 8)] {
-                    append_swamp_item(
-                        &mut record,
-                        &village,
-                        left,
-                        top,
-                        ("village_decor", x, y, "barrels", "Ale barrels"),
-                    );
-                }
-            }
-            if touched {
-                commit_rows(&mut record, &terrain);
-                set(&mut record, "swamp_version", scalar(1));
-            }
+        if previous == 0
+            && let Some(village) = selected.first()
+        {
+            apply_legacy_swamp(&mut record, village, left, top, ROOT)?;
         }
         let mut output = Vec::new();
         write_node(&record, &mut output);
@@ -636,4 +565,84 @@ fn append_swamp_item(
         set(&mut item, "label", scalar(label));
         append(record, item);
     }
+}
+
+fn apply_legacy_swamp(
+    record: &mut Node,
+    village: &Village,
+    left: i32,
+    top: i32,
+    root: &str,
+) -> Result<(), BoundaryError> {
+    if version(record, "swamp_version", 2, root)? == Some(1) {
+        return Ok(());
+    }
+    let (vx, vy) = (village.x, village.y);
+    if left > vx + 18 || left + 40 <= vx - 19 || top > vy + 18 || top + 40 <= vy - 19 {
+        return Ok(());
+    }
+    let mut terrain = rows(record, root)?;
+    let mut cleared = BTreeSet::new();
+    for y in top.max(vy - 19)..(top + 40).min(vy + 19) {
+        for x in left.max(vx - 19)..(left + 40).min(vx + 19) {
+            if (x - vx).abs().max((y - vy).abs()) > 9 {
+                terrain[(y - top) as usize][(x - left) as usize] = b'g';
+                cleared.insert((x, y));
+            }
+        }
+    }
+    for field in ["map_resources", "tree_stumps"] {
+        field_mut(record, field).retain(|item| {
+            let point = position(item, root).unwrap();
+            !cleared.contains(&point)
+                || item
+                    .optional("village", root)
+                    .unwrap()
+                    .is_some_and(|n| n.string(root).is_ok_and(|name| name == village.name))
+        });
+    }
+    for (index, (x, y)) in legacy_swamp_sites().into_iter().enumerate() {
+        let (kind, variant, label) = if (x, y) == (12, 4) {
+            ("village_hut", "tavern", "The Crooked Candle")
+        } else if index % 7 == 0 {
+            ("village_market", "stall", "Marsh market stall")
+        } else if index % 5 == 0 {
+            ("village_hut", "workshop", "Reedworker’s shed")
+        } else {
+            (
+                "village_hut",
+                ["reed_house", "net_house", "moss_house"][index % 3],
+                "Stilt cottage",
+            )
+        };
+        let mut items = vec![(kind, x, y, variant, label)];
+        let plant = ["ferns", "cattails", "mushrooms", "reeds"][index % 4];
+        let plant_label = ["Ferns", "Cattails", "Mushrooms", "Reeds"][index % 4];
+        items.extend([
+            ("village_decor", x + 1, y, "bench", "Bench"),
+            (
+                "village_decor",
+                x - 1,
+                y + 1,
+                "candle_lantern",
+                "Candle lantern",
+            ),
+            ("village_decor", x, y - 1, plant, plant_label),
+        ]);
+        for (kind, x, y, variant, label) in items {
+            append_swamp_item(record, village, left, top, (kind, x, y, variant, label));
+        }
+    }
+    for (x, y) in [(10, 5), (14, 4), (14, 8), (-10, 8)] {
+        append_swamp_item(
+            record,
+            village,
+            left,
+            top,
+            ("village_decor", x, y, "barrels", "Ale barrels"),
+        );
+    }
+    commit_rows(record, &terrain);
+    set(record, "swamp_version", scalar(1));
+    Ok(())
 }

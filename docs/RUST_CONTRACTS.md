@@ -270,8 +270,11 @@ geometry, saved edits and private scalar lexemes/extensions. It does not change
 raw reads or the inspection CLI; placement/swamp migrations and complete
 post-overlay neighbor sampling remain required. Slice 3b.iii.b.i supplies an
 independent private swamp-v1 phase (43 actual Python pairs) and valid saved
-organic `p/w/c` decoding (four real saved chunks); organic v2 upgrades and
-obstacle-safe placement/metadata migrations remain. No NPC gameplay or complete R07
+organic `p/w/c` decoding (four real saved chunks). Slice 3b.iii.b.ii supplies
+complete explicit versioned swamp materialization including organic v2 geometry
+and record upgrades (100 actual Python pairs plus exact layout), retaining mixed
+v1/v2 order and Python repeat behavior. Obstacle-safe placement/world metadata
+migrations and moved visit keys remain. No NPC gameplay or complete R07
 readiness is claimed.
 Saved records take precedence over regeneration; seeded base generation and
 idempotent legacy repairs/overlays are separate operations. `ChunkMap.read` can

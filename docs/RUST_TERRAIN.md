@@ -304,8 +304,8 @@ python3 rust/crates/lantern-host/tests/fixtures/terrain/generate_village_overlay
 ```
 
 **Remaining:** 3b.iii.b must supply actual obstacle-safe village placement and
-layout/life/swamp migrations plus organic v2 geometry; the independent v1 phase
-below is complete. Then 3b.iii.c must integrate complete immutable saved-first materialization and tiny-water repair
+layout/life/swamp world metadata migrations; the independent v1/v2 phases
+below are complete. Then 3b.iii.c must integrate complete immutable saved-first materialization and tiny-water repair
 sampling post-overlay neighbors. Slice 3c still owns authoritative lifecycle and
 regrowth. The ordinary helper alone is not old-world exploration readiness.
 Performance checks were not run for this compatibility port.
@@ -339,12 +339,54 @@ python3 rust/crates/lantern-host/tests/fixtures/terrain/generate_legacy_swamp.py
 
 This helper does not choose or migrate village metadata, check player obstacles,
 apply organic v2 geometry, repair water, activate resources or integrate with raw
-selection. Next bounded tasks within 3b.iii.b are versioned organic v2 geometry
-(including v1-to-v2 upgrades), then obstacle-safe placement/layout/life/swamp
+selection. Organic v2 and record upgrades are now complete in 3b.iii.b.ii below.
+The remaining 3b.iii.b task is obstacle-safe placement/layout/life/swamp world
 metadata migrations and moved visit keys. These must finish before 3b.iii.c
 integrates all overlays and samples post-overlay neighbors for tiny-water repair.
 R07 remains incomplete. Performance comparison was not run: this is compatibility
 work, not an investigation or fix of a performance problem.
+
+## Organic versioned swamp phase (slice 3b.iii.b.ii)
+
+`SwampOverlay::materialize(source, villages, key, world_size)` independently
+matches the complete **`swamp_village.apply` v1/v2 phase for already selected
+metadata**. It composes the same legacy implementation with organic `layout()`:
+ordered BFS roads, two-wide causeway, homes/access lanes, market/tavern courtyards,
+canal water/bridges and reserved decoration placement/footprint. It upgrades
+missing/zero/v1 record markers, re-wets unused old corners in Python's y/x order,
+preserves the old center's harvested resources and stumps, and appends structures,
+decor and sorted water in exact order. Roads overwrite terrain within the center
+just as Python does. Retained source scalar lexemes and arbitrary extensions are
+never converted through numeric JSON values. The boundary has no Debug/Serialize
+and never mutates input archives/metadata or caches. Unsupported versions,
+coordinates and malformed records fail with sanitized ordinal paths even when
+completed metadata would otherwise produce no edits.
+
+The original record marker is captured once; each organic village commits before
+the next. The first eligible v1 village invokes legacy geometry and returns even
+when outside the chunk. Mixed v2→v1 metadata can downgrade the result to marker 1,
+then upgrade on the next call. These Python semantics are explicitly covered;
+blanket idempotence is not imposed on such metadata. Normal completed v2 records
+preserve saved edits on repeated calls.
+
+100 actual Python pairs use real terrain generators 1–7, typed seeds, a 3×3
+neighborhood, current/legacy bounds and clipped corners, missing/0/1/2 record
+markers, metadata eligibility, overlaps/mixed order and saved terrain/resources/
+stumps/quantities/extensions. Repeated materialization compares against actual
+Python again (four mixed cases differ on repetition). A separate exact layout
+oracle checks ordered roads/materials/decor and the complete footprint/water.
+Recheck the record and layout corpora independently without refreshing:
+
+```sh
+python3 rust/crates/lantern-host/tests/fixtures/terrain/generate_organic_swamp.py --check
+```
+
+This is record materialization, not obstacle-safe `ensure(world)` metadata
+migration or placement. `ImportedWorld::raw_chunk` and saved-only `ChunkReader`
+remain unchanged. Next: world metadata migrations/visit keys (3b.iii.b), complete
+saved-first overlay integration and post-overlay neighbor water repair (3b.iii.c),
+then activation/regrowth (3c). No performance comparison was run for this
+compatibility port.
 
 ## Compatibility matrix and remaining work
 
@@ -354,7 +396,7 @@ work, not an investigation or fix of a performance problem.
 | Raw generator versions 1–7, legacy seeds/dimensions and unexplored nonstarter selection | Slice 2 complete; exact 226-record and RNG parity |
 | D05 byte seed material → compatible reference RNG draws | Complete; gameplay adoption/state serialization remain later work |
 | Authored starter ground/resources and new-world town sites/separation | Slices 3b.i–ii complete; 49 authored starter and 86 raw selection Python goldens |
-| Village/swamp placement and versioned overlays | 3b.iii.a ordinary phase and 3b.iii.b.i legacy swamp-v1 phase complete (150 + 43 Python pairs); organic v2 and placement/metadata migrations remaining |
+| Village/swamp placement and versioned overlays | 3b.iii.a ordinary and 3b.iii.b.i–ii legacy/organic swamp phases complete (150 + 43 + 100 Python pairs); obstacle-safe placement/world metadata migrations remaining |
 | Post-overlay v7 tiny-water repair and boundaries | 3b.iii.c complete integration/neighbor repair remaining; raw and ordinary-phase boundaries covered |
 | Active/sleeping chunks, dirty resources, regrowth and clock catch-up | Slice 3c remaining |
 | Ordinary/independent/shared nonchunked terrain-only hydration and `generate_map` | Slice 3a complete; 35 real maps and six paired hydration goldens; gameplay preparation remains later stages |
