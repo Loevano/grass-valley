@@ -221,7 +221,7 @@ pub(super) fn metadata(payload: &Node, path: &str) -> Result<Option<ChunkMetadat
         ));
     }
     if let Some(clock) = shared.optional("chunk_clock", &path)? {
-        clock.nonnegative_number(&format!("{path}.chunk_clock"))?;
+        super::clock::Clock::parse(clock, &format!("{path}.chunk_clock"))?;
     }
     for field in ["terrain", "map_resources", "tree_stumps"] {
         if shared.optional(field, &path)?.is_some() {
@@ -311,7 +311,7 @@ fn validate_record(
         }
     }
     if let Some(clock) = node.optional("clock", path)? {
-        clock.nonnegative_number(&format!("{path}.clock"))?;
+        super::clock::Clock::parse(clock, &format!("{path}.clock"))?;
     }
     preserved_fields(
         &node,

@@ -202,8 +202,9 @@ R07 slice 3c.i exposes private `CaughtUpChunk` without Debug/Serialize. Explicit
 preparation retains exact private source/untouched scalar extensions and returns
 owned industry/resource/sleeping-stump catch-up output for a supplied simulation
 clock and expanded obstacle tiles. It neither installs authoritative state nor
-modifies archive/world/client DTOs or production. The clock domain is explicitly
-finite/nonnegative ≤2^53. Slice 3c.ii adds private `ChunkLifecycle`,
+modifies archive/world/client DTOs or production. Clocks now retain finite
+nonnegative float/arbitrary-size integer scalar semantics with exact arithmetic;
+see slice 3c.iv below. Slice 3c.ii adds private `ChunkLifecycle`,
 `ChunkWriteIntent` and `PrivateChunkSnapshot` without Debug/Serialize: one owner
 installs ordered resident cache-plan results, bootstraps active aggregates, extracts
 desired chunks/occupied footprints and retains edited eviction/reload through an
@@ -214,5 +215,9 @@ wire filtering/versioning remains later protocol work. Slice 3c.iii adds explici
 transactional active renewal with immediate aggregate/membership synchronization
 and snapshot invalidation. Conversion preserves stump metadata and aggregate append
 order; stocks/groups, versioned eligibility and timers match Python. No clock,
-production, town inventory or client DTO is changed. Exact larger integer clocks
-remain required by 3c.
+production, town inventory or client DTO is changed. Slice 3c.iv completes exact
+integer clock subtraction and integer/float arithmetic,
+comparison and scalar retention without a 2^53 restriction. `LoadedChunk` exposes
+exact private clock bytes separately from its explicitly fallible binary64 inspection
+view. This private terrain boundary does not widen the general typed DTO time
+conversion domain described above, nor does it expose arbitrary integers on public wire DTOs.

@@ -2,19 +2,14 @@
 
 A migration that can be completed one task at a time, with a prompt for each task.
 
-**Status:** R01–R06 complete; R07 slices 1–2 (saved-chunk reading/loading and raw
-supported legacy generators) and slice 3a (maps/nonchunked terrain-only hydration)
-complete; slices 3b.i–ii (authored starter geometry and typed-seed saved-first
-reconstruction) complete; 3b.iii.a ordinary village overlay phase complete;
-3b.iii.b.i legacy swamp and 3b.iii.b.ii organic v2/record upgrades complete;
-3b.iii.b.iii ordinary obstacle-safe placement/layout/life metadata complete;
-3b.iii.b.iv swamp world metadata/visit relocation and ordered deferred cache plans
-complete; 3b.iii.c immutable saved-first overlay/water integration complete;
-3c.i private supplied-clock chunk catch-up preparation complete within its explicit
-clock domain; 3c.ii private authoritative lifecycle/cache-plan integration complete;
-3c.iii active versioned renew/regrowth complete; exact larger integer clocks remain.
-Rust contains an experimental workspace, transport smoke CLI and read-only copy
-inspection CLI; gameplay is not ported.
+**Status:** R01–R07 complete as experimental migration foundations; R08 spatial
+rules and founder movement is next. R07 includes saved-first terrain versions 1–7,
+nonchunked maps, authored starter/town sites, ordinary/swamp metadata and overlays,
+post-overlay water repair, private authoritative chunk lifecycle/resource renewal,
+and exact Python integer/float clock arithmetic. See the [completion audit](#r07-slice-3civ-exact-clocks-and-completion-audit).
+Python remains the playable default. Rust's transport smoke and read-only copy
+inspection CLIs do not load playable gameplay. Platform libm compatibility remains
+an R23 release gate, real persistence remains R19, and public wire integration is later work.
 **Initial plan revision:** `445ddddd675a87eb7adb50442b2dbf3c14ea6c6f`.
 **R01 audit revision:** `935db7b95885c101c62dfd6bf9e16f39b6a7a8fe`.
 **Scope:** replace the Python host first. Keep the browser playable during that
@@ -232,7 +227,7 @@ only after work is performed. Keep unfinished stages visible in the roadmap.
 | R04 | Cargo workspace and applicable checks | R03 | Complete: slice 1 `732619a`; slice 2 `c7cf3e2`; slice 3 `feat: add Rust replay transport smoke CLI` (this change); evidence below |
 | R05 | Typed state, IDs, units, and boundary DTOs | R04 | Complete: slice 1 `f271ff4`; slice 2 `b5fa931`; slice 3 `508b396`; [boundary/coverage audit](RUST_STATE_DTOS.md), evidence below |
 | R06 | Legacy import and read-only save inspection | R05 | Complete: slice 1 `3312d5d`; slice 2 `4513bec`; slice 3 `041caee`; [staging scope/coverage](RUST_LEGACY_IMPORT.md), evidence below |
-| R07 | Terrain versions and chunk generation | R06 | In progress: slice 1 complete (`31fcf91`); [scope and evidence](RUST_TERRAIN.md); slice 2 complete (`dc0d400`); slice 3a complete (`4762909`); slice 3b.i complete (`9b08f25`); slice 3b.ii complete (`b925488`); slice 3b.iii.a ordinary village phase complete (`085c64b`); 3b.iii.b.i–ii legacy/organic swamp phases complete; 3b.iii.b.iii ordinary placement/layout/life metadata complete (`37f2a84`); 3b.iii.b.iv swamp world metadata/visits and ordered deferred cache plans complete (`7feec7b`); 3b.iii.c immutable post-overlay terrain and seam water repair complete (`6c4bbe9`); 3c.i private supplied-clock catch-up preparation complete (`725e089`); 3c.ii private authoritative lifecycle integration complete (`4fbd2ee`); 3c.iii active versioned renew/regrowth complete (this change); exact larger integer clocks remain |
+| R07 | Terrain versions and chunk generation | R06 | Complete as private terrain/chunk foundation; [scope, slice evidence and completion audit](RUST_TERRAIN.md); exact clocks finish 3c.iv; finite platform-math vectors retain the R23 release gate |
 | R08 | Spatial rules and founder movement | R07 | Not started |
 | R09 | Search algorithms and library decision | R08 | Not started |
 | R10 | Request scheduler and cache invalidation | R09 | Not started |
@@ -921,8 +916,8 @@ sites; 3b.ii typed-seed saved-first reconstruction integration; 3b.iii village/
 swamp placement/overlays and post-overlay water repair, subdivided below); (3c) authoritative
 active/sleeping and dirty resource state,
 bounded decoded/snapshot caches, eviction/reload, supplied simulation-time catch-up
-and versioned regrowth without offline production. R07 remains in progress until
-3b and 3c pass; do not begin R08 from a partial terrain implementation.
+and versioned regrowth without offline production. All slices are complete as a
+private migration foundation; the audit below records scope and release limits.
 
 **Deliver:** old generator versions produce the same terrain/resources when an old
 world explores previously unloaded chunks. Include seed conversion, iteration order,
@@ -1395,13 +1390,11 @@ Unsupported kinds/versions, malformed fields and foreign chunk positions reject
 with sanitized structural paths. Known nonsupply resources, including authored
 chests and village structures/decor, are retained.
 
-The explicit accepted clock domain is finite nonnegative clocks at most 2^53;
-integer lexemes above that bound reject before float conversion rather than
-silently changing elapsed time. JSON float spellings retain Python binary64
-semantics. **Lifting this domain restriction with exact integer-clock arithmetic
-is still required before claiming full Python clock compatibility.** Arbitrary
-private extension/quantity integers remain lossless and are not subject to this
-clock-only bound.
+At completion of 3c.i, the accepted clock domain was finite nonnegative clocks
+at most 2^53, with larger integer lexemes rejected before float conversion. Slice
+3c.iv below removes this historical restriction using exact integer arithmetic.
+JSON float spellings retain Python binary64 semantics. Arbitrary private extension/
+quantity integers remain lossless and are not subject to that former clock bound.
 
 65 frozen actual Python `ChunkMap.catch_up` cases cover real generated terrain
 versions 1–7, typed seeds, 480/1920 dimensions, authored starter chunks containing
@@ -1481,7 +1474,7 @@ denied. The final Markdown/JSON reports at `performance-results/r07-slice3cii/`
 were inspected: candidate `725e089` plus the task worktree, correctness pass and
 performance `not_run`. No unknown runtime files selected unrelated checks.
 
-**Remaining 3c:** exact clocks above 2^53 and active versioned renew/regrowth with
+**At completion of 3c.ii (resolved by 3c.iii–iv below):** exact clocks above 2^53 and active versioned renew/regrowth with
 paired traces. Supplied clocks still reject outside the existing catch-up domain;
 active reads never simulate sleeping recovery. Public wire snapshot filtering/version
 protocol, real persistence, HTTP and playable-host integration remain their later
@@ -1521,8 +1514,8 @@ renewal failure, scalar/private integer retention, snapshot invalidation, no clo
 production changes and duplicate-intent suppression. Frozen oracle verification
 remains `generate_lifecycle.py --check`; it never updates expected data.
 
-**Remaining 3c:** exact integer clocks above 2^53 still reject explicitly and remain
-the final known R07 compatibility gate. Finite libm platform/release coverage also
+**At completion of 3c.iii:** exact integer clocks above 2^53 still rejected.
+Slice 3c.iv below resolves this final known R07 compatibility gate. Finite libm platform/release coverage also
 remains gated as documented. No whole R07 completion, playable host, HTTP, public
 wire snapshots or persistence readiness is claimed. Python remains default.
 Performance comparison was not run because this compatibility port did not
@@ -1535,6 +1528,55 @@ reports at `performance-results/r07-slice3ciii-final/` were inspected: candidate
 `4fbd2ee` plus the task worktree, correctness pass, performance `not_run`.
 The affected set selected only `rust:lantern-host`; it was rerun after a final
 rule-field validation refinement. No unknown runtime files selected unrelated checks.
+
+### R07 slice 3c.iv exact clocks and completion audit
+
+Starting revision: `7ba9bd00b187f3ca442c6660b20bebdd3559e2c4`. Private clocks now
+preserve JSON integer versus float semantics without a 2^53 limit. Integer elapsed
+subtraction is exact before conversion; `elapsed / 3` rounds the exact quotient
+once. Mixed subtraction uses Python's integer-to-float conversion and exact
+integer/float equality controls camera hits. Supplied scalar lexemes survive reads
+and flushes. Enormous close integer clocks work even when their absolute values
+cannot convert to binary64; conversions that Python cannot perform reject with
+sanitized errors before publishing state. Unused elapsed values and active reads
+never trigger eager conversion. Saved loading offers exact private clock bytes and
+an explicitly fallible binary64 inspection view. No new dependency was added.
+
+The independent actual-Python evidence adds 3,096 arithmetic vectors (every
+binary64 exponent, int/3 ties, >u64, 400-digit close/equal/future clocks, mixed
+operands, signed zero and overflow), 18 catch-up cases (83 total, original 65
+unchanged), and nine clock lifecycle traces alongside the existing 33 traces.
+Rust checks exercise raw clock retention, active bypass, camera equality/catch-up,
+flush/source immutability, explicit inspection overflow and transactional failure.
+Frozen `--check` scripts recompute Python results without refreshing baselines.
+
+The R07 done criteria were audited against current code and tests:
+
+| Criterion | Implemented boundary and evidence |
+| --- | --- |
+| Old-world unvisited chunks and old seeds | Saved-first `raw_chunk`/`PostOverlayTerrain::read`, typed seeds and generators 1–7; `generated_chunks.rs`, `legacy_chunks.rs`, `materialized_terrain.rs` compare real Python cells and ordered resources, current/legacy bounds and offsets |
+| Chunk unload/reload | Immutable `ChunkReader` and private `ChunkLifecycle`; `loaded_chunks.rs` and 33 original lifecycle traces cover 49-view eviction, active promotion, edited flush/eviction/reload and archive precedence |
+| New-world town separation | `generate_starter`; `authored_starters.rs` compares 49 real Python starters/sites and verifies every pair is at least 40 tiles apart |
+| Water boundaries | Versioned overlays plus post-overlay cardinal neighbor sampling; `materialized_terrain.rs` checks seam/corner/world edges, added/removed connections and v1–6 versus v7 thresholds |
+| Resource recovery | Explicit sleeping `CaughtUpChunk` and active `renew_active`; 83 Python catch-up cases, 33 original lifecycle traces and nine clock traces cover supplies, round-nine timers, versioned regrowth, blocked stumps, group roots/caps, boundaries and no offline production |
+| Unsupported versions fail | Generator, import, overlay, materialization and lifecycle tests reject future/mismatched markers before writes; saved records never silently fall back to new generation |
+
+**R07 is complete as the terrain/chunk migration foundation. R08 is next.** This
+is not playable-host completion: full nonchunked gameplay preparation belongs to
+its feature stages, real durable writes/recovery to R19, and public/client protocol
+integration to later stages. Python stays default. Finite libm/float/fmod/pow/round
+vectors on this development host do not prove every seed on every supported platform;
+R23 must resolve any platform threshold difference before that platform's cutover.
+No tolerance, generator upgrade or baseline refresh hides a mismatch. Performance
+comparison was not run because this is compatibility work, not a performance problem.
+
+
+Validation: all four independent frozen Python checks passed (3,096 arithmetic
+cases, 83 catch-up cases, nine clock traces and the unchanged 33 lifecycle traces).
+The affected selection contained only `rust:lantern-host`; formatting, 101 host
+tests plus 16 compile-fail doctests, and Clippy with warnings denied passed.
+Markdown/JSON reports at `performance-results/r07-slice3civ/` were inspected:
+candidate `7ba9bd0` plus this task's worktree, correctness pass, performance `not_run`.
 
 ## R08 — Spatial rules and founder movement
 

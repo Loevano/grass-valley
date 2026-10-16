@@ -1,10 +1,13 @@
 # R07 terrain compatibility
 
-R07 slices 1–3a provide experimental **read-only saved-chunk loading**, **raw
-versioned chunk generation**, and **nonchunked terrain-only hydration**, separate
-from R06 staging and its unchanged
-`preserved_only` inspection CLI. They do not create a playable authoritative world.
-Python remains the normal host.
+R07 is complete as an experimental private terrain/chunk migration foundation:
+saved-first generation, nonchunked terrain-only hydration, authored town sites,
+ordinary/swamp metadata and overlays, post-overlay water boundaries, authoritative
+chunk ownership/resource renewal and exact supplied-clock arithmetic. The
+[completion audit](RUST_MIGRATION.md#r07-slice-3civ-exact-clocks-and-completion-audit)
+maps every done criterion to code and evidence. Historical slice evidence follows.
+R06 staging and its unchanged `preserved_only` inspection CLI remain separate.
+Python remains the playable default; Rust does not create a playable host.
 
 ## Saved-copy reader
 
@@ -545,11 +548,12 @@ needed for this compatibility port and no speedup is claimed.
 | Authored starter ground/resources and new-world town sites/separation | Slices 3b.i–ii complete; 49 authored starter and 86 raw selection Python goldens |
 | Village/swamp placement and versioned overlays | 3b.iii.a ordinary and 3b.iii.b.i–ii legacy/organic swamp phases complete (150 + 43 + 100 Python pairs); 3b.iii.b.iii ordinary obstacle-safe placement/layout/life metadata complete (105 Python worlds); 3b.iii.b.iv swamp world metadata/home/routine/visit migration complete (264 Python worlds plus explicit ordered cache plans) |
 | Post-overlay v7 tiny-water repair and boundaries | 3b.iii.c immutable integration complete; 35 actual Python worlds, including resident plans and post-overlay edges/corners; 3c.ii consumes these results in the private owner |
-| Active/sleeping chunks, dirty resources, regrowth and clock catch-up | 3c.i private chunk catch-up preparation complete within finite nonnegative clock domain ≤2^53 (65 actual Python cases); 3c.ii authoritative private owner/catch-up/cache-plan integration complete (19 actual Python lifecycle traces); 3c.iii active versioned renew/regrowth complete (14 new actual Python traces); exact larger integer clocks remain |
+| Active/sleeping chunks, dirty resources, regrowth and clock catch-up | Slices 3c.i–iv complete: private catch-up, authoritative lifecycle/cache plans, active versioned renewal and exact integer/float clocks; 83 Python catch-up cases, 33 original lifecycle traces, nine exact-clock traces and 3,096 arithmetic vectors |
 | Ordinary/independent/shared nonchunked terrain-only hydration and `generate_map` | Slice 3a complete; 35 real maps and six paired hydration goldens; gameplay preparation remains later stages |
 
-No whole R07 completion, playable-world readiness, performance gain, runtime
-memory bound, durable save conversion or HTTP integration is claimed.
+R07 is complete as a private terrain/chunk foundation; see the completion audit.
+Playable-world readiness, performance gain, total runtime memory bounds, durable
+save conversion and HTTP integration remain outside this stage.
 
 
 ## Explicit sleeping-chunk catch-up preparation (slice 3c.i)
@@ -566,10 +570,9 @@ production, installs an authoritative record or mutates input/archive/source.
 
 Known nonsupply chest/village records survive unchanged; unknown kinds/versions
 and malformed records reject with sanitized paths. Untouched extensions/scalar
-lexemes remain exact, including arbitrary-size private integers. The explicit
-clock domain is finite nonnegative values ≤2^53; larger integer clocks reject
-without lossy conversion and remain an R07 compatibility gate. Float spellings
-use Python binary64 semantics; the supplied clock's original lexeme is retained.
+lexemes remain exact, including arbitrary-size private integers. At completion of 3c.i, the explicit clock domain was finite nonnegative values
+≤2^53. Slice 3c.iv below removes that restriction with exact integer arithmetic.
+Float spellings use Python binary64 semantics; supplied clock lexemes are retained.
 
 65 actual Python cases use real generated chunks and authored chest-containing
 starter chunks across versions 1–7, 480/1920 dimensions and typed seeds, with
@@ -628,9 +631,9 @@ is only test storage and never enters imported world payloads.
 python3 rust/crates/lantern-host/tests/fixtures/terrain/generate_lifecycle.py --check
 ```
 
-Starting revision: `725e089`. Exact larger integer clocks and active versioned
-renew/regrowth remain the next R07 work; finite nonnegative supplied clocks still
-must be ≤2^53. This owner does not run production or become a playable host.
+Starting revision: `725e089`. At completion of 3c.ii, exact larger integer clocks
+and active versioned renew/regrowth remained required. Slices 3c.iii–iv below
+complete both. This owner does not run production or become a playable host.
 Python remains default. Performance comparisons were not run because no performance
 problem or optimization was investigated.
 
@@ -672,8 +675,8 @@ versions 1–7 and both dimensions using real generated geometry and isolated au
 rule cells. Repeated renewal/passive reads/flush/eviction/sleep/reload compare full
 records and aggregates. Five Rust lifecycle tests also cover renewal atomicity,
 private numeric retention, cache invalidation and inventory/clock invariance.
-Exact integer clocks above 2^53 remain rejected and required before R07 completion;
-the finite libm platform gate remains. Python stays default. No performance comparison
+At completion of 3c.iii, exact integer clocks above 2^53 were still rejected;
+slice 3c.iv below resolves that restriction. The finite libm platform gate remains. Python stays default. No performance comparison
 was run because this is compatibility work without a performance investigation.
 
 Validation passed the independent frozen oracle check (33 actual Python traces;
@@ -683,3 +686,56 @@ reports at `performance-results/r07-slice3ciii-final/` were inspected: candidate
 `4fbd2ee` plus the task worktree, correctness pass, performance `not_run`.
 The affected set selected only `rust:lantern-host`; it was rerun after a final
 rule-field validation refinement. No unknown runtime files selected unrelated checks.
+
+## Exact supplied clocks and R07 completion (slice 3c.iv)
+
+Starting revision: `7ba9bd00b187f3ca442c6660b20bebdd3559e2c4`. The former ≤2^53
+restriction is removed. A private clock scalar distinguishes arbitrary-size JSON
+integers from finite binary64 float literals. It subtracts integers exactly before
+conversion and rounds integer `elapsed / 3` once, preserving Python true division.
+Mixed subtraction converts integer operands as Python does; exact integer/float
+equality controls camera hits. Negative zero and exponent spellings remain supplied
+lexemes. Absent clocks still use zero for arithmetic but miss the camera cache;
+future clocks clamp elapsed to zero. No wall clock or production is consulted.
+
+Large absolute integer clocks do not need binary64 conversion: 400-digit close,
+equal and future pairs work. Only operations actually evaluated by Python convert:
+resource recovery divides an integer difference by three; stump updates multiply
+it by a float. An integer numerator may overflow float conversion while its quotient
+is finite. Mixed subtraction or evaluated arithmetic that raises Python overflow
+returns a sanitized error without publishing state. Empty records and active
+reads/edits avoid hypothetical sleeping conversions; camera catch-up stays on demand.
+Saved import, overlays and materialization validate the same exact scalar domain.
+`LoadedChunk::private_clock_bytes()` preserves the exact optional scalar, while
+`clock()` returns `Result<Option<f64>, BoundaryError>` for explicitly fallible
+binary64 inspection. Untouched source and supplied clock bytes stay exact.
+
+No new dependency was needed: decimal integer compare/subtraction and long division
+by three suffice for this narrow clock boundary. Parsing a decimal quotient with
+80 fractional digits correctly rounds a repeating third: positive integer/3 is at
+least 1/3, so binary64 tie boundaries have denominator at most 2^55. No quantity
+model, blanket tolerance or generator version changed.
+
+`generate_clocks.py --check` verifies 3,096 independently computed actual Python
+arithmetic results, including every binary64 exponent and true-division tie
+neighbors. `generate_catch_up.py --check` now verifies 83 actual Python cases, with
+all original 65 unchanged; `generate_clock_lifecycle.py --check` adds nine actual
+Python traces alongside the unchanged 33 original lifecycle traces. New Rust checks
+cover exact source clocks/fallible inspection, active bypass, mixed cache equality,
+flushes and failure atomicity. All terrain/world cases retain real generation;
+small deterministic records are used only for isolated arithmetic/rule checks.
+
+All R07 done criteria are implemented at their private foundation boundary. R08 is
+next; full nonchunked gameplay preparation, public wire integration and durable
+persistence/recovery belong to their later feature/protocol/R19 stages. The existing
+finite libm/fmod/pow/round vectors do not prove every seed on every platform. R23
+must block any platform's cutover until its math threshold compatibility is verified;
+never hide differences behind tolerances or a seed/generator upgrade. Performance
+comparison was not run because no performance problem was investigated.
+
+Validation: all four independent frozen Python checks passed (3,096 arithmetic
+cases, 83 catch-up cases, nine clock traces and the unchanged 33 lifecycle traces).
+The affected selection contained only `rust:lantern-host`; formatting, 101 host
+tests plus 16 compile-fail doctests, and Clippy with warnings denied passed.
+Markdown/JSON reports at `performance-results/r07-slice3civ/` were inspected:
+candidate `7ba9bd0` plus this task's worktree, correctness pass, performance `not_run`.

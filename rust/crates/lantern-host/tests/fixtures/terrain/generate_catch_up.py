@@ -83,6 +83,40 @@ def build():
         add(f'round9-{remaining}',record,7,3.125)
         add(f'round9-zero-elapsed-{remaining}',record,7,3)
     add('largest-exact-integer-clock',fixture(),7,2**53)
+    # Exact clocks retain Python's JSON int/float distinction. Close absolute
+    # integers may exceed binary64's range without making elapsed time overflow.
+    pairs=[(2**53+1,2**53),(2**53,2**53+1),(2**64+1,2**64),
+           (10**400+7,10**400),(10**400,10**400),(10**400,10**400+1),
+           (2**53+1,float(2**53)),(float(2**53),2**53+1),
+           (float(2**53+1),2**53),(125.0,125),(0.0,0),
+           (2**53+1,0),(10**308*3,0)]
+    for i,(clock,previous) in enumerate(pairs):
+        record=fixture();record['clock']=previous
+        record['terrain']=['f'*40]*40
+        record['map_resources']=[dict(kind='rock',x=0,y=0,supply=.125)]
+        # A large int/3 can succeed even when int*float overflows: keep this
+        # supplies-only case distinct from the failing stump conversion below.
+        if i!=12:record['tree_stumps']=[dict(kind='tree',x=1,y=0,remaining=12.125)]
+        add(f'exact-clock-{i}',record,7,clock)
+    for label,clock,previous,stumps,resources in [
+        ('mixed-huge-now',10**400,0.0,False,False),
+        ('mixed-huge-previous',0.0,10**400,False,False),
+        ('integer-division-overflow',10**309,0,False,True),
+        ('integer-stump-conversion-overflow',10**308*3,0,True,False),
+    ]:
+        record=fixture();record['clock']=previous
+        if resources:record['map_resources']=[dict(kind='rock',x=0,y=0,supply=.125)]
+        if stumps:
+            record['terrain']=['f'*40]*40
+            record['tree_stumps']=[dict(kind='tree',x=1,y=0,remaining=12.125)]
+        manager=ChunkMap(dict(towns={},shared_map=dict(map_size=480,terrain_version=7,chunk_clock=clock)))
+        try:manager.catch_up('0,0',deepcopy(record))
+        except OverflowError:pass
+        else:raise AssertionError('Expected Python OverflowError')
+        cases.append(dict(label=label,key='0,0',size=480,version=7,clock=clock,
+                          occupied=[],source=record,expected_error=True))
+    record=fixture();record['clock']=0
+    add('enormous-unused-elapsed',record,7,10**400)
     return cases
 
 

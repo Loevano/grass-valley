@@ -85,7 +85,7 @@ impl OrdinaryVillageOverlay {
         let mut pending_rows: Option<Vec<Vec<u8>>> = None;
         validate_resources(&record, left, top, PATH)?;
         if let Some(clock) = record.optional("clock", PATH)? {
-            clock.nonnegative_number(&format!("{PATH}.clock"))?;
+            super::clock::Clock::parse(clock, &format!("{PATH}.clock"))?;
         }
         let village_nodes = Node::parse(villages, &format!("{PATH}.villages"))?;
         let villages = village_nodes
@@ -522,7 +522,7 @@ impl LegacySwampOverlay {
         rows(&record, ROOT)?;
         validate_resources(&record, left, top, ROOT)?;
         if let Some(clock) = record.optional("clock", ROOT)? {
-            clock.nonnegative_number(&format!("{ROOT}.clock"))?;
+            super::clock::Clock::parse(clock, &format!("{ROOT}.clock"))?;
         }
         let nodes = Node::parse(villages, &format!("{ROOT}.villages"))?;
         let mut selected = Vec::new();

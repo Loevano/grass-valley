@@ -345,7 +345,7 @@ fn invalid_reads_edits_clock_movement_and_failed_activation_are_atomic() {
     let cached = owner.snapshot_cache_len();
     assert_error(owner.read(key("48,0")));
     assert_error(owner.snapshot(&[key("48,0")]));
-    assert_error(owner.set_clock(b"9007199254740993"));
+    assert_error(owner.set_clock(b"1e999"));
     assert_error(owner.set_clock(b"-1"));
     assert_error(owner.move_founder("synthetic-town", f64::NAN, 0.0));
     assert_error(owner.move_founder("SYNTHETIC_SECRET", 0.0, 0.0));
@@ -469,4 +469,177 @@ fn active_renew_is_transactional_and_preserves_private_extensions_and_numeric_le
     owner.flush().unwrap();
     assert!(owner.take_write_intents().is_empty());
     assert_eq!(registry.private_source_bytes().unwrap(), copy.source);
+}
+
+/// Recursive RawValue traversal avoids coercing huge clocks through Value.
+fn exact_clock_value(bytes: &[u8]) -> Value {
+    fn visit(raw: &RawValue) -> Value {
+        if raw.get().starts_with('{') {
+            let fields: BTreeMap<String, Box<RawValue>> = serde_json::from_str(raw.get()).unwrap();
+            fields
+                .into_iter()
+                .map(|(k, v)| {
+                    let value = if k == "clock" || k == "chunk_clock" {
+                        Value::String(v.get().into())
+                    } else {
+                        visit(&v)
+                    };
+                    (k, value)
+                })
+                .collect()
+        } else if raw.get().starts_with('[') {
+            let items: Vec<Box<RawValue>> = serde_json::from_str(raw.get()).unwrap();
+            items.iter().map(|v| visit(v)).collect()
+        } else {
+            serde_json::from_str(raw.get()).unwrap()
+        }
+    }
+    visit(&serde_json::from_slice::<Box<RawValue>>(bytes).unwrap())
+}
+#[test]
+fn actual_python_exact_clock_lifecycle_traces() {
+    #[derive(Deserialize)]
+    struct Action {
+        op: String,
+        key: Option<String>,
+        clock: Option<String>,
+    }
+    #[derive(Deserialize)]
+    struct Output {
+        read: Option<String>,
+        active: BTreeMap<String, String>,
+        memory: BTreeMap<String, String>,
+        camera: Vec<String>,
+        clock: String,
+    }
+    #[derive(Deserialize)]
+    struct ClockCase {
+        label: String,
+        world: String,
+        active: BTreeMap<String, String>,
+        camera: BTreeMap<String, String>,
+        actions: Vec<Action>,
+        outputs: Vec<Output>,
+    }
+    let fixtures: Vec<ClockCase> =
+        serde_json::from_slice(include_bytes!("fixtures/terrain/clock_lifecycle.json")).unwrap();
+    assert_eq!(fixtures.len(), 9);
+    for fixture in fixtures {
+        let raw_map = |records: BTreeMap<String, String>| {
+            records
+                .into_iter()
+                .map(|(k, v)| (k, RawValue::from_string(v).unwrap()))
+                .collect()
+        };
+        let case = Case {
+            label: fixture.label,
+            world: RawValue::from_string(fixture.world).unwrap(),
+            saved: BTreeMap::new(),
+            active: raw_map(fixture.active),
+            camera: raw_map(fixture.camera),
+            active_order: vec!["0,0".into()],
+            initial: Value::Null,
+            actions: vec![],
+            outputs: vec![],
+        };
+        let copy = Copy::new(&case);
+        let before = copy.disk();
+        let registry = copy.import();
+        let active = residents(&case.active, &copy.owner);
+        let camera = residents(&case.camera, &copy.owner);
+        let mut owner = ChunkLifecycle::prepare(&registry, &copy.owner, &active, &camera).unwrap();
+        let mut memory = BTreeMap::new();
+        for (i, (action, expected)) in fixture.actions.into_iter().zip(fixture.outputs).enumerate()
+        {
+            let label = format!("{} step {i}", case.label);
+            match action.op.as_str() {
+                "read" => {
+                    let read = owner.read(key(action.key.as_deref().unwrap())).unwrap();
+                    equal(
+                        &exact_clock_value(&read),
+                        &exact_clock_value(expected.read.as_ref().unwrap().as_bytes()),
+                        &label,
+                    );
+                }
+                "clock" => owner
+                    .set_clock(action.clock.as_ref().unwrap().as_bytes())
+                    .unwrap(),
+                "flush" => owner.flush().unwrap(),
+                _ => panic!("unexpected clock action"),
+            }
+            for (k, expected) in expected.active {
+                equal(
+                    &exact_clock_value(owner.private_active_bytes(key(&k)).unwrap()),
+                    &exact_clock_value(expected.as_bytes()),
+                    &label,
+                );
+            }
+            for intent in owner.take_write_intents() {
+                memory.insert(
+                    text(intent.key()),
+                    exact_clock_value(intent.private_record_bytes()),
+                );
+            }
+            assert_eq!(memory.len(), expected.memory.len(), "{label}");
+            for (k, expected) in expected.memory {
+                equal(&memory[&k], &exact_clock_value(expected.as_bytes()), &label);
+            }
+            assert_eq!(
+                owner
+                    .camera_keys_lru()
+                    .into_iter()
+                    .map(text)
+                    .collect::<Vec<_>>(),
+                expected.camera,
+                "{label}"
+            );
+            assert_eq!(
+                exact_clock_value(&owner.private_world_bytes())["shared_map"]["chunk_clock"],
+                expected.clock,
+                "{label}"
+            );
+        }
+        assert_eq!(copy.disk(), before);
+        assert_eq!(registry.private_source_bytes().unwrap(), copy.source);
+    }
+}
+#[test]
+fn huge_clock_failures_are_atomic_and_active_reads_bypass_sleeping_arithmetic() {
+    let case = oracle().cases.remove(0);
+    let copy = Copy::new(&case);
+    let registry = copy.import();
+    let mut owner = ChunkLifecycle::prepare(&registry, &copy.owner, &[], &[]).unwrap();
+    owner.activate().unwrap();
+    owner.take_write_intents();
+    owner.read(key("2,5")).unwrap();
+    let huge = format!("1{}", "0".repeat(400));
+    owner.set_clock(huge.as_bytes()).unwrap();
+    let world = owner.private_world_bytes();
+    let camera = owner.camera_keys_lru();
+    let active = owner.private_active_bytes(key("0,0")).unwrap().to_vec();
+    assert_eq!(owner.read(key("0,0")).unwrap(), active);
+    owner.replace_active(key("0,0"), &active).unwrap();
+    assert_error(owner.read(key("2,5")));
+    assert_error(owner.snapshot(&[key("2,5")]));
+    assert_error(owner.set_clock(b"1e999"));
+    assert_error(owner.set_clock(b"-1"));
+    assert_eq!(owner.private_world_bytes(), world);
+    assert_eq!(owner.camera_keys_lru(), camera);
+    assert_eq!(owner.private_active_bytes(key("0,0")).unwrap(), active);
+    assert!(owner.take_write_intents().is_empty());
+    // Lexical float spelling and signed zero survive set/flush without inference
+    // from the f64 value; a failed read above did not poison the camera cache.
+    owner.set_clock(b"1.2500e2").unwrap();
+    owner.read(key("2,5")).unwrap();
+    assert!(
+        std::str::from_utf8(&owner.read(key("2,5")).unwrap())
+            .unwrap()
+            .contains("\"clock\":1.2500e2")
+    );
+    owner.set_clock(b"-0.0").unwrap();
+    assert!(
+        std::str::from_utf8(&owner.private_world_bytes())
+            .unwrap()
+            .contains("\"chunk_clock\":-0.0")
+    );
 }

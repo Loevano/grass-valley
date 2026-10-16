@@ -8,7 +8,7 @@ and cache rules are in [Backend](BACKEND.md#cached-zoomed-out-map).
 | 1     | Cached zoomed-out town overview    | Implemented              | Show the landscape and city sizes without refreshing animated scene detail.                                      |
 | 2     | Production line balancing          | Wood and grain implemented; fishing remains | Develop clear fishing chains with capped staffing and simple upgrades. |
 | 3     | Scalable villager pathfinding       | Host queue implemented; cache refinement and shared navigation remain | Keep movement responsive as villager counts and towns grow, with bounded routing work. |
-| 4     | Rust migration | R07 saved chunks, raw generators and nonchunked terrain-only hydration complete; authored starter geometry and typed-seed reconstruction complete; ordinary village and legacy/organic swamp phases complete; ordinary and swamp metadata plus immutable post-overlay water integration complete; private supplied-clock chunk catch-up preparation complete within its explicit clock domain; private authoritative lifecycle/cache-plan integration complete; active versioned renewal complete; exact larger integer clocks remain | Follow the [staged plan and prompts](RUST_MIGRATION.md), preserving playable checkpoints and saved worlds. |
+| 4     | Rust migration | R01–R07 foundations complete; R08 spatial rules and founder movement next | Follow the [staged plan and prompts](RUST_MIGRATION.md), preserving playable checkpoints and saved worlds. |
 
 ## Rust migration
 
@@ -21,41 +21,16 @@ are verified on disposable worlds. Default-host cutover follows the release gate
 
 R06 read-only staging and inspection are complete for explicit synthetic ordinary
 saves and external chunk copies; see the [staging scope](RUST_LEGACY_IMPORT.md).
-R07 slices 1–2 load immutable saved-chunk views with bounded decoded caching and
-reproduce raw versioned Python chunk generators;
-see the [terrain scope and evidence](RUST_TERRAIN.md). Slice 3a adds exact legacy
-map generation and explicit ordinary/independent/shared nonchunked terrain-only
-hydration, preserving saved resources and private source bytes. Slice 3b.i adds
-pure authored starter terrain/resources and exact town-site selection/separation.
-Slice 3b.ii integrates typed-seed saved-first starter reconstruction with exact
-legacy/current offsets and source preservation. Slice 3b.iii.a adds the explicit
-private ordinary village phase (150 paired Python cases), without changing raw
-reads or claiming complete overlays. Slice 3b.iii.b.i adds private legacy swamp-v1
-materialization (43 real Python pairs) and saved organic `p/w/c` decoding. Slice
-3b.iii.b.ii adds complete explicit versioned swamp materialization, organic v2
-geometry and record upgrades (100 real Python pairs plus exact layout). Slice
-3b.iii.b.iii adds independent ordinary obstacle-safe placement/dialogue/layout/life
-metadata (105 actual Python worlds with repeat and insertion-order checks). Slice
-3b.iii.b.iv adds independent swamp world metadata, NPC home/routine relocation and
-moved visit keys (264 actual Python worlds plus ordered deferred cache plans).
-Slice 3b.iii.c composes saved-first metadata/overlays, honors ordered resident-copy
-plans and repairs v7 water using post-overlay neighbors (35 actual Python worlds).
-Slice 3c.i adds private supplied-clock chunk catch-up preparation (65 actual Python
-cases), with exact source/quantity preservation and no production. Clocks above
-2^53 explicitly reject pending exact integer-clock support. Slice 3c.ii adds an
-authoritative private lifecycle owner with desired chunks/obstacles, ordered swamp
-plan installation, active aggregate bootstrap/rebinding, bounded camera/snapshot
-copies and edited flush/evict/reload through in-memory archive/write intents
-(19 initial actual Python lifecycle traces). Slice 3c.iii adds transactional active
-renewal and immediate membership sync with 14 additional actual Python traces covering
-versioned stump eligibility/ordering, blocked regrowth, group stocks/caps and sleeping
-transitions. Exact larger integer clocks remain required; R19 retains real persistence/recovery. The completed
-[state/DTO boundary audit](RUST_STATE_DTOS.md) identifies unsupported features;
-gameplay remains unported. Release hardware metadata, Rust gameplay RNG stream
-adoption and R24 rollback acceptance remain gated as documented in the contracts. Later navigation stages cover bounded waiting, cache
-validity, and shared destinations; the existing pathfinding work below remains unfinished until verified.
-The later client stages separately evaluate WebAssembly sharing or a full Rust
-client. Update the plan's progress table and this status as each stage completes.
+R08 spatial rules and founder movement is the next unfinished stage. Completed R07
+terrain/chunk behavior and its compatibility evidence are recorded in the
+[terrain scope](RUST_TERRAIN.md) and [completion audit](RUST_MIGRATION.md#r07-slice-3civ-exact-clocks-and-completion-audit).
+The [state/DTO boundary audit](RUST_STATE_DTOS.md) identifies later gameplay work.
+Python remains the playable default; R19 owns durable persistence/recovery and R23
+retains target-platform math/release validation. Gameplay RNG stream adoption and
+R24 rollback acceptance remain gated by the contracts. Later navigation stages
+cover bounded waiting, cache validity and shared destinations; the pathfinding work
+below remains unfinished until verified. Later client stages separately evaluate
+WebAssembly sharing or a full Rust client. Update progress as each stage completes.
 
 ## Cached zoomed-out town overview
 

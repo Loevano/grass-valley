@@ -104,7 +104,7 @@ fn real_python_golden_records_load_without_generation_or_semantic_changes() {
         let record = reader.read(key).unwrap();
         assert_eq!(record.key(), key);
         assert_eq!(record.private_bytes(), world.chunks()[0].private_bytes());
-        assert_eq!(record.clock(), Some(0.0)); // never advance to shared chunk_clock
+        assert_eq!(record.clock().unwrap(), Some(0.0)); // never advance to shared chunk_clock
         assert!(record.stumps().is_empty());
         let rows: Vec<_> = case.record["terrain"]
             .as_array()
@@ -289,7 +289,7 @@ fn saved_edits_stumps_optional_clocks_and_private_extensions_survive_reload() {
             }
         );
         assert_eq!(loaded.stumps()[0].remaining(), 0.03125);
-        assert_eq!(loaded.clock(), None);
+        assert_eq!(loaded.clock().unwrap(), None);
         assert_eq!(loaded.private_bytes(), bytes.as_bytes());
         assert_eq!(
             reader.tile(Tile {
@@ -583,4 +583,42 @@ fn actual_saved_organic_lanes_canals_courtyards_load_without_edits() {
     }
     assert_eq!(count, 4);
     assert!(['p', 'w', 'c'].iter().all(|code| seen.contains(code)));
+}
+
+#[test]
+fn enormous_saved_clocks_load_losslessly_and_binary64_inspection_is_explicitly_fallible() {
+    let case = &goldens()[6];
+    let key = case.key();
+    for clock in [
+        format!("1{}7", "0".repeat(400)),
+        "9007199254740993".into(),
+        "1.2500e2".into(),
+        "-0.0".into(),
+    ] {
+        let copy = Copy::new(case);
+        let record = serde_json::to_string(&case.record)
+            .unwrap()
+            .replace("\"clock\":0", &format!("\"clock\":{clock}"));
+        assert!(record.contains(&format!("\"clock\":{clock}")));
+        fs::write(copy.0.join(key.file_name()), &record).unwrap();
+        let archive = copy.import();
+        let mut reader = ChunkReader::new(&archive.worlds()[0]).unwrap();
+        let loaded = reader.read(key).unwrap();
+        assert_eq!(loaded.private_clock_bytes(), Some(clock.as_bytes()));
+        assert_eq!(loaded.private_bytes(), record.as_bytes());
+        if clock.len() > 308 {
+            assert!(loaded.clock().is_err());
+        } else {
+            assert_eq!(loaded.clock().unwrap(), Some(clock.parse::<f64>().unwrap()));
+        }
+        reader.unload(key);
+        assert_eq!(
+            reader.read(key).unwrap().private_clock_bytes(),
+            Some(clock.as_bytes())
+        );
+        assert_eq!(
+            fs::read(copy.0.join(key.file_name())).unwrap(),
+            record.as_bytes()
+        );
+    }
 }

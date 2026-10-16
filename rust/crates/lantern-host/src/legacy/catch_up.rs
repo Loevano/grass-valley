@@ -1,6 +1,7 @@
 //! Explicit sleeping-chunk preparation, before authoritative lifecycle installation.
 use super::{
     ChunkKey,
+    clock::Clock,
     json::Node,
     village_overlay::write_node,
     village_overlay::{position, rows, validate_resources, version},
@@ -25,7 +26,7 @@ pub struct CaughtUpChunk {
 impl CaughtUpChunk {
     /// `clock` is a private JSON numeric scalar from the supplied simulation time.
     /// Absent landscape clocks must be supplied as `0`; no wall clock is read.
-    /// Integral clocks above 2^53 reject rather than silently round elapsed time.
+    /// Integer clock subtraction remains exact, even above binary64 range.
     pub fn prepare(
         source: &[u8],
         key: ChunkKey,
@@ -62,13 +63,14 @@ impl CaughtUpChunk {
             return Err(BoundaryError::invalid(PATH, "terrain version mismatch"));
         }
         let supplied = Node::parse(clock, &format!("{PATH}.clock"))?;
-        let now = time(&supplied)?;
+        let clock_path = format!("{PATH}.clock");
+        let now = Clock::parse(&supplied, &clock_path)?;
         let previous = record
             .optional("clock", PATH)?
-            .map(time)
+            .map(|node| Clock::parse(node, &clock_path))
             .transpose()?
-            .unwrap_or(0.0);
-        let elapsed = (now - previous).max(0.0);
+            .unwrap_or_else(Clock::zero);
+        let elapsed = now.elapsed(&previous, &clock_path)?;
         // Validate relevant gameplay types before even filtered resources are lost.
         for field in ["map_resources", "tree_stumps"] {
             for (i, resource) in record
@@ -178,7 +180,7 @@ impl CaughtUpChunk {
                 .map(|s| s.nonnegative_number(PATH))
                 .transpose()?
                 .unwrap_or(maximum);
-            let available = (supply + elapsed / 3.0 * regeneration).min(maximum);
+            let available = (supply + elapsed.thirds(&clock_path)? * regeneration).min(maximum);
             set(resource, "supply", scalar(available));
             set(resource, "supply_max", scalar(maximum));
             set(resource, "regeneration", scalar(regeneration));
@@ -189,7 +191,9 @@ impl CaughtUpChunk {
                 .nonnegative_number(PATH)?;
             // CPython's short-float round(x, 9) uses correctly rounded decimal
             // conversion, not multiply/round/divide (which double rounds).
-            let rounded: f64 = format!("{:.9}", remaining - elapsed * 0.9).parse().unwrap();
+            let rounded: f64 = format!("{:.9}", remaining - elapsed.binary64(&clock_path)? * 0.9)
+                .parse()
+                .unwrap();
             set(stump, "remaining", scalar(rounded.max(3.0 * 0.9)));
         }
         set(&mut record, "clock", supplied);
@@ -206,26 +210,6 @@ impl CaughtUpChunk {
     pub fn private_record_bytes(&self) -> &[u8] {
         &self.record
     }
-}
-pub(super) fn time(node: &Node) -> Result<f64, BoundaryError> {
-    let path = format!("{PATH}.clock");
-    let value = node.nonnegative_number(&path)?;
-    if let Node::Scalar(raw) = node {
-        let text = raw.get();
-        if !text.contains(['.', 'e', 'E'])
-            && text
-                .strip_prefix('-')
-                .unwrap_or(text)
-                .parse::<u64>()
-                .map_or(true, |n| n > 9007199254740992)
-        {
-            return Err(BoundaryError::invalid(path, "unsupported clock precision"));
-        }
-    }
-    if value > 9007199254740992.0 {
-        return Err(BoundaryError::invalid(path, "unsupported clock precision"));
-    }
-    Ok(value)
 }
 fn kind(node: &Node) -> String {
     node.required("kind", PATH).unwrap().string(PATH).unwrap()

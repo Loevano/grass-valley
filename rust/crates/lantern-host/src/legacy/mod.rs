@@ -9,6 +9,7 @@
 
 mod catch_up;
 mod chunks;
+mod clock;
 mod json;
 mod landscapes;
 mod lifecycle;

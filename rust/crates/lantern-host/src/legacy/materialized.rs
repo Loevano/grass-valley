@@ -331,7 +331,7 @@ fn validate(source: &[u8], key: ChunkKey, generator: u32, path: &str) -> Result<
         ));
     }
     if let Some(clock) = record.optional("clock", path)? {
-        clock.nonnegative_number(path)?;
+        super::clock::Clock::parse(clock, path)?;
     }
     Ok(())
 }

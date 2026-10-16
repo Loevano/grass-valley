@@ -72,7 +72,7 @@ pub struct LoadedChunk<'a> {
     rows: Vec<String>,
     resources: Vec<LoadedResource>,
     stumps: Vec<LoadedStump>,
-    clock: Option<f64>,
+    clock: Option<Node>,
 }
 impl LoadedChunk<'_> {
     pub fn key(&self) -> ChunkKey {
@@ -87,9 +87,25 @@ impl LoadedChunk<'_> {
     pub fn stumps(&self) -> &[LoadedStump] {
         &self.stumps
     }
-    /// None preserves an absent clock; callers must not infer catch-up here.
-    pub fn clock(&self) -> Option<f64> {
+    /// Explicit binary64 inspection only; enormous integers return an error.
+    /// None preserves absence. Catch-up uses the exact scalar instead.
+    pub fn clock(&self) -> Result<Option<f64>, BoundaryError> {
         self.clock
+            .as_ref()
+            .map(|node| {
+                super::clock::Clock::parse(node, "$.loaded_chunk.clock")?
+                    .binary64("$.loaded_chunk.clock")
+            })
+            .transpose()
+    }
+    /// Exact private source scalar, including integer/float spelling.
+    pub fn private_clock_bytes(&self) -> Option<&[u8]> {
+        self.clock.as_ref().map(|node| {
+            let Node::Scalar(raw) = node else {
+                unreachable!()
+            };
+            raw.get().as_bytes()
+        })
     }
     pub fn private_bytes(&self) -> &[u8] {
         self.bytes
@@ -209,7 +225,7 @@ fn decode(bytes: &[u8], key: ChunkKey) -> Result<LoadedChunk<'_>, BoundaryError>
         rows,
         resources,
         stumps,
-        clock: number(&node, "clock", path)?,
+        clock: node.optional("clock", path)?.cloned(),
     })
 }
 

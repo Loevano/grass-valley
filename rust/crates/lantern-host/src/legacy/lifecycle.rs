@@ -1,6 +1,7 @@
 //! Single private in-memory chunk owner. No filesystem writes or playable host.
 use super::{
     CaughtUpChunk, ChunkKey, ImportedRegistry, PostOverlayTerrain, ResidentChunkCopy,
+    clock::Clock,
     json::Node,
     village_overlay::{position, write_node},
 };
@@ -53,7 +54,7 @@ struct Owned {
 }
 /// Owns all mutable records separately from immutable import and returned copies.
 /// Active records are authoritative; camera/snapshot records are disposable.
-/// Supplied clocks retain CaughtUpChunk's explicit <=2^53 compatibility domain.
+/// Clock scalars retain Python integer/float arithmetic and exact source lexemes.
 /// Public wire snapshots and real persistence remain gated.
 /// ```compile_fail
 /// use lantern_host::legacy::ChunkLifecycle;
@@ -131,14 +132,21 @@ impl<'a> ChunkLifecycle<'a> {
         result.desired()?;
         let occupied = result.occupied_tiles()?;
         let clock = clock(&result.state.world)?;
-        super::catch_up::time(&Node::parse(&clock, PATH)?)?;
+        Clock::parse(&Node::parse(&clock, PATH)?, PATH)?;
         for (&key, record) in result.state.active.iter().chain(&result.state.camera) {
+            // Validate resident rules without performing a sleeping catch-up:
+            // active reads bypass it, and camera reads apply it only on demand.
+            let resident = Node::parse(record, PATH)?;
+            let resident_clock = resident
+                .optional("clock", PATH)?
+                .map(bytes)
+                .unwrap_or_else(|| b"0".to_vec());
             CaughtUpChunk::prepare(
                 record,
                 key,
                 result.size,
                 result.generator,
-                &clock,
+                &resident_clock,
                 &occupied,
             )?;
         }
@@ -168,7 +176,7 @@ impl<'a> ChunkLifecycle<'a> {
     /// Only changes supplied simulation time. Active records do not catch up.
     pub fn set_clock(&mut self, clock: &[u8]) -> Result<(), BoundaryError> {
         let value = Node::parse(clock, PATH)?;
-        super::catch_up::time(&value)?;
+        Clock::parse(&value, PATH)?;
         set(landscape(&mut self.state.world)?, "chunk_clock", value);
         Ok(())
     }
@@ -197,11 +205,12 @@ impl<'a> ChunkLifecycle<'a> {
         let clock = clock(&state.world)?;
         let source = if let Some(record) = state.camera.get(&key) {
             let node = Node::parse(record, PATH)?;
+            let now = Clock::parse(&Node::parse(&clock, PATH)?, PATH)?;
             if node
                 .optional("clock", PATH)?
-                .map(super::catch_up::time)
+                .map(|node| Clock::parse(node, PATH))
                 .transpose()?
-                == Some(super::catch_up::time(&Node::parse(&clock, PATH)?)?)
+                .is_some_and(|previous| previous.equal(&now))
             {
                 state.order.retain(|k| *k != key);
                 state.order.push_back(key);
@@ -244,12 +253,17 @@ impl<'a> ChunkLifecycle<'a> {
         if !self.state.active.contains_key(&key) {
             return Err(invalid("chunk is not active"));
         }
+        let node = Node::parse(record, PATH)?;
+        let resident_clock = node
+            .optional("clock", PATH)?
+            .map(bytes)
+            .unwrap_or_else(|| b"0".to_vec());
         CaughtUpChunk::prepare(
             record,
             key,
             self.size,
             self.generator,
-            &clock(&self.state.world)?,
+            &resident_clock,
             &self.occupied_tiles()?,
         )?;
         let mut state = self.state.clone();

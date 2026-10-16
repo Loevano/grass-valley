@@ -11,8 +11,10 @@ struct Case {
     clock: Box<RawValue>,
     occupied: Vec<(i32, i32)>,
     source: Box<RawValue>,
-    expected: Box<RawValue>,
-    repeat: Box<RawValue>,
+    expected: Option<Box<RawValue>>,
+    repeat: Option<Box<RawValue>>,
+    #[serde(default)]
+    expected_error: bool,
 }
 fn cases() -> Vec<Case> {
     serde_json::from_slice(include_bytes!("fixtures/terrain/catch_up.json")).unwrap()
@@ -49,9 +51,27 @@ fn equal(actual: &Value, expected: &Value, label: &str) {
     }
 }
 fn assert_record(actual: &[u8], expected: &[u8], label: &str) {
+    // Inspect clocks as raw scalars: serde_json::Value cannot represent a
+    // 400-digit integer, and binary64 comparison would hide int/float mistakes.
+    #[derive(Deserialize)]
+    struct Clock {
+        clock: Box<RawValue>,
+    }
+    let a: Clock = serde_json::from_slice(actual).unwrap();
+    let b: Clock = serde_json::from_slice(expected).unwrap();
+    assert_eq!(
+        a.clock.get(),
+        b.clock.get(),
+        "{label}: exact supplied clock"
+    );
+    let scrub = |bytes: &[u8], clock: &str| {
+        std::str::from_utf8(bytes)
+            .unwrap()
+            .replace(&format!("\"clock\":{clock}"), "\"clock\":0")
+    };
     equal(
-        &serde_json::from_slice(actual).unwrap(),
-        &serde_json::from_slice(expected).unwrap(),
+        &serde_json::from_str(&scrub(actual, a.clock.get())).unwrap(),
+        &serde_json::from_str(&scrub(expected, b.clock.get())).unwrap(),
         label,
     );
     // Compare object field order independently, including preserved extensions.
@@ -86,7 +106,7 @@ fn assert_record(actual: &[u8], expected: &[u8], label: &str) {
 #[test]
 fn actual_python_catch_up_records_and_repeat() {
     let cases = cases();
-    assert_eq!(cases.len(), 65);
+    assert_eq!(cases.len(), 83);
     for case in cases {
         let caught = CaughtUpChunk::prepare(
             case.source.get().as_bytes(),
@@ -95,12 +115,20 @@ fn actual_python_catch_up_records_and_repeat() {
             case.version,
             case.clock.get().as_bytes(),
             &case.occupied,
-        )
-        .unwrap_or_else(|e| panic!("{}: {e:?}", case.label));
+        );
+        if case.expected_error {
+            assert!(
+                caught.is_err(),
+                "{} must reject Python arithmetic overflow",
+                case.label
+            );
+            continue;
+        }
+        let caught = caught.unwrap_or_else(|e| panic!("{}: {e:?}", case.label));
         assert_eq!(caught.private_source_bytes(), case.source.get().as_bytes());
         assert_record(
             caught.private_record_bytes(),
-            case.expected.get().as_bytes(),
+            case.expected.as_ref().unwrap().get().as_bytes(),
             &case.label,
         );
         let repeat = CaughtUpChunk::prepare(
@@ -114,7 +142,7 @@ fn actual_python_catch_up_records_and_repeat() {
         .unwrap();
         assert_record(
             repeat.private_record_bytes(),
-            case.repeat.get().as_bytes(),
+            case.repeat.as_ref().unwrap().get().as_bytes(),
             &format!("{} repeat", case.label),
         );
     }
@@ -149,7 +177,6 @@ fn malformed_and_unsupported_inputs_reject_without_private_error_values() {
         ("mineral_version", json!(2)),
         ("terrain_version", json!(8)),
         ("clock", json!(-1)),
-        ("clock", json!(9007199254740993_u64)),
     ] {
         let mut source: Value = serde_json::from_str(case.source.get()).unwrap();
         source[field] = value;
@@ -180,14 +207,7 @@ fn malformed_and_unsupported_inputs_reject_without_private_error_values() {
         )
         .is_err()
     );
-    for clock in [
-        b"9007199254740993".as_slice(),
-        b"900719925474099300000000000000000",
-        b"-1",
-        b"null",
-        b"true",
-        b"1e999",
-    ] {
+    for clock in [b"-1".as_slice(), b"null", b"true", b"1e999"] {
         assert!(
             CaughtUpChunk::prepare(
                 case.source.get().as_bytes(),
