@@ -1,0 +1,13 @@
+{
+  "protocol_version": 1,
+  "trace_id": "rust-transport-smoke-v1",
+  "initial": {
+    "recipe": "transport_smoke_v1",
+    "terrain": "synthetic_flat",
+    "parameters": {"seed": 0, "setup_draws": []}
+  },
+  "steps": [
+    {"operation": {"kind": "advance", "clock": "movement", "seconds": 0}, "random_draws": []},
+    {"operation": {"kind": "advance", "clock": "movement", "seconds": 0}, "random_draws": []}
+  ]
+}

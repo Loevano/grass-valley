@@ -7,7 +7,7 @@ import sys
 import tempfile
 import unittest
 
-from tools.replay import (BackendUnavailable, RustUnavailable,
+from tools.replay import (BackendUnavailable,
                           compare_backends, markdown_report, replay_trace, request_for,
                           validate_request)
 from tools.replay_contract import ContractError
@@ -19,6 +19,14 @@ BLOCKED = Path('tests/replay/python/blocked_delivery_v1.json')
 RELOCATION = Path('tests/replay/python/relocation_v1.json')
 QUARRY = Path('tests/replay/python/terrain_quarry_v1.json')
 WORKSHOP = Path('tests/replay/python/workshop_v1.json')
+
+
+class RustUnavailable:
+    """Absent-backend double for oracle tests, independent of the real Rust CLI."""
+    name = 'rust'
+
+    def replay(self, request):
+        raise BackendUnavailable('Test backend unavailable.')
 
 
 class StubBackend:
@@ -201,9 +209,9 @@ class ReplayInterface(unittest.TestCase):
                 markdown = (output / 'report.md').read_text()
                 self.assertEqual(report['status'], status)
                 self.assertEqual(report['performance'], 'not_run')
-                self.assertEqual(report['rust_adapter'], 'unavailable')
+                self.assertEqual(report['rust_adapter'], 'transport_smoke_only')
                 self.assertEqual(report['rust_host_benchmarks'], 'unavailable')
-                self.assertIn('Rust adapter and Rust-host benchmarks do not exist', result.stdout)
+                self.assertIn('Rust replay supports transport smoke only', result.stdout)
                 self.assertIn('not Rust parity', markdown)
                 self.assertIn(self.trace['provenance']['python_revision'], markdown)
                 self.assertEqual(markdown, markdown_report(report))

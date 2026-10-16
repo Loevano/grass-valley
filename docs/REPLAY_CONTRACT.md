@@ -7,11 +7,12 @@ compares supplied observations without importing the game. `tests/replay/contrac
 fabricated **contract example**, not a recorded Python baseline. Its revision
 identifies the Python source inspected when designing the format; no gameplay
 result in that example is claimed as measured evidence. All three R03 slices are
-complete; the Rust adapter arrives in a later stage.
+complete; R04 adds a [transport-only Rust smoke adapter](REPLAY_BACKENDS.md#rust-transport-smoke-r04-slice-3).
 
 Run `python3 tools/replay_contract.py tests/replay/contract_v1.json` for format
 validation. The command points to `tools/python_replay.py` for Python execution
-and reports that Rust adapters and Rust-host benchmarks do not exist; `tools/server_perf.py`
+and reports that Rust supports transport smoke only, with gameplay and Rust-host
+benchmarks unavailable; `tools/server_perf.py`
 measures Python only. Validation is not replay, parity, or performance evidence.
 
 ## Trace envelope
@@ -94,7 +95,8 @@ field paths and invariant names on failure. It has no Python dependencies or
 snapshot-building logic, so its checks are independent of gameplay implementation.
 The Python adapter and backend-neutral harness supply observations to it.
 [Protocol v1](REPLAY_BACKENDS.md) keeps expected data out of execution requests.
-No Rust implementation is available.
+Rust supports a separate transport smoke request; these gameplay observations
+remain unported.
 
 Normalization only canonicalizes object-key order and JSON whitespace. Arrays,
 IDs, integer quantities, ownership, rewards, null versus missing, phases, timers,

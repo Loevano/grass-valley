@@ -1,10 +1,10 @@
-# Backend-neutral replay and reports (R03 slice 3)
+# Backend-neutral replay and reports (R03/R04)
 
 R03 is complete. `tools/replay.py` defines a versioned JSON execution boundary,
 independent validation/comparison, and JSON/Markdown reporting. The working Python
-adapter runs the five unchanged [recorded scenarios](PYTHON_REPLAYS.md). A Rust
-adapter is deliberately unavailable; no Rust code, host, benchmark, subprocess
-transport, or Rust performance evidence is introduced. Those belong to later stages.
+adapter runs the five unchanged [recorded scenarios](PYTHON_REPLAYS.md). R04 adds
+a Rust stdio adapter for a transport smoke fixture only. Gameplay recipes remain
+unsupported; no Rust-host benchmark or gameplay parity evidence is established.
 
 From the repository root:
 
@@ -12,7 +12,7 @@ From the repository root:
 # Two independent fresh Python worlds: semantic repeatability only.
 python3 tools/replay.py --candidate python --output performance-results/replay-python
 
-# Python runs; Rust is unavailable. Expected exit code 2 (inconclusive).
+# Python runs; Rust gameplay is unsupported. Expected exit code 2 (inconclusive).
 python3 tools/replay.py --output performance-results/replay-rust
 
 # A single trace can be named explicitly.
@@ -31,7 +31,7 @@ its separate path and clean-source/no-overwrite checks.
 
 A `ReplayBackend` has a nonempty `name` and a `replay(request) -> response` method.
 The interface is a Python structural protocol with JSON-only arguments/results;
-a future adapter can translate the same envelopes to a Rust executable. The neutral
+the Rust adapter translates the same envelopes to the offline Rust executable. The neutral
 module imports no game modules; the CLI loads Python lazily. Callers may supply
 independent adapters without changing snapshot comparison or importing Python rules.
 No dynamic imports or user-provided executable paths are accepted by the CLI.
@@ -128,7 +128,8 @@ operation, field path and invariant context. Reports omit raw whole observations
 invalid private fixtures/responses do not copy sensitive payloads into the report.
 Unknown adapter exceptions report their type without arbitrary exception payloads.
 CLI reports use this repository's HEAD/dirty state for the executing harness/Python
-source tree; they are not a claimed revision for a future external Rust binary.
+source tree; the Rust adapter builds this same working tree with locked offline Cargo, rather
+than accepting an external binary path.
 
 | Outcome | Overall status / exit | Meaning |
 | --- | --- | --- |
@@ -136,13 +137,60 @@ source tree; they are not a claimed revision for a future external Rust binary.
 | Invalid input/response, snapshot/invariant mismatch, or execution failure | `failed` / 1 | Any failure takes precedence over missing adapters |
 | Adapter unavailable and no other failure | `inconclusive` / 2 | Missing work never counts as parity or performance passing |
 
-The Rust placeholder raises `BackendUnavailable`; it never falls back to Python.
-The CLI and both report formats explicitly state that Rust adapters and Rust-host
-benchmarks do not exist. JSON records `rust_adapter=unavailable`,
-`rust_host_benchmarks=unavailable`, and `performance=not_run`. A missing response
-makes the paired comparison inconclusive even if Python passes its baseline.
+The Rust adapter raises `BackendUnavailable` for unsupported workloads and never
+falls back to Python. Missing commands, build/runtime failures, timeouts, and
+invalid responses produce failures; they are distinct from unsupported gameplay.
+The CLI and both report formats state that Rust supports transport smoke only.
+JSON records `rust_adapter=transport_smoke_only`, `rust_host_benchmarks=unavailable`,
+and `performance=not_run`. An unsupported workload leaves paired comparison
+inconclusive even if Python passes its baseline. This capability field describes
+the implementation, not a successful invocation on the current machine.
 
-## Evidence
+## Rust transport smoke (R04 slice 3)
+
+`tests/replay/rust/transport_smoke_v1.json` is a **request fixture**, not a
+recorded Python trace or gameplay baseline. It carries no expected state,
+provenance, tolerances, or invariants. Do not feed it to the trace-comparison CLI
+as a recorded baseline; that CLI correctly rejects it. Run from the repository:
+
+```sh
+cd rust
+cargo run --quiet -p lantern-host --locked --offline -- replay < ../tests/replay/rust/transport_smoke_v1.json
+```
+
+The CLI uses [Serde strict deserialization](https://serde.rs/container-attrs.html)
+and [serde_json](https://docs.rs/serde_json/1.0.151/serde_json/) in the host package.
+It accepts one protocol v1 request on stdin. Only recipe `transport_smoke_v1`,
+terrain `synthetic_flat`, seed 0, no setup/step draws, and zero-time movement
+advances are supported. This exercises serialization and ordered response counts;
+it constructs no world and advances no simulation. Initial and observation state
+are exactly `{"recipe":"transport_smoke_v1","gameplay_ported":false}`; each public
+observation is `{"result":null}`. The core remains an empty, dependency-free
+`no_std` crate. No listener, save writer, or Python gameplay bridge is added.
+
+Success emits one protocol v1 response with matching trace ID and one observation
+per step, exiting 0. Invalid JSON/schema/protocol/private fields exit 1; valid but
+unsupported recipes, nonzero time, commands, reloads, or random draws exit 2.
+Failures emit no JSON response. Error text never echoes request data. The CLI
+requires the explicit `replay` subcommand and accepts no file/save path arguments.
+
+`RustBackend` validates requests, invokes a fixed locked/offline `cargo run` in
+`rust/` with a 300-second timeout, and validates responses before returning them.
+It accepts no executable path and sends no oracle fields. The existing comparison
+CLI now uses it; all five Python gameplay fixtures still report unsupported Rust
+and inconclusive comparisons. Python/Python checks remain repeatability checks.
+The Rust transport is independently smoke-tested through the executable and
+through the real adapter; unsupported and invalid paths also have tests.
+
+R04 validation: `python3 tools/check.py --output performance-results/r04-slice3`
+passed 43 Python cases and all six Cargo format/test/Clippy commands, including
+six host unit/integration cases. The standalone smoke request succeeds. The
+`performance-results/r04-slice3-gameplay/` reports show all five Python baselines
+passing and Rust gameplay unsupported/inconclusive (CLI exit 2). JSON/Markdown
+were inspected. No fixture baselines were refreshed, no gameplay parity is
+claimed, and no performance comparison was needed for transport scaffolding.
+
+## R03 evidence (historical)
 
 The new tests use clearly labeled fabricated backend doubles to check the protocol
 and oracle without a Rust implementation. They also pair the **real Python adapter**
@@ -167,6 +215,5 @@ Runner revision was `049fe101d3a11ffec7d999682dc6e477ce3f83ec` with this slice's
 uncommitted tooling diff; baseline producing revision remains
 `9637eb5bf982fa2342556feaa4059fcb3f0d4b17`.
 Performance checks were not run: this is semantic replay tooling, with no performance
-investigation or optimization. R03 is complete. R04 is the next unfinished stage;
-Rust transport/CLI support and implementation remain future work, as do the broader
-release gates in the migration plan.
+investigation or optimization. These R03 results predate the R04 transport smoke
+implementation above. Gameplay parity and broader release gates remain unfinished.

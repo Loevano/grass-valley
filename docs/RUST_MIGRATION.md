@@ -2,8 +2,8 @@
 
 A migration that can be completed one task at a time, with a prompt for each task.
 
-**Status:** R01–R03 complete; R04 slices 1–2 complete; Rust replay CLI is next.
-Rust contains only an experimental workspace scaffold; gameplay is not ported.
+**Status:** R01–R04 complete; R05 typed state/IDs/units is next.
+Rust contains an experimental workspace and transport smoke CLI; gameplay is not ported.
 **Initial plan revision:** `445ddddd675a87eb7adb50442b2dbf3c14ea6c6f`.
 **R01 audit revision:** `935db7b95885c101c62dfd6bf9e16f39b6a7a8fe`.
 **Scope:** replace the Python host first. Keep the browser playable during that
@@ -218,7 +218,7 @@ only after work is performed. Keep unfinished stages visible in the roadmap.
 | R01 | Contracts, coverage inventory, decisions | This plan | Complete; [contracts and evidence](RUST_CONTRACTS.md), audited at `935db7b`; commit: `docs: define R01 migration contracts` (this change) |
 | R02 | Fix current relocation continuity | R01 | Complete; `fix: preserve worker continuity when relocating workplaces` (this change); evidence below |
 | R03 | Replay fixtures and comparison oracle | R02 | Complete: slice 1 `9637eb5`; slice 2 `049fe10`; slice 3 `test: add backend-neutral replay comparison reports` (this change); [protocol and evidence](REPLAY_BACKENDS.md) |
-| R04 | Cargo workspace and applicable checks | R03 | In progress: slice 1 `732619a`; slice 2 complete (`feat: integrate affected Rust checks`, this change); slice 3 remains; evidence below |
+| R04 | Cargo workspace and applicable checks | R03 | Complete: slice 1 `732619a`; slice 2 `c7cf3e2`; slice 3 `feat: add Rust replay transport smoke CLI` (this change); evidence below |
 | R05 | Typed state, IDs, units, and boundary DTOs | R04 | Not started |
 | R06 | Legacy import and read-only save inspection | R05 | Not started |
 | R07 | Terrain versions and chunk generation | R06 | Not started |
@@ -524,9 +524,44 @@ and performance is `not_run`. No performance comparison is needed: this is check
 functionality, not a performance investigation; Python-host benchmarks still
 cannot measure Rust. The Python launcher and core scaffold are unchanged.
 
-Remaining slice 3: connect a small supported fixture to the Rust replay CLI and
-report unsupported gameplay explicitly. R04 remains in progress until that slice
-is complete; no gameplay is ported by the workspace or runner work.
+Slice 2 was committed as `c7cf3e2`. Its remaining-work status is superseded by
+slice 3 below.
+
+### R04 slice 3 evidence and completion
+
+`lantern-host replay` now accepts a single protocol v1 request on stdin and emits
+a validated response on stdout. The small committed transport smoke request uses
+seed 0, flat terrain, no draws, and zero-time movement advances. Output explicitly
+says `gameplay_ported: false`. It is not a recorded Python baseline and establishes
+no gameplay parity. The host alone adds Serde 1.0.229/serde_json 1.0.151, checked
+against current official documentation and cached crate MSRV/license metadata;
+Cargo.lock includes all transitive dependencies. Core remains dependency-free,
+`no_std`, and independent of networking, filesystem, wall-clock, and Python.
+
+The neutral adapter invokes fixed locked/offline Cargo in `rust/`, validates both
+sides of the envelope, and never receives expectations or substitutes Python.
+Unsupported recipes/time/commands/reload/random draws return exit 2 and produce
+inconclusive gameplay comparisons. Invalid requests, missing commands, build/runtime
+failures, timeouts, and malformed responses fail. Normal Python launch and all
+recorded gameplay baselines remain unchanged. See the
+[transport protocol and commands](REPLAY_BACKENDS.md#rust-transport-smoke-r04-slice-3).
+
+Final affected validation: `python3 tools/check.py --output performance-results/r04-slice3`
+passed 43 Python cases across four replay modules and all six Cargo commands
+(format/test/Clippy for both packages). The host runs three unit and three real CLI
+integration tests; the core's empty harness still runs without networking. The
+standalone smoke invocation passed. JSON and Markdown correctness reports were
+inspected and report `pass` with performance `not_run`.
+
+`python3 tools/replay.py --output performance-results/r04-slice3-gameplay` exited 2:
+all five Python references pass their unchanged baselines, and every Rust gameplay
+candidate is unsupported with an inconclusive comparison. Both report formats were
+inspected. Runner revision is `c7cf3e2bdcb1ad055a161c4f7c89826201b208aa` plus this
+slice's uncommitted changes; recorded baseline revision is still
+`9637eb5bf982fa2342556feaa4059fcb3f0d4b17`. These are semantic checks, not performance
+measurements. No performance comparison is needed for protocol scaffolding; the
+current harness measures Python and browser code only. All three R04 slices are
+complete; typed state and gameplay remain in R05 and later stages.
 
 ## R05 — Typed state, IDs, units, and DTOs
 

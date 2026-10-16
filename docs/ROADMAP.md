@@ -8,20 +8,19 @@ and cache rules are in [Backend](BACKEND.md#cached-zoomed-out-map).
 | 1     | Cached zoomed-out town overview    | Implemented              | Show the landscape and city sizes without refreshing animated scene detail.                                      |
 | 2     | Production line balancing          | Wood and grain implemented; fishing remains | Develop clear fishing chains with capped staffing and simple upgrades. |
 | 3     | Scalable villager pathfinding       | Host queue implemented; cache refinement and shared navigation remain | Keep movement responsive as villager counts and towns grow, with bounded routing work. |
-| 4     | Rust migration | R01–R03 complete; R04 workspace and affected checks complete; replay CLI next | Follow the [staged plan and prompts](RUST_MIGRATION.md), preserving playable checkpoints and saved worlds. |
+| 4     | Rust migration | R01–R04 foundations complete; R05 typed state/IDs/units next | Follow the [staged plan and prompts](RUST_MIGRATION.md), preserving playable checkpoints and saved worlds. |
 
 ## Rust migration
 
 The [Rust migration plan](RUST_MIGRATION.md) contains 24 host-migration stages and
 three optional client stages, each with a copyable prompt and completion criteria.
-The [R01 contracts and coverage audit](RUST_CONTRACTS.md) is complete; Rust now has an experimental workspace scaffold without gameplay.
+The [R01 contracts and coverage audit](RUST_CONTRACTS.md) is complete; Rust now has an experimental workspace and transport smoke CLI without gameplay.
 The proposed sequence keeps Python as the normal
 host while the Rust core, feature coverage, save compatibility, and browser contract
 are verified on disposable worlds. Default-host cutover follows the release gates.
 
-Remaining R04 work: the small Rust replay CLI. Workspace/toolchain setup and
-affected Rust check selection/reporting with failure tests are complete; gameplay
-remains unported. Release hardware metadata, new gameplay RNG vectors and R24 rollback acceptance remain gated as
+Remaining work starts with R05 typed state, IDs, units, and boundary DTOs.
+Gameplay remains unported. Release hardware metadata, new gameplay RNG vectors and R24 rollback acceptance remain gated as
 documented in the contracts. Later navigation stages cover bounded waiting, cache
 validity, and shared destinations; the existing pathfinding work below remains unfinished until verified.
 The later client stages separately evaluate WebAssembly sharing or a full Rust

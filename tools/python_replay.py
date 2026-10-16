@@ -26,7 +26,7 @@ import work_cycles
 from tools.replay_contract import (ContractError, canonical_json, compare_observation,
                                    require, validate_trace)
 
-STATUS = ('Python synthetic replay only. Rust adapter and Rust-host benchmarks do not '
+STATUS = ('Python synthetic replay only. Rust gameplay and Rust-host benchmarks do not '
           'exist yet; tools/server_perf.py measures Python only. Backend-neutral '
           'execution/reporting is available in tools/replay.py.')
 FIXTURES = ROOT / 'tests/replay/python'

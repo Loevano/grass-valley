@@ -853,11 +853,12 @@ priorities, balancing theory, game design, and artwork, with tables and diagrams
 
 ## Experimental Rust workspace
 
-R04 slice 1 provides `rust/crates/lantern-core` (an empty `no_std` library)
-and `rust/crates/lantern-host` (a placeholder executable depending on core).
+R04 provides `rust/crates/lantern-core` (an empty `no_std` library)
+and `rust/crates/lantern-host` (an offline replay transport executable).
 The core has no external dependencies or I/O; it compiles and its test harness
-runs without a listener. No gameplay rules, replay adapter, or HTTP host are
-implemented. Start the playable game with `python3 server/server.py` as before.
+runs without a listener. The replay adapter supports only a transport smoke
+fixture; no gameplay rules or HTTP host are implemented. Start the playable game
+with `python3 server/server.py` as before.
 
 Install [Rust with rustup](https://www.rust-lang.org/tools/install), then run
 commands **inside `rust/`** so rustup discovers `rust-toolchain.toml`:
@@ -865,11 +866,12 @@ commands **inside `rust/`** so rustup discovers `rust-toolchain.toml`:
 ```sh
 cd rust
 rustup show
+cargo fetch --locked  # Once online to populate the dependency cache.
 cargo check --workspace --locked --offline
 cargo fmt --all -- --check
 cargo test --workspace --locked --offline
 cargo clippy --workspace --all-targets --locked --offline -- -D warnings
-cargo run -p lantern-host --locked --offline
+cargo run -p lantern-host --locked --offline -- replay < ../tests/replay/rust/transport_smoke_v1.json
 ```
 
 The toolchain file pins Rust **1.99.0**, with rustfmt and Clippy, to the release
@@ -882,9 +884,14 @@ this scaffold uses the locally available 1.99.0 and does not claim to pin the
 latest patch. A direct Homebrew installation ignores the rustup file: verify
 `rustc --version` and `cargo --version` against the pin before checking.
 
-Commit `rust/Cargo.lock`; `rust/target/` is ignored. There are no registry
-libraries yet, so checks work offline after the toolchain is installed. The
-layout and pin follow the official [Cargo workspace documentation](https://doc.rust-lang.org/cargo/reference/workspaces.html)
+Commit `rust/Cargo.lock`; `rust/target/` is ignored. The host uses Serde 1.0.229
+and serde_json 1.0.151 (MIT OR Apache-2.0; declared minimum Rust 1.56 and 1.71
+respectively), locked with their transitive dependencies. These cached releases
+were checked against the official [Serde derive](https://serde.rs/derive.html),
+[strict deserialization](https://serde.rs/container-attrs.html), and
+[serde_json APIs](https://docs.rs/serde_json/1.0.151/serde_json/); the core has
+no dependencies. Checks run offline after installing the toolchain and fetching
+the locked libraries. The layout and pin follow the official [Cargo workspace documentation](https://doc.rust-lang.org/cargo/reference/workspaces.html)
 and [rustup toolchain-file documentation](https://rust-lang.github.io/rustup/overrides.html#the-toolchain-file).
 
 R04 slice 2 integrates Rust into `python3 tools/check.py`. From the repository
@@ -920,8 +927,16 @@ lists each command result and selection reasons. `--all` includes every Rust
 package as well as Python/JS tests. Install the pinned toolchain before running
 Rust checks; offline Cargo checks never fetch missing dependencies.
 
-Slice 3 still needs the small replay CLI. The current performance harness measures
-Python and browser code only; it cannot establish Rust-host performance.
+The replay subcommand reads one protocol v1 request from stdin and emits one JSON
+response on stdout. The smoke recipe accepts seed 0, synthetic flat terrain, empty
+draw lists, and zero-time movement advances only. Its state says
+`gameplay_ported: false`. It opens no listener and reads no saves. Invalid requests
+exit 1; valid unsupported workloads exit 2 with no response. The neutral
+`tools/replay.py --candidate rust` adapter invokes this fixed Cargo command and
+validates the response. All five recorded gameplay traces remain unsupported:
+comparisons report `inconclusive`, never parity. See [replay transport details](docs/REPLAY_BACKENDS.md#rust-transport-smoke-r04-slice-3).
+The current performance harness measures Python and browser code only; it cannot
+establish Rust-host performance.
 
 ## Check the simulation
 

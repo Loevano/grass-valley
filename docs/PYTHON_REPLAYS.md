@@ -3,7 +3,7 @@
 Five recorded synthetic scenarios replay on the unchanged Python game. This
 completed slice 2; slice 3 adds the [backend-neutral execution/comparison
 interface and paired reporting](REPLAY_BACKENDS.md). The pure comparator remains in `tools/replay_contract.py`.
-No Rust adapter or Rust-host benchmark exists. `tools/server_perf.py` imports Python
+The R04 Rust adapter supports transport smoke only; gameplay and Rust-host benchmarks remain unavailable. `tools/server_perf.py` imports Python
 and cannot establish Rust performance. These are semantic fixtures, not load tests,
 a complete public snapshot contract, HTTP tests, or legacy-save acceptance.
 

@@ -12,7 +12,7 @@ sys.path.insert(0, str(ROOT))
 from tools.replay_contract import (ContractError, compare_observation, json_value,
                                    require, validate_draws, validate_operation, validate_trace)
 
-STATUS = ('Rust adapter and Rust-host benchmarks do not exist yet. '
+STATUS = ('Rust replay supports transport smoke only; gameplay and Rust-host benchmarks remain unavailable. '
           'tools/server_perf.py measures Python only. No performance measurements are made here.')
 
 
@@ -28,11 +28,27 @@ class ReplayBackend(Protocol):
         ...
 
 
-class RustUnavailable:
+class RustBackend:
     name = 'rust'
 
     def replay(self, request):
-        raise BackendUnavailable('Rust replay adapter is not implemented.')
+        validate_request(request)
+        try:
+            result = subprocess.run(
+                ['cargo', 'run', '--quiet', '-p', 'lantern-host', '--locked', '--offline', '--', 'replay'],
+                cwd=ROOT / 'rust', input=json.dumps(request, allow_nan=False),
+                text=True, capture_output=True, timeout=300)
+        except (OSError, subprocess.TimeoutExpired) as error:
+            raise ContractError('Rust replay command unavailable or timed out.') from error
+        if result.returncode == 2:
+            raise BackendUnavailable('Rust replay workload unsupported; only transport_smoke_v1 is implemented. '
+                                     'Gameplay is not ported.')
+        require(result.returncode == 0, f'Rust replay command failed (exit {result.returncode}).')
+        try:
+            response = json.loads(result.stdout)
+        except ValueError as error:
+            raise ContractError('Rust replay returned invalid JSON.') from error
+        return validate_response(response, request)
 
 
 def validate_request(request):
@@ -200,7 +216,7 @@ def main():
     paths = args.traces or sorted(FIXTURES.glob('*.json'))
     if not paths:
         parser.error('no traces found')
-    candidate = PythonBackend() if args.candidate == 'python' else RustUnavailable()
+    candidate = PythonBackend() if args.candidate == 'python' else RustBackend()
     results = []
     for path in paths:
         try:
@@ -216,7 +232,7 @@ def main():
               'mode': 'python_repeatability' if args.candidate == 'python' else 'python_vs_rust',
               'runner_revision': subprocess.check_output(['git', 'rev-parse', 'HEAD'], cwd=ROOT, text=True).strip(),
               'runner_dirty': bool(subprocess.check_output(['git', 'status', '--porcelain'], cwd=ROOT, text=True)),
-              'rust_adapter': 'unavailable', 'rust_host_benchmarks': 'unavailable',
+              'rust_adapter': 'transport_smoke_only', 'rust_host_benchmarks': 'unavailable',
               'performance': 'not_run', 'traces': results}
     args.output.mkdir(parents=True, exist_ok=True)
     (args.output / 'report.json').write_text(json.dumps(report, indent=2) + '\n')

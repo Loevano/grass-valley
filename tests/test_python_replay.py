@@ -236,4 +236,4 @@ class PythonReplay(unittest.TestCase):
                                 text=True, capture_output=True)
         self.assertNotEqual(result.returncode, 0)
         self.assertIn('destination must be empty', result.stderr)
-        self.assertIn('Rust adapter and Rust-host benchmarks do not exist', result.stdout)
+        self.assertIn('Rust gameplay and Rust-host benchmarks do not exist', result.stdout)

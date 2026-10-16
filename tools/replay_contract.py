@@ -8,7 +8,7 @@ from pathlib import Path
 
 TOLERANCES = {'position': 1e-6, 'fraction': 1e-9}
 STATUS = ('Format validation only. Python recording/replay is in tools/python_replay.py; paired reports are in tools/replay.py. '
-          'Rust adapter and Rust-host benchmarks do not exist yet; tools/server_perf.py '
+          'Rust replay supports transport smoke only; gameplay and Rust-host benchmarks remain unavailable; tools/server_perf.py '
           'measures Python only.')
 PRIVATE_KEYS = {'token', 'tokens', 'pin', 'pin_hash', 'password', 'credentials',
                 'player_accounts', 'accounts', 'authorization'}
