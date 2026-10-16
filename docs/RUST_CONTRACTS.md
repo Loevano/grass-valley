@@ -258,6 +258,15 @@ API. Preserve changes to mined resources, trees/stumps, and village ground.
 
 ## Saved subsystem coverage and feature/test mapping
 
+R05 slice 1 implements identity/unit foundations: see
+`rust/crates/lantern-core/tests/primitives.rs` for world-wide allocation, owner
+validation, reload-counter/collision rejection, reference stability in a synthetic
+collection, exact large IDs and bit-preserving fractional units. Two compile-fail
+doc tests enforce kind/unit separation. These are **implemented** primitives,
+not cross-host feature parity. Saved subsystem rows below remain unported.
+Actor/task models, queued-index enforcement and public/save DTO privacy tests
+remain R05 slices 2–3; see [slice evidence](RUST_MIGRATION.md#r05-slice-1-evidence-and-remaining-work).
+
 This is the semantic persistence inventory, including state nested below buildings,
 workers, founders, landscapes, and adventures. It also covers autonomous behavior
 without a command. All rows require import → play → save → reload comparisons.

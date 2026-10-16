@@ -2,7 +2,8 @@
 
 A migration that can be completed one task at a time, with a prompt for each task.
 
-**Status:** R01–R04 complete; R05 typed state/IDs/units is next.
+**Status:** R01–R04 complete; R05 IDs/primitive units complete;
+actor/building/task model (slice 2) is next.
 Rust contains an experimental workspace and transport smoke CLI; gameplay is not ported.
 **Initial plan revision:** `445ddddd675a87eb7adb50442b2dbf3c14ea6c6f`.
 **R01 audit revision:** `935db7b95885c101c62dfd6bf9e16f39b6a7a8fe`.
@@ -219,7 +220,7 @@ only after work is performed. Keep unfinished stages visible in the roadmap.
 | R02 | Fix current relocation continuity | R01 | Complete; `fix: preserve worker continuity when relocating workplaces` (this change); evidence below |
 | R03 | Replay fixtures and comparison oracle | R02 | Complete: slice 1 `9637eb5`; slice 2 `049fe10`; slice 3 `test: add backend-neutral replay comparison reports` (this change); [protocol and evidence](REPLAY_BACKENDS.md) |
 | R04 | Cargo workspace and applicable checks | R03 | Complete: slice 1 `732619a`; slice 2 `c7cf3e2`; slice 3 `feat: add Rust replay transport smoke CLI` (this change); evidence below |
-| R05 | Typed state, IDs, units, and boundary DTOs | R04 | Not started |
+| R05 | Typed state, IDs, units, and boundary DTOs | R04 | In progress: slice 1 `feat: add persistent Rust IDs and primitive units` (this change); evidence below. Slices 2–3 remain |
 | R06 | Legacy import and read-only save inspection | R05 | Not started |
 | R07 | Terrain versions and chunk generation | R06 | Not started |
 | R08 | Spatial rules and founder movement | R07 | Not started |
@@ -588,6 +589,60 @@ DTOs. Preserve existing fractional quantities and client contracts. Test identit
 ownership, stale-reference handling, and private-field exclusion. Run applicable
 checks, update coverage and progress, and commit the completed slice.
 ```
+
+### R05 slice 1 evidence and remaining work
+
+`lantern-core` now provides distinct world/town keys and typed building, actor,
+animal and NPC IDs. Existing opaque keys are preserved verbatim. Each entity ID
+contains world/town ownership and an exact nonzero `u64` serial. One world-wide
+allocator spans all towns and entity kinds; it never reuses serials. Restore
+validates every live identity across all kinds/towns against the persisted
+high-water mark, rejecting duplicate serials, foreign worlds and stale counters.
+Exhaustion fails without wrapping. The high-water mark must persist even after
+deleting the highest ID. R06 import must allocate in recorded order through one
+allocator, remap all references, and reject collisions rather than merge IDs.
+These restoration primitives are not a save reader.
+
+Finite binary64 wrappers distinguish quantity, work, practice, elapsed seconds
+and continuous tile coordinates. Amounts/times reject negatives; coordinates
+permit negatives. Construction preserves every input bit, including subnormals
+and signed zero; no quantization or rates changed. Discrete tiles use `i32`
+coordinates; counts and terrain seeds use exact `u64`. Internal types have no
+Serde implementation. Slice 3 must provide explicit boundary conversion, encode
+new serials as decimal strings without passing through JavaScript numbers, and
+test terrain seed compatibility. Existing wire contracts remain unchanged.
+
+**Queued-reference decision:** resolve a legacy index to an owned stable ID at
+admission, before queuing, while validating its snapshot's collection revision.
+Execute by ID and recheck ownership/existence; deletion is an error, never a
+selection of the entity now occupying the old slot. If resolution occurs after
+queuing, carry the snapshot collection revision and reject any mismatch before
+resolving the index. Never resolve an old index against the current list without
+this validation. Revisions track membership/order changes, not unrelated
+production. Slice 3 must implement/test this boundary policy; R12/R20 must use it
+for queued commands. No Python/browser command behavior changed.
+
+`rust/crates/lantern-core/tests/primitives.rs` covers allocation across imported
+town scopes/kinds, exact serials above 2^53, exhaustion, restored/deleted IDs,
+foreign ownership, duplicate/stale restore data, bit-preserving fractional units
+and nonfinite rejection. A synthetic collection test moves/reorders/removes
+entries and reconstructs an ID to check references independently of list slots;
+it does not claim real actor/building/save integration. Compile-fail doc tests
+check actor/building and quantity/time type separation.
+
+Validation passed (6/6 commands), recorded in the inspected Markdown/JSON reports
+at `performance-results/r05-slice1/`: core and reverse-dependent host formatting,
+tests and Clippy with warnings denied. Core has eight integration tests and two
+compile-fail doc tests; the six existing host tests also pass. Performance
+comparison was not run for offline primitives with no performance investigation
+or optimization.
+
+**Remaining:** slice 2 must add the actor/building model with independent
+position/cargo and typed task/route states. Slice 3 must add public/save DTOs,
+roundtrip and private-credential/derived-search exclusion tests, actual index
+adapter rejection tests and feature coverage. Freeze D05 RNG seed derivation
+with golden vectors before RNG adoption (still pending in R05). Gameplay,
+legacy import, durable saves, HTTP and client integration remain unported.
 
 ## R06 — Legacy save import and inspection
 
