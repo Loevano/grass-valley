@@ -3,7 +3,7 @@
 A migration that can be completed one task at a time, with a prompt for each task.
 
 **Status:** R01–R07 complete as experimental migration foundations; R08 spatial
-rules and founder movement is in progress (slice 1 geometry complete). R07 includes saved-first terrain versions 1–7,
+rules and founder movement is in progress (slices 1 geometry and 2 local founder movement complete). R07 includes saved-first terrain versions 1–7,
 nonchunked maps, authored starter/town sites, ordinary/swamp metadata and overlays,
 post-overlay water repair, private authoritative chunk lifecycle/resource renewal,
 and exact Python integer/float clock arithmetic. See the [completion audit](#r07-slice-3civ-exact-clocks-and-completion-audit).
@@ -228,7 +228,7 @@ only after work is performed. Keep unfinished stages visible in the roadmap.
 | R05 | Typed state, IDs, units, and boundary DTOs | R04 | Complete: slice 1 `f271ff4`; slice 2 `b5fa931`; slice 3 `508b396`; [boundary/coverage audit](RUST_STATE_DTOS.md), evidence below |
 | R06 | Legacy import and read-only save inspection | R05 | Complete: slice 1 `3312d5d`; slice 2 `4513bec`; slice 3 `041caee`; [staging scope/coverage](RUST_LEGACY_IMPORT.md), evidence below |
 | R07 | Terrain versions and chunk generation | R06 | Complete as private terrain/chunk foundation; [scope, slice evidence and completion audit](RUST_TERRAIN.md); exact clocks finish 3c.iv; finite platform-math vectors retain the R23 release gate |
-| R08 | Spatial rules and founder movement | R07 | In progress: slice 1 geometry complete; slices 2 founder collision/access and 3 shared boundaries/recovery remain; evidence below |
+| R08 | Spatial rules and founder movement | R07 | In progress: slices 1 geometry and 2 local founder collision/access complete; slice 3 shared boundaries/recovery remains; evidence below |
 | R09 | Search algorithms and library decision | R08 | Not started |
 | R10 | Request scheduler and cache invalidation | R09 | Not started |
 | R11 | Persistent worker movement and playback | R10 | Not started |
@@ -1624,13 +1624,72 @@ core checks pass all three commands (28 cases/doc tests), and host all-target
 compilation passes. Report: `performance-results/20261016-185557/report.md`.
 The earlier complete affected-set report covers unchanged runtime behavior.
 
-**Remaining:** slice 2 founder radius/sliding/substeps, screen-projection metric,
-clothing/boat access and prediction compatibility; slice 3 shared-town/chunk
+**Remaining after slice 1:** founder collision/access and shared-town/chunk
 assembly, terrain/search bounds, unloaded tiles and blocked-position recovery.
-Fishing planner validation of pier/boat overlays, search algorithms and scheduling
-remain later R08/R09–11 work. Python stays default; no HTTP, save writes, cutover,
-performance optimization or measured speed claim. Performance comparisons are not
-needed for this compatibility-only port.
+Slice 2 evidence follows; slice 3 remains unfinished.
+
+### R08 slice 2 — local founder collision and access
+
+Implemented in `lantern_core::founder`, derived founder profiles on the existing
+`SpatialIndex`, and read-only `legacy::PrivateFounderCopy`. The core preserves the
+2:1 screen metric, strict 0.18 radius, five fixed substeps per command, X-before-Y
+sliding, facing updates, 1–5 ordered commands and whole-batch validation before
+queries/movement. There is no invented elapsed-time input or worker-route metric.
+Completed roads give 1.5 land speed; mounts multiply land speed by 1.75, while
+water-anchor speed uses the founder boat level without the mount/road bonus.
+Speed is sampled once before both axes of each substep. Boat access removes water
+footprints without removing overlapping solid buildings. Trees/bushes permit
+passage; NPCs and moving actors are outside founder occupancy. Depth does not
+restrict founder boats. Dark swamp shades require equipped boots; other shades,
+sand/desert/ice and water resource anchors preserve Python clothing exemptions.
+The result returns transform/facing and an explicit activity/status-clear effect;
+route/task, inventory/cargo, equipment and private extension records remain separate.
+
+`PrivateFounderCopy` accepts explicitly supplied ordinary local scene bytes and
+keeps them exact, including unknown fields and quantities; it never serializes a
+lossy reconstructed player. Invalid typed access/position/terrain/geometry rejects
+with sanitized paths. Flags must be booleans, facing ±1, coordinates/boat levels
+finite numbers, and terrain rows strings or arrays of single-character strings;
+unsupported Python truthy/container forms reject explicitly. Numeric saved boat
+levels are retained rather than clamped to catalog tiers. Missing/null ordinary
+terrain remains permissive, matching Python. Chunked copies reject until slice 3
+assembles authoritative terrain and missing-tile access. Blocked starts return an
+explicit recovery requirement even for zero input. This is an offline immutable
+adapter, without playable hydration, save writes, HTTP or default-host changes.
+
+Independent actual Python `move_player`/`walkable` fixtures cover 95 local scenarios,
+475 sequential movement samples and 138 radius/access queries. They include
+fractional starts, all directions/zero input, corner sliding, fence gates, supported
+footprints/overlap, construction road timing, boundaries, all swamp shades,
+water-over-swamp, boat levels and depth/mount combinations. The frozen generator's
+`--check` recomputes Python outputs and fails without refreshing on differences.
+`fixtures/founder/browser.js` executes the actual browser predictor: 455 supported
+samples agree within 1e-12 and snapshots remain unchanged. Four host-only saved
+boat-level cases (0/negative, with/without mount; 20 samples) expose an existing
+browser discrepancy: Python uses `1 + .25 * max(0, level - 1)` on water, whereas JS
+uses its existing level fallback/unclamped formula. Rust preserves Python; no
+browser behavior is changed or universal parity claimed for that unsupported saved
+domain. Finite vectors remain evidence on this platform, not a replacement for
+the R23 libm/platform gate.
+
+Five pure core invariants and two host tests verify atomic invalid batches,
+ordered step equivalence, immutable geometry/source/snapshots, nonblocking NPCs,
+overlapping water/buildings, max-map arithmetic, sanitized errors and explicit
+recovery/chunked-scene rejection. Existing applicable tests pass: 41 Python cases across player,
+equipment, boats and command routing, plus player prediction JS; report
+`performance-results/20261016-190138/report.md`. Final affected
+`python3 tools/check.py` passes all six format/test/clippy commands (33 core and
+124 host cases/doc tests), with warnings denied; Markdown/JSON report inspected:
+`performance-results/20261016-190346/report.md`. An initial test-only clippy finding
+was fixed before this final run. Frozen `--check`, actual-browser vectors and
+`git diff --check` pass. Compatibility migration is not a performance investigation;
+no performance comparison or speed claim is made.
+
+**Remaining:** slice 3 shared-town/chunk assembly, bounds/unloaded terrain and full
+blocked-start recovery, including refresh of local obstacles between batched host
+commands. Founder equipment/boat/horse acquisition and other activity commands
+remain their later feature stages; worker route/search/scheduling remains R09–11.
+Python stays the playable default.
 
 **Deliver:** one authoritative spatial representation and explicit movement profiles.
 Preserve farmer acre access, pier/boat exceptions, founder clothing and water rules,

@@ -142,6 +142,10 @@ pub struct SpatialIndex {
     completed_acres: BTreeSet<Tile>,
     roads: BTreeSet<Tile>,
     fences: Vec<Segment>,
+    founder_land: BTreeSet<Tile>,
+    founder_boat: BTreeSet<Tile>,
+    water: BTreeSet<Tile>,
+    size: u32,
 }
 impl SpatialIndex {
     pub fn derive(
@@ -159,9 +163,14 @@ impl SpatialIndex {
             completed_acres: BTreeSet::new(),
             roads: BTreeSet::new(),
             fences: Vec::new(),
+            founder_land: BTreeSet::new(),
+            founder_boat: BTreeSet::new(),
+            water: BTreeSet::new(),
+            size,
         };
         for b in structures {
             index.blocked.extend(b.footprint.tiles());
+            index.add_founder(&b.kind, b.footprint);
             if b.kind == "acre" && b.construction == Construction::Complete {
                 index.completed_acres.insert(b.footprint.origin);
             }
@@ -173,6 +182,10 @@ impl SpatialIndex {
         }
         for r in resources {
             index.blocked.extend(r.footprint.tiles());
+            index.add_founder(&r.kind, r.footprint);
+            if r.kind == "water" {
+                index.water.insert(r.footprint.origin());
+            }
         }
         for n in npcs {
             index.blocked.extend(n.tiles());
@@ -183,6 +196,32 @@ impl SpatialIndex {
             }
         }
         Ok(index)
+    }
+    fn add_founder(&mut self, kind: &str, footprint: Footprint) {
+        if kind != "tree" && kind != "berry_bush" {
+            self.founder_land.extend(footprint.tiles());
+            if kind != "water" {
+                self.founder_boat.extend(footprint.tiles());
+            }
+        }
+    }
+    pub fn size(&self) -> u32 {
+        self.size
+    }
+    /// Founder occupancy excludes NPCs and moving actors, and removes water
+    /// only for boats. Separate derived sets preserve overlapping solid objects.
+    pub fn founder_occupied(&self, tile: Tile, boat: bool) -> bool {
+        (if boat {
+            &self.founder_boat
+        } else {
+            &self.founder_land
+        })
+        .contains(&tile)
+    }
+    /// Python uses resource anchors (not expanded water footprints) for speed
+    /// and clothing exemptions. Buildings named water do not populate this set.
+    pub fn water(&self) -> &BTreeSet<Tile> {
+        &self.water
     }
     pub fn blocked(&self) -> &BTreeSet<Tile> {
         &self.blocked

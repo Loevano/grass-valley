@@ -234,6 +234,10 @@ privacy doctests prevent implicit formatting of arbitrary private kind names);
 actor acre/pier/boat overlays never mutate that index. This is an offline geometry
 boundary, not gameplay hydration or a second mutable world authority. Saved
 footprints are already oriented, with missing dimensions remaining 1×1. Barn fences
-and road costs are implemented; founder collision/access, shared-world assembly,
-terrain/bounds checks and recovery remain R08 slices 2/3. Durable construction,
+and road costs are implemented. R08 slice 2 adds founder collision/access, local
+bounds, ordered fixed-command movement and an immutable `PrivateFounderCopy`
+adapter. Results carry only transform/facing and an activity-clear effect; exact
+source bytes retain every unported founder field/quantity. No implicit Debug or
+Serialize exposes this private copy. Shared-world/chunk assembly, unavailable
+terrain and blocked-start recovery remain R08 slice 3. Durable construction,
 rotation/road commands and public geometry DTOs remain R12/R21.

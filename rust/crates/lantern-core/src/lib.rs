@@ -7,6 +7,7 @@
 
 extern crate alloc;
 
+pub mod founder;
 pub mod ids;
 pub mod legacy_map;
 pub mod model;
