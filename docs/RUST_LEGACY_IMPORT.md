@@ -182,6 +182,15 @@ file counts, required keys checked and `sparse_copy_only; absent files unverifie
 it never claims that an unmanifested sparse copy is complete. An empty explicit
 directory is valid sparse input. Neither success nor failure creates missing files.
 
+## Separate R07 saved-view boundary
+
+R07 slice 1 adds an opt-in [immutable saved-chunk reader](RUST_TERRAIN.md) over
+this archive. It decodes saved terrain/resources/stumps without altering staging,
+source bytes or the inspector report. Optional resource values receive additional
+typed validation only when loaded. Missing chunks explicitly refuse unported
+generation/starter reconstruction. Saved views do not run migrations, village/
+water repairs, activation or catch-up, and do not establish playable compatibility.
+
 ## Inspection command (slice 3)
 
 From `rust/`, inspect explicit synthetic copies:

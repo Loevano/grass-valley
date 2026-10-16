@@ -2,7 +2,8 @@
 
 A migration that can be completed one task at a time, with a prompt for each task.
 
-**Status:** R01–R06 complete; R07 slice 1 (terrain chunk reading/loading) is next.
+**Status:** R01–R06 complete; R07 slice 1 (saved-chunk reading/loading) complete;
+slice 2 (supported legacy generators) is next.
 Rust contains an experimental workspace, transport smoke CLI and read-only copy
 inspection CLI; gameplay is not ported.
 **Initial plan revision:** `445ddddd675a87eb7adb50442b2dbf3c14ea6c6f`.
@@ -222,7 +223,7 @@ only after work is performed. Keep unfinished stages visible in the roadmap.
 | R04 | Cargo workspace and applicable checks | R03 | Complete: slice 1 `732619a`; slice 2 `c7cf3e2`; slice 3 `feat: add Rust replay transport smoke CLI` (this change); evidence below |
 | R05 | Typed state, IDs, units, and boundary DTOs | R04 | Complete: slice 1 `f271ff4`; slice 2 `b5fa931`; slice 3 `508b396`; [boundary/coverage audit](RUST_STATE_DTOS.md), evidence below |
 | R06 | Legacy import and read-only save inspection | R05 | Complete: slice 1 `3312d5d`; slice 2 `4513bec`; slice 3 `feat: inspect legacy save copies with capability reports` (this change); [staging scope/coverage](RUST_LEGACY_IMPORT.md), evidence below |
-| R07 | Terrain versions and chunk generation | R06 | Not started |
+| R07 | Terrain versions and chunk generation | R06 | In progress: slice 1 complete (`feat: load immutable saved terrain chunk views`, this change); [scope and evidence](RUST_TERRAIN.md); slices 2–3 remain |
 | R08 | Spatial rules and founder movement | R07 | Not started |
 | R09 | Search algorithms and library decision | R08 | Not started |
 | R10 | Request scheduler and cache invalidation | R09 | Not started |
@@ -927,6 +928,39 @@ Do not substitute Rust's default RNG or change saved landscapes. Validate golden
 chunks, boundaries, activation/regrowth, and new-world placement as applicable.
 Update the compatibility matrix and progress, run affected checks, and commit.
 ```
+
+### R07 slice 1 evidence and remaining work
+
+`lantern_host::legacy::ChunkReader` now loads immutable decoded saved-chunk views
+from explicit R06 archives, with typed tile/resource/stump reads and optional saved
+clocks. A 49-record LRU bounds decoded views; eviction/reload keeps original saved
+bytes. Tile reads distinguish outside-world, unloaded and saved terrain. Missing
+copies explicitly refuse unported generation/starter reconstruction; no latest
+version or random-generator substitution is possible. Unsupported decoded terrain
+and optional resource fields fail without evicting valid views or changing sources.
+The R06 inspection CLI and its preserved-only readiness remain unchanged.
+
+Four Rust integration tests use 58 frozen **real Python-generated** records covering
+versions 1–7, existing v1/v2 golden hashes, legacy dimensions, text/arbitrary-size
+negative seeds, every tile/ordered resource, adjacent water, LRU overflow/reload,
+edited resource quantities, exact private extensions, saved/missing clocks, stump
+timers and sanitized failure paths. The fixture verifier regenerates all records
+and hashes with the actual Python generator. [Reader contract and golden workflow](RUST_TERRAIN.md)
+describe the distinction between saved decoding and generator compatibility.
+
+Validation: targeted `loaded_chunks` tests pass (4/4); the real Python fixture
+`generate.py --check` matches all 58 records and hashes. `tools/check.py --list`
+selects only `rust:lantern-host`; the affected run passes 3/3 commands (formatting,
+47 host tests plus six compile-fail doctests, and Clippy), report
+`performance-results/20261016-045537/report.md`. No unknown runtime files or broader
+Python/browser tests were selected. Performance checks were not run: this ports a
+compatibility boundary, not a performance problem, and no runtime speedup is claimed.
+
+**Remaining:** slice 2 must implement Python-compatible generation for unexplored
+chunks and all old seeds/versions. Slice 3 must implement new-world/starter/village
+placement, tiny-water repair after overlays, activation/sleeping/dirty resources,
+and regrowth/catch-up. Ordinary/nonchunked hydration is still unported. The reader
+is experimental, read-only and not a playable authoritative world; R07 is not complete.
 
 ## R08 — Spatial rules and founder movement
 

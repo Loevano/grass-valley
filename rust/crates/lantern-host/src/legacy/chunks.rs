@@ -5,7 +5,7 @@ use lantern_core::ids::WorldId;
 use serde::Serialize;
 use std::{collections::BTreeSet, fs, path::Path};
 
-const CHUNK_SIZE: u32 = 40;
+pub(super) const CHUNK_SIZE: u32 = 40;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord)]
 pub struct ChunkKey {
@@ -36,7 +36,11 @@ impl ChunkKey {
         }
         Ok(key)
     }
-    fn validate(self, metadata: &ChunkMetadata, path: &str) -> Result<(), BoundaryError> {
+    pub(super) fn validate(
+        self,
+        metadata: &ChunkMetadata,
+        path: &str,
+    ) -> Result<(), BoundaryError> {
         if self.x >= metadata.map_size / CHUNK_SIZE || self.y >= metadata.map_size / CHUNK_SIZE {
             return Err(BoundaryError::invalid(path, "chunk outside saved world"));
         }

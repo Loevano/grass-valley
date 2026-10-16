@@ -9,10 +9,14 @@
 
 mod chunks;
 mod json;
+mod loaded;
 mod ordinary;
 mod validation;
 
 pub use chunks::{ChunkDirectory, ChunkKey, ChunkMetadata, ChunkMetadataReport, ImportedChunk};
+pub use loaded::{
+    ChunkReader, LoadedChunk, LoadedResource, LoadedStump, LoadedTile, MAX_LOADED_CHUNKS,
+};
 
 use crate::{BoundaryError, ErrorKind, state::PrivateCredentials};
 use json::Node;
