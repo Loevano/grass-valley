@@ -853,8 +853,8 @@ priorities, balancing theory, game design, and artwork, with tables and diagrams
 
 ## Experimental Rust workspace
 
-R05 slice 1 provides `rust/crates/lantern-core` (a `no_std` library with typed
-persistent IDs and primitive units, using `alloc`)
+R05 slices 1–2 provide `rust/crates/lantern-core` (a `no_std` library with typed
+persistent IDs, units and actor/building/task/route models, using `alloc`)
 and `rust/crates/lantern-host` (an offline replay transport executable).
 The core has no external dependencies or I/O; it compiles and its test harness
 runs without a listener. The replay adapter supports only a transport smoke

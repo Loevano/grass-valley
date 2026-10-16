@@ -264,8 +264,14 @@ validation, reload-counter/collision rejection, reference stability in a synthet
 collection, exact large IDs and bit-preserving fractional units. Two compile-fail
 doc tests enforce kind/unit separation. These are **implemented** primitives,
 not cross-host feature parity. Saved subsystem rows below remain unported.
-Actor/task models, queued-index enforcement and public/save DTO privacy tests
-remain R05 slices 2–3; see [slice evidence](RUST_MIGRATION.md#r05-slice-1-evidence-and-remaining-work).
+R05 slice 2 adds the **implemented** actor/building/task model foundation;
+`rust/crates/lantern-core/tests/model.rs` covers independent fractional position
+and cargo, ownership/dangling-reference checks, reorder/reconstruction continuity,
+workplace relocation, task/request generations and stale/duplicate route results.
+Route state is derived and excluded from internal `ActorState` reconstruction.
+No save/public conversion or gameplay rules are implemented; the saved subsystem
+rows remain unported. Queued-index enforcement, public/save DTO privacy/roundtrip
+tests and feature coverage remain slice 3; see [slice evidence](RUST_MIGRATION.md#r05-slice-2-evidence-and-remaining-work).
 
 This is the semantic persistence inventory, including state nested below buildings,
 workers, founders, landscapes, and adventures. It also covers autonomous behavior

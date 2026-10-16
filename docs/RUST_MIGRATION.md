@@ -2,8 +2,8 @@
 
 A migration that can be completed one task at a time, with a prompt for each task.
 
-**Status:** R01–R04 complete; R05 IDs/primitive units complete;
-actor/building/task model (slice 2) is next.
+**Status:** R01–R04 complete; R05 slices 1–2 (IDs/units and actor/building/task
+model) complete; public/save DTO conversion and feature coverage (slice 3) is next.
 Rust contains an experimental workspace and transport smoke CLI; gameplay is not ported.
 **Initial plan revision:** `445ddddd675a87eb7adb50442b2dbf3c14ea6c6f`.
 **R01 audit revision:** `935db7b95885c101c62dfd6bf9e16f39b6a7a8fe`.
@@ -220,7 +220,7 @@ only after work is performed. Keep unfinished stages visible in the roadmap.
 | R02 | Fix current relocation continuity | R01 | Complete; `fix: preserve worker continuity when relocating workplaces` (this change); evidence below |
 | R03 | Replay fixtures and comparison oracle | R02 | Complete: slice 1 `9637eb5`; slice 2 `049fe10`; slice 3 `test: add backend-neutral replay comparison reports` (this change); [protocol and evidence](REPLAY_BACKENDS.md) |
 | R04 | Cargo workspace and applicable checks | R03 | Complete: slice 1 `732619a`; slice 2 `c7cf3e2`; slice 3 `feat: add Rust replay transport smoke CLI` (this change); evidence below |
-| R05 | Typed state, IDs, units, and boundary DTOs | R04 | In progress: slice 1 `feat: add persistent Rust IDs and primitive units` (this change); evidence below. Slices 2–3 remain |
+| R05 | Typed state, IDs, units, and boundary DTOs | R04 | In progress: slice 1 `f271ff4`; slice 2 `feat: add Rust actor building and task models` (this change); evidence below. Slice 3 remains |
 | R06 | Legacy import and read-only save inspection | R05 | Not started |
 | R07 | Terrain versions and chunk generation | R06 | Not started |
 | R08 | Spatial rules and founder movement | R07 | Not started |
@@ -637,12 +637,65 @@ compile-fail doc tests; the six existing host tests also pass. Performance
 comparison was not run for offline primitives with no performance investigation
 or optimization.
 
-**Remaining:** slice 2 must add the actor/building model with independent
+**Remaining at slice 1:** slice 2 must add the actor/building model with independent
 position/cargo and typed task/route states. Slice 3 must add public/save DTOs,
 roundtrip and private-credential/derived-search exclusion tests, actual index
 adapter rejection tests and feature coverage. Freeze D05 RNG seed derivation
 with golden vectors before RNG adoption (still pending in R05). Gameplay,
 legacy import, durable saves, HTTP and client integration remain unported.
+
+### R05 slice 2 evidence and remaining work
+
+`lantern-core::model` adds an owned town collection, building identity/location
+and typed construction state, and actor state with independent continuous position
+and named fractional cargo. Tasks distinguish idle, move, work, transport and
+construction; work phases and transport legs persist separately from pending,
+ready, arrived, unreachable, blocked and cancelled route states. Task replacement,
+cancellation, route failure and workplace relocation do not clear goods or reset
+actor position. No transfers, refunds or production are performed implicitly.
+
+Town reconstruction validates world/town ownership, duplicate serials across
+actor/building kinds and all task building references. Lookups and mutations use
+stable IDs; reordered records keep their references. Structural building relocation
+preserves task phase/elapsed work and actor facts while invalidating routes aimed
+at that building. Other paths still need the later navigation dependency checks
+for changed footprints/access; this is not the R12 move command or spatial rules.
+
+Separate checked task/request generations prevent counter wrap. Route requests
+capture actor identity, both generations, origin, destination/resolved goal and
+the relevant navigation revision supplied by the caller. Only the matching pending
+request can accept a result, once; reassignment, retry, cancellation, relocation,
+position recovery or changed navigation dependencies reject stale results without
+mutating facts. Pending and unreachable remain distinct; an empty completed path
+is rejected in favor of the explicit arrived outcome. R09–R11 still own legal
+goals, arrival policy, path validity, navigation dependencies and actual movement.
+
+`ActorState` is an internal structure, not a DTO. Reconstruction retains its task,
+position, cargo and generation counters, rebuilding derived route state as
+`NotRequested`. Hosts must retire old simulation jobs before reconstruction,
+especially when rolling back to an older snapshot whose counters are also older.
+World loading must also validate all town identities against the one world-wide
+allocator. No Serde implementation, save reader or client protocol was added.
+
+Ten tests in `rust/crates/lantern-core/tests/model.rs` exercise fractional cargo,
+reassignment/cancellation continuity, work/transport references, workplace moves,
+reordered reconstruction, route/result lifecycle, stale/duplicate/cross-actor
+results, foreign/missing/dangling IDs, duplicate identities and atomic generation
+exhaustion. These are offline model invariants, not cross-host gameplay parity.
+Applicable validation passed (6/6 commands): core and reverse-dependent host
+formatting, tests and Clippy with warnings denied. All 26 tests pass (18 core
+integration, two compile-fail doc tests and six host tests). Markdown/JSON reports
+at `performance-results/r05-slice2/` were inspected. Performance comparison was
+not run: this is model implementation, not a performance investigation/optimization.
+
+**Remaining:** slice 3 must implement separate public/save DTO conversion,
+fractional/large-ID JSON roundtrips, private credential/derived search exclusion,
+the queued-index boundary policy above and an explicit feature coverage audit.
+Freeze D05 seed derivation with golden vectors before RNG adoption (still pending
+in R05). Models are foundations: catalog fields, resident traits, farm claims,
+boats, animals, reservations and feature-specific task payloads remain unported
+and cannot be defaulted away during import. Python remains the playable host;
+legacy import, durable saves, HTTP and all simulation rules remain later stages.
 
 ## R06 — Legacy save import and inspection
 
