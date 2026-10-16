@@ -324,9 +324,9 @@ fn versions_are_validated_without_migration_or_chunk_attachment() {
                 .ends_with(marker)
         );
     }
-    for location in [
-        "/worlds/a-world/world/shared_map",
-        "/worlds/z-world/world/towns/z-town",
+    for (location, suffix) in [
+        ("/worlds/a-world/world/shared_map", ".chunk_size"),
+        ("/worlds/z-world/world/towns/z-town", ".chunked"),
     ] {
         let mut root: Value = serde_json::from_slice(REGISTRY).unwrap();
         root.pointer_mut(location)
@@ -335,8 +335,7 @@ fn versions_are_validated_without_migration_or_chunk_attachment() {
             .unwrap()
             .insert("chunked".into(), json!(true));
         let error = reject(&serde_json::to_vec(&root).unwrap());
-        assert!(error.path.ends_with(".chunked"));
-        assert!(format!("{error:?}").contains("slice 2"));
+        assert!(error.path.ends_with(suffix));
     }
 }
 

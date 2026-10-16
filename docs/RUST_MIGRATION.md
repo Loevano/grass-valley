@@ -2,8 +2,8 @@
 
 A migration that can be completed one task at a time, with a prompt for each task.
 
-**Status:** R01–R05 complete; R06 slice 1 (registry/accounts/ordinary-world
-staging) complete; slice 2 (chunked world references) is next.
+**Status:** R01–R05 complete; R06 slices 1–2 (ordinary saves and external chunk
+staging) complete; slice 3 (migration validation and inspection CLI) is next.
 Rust contains an experimental workspace and transport smoke CLI; gameplay is not ported.
 **Initial plan revision:** `445ddddd675a87eb7adb50442b2dbf3c14ea6c6f`.
 **R01 audit revision:** `935db7b95885c101c62dfd6bf9e16f39b6a7a8fe`.
@@ -221,7 +221,7 @@ only after work is performed. Keep unfinished stages visible in the roadmap.
 | R03 | Replay fixtures and comparison oracle | R02 | Complete: slice 1 `9637eb5`; slice 2 `049fe10`; slice 3 `test: add backend-neutral replay comparison reports` (this change); [protocol and evidence](REPLAY_BACKENDS.md) |
 | R04 | Cargo workspace and applicable checks | R03 | Complete: slice 1 `732619a`; slice 2 `c7cf3e2`; slice 3 `feat: add Rust replay transport smoke CLI` (this change); evidence below |
 | R05 | Typed state, IDs, units, and boundary DTOs | R04 | Complete: slice 1 `f271ff4`; slice 2 `b5fa931`; slice 3 `508b396`; [boundary/coverage audit](RUST_STATE_DTOS.md), evidence below |
-| R06 | Legacy import and read-only save inspection | R05 | In progress: slice 1 `feat: stage ordinary legacy saves without mutation` (this change); [staging scope/coverage](RUST_LEGACY_IMPORT.md), evidence below. Slices 2–3 remain |
+| R06 | Legacy import and read-only save inspection | R05 | In progress: slice 1 `3312d5d`; slice 2 `feat: stage legacy external chunk copies` (this change); [staging scope/coverage](RUST_LEGACY_IMPORT.md), evidence below. Slice 3 remains |
 | R07 | Terrain versions and chunk generation | R06 | Not started |
 | R08 | Spatial rules and founder movement | R07 | Not started |
 | R09 | Search algorithms and library decision | R08 | Not started |
@@ -813,12 +813,48 @@ warnings denied). Markdown/JSON reports at `performance-results/r06-slice1/` wer
 inspected. Performance comparison was not run for read-only import correctness,
 with no performance investigation or optimization.
 
-**Remaining:** slice 2 must handle external chunk references/metadata and preserve
+**Remaining at slice 1:** slice 2 must handle external chunk references/metadata and preserve
 edited chunk copies without loading/generating/catching up terrain. Slice 3 must
 complete broader migration/reference validation, capability diagnostics and the
 inspection CLI. No source/destination writes, production-save inspection or new
 generation are enabled. Core feature hydration, terrain/RNG parity, durable
 destination conversion and runtime authentication remain later stages.
+
+### R06 slice 2 evidence and remaining work
+
+External chunk staging now requires explicit typed per-world seed-directory copies
+for every chunked world, including inactive entries. It validates Python boolean/
+integer chunk flags, 40-tile chunks, 480/1920 dimensions, safe integer/string seed
+namespaces, historical offset 880 and version-1 defaults, current offset 160,
+optional clocks, canonical bounded keys and resource/stump ownership. Known future
+versions, malformed records, mismatched/duplicate/foreign bindings, shared directory
+aliases, symlinks and unexpected entries fail with sanitized schema paths.
+
+All supplied files, including edited sleeping/evicted chunks, remain exact private
+bytes with unknown data and fractional quantities intact. No Python loader,
+generator, migration, repair, catch-up, simulation, source write or output creation
+runs. Separate public reports expose numeric metadata/counts and sparse coverage,
+never seeds, paths, raw resources or credentials. Required-key declarations detect
+missing copied files; without a manifest, other absent sparse chunks remain
+explicitly unverified. Details and supported shapes are in the [staging audit](RUST_LEGACY_IMPORT.md).
+
+Nine chunk integration tests supplement the ordinary-save tests with one committed
+synthetic registry and disposable generated records. They check versions 1–7,
+metadata defaults, unchanged resource/stump timers, exact large/fractional lexemes,
+repeatable IDs/reports despite directory argument order, ownership, all-file
+preservation, missing/corrupt copies, private output and unchanged filesystem
+bytes/mtime/entries on success/failure. A second compile-fail doc test prevents raw
+chunk serialization. Applicable checks passed (3/3 commands: host formatting,
+41 tests including doc tests, and Clippy with warnings denied). Markdown/JSON
+reports at `performance-results/r06-slice2/` were inspected. Performance comparison
+was not run for read-only import correctness; there is no performance investigation
+or optimization.
+
+**Remaining:** R06 slice 3 must complete broader migration/reference validation,
+capability diagnostics and the read-only inspection CLI. Sparse-copy completeness
+needs an external manifest; imported raw records are not a playable world. Terrain
+hydration/generation, resource/animal identities, migration effects, durable
+copy-based destination writes and runtime authentication remain later stages.
 
 ## R07 — Terrain and chunks
 

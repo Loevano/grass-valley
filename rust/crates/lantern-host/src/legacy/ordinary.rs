@@ -9,15 +9,7 @@ use crate::{
 use lantern_core::ids::{BuildingId, IdAllocator, Owner, TownId, WorldId};
 use std::collections::BTreeSet;
 
-fn versions(node: &Node, path: &str) -> Result<(), BoundaryError> {
-    if let Some(chunked) = node.optional("chunked", path)?
-        && chunked.boolean(&format!("{path}.chunked"))?
-    {
-        return Err(BoundaryError::invalid(
-            format!("{path}.chunked"),
-            "external chunks require R06 slice 2",
-        ));
-    }
+pub(super) fn versions(node: &Node, path: &str) -> Result<(), BoundaryError> {
     for (field, minimum, maximum) in [
         ("terrain_version", 1, 7),
         ("forage_version", 0, 1),

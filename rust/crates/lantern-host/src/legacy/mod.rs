@@ -1,4 +1,4 @@
-//! R06 slice 1: read-only, lossless staging of ordinary Python saves.
+//! R06 slices 1–2: read-only, lossless staging of Python saves and chunk copies.
 //! This archive is not a playable world or a Rust model save. Unported payloads
 //! remain private, in their original bytes/order; no migrations or clock updates.
 //!
@@ -7,8 +7,11 @@
 //! fn unsafe_report(imported: &ImportedRegistry) { serde_json::to_string(imported).unwrap(); }
 //! ```
 
+mod chunks;
 mod json;
 mod ordinary;
+
+pub use chunks::{ChunkDirectory, ChunkKey, ChunkMetadata, ChunkMetadataReport, ImportedChunk};
 
 use crate::{BoundaryError, ErrorKind, state::PrivateCredentials};
 use json::Node;
@@ -21,6 +24,7 @@ use std::{collections::BTreeSet, fs, io::ErrorKind as IoErrorKind, path::Path};
 pub enum LandscapeLayout {
     Independent,
     Shared,
+    Chunked,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -75,6 +79,9 @@ pub struct ImportedWorld {
     allocator: IdAllocator,
     towns: Vec<ImportedTown>,
     credentials: PrivateCredentials,
+    chunk_metadata: Option<ChunkMetadata>,
+    chunks: Vec<ImportedChunk>,
+    required_chunks: usize,
 }
 
 impl ImportedWorld {
@@ -95,6 +102,12 @@ impl ImportedWorld {
     }
     pub fn credentials(&self) -> &PrivateCredentials {
         &self.credentials
+    }
+    pub fn chunk_metadata(&self) -> Option<&ChunkMetadata> {
+        self.chunk_metadata.as_ref()
+    }
+    pub fn chunks(&self) -> &[ImportedChunk] {
+        &self.chunks
     }
 }
 
@@ -124,6 +137,10 @@ pub struct WorldReport {
     pub villagers: usize,
     pub founders: usize,
     pub accounts: usize,
+    pub chunk_files: usize,
+    pub required_chunks_checked: usize,
+    pub chunk_coverage: &'static str,
+    pub chunk_metadata: Option<ChunkMetadataReport>,
 }
 
 /// A safe allowlist for future inspection output, never arbitrary source JSON.
@@ -168,6 +185,14 @@ impl ImportedRegistry {
                     villagers: world.towns.iter().map(|t| t.villagers.len()).sum(),
                     founders: world.towns.iter().filter(|t| t.founder.is_some()).count(),
                     accounts: world.credentials.players.len(),
+                    chunk_files: world.chunks.len(),
+                    required_chunks_checked: world.required_chunks,
+                    chunk_coverage: if world.chunk_metadata.is_some() {
+                        "sparse_copy_only; absent files unverified"
+                    } else {
+                        "not_chunked"
+                    },
+                    chunk_metadata: world.chunk_metadata.as_ref().map(ChunkMetadata::report),
                 })
                 .collect(),
             preserved: self.preserved.clone(),
@@ -211,6 +236,7 @@ fn world(
     path: &str,
     preserved: &mut Vec<PreservedField>,
 ) -> Result<ImportedWorld, BoundaryError> {
+    let chunk_metadata = chunks::metadata(payload, &format!("{path}.world"))?;
     let (layout, towns, allocator) =
         ordinary::import_world(&id, payload, &format!("{path}.world"), preserved)?;
     let owners = towns
@@ -221,15 +247,53 @@ fn world(
     Ok(ImportedWorld {
         id,
         name,
-        layout,
+        layout: if chunk_metadata.is_some() {
+            LandscapeLayout::Chunked
+        } else {
+            layout
+        },
         allocator,
         towns,
         credentials,
+        chunk_metadata,
+        chunks: Vec::new(),
+        required_chunks: 0,
     })
 }
 
 /// Explicit bytes from synthetic copies. None means no source save, not empty JSON.
 pub fn import_bytes(
+    source: Option<&[u8]>,
+    provision: Option<&[u8]>,
+) -> Result<ImportedRegistry, BoundaryError> {
+    let result = parse_registry(source, provision)?;
+    if result
+        .worlds
+        .iter()
+        .any(|world| world.chunk_metadata.is_some())
+    {
+        return Err(BoundaryError::invalid(
+            "$.chunks",
+            "explicit chunk directories required",
+        ));
+    }
+    Ok(result)
+}
+
+/// Reads every file in each explicit seed-directory copy, including inactive
+/// worlds. No chunks are generated or caught up. Required keys detect missing
+/// copied files; without a source manifest other absences remain unverified.
+pub fn import_with_chunk_copies(
+    source: Option<&[u8]>,
+    provision: Option<&[u8]>,
+    directories: &[ChunkDirectory<'_>],
+) -> Result<ImportedRegistry, BoundaryError> {
+    let mut result = parse_registry(source, provision)?;
+    chunks::attach(&mut result, directories)?;
+    Ok(result)
+}
+
+fn parse_registry(
     source: Option<&[u8]>,
     provision: Option<&[u8]>,
 ) -> Result<ImportedRegistry, BoundaryError> {
@@ -328,6 +392,22 @@ pub fn read_copies(
     source: &Path,
     provision: Option<&Path>,
 ) -> Result<ImportedRegistry, BoundaryError> {
+    let (source, provision) = read_inputs(source, provision)?;
+    import_bytes(source.as_deref(), provision.as_deref())
+}
+
+pub fn read_copies_with_chunks(
+    source: &Path,
+    provision: Option<&Path>,
+    directories: &[ChunkDirectory<'_>],
+) -> Result<ImportedRegistry, BoundaryError> {
+    let (source, provision) = read_inputs(source, provision)?;
+    import_with_chunk_copies(source.as_deref(), provision.as_deref(), directories)
+}
+
+type InputCopies = (Option<Vec<u8>>, Option<Vec<u8>>);
+
+fn read_inputs(source: &Path, provision: Option<&Path>) -> Result<InputCopies, BoundaryError> {
     let source = match fs::read(source) {
         Ok(bytes) => Some(bytes),
         Err(e) if e.kind() == IoErrorKind::NotFound => None,
@@ -339,5 +419,5 @@ pub fn read_copies(
                 .map_err(|_| BoundaryError::invalid("$provision", "unable to read provisioning"))
         })
         .transpose()?;
-    import_bytes(source.as_deref(), provision.as_deref())
+    Ok((source, provision))
 }

@@ -152,4 +152,49 @@ impl Node {
     pub fn is_null(&self) -> bool {
         matches!(self, Self::Scalar(raw) if raw.get() == "null")
     }
+    pub fn nonnegative_number(&self, path: &str) -> Result<f64, BoundaryError> {
+        let Self::Scalar(raw) = self else {
+            return Err(BoundaryError::invalid(path, "expected number"));
+        };
+        let text = raw.get();
+        // Underflow must not turn a negative persisted timer into accepted -0.0.
+        let negative = text.starts_with('-')
+            && text
+                .split(['e', 'E'])
+                .next()
+                .unwrap()
+                .bytes()
+                .any(|b| matches!(b, b'1'..=b'9'));
+        text.parse::<f64>()
+            .ok()
+            .filter(|v| v.is_finite() && *v >= 0.0 && !negative)
+            .ok_or_else(|| BoundaryError::invalid(path, "expected finite nonnegative number"))
+    }
+
+    pub fn seed_namespace(&self, path: &str) -> Result<String, BoundaryError> {
+        let Self::Scalar(raw) = self else {
+            return Err(BoundaryError::invalid(path, "unsupported chunk seed type"));
+        };
+        let text = raw.get();
+        let seed = if text.starts_with('"') {
+            self.string(path)?
+        } else if text
+            .strip_prefix('-')
+            .unwrap_or(text)
+            .bytes()
+            .all(|b| b.is_ascii_digit())
+        {
+            if text == "-0" {
+                "0".into()
+            } else {
+                text.into()
+            }
+        } else {
+            return Err(BoundaryError::invalid(path, "unsupported chunk seed type"));
+        };
+        if seed.is_empty() || seed == "." || seed == ".." || seed.contains(['/', '\\', '\0', ':']) {
+            return Err(BoundaryError::invalid(path, "unsafe chunk seed namespace"));
+        }
+        Ok(seed)
+    }
 }
