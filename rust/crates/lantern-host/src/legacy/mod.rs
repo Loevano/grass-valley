@@ -22,7 +22,9 @@ pub use landscapes::{HydratedLandscape, HydratedLandscapes};
 pub use loaded::{
     ChunkReader, LoadedChunk, LoadedResource, LoadedStump, LoadedTile, MAX_LOADED_CHUNKS,
 };
-pub use village_overlay::{LegacySwampOverlay, OrdinaryVillageOverlay, SwampOverlay};
+pub use village_overlay::{
+    LegacySwampOverlay, OrdinaryVillageMetadata, OrdinaryVillageOverlay, SwampOverlay,
+};
 
 use crate::{BoundaryError, ErrorKind, state::PrivateCredentials};
 use json::Node;

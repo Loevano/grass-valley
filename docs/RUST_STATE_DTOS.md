@@ -183,6 +183,10 @@ same private/source-preserving boundary for legacy swamp-v1 materialization;
 its v2 records/metadata still explicitly fail. Slice 3b.iii.b.ii adds separate
 private `SwampOverlay` for complete v1/v2 materialization and organic record
 upgrades, preserving exact source/scalar extensions and mixed-order semantics.
-Saved-only decoding accepts real organic `p/w/c` terrain. Obstacle-safe placement/
-world metadata migrations and post-overlay water integration remain 3b.iii.b–c; see the
+Saved-only decoding accepts real organic `p/w/c` terrain. Slice 3b.iii.b.iii adds
+private `OrdinaryVillageMetadata`, preserving complete world source, scalar lexemes
+and ordered extensions while independently migrating ordinary placement/dialogue/
+layout/life metadata. Its output is not prepared authoritative state or a public DTO;
+it stops before swamp ensure. Swamp world metadata/NPC homes/routines/visit keys
+remain 3b.iii.b.iv; complete post-overlay water integration remains 3b.iii.c; see the
 [terrain compatibility boundary](RUST_TERRAIN.md#ordinary-village-overlay-phase-slice-3biiia).

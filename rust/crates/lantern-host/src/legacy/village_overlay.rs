@@ -1,9 +1,12 @@
 //! Ordinary village phase only: Python villages._apply_villages, not apply_villages.
-//! Also exposes independent versioned swamp phases; no placement,
-//! water repair, activation, supply defaults or writes.
+//! Also exposes independent versioned swamp phases and ordinary world metadata.
+//! No implicit read integration, water repair, activation, supply defaults or writes.
 use super::{ChunkKey, json::Node, loaded::decode_resources};
 use crate::BoundaryError;
 use std::collections::BTreeSet;
+
+mod metadata;
+pub use metadata::OrdinaryVillageMetadata;
 
 mod swamp;
 pub use swamp::SwampOverlay;

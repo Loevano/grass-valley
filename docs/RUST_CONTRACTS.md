@@ -273,8 +273,11 @@ independent private swamp-v1 phase (43 actual Python pairs) and valid saved
 organic `p/w/c` decoding (four real saved chunks). Slice 3b.iii.b.ii supplies
 complete explicit versioned swamp materialization including organic v2 geometry
 and record upgrades (100 actual Python pairs plus exact layout), retaining mixed
-v1/v2 order and Python repeat behavior. Obstacle-safe placement/world metadata
-migrations and moved visit keys remain. No NPC gameplay or complete R07
+v1/v2 order and Python repeat behavior. Slice 3b.iii.b.iii adds independent
+ordinary obstacle-safe placement/dialogue/layout/life metadata (105 complete actual
+Python worlds plus repeat/insertion-order checks), preserving private source and
+scalar lexemes. It explicitly stops before swamp ensure; 3b.iii.b.iv swamp world
+metadata, NPC homes/routines and moved visit keys remain. No NPC gameplay or complete R07
 readiness is claimed.
 Saved records take precedence over regeneration; seeded base generation and
 idempotent legacy repairs/overlays are separate operations. `ChunkMap.read` can
@@ -336,7 +339,7 @@ without a command. All rows require import → play → save → reload comparis
 | Fishing piers, boat crew/captain trip/depth/reach, mixed species cargo, catch chance, XP and species-preserving smoking | `work_cycles.py`, `progression.py`, `logistics.py` | `tests/test_fishing_range.py`, `tests/test_fishing_luck.py`, `tests/test_boats.py`, `tests/test_smoking.py`, `tests/test_fishing_animation.js`; all fish/smoked fish catalog members | unported / R17 |
 | Barn/stable animal counts/ages/names, growth/output clocks, keeper rounds and butchering order ID/name/pickup/stage/remaining | `barns.py`, `progression.py`, `logistics.py`, `work_cycles.py` | `tests/test_animal_growth.py`, `tests/test_animal_names.py`, `tests/test_livestock_balance.py`, `tests/test_barn_workers.py`, `tests/test_butcher_animation.py`, `tests/test_animal_timers.js`; no animation-driven rewards | unported / R17 |
 | Wild horse home/wander timer/from/start, capture, settlement, breeding, riding unlock | `horses.py` | `tests/test_wild_horses.py`; saved ecology separate from decorative horse display | unported / R17 |
-| NPC roster/placement, villages/layout/life/swamp versions, saved routine paths/phase/timing, outdoor lanes/tavern, visits/stories/gifts/cooldowns | `npcs.py`, `villages.py`, `swamp_village.py`, `village_life.py` | `tests/test_npcs.py`, `tests/test_npc_stories.py`, `tests/test_villages.py`, `tests/test_village_life.py`, `tests/test_npc_routines.js`; layout versions 1/2, life 0/1, chunk village overlays through 3, swamp 1/2; preserve occupied player ground and moved visit keys | unported / R18 |
+| NPC roster/placement, villages/layout/life/swamp versions, saved routine paths/phase/timing, outdoor lanes/tavern, visits/stories/gifts/cooldowns | `npcs.py`, `villages.py`, `swamp_village.py`, `village_life.py` | `tests/test_npcs.py`, `tests/test_npc_stories.py`, `tests/test_villages.py`, `tests/test_village_life.py`, `tests/test_npc_routines.js`; layout versions 1/2, life 0/1, chunk village overlays through 3, swamp 1/2; preserve occupied player ground and moved visit keys | ordinary placement/layout/life private phase / R07 3b.iii.b.iii; swamp world metadata/visits remain 3b.iii.b.iv; NPC gameplay unported / R18 |
 | Town trade_offers IDs/targets/terms and completed_trades | `trading.py` | `tests/test_trading.py`; owner/target isolation, outgoing/incoming capacity checked atomically, stale offer cannot double reward | unported / R18 |
 | Quarry members/inside/positions, started/completed/gate_latched, rune sequence/solved/message, coins and keepsakes | `quests.py` | `tests/test_quests.py`, `tests/test_quests.js`; reconnect and departed participant reward eligibility | unported / R18 |
 | Courier members/inside/positions/checkpoints/hits/last_step, elapsed/completed/message, hazards derived | `lanterns.py` | `tests/test_lanterns.py`, `tests/test_lanterns.js`; two-player pause/resume, 0.25s elapsed clamp/0.05s hit slices, one-time reward | unported / R18 |

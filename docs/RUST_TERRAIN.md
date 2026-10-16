@@ -388,6 +388,38 @@ saved-first overlay integration and post-overlay neighbor water repair (3b.iii.c
 then activation/regrowth (3c). No performance comparison was run for this
 compatibility port.
 
+## Ordinary world metadata (slice 3b.iii.b.iii)
+
+`OrdinaryVillageMetadata::materialize(world_bytes)` independently copies the
+ordinary part of `ensure_villages`, ending explicitly before `swamp_village.ensure`.
+It refreshes original trader dialogue, chooses obstacle-safe villages in Python
+preferred/grid order and migrates layout/life metadata. Sizes 120/480/1920 and
+absent-offset 880 are supported. Saved building/road/NPC footprints, exact margins,
+starter exclusion, sequential NPC additions and final blocked markers match Python.
+Marker 0 layout expands as Python does; unknown future markers and malformed
+metadata reject even on no-op worlds. Independent worlds without shared_map and
+runtime `_chunks` managers reject explicitly; no automatic map conversion occurs.
+
+This private boundary retains exact source bytes, scalar lexemes, extensions,
+private quantities/credentials and object/list order. It neither alters imported
+snapshots nor exposes a public DTO, performs terrain reads, repairs routines/visits,
+updates caches or applies swamp geometry. Existing NPC gameplay is retained.
+105 complete actual Python ordinary-phase world pairs also check repeat behavior
+and raw JSON insertion order. Terrain-independent metadata rules use isolated
+fixtures; a real v7-generated record separately proves opaque terrain preservation.
+Typed saved seeds and terrain markers 1–7 survive without conversion or RNG draws.
+The fixed text catalog and frozen oracle independently verify against Python:
+
+```sh
+python3 rust/crates/lantern-host/tests/fixtures/terrain/generate_village_metadata.py --check
+```
+
+Next **3b.iii.b.iv** must port swamp ensure's bounds/obstacle metadata, home/ambient
+stops, routine repair and moved visit keys, with cache effects kept explicit.
+Then 3b.iii.c integrates all phases and post-overlay neighbor water repair; 3c
+retains lifecycle/resources/regrowth. This is not full metadata or R07 completion.
+Performance comparison was not run: no performance issue was investigated.
+
 ## Compatibility matrix and remaining work
 
 | Behavior | Coverage |
@@ -396,7 +428,7 @@ compatibility port.
 | Raw generator versions 1–7, legacy seeds/dimensions and unexplored nonstarter selection | Slice 2 complete; exact 226-record and RNG parity |
 | D05 byte seed material → compatible reference RNG draws | Complete; gameplay adoption/state serialization remain later work |
 | Authored starter ground/resources and new-world town sites/separation | Slices 3b.i–ii complete; 49 authored starter and 86 raw selection Python goldens |
-| Village/swamp placement and versioned overlays | 3b.iii.a ordinary and 3b.iii.b.i–ii legacy/organic swamp phases complete (150 + 43 + 100 Python pairs); obstacle-safe placement/world metadata migrations remaining |
+| Village/swamp placement and versioned overlays | 3b.iii.a ordinary and 3b.iii.b.i–ii legacy/organic swamp phases complete (150 + 43 + 100 Python pairs); 3b.iii.b.iii ordinary obstacle-safe placement/layout/life metadata complete (105 Python worlds); 3b.iii.b.iv swamp world metadata/visits remaining |
 | Post-overlay v7 tiny-water repair and boundaries | 3b.iii.c complete integration/neighbor repair remaining; raw and ordinary-phase boundaries covered |
 | Active/sleeping chunks, dirty resources, regrowth and clock catch-up | Slice 3c remaining |
 | Ordinary/independent/shared nonchunked terrain-only hydration and `generate_map` | Slice 3a complete; 35 real maps and six paired hydration goldens; gameplay preparation remains later stages |
