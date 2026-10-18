@@ -8,7 +8,7 @@ and cache rules are in [Backend](BACKEND.md#cached-zoomed-out-map).
 | 1     | Cached zoomed-out town overview    | Implemented              | Show the landscape and city sizes without refreshing animated scene detail.                                      |
 | 2     | Production line balancing          | Wood and grain implemented; fishing remains | Develop clear fishing chains with capped staffing and simple upgrades. |
 | 3     | Scalable villager pathfinding       | Host queue implemented; cache refinement and shared navigation remain | Keep movement responsive as villager counts and towns grow, with bounded routing work. |
-| 4     | Rust migration | R13 accounting/progression slices implemented; production actors, host integration and release acceptance remain open | Follow the [staged plan and prompts](RUST_MIGRATION.md), preserving playable checkpoints and saved worlds. |
+| 4     | Rust migration | R15 woodcutting slice implemented; processor actors, host integration and release acceptance remain open | Follow the [staged plan and prompts](RUST_MIGRATION.md), preserving playable checkpoints and saved worlds. |
 
 ## Rust migration
 
@@ -35,7 +35,11 @@ Base and top-tier grain accounting match Python under continuous-input assumptio
 R14's three slices implement experimental producer, hauler and merchant trips,
 market purchases/sales and cancellation/reload continuity; see the
 [R14 completion boundary](RUST_MIGRATION.md#r14-slice-3--merchants-purchases-sales-and-completion-audit).
-Production actors and population integration remain R15–R18; durable saves and
+R15 slice 1 implements experimental woodcutting claims, productive work/return/
+unload clocks, depletion events, tools/practice and pending-output recovery; see
+[its completion boundary](RUST_MIGRATION.md#r15-slice-1--woodcutters-and-resource-claims).
+Basic processors and advanced/workshop queues remain R15 slices 2–3; other
+production actors and population integration remain R16–R18; durable saves and
 playable host integration remain R19–R21.
 R11's integrated W2/W3 movement/accounting acceptance remains open; R19–R21 retain
 HTTP/save/snapshot integration and R23 retains complete W1–W6 acceptance. See the

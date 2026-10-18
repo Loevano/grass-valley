@@ -656,6 +656,33 @@ impl Ledger {
             Ok(())
         })
     }
+    /// A new gatherer takes responsibility for abandoned finished output. This
+    /// changes only physical pending ownership, never production or activity.
+    pub(crate) fn adopt_orphan_pending(
+        &mut self,
+        id: &BuildingId,
+        actor: &ActorId,
+    ) -> Result<(), Error> {
+        self.apply(|l| {
+            l.actor(actor)?;
+            if l.stores.iter().any(|s| {
+                &s.id != id && s.pending.contains_key(&PendingOwner::Worker(actor.clone()))
+            }) {
+                return Err(Error::DuplicateIdentity);
+            }
+            let s = l.store_mut(id)?;
+            if let Some(orphan) = s.pending.remove(&PendingOwner::Orphan) {
+                let target = s
+                    .pending
+                    .entry(PendingOwner::Worker(actor.clone()))
+                    .or_default();
+                for (k, n) in orphan.ordered_entries() {
+                    target.credit(k.clone(), *n)?;
+                }
+            }
+            Ok(())
+        })
+    }
     pub fn orphan_pending(&mut self, id: &BuildingId, actor: &ActorId) -> Result<(), Error> {
         self.apply(|l| {
             l.actor(actor)?;

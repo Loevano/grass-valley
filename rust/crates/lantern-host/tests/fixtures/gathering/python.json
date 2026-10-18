@@ -1,0 +1,984 @@
+{
+  "rates": [
+    {
+      "skill": 0,
+      "talent": 0,
+      "tool": null,
+      "elapsed": 3,
+      "room": 50,
+      "supply": 8,
+      "amount": 0.75,
+      "practice": 0.08
+    },
+    {
+      "skill": 0,
+      "talent": 0,
+      "tool": null,
+      "elapsed": 0.2,
+      "room": 50,
+      "supply": 8,
+      "amount": 0.05000000000000001,
+      "practice": 0.005
+    },
+    {
+      "skill": 0,
+      "talent": 0,
+      "tool": null,
+      "elapsed": 3,
+      "room": 0.1,
+      "supply": 8,
+      "amount": 0.1,
+      "practice": 0.08
+    },
+    {
+      "skill": 0,
+      "talent": 0,
+      "tool": null,
+      "elapsed": 3,
+      "room": 50,
+      "supply": 0.05,
+      "amount": 0.05,
+      "practice": 0.08
+    },
+    {
+      "skill": 0,
+      "talent": 0,
+      "tool": null,
+      "elapsed": 3,
+      "room": 0,
+      "supply": 8,
+      "amount": 0,
+      "practice": 0
+    },
+    {
+      "skill": 0,
+      "talent": 0,
+      "tool": "crafted_axe",
+      "elapsed": 3,
+      "room": 50,
+      "supply": 8,
+      "amount": 0.9375,
+      "practice": 0.08
+    },
+    {
+      "skill": 0,
+      "talent": 0,
+      "tool": "crafted_axe",
+      "elapsed": 0.2,
+      "room": 50,
+      "supply": 8,
+      "amount": 0.06250000000000001,
+      "practice": 0.005
+    },
+    {
+      "skill": 0,
+      "talent": 0,
+      "tool": "crafted_axe",
+      "elapsed": 3,
+      "room": 0.1,
+      "supply": 8,
+      "amount": 0.1,
+      "practice": 0.08
+    },
+    {
+      "skill": 0,
+      "talent": 0,
+      "tool": "crafted_axe",
+      "elapsed": 3,
+      "room": 50,
+      "supply": 0.05,
+      "amount": 0.05,
+      "practice": 0.08
+    },
+    {
+      "skill": 0,
+      "talent": 0,
+      "tool": "crafted_axe",
+      "elapsed": 3,
+      "room": 0,
+      "supply": 8,
+      "amount": 0,
+      "practice": 0
+    },
+    {
+      "skill": 0,
+      "talent": 0,
+      "tool": "fine_axe",
+      "elapsed": 3,
+      "room": 50,
+      "supply": 8,
+      "amount": 0.9375,
+      "practice": 0.08
+    },
+    {
+      "skill": 0,
+      "talent": 0,
+      "tool": "fine_axe",
+      "elapsed": 0.2,
+      "room": 50,
+      "supply": 8,
+      "amount": 0.06250000000000001,
+      "practice": 0.005
+    },
+    {
+      "skill": 0,
+      "talent": 0,
+      "tool": "fine_axe",
+      "elapsed": 3,
+      "room": 0.1,
+      "supply": 8,
+      "amount": 0.1,
+      "practice": 0.08
+    },
+    {
+      "skill": 0,
+      "talent": 0,
+      "tool": "fine_axe",
+      "elapsed": 3,
+      "room": 50,
+      "supply": 0.05,
+      "amount": 0.05,
+      "practice": 0.08
+    },
+    {
+      "skill": 0,
+      "talent": 0,
+      "tool": "fine_axe",
+      "elapsed": 3,
+      "room": 0,
+      "supply": 8,
+      "amount": 0,
+      "practice": 0
+    },
+    {
+      "skill": 0,
+      "talent": 0,
+      "tool": "steel_axe",
+      "elapsed": 3,
+      "room": 50,
+      "supply": 8,
+      "amount": 1.125,
+      "practice": 0.08
+    },
+    {
+      "skill": 0,
+      "talent": 0,
+      "tool": "steel_axe",
+      "elapsed": 0.2,
+      "room": 50,
+      "supply": 8,
+      "amount": 0.07500000000000001,
+      "practice": 0.005
+    },
+    {
+      "skill": 0,
+      "talent": 0,
+      "tool": "steel_axe",
+      "elapsed": 3,
+      "room": 0.1,
+      "supply": 8,
+      "amount": 0.1,
+      "practice": 0.08
+    },
+    {
+      "skill": 0,
+      "talent": 0,
+      "tool": "steel_axe",
+      "elapsed": 3,
+      "room": 50,
+      "supply": 0.05,
+      "amount": 0.05,
+      "practice": 0.08
+    },
+    {
+      "skill": 0,
+      "talent": 0,
+      "tool": "steel_axe",
+      "elapsed": 3,
+      "room": 0,
+      "supply": 8,
+      "amount": 0,
+      "practice": 0
+    },
+    {
+      "skill": 0,
+      "talent": 0,
+      "tool": "masterwork_axe",
+      "elapsed": 3,
+      "room": 50,
+      "supply": 8,
+      "amount": 1.3125,
+      "practice": 0.08
+    },
+    {
+      "skill": 0,
+      "talent": 0,
+      "tool": "masterwork_axe",
+      "elapsed": 0.2,
+      "room": 50,
+      "supply": 8,
+      "amount": 0.08750000000000002,
+      "practice": 0.005
+    },
+    {
+      "skill": 0,
+      "talent": 0,
+      "tool": "masterwork_axe",
+      "elapsed": 3,
+      "room": 0.1,
+      "supply": 8,
+      "amount": 0.1,
+      "practice": 0.08
+    },
+    {
+      "skill": 0,
+      "talent": 0,
+      "tool": "masterwork_axe",
+      "elapsed": 3,
+      "room": 50,
+      "supply": 0.05,
+      "amount": 0.05,
+      "practice": 0.08
+    },
+    {
+      "skill": 0,
+      "talent": 0,
+      "tool": "masterwork_axe",
+      "elapsed": 3,
+      "room": 0,
+      "supply": 8,
+      "amount": 0,
+      "practice": 0
+    },
+    {
+      "skill": 0,
+      "talent": 0,
+      "tool": "fine_sickle",
+      "elapsed": 3,
+      "room": 50,
+      "supply": 8,
+      "amount": 0.75,
+      "practice": 0.08
+    },
+    {
+      "skill": 0,
+      "talent": 0,
+      "tool": "fine_sickle",
+      "elapsed": 0.2,
+      "room": 50,
+      "supply": 8,
+      "amount": 0.05000000000000001,
+      "practice": 0.005
+    },
+    {
+      "skill": 0,
+      "talent": 0,
+      "tool": "fine_sickle",
+      "elapsed": 3,
+      "room": 0.1,
+      "supply": 8,
+      "amount": 0.1,
+      "practice": 0.08
+    },
+    {
+      "skill": 0,
+      "talent": 0,
+      "tool": "fine_sickle",
+      "elapsed": 3,
+      "room": 50,
+      "supply": 0.05,
+      "amount": 0.05,
+      "practice": 0.08
+    },
+    {
+      "skill": 0,
+      "talent": 0,
+      "tool": "fine_sickle",
+      "elapsed": 3,
+      "room": 0,
+      "supply": 8,
+      "amount": 0,
+      "practice": 0
+    },
+    {
+      "skill": 20,
+      "talent": 1,
+      "tool": null,
+      "elapsed": 3,
+      "room": 50,
+      "supply": 8,
+      "amount": 1.875,
+      "practice": 20.1
+    },
+    {
+      "skill": 20,
+      "talent": 1,
+      "tool": null,
+      "elapsed": 0.2,
+      "room": 50,
+      "supply": 8,
+      "amount": 0.12500000000000003,
+      "practice": 20.007
+    },
+    {
+      "skill": 20,
+      "talent": 1,
+      "tool": null,
+      "elapsed": 3,
+      "room": 0.1,
+      "supply": 8,
+      "amount": 0.1,
+      "practice": 20.1
+    },
+    {
+      "skill": 20,
+      "talent": 1,
+      "tool": null,
+      "elapsed": 3,
+      "room": 50,
+      "supply": 0.05,
+      "amount": 0.05,
+      "practice": 20.1
+    },
+    {
+      "skill": 20,
+      "talent": 1,
+      "tool": null,
+      "elapsed": 3,
+      "room": 0,
+      "supply": 8,
+      "amount": 0,
+      "practice": 20
+    },
+    {
+      "skill": 20,
+      "talent": 1,
+      "tool": "crafted_axe",
+      "elapsed": 3,
+      "room": 50,
+      "supply": 8,
+      "amount": 2.34375,
+      "practice": 20.1
+    },
+    {
+      "skill": 20,
+      "talent": 1,
+      "tool": "crafted_axe",
+      "elapsed": 0.2,
+      "room": 50,
+      "supply": 8,
+      "amount": 0.15625000000000003,
+      "practice": 20.007
+    },
+    {
+      "skill": 20,
+      "talent": 1,
+      "tool": "crafted_axe",
+      "elapsed": 3,
+      "room": 0.1,
+      "supply": 8,
+      "amount": 0.1,
+      "practice": 20.1
+    },
+    {
+      "skill": 20,
+      "talent": 1,
+      "tool": "crafted_axe",
+      "elapsed": 3,
+      "room": 50,
+      "supply": 0.05,
+      "amount": 0.05,
+      "practice": 20.1
+    },
+    {
+      "skill": 20,
+      "talent": 1,
+      "tool": "crafted_axe",
+      "elapsed": 3,
+      "room": 0,
+      "supply": 8,
+      "amount": 0,
+      "practice": 20
+    },
+    {
+      "skill": 20,
+      "talent": 1,
+      "tool": "fine_axe",
+      "elapsed": 3,
+      "room": 50,
+      "supply": 8,
+      "amount": 2.34375,
+      "practice": 20.1
+    },
+    {
+      "skill": 20,
+      "talent": 1,
+      "tool": "fine_axe",
+      "elapsed": 0.2,
+      "room": 50,
+      "supply": 8,
+      "amount": 0.15625000000000003,
+      "practice": 20.007
+    },
+    {
+      "skill": 20,
+      "talent": 1,
+      "tool": "fine_axe",
+      "elapsed": 3,
+      "room": 0.1,
+      "supply": 8,
+      "amount": 0.1,
+      "practice": 20.1
+    },
+    {
+      "skill": 20,
+      "talent": 1,
+      "tool": "fine_axe",
+      "elapsed": 3,
+      "room": 50,
+      "supply": 0.05,
+      "amount": 0.05,
+      "practice": 20.1
+    },
+    {
+      "skill": 20,
+      "talent": 1,
+      "tool": "fine_axe",
+      "elapsed": 3,
+      "room": 0,
+      "supply": 8,
+      "amount": 0,
+      "practice": 20
+    },
+    {
+      "skill": 20,
+      "talent": 1,
+      "tool": "steel_axe",
+      "elapsed": 3,
+      "room": 50,
+      "supply": 8,
+      "amount": 2.8125,
+      "practice": 20.1
+    },
+    {
+      "skill": 20,
+      "talent": 1,
+      "tool": "steel_axe",
+      "elapsed": 0.2,
+      "room": 50,
+      "supply": 8,
+      "amount": 0.18750000000000003,
+      "practice": 20.007
+    },
+    {
+      "skill": 20,
+      "talent": 1,
+      "tool": "steel_axe",
+      "elapsed": 3,
+      "room": 0.1,
+      "supply": 8,
+      "amount": 0.1,
+      "practice": 20.1
+    },
+    {
+      "skill": 20,
+      "talent": 1,
+      "tool": "steel_axe",
+      "elapsed": 3,
+      "room": 50,
+      "supply": 0.05,
+      "amount": 0.05,
+      "practice": 20.1
+    },
+    {
+      "skill": 20,
+      "talent": 1,
+      "tool": "steel_axe",
+      "elapsed": 3,
+      "room": 0,
+      "supply": 8,
+      "amount": 0,
+      "practice": 20
+    },
+    {
+      "skill": 20,
+      "talent": 1,
+      "tool": "masterwork_axe",
+      "elapsed": 3,
+      "room": 50,
+      "supply": 8,
+      "amount": 3.28125,
+      "practice": 20.1
+    },
+    {
+      "skill": 20,
+      "talent": 1,
+      "tool": "masterwork_axe",
+      "elapsed": 0.2,
+      "room": 50,
+      "supply": 8,
+      "amount": 0.21875000000000006,
+      "practice": 20.007
+    },
+    {
+      "skill": 20,
+      "talent": 1,
+      "tool": "masterwork_axe",
+      "elapsed": 3,
+      "room": 0.1,
+      "supply": 8,
+      "amount": 0.1,
+      "practice": 20.1
+    },
+    {
+      "skill": 20,
+      "talent": 1,
+      "tool": "masterwork_axe",
+      "elapsed": 3,
+      "room": 50,
+      "supply": 0.05,
+      "amount": 0.05,
+      "practice": 20.1
+    },
+    {
+      "skill": 20,
+      "talent": 1,
+      "tool": "masterwork_axe",
+      "elapsed": 3,
+      "room": 0,
+      "supply": 8,
+      "amount": 0,
+      "practice": 20
+    },
+    {
+      "skill": 20,
+      "talent": 1,
+      "tool": "fine_sickle",
+      "elapsed": 3,
+      "room": 50,
+      "supply": 8,
+      "amount": 1.875,
+      "practice": 20.1
+    },
+    {
+      "skill": 20,
+      "talent": 1,
+      "tool": "fine_sickle",
+      "elapsed": 0.2,
+      "room": 50,
+      "supply": 8,
+      "amount": 0.12500000000000003,
+      "practice": 20.007
+    },
+    {
+      "skill": 20,
+      "talent": 1,
+      "tool": "fine_sickle",
+      "elapsed": 3,
+      "room": 0.1,
+      "supply": 8,
+      "amount": 0.1,
+      "practice": 20.1
+    },
+    {
+      "skill": 20,
+      "talent": 1,
+      "tool": "fine_sickle",
+      "elapsed": 3,
+      "room": 50,
+      "supply": 0.05,
+      "amount": 0.05,
+      "practice": 20.1
+    },
+    {
+      "skill": 20,
+      "talent": 1,
+      "tool": "fine_sickle",
+      "elapsed": 3,
+      "room": 0,
+      "supply": 8,
+      "amount": 0,
+      "practice": 20
+    },
+    {
+      "skill": 40,
+      "talent": -1,
+      "tool": null,
+      "elapsed": 3,
+      "room": 50,
+      "supply": 8,
+      "amount": 1.6875,
+      "practice": 40.06
+    },
+    {
+      "skill": 40,
+      "talent": -1,
+      "tool": null,
+      "elapsed": 0.2,
+      "room": 50,
+      "supply": 8,
+      "amount": 0.11250000000000002,
+      "practice": 40.004
+    },
+    {
+      "skill": 40,
+      "talent": -1,
+      "tool": null,
+      "elapsed": 3,
+      "room": 0.1,
+      "supply": 8,
+      "amount": 0.1,
+      "practice": 40.06
+    },
+    {
+      "skill": 40,
+      "talent": -1,
+      "tool": null,
+      "elapsed": 3,
+      "room": 50,
+      "supply": 0.05,
+      "amount": 0.05,
+      "practice": 40.06
+    },
+    {
+      "skill": 40,
+      "talent": -1,
+      "tool": null,
+      "elapsed": 3,
+      "room": 0,
+      "supply": 8,
+      "amount": 0,
+      "practice": 40
+    },
+    {
+      "skill": 40,
+      "talent": -1,
+      "tool": "crafted_axe",
+      "elapsed": 3,
+      "room": 50,
+      "supply": 8,
+      "amount": 2.109375,
+      "practice": 40.06
+    },
+    {
+      "skill": 40,
+      "talent": -1,
+      "tool": "crafted_axe",
+      "elapsed": 0.2,
+      "room": 50,
+      "supply": 8,
+      "amount": 0.14062500000000003,
+      "practice": 40.004
+    },
+    {
+      "skill": 40,
+      "talent": -1,
+      "tool": "crafted_axe",
+      "elapsed": 3,
+      "room": 0.1,
+      "supply": 8,
+      "amount": 0.1,
+      "practice": 40.06
+    },
+    {
+      "skill": 40,
+      "talent": -1,
+      "tool": "crafted_axe",
+      "elapsed": 3,
+      "room": 50,
+      "supply": 0.05,
+      "amount": 0.05,
+      "practice": 40.06
+    },
+    {
+      "skill": 40,
+      "talent": -1,
+      "tool": "crafted_axe",
+      "elapsed": 3,
+      "room": 0,
+      "supply": 8,
+      "amount": 0,
+      "practice": 40
+    },
+    {
+      "skill": 40,
+      "talent": -1,
+      "tool": "fine_axe",
+      "elapsed": 3,
+      "room": 50,
+      "supply": 8,
+      "amount": 2.109375,
+      "practice": 40.06
+    },
+    {
+      "skill": 40,
+      "talent": -1,
+      "tool": "fine_axe",
+      "elapsed": 0.2,
+      "room": 50,
+      "supply": 8,
+      "amount": 0.14062500000000003,
+      "practice": 40.004
+    },
+    {
+      "skill": 40,
+      "talent": -1,
+      "tool": "fine_axe",
+      "elapsed": 3,
+      "room": 0.1,
+      "supply": 8,
+      "amount": 0.1,
+      "practice": 40.06
+    },
+    {
+      "skill": 40,
+      "talent": -1,
+      "tool": "fine_axe",
+      "elapsed": 3,
+      "room": 50,
+      "supply": 0.05,
+      "amount": 0.05,
+      "practice": 40.06
+    },
+    {
+      "skill": 40,
+      "talent": -1,
+      "tool": "fine_axe",
+      "elapsed": 3,
+      "room": 0,
+      "supply": 8,
+      "amount": 0,
+      "practice": 40
+    },
+    {
+      "skill": 40,
+      "talent": -1,
+      "tool": "steel_axe",
+      "elapsed": 3,
+      "room": 50,
+      "supply": 8,
+      "amount": 2.53125,
+      "practice": 40.06
+    },
+    {
+      "skill": 40,
+      "talent": -1,
+      "tool": "steel_axe",
+      "elapsed": 0.2,
+      "room": 50,
+      "supply": 8,
+      "amount": 0.16875,
+      "practice": 40.004
+    },
+    {
+      "skill": 40,
+      "talent": -1,
+      "tool": "steel_axe",
+      "elapsed": 3,
+      "room": 0.1,
+      "supply": 8,
+      "amount": 0.1,
+      "practice": 40.06
+    },
+    {
+      "skill": 40,
+      "talent": -1,
+      "tool": "steel_axe",
+      "elapsed": 3,
+      "room": 50,
+      "supply": 0.05,
+      "amount": 0.05,
+      "practice": 40.06
+    },
+    {
+      "skill": 40,
+      "talent": -1,
+      "tool": "steel_axe",
+      "elapsed": 3,
+      "room": 0,
+      "supply": 8,
+      "amount": 0,
+      "practice": 40
+    },
+    {
+      "skill": 40,
+      "talent": -1,
+      "tool": "masterwork_axe",
+      "elapsed": 3,
+      "room": 50,
+      "supply": 8,
+      "amount": 2.953125,
+      "practice": 40.06
+    },
+    {
+      "skill": 40,
+      "talent": -1,
+      "tool": "masterwork_axe",
+      "elapsed": 0.2,
+      "room": 50,
+      "supply": 8,
+      "amount": 0.19687500000000005,
+      "practice": 40.004
+    },
+    {
+      "skill": 40,
+      "talent": -1,
+      "tool": "masterwork_axe",
+      "elapsed": 3,
+      "room": 0.1,
+      "supply": 8,
+      "amount": 0.1,
+      "practice": 40.06
+    },
+    {
+      "skill": 40,
+      "talent": -1,
+      "tool": "masterwork_axe",
+      "elapsed": 3,
+      "room": 50,
+      "supply": 0.05,
+      "amount": 0.05,
+      "practice": 40.06
+    },
+    {
+      "skill": 40,
+      "talent": -1,
+      "tool": "masterwork_axe",
+      "elapsed": 3,
+      "room": 0,
+      "supply": 8,
+      "amount": 0,
+      "practice": 40
+    },
+    {
+      "skill": 40,
+      "talent": -1,
+      "tool": "fine_sickle",
+      "elapsed": 3,
+      "room": 50,
+      "supply": 8,
+      "amount": 1.6875,
+      "practice": 40.06
+    },
+    {
+      "skill": 40,
+      "talent": -1,
+      "tool": "fine_sickle",
+      "elapsed": 0.2,
+      "room": 50,
+      "supply": 8,
+      "amount": 0.11250000000000002,
+      "practice": 40.004
+    },
+    {
+      "skill": 40,
+      "talent": -1,
+      "tool": "fine_sickle",
+      "elapsed": 3,
+      "room": 0.1,
+      "supply": 8,
+      "amount": 0.1,
+      "practice": 40.06
+    },
+    {
+      "skill": 40,
+      "talent": -1,
+      "tool": "fine_sickle",
+      "elapsed": 3,
+      "room": 50,
+      "supply": 0.05,
+      "amount": 0.05,
+      "practice": 40.06
+    },
+    {
+      "skill": 40,
+      "talent": -1,
+      "tool": "fine_sickle",
+      "elapsed": 3,
+      "room": 0,
+      "supply": 8,
+      "amount": 0,
+      "practice": 40
+    }
+  ],
+  "clocks": [
+    {
+      "phase": "working",
+      "clock": 0,
+      "elapsed": 3,
+      "finished": false,
+      "remaining": 0,
+      "result_phase": "working",
+      "result_clock": 3
+    },
+    {
+      "phase": "working",
+      "clock": 3,
+      "elapsed": 0.2,
+      "finished": false,
+      "remaining": 0,
+      "result_phase": "returning",
+      "result_clock": 0
+    },
+    {
+      "phase": "depositing",
+      "clock": 0.4,
+      "elapsed": 3,
+      "finished": true,
+      "remaining": 2.75,
+      "result_phase": "idle",
+      "result_clock": 0
+    },
+    {
+      "phase": "depositing",
+      "clock": 0,
+      "elapsed": 0.2,
+      "finished": false,
+      "remaining": 0,
+      "result_phase": "depositing",
+      "result_clock": 0.2
+    }
+  ],
+  "accounting": [
+    {
+      "op": "work",
+      "free": 0,
+      "pending": 0.25,
+      "orphan": 0,
+      "worker": 0,
+      "produced": 0.25
+    },
+    {
+      "op": "cancel",
+      "free": 0,
+      "pending": 0.25,
+      "orphan": 0.25,
+      "worker": 0,
+      "produced": 0.25
+    },
+    {
+      "op": "replacement",
+      "free": 0,
+      "pending": 0.5,
+      "orphan": 0,
+      "worker": 0.5,
+      "produced": 0.5
+    },
+    {
+      "op": "dropoff",
+      "free": 0.5,
+      "pending": 0.0,
+      "orphan": 0,
+      "worker": 0,
+      "produced": 0.5
+    },
+    {
+      "op": "retry",
+      "free": 0.5,
+      "pending": 0.0,
+      "orphan": 0,
+      "worker": 0,
+      "produced": 0.5
+    }
+  ]
+}

@@ -8,9 +8,9 @@ including upgrades, linked groups, helpers and offline reload.
 R13 slices 1–3 implement reviewed catalogs, fractional quantities, a single-owner
 resource ledger and recipe/personal progression/equipment/hall rule evaluation at
 the experimental offline boundary. R14 slices 1–3 implement producer, hauler and
-merchant trips plus market execution over movement and accounting. Production
-actors and playable integration remain in R15–R21; complete W1–W6 acceptance
-remains R23.
+merchant trips plus market execution over movement and accounting. R15 slice 1
+implements offline woodcutters and resource claims. Remaining production actors
+and playable integration remain in R15–R21; complete W1–W6 acceptance remains R23.
 Integrated W2/W3 movement/accounting acceptance remains open. R08 spatial
 rules and founder movement is complete as an experimental private-copy foundation. R07 includes saved-first terrain versions 1–7,
 nonchunked maps, authored starter/town sites, ordinary/swamp metadata and overlays,
@@ -244,7 +244,7 @@ only after work is performed. Keep unfinished stages visible in the roadmap.
 | R12 | Construction and building operations | R11 | Slices 1–3 implemented at explicit synthetic-model boundary; full economy/resident rules, durable/public host integration and release acceptance remain in R13–R23; completion boundary below |
 | R13 | Resource ledger, storage, and progression rules | R12 | Slices 1–3 implemented at offline model boundary: reviewed catalogs, ledger/storage/reservations/caps/flows and progression rules; actor/save/HTTP integration and full W1–W6 acceptance remain R14–R23 |
 | R14 | Hauling, delivery, and merchant trips | R13 | Slices 1–3 implemented at the experimental offline boundary: producer/hauler/merchant trips, thresholds, purchases, sales and recovery; integrated production, durable saves and playable host remain R15–R23 |
-| R15 | Gathering and processing professions | R14 | Not started |
+| R15 | Gathering and processing professions | R14 | Slice 1 implemented at the experimental offline boundary: woodcutters, tree claims, productive clocks and ledger output; basic processors and advanced/workshop queues remain slices 2–3 |
 | R16 | Farming and orchards | R15 | Not started |
 | R17 | Fishing, boats, animals, and horses | R16 | Not started |
 | R18 | Residents, villages, trade, and adventures | R17 | Not started |
@@ -3228,7 +3228,7 @@ This completes all three R14 code slices at the experimental offline model
 boundary. `logistics/market.rs` owns ordered trade rules, merchant purchase progress
 and update receipts. Sale trips reuse the existing trip/movement/cargo owner;
 `Ledger` owns all goods, coin flows and the cumulative `market_sales` quantity.
-Python remains the playable default. The next migration slice is R15 slice 1.
+Python remains the playable default. R15 slice 1 follows this completion boundary.
 
 - Paired buy/sell thresholds are configured atomically with a strict gap; the
   legacy sale editor retains its cap, enabled flag, batch (1–10) and strictness.
@@ -3311,6 +3311,81 @@ skills/tools, and workshop orders. Do not change balance or silently omit advanc
 recipes. Compare targeted rates and interruption traces, update coverage/progress,
 run applicable checks, and commit the completed slice.
 ```
+
+### R15 slice 1 — Woodcutters and resource claims
+
+Implemented in experimental `lantern-host::gathering`, using R11 `Town` movement,
+R13 personal rules and the single-owner resource ledger. Python stays the playable
+default. This completes slice 1 at the offline admitted-facts boundary; the next
+slice is R15 slice 2. No processor actor or workshop queue is promoted by this slice.
+
+- Stable actor/building identities own separate tree-coordinate claims across
+  overlapping camps. Candidates retain map-order distance ties and the ten-tile
+  Manhattan reach. Active and pending targets survive nearer alternatives;
+  unreachable empty targets can be replaced. Reassignment, removed/moved/upgrading
+  camps and cancellation release claims while preserving finished goods. New
+  gatherers adopt orphaned output without recording production or practice twice.
+- Each actor uses the existing work phases and clock: 3.2 seconds chopping and
+  0.65 seconds unloading. Route-pending, blocked, return travel and unloading do
+  not produce or train. Confirmed arrival spends only its remaining simulation
+  time on work. Work-boundary and completed-unload outcomes return unused time
+  explicitly, allowing the caller to admit and continue the next leg immediately.
+  Waiting discards elapsed time rather than banking future production.
+- Productive output preserves 0.75 wood per three active seconds, existing skill
+  tiers/talents, and crafted/fine/steel/masterwork axe bonuses. Camp storage
+  upgrades add capacity, never output multipliers. Current tree supply, local
+  capacity and town production caps clip output; only actual wood reaches pending
+  ownership, milestones and minute activity. Drop-off makes it spendable once.
+  Cancellation leaves finished goods in the original ledger store's orphan pool,
+  including when its model endpoint is relocated/deleted, pending later salvage.
+- `Trees` admits actual supply in authoritative map order. Consumption removes
+  depleted trees and returns a depletion tile; it does not invent a second renewal
+  clock. The caller must commit remaining supply and depletion/stump changes to
+  its R07 landscape with the ledger transaction, retaining species and existing
+  biome/regrowth rules. Removed trees and saved blocked workers with cargo finish
+  their original return before selecting another target.
+- Versioned v1 claim JSON validates town/actor identity, unique claims, reach and
+  phase clocks against independently restored model/ledger facts. Stale assignments
+  remain cancellable after reload without overriding a new task. Duplicate claims
+  in this new DTO are rejected; legacy duplicate-target normalization remains a
+  later ordinary-save adapter responsibility. No cargo is mirrored in `Town`.
+  Failed work/accounting or assignment admission commits no partial owner changes.
+
+Evidence: `tests/gathering.rs` has 15 focused tests covering competing workers,
+shared/overlapping camps, pending/blocked travel, partial arrival, target retention
+and replacement, supply depletion, removed/unreachable cargo returns, caps/full
+buffers, all four active-phase reloads, cancellation after move/delete/reassignment/
+upgrade and reload, orphan adoption, unused-time continuation and overflow rollback.
+A stalled wood chain resumes when downstream reservations free its production cap.
+Frozen Python evidence compares 90 rate/practice cases across six tool configurations,
+three skill/talent combinations, fractional work, caps and depleted supply; four
+real movement-clock cases; and five cancellation/replacement/drop-off accounting
+snapshots. Quantities/clocks use an absolute 1e-9 comparison tolerance; these practice
+fixtures match Python's existing three-decimal per-invocation rounding. Verify with
+`python3 rust/crates/lantern-host/tests/fixtures/gathering/generate.py --check`.
+
+Completion boundary: the caller still owns navigation admission/pumping, roster
+assignment ordering, consuming returned time and grouping work/practice updates.
+These are explicit offline event APIs, not full Python-tick, browser-playback or
+playable-host integration acceptance. R19 must persist claims, model phases, skills,
+ledger buffers/history and terrain supply in one generation. R20–21 own live world
+adapters; R23 retains integrated W2/W3 and full W1–W6 acceptance. Producer/hauler
+trip gates remain R14-owned. Remaining R15 slices must implement timed processing,
+input reservations, recipe changes, output limits and request lifecycles for the
+matrix's tannery, mine, smelter, saddler, steelworks, tradehouse, bakery, butcher,
+sawpit, mill, smokehouse, workshop and fish-pond recipe families, including every
+advanced recipe and species-preserving smoking. Fishing/livestock-specific actor
+clocks remain R17 as recorded by the matrix.
+
+Performance comparisons were not run: this is a behavior port, with no performance
+investigation, optimization or performance claim.
+
+Validation: `python3 tools/check.py` selected only `rust:lantern-host`;
+formatting, locked offline package tests/doc tests and all-target Clippy with
+warnings denied passed (3/3 commands). Python gathering fixture verification and
+`git diff --check` passed. Report: `performance-results/20261018-202538/report.md`.
+
+Commit message: `feat: port Rust woodcutters and tree claims`.
 
 ## R16 — Farming and orchards
 

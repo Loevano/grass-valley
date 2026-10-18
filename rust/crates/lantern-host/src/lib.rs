@@ -16,6 +16,7 @@
 
 pub mod building;
 pub mod dto;
+pub mod gathering;
 pub mod legacy;
 pub mod logistics;
 pub mod navigation;
