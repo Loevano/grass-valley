@@ -537,3 +537,58 @@ fn cargo_preserves_named_fractional_goods_and_rejects_ambiguous_keys() {
         1
     );
 }
+
+#[test]
+fn work_followers_share_confirmed_pose_without_copying_identity_cargo_or_routes() {
+    let mut f = fixture();
+    let follower_cargo =
+        Cargo::from_entries([("trout".into(), Quantity::new(2.).unwrap())]).unwrap();
+    f.town.set_cargo(&f.other, follower_cargo.clone()).unwrap();
+    f.town.set_task(&f.other, returning(&f)).unwrap();
+    let stale = f
+        .town
+        .request_route(&f.other, Destination::Building(f.workplace.clone()), NAV)
+        .unwrap();
+    let leader = begin(&mut f);
+    f.town
+        .accept_route(
+            &f.worker,
+            &leader,
+            NAV,
+            RouteOutcome::Ready(vec![position(9., 3.)]),
+        )
+        .unwrap();
+    f.town
+        .advance_travel(&f.worker, Seconds::new(0.1).unwrap(), 100, |_, _| {
+            Some(lantern_core::travel::Speed::new(1.8).unwrap())
+        })
+        .unwrap();
+    let before = f.town.actor(&f.worker).unwrap().state().clone();
+    let playback = f.town.actor(&f.worker).unwrap().confirmed_playback();
+    f.town.follow_work_actor(&f.other, &f.worker).unwrap();
+    let other = f.town.actor(&f.other).unwrap();
+    assert_eq!(other.state().id, f.other);
+    assert_eq!(other.state().cargo, follower_cargo);
+    assert_eq!(other.state().position, before.position);
+    assert_eq!(other.state().facing, before.facing);
+    assert_eq!(other.state().task, before.task);
+    assert_eq!(other.state().travel, before.travel);
+    assert_eq!(other.confirmed_playback(), playback);
+    assert!(matches!(other.route(), RouteState::NotRequested));
+    assert_eq!(f.town.actor(&f.worker).unwrap().state(), &before);
+    assert_eq!(
+        f.town
+            .accept_route(&f.other, &stale, NAV, RouteOutcome::Arrived),
+        Err(ModelError::StaleRoute)
+    );
+}
+#[test]
+fn a_non_work_leader_cannot_replace_a_followers_task() {
+    let mut f = fixture();
+    let before = f.town.clone();
+    assert_eq!(
+        f.town.follow_work_actor(&f.other, &f.worker),
+        Err(ModelError::NoTask)
+    );
+    assert_eq!(f.town, before);
+}

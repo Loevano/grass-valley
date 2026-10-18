@@ -648,6 +648,30 @@ impl Town {
         Ok(())
     }
 
+    /// A subsystem-authorized crew member shares one leader's confirmed work
+    /// voyage. Identity, cargo and route generations remain the follower's; old
+    /// route results are invalidated. Only the leader is independently routed.
+    pub fn follow_work_actor(
+        &mut self,
+        follower: &ActorId,
+        leader: &ActorId,
+    ) -> Result<(), ModelError> {
+        let source = self.actor(leader)?.clone();
+        if !matches!(source.state.task, Task::Work { .. }) {
+            return Err(ModelError::NoTask);
+        }
+        if follower == leader {
+            return Ok(());
+        }
+        self.restore_task_intent(follower, source.state.task, source.state.travel)?;
+        let index = self.actor_index(follower)?;
+        let target = &mut self.actors[index];
+        target.state.position = source.state.position;
+        target.state.facing = source.state.facing;
+        target.playback = source.playback;
+        Ok(())
+    }
+
     /// Rules choose the task's next goal/arrival policy; R09–R11 validate access
     /// and paths. The request captures identity, origin, goal and generations.
     pub fn request_route(

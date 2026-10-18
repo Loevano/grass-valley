@@ -683,6 +683,63 @@ impl Ledger {
             Ok(())
         })
     }
+    /// Adopt only the fish that fits a shared boat hold, preserving species and
+    /// insertion order. This transfers ownership without production or activity.
+    pub(crate) fn adopt_boat_orphans(
+        &mut self,
+        id: &BuildingId,
+        actor: &ActorId,
+        limit: Quantity,
+    ) -> Result<(), Error> {
+        self.apply(|ledger| {
+            ledger.actor(actor)?;
+            if ledger.stores.iter().any(|s| {
+                &s.id != id && s.pending.contains_key(&PendingOwner::Worker(actor.clone()))
+            }) {
+                return Err(Error::DuplicateIdentity);
+            }
+            let store = ledger.store_mut(id)?;
+            let Some(orphan) = store.pending.get(&PendingOwner::Orphan) else {
+                return Ok(());
+            };
+            let mut room = limit.get();
+            let mut adopted = Stock::default();
+            for (key, n) in orphan.ordered_entries() {
+                if super::public_catalog()["fish"][key.as_str()].is_object() {
+                    let take = n.get().min(room);
+                    if take > 0. {
+                        adopted.credit(key.clone(), q(take))?;
+                        room -= take;
+                    }
+                }
+            }
+            store
+                .pending
+                .get_mut(&PendingOwner::Orphan)
+                .unwrap()
+                .spend(&adopted)?;
+            let remaining = store.pending[&PendingOwner::Orphan]
+                .ordered_entries()
+                .filter(|(_, n)| n.get() > 0.)
+                .map(|(k, n)| (k.clone(), *n))
+                .collect::<Vec<_>>();
+            if remaining.is_empty() {
+                store.pending.remove(&PendingOwner::Orphan);
+            } else {
+                store
+                    .pending
+                    .insert(PendingOwner::Orphan, Stock::from_entries(remaining)?);
+            }
+            let worker = store
+                .pending
+                .entry(PendingOwner::Worker(actor.clone()))
+                .or_default();
+            for (key, n) in adopted.ordered_entries() {
+                worker.credit(key.clone(), *n)?;
+            }
+            Ok(())
+        })
+    }
     pub fn orphan_pending(&mut self, id: &BuildingId, actor: &ActorId) -> Result<(), Error> {
         self.apply(|l| {
             l.actor(actor)?;

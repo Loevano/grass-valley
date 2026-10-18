@@ -1,4 +1,4 @@
-//! Founder land activity; position, equipment and personal practice stay with
+//! Founder fishing activity; position, equipment and personal practice stay with
 //! their existing owners. Movement's clear_activity result calls stop().
 use super::*;
 use lantern_core::{founder::FounderState, ids::Owner, units::Practice};
@@ -81,7 +81,7 @@ impl LandAngler {
     }
     /// One explicit three-second founder production batch. Chance is 4/5,
     /// practice is +6 per attempt, no villager talents/tools/nets apply. Boat
-    /// fishing and its afloat equipment bonus belong to R17 slice 2.
+    /// fishing uses attempt_afloat with the same saved activity and batch history.
     #[allow(clippy::too_many_arguments)]
     pub fn attempt(
         &mut self,
@@ -92,6 +92,46 @@ impl LandAngler {
         practice: &mut Practice,
         batch: u64,
         roll: u8,
+    ) -> Result<Catch, Error> {
+        self.attempt_with_bonus(town, ledger, water, position, practice, batch, roll, 1.)
+    }
+    /// Same activity owner and batch history afloat; only an owned exploration
+    /// boat on an actual water tile supplies the equipment bonus.
+    #[allow(clippy::too_many_arguments)]
+    pub fn attempt_afloat(
+        &mut self,
+        town: &Town,
+        ledger: &mut Ledger,
+        water: &mut Waters,
+        position: Position,
+        practice: &mut Practice,
+        batch: u64,
+        roll: u8,
+        boat: &super::ExplorationBoat,
+    ) -> Result<Catch, Error> {
+        boat.validate(town)?;
+        let at = Tile {
+            x: (position.x.get() + 0.5) as i32,
+            y: (position.y.get() + 0.5) as i32,
+        };
+        let bonus = if boat.tier() > 0 && water.water.iter().any(|w| w.tile == at) {
+            1. + 0.25 * f64::from(boat.tier().saturating_sub(1))
+        } else {
+            1.
+        };
+        self.attempt_with_bonus(town, ledger, water, position, practice, batch, roll, bonus)
+    }
+    #[allow(clippy::too_many_arguments)]
+    fn attempt_with_bonus(
+        &mut self,
+        town: &Town,
+        ledger: &mut Ledger,
+        water: &mut Waters,
+        position: Position,
+        practice: &mut Practice,
+        batch: u64,
+        roll: u8,
+        bonus: f64,
     ) -> Result<Catch, Error> {
         self.validate(town)?;
         for store in ledger.stores() {
@@ -139,7 +179,9 @@ impl LandAngler {
             return Ok(Catch::Skipped);
         }
         let (mut goods, mut waters) = (ledger.clone(), water.clone());
-        let amount = cap.min(storage).min(1. + (practice.get() / 20.).floor());
+        let amount = cap
+            .min(storage)
+            .min((1. + (practice.get() / 20.).floor()) * bonus);
         let consumed = waters.take(source, amount);
         let caught = roll != 0;
         if caught && consumed > 0. {

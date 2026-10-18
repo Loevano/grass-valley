@@ -1,13 +1,17 @@
-//! Experimental land fishing. Movement clocks and three-second production batches
+//! Experimental fishing owners. Movement clocks and three-second production batches
 //! are separate, as in Python. The caller owns roster admission and R07 renewal;
 //! this owner never renews supply or changes shared navigation geometry.
 mod angler;
+mod boats;
+mod exploration;
 use crate::{
     gathering::Error,
     progression::Worker,
     resources::{Ledger, PendingOwner, ResourceKey, Stock},
 };
 pub use angler::{LandAngler, Status as AnglerStatus};
+pub use boats::{BoatOutcome, Boats, VoyagePhase};
+pub use exploration::{BoatPurchase, ExplorationBoat};
 use lantern_core::{
     ids::{ActorId, BuildingId, EntityIdentity},
     model::{
