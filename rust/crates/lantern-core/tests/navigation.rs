@@ -612,3 +612,81 @@ fn local_service_refresh_preserves_work_or_restarts_on_observed_change() {
     assert_eq!(s.diagnostics().retained, 2);
     assert_eq!(s.diagnostics().restarts, 1);
 }
+
+#[test]
+fn small_budgets_do_not_reserve_dense_backing_even_for_immediate_answers() {
+    let (mut town, ids) = fixture(1);
+    let r = request(&mut town, &ids[0]);
+    let q = query(64);
+    let inputs = q.retained_records();
+    let mut service = Service::new(Limits {
+        work_per_job: 1,
+        dependency_records: 12,
+        cache_entries: 0,
+        ..Limits::default()
+    });
+    submit(&mut service, &town, &r, q, Priority::Ordinary);
+    // One initial node costs two units, one observation, one heap entry.
+    assert_eq!(service.retained_records(), inputs + 4);
+    advance(&mut service, &town, 1);
+    assert_eq!(
+        service.status(&r),
+        Some(Status::Waiting(Waiting::ResourceLimit))
+    );
+    assert_eq!(service.retained_records(), 0);
+    service.cancel(&r);
+    let arrived = std::rc::Rc::new(
+        Query::new(
+            std::rc::Rc::new(SpatialIndex::derive(&[], &[], &[], &[], 64).unwrap()),
+            Terrain::default(),
+            Access::default(),
+            Tile { x: 0, y: 0 },
+            Target::Exact(Tile { x: 0, y: 0 }),
+            false,
+            RoadMode::Smooth,
+        )
+        .unwrap(),
+    );
+    let inputs = arrived.retained_records();
+    submit(&mut service, &town, &r, arrived, Priority::Ordinary);
+    assert_eq!(service.status(&r), Some(Status::Ready));
+    assert_eq!(service.retained_records(), inputs + 1);
+    assert_eq!(service.take(&r).unwrap().outcome(), &Outcome::Arrived);
+}
+
+#[test]
+fn zero_dependency_budget_retains_no_initial_record_or_terminal_answer() {
+    let (mut town, ids) = fixture(1);
+    let r = request(&mut town, &ids[0]);
+    let mut service = Service::new(Limits {
+        dependency_records: 0,
+        ..Limits::default()
+    });
+    let arrived = Rc::new(
+        Query::new(
+            Rc::new(SpatialIndex::derive(&[], &[], &[], &[], 64).unwrap()),
+            Terrain::default(),
+            Access::default(),
+            Tile { x: 0, y: 0 },
+            Target::Exact(Tile { x: 0, y: 0 }),
+            false,
+            RoadMode::Smooth,
+        )
+        .unwrap(),
+    );
+    for q in [query(64), arrived] {
+        assert_eq!(
+            submit(&mut service, &town, &r, q, Priority::Ordinary),
+            Status::Waiting(Waiting::ResourceLimit)
+        );
+        assert_eq!(service.resident_jobs(), 0);
+        assert_eq!(service.retained_records(), 0);
+        assert_eq!(advance(&mut service, &town, 1000), 0);
+        assert!(service.take(&r).is_none());
+        assert!(!service.has_reservation());
+    }
+    assert!(matches!(
+        town.actor(&ids[0]).unwrap().route(),
+        RouteState::Pending(_)
+    ));
+}

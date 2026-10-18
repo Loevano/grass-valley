@@ -220,13 +220,13 @@ impl Service {
             self.diagnostics.retained += 1;
         } else {
             self.diagnostics.restarts += 1;
-            job.state = Self::search_state(query);
+            job.state = Self::search_state(query, self.limits);
             job.work = 0;
         }
         Some(job.status())
     }
-    fn search_state(query: Rc<Query>) -> State {
-        let search = Search::new(query);
+    fn search_state(query: Rc<Query>, limits: Limits) -> State {
+        let search = Search::bounded(query, limits.work_per_job, limits.dependency_records);
         if search.outcome() == &Outcome::Pending {
             State::Searching(search)
         } else {
@@ -242,6 +242,28 @@ impl Service {
             .iter()
             .find(|j| &j.request == request)
             .map(|j| j.work)
+    }
+    /// Currently retained logical backing units; includes dense unused capacity,
+    /// query/index inputs charged per owner, and cache aggregate backing units.
+    /// Identity bytes/allocator metadata are separate from these record units.
+    pub fn retained_records(&self) -> usize {
+        self.cache_usage().1
+            + self
+                .jobs
+                .iter()
+                .map(|job| match &job.state {
+                    State::Searching(search) => search.retained_records(),
+                    State::Ready(outcome, deps) => {
+                        deps.query().retained_records()
+                            + deps.retained_records()
+                            + match outcome {
+                                Outcome::Completed { path, .. } => path.capacity(),
+                                _ => 0,
+                            }
+                    }
+                    State::Limited(_) => 0,
+                })
+                .sum::<usize>()
     }
     pub fn resident_jobs(&self) -> usize {
         self.jobs.len()
@@ -324,7 +346,7 @@ impl Service {
             self.diagnostics.cache_hits += 1;
             state
         } else {
-            Self::search_state(query)
+            Self::search_state(query, self.limits)
         };
         self.jobs.push_back(Job {
             request: request.clone(),
@@ -333,6 +355,16 @@ impl Service {
             work: 0,
         });
         self.status(request).expect("inserted request")
+    }
+    /// Release obsolete/omitted owner requests before admission, without consuming
+    /// the retry lease. Returns released resident slots (reservation is separate).
+    pub fn cancel_obsolete(&mut self, mut current: impl FnMut(&RouteRequest) -> bool) -> usize {
+        let before = self.jobs.len();
+        self.jobs.retain(|j| current(&j.request));
+        if self.reservation.as_ref().is_some_and(|r| !current(r)) {
+            self.reservation = None;
+        }
+        before - self.jobs.len()
     }
     /// Prune all stale generations, including terminal answers/reservation, then
     /// serve weighted FIFO lanes (4 blocked / 2 cargo / 1 ordinary). Validation
@@ -435,7 +467,7 @@ impl Service {
         let units = dependencies
             .query()
             .retained_records()
-            .saturating_add(dependencies.records())
+            .saturating_add(dependencies.retained_records())
             .saturating_add(waypoints);
         if self.limits.cache_entries > 0
             && units <= self.limits.cache_records

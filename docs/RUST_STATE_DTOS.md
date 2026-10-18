@@ -160,7 +160,8 @@ No omitted feature is approved for removal. The saved subsystem matrix assigns:
   has no DTO/save/actor ownership; R09 slice 3 pairs actual Python route vectors.
   R10 slice 1 adds bounded derived service/admission using the existing model's
   request generations. R10 slice 2 adds bounded dependency-certified caches and
-  local query refresh; independent cadence remains R10 slice 3.
+  local query refresh. R10 slice 3 adds the single-owner host pump with injected
+  monotonic deadlines, retries and guarded route adoption; movement remains R11.
 - R12–13: complete buildings/footprints/roads/links, residents/assignments, stock,
   costs/capacities, skills, food/progression, hall unlocks and balance migrations.
 - R14–17: trips/reservations/accounting, markets/resource activity, every production
@@ -272,5 +273,10 @@ answers; a leased single retry reservation avoids an overflow queue. No clock,
 public service DTO or persisted frontier is introduced. R10 slice 2 adds bounded positive/negative caches and search-prefix certificates;
 `submit_current`/`apply_current` require current actor-specific query validation and
 model-owned generation/origin checks. These are derived APIs, with no new DTO or
-saved revision schema. Independent cadence remains R10 slice 3; travel/cargo/task integration
-remains R11 and later gameplay stages.
+saved revision schema. R10 slice 3 adds `lantern_host::navigation::NavigationPump`:
+monotonic deadlines, elapsed diagnostics and bounded retry/refresh/adoption traversal
+are derived host state, never simulation time or saved authority. Borrowed current
+intents come from owners; omitted/stale generations are cancelled and completions
+are drained between production updates. The pump introduces no persistent retry
+registry or gameplay thread. Travel/cargo/task integration remains R11 and later
+stages; no HTTP/API/save DTO changes are made.

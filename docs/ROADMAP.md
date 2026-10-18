@@ -8,7 +8,7 @@ and cache rules are in [Backend](BACKEND.md#cached-zoomed-out-map).
 | 1     | Cached zoomed-out town overview    | Implemented              | Show the landscape and city sizes without refreshing animated scene detail.                                      |
 | 2     | Production line balancing          | Wood and grain implemented; fishing remains | Develop clear fishing chains with capped staffing and simple upgrades. |
 | 3     | Scalable villager pathfinding       | Host queue implemented; cache refinement and shared navigation remain | Keep movement responsive as villager counts and towns grow, with bounded routing work. |
-| 4     | Rust migration | R01–R09 foundations and R10 bounded cache/local invalidation complete; R10 cadence remains | Follow the [staged plan and prompts](RUST_MIGRATION.md), preserving playable checkpoints and saved worlds. |
+| 4     | Rust migration | R01–R10 experimental foundations complete; R11 travel and later integration/acceptance remain | Follow the [staged plan and prompts](RUST_MIGRATION.md), preserving playable checkpoints and saved worlds. |
 
 ## Rust migration
 
@@ -24,10 +24,11 @@ saves and external chunk copies; see the [staging scope](RUST_LEGACY_IMPORT.md).
 R08 geometry, founder movement, shared-town/chunk boundaries and position recovery
 are complete behind the experimental private-copy boundary; see the
 [completion audit](RUST_MIGRATION.md#r08-slice-3--shared-boundaries-recovery-and-completion-audit).
-R10 slices 1–2 request generations, bounded admission/fair service, positive/negative
-caches and dependency-validated local invalidation are complete experimentally.
-R10 slice 3 independent cadence/acceptance diagnostics and R11 persistent worker
-travel remain. Completed R07
+R11 persistent worker travel is next after the completed R10 experimental navigation
+foundation. R11 retains actual movement/blocked-recovery checks; R19–R21 retain
+HTTP/save/snapshot integration and R23 retains complete W1–W6 acceptance. See the
+[R10 completion audit](RUST_MIGRATION.md#final-measurements-and-foundation-completion)
+for measured scope and remaining release gates. Completed R07
 terrain/chunk behavior and its compatibility evidence are recorded in the
 [terrain scope](RUST_TERRAIN.md) and [completion audit](RUST_MIGRATION.md#r07-slice-3civ-exact-clocks-and-completion-audit).
 The [state/DTO boundary audit](RUST_STATE_DTOS.md) identifies later gameplay work.

@@ -325,9 +325,9 @@ Actual caller-owned water/exemption inputs do not port fishing gameplay or silen
 change the builder fallback NPC-anchor behavior. Private bytes/indexes remain intact.
 No concrete core discrepancy was found, so runtime code is unchanged.
 
-R09 is complete at the experimental core boundary. R10 must still supply request
-identity/generations, examined dependencies, cache invalidation, admission/fairness,
-memory caps and service cadence. R11 owns persistent travel/playback; later stages
+At the R09 checkpoint, the experimental core boundary was complete; request
+identity/generations, dependencies, caches, fairness, memory caps and cadence were
+assigned to R10. The current R10 boundary is recorded below. R11 owns persistent travel/playback; later stages
 own gameplay planners, authoritative HTTP/save integration and platform validation.
 The prior decision/release evidence files are untouched and remain inconclusive for
 stable latency/gain estimates. No performance rerun is needed for this parity-only
@@ -354,5 +354,35 @@ restart because they affect global heuristic policy. See the
 [R10 slice 2 audit](RUST_MIGRATION.md#r10-slice-2--bounded-cache-and-local-navigation-validity)
 for limits, actor-authority bridge, tests and release measurements. This adds real
 CPU/memory overhead to cold search; cache reuse and retained progress must be
-measured including preparation/maintenance. W1–W6/cadence acceptance remains
-inconclusive until R10 slice 3; worker movement remains R11.
+measured including preparation/maintenance. The slice 3 section below records
+independent cadence evidence; integrated W1–W6 acceptance remains inconclusive,
+and worker movement remains R11.
+
+## R10 slice 3 current execution boundary
+
+The experimental host now exposes `NavigationPump::poll` independently of the
+three-second production clock. It retries current owner intents, refreshes immutable
+queries, advances an operation allowance and adopts guarded terminal answers.
+Monotonic scheduling coalesces missed releases, then schedules finish + idle delay;
+there is no catch-up burst or authority/save clock. Route-ready adoption does not
+move actors; R11 still owns travel/playback.
+
+Small finite maps (at most 4096 cells) now use direct node lookup and compact
+arrival/expansion flags. Large domains use sparse trees; small configured work or
+dependency caps also force sparse backing so eager allocation cannot bypass limits.
+Heap ordering, relaxations, neighbor order and operation accounting are unchanged.
+Forced dense/sparse tests compare exact paths, cost, work, expansions and dependency
+proofs; existing actual Python frozen routes remain normative. Cache/diagnostic
+retained units include unused dense capacity; release measurements also track
+requested heap and preparation, validation, conversion and destruction costs.
+
+See the [R10 slice 3 audit](RUST_MIGRATION.md#r10-slice-3--independent-host-cadence-and-completion-audit)
+for actual monotonic W2-family and separate stress evidence, CPU/memory, measured
+allowance/frequency and acceptance gaps. Earlier release artifacts are historical
+and unchanged. Complete W1–W6 contention and actual first movement remain unmeasured
+at this experimental boundary, and Python remains the playable default.
+
+R10 is complete as an experimental navigation foundation; see the
+[final measurements and integration-gate owners](RUST_MIGRATION.md#final-measurements-and-foundation-completion).
+The isolated W2 route-ready samples meet their absolute targets, while complete
+W1–W6 acceptance remains inconclusive and mandatory under R11/R19–R23.
