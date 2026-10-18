@@ -1,7 +1,7 @@
 use lantern_core::{
     search::{Access, Outcome, Query, QueryError, Search, Target, Terrain},
     spatial::{Construction, Footprint, RoadMode, SpatialIndex, Structure},
-    units::Tile,
+    units::{Position, Tile},
 };
 use std::{
     collections::{BTreeMap, BTreeSet},
@@ -48,6 +48,99 @@ fn block(p: Tile) -> Structure {
         fence_orientation: 0,
     }
 }
+#[test]
+fn travel_segment_checks_fractional_origin_corners_access_and_terrain() {
+    let p = |x, y| Position::new(x, y).unwrap();
+    let make = |structures: &[Structure], terrain, access, diagonal| {
+        Query::new(
+            index(structures),
+            terrain,
+            access,
+            t(0, 0),
+            Target::Exact(t(7, 7)),
+            diagonal,
+            RoadMode::Smooth,
+        )
+        .unwrap()
+    };
+    let q = make(&[], Terrain::default(), Access::default(), false);
+    assert!(q.segment_safe(p(0.25, 0.0), p(1.0, 0.0)));
+    assert!(q.segment_safe(p(0.75, 0.0), p(1.0, 0.0)));
+    assert!(!q.segment_safe(p(0.25, 0.25), p(1.0, 1.0)));
+    assert!(!q.segment_safe(p(0.25, 0.0), p(2.0, 0.0)));
+    assert!(!q.segment_safe(p(0.25, 0.0), p(1.25, 0.0)));
+    assert!(!q.segment_safe(p(1e100, 0.0), p(1.0, 0.0)));
+    assert!(!q.segment_safe(p(0.25, 0.0), p(-1.0, 0.0)));
+    assert!(!q.segment_safe(p(0.25, 0.0), p(8.0, 0.0)));
+    let diagonal = make(&[], Terrain::default(), Access::default(), true);
+    assert!(diagonal.segment_safe(p(0.25, 0.25), p(1.0, 1.0)));
+    for side in [t(1, 0), t(0, 1)] {
+        let q = make(&[block(side)], Terrain::default(), Access::default(), true);
+        assert!(!q.segment_safe(p(0.25, 0.25), p(1.0, 1.0)));
+    }
+    let blocked = make(
+        &[block(t(0, 0))],
+        Terrain::default(),
+        Access::default(),
+        false,
+    );
+    assert!(!blocked.segment_safe(p(0.25, 0.0), p(1.0, 0.0)));
+    assert!(!blocked.segment_safe(p(0.5, 0.0), p(1.0, 0.0))); // Python ties-to-even tile 0.
+    let exempt = make(
+        &[block(t(0, 0))],
+        Terrain::default(),
+        Access {
+            exemptions: [t(0, 0)].into(),
+            ..Access::default()
+        },
+        false,
+    );
+    assert!(exempt.segment_safe(p(0.25, 0.0), p(1.0, 0.0)));
+    let void = make(
+        &[],
+        Terrain {
+            cells: Some([(t(1, 0), 'v')].into()),
+            bounds: None,
+        },
+        Access::default(),
+        false,
+    );
+    assert!(!void.segment_safe(p(0.25, 0.0), p(1.0, 0.0)));
+    let bounded = make(
+        &[],
+        Terrain {
+            cells: None,
+            bounds: Some((0, 0, 0, 0)),
+        },
+        Access::default(),
+        false,
+    );
+    assert!(!bounded.segment_safe(p(0.25, 0.0), p(1.0, 0.0)));
+}
+
+#[test]
+fn travel_segment_checks_actual_fractional_fence_crossing() {
+    let barn = Structure {
+        footprint: Footprint::saved(t(4, 4), None).unwrap(),
+        kind: "barn".into(),
+        construction: Construction::Complete,
+        fence_orientation: 0,
+    };
+    let q = query(
+        t(0, 0),
+        Target::Exact(t(7, 7)),
+        Terrain::default(),
+        Access::default(),
+        &[barn],
+    );
+    // Back fence is y=0.5. Both points round to tile (4, 0), so only the
+    // continuous-edge check catches crossing it from the exact boundary.
+    assert!(!q.segment_safe(
+        Position::new(4.0, 0.5).unwrap(),
+        Position::new(4.0, 0.0).unwrap()
+    ));
+}
+
 #[test]
 fn quantum_partition_and_zero_are_observationally_equivalent() {
     let q = query(

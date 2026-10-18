@@ -163,8 +163,10 @@ No omitted feature is approved for removal. The saved subsystem matrix assigns:
   local query refresh. R10 slice 3 adds the single-owner host pump with injected
   monotonic deadlines, retries and guarded route adoption. R11 slice 1 adds generic
   fractional travel/wait/arrival with actor-owned position/cargo, injected segment
-  checks/speeds and bounded traversal. Task-change recovery, facing, confirmed
-  playback DTOs and complete reload continuity remain R11 slices 2–3; no public
+  checks/speeds and bounded traversal. R11 slice 2 retains the selected destination
+  across path invalidation, adds relocation/reassignment continuity, revision-gated
+  negative retry and current fractional-segment checks. Facing, confirmed playback
+  DTOs and complete reload continuity remain R11 slice 3; no public
   wire/save schema changes or gameplay-host integration are claimed.
 - R12–13: complete buildings/footprints/roads/links, residents/assignments, stock,
   costs/capacities, skills, food/progression, hall unlocks and balance migrations.

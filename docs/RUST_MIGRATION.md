@@ -2,9 +2,9 @@
 
 A migration that can be completed one task at a time, with a prompt for each task.
 
-**Status:** R01–R10 complete as experimental migration foundations; R11 slice 1
-adds generic worker travel/wait/arrival. Task-change recovery and confirmed
-playback/reload continuity remain in R11 slices 2–3. R08 spatial
+**Status:** R01–R10 complete as experimental migration foundations; R11 slices 1–2
+add generic worker travel/wait/arrival, task-change continuity and blocked recovery.
+Confirmed playback/reload continuity remain in R11 slice 3. R08 spatial
 rules and founder movement is complete as an experimental private-copy foundation. R07 includes saved-first terrain versions 1–7,
 nonchunked maps, authored starter/town sites, ordinary/swamp metadata and overlays,
 post-overlay water repair, private authoritative chunk lifecycle/resource renewal,
@@ -233,7 +233,7 @@ only after work is performed. Keep unfinished stages visible in the roadmap.
 | R08 | Spatial rules and founder movement | R07 | Complete as experimental geometry/movement foundation; slices 1–3 and boundary audit below; Python remains default |
 | R09 | Search algorithms and library decision | R08 | Complete at experimental core boundary: library/custom decision, bounded no_std backend and actual Python route/access/cost parity; [evaluation/evidence](RUST_SEARCH_EVALUATION.md) |
 | R10 | Request scheduler and cache invalidation | R09 | Complete as experimental navigation foundation; slices 1–3 and completion audit below; integrated W1–W6 acceptance retained in R11/R19–R23 |
-| R11 | Persistent worker movement and playback | R10 | Slice 1 complete: generic travel/wait/arrival; task-change recovery and playback/reload continuity remain |
+| R11 | Persistent worker movement and playback | R10 | Slices 1–2 complete: generic travel, task-change continuity and blocked recovery; playback/reload continuity remain |
 | R12 | Construction and building operations | R11 | Not started |
 | R13 | Resource ledger, storage, and progression rules | R12 | Not started |
 | R14 | Hauling, delivery, and merchant trips | R13 | Not started |
@@ -2447,12 +2447,73 @@ Performance comparisons are not required for this new generic behavior slice;
 it does not address a measured performance problem. W2 actual movement latency and
 W3 blocked/reopen recovery under load remain unmeasured acceptance gates.
 
-**Remaining:** slice 2 owns task replacement/relocation continuity, automatic
-blocked-route recovery and the destination/leg policies around those changes.
+**Follow-on:** slice 2 below adds task replacement/relocation continuity and
+blocked-route recovery while retaining the task-rule-selected destination/leg.
 Slice 3 owns facing/presentation state, confirmed movement/playback DTOs and
 save/reload reconstruction without duplicate actions. The existing derived-route
 reset on restore is not complete travel-reload continuity. R19–R21 still own
 playable host/save/HTTP integration; R23 still owns integrated W1–W6 release budgets.
+Python remains the playable default.
+
+### R11 slice 2 — Task changes and blocked recovery
+
+An actor now retains its current leg's destination separately from its disposable
+path. `request_route` still explicitly selects the leg; `resume_travel` maintains
+it before host-pump intent assembly. A blocked route or a destination invalidated
+by structural relocation rebuilds from the exact current fractional position,
+resolving stable building IDs at their new location. Task phase, work elapsed and
+cargo survive. Moving a workplace leaves an outbound route to an unchanged source
+intact. Moving a targeted source invalidates its old request/answer.
+
+Task replacement clears the old leg and cursor, increments task identity, and
+retains actor position/cargo. Rules explicitly select the replacement destination;
+travel does not infer a pickup, discard held output or silently change return legs.
+Cancellation clears travel intent, so later navigation changes or explicit
+position recovery cannot resurrect it. Already-arrived legs also stay finished.
+Building costs/demolition/linked groups remain R12; logistics endpoint cancellation,
+refunds and exactly-once inventory transfers remain R14. These generic primitives
+do not claim those feature-specific policies.
+
+The maintenance call reuses pending request identity across updates, allowing R10
+query refresh without search churn. Blockage creates at most one replacement
+request; subsequent updates reuse it. An unreachable result stays truthfully
+unreachable until the owner changes the relevant geometry/access revision. The
+latest attempted query revision is tracked separately from the stable request
+token, including in-place pending refresh; a refreshed negative answer therefore
+does not trigger an immediate redundant retry. Revision is a retry signal, not a
+geometry certificate: callers still supply current immutable queries to R10.
+
+`Query::segment_safe` supplies the current movement guard: Python ties-to-even
+origin-tile rounding, terrain/bounds/access, diagonal side tiles, graph fences and
+the actual continuous fence segment. It checks only the next segment, leaving
+valid paths intact across distant edits and road-cost changes. A newly occupied
+current tile stops safely; this slice does not invent a teleport/recovery spot.
+The host may explicitly supply a validated recovery position through the existing
+`reposition_actor` API; maintenance then replans the same leg from that position.
+
+Evidence: seven additional core travel traces cover partial reassignment, outbound
+and return relocation, moved-source stale answers, blocked/negative/reopen retry,
+explicit cancellation/repositioning, generation-exhaustion atomicity and refreshed
+negative retry identity. Two query tests cover fractional movement, corners,
+terrain/access/bounds, malformed segments and actual fractional fence crossing.
+A host trace runs 16 cargo-bearing returning workers in four towns through two
+navigation slots: walk, block, seal, settle unreachable, reopen, move at walking
+speed, and arrive once per route without changing cargo, phase or work elapsed.
+This is deterministic correctness evidence, not a W2/W3 wall-clock measurement or
+an exactly-once accounting port. No wire/save DTO schema changes are introduced.
+`python3 tools/check.py` selected `lantern-core` and dependent `lantern-host`;
+all six formatting, test (including existing DTO/save checks) and Clippy commands
+passed. Report: `performance-results/20261018-151114/report.md` (local, ignored
+artifact).
+
+Performance comparisons are not run: this is new recovery behavior rather than a
+performance investigation or fix. W2 first-movement latency and W3 recovery budgets
+under the complete agreed load remain acceptance work.
+
+**Remaining:** slice 3 owns facing, confirmed movement/playback DTOs and persistence
+of travel intent/reload continuity without duplicate actions. This slice's retained
+destination and query-attempt metadata are not serialized. R19–R21 own playable
+host/save/HTTP integration and R23 retains integrated W1–W6 release budgets.
 Python remains the playable default.
 
 ## R12 — Building operations and construction

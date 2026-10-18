@@ -5,6 +5,45 @@ use lantern_core::{
     units::{Position, Quantity, Seconds, Tile},
 };
 
+#[test]
+fn exhausted_recovery_generation_preserves_blocked_intent_atomically() {
+    let (town, id) = fixture();
+    let mut state = town.actor(&id).unwrap().state().clone();
+    state.route_generation = RouteGeneration::from_saved(u64::MAX - 1);
+    let mut town =
+        Town::restore(town.owner().clone(), town.buildings().to_vec(), vec![state]).unwrap();
+    ready(&mut town, &id, vec![p(2.0, 0.0)]);
+    town.block_route(&id).unwrap();
+    let before = town.actor(&id).unwrap().clone();
+    assert_eq!(
+        town.resume_travel(&id, NavigationRevision(2)),
+        Err(ModelError::GenerationExhausted)
+    );
+    assert_eq!(town.actor(&id).unwrap(), &before);
+}
+
+#[test]
+fn refreshed_pending_failure_waits_for_a_change_after_the_latest_query_revision() {
+    let (mut town, id) = fixture();
+    let r = request(&mut town, &id);
+    assert_eq!(
+        town.resume_travel(&id, NavigationRevision(2)).unwrap(),
+        Some(r.clone())
+    );
+    // R10 refreshes the current query while preserving the request token.
+    town.accept_route(&id, &r, r.navigation(), RouteOutcome::Unreachable)
+        .unwrap();
+    assert_eq!(
+        town.resume_travel(&id, NavigationRevision(2)).unwrap(),
+        None
+    );
+    assert!(
+        town.resume_travel(&id, NavigationRevision(3))
+            .unwrap()
+            .is_some()
+    );
+}
+
 fn p(x: f64, y: f64) -> Position {
     Position::new(x, y).unwrap()
 }
@@ -266,4 +305,250 @@ fn return_leg_retains_cargo_phase_and_work_clock_through_block_and_arrival() {
     .unwrap();
     assert!(walk(&mut town, &id, 1.0).arrived_now);
     assert_facts(&facts, town.actor(&id).unwrap().state());
+}
+
+#[test]
+fn task_replacement_clears_old_leg_without_discarding_fractional_pose_or_cargo() {
+    let (mut town, id) = fixture();
+    let old = request(&mut town, &id);
+    town.accept_route(
+        &id,
+        &old,
+        old.navigation(),
+        RouteOutcome::Ready(vec![p(2.0, 0.0)]),
+    )
+    .unwrap();
+    walk(&mut town, &id, 0.125);
+    let facts = town.actor(&id).unwrap().state().clone();
+    town.set_task(
+        &id,
+        Task::Move {
+            destination: p(0.0, 2.0),
+        },
+    )
+    .unwrap();
+    assert_eq!(town.actor(&id).unwrap().state().position, facts.position);
+    assert_eq!(town.actor(&id).unwrap().state().cargo, facts.cargo);
+    assert_eq!(town.actor(&id).unwrap().travel_destination(), None);
+    assert_eq!(
+        town.resume_travel(&id, NavigationRevision(2)).unwrap(),
+        None
+    );
+    assert_eq!(
+        town.accept_route(&id, &old, old.navigation(), RouteOutcome::Arrived),
+        Err(ModelError::StaleRoute)
+    );
+    let new = town
+        .request_route(
+            &id,
+            Destination::Position(p(0.0, 2.0)),
+            NavigationRevision(2),
+        )
+        .unwrap();
+    assert_eq!(new.origin(), facts.position);
+    assert_ne!(new.task_generation(), old.task_generation());
+    town.set_task(&id, Task::Idle).unwrap();
+    assert_eq!(
+        town.resume_travel(&id, NavigationRevision(3)).unwrap(),
+        None
+    );
+    assert_eq!(town.actor(&id).unwrap().state().cargo, facts.cargo);
+}
+
+#[test]
+fn relocation_keeps_outbound_source_but_retargets_return_from_fractional_position() {
+    let (mut town, id) = fixture();
+    let workplace = town.buildings()[0].id.clone();
+    let target = Destination::Position(p(8.0, 0.0));
+    town.set_task(
+        &id,
+        Task::Work {
+            workplace: workplace.clone(),
+            target: target.clone(),
+            phase: WorkPhase::Outbound,
+            elapsed: seconds(0.375),
+        },
+    )
+    .unwrap();
+    let outbound = town
+        .request_route(&id, target.clone(), NavigationRevision(1))
+        .unwrap();
+    town.accept_route(
+        &id,
+        &outbound,
+        outbound.navigation(),
+        RouteOutcome::Ready(vec![p(8.0, 0.0)]),
+    )
+    .unwrap();
+    walk(&mut town, &id, 0.125);
+    let actor = town.actor(&id).unwrap().clone();
+    town.relocate_building(&workplace, Tile { x: 3, y: 1 })
+        .unwrap();
+    assert_eq!(town.actor(&id).unwrap(), &actor);
+    assert_eq!(
+        town.resume_travel(&id, NavigationRevision(2)).unwrap(),
+        None
+    );
+    town.set_task(
+        &id,
+        Task::Work {
+            workplace: workplace.clone(),
+            target,
+            phase: WorkPhase::Returning,
+            elapsed: seconds(0.375),
+        },
+    )
+    .unwrap();
+    let old = town
+        .request_route(
+            &id,
+            Destination::Building(workplace.clone()),
+            NavigationRevision(2),
+        )
+        .unwrap();
+    town.accept_route(
+        &id,
+        &old,
+        old.navigation(),
+        RouteOutcome::Ready(vec![p(3.0, 1.0)]),
+    )
+    .unwrap();
+    walk(&mut town, &id, 0.125);
+    let facts = town.actor(&id).unwrap().state().clone();
+    town.relocate_building(&workplace, Tile { x: 4, y: 1 })
+        .unwrap();
+    assert_eq!(town.actor(&id).unwrap().state(), &facts);
+    assert_eq!(
+        town.actor(&id).unwrap().travel_destination(),
+        Some(&Destination::Building(workplace.clone()))
+    );
+    let retry = town
+        .resume_travel(&id, NavigationRevision(3))
+        .unwrap()
+        .unwrap();
+    assert_eq!(retry.origin(), facts.position);
+    assert_eq!(retry.goal(), p(4.0, 1.0));
+    assert_eq!(retry.destination(), &Destination::Building(workplace));
+    assert_eq!(
+        town.resume_travel(&id, NavigationRevision(4)).unwrap(),
+        Some(retry.clone())
+    );
+    assert_eq!(
+        town.accept_route(&id, &old, old.navigation(), RouteOutcome::Arrived),
+        Err(ModelError::StaleRoute)
+    );
+    town.accept_route(&id, &retry, retry.navigation(), RouteOutcome::Arrived)
+        .unwrap();
+    assert_eq!(
+        town.resume_travel(&id, NavigationRevision(5)).unwrap(),
+        None
+    );
+    assert_eq!(town.actor(&id).unwrap().state().position, facts.position);
+    assert_facts(&facts, town.actor(&id).unwrap().state());
+}
+
+#[test]
+fn moved_source_rejects_pending_answer_and_resolves_new_goal_on_same_leg() {
+    let (mut town, id) = fixture();
+    let source = town.buildings()[0].id.clone();
+    let old = town
+        .request_route(
+            &id,
+            Destination::Building(source.clone()),
+            NavigationRevision(1),
+        )
+        .unwrap();
+    let before = town.actor(&id).unwrap().state().clone();
+    town.relocate_building(&source, Tile { x: 5, y: 2 })
+        .unwrap();
+    let retry = town
+        .resume_travel(&id, NavigationRevision(1))
+        .unwrap()
+        .unwrap();
+    assert_eq!(retry.goal(), p(5.0, 2.0));
+    assert_ne!(old.route_generation(), retry.route_generation());
+    assert_eq!(
+        town.accept_route(&id, &old, old.navigation(), RouteOutcome::Arrived),
+        Err(ModelError::StaleRoute)
+    );
+    assert_facts(&before, town.actor(&id).unwrap().state());
+}
+
+#[test]
+fn blocked_leg_retries_once_and_unchanged_unreachable_does_not_churn() {
+    let (mut town, id) = fixture();
+    ready(&mut town, &id, vec![p(2.0, 0.0)]);
+    walk(&mut town, &id, 0.125);
+    let before = town.actor(&id).unwrap().state().clone();
+    town.advance_travel(&id, seconds(1.0), 10, |_, _| None)
+        .unwrap();
+    let retry = town
+        .resume_travel(&id, NavigationRevision(1))
+        .unwrap()
+        .unwrap();
+    assert_eq!(retry.origin(), before.position);
+    for _ in 0..10 {
+        assert_eq!(
+            town.resume_travel(&id, NavigationRevision(1)).unwrap(),
+            Some(retry.clone())
+        );
+    }
+    town.accept_route(&id, &retry, retry.navigation(), RouteOutcome::Unreachable)
+        .unwrap();
+    for _ in 0..10 {
+        assert_eq!(
+            town.resume_travel(&id, NavigationRevision(1)).unwrap(),
+            None
+        );
+    }
+    assert_eq!(
+        town.actor(&id).unwrap().travel_status(),
+        Status::Unreachable
+    );
+    let reopened = town
+        .resume_travel(&id, NavigationRevision(2))
+        .unwrap()
+        .unwrap();
+    assert_eq!(reopened.destination(), retry.destination());
+    assert_eq!(reopened.origin(), before.position);
+    town.accept_route(
+        &id,
+        &reopened,
+        reopened.navigation(),
+        RouteOutcome::Ready(vec![p(2.0, 0.0)]),
+    )
+    .unwrap();
+    assert!(walk(&mut town, &id, 10.0).arrived_now);
+    assert_eq!(
+        town.resume_travel(&id, NavigationRevision(3)).unwrap(),
+        None
+    );
+    assert!(!walk(&mut town, &id, 10.0).arrived_now);
+    assert_facts(&before, town.actor(&id).unwrap().state());
+}
+
+#[test]
+fn recovery_repositioning_keeps_intent_but_cancellation_is_explicit() {
+    let (mut town, id) = fixture();
+    ready(&mut town, &id, vec![p(2.0, 0.0)]);
+    let destination = town.actor(&id).unwrap().travel_destination().cloned();
+    town.reposition_actor(&id, p(0.5, 1.25)).unwrap();
+    let retry = town
+        .resume_travel(&id, NavigationRevision(2))
+        .unwrap()
+        .unwrap();
+    assert_eq!(retry.origin(), p(0.5, 1.25));
+    assert_eq!(Some(retry.destination()), destination.as_ref());
+    town.cancel_route(&id).unwrap();
+    assert_eq!(
+        town.resume_travel(&id, NavigationRevision(3)).unwrap(),
+        None
+    );
+    assert_eq!(town.actor(&id).unwrap().travel_status(), Status::Cancelled);
+    assert_eq!(town.actor(&id).unwrap().travel_destination(), None);
+    town.reposition_actor(&id, p(0.75, 1.25)).unwrap();
+    assert_eq!(
+        town.resume_travel(&id, NavigationRevision(4)).unwrap(),
+        None
+    );
 }

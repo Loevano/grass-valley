@@ -274,6 +274,12 @@ pub enum RouteState {
 pub struct Actor {
     state: ActorState,
     route: RouteState,
+    /// Current leg chosen by task rules, independent of the disposable path.
+    /// R11 slice 3 owns save/restore of this intent; no new DTO field yet.
+    destination: Option<Destination>,
+    /// Latest query revision supplied for this leg, including in-place R10
+    /// pending-query refresh. The request token itself deliberately stays stable.
+    attempted_navigation: NavigationRevision,
     /// Derived cursor, discarded together with the route on restoration.
     route_step: usize,
 }
@@ -284,6 +290,9 @@ impl Actor {
     }
     pub fn route(&self) -> &RouteState {
         &self.route
+    }
+    pub fn travel_destination(&self) -> Option<&Destination> {
+        self.destination.as_ref()
     }
     pub fn travel_status(&self) -> crate::travel::Status {
         use crate::travel::Status;
@@ -336,6 +345,8 @@ impl Town {
                 .map(|state| Actor {
                     state,
                     route: RouteState::NotRequested,
+                    destination: None,
+                    attempted_navigation: NavigationRevision(0),
                     route_step: 0,
                 })
                 .collect(),
@@ -422,6 +433,8 @@ impl Town {
         actor.state.task = task;
         actor.state.task_generation = generation;
         actor.route = RouteState::NotRequested;
+        actor.destination = None;
+        actor.route_step = 0;
         Ok(())
     }
 
@@ -452,6 +465,7 @@ impl Town {
                 |r| matches!(&r.destination, Destination::Building(target) if target == id),
             ) {
                 actor.route = RouteState::NotRequested;
+                actor.route_step = 0;
             }
         }
         Ok(())
@@ -464,6 +478,7 @@ impl Town {
         if actor.state.position != position {
             actor.state.position = position;
             actor.route = RouteState::NotRequested;
+            actor.route_step = 0;
         }
         Ok(())
     }
@@ -493,8 +508,48 @@ impl Town {
             navigation,
         };
         actor.state.route_generation = generation;
+        actor.destination = Some(request.destination.clone());
+        actor.attempted_navigation = navigation;
         actor.route = RouteState::Pending(request.clone());
+        actor.route_step = 0;
         Ok(request)
+    }
+
+    /// Maintain the task-rule-selected leg without changing task phase or cargo.
+    /// Call once per host navigation update, before assembling pump intents.
+    /// Returns the existing pending request or creates ONE replacement after
+    /// blockage/relocation/repositioning. Repeated calls cannot restart a search.
+    /// Unreachable results retry only after the owner changes the relevant
+    /// geometry/access revision; unrelated production changes must not bump it.
+    /// Pending queries instead refresh through R10's dependency validation.
+    /// Arrived/cancelled legs never restart here. Task replacement clears the old
+    /// destination: rules must explicitly request the new leg. In particular,
+    /// held cargo does not authorize guessing a new pickup or return destination.
+    pub fn resume_travel(
+        &mut self,
+        id: &ActorId,
+        navigation: NavigationRevision,
+    ) -> Result<Option<RouteRequest>, ModelError> {
+        let index = self.actor_index(id)?;
+        let actor = &self.actors[index];
+        let Some(destination) = actor.destination.clone() else {
+            return Ok(None);
+        };
+        match &actor.route {
+            RouteState::Pending(request) => {
+                let request = request.clone();
+                self.actors[index].attempted_navigation = navigation;
+                return Ok(Some(request));
+            }
+            RouteState::Ready { .. } | RouteState::Arrived(_) | RouteState::Cancelled => {
+                return Ok(None);
+            }
+            RouteState::Unreachable(_) if actor.attempted_navigation == navigation => {
+                return Ok(None);
+            }
+            _ => {}
+        }
+        self.request_route(id, destination, navigation).map(Some)
     }
 
     /// Owner token check for dependency-validated navigation. Revision alone is
@@ -587,7 +642,7 @@ impl Town {
                 let dx = target.x.get() - before.x.get();
                 let dy = target.y.get() - before.y.get();
                 let distance = libm::hypot(dx, dy);
-                // Search paths include their origin. Consuming it costs no time.
+                // Explicit paths may repeat their origin; it costs no time.
                 if distance == 0.0 {
                     actor.route_step += 1;
                     segments += 1;
@@ -641,6 +696,8 @@ impl Town {
     pub fn cancel_route(&mut self, id: &ActorId) -> Result<(), ModelError> {
         let index = self.actor_index(id)?;
         self.actors[index].route = RouteState::Cancelled;
+        self.actors[index].destination = None;
+        self.actors[index].route_step = 0;
         Ok(())
     }
 

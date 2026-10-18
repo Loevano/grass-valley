@@ -166,6 +166,35 @@ impl Query {
         }
         self.reached(at)
     }
+    /// Current next-segment safety for R11 travel, independent of road cost and
+    /// final-goal arrival. Search waypoints are integer tile centers; the actor
+    /// may be fractional. Round its tile like Python (ties to even), check the
+    /// graph's terrain/access/corners, and also the ACTUAL fractional fence edge.
+    /// This does not relocate an actor whose current tile has become occupied.
+    pub fn segment_safe(&self, from: Position, to: Position) -> bool {
+        let tile = |p: Position, exact: bool| {
+            let (x, y) = (libm::rint(p.x.get()), libm::rint(p.y.get()));
+            if x < f64::from(i32::MIN)
+                || x > f64::from(i32::MAX)
+                || y < f64::from(i32::MIN)
+                || y > f64::from(i32::MAX)
+                || (exact && (x != p.x.get() || y != p.y.get()))
+            {
+                None
+            } else {
+                Some(Tile {
+                    x: x as i32,
+                    y: y as i32,
+                })
+            }
+        };
+        let (Some(a), Some(b)) = (tile(from, false), tile(to, true)) else {
+            return false;
+        };
+        self.open(a)
+            && (a == b || self.edge(a, b).is_some())
+            && !spatial::crosses(from, to, self.index.fences())
+    }
     fn occupied(&self, t: Tile) -> bool {
         self.index.occupied_for(
             t,
