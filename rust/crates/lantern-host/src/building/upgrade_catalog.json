@@ -1,0 +1,321 @@
+{
+  "capacity_levels": {
+    "acre": 1,
+    "bakery": 1,
+    "barn": 3,
+    "butcher": 3,
+    "farm": 3,
+    "fish_pond": 3,
+    "fishing_hut": 3,
+    "flower_box": 3,
+    "garden_arch": 3,
+    "home": 3,
+    "lantern": 3,
+    "market": 3,
+    "mill": 1,
+    "mine": 4,
+    "orchard": 3,
+    "orchard_tree": 3,
+    "saddler": 3,
+    "sawpit": 2,
+    "signpost": 3,
+    "smelter": 3,
+    "smokehouse": 3,
+    "stable": 3,
+    "steelworks": 1,
+    "storehouse": 3,
+    "tannery": 3,
+    "tradehouse": 3,
+    "well": 3,
+    "woodcutter": 3,
+    "wooden_bench": 3,
+    "wooden_statue": 3,
+    "wooden_table": 3,
+    "workshop": 1
+  },
+  "equipment": {
+    "boat": {
+      "building": "fishing_hut",
+      "costs": {
+        "planks": 10
+      },
+      "level": 3,
+      "requires": null,
+      "skill": "fishing",
+      "xp": 20
+    },
+    "double_hearth_oven": {
+      "building": "bakery",
+      "costs": {
+        "planks": 20,
+        "tools": 5,
+        "wood": 60
+      },
+      "level": 5,
+      "requires": "larger_oven",
+      "skill": "baking",
+      "xp": 3
+    },
+    "geared_millstones": {
+      "building": "mill",
+      "costs": {
+        "planks": 20,
+        "tools": 5,
+        "wood": 60
+      },
+      "level": 5,
+      "requires": "improved_millstones",
+      "skill": "milling",
+      "xp": 3
+    },
+    "improved_boat": {
+      "building": "fishing_hut",
+      "costs": {
+        "coins": 20,
+        "planks": 15
+      },
+      "level": 4,
+      "requires": "boat",
+      "skill": "fishing",
+      "xp": 30
+    },
+    "improved_millstones": {
+      "building": "mill",
+      "costs": {
+        "planks": 10,
+        "wood": 30
+      },
+      "level": 4,
+      "requires": null,
+      "skill": "milling",
+      "xp": 2
+    },
+    "larger_oven": {
+      "building": "bakery",
+      "costs": {
+        "planks": 10,
+        "wood": 30
+      },
+      "level": 4,
+      "requires": null,
+      "skill": "baking",
+      "xp": 2
+    },
+    "master_boat": {
+      "building": "fishing_hut",
+      "costs": {
+        "coins": 40,
+        "planks": 20
+      },
+      "level": 5,
+      "requires": "improved_boat",
+      "skill": "fishing",
+      "xp": 40
+    },
+    "masterwork_millstones": {
+      "building": "mill",
+      "costs": {
+        "planks": 30,
+        "tools": 10,
+        "wood": 90
+      },
+      "level": 6,
+      "requires": "geared_millstones",
+      "skill": "milling",
+      "xp": 5
+    },
+    "masterwork_oven": {
+      "building": "bakery",
+      "costs": {
+        "planks": 30,
+        "tools": 10,
+        "wood": 90
+      },
+      "level": 6,
+      "requires": "double_hearth_oven",
+      "skill": "baking",
+      "xp": 5
+    },
+    "nets": {
+      "building": "fishing_hut",
+      "costs": {
+        "coins": 5,
+        "wood": 10
+      },
+      "level": 2,
+      "requires": null,
+      "skill": "fishing",
+      "xp": 10
+    },
+    "steel_pickaxe": {
+      "building": "mine",
+      "costs": {
+        "leather": 3,
+        "steel": 5
+      },
+      "level": 9,
+      "requires": null,
+      "skill": "mining",
+      "xp": 10
+    },
+    "timber_frame": {
+      "building": "home",
+      "costs": {
+        "planks": 10
+      },
+      "level": 5,
+      "requires": null,
+      "skill": "",
+      "xp": 0
+    },
+    "wool_nets": {
+      "building": "fishing_hut",
+      "costs": {
+        "wool": 5
+      },
+      "level": 3,
+      "requires": null,
+      "skill": "fishing",
+      "xp": 20
+    }
+  },
+  "hall": [
+    {
+      "costs": {
+        "wood": 40
+      },
+      "level": 2,
+      "processed_food": 0,
+      "production": {},
+      "reward": 30,
+      "seconds": 30
+    },
+    {
+      "costs": {
+        "wood": 50
+      },
+      "level": 3,
+      "processed_food": 0,
+      "production": {
+        "eggs": 6,
+        "wheat": 20
+      },
+      "reward": 40,
+      "seconds": 60
+    },
+    {
+      "costs": {
+        "planks": 15,
+        "wood": 60
+      },
+      "level": 4,
+      "processed_food": 0,
+      "production": {
+        "planks": 20
+      },
+      "reward": 50,
+      "seconds": 90
+    },
+    {
+      "costs": {
+        "planks": 20,
+        "tools": 5,
+        "wood": 70
+      },
+      "level": 5,
+      "processed_food": 10,
+      "production": {
+        "tools": 5
+      },
+      "reward": 60,
+      "seconds": 120
+    },
+    {
+      "costs": {
+        "leather": 4,
+        "planks": 25,
+        "wood": 80
+      },
+      "level": 6,
+      "processed_food": 0,
+      "production": {
+        "leather": 6
+      },
+      "reward": 70,
+      "seconds": 150
+    },
+    {
+      "costs": {
+        "planks": 30,
+        "tools": 5,
+        "wood": 90
+      },
+      "level": 7,
+      "processed_food": 0,
+      "production": {
+        "iron_ore": 20
+      },
+      "reward": 80,
+      "seconds": 180
+    },
+    {
+      "costs": {
+        "iron": 10,
+        "planks": 35,
+        "wood": 100
+      },
+      "level": 8,
+      "processed_food": 0,
+      "production": {
+        "iron": 10
+      },
+      "reward": 90,
+      "seconds": 210
+    },
+    {
+      "costs": {
+        "iron": 10,
+        "leather": 5,
+        "planks": 40,
+        "wood": 110
+      },
+      "level": 9,
+      "processed_food": 0,
+      "production": {
+        "saddles": 2
+      },
+      "reward": 100,
+      "seconds": 240
+    },
+    {
+      "costs": {
+        "planks": 45,
+        "steel": 10,
+        "wood": 120
+      },
+      "level": 10,
+      "processed_food": 0,
+      "production": {
+        "steel": 15
+      },
+      "reward": 120,
+      "seconds": 270
+    }
+  ],
+  "processed_food": [
+    "smoked_fish",
+    "smoked_trout",
+    "smoked_salmon",
+    "smoked_sturgeon",
+    "bread",
+    "bread_rolls",
+    "herb_bread",
+    "fruit_pies",
+    "cakes",
+    "prepared_meat",
+    "herbed_meat",
+    "smoked_meat",
+    "sausages",
+    "meat_pies"
+  ]
+}

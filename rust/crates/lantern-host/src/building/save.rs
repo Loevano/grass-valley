@@ -10,6 +10,26 @@ use crate::{
 };
 use serde::{Deserialize, Serialize};
 use serde_json::value::RawValue;
+mod extensions;
+use extensions::Extensions;
+#[derive(Serialize)]
+#[serde(transparent)]
+struct Added<T>(Option<T>);
+impl<T> Default for Added<T> {
+    fn default() -> Self {
+        Self(None)
+    }
+}
+impl<'de, T: Deserialize<'de>> Deserialize<'de> for Added<T> {
+    fn deserialize<D: serde::Deserializer<'de>>(d: D) -> Result<Self, D::Error> {
+        T::deserialize(d).map(|v| Self(Some(v)))
+    }
+}
+impl<T> Added<T> {
+    fn missing(&self) -> bool {
+        self.0.is_none()
+    }
+}
 
 #[derive(Serialize, Deserialize)]
 enum Format {
@@ -26,6 +46,8 @@ struct Save {
     towns: Vec<TownDto>,
     landscape: LandscapeDto,
     builders: Vec<BuilderDto>,
+    #[serde(default, skip_serializing_if = "Added::missing")]
+    extensions: Added<Extensions>,
 }
 #[derive(Clone, Copy, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -297,20 +319,26 @@ pub fn encode_building_save(world: &BuildingWorld) -> Result<Vec<u8>, BoundaryEr
         .collect();
     serde_json::to_vec(&Save {
         format: Format::Building,
-        version: 1,
+        version: 2,
         model,
         shared: world.shared,
         towns,
         landscape,
         builders,
+        extensions: Added(Some(Extensions::from_world(world))),
     })
     .map_err(|_| invalid("invalid construction encoding"))
 }
 pub fn decode_building_save(source: &[u8]) -> Result<BuildingWorld, BoundaryError> {
     let save: Save =
         serde_json::from_slice(source).map_err(|_| invalid("invalid construction schema"))?;
-    if save.version != 1 {
+    if ![1, 2].contains(&save.version) {
         return Err(invalid("unsupported construction version"));
+    }
+    if (save.version == 1 && save.extensions.0.is_some())
+        || (save.version == 2 && save.extensions.0.is_none())
+    {
+        return Err(invalid("version-gated construction extensions"));
     }
     let model = decode_save(save.model.get())?;
     let mut rules = BTreeMap::new();
@@ -328,12 +356,13 @@ pub fn decode_building_save(source: &[u8]) -> Result<BuildingWorld, BoundaryErro
                 .insert(
                     id,
                     Site {
-                        kind: s.kind,
+                        kind: s.kind.clone(),
                         dimensions,
                         orientation: s.orientation,
                         fence_orientation: s.fence_orientation,
                         stored: quantities(s.stored)?,
                         pending: quantities(s.pending)?,
+                        ..Site::new(s.kind, dimensions)
                     },
                 )
                 .is_some()
@@ -348,6 +377,7 @@ pub fn decode_building_save(source: &[u8]) -> Result<BuildingWorld, BoundaryErro
             player: t.player.into_core("$.towns.player")?,
             coins: Quantity::new(t.coins.get()).map_err(|_| invalid("invalid coins"))?,
             sites,
+            progression: Progression::default(),
             roads: t
                 .roads
                 .into_iter()
@@ -422,12 +452,17 @@ pub fn decode_building_save(source: &[u8]) -> Result<BuildingWorld, BoundaryErro
                     role: b.role.into(),
                     claim,
                     walk,
+                    helper: None,
+                    suspended: None,
                 },
             )
             .is_some()
         {
             return Err(invalid("duplicate builder identity"));
         }
+    }
+    if let Some(extensions) = save.extensions.0 {
+        extensions.apply(&mut rules, &mut builders)?;
     }
     BuildingWorld::restore_with_builders(model, rules, landscape, save.shared, builders)
         .map_err(|_| invalid("inconsistent construction facts"))

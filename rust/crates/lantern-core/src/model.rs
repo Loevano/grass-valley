@@ -504,7 +504,7 @@ impl Town {
         }
     }
 
-    fn validate_task(&self, task: &Task) -> Result<(), ModelError> {
+    pub fn validate_task(&self, task: &Task) -> Result<(), ModelError> {
         match task {
             Task::Idle | Task::Move { .. } | Task::RoadConstruction { .. } => {}
             Task::Work {
@@ -541,6 +541,32 @@ impl Town {
         actor.state.travel = TravelIntent::None;
         actor.playback = None;
         actor.route_step = 0;
+        Ok(())
+    }
+
+    /// Resume a suspended helper's intent at its current pose. Routes stay
+    /// derived; reject dangling destinations before mutating the actor.
+    pub fn restore_task_intent(
+        &mut self,
+        id: &ActorId,
+        task: Task,
+        travel: TravelIntent,
+    ) -> Result<(), ModelError> {
+        if let Some(destination) = travel.destination() {
+            if task == Task::Idle {
+                return Err(ModelError::InvalidTravelIntent);
+            }
+            self.resolve(destination)?;
+        }
+        self.set_task(id, task)?;
+        let index = self.actor_index(id)?;
+        self.actors[index].state.travel = travel;
+        Ok(())
+    }
+
+    pub fn set_cargo(&mut self, id: &ActorId, cargo: Cargo) -> Result<(), ModelError> {
+        let index = self.actor_index(id)?;
+        self.actors[index].state.cargo = cargo;
         Ok(())
     }
 

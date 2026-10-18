@@ -64,6 +64,12 @@ fn source_world(source: &Value, actors: Vec<ActorState>) -> BuildingWorld {
             site.fence_orientation = b["fence_orientation"].as_u64().unwrap_or(0) as u8;
             site.stored = goods(&b["stored_goods"]);
             site.pending = goods(&b["pending_output"]);
+            site.level = b["level"].as_u64().unwrap_or(1) as u8;
+            site.capacity_level = b["settler_level"].as_u64().unwrap_or(1) as u8;
+            site.equipment = b["profession_upgrades"]
+                .as_array()
+                .map(|v| v.iter().map(|v| v.as_str().unwrap().to_string()).collect())
+                .unwrap_or_default();
             sites.insert(id.clone(), site);
             Building {
                 id,
@@ -99,6 +105,13 @@ fn source_world(source: &Value, actors: Vec<ActorState>) -> BuildingWorld {
     )
     .unwrap();
     let rules = Rules {
+        progression: Progression {
+            skills: goods(&source["skills"]),
+            produced: goods(&source["produced"]),
+            food: source["food"].as_f64().map(q),
+            completed_trades: source["completed_trades"].as_u64().unwrap_or(0),
+            market_sales: source["market_sales"].as_f64().map(q),
+        },
         level: source["level"].as_u64().unwrap() as u8,
         sandbox: source["sandbox"].as_bool().unwrap(),
         coins: q(source["coins"].as_f64().unwrap()),
@@ -970,7 +983,7 @@ fn construction_save_rejects_invalid_fields_numbers_claims_and_walks() {
     for mutation in 0..10 {
         let mut bad = source.clone();
         match mutation {
-            0 => bad["version"] = json!(2),
+            0 => bad["version"] = json!(3),
             1 => bad["builders"][0]["walk"]["step"] = json!(usize::MAX),
             2 => bad["builders"][0]["id"]["town_id"] = json!("foreign"),
             3 => bad["towns"][0]["coins"] = json!(-1),
@@ -997,7 +1010,7 @@ fn construction_save_rejects_invalid_fields_numbers_claims_and_walks() {
         assert!(!format!("{error:?}").contains("private-input"));
     }
     let raw = String::from_utf8(bytes).unwrap();
-    let duplicate = raw.replacen("\"version\":1", "\"version\":1,\"version\":1", 1);
+    let duplicate = raw.replacen("\"version\":2", "\"version\":2,\"version\":2", 1);
     assert!(decode_building_save(duplicate.as_bytes()).is_err());
     let bad = raw.replacen(
         "\"stored\":{",
@@ -1187,4 +1200,539 @@ fn nullable_construction_fields_are_required_and_hall_upgrades_are_explicitly_un
     bad["model"]["towns"][0]["buildings"][0]["construction"] =
         json!({"in_progress":{"remaining":30}});
     assert!(decode_building_save(bad.to_string().as_bytes()).is_err());
+}
+
+fn upgraded_snapshot(w: &BuildingWorld) -> Value {
+    let town = &w.model().towns()[0];
+    let r = &w.rules()[&owner().town];
+    json!({"level":r.level,"coins":r.coins.get(),"buildings":town.buildings().iter().map(|b|{
+        let s=&r.sites[&b.id];
+        let child=s.child.as_ref().map(|c|match c{
+            ChildState::Field{stage,elapsed,progress,cycle}=>json!({"stage":stage,"elapsed":elapsed.get(),"progress":progress.get(),"cycle":cycle}),
+            ChildState::Tree{stage,elapsed,fruit}=>json!({"stage":stage,"elapsed":elapsed.get(),"fruit":fruit.get()}),
+        });
+        json!({"kind":s.kind,"tile":[b.location.x,b.location.y],"level":s.level,"capacity":s.capacity_level,"equipment":s.equipment,
+            "parent":s.parent.as_ref().map(|id|town.buildings().iter().position(|b|&b.id==id).unwrap()),"child":child,
+            "remaining":match b.construction{ConstructionState::Complete=>None,ConstructionState::InProgress{remaining}=>Some(remaining.get())},"stored":values(&s.stored),"pending":values(&s.pending)})
+    }).collect::<Vec<_>>()})
+}
+fn upgrade_vector_command(w: &BuildingWorld, input: &Value) -> Command {
+    let id = || {
+        w.model().towns()[0].buildings()[input["index"].as_u64().unwrap() as usize]
+            .id
+            .clone()
+    };
+    match input["action"].as_str().unwrap() {
+        "upgrade_building" => Command::UpgradeStructure(id()),
+        "upgrade_capacity" => Command::UpgradeCapacity(id()),
+        "upgrade" => Command::UpgradeHall,
+        "profession_upgrade" => Command::UpgradeEquipment {
+            id: id(),
+            key: input["upgrade"].as_str().unwrap().into(),
+        },
+        "build" if input["kind"] == "acre" || input["kind"] == "orchard_tree" => {
+            let parent = input
+                .get("farm_index")
+                .or_else(|| input.get("orchard_index"))
+                .unwrap()
+                .as_u64()
+                .unwrap() as usize;
+            Command::BuildChild {
+                kind: input["kind"].as_str().unwrap().into(),
+                tile: tile(
+                    input["x"].as_i64().unwrap() as i32,
+                    input["y"].as_i64().unwrap() as i32,
+                ),
+                parent: w.model().towns()[0].buildings()[parent].id.clone(),
+                orientation: input["orientation"].as_u64().unwrap_or(0) as u8,
+            }
+        }
+        _ => command(w, input),
+    }
+}
+#[test]
+fn paired_python_upgrades_linked_groups_helpers_and_hall_rewards() {
+    let vectors: Value =
+        serde_json::from_str(include_str!("fixtures/building/r12_upgrade_cases.json")).unwrap();
+    let catalog: Value =
+        serde_json::from_str(include_str!("../src/building/upgrade_catalog.json")).unwrap();
+    assert_eq!(catalog, vectors["catalog"]);
+    for case in vectors["cases"].as_array().unwrap() {
+        let mut actor = worker(10);
+        actor.position = p(if case["hall"] == true { 29. } else { 39. }, 30.);
+        if case["helper"] == true {
+            let site = BuildingId::from_saved(EntityIdentity::from_saved(owner(), 2).unwrap());
+            actor.task = Task::Work {
+                workplace: site.clone(),
+                target: Destination::Building(site),
+                phase: WorkPhase::Working,
+                elapsed: Seconds::new(2.125).unwrap(),
+            };
+        }
+        let id = actor.id.clone();
+        let mut world = source_world(&case["source"], vec![actor]);
+        if case["helper"] == true {
+            let site = world.model().towns()[0].buildings()[1].id.clone();
+            world.set_upgrade_helper(&owner(), &id, Some(site)).unwrap();
+        } else {
+            world
+                .set_builder_role(&owner(), &id, Role::Dedicated)
+                .unwrap();
+        }
+        for (i, input) in case["actions"].as_array().unwrap().iter().enumerate() {
+            let before = encode_building_save(&world).unwrap();
+            let result = if input["action"] == "tick" {
+                world.advance_construction(
+                    &owner(),
+                    Seconds::new(input["seconds"].as_f64().unwrap()).unwrap(),
+                    route,
+                )
+            } else {
+                world
+                    .execute(&owner(), upgrade_vector_command(&world, input))
+                    .map(|_| ())
+            };
+            assert_eq!(
+                result.is_ok(),
+                case["outcomes"][i]["ok"].as_bool().unwrap(),
+                "{}[{i}] {input} {result:?}",
+                case["name"]
+            );
+            if result.is_err() {
+                assert_eq!(encode_building_save(&world).unwrap(), before);
+            }
+            equal_numbers(
+                &upgraded_snapshot(&world),
+                &case["outcomes"][i]["state"],
+                &format!("{}[{i}]", case["name"]),
+            );
+            let saved = encode_building_save(&world).unwrap();
+            let loaded = decode_building_save(&saved).unwrap();
+            assert_eq!(world.builders(), loaded.builders());
+            assert_eq!(encode_building_save(&loaded).unwrap(), saved);
+            world = loaded;
+        }
+    }
+}
+
+fn farm_world(actors: Vec<ActorState>) -> BuildingWorld {
+    let mut source = fixture()["cases"][0]["source"].clone();
+    source["resources"] = json!([]);
+    source["buildings"]
+        .as_array_mut()
+        .unwrap()
+        .push(json!({"kind":"farm","x":40,"y":30,"stored_goods":{"wood":1.25}}));
+    source_world(&source, actors)
+}
+fn add_acre(world: &mut BuildingWorld) -> BuildingId {
+    let parent = world.model().towns()[0].buildings()[1].id.clone();
+    world
+        .execute(
+            &owner(),
+            Command::BuildChild {
+                kind: "acre".into(),
+                tile: tile(41, 31),
+                parent,
+                orientation: 0,
+            },
+        )
+        .unwrap()
+        .unwrap()
+}
+#[test]
+fn linked_group_move_preserves_field_progress_and_stable_work_references_atomically() {
+    let mut world = farm_world(vec![worker(10)]);
+    let acre = add_acre(&mut world);
+    let farm = world.model().towns()[0].buildings()[1].id.clone();
+    let actor = world.model().towns()[0].actors()[0].state().id.clone();
+    let mut town = world.model().towns()[0].clone();
+    town.set_task(
+        &actor,
+        Task::Work {
+            workplace: farm.clone(),
+            target: Destination::Building(acre.clone()),
+            phase: WorkPhase::Working,
+            elapsed: Seconds::new(2.125).unwrap(),
+        },
+    )
+    .unwrap();
+    let request = town
+        .request_route(
+            &actor,
+            Destination::Building(acre.clone()),
+            NavigationRevision(1),
+        )
+        .unwrap();
+    town.accept_route(
+        &actor,
+        &request,
+        NavigationRevision(1),
+        RouteOutcome::Ready(vec![p(40., 31.)]),
+    )
+    .unwrap();
+    world = replace_town(world, town);
+    let (model, mut rules, mut landscape, shared, builders) = world.into_parts();
+    rules
+        .get_mut(&owner().town)
+        .unwrap()
+        .sites
+        .get_mut(&acre)
+        .unwrap()
+        .child = Some(ChildState::Field {
+        stage: "ripe".into(),
+        elapsed: Seconds::new(1.125).unwrap(),
+        progress: Work::new(0.375).unwrap(),
+        cycle: u64::MAX,
+    });
+    landscape.resources.push(Resource {
+        kind: "rock".into(),
+        footprint: Footprint::saved(tile(46, 31), None).unwrap(),
+    });
+    let mut world =
+        BuildingWorld::restore_with_builders(model, rules, landscape, shared, builders).unwrap();
+    let before = encode_building_save(&world).unwrap();
+    assert_eq!(
+        world.execute(
+            &owner(),
+            Command::Move {
+                id: farm.clone(),
+                tile: tile(45, 30)
+            }
+        ),
+        Err(Error::Occupied)
+    );
+    assert_eq!(encode_building_save(&world).unwrap(), before);
+    let state = world.model().towns()[0]
+        .actor(&actor)
+        .unwrap()
+        .state()
+        .clone();
+    let child = world.rules()[&owner().town].sites[&acre].child.clone();
+    world
+        .execute(
+            &owner(),
+            Command::Move {
+                id: farm.clone(),
+                tile: tile(43, 30),
+            },
+        )
+        .unwrap();
+    assert_eq!(
+        world.model().towns()[0].actor(&actor).unwrap().state(),
+        &state
+    );
+    assert_eq!(
+        world.model().towns()[0].actor(&actor).unwrap().route(),
+        &RouteState::NotRequested
+    );
+    assert_eq!(
+        world.model().towns()[0].building(&acre).unwrap().location,
+        tile(44, 31)
+    );
+    assert_eq!(world.rules()[&owner().town].sites[&acre].child, child);
+    let world = decode_building_save(&encode_building_save(&world).unwrap()).unwrap();
+    assert_eq!(world.rules()[&owner().town].sites[&acre].parent, Some(farm));
+    assert_eq!(world.rules()[&owner().town].sites[&acre].child, child);
+}
+#[test]
+fn transport_refunds_survive_group_moves_and_demolition_without_duplication() {
+    let mut actor = worker(10);
+    let farm = BuildingId::from_saved(EntityIdentity::from_saved(owner(), 2).unwrap());
+    let hall = BuildingId::from_saved(EntityIdentity::from_saved(owner(), 1).unwrap());
+    actor.task = Task::Transport {
+        source: farm.clone(),
+        destination: hall.clone(),
+        phase: TransportPhase::ToDropoff,
+    };
+    let id = actor.id.clone();
+    let mut world = farm_world(vec![actor]);
+    let acre = add_acre(&mut world);
+    world
+        .execute(
+            &owner(),
+            Command::Move {
+                id: farm.clone(),
+                tile: tile(43, 30),
+            },
+        )
+        .unwrap();
+    let r = &world.rules()[&owner().town];
+    assert_eq!(r.sites[&farm].stored["wood"].get(), 3.375);
+    assert!(
+        world.model().towns()[0]
+            .actor(&id)
+            .unwrap()
+            .state()
+            .cargo
+            .goods()
+            .is_empty()
+    );
+    let (model, mut rules, landscape, shared, builders) = world.into_parts();
+    rules
+        .get_mut(&owner().town)
+        .unwrap()
+        .sites
+        .get_mut(&acre)
+        .unwrap()
+        .pending
+        .insert("planks".into(), q(0.375));
+    let mut world =
+        BuildingWorld::restore_with_builders(model, rules, landscape, shared, builders).unwrap();
+    world
+        .execute(&owner(), Command::Destroy { id: farm.clone() })
+        .unwrap();
+    // The acre cost is spent, while the parent's inventory and explicit carried
+    // transport cargo are salvaged exactly once, together with pending output.
+    assert_eq!(
+        world.rules()[&owner().town].sites[&hall].stored["wood"].get(),
+        98.375
+    );
+    assert_eq!(
+        world.rules()[&owner().town].sites[&hall].stored["planks"].get(),
+        30.375
+    );
+    let saved = encode_building_save(&world).unwrap();
+    let mut world = decode_building_save(&saved).unwrap();
+    assert_eq!(
+        world.execute(&owner(), Command::Destroy { id: farm }),
+        Err(Error::MissingBuilding)
+    );
+    assert_eq!(encode_building_save(&world).unwrap(), saved);
+}
+#[test]
+fn destroying_a_loaded_transport_source_salvages_cargo_at_the_hall_and_failures_are_atomic() {
+    let mut actor = worker(10);
+    let id = actor.id.clone();
+    let farm = BuildingId::from_saved(EntityIdentity::from_saved(owner(), 2).unwrap());
+    let hall = BuildingId::from_saved(EntityIdentity::from_saved(owner(), 1).unwrap());
+    actor.task = Task::Transport {
+        source: farm.clone(),
+        destination: hall.clone(),
+        phase: TransportPhase::ToDropoff,
+    };
+    let mut world = farm_world(vec![actor]);
+    add_acre(&mut world);
+    let mut raw: Value = serde_json::from_slice(&encode_building_save(&world).unwrap()).unwrap();
+    raw["model"]["towns"][0]["actors"][0]["task_generation"] = json!(u64::MAX.to_string());
+    let mut blocked = decode_building_save(raw.to_string().as_bytes()).unwrap();
+    let saved = encode_building_save(&blocked).unwrap();
+    assert_eq!(
+        blocked.execute(&owner(), Command::Destroy { id: farm.clone() }),
+        Err(Error::Model)
+    );
+    assert_eq!(encode_building_save(&blocked).unwrap(), saved);
+    world
+        .execute(&owner(), Command::Destroy { id: farm })
+        .unwrap();
+    assert_eq!(
+        world.rules()[&owner().town].sites[&hall].stored["wood"].get(),
+        98.375
+    );
+    assert_eq!(
+        world.model().towns()[0].actor(&id).unwrap().state().task,
+        Task::Idle
+    );
+    assert!(
+        world.model().towns()[0]
+            .actor(&id)
+            .unwrap()
+            .state()
+            .cargo
+            .goods()
+            .is_empty()
+    );
+}
+#[test]
+fn acre_assigned_helper_resumes_exact_work_intent_after_saved_upgrade_and_relocation() {
+    let mut world = farm_world(vec![worker(10)]);
+    let acre = add_acre(&mut world);
+    let farm = world.model().towns()[0].buildings()[1].id.clone();
+    let id = world.model().towns()[0].actors()[0].state().id.clone();
+    let mut town = world.model().towns()[0].clone();
+    let task = Task::Work {
+        workplace: acre.clone(),
+        target: Destination::Building(acre.clone()),
+        phase: WorkPhase::ReturningWater,
+        elapsed: Seconds::new(2.125).unwrap(),
+    };
+    town.set_task(&id, task.clone()).unwrap();
+    town.request_route(
+        &id,
+        Destination::Building(acre.clone()),
+        NavigationRevision(1),
+    )
+    .unwrap();
+    world = replace_town(world, town);
+    world
+        .set_upgrade_helper(&owner(), &id, Some(acre.clone()))
+        .unwrap();
+    world
+        .execute(&owner(), Command::UpgradeStructure(farm.clone()))
+        .unwrap();
+    world
+        .advance_construction(&owner(), Seconds::new(1.).unwrap(), route)
+        .unwrap();
+    assert_eq!(
+        world.builders()[&id].claim,
+        Some(Claim::Building(farm.clone()))
+    );
+    assert!(world.builders()[&id].suspended.is_some());
+    world = decode_building_save(&encode_building_save(&world).unwrap()).unwrap();
+    world
+        .execute(
+            &owner(),
+            Command::Move {
+                id: farm.clone(),
+                tile: tile(43, 30),
+            },
+        )
+        .unwrap();
+    assert!(world.builders()[&id].walk.is_none());
+    world
+        .advance_construction(&owner(), Seconds::new(300.).unwrap(), route)
+        .unwrap();
+    world
+        .advance_construction(&owner(), Seconds::new(30.).unwrap(), route)
+        .unwrap();
+    let actor = world.model().towns()[0].actor(&id).unwrap();
+    assert_eq!(actor.state().task, task);
+    assert_eq!(
+        actor.state().travel,
+        TravelIntent::Active(Destination::Building(acre))
+    );
+    assert_eq!(actor.state().cargo.goods()["wood"].get(), 2.125);
+    assert_eq!(world.rules()[&owner().town].sites[&farm].level, 2);
+    assert!(world.builders()[&id].claim.is_none());
+    assert!(world.builders()[&id].suspended.is_none());
+    let saved = encode_building_save(&world).unwrap();
+    assert_eq!(
+        encode_building_save(&decode_building_save(&saved).unwrap()).unwrap(),
+        saved
+    );
+}
+#[test]
+fn helper_reassignment_and_demolition_never_restore_a_removed_profession_target() {
+    let mut world = farm_world(vec![worker(10)]);
+    let farm = world.model().towns()[0].buildings()[1].id.clone();
+    let id = world.model().towns()[0].actors()[0].state().id.clone();
+    let mut town = world.model().towns()[0].clone();
+    town.set_task(
+        &id,
+        Task::Work {
+            workplace: farm.clone(),
+            target: Destination::Building(farm.clone()),
+            phase: WorkPhase::Working,
+            elapsed: Seconds::new(1.).unwrap(),
+        },
+    )
+    .unwrap();
+    world = replace_town(world, town);
+    world
+        .set_upgrade_helper(&owner(), &id, Some(farm.clone()))
+        .unwrap();
+    world
+        .execute(&owner(), Command::UpgradeCapacity(farm.clone()))
+        .unwrap();
+    world
+        .advance_construction(&owner(), Seconds::new(1.).unwrap(), route)
+        .unwrap();
+    let mut demolished = decode_building_save(&encode_building_save(&world).unwrap()).unwrap();
+    demolished
+        .execute(&owner(), Command::Destroy { id: farm.clone() })
+        .unwrap();
+    assert!(demolished.builders()[&id].helper.is_none());
+    assert!(demolished.builders()[&id].suspended.is_none());
+    assert_eq!(
+        demolished.model().towns()[0]
+            .actor(&id)
+            .unwrap()
+            .state()
+            .task,
+        Task::Idle
+    );
+    decode_building_save(&encode_building_save(&demolished).unwrap()).unwrap();
+    world
+        .set_builder_role(&owner(), &id, Role::Dedicated)
+        .unwrap();
+    assert!(world.builders()[&id].helper.is_none());
+    assert!(world.builders()[&id].suspended.is_none());
+    world
+        .advance_construction(&owner(), Seconds::new(1.).unwrap(), route)
+        .unwrap();
+    world
+        .execute(&owner(), Command::Destroy { id: farm })
+        .unwrap();
+    assert_eq!(
+        world.model().towns()[0].actor(&id).unwrap().state().task,
+        Task::Idle
+    );
+    assert!(world.builders()[&id].claim.is_none());
+    decode_building_save(&encode_building_save(&world).unwrap()).unwrap();
+}
+#[test]
+fn construction_v1_migration_and_v2_extension_validation_preserve_scope_and_rewards() {
+    let world = with_actors(vec![worker(10)]);
+    let raw: Value = serde_json::from_slice(&encode_building_save(&world).unwrap()).unwrap();
+    let mut old = raw.clone();
+    old["version"] = json!(1);
+    old.as_object_mut().unwrap().remove("extensions");
+    let restored = decode_building_save(old.to_string().as_bytes()).unwrap();
+    assert_eq!(restored.rules(), world.rules());
+    for mutation in 0..7 {
+        let mut bad = raw.clone();
+        match mutation {
+            0 => {
+                bad.as_object_mut().unwrap().remove("extensions");
+            }
+            1 => {
+                bad["extensions"]["sites"][0]["parent"] =
+                    bad["extensions"]["sites"][0]["id"].clone()
+            }
+            2 => {
+                bad["extensions"]["sites"][0]["upgrade"] =
+                    json!({"hall":{"level":2,"reward":100000}})
+            }
+            3 => bad["extensions"]["progression"][0]["skills"]["fishing"] = json!(-1),
+            4 => {
+                let x = bad["extensions"]["sites"][0].clone();
+                bad["extensions"]["sites"].as_array_mut().unwrap().push(x);
+            }
+            5 => bad["version"] = json!(1),
+            6 => bad["extensions"] = Value::Null,
+            _ => unreachable!(),
+        }
+        assert!(
+            decode_building_save(bad.to_string().as_bytes()).is_err(),
+            "invalid extension {mutation} accepted"
+        );
+    }
+}
+
+#[test]
+fn idle_upgrade_helpers_preserve_terminal_cancelled_intent_across_reload() {
+    let mut actor = worker(10);
+    actor.travel = TravelIntent::Cancelled;
+    let id = actor.id.clone();
+    let mut world = farm_world(vec![actor]);
+    let farm = world.model().towns()[0].buildings()[1].id.clone();
+    world
+        .set_upgrade_helper(&owner(), &id, Some(farm.clone()))
+        .unwrap();
+    world
+        .execute(&owner(), Command::UpgradeStructure(farm))
+        .unwrap();
+    world
+        .advance_construction(&owner(), Seconds::new(1.).unwrap(), route)
+        .unwrap();
+    world = decode_building_save(&encode_building_save(&world).unwrap()).unwrap();
+    world
+        .advance_construction(&owner(), Seconds::new(300.).unwrap(), route)
+        .unwrap();
+    world
+        .advance_construction(&owner(), Seconds::new(30.).unwrap(), route)
+        .unwrap();
+    let state = world.model().towns()[0].actor(&id).unwrap().state();
+    assert_eq!(state.task, Task::Idle);
+    assert_eq!(state.travel, TravelIntent::Cancelled);
+    decode_building_save(&encode_building_save(&world).unwrap()).unwrap();
 }

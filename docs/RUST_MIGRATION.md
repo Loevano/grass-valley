@@ -3,9 +3,8 @@
 A migration that can be completed one task at a time, with a prompt for each task.
 
 **Status:** R01–R10 complete as experimental migration foundations; all three R11
-code slices are implemented at the experimental model boundary. R12 slices 1–2 add
-experimental building commands, construction and offline reload; linked groups
-and upgrades remain open.
+code slices are implemented at the experimental model boundary. R12 slices 1–3 implement the experimental building/construction model,
+including upgrades, linked groups, helpers and offline reload.
 Integrated W2/W3 movement/accounting acceptance remains open. R08 spatial
 rules and founder movement is complete as an experimental private-copy foundation. R07 includes saved-first terrain versions 1–7,
 nonchunked maps, authored starter/town sites, ordinary/swamp metadata and overlays,
@@ -236,7 +235,7 @@ only after work is performed. Keep unfinished stages visible in the roadmap.
 | R09 | Search algorithms and library decision | R08 | Complete at experimental core boundary: library/custom decision, bounded no_std backend and actual Python route/access/cost parity; [evaluation/evidence](RUST_SEARCH_EVALUATION.md) |
 | R10 | Request scheduler and cache invalidation | R09 | Complete as experimental navigation foundation; slices 1–3 and completion audit below; integrated W1–W6 acceptance retained in R11/R19–R23 |
 | R11 | Persistent worker movement and playback | R10 | Slices 1–3 implemented at experimental model boundary; integrated W2/W3 movement/accounting acceptance remains open |
-| R12 | Construction and building operations | R11 | Slices 1–2 implemented at explicit synthetic-model boundary; slice 3 upgrades/linked groups/helpers, gameplay accounting and durable integration remain open; evidence below |
+| R12 | Construction and building operations | R11 | Slices 1–3 implemented at explicit synthetic-model boundary; full economy/resident rules, durable/public host integration and release acceptance remain in R13–R23; completion boundary below |
 | R13 | Resource ledger, storage, and progression rules | R12 | Not started |
 | R14 | Hauling, delivery, and merchant trips | R13 | Not started |
 | R15 | Gathering and processing professions | R14 | Not started |
@@ -2744,7 +2743,7 @@ the final test-only comparison edit was verified with the targeted completion/ro
 removal generation-failure case. The failed initial report is retained, not relabeled
 as a passing run. Commit: `feat: add Rust builder claims and construction reload`.
 
-Remaining: R12 slice 3 owns upgrades, hall completion rewards, upgrade-specific
+Historical slice-2 boundary (superseded by slice 3 below): R12 slice 3 owns upgrades, hall completion rewards, upgrade-specific
 helpers, linked acres/orchard trees and complete cancellation interactions. Incomplete
 halls and linked children explicitly reject rather than discarding absent upgrade
 or link metadata. R13–R17 retain full economic/production/reservation and resident
@@ -2752,6 +2751,88 @@ rules. R19–R21 retain durable disk/registry/chunk recovery, authenticated disp
 R10 pump integration and public browser construction observations. No new launcher,
 HTTP listener, legacy construction import or live-save writer is introduced.
 R11's integrated W2/W3 movement/accounting and R23's W1–W6 gates remain open.
+
+### R12 slice 3 — Upgrades, linked groups and cancellation
+
+This slice completes the planned R12 code slices at the experimental explicit-facts
+boundary. `BuildingWorld` now supports structural/capacity/equipment/hall upgrades,
+linked acres and orchard trees, atomic group relocation/removal, upgrade helpers,
+and explicit transport-cargo refunds. Python remains the playable host; this is not
+an HTTP, legacy-import, full-economy or release acceptance claim.
+
+- Upgrade costs, level/capacity ceilings, equipment prerequisites/skill gates,
+  hall milestone production requirements, processed-food keys, durations and coin
+  rewards come from the reviewed generated `building/upgrade_catalog.json` and
+  existing construction catalog. Structural and staffing levels stay independent.
+  The fourth cottage structure requires stone. Wells, decorations, acres and fruit
+  trees reject unsupported upgrades. The first fishing boat is immediate; other
+  equipment uses construction. Sandbox bypasses material/skill/milestone charges
+  and finishes immediately while retaining prerequisite and maximum-level checks.
+- Pending upgrades retain their target independently of current levels. Completion
+  applies that target once, clears the pending record, and credits hall reward coins
+  only then. Rewards are never upgrade costs. Hall levels stop at 10. Explicit
+  `Progression` observations supply skills, lifetime output, food, trades and sales;
+  stocked/imported goods alone do not prove production. These observations do not
+  replace R13's authoritative resource ledger or progression producers.
+- `BuildChild` requires an owned, completed matching farm/orchard within three tiles
+  in each direction, validates orientation and ordinary placement, charges the
+  existing cost, and immediately creates the initial saved field/tree state. Parent
+  references use stable IDs. A parent move validates every translated child before
+  applying one move fee or clearing any forage. Direct child moves retain parent
+  constraints. Group removal releases references and salvages stored/pending goods
+  once at the hall. Field stages, fractional progress, fruit and exact cycle counters
+  survive group moves/reload; their production/growth engines remain R16.
+- Explicitly assigned busy residents can help only their own upgrading workplace;
+  an acre assignment resolves to its parent farm. Dedicated builders still select
+  first and claims remain exclusive. Helpers suspend their original task and travel
+  intent while the actor keeps its actual position/cargo. Completion resumes that
+  exact intent at the current pose with derived routes discarded. Relocation retires
+  only stale walks; reassignment or demolition cannot restore a deleted profession
+  target. Busy workers without an explicit helper assignment remain untouched.
+- Moving or removing an explicit `Task::Transport` endpoint cancels its task and
+  returns its carried goods to the actual source, or the hall when that source is
+  removed/under construction. Clear carried cargo only in the same successful
+  transaction. Work cargo stays actor-owned: this model must not infer unported
+  supply/production reservations from a generic work task. R14–R17 still own those
+  complete logistics/production policies. Failed group checks, cargo overflow or
+  generation exhaustion leave inventories, actors, fees and allocation unchanged.
+- Upgrade barns retain active fences, and completed acres remain construction
+  walkable, including when their farm is upgrading. Navigation projections remain
+  derived and never modify the authoritative model.
+
+The private `lantern-building-model` schema advances to v2, nesting the unchanged
+v3 model. Closed, version-gated extension records contain every site's levels,
+parent, child state, equipment and pending upgrade; town progression facts; and
+helper assignments/suspended intent. v1 migrates explicitly to its original
+level-one/no-link/no-helper facts. v2 requires all records and nullable fields;
+unknown fields, duplicate/foreign links, wrong parent kinds, invalid child stages,
+forged reward amounts, inconsistent helper assignments and missing records reject.
+No arbitrary legacy extension bag or live-save writer is introduced.
+
+Validation includes the existing 19 building tests, eight additional R12 tests,
+and 13 actual-Python upgrade/group/helper/hall scenarios covering 60 actions, with
+JSON reload after each action. The earlier 52 command comparisons and 161 builder
+updates remain applicable. Regenerate upgrade data and vectors with
+`tests/fixtures/building/generate_upgrade_catalog.py` and
+`tests/fixtures/building/generate_upgrade_cases.py` under the host crate. Additional
+checks cover atomic transport refunds, generation exhaustion, field cycle counters
+above JavaScript's exact integer limit, suspended helper recovery, v1 migration and
+v2 corruption. Applicable validation selects the two Rust packages (formatting,
+locked offline tests/doc tests and Clippy). Performance comparisons are not run:
+this ports functionality and persistence rather than investigating performance.
+
+Evidence: all six commands in the affected `python3 tools/check.py` run passed;
+see `performance-results/20261018-171053/report.md`. Final review added terminal
+cancelled-intent preservation for idle upgrade helpers; all 27 building tests,
+workspace format checking and host all-target Clippy passed afterward. No
+performance comparison was needed. Commit: `feat: add Rust upgrades and linked building groups`.
+
+Remaining migration ownership is unchanged: R13–R17 implement the complete ledger,
+resident assignments/qualifications, recipes, production clocks, field/water state,
+animals and reservation accounting; R19–R21 integrate durable saves, commands,
+R10 dispatch, snapshots and the playable browser contract. R11's integrated W2/W3
+movement/accounting and R23's W1–W6 release gates remain open. No missing subsystem
+is defaulted or declared removed by completing this R12 model slice.
 
 ## R13 — Resource accounting and progression rules
 

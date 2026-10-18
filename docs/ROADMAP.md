@@ -8,7 +8,7 @@ and cache rules are in [Backend](BACKEND.md#cached-zoomed-out-map).
 | 1     | Cached zoomed-out town overview    | Implemented              | Show the landscape and city sizes without refreshing animated scene detail.                                      |
 | 2     | Production line balancing          | Wood and grain implemented; fishing remains | Develop clear fishing chains with capped staffing and simple upgrades. |
 | 3     | Scalable villager pathfinding       | Host queue implemented; cache refinement and shared navigation remain | Keep movement responsive as villager counts and towns grow, with bounded routing work. |
-| 4     | Rust migration | R12 slices 1–2 commands, construction and offline reload implemented; linked groups, upgrades and integrated acceptance remain open | Follow the [staged plan and prompts](RUST_MIGRATION.md), preserving playable checkpoints and saved worlds. |
+| 4     | Rust migration | R12 experimental building/construction slices implemented; economy, host integration and release acceptance remain open | Follow the [staged plan and prompts](RUST_MIGRATION.md), preserving playable checkpoints and saved worlds. |
 
 ## Rust migration
 
@@ -26,11 +26,11 @@ are complete behind the experimental private-copy boundary; see the
 [completion audit](RUST_MIGRATION.md#r08-slice-3--shared-boundaries-recovery-and-completion-audit).
 R11's three code slices add generic worker travel/wait/arrival, task-change and
 blocked recovery, facing, confirmed playback and versioned model reload continuity.
-R12 slices 1–2 add atomic experimental building commands, builder priority/claims,
-construction progress, persistent waypoint walks and complete offline construction
-serialization on explicit synthetic facts. Slice 3 retains linked acres/orchard
-trees, upgrades and upgrade helpers. Complete economic cancellation, durable saves
-and gameplay integration remain open.
+R12's three slices implement the experimental building/construction model,
+including upgrades, linked groups, upgrade helpers and offline reload; see the
+[completion boundary](RUST_MIGRATION.md#r12-slice-3--upgrades-linked-groups-and-cancellation).
+Full economy/production rules and resident qualification remain in R13–R17;
+durable saves and playable host integration remain in R19–R21.
 R11's integrated W2/W3 movement/accounting acceptance remains open; R19–R21 retain
 HTTP/save/snapshot integration and R23 retains complete W1–W6 acceptance. See the
 [R10 completion audit](RUST_MIGRATION.md#final-measurements-and-foundation-completion)

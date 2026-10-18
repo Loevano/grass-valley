@@ -2,7 +2,7 @@
 //! navigation work is budgeted by its owner, never an unbounded search in a tick.
 use super::*;
 use lantern_core::{
-    model::{ConstructionPhase, Task},
+    model::{ConstructionPhase, Task, TravelIntent},
     search::{Access, Query, Target, Terrain},
     spatial::{LandAccess, RoadMode, SpatialIndex},
     units::Seconds,
@@ -35,6 +35,13 @@ pub struct Builder {
     pub role: Role,
     pub claim: Option<Claim>,
     pub walk: Option<Walk>,
+    pub helper: Option<BuildingId>,
+    pub suspended: Option<Suspended>,
+}
+#[derive(Clone, Debug, PartialEq)]
+pub struct Suspended {
+    pub task: Task,
+    pub travel: TravelIntent,
 }
 pub struct Plan {
     pub actor: ActorId,
@@ -71,8 +78,41 @@ impl BuildingWorld {
                 .find(|t| t.owner() == id.identity().owner())
                 .ok_or(Error::Ownership)?;
             let actor = town.actor(id).map_err(|_| Error::InvalidFacts)?;
-            if builder.role == Role::Busy && builder.claim.is_some() {
+            if builder.role == Role::Busy && builder.claim.is_some() && builder.helper.is_none() {
                 return Err(Error::InvalidFacts);
+            }
+            if let Some(helper) = &builder.helper {
+                town.building(helper).map_err(|_| Error::InvalidFacts)?;
+                let task = builder
+                    .suspended
+                    .as_ref()
+                    .map_or(&actor.state().task, |s| &s.task);
+                if *task != Task::Idle
+                    && !matches!(task,Task::Work{workplace,..} if workplace==helper)
+                {
+                    return Err(Error::InvalidFacts);
+                }
+            }
+            if builder.helper.is_some() && builder.role != Role::Busy {
+                return Err(Error::InvalidFacts);
+            }
+            if let Some(saved) = &builder.suspended {
+                if builder.helper.is_none() || builder.claim.is_none() {
+                    return Err(Error::InvalidFacts);
+                }
+                town.validate_task(&saved.task)
+                    .map_err(|_| Error::InvalidFacts)?;
+                if !matches!(saved.task, Task::Idle | Task::Work { .. }) {
+                    return Err(Error::InvalidFacts);
+                }
+                if let Some(lantern_core::model::Destination::Building(id)) =
+                    saved.travel.destination()
+                {
+                    town.building(id).map_err(|_| Error::InvalidFacts)?;
+                }
+                if saved.task == Task::Idle && saved.travel.destination().is_some() {
+                    return Err(Error::InvalidFacts);
+                }
             }
             match &builder.claim {
                 None => {
@@ -84,6 +124,15 @@ impl BuildingWorld {
                     }
                 }
                 Some(claim) => {
+                    if builder.role == Role::Busy
+                        && (builder.suspended.is_none()
+                            || helper_target(town, &world.rules[&town.owner().town], builder)
+                                .map(Claim::Building)
+                                .as_ref()
+                                != Some(claim))
+                    {
+                        return Err(Error::InvalidFacts);
+                    }
                     if !claims.insert((town.owner().clone(), claim.clone())) {
                         return Err(Error::InvalidFacts);
                     }
@@ -153,6 +202,17 @@ impl BuildingWorld {
             .position(|t| t.owner() == owner)
             .ok_or(Error::MissingTown)?;
         let mut town = self.model.towns[index].clone();
+        // Explicitly switching an upgrade helper's role releases its profession
+        // assignment; suspend/resume is only for temporary upgrade assistance.
+        let mut previous = self.builders.get(id).cloned();
+        if role != Role::Busy && previous.as_ref().is_some_and(|b| b.helper.is_some()) {
+            town.set_task(id, Task::Idle).map_err(|_| Error::Model)?;
+            let b = previous.as_mut().unwrap();
+            b.helper = None;
+            b.suspended = None;
+            b.claim = None;
+            b.walk = None;
+        }
         let actor = town.actor(id).map_err(|_| Error::InvalidFacts)?;
         if construction_task(&actor.state().task) && !self.builders.contains_key(id) {
             return Err(Error::Unsupported);
@@ -163,10 +223,12 @@ impl BuildingWorld {
         {
             return Err(Error::Unsupported);
         }
-        let mut builder = self.builders.get(id).cloned().unwrap_or(Builder {
+        let mut builder = previous.unwrap_or(Builder {
             role,
             claim: None,
             walk: None,
+            helper: None,
+            suspended: None,
         });
         if builder.role != role {
             builder.walk = None;
@@ -210,8 +272,7 @@ impl BuildingWorld {
                 .map(|b| b.id.clone())
                 .collect::<Vec<_>>();
             for id in sites {
-                town.set_construction(&id, ConstructionState::Complete)
-                    .map_err(|_| Error::Model)?;
+                upgrades::finish(&mut town, &mut rules, &id)?;
             }
             for road in &mut rules.roads {
                 road.remaining = None;
@@ -234,7 +295,9 @@ impl BuildingWorld {
                 .filter_map(|a| {
                     builders
                         .get(&a.state().id)
-                        .filter(|b| b.role != Role::Busy)
+                        .filter(|b| {
+                            b.role != Role::Busy || helper_target(&town, &rules, b).is_some()
+                        })
                         .map(|b| (a.state().id.clone(), b.role))
                 })
                 .collect::<Vec<_>>();
@@ -248,6 +311,13 @@ impl BuildingWorld {
                     .map(|b| Claim::Building(b.id.clone()))
                     .chain(rules.roads.iter().map(|r| Claim::Road(r.tile)))
                     .filter(|c| target(&town, &rules, c).is_some())
+                    .filter(|c| {
+                        builder.role != Role::Busy
+                            || helper_target(&town, &rules, &builder)
+                                .map(Claim::Building)
+                                .as_ref()
+                                == Some(c)
+                    })
                     .collect::<Vec<_>>();
                 choices.sort_by_key(|c| builder.claim.as_ref() != Some(c));
                 let mut selected = false;
@@ -302,6 +372,7 @@ impl BuildingWorld {
                             query: query.clone(),
                         }) {
                             PlanResult::Pending => {
+                                suspend(&town, &id, &mut builder)?;
                                 assign(&mut town, &id, &claim, ConstructionPhase::Outbound)?;
                                 builder.claim = Some(claim.clone());
                                 builder.walk = None;
@@ -337,6 +408,7 @@ impl BuildingWorld {
                     }
                     let mut walk = walk.unwrap();
                     let travelling = walk.step + 1 < walk.path.len();
+                    suspend(&town, &id, &mut builder)?;
                     assign(
                         &mut town,
                         &id,
@@ -433,6 +505,13 @@ pub(super) fn reconcile(
         .map(|a| a.state().id.clone())
         .collect::<Vec<_>>();
     for id in ids {
+        if let Some(b) = builders.get_mut(&id) {
+            if b.helper.as_ref().is_some_and(|h|town.building(h).is_err()) {
+                b.helper=None;b.suspended=None;release(town,&id,b)?;
+            } else if b.suspended.as_ref().is_some_and(|s|town.validate_task(&s.task).is_err() || matches!(s.travel.destination(),Some(lantern_core::model::Destination::Building(id)) if town.building(id).is_err())) {
+                b.suspended=None;release(town,&id,b)?;
+            }
+        }
         if let Some(b) = builders.get_mut(&id)
             && let Some(claim) = &b.claim
         {
@@ -476,7 +555,10 @@ fn assign(
     Ok(())
 }
 fn release(town: &mut Town, id: &ActorId, builder: &mut Builder) -> Result<(), Error> {
-    if construction_task(&town.actor(id).map_err(|_| Error::Model)?.state().task) {
+    if let Some(saved) = builder.suspended.take() {
+        town.restore_task_intent(id, saved.task, saved.travel)
+            .map_err(|_| Error::Model)?;
+    } else if construction_task(&town.actor(id).map_err(|_| Error::Model)?.state().task) {
         town.set_task(id, Task::Idle).map_err(|_| Error::Model)?;
     }
     builder.claim = None;
@@ -511,6 +593,10 @@ fn progress(
                 return Err(Error::InvalidFacts);
             };
             let left = (remaining.get() - elapsed.get()).max(0.);
+            if left == 0. {
+                upgrades::finish(town, rules, id)?;
+                return Ok(true);
+            }
             town.set_construction(
                 id,
                 if left == 0. {
@@ -564,7 +650,16 @@ fn ends_at(fp: Footprint, p: Position) -> bool {
     integral(p) && rounded(p).is_ok_and(|t| fp.perimeter().contains(&t))
 }
 fn open(index: &SpatialIndex, land: &Landscape, tile: Tile) -> bool {
-    inside(tile, land.size) && !land.unavailable.contains(&tile) && !index.blocked().contains(&tile)
+    inside(tile, land.size)
+        && !land.unavailable.contains(&tile)
+        && !index.occupied_for(
+            tile,
+            &spatial::AccessProfile {
+                land: LandAccess::Construction,
+                exemptions: &BTreeSet::new(),
+                only: None,
+            },
+        )
 }
 fn query(
     index: Rc<SpatialIndex>,
@@ -589,4 +684,76 @@ fn query(
     )
     .map(Rc::new)
     .map_err(|_| Error::InvalidFacts)
+}
+
+fn helper_target(town: &Town, rules: &Rules, b: &Builder) -> Option<BuildingId> {
+    let workplace = b.helper.as_ref()?;
+    let site = rules.sites.get(workplace)?;
+    let parent = site.parent.as_ref().unwrap_or(workplace);
+    town.building(parent)
+        .ok()
+        .filter(|b| {
+            b.construction != ConstructionState::Complete && rules.sites[parent].upgrade.is_some()
+        })
+        .map(|b| b.id.clone())
+}
+fn suspend(town: &Town, id: &ActorId, b: &mut Builder) -> Result<(), Error> {
+    if b.role == Role::Busy && b.helper.is_some() && b.suspended.is_none() {
+        let a = town.actor(id).map_err(|_| Error::Model)?.state();
+        if !matches!(a.task, Task::Idle | Task::Work { .. }) {
+            return Err(Error::Unsupported);
+        }
+        b.suspended = Some(Suspended {
+            task: a.task.clone(),
+            travel: a.travel.clone(),
+        });
+    }
+    Ok(())
+}
+impl BuildingWorld {
+    /// Explicit profession assignment supplied by the later gameplay owner.
+    /// A linked-acre resident helps its farm, only while that farm is upgrading.
+    pub fn set_upgrade_helper(
+        &mut self,
+        owner: &Owner,
+        id: &ActorId,
+        workplace: Option<BuildingId>,
+    ) -> Result<(), Error> {
+        if owner.world != *self.model.id() || id.identity().owner() != owner {
+            return Err(Error::Ownership);
+        }
+        let index = self
+            .model
+            .towns
+            .iter()
+            .position(|t| t.owner() == owner)
+            .ok_or(Error::MissingTown)?;
+        let mut town = self.model.towns[index].clone();
+        let mut builder = self.builders.get(id).cloned().unwrap_or(Builder {
+            role: Role::Busy,
+            claim: None,
+            walk: None,
+            helper: None,
+            suspended: None,
+        });
+        release(&mut town, id, &mut builder)?;
+        let task = &town
+            .actor(id)
+            .map_err(|_| Error::InvalidFacts)?
+            .state()
+            .task;
+        if let Some(workplace) = &workplace {
+            lookup(&town, workplace)?;
+            if !matches!(task, Task::Idle)
+                && !matches!(task,Task::Work{workplace:id,..} if id==workplace)
+            {
+                return Err(Error::Unsupported);
+            }
+        }
+        builder.role = Role::Busy;
+        builder.helper = workplace;
+        self.model.towns[index] = town;
+        self.builders.insert(id.clone(), builder);
+        Ok(())
+    }
 }

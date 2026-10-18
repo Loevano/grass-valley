@@ -16,8 +16,10 @@ use crate::state::ModelWorld;
 
 mod construction;
 mod save;
-pub use construction::{Builder, Claim, Plan, PlanResult, Role, Walk};
+mod upgrades;
+pub use construction::{Builder, Claim, Plan, PlanResult, Role, Suspended, Walk};
 pub use save::{decode_building_save, encode_building_save};
+pub use upgrades::{ChildState, Progression, Upgrade};
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum Error {
@@ -67,6 +69,12 @@ pub struct Site {
     pub fence_orientation: u8,
     pub stored: BTreeMap<String, Quantity>,
     pub pending: BTreeMap<String, Quantity>,
+    pub parent: Option<BuildingId>,
+    pub child: Option<ChildState>,
+    pub level: u8,
+    pub capacity_level: u8,
+    pub equipment: BTreeSet<String>,
+    pub upgrade: Option<Upgrade>,
 }
 impl Site {
     pub fn new(kind: impl Into<String>, dimensions: (u32, u32)) -> Self {
@@ -77,6 +85,12 @@ impl Site {
             fence_orientation: 0,
             stored: BTreeMap::new(),
             pending: BTreeMap::new(),
+            parent: None,
+            child: None,
+            level: 1,
+            capacity_level: 1,
+            equipment: BTreeSet::new(),
+            upgrade: None,
         }
     }
 }
@@ -94,6 +108,7 @@ pub struct Rules {
     pub coins: Quantity,
     pub sites: BTreeMap<BuildingId, Site>,
     pub roads: Vec<Road>,
+    pub progression: Progression,
 }
 #[derive(Clone)]
 pub struct Landscape {
@@ -108,6 +123,19 @@ pub struct Landscape {
 }
 
 pub enum Command {
+    BuildChild {
+        kind: String,
+        tile: Tile,
+        parent: BuildingId,
+        orientation: u8,
+    },
+    UpgradeStructure(BuildingId),
+    UpgradeCapacity(BuildingId),
+    UpgradeEquipment {
+        id: BuildingId,
+        key: String,
+    },
+    UpgradeHall,
     Build {
         kind: String,
         tile: Tile,
@@ -169,18 +197,8 @@ impl BuildingWorld {
             let mut halls = 0;
             for building in town.buildings() {
                 let site = r.sites.get(&building.id).ok_or(Error::InvalidFacts)?;
-                // Linked children require the later explicit link model. Do not
-                // accept them and accidentally move/demolish an incomplete group.
-                if site.kind == "acre" || site.kind == "orchard_tree" {
-                    return Err(Error::Unsupported);
-                }
                 if site.kind == "hall" {
                     halls += 1;
-                    if building.construction != ConstructionState::Complete {
-                        // Hall work is an upgrade with level/reward metadata,
-                        // not an ordinary construction site (R12 slice 3).
-                        return Err(Error::Unsupported);
-                    }
                 } else if !catalog.contains_key(&site.kind) {
                     return Err(Error::Unsupported);
                 }
@@ -201,6 +219,7 @@ impl BuildingWorld {
                     return Err(Error::InvalidFacts);
                 }
             }
+            upgrades::validate(town, r)?;
             if halls != 1 {
                 return Err(Error::InvalidFacts);
             }
@@ -295,7 +314,7 @@ impl BuildingWorld {
                     ..Site::new(kind, dimensions)
                 };
                 let fp = footprint(tile, &site)?;
-                self.validate(&town, &rules, &site, fp, None)?;
+                self.validate(&town, &rules, &site, fp, &[])?;
                 if rules.level < spec.level {
                     return Err(Error::Locked);
                 }
@@ -329,65 +348,55 @@ impl BuildingWorld {
                 created = Some(id);
             }
             Command::Move { id, tile } => {
-                let building = lookup(&town, &id)?;
-                if building.location == tile {
-                    return Err(Error::NoChange);
-                }
-                let mut site = rules.sites[&id].clone();
-                site.dimensions =
-                    spatial::placement_dimensions(&site.kind, i32::from(site.orientation));
-                let fp = footprint(tile, &site)?;
-                self.validate(&town, &rules, &site, fp, Some(&id))?;
-                if site.kind == "hall" && self.shared {
-                    for other in self.model.towns().iter().filter(|t| t.owner() != owner) {
-                        let other_rules = &self.rules[&other.owner().town];
-                        for b in other
-                            .buildings()
-                            .iter()
-                            .filter(|b| other_rules.sites[&b.id].kind == "hall")
-                        {
-                            let dx = f64::from(b.location.x) - f64::from(tile.x);
-                            let dy = f64::from(b.location.y) - f64::from(tile.y);
-                            if dx * dx + dy * dy < 1600.0 {
-                                return Err(Error::HallSeparation);
-                            }
-                        }
-                    }
-                }
-                town.relocate_building(&id, tile)
-                    .map_err(|_| Error::Model)?;
-                rules.sites.insert(id, site);
-                if !rules.sandbox {
-                    rules.coins = quantity((rules.coins.get() - 1.0).max(0.0))?;
-                }
-                clear.extend(fp.tiles());
+                clear.extend(upgrades::relocate(self, &mut town, &mut rules, &id, tile)?);
             }
             Command::Destroy { id } => {
-                lookup(&town, &id)?;
-                let site = &rules.sites[&id];
-                if site.kind == "hall" {
-                    return Err(Error::HallProtected);
+                upgrades::destroy(&mut town, &mut rules, &id)?;
+            }
+            Command::BuildChild {
+                kind,
+                tile,
+                parent,
+                orientation,
+            } => {
+                if orientation > 3 {
+                    return Err(Error::InvalidOrientation);
                 }
-                let salvage = site
-                    .stored
-                    .iter()
-                    .chain(site.pending.iter())
-                    .map(|(k, v)| (k.clone(), *v))
-                    .collect::<Vec<_>>();
-                let hall = town
-                    .buildings()
-                    .iter()
-                    .find(|b| rules.sites[&b.id].kind == "hall")
-                    .ok_or(Error::InvalidFacts)?
-                    .id
-                    .clone();
-                for (key, amount) in salvage {
-                    let stored = &mut rules.sites.get_mut(&hall).unwrap().stored;
-                    let total = stored.get(&key).map_or(0.0, |q| q.get()) + amount.get();
-                    stored.insert(key, quantity(total)?);
+                let mut site = upgrades::child(&town, &rules, &kind, &parent, tile)?;
+                site.orientation = orientation;
+                let fp = footprint(tile, &site)?;
+                self.validate(&town, &rules, &site, fp, &[])?;
+                let spec = &self.catalog[&kind];
+                if rules.level < spec.level {
+                    return Err(Error::Locked);
                 }
-                town.remove_building(&id).map_err(|_| Error::Model)?;
-                rules.sites.remove(&id);
+                if !rules.sandbox {
+                    spend(&town, &mut rules, &spec.costs)?;
+                }
+                let serial = self
+                    .model
+                    .high_water()
+                    .checked_add(1)
+                    .ok_or(Error::Exhausted)?;
+                let id = BuildingId::from_saved(
+                    EntityIdentity::from_saved(owner.clone(), serial)
+                        .map_err(|_| Error::Exhausted)?,
+                );
+                town.insert_building(Building {
+                    id: id.clone(),
+                    location: tile,
+                    construction: ConstructionState::Complete,
+                })
+                .map_err(|_| Error::Model)?;
+                rules.sites.insert(id.clone(), site);
+                clear.extend(fp.tiles());
+                created = Some(id);
+            }
+            command @ (Command::UpgradeStructure(_)
+            | Command::UpgradeCapacity(_)
+            | Command::UpgradeEquipment { .. }
+            | Command::UpgradeHall) => {
+                self.start_upgrade(&mut town, &mut rules, &command)?;
             }
             Command::Rotate {
                 id,
@@ -413,7 +422,7 @@ impl BuildingWorld {
                 site.orientation = orientation;
                 let after = footprint(b.location, &site)?;
                 if before != after {
-                    self.validate(&town, &rules, &site, after, Some(&id))?;
+                    self.validate(&town, &rules, &site, after, std::slice::from_ref(&id))?;
                     clear.extend(after.tiles());
                 }
                 rules.sites.insert(id, site);
@@ -423,7 +432,9 @@ impl BuildingWorld {
                     return Err(Error::InvalidOrientation);
                 }
                 let b = lookup(&town, &id)?;
-                if b.construction != ConstructionState::Complete {
+                if b.construction != ConstructionState::Complete
+                    && rules.sites[&id].upgrade.is_none()
+                {
                     return Err(Error::Unfinished);
                 }
                 if rules.sites[&id].kind != "barn" {
@@ -504,7 +515,7 @@ impl BuildingWorld {
         rules: &Rules,
         site: &Site,
         fp: Footprint,
-        moving: Option<&BuildingId>,
+        moving: &[BuildingId],
     ) -> Result<(), Error> {
         let others = self
             .model
@@ -515,7 +526,7 @@ impl BuildingWorld {
                 let r = &self.rules[&t.owner().town];
                 t.buildings()
                     .iter()
-                    .filter(|b| Some(&b.id) != moving)
+                    .filter(|b| !moving.contains(&b.id))
                     .map(|b| structure(b, &r.sites[&b.id]))
             })
             .collect::<Vec<_>>();
@@ -650,6 +661,8 @@ fn structure(b: &Building, s: &Site) -> Structure {
         footprint: footprint(b.location, s).expect("validated geometry"),
         construction: if b.construction == ConstructionState::Complete {
             Construction::Complete
+        } else if s.upgrade.is_some() {
+            Construction::Upgrade
         } else {
             Construction::Site
         },
@@ -660,16 +673,23 @@ fn structure(b: &Building, s: &Site) -> Structure {
 /// are never spendable. R13 owns reservations, edible aggregates and activity DTOs.
 fn spend(town: &Town, rules: &mut Rules, costs: &BTreeMap<String, f64>) -> Result<(), Error> {
     for (key, amount) in costs {
-        let available: f64 = town
-            .buildings()
-            .iter()
-            .map(|b| rules.sites[&b.id].stored.get(key).map_or(0.0, |q| q.get()))
-            .sum();
+        let available: f64 = if key == "coins" {
+            rules.coins.get()
+        } else {
+            town.buildings()
+                .iter()
+                .map(|b| rules.sites[&b.id].stored.get(key).map_or(0.0, |q| q.get()))
+                .sum()
+        };
         if available + 1e-9 < *amount {
             return Err(Error::Materials);
         }
     }
     for (key, amount) in costs {
+        if key == "coins" {
+            rules.coins = quantity((rules.coins.get() - amount).max(0.0))?;
+            continue;
+        }
         let mut remaining = *amount;
         for b in town.buildings() {
             if let Some(stock) = rules.sites.get_mut(&b.id).unwrap().stored.get_mut(key) {

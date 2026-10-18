@@ -4,12 +4,14 @@ R05 is a foundation checkpoint, not a playable Rust host. The host library expos
 offline conversion of the model built in R05 slices 1–2. Python launch, HTTP
 responses, action bodies, browser behavior, rates and saves remain unchanged.
 
-R12 slices 1–2 add a separate exclusive `BuildingWorld` wrapper around this
+R12 slices 1–3 add a separate exclusive `BuildingWorld` wrapper around this
 substrate, with explicit site/inventory/road/landscape and builder claim/walk facts.
-Its version-1 `lantern-building-model` offline schema nests the model save and
-roundtrips all construction facts. Encoding only `BuildingWorld::model()` still
+Its version-2 `lantern-building-model` offline schema nests the model save and
+roundtrips construction facts, levels, linked children, pending upgrades, progression
+observations and suspended helpers. Version 1 migrates explicitly without inferring
+links/upgrades/helper assignments that it could not represent. Encoding only `BuildingWorld::model()` still
 omits the wrapper and is not a save of the construction world. See the
-[R12 scope and evidence](RUST_MIGRATION.md#r12-slice-2--builder-claims-progress-and-offline-reload).
+[R12 scope and evidence](RUST_MIGRATION.md#r12-slice-3--upgrades-linked-groups-and-cancellation).
 
 ## Formats and conversion
 
@@ -182,9 +184,9 @@ No omitted feature is approved for removal. The saved subsystem matrix assigns:
   facing and active/terminal travel intent, v2 model save migration, confirmed
   playback observations and JSON reload traces. Full worker/accounting rules,
   browser wire integration and measured W2/W3 acceptance remain open.
-- R12–13: slices 1–2 implement ordinary building/road commands, builder roles/claims,
-  construction progress and saved walks on explicit facts. Remaining work includes
-  upgrades/linked groups, upgrade helpers, residents/assignments and full stock,
+- R12–13: R12 implements building/road/group commands, upgrades, helpers, builder
+  claims/progress and offline saved walks on explicit facts. R13 and later stages
+  retain complete residents/assignments and stock,
   costs/capacities, skills, food/progression, hall unlocks and balance migrations.
 - R14–17: trips/reservations/accounting, markets/resource activity, every production
   recipe/queue, farms/orchards/water/claims, species, boats, barn animals and horses.
