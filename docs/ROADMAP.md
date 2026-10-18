@@ -8,7 +8,7 @@ and cache rules are in [Backend](BACKEND.md#cached-zoomed-out-map).
 | 1     | Cached zoomed-out town overview    | Implemented              | Show the landscape and city sizes without refreshing animated scene detail.                                      |
 | 2     | Production line balancing          | Wood and grain implemented; fishing remains | Develop clear fishing chains with capped staffing and simple upgrades. |
 | 3     | Scalable villager pathfinding       | Host queue implemented; cache refinement and shared navigation remain | Keep movement responsive as villager counts and towns grow, with bounded routing work. |
-| 4     | Rust migration | R01–R10 foundations and R11 travel/recovery complete; R11 playback/reload and later integration/acceptance remain | Follow the [staged plan and prompts](RUST_MIGRATION.md), preserving playable checkpoints and saved worlds. |
+| 4     | Rust migration | R01–R10 foundations complete; R11 code slices implemented, integrated movement/accounting acceptance remains open | Follow the [staged plan and prompts](RUST_MIGRATION.md), preserving playable checkpoints and saved worlds. |
 
 ## Rust migration
 
@@ -24,10 +24,9 @@ saves and external chunk copies; see the [staging scope](RUST_LEGACY_IMPORT.md).
 R08 geometry, founder movement, shared-town/chunk boundaries and position recovery
 are complete behind the experimental private-copy boundary; see the
 [completion audit](RUST_MIGRATION.md#r08-slice-3--shared-boundaries-recovery-and-completion-audit).
-R11 slices 1–2 add generic worker travel/wait/arrival, task-change continuity and
-blocked recovery on the completed R10 experimental navigation foundation. R11
-slice 3 retains confirmed playback, reload continuity and actual movement/recovery
-acceptance; R19–R21 retain
+R11's three code slices add generic worker travel/wait/arrival, task-change and
+blocked recovery, facing, confirmed playback and versioned model reload continuity.
+R11's integrated W2/W3 movement/accounting acceptance remains open; R19–R21 retain
 HTTP/save/snapshot integration and R23 retains complete W1–W6 acceptance. See the
 [R10 completion audit](RUST_MIGRATION.md#final-measurements-and-foundation-completion)
 for measured scope and remaining release gates. Completed R07

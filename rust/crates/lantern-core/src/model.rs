@@ -28,6 +28,7 @@ pub enum ModelError {
     EmptyRoute,
     InvalidRouteGeometry,
     RouteNotReady,
+    InvalidTravelIntent,
 }
 
 impl From<IdentityError> for ModelError {
@@ -98,6 +99,25 @@ impl Cargo {
 pub enum Destination {
     Building(BuildingId),
     Position(Position),
+}
+
+/// Saved leg outcome, independent of the disposable search/path/playback. An
+/// arrived leg remains terminal after reload, so movement cannot replay arrival.
+#[derive(Clone, Debug, Default, PartialEq)]
+pub enum TravelIntent {
+    #[default]
+    None,
+    Active(Destination),
+    Arrived(Destination),
+    Cancelled,
+}
+impl TravelIntent {
+    pub fn destination(&self) -> Option<&Destination> {
+        match self {
+            Self::Active(d) | Self::Arrived(d) => Some(d),
+            _ => None,
+        }
+    }
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -179,6 +199,8 @@ pub struct Building {
 pub struct ActorState {
     pub id: ActorId,
     pub position: Position,
+    pub facing: crate::travel::Facing,
+    pub travel: TravelIntent,
     pub cargo: Cargo,
     pub task: Task,
     pub task_generation: TaskGeneration,
@@ -190,6 +212,8 @@ impl ActorState {
         Self {
             id,
             position,
+            facing: crate::travel::Facing::default(),
+            travel: TravelIntent::None,
             cargo,
             task: Task::Idle,
             task_generation: TaskGeneration::default(),
@@ -274,9 +298,7 @@ pub enum RouteState {
 pub struct Actor {
     state: ActorState,
     route: RouteState,
-    /// Current leg chosen by task rules, independent of the disposable path.
-    /// R11 slice 3 owns save/restore of this intent; no new DTO field yet.
-    destination: Option<Destination>,
+    playback: Option<crate::travel::Playback>,
     /// Latest query revision supplied for this leg, including in-place R10
     /// pending-query refresh. The request token itself deliberately stays stable.
     attempted_navigation: NavigationRevision,
@@ -292,12 +314,29 @@ impl Actor {
         &self.route
     }
     pub fn travel_destination(&self) -> Option<&Destination> {
-        self.destination.as_ref()
+        self.state.travel.destination()
+    }
+    pub fn pose(&self) -> crate::travel::Pose {
+        crate::travel::Pose {
+            position: self.state.position,
+            facing: self.state.facing,
+            status: self.travel_status(),
+        }
+    }
+    pub fn confirmed_playback(&self) -> crate::travel::Playback {
+        self.playback
+            .clone()
+            .unwrap_or_else(|| crate::travel::Playback::stationary(self.pose()))
     }
     pub fn travel_status(&self) -> crate::travel::Status {
         use crate::travel::Status;
         match self.route {
-            RouteState::NotRequested => Status::NotRequested,
+            RouteState::NotRequested => match self.state.travel {
+                TravelIntent::Active(_) => Status::Waiting,
+                TravelIntent::Arrived(_) => Status::Arrived,
+                TravelIntent::Cancelled => Status::Cancelled,
+                TravelIntent::None => Status::NotRequested,
+            },
             RouteState::Pending(_) => Status::Waiting,
             RouteState::Ready { .. } => Status::Walking,
             RouteState::Arrived(_) => Status::Arrived,
@@ -345,7 +384,7 @@ impl Town {
                 .map(|state| Actor {
                     state,
                     route: RouteState::NotRequested,
-                    destination: None,
+                    playback: None,
                     attempted_navigation: NavigationRevision(0),
                     route_step: 0,
                 })
@@ -353,6 +392,12 @@ impl Town {
         };
         for actor in &town.actors {
             town.validate_task(&actor.state.task)?;
+            if let Some(destination) = actor.state.travel.destination() {
+                if actor.state.task == Task::Idle {
+                    return Err(ModelError::InvalidTravelIntent);
+                }
+                town.resolve(destination)?;
+            }
         }
         Ok(town)
     }
@@ -433,7 +478,8 @@ impl Town {
         actor.state.task = task;
         actor.state.task_generation = generation;
         actor.route = RouteState::NotRequested;
-        actor.destination = None;
+        actor.state.travel = TravelIntent::None;
+        actor.playback = None;
         actor.route_step = 0;
         Ok(())
     }
@@ -453,19 +499,11 @@ impl Town {
         }
         building.location = location;
         for actor in &mut self.actors {
-            let request = match &actor.route {
-                RouteState::Pending(r)
-                | RouteState::Arrived(r)
-                | RouteState::Unreachable(r)
-                | RouteState::Blocked(r)
-                | RouteState::Ready { request: r, .. } => Some(r),
-                _ => None,
-            };
-            if request.is_some_and(
-                |r| matches!(&r.destination, Destination::Building(target) if target == id),
-            ) {
+            if matches!(&actor.state.travel, TravelIntent::Active(Destination::Building(target)) if target == id)
+            {
                 actor.route = RouteState::NotRequested;
                 actor.route_step = 0;
+                actor.playback = None;
             }
         }
         Ok(())
@@ -479,6 +517,7 @@ impl Town {
             actor.state.position = position;
             actor.route = RouteState::NotRequested;
             actor.route_step = 0;
+            actor.playback = None;
         }
         Ok(())
     }
@@ -508,7 +547,8 @@ impl Town {
             navigation,
         };
         actor.state.route_generation = generation;
-        actor.destination = Some(request.destination.clone());
+        actor.state.travel = TravelIntent::Active(request.destination.clone());
+        actor.playback = None;
         actor.attempted_navigation = navigation;
         actor.route = RouteState::Pending(request.clone());
         actor.route_step = 0;
@@ -532,9 +572,10 @@ impl Town {
     ) -> Result<Option<RouteRequest>, ModelError> {
         let index = self.actor_index(id)?;
         let actor = &self.actors[index];
-        let Some(destination) = actor.destination.clone() else {
+        let TravelIntent::Active(destination) = &actor.state.travel else {
             return Ok(None);
         };
+        let destination = destination.clone();
         match &actor.route {
             RouteState::Pending(request) => {
                 let request = request.clone();
@@ -611,6 +652,10 @@ impl Town {
         };
         actor.route = route;
         actor.route_step = 0;
+        if matches!(actor.route, RouteState::Arrived(_)) {
+            actor.state.travel = TravelIntent::Arrived(request.destination.clone());
+        }
+        actor.playback = None;
         Ok(())
     }
 
@@ -634,6 +679,8 @@ impl Town {
         let mut remaining = elapsed.get();
         let mut segments = 0;
         let mut arrived_now = false;
+        let mut playback = crate::travel::Playback::stationary(actor.pose());
+        playback.duration = elapsed;
         if let RouteState::Ready { request, waypoints } = &actor.route {
             let mut blocked = false;
             while actor.route_step < waypoints.len() && segments < max_segments {
@@ -657,6 +704,7 @@ impl Town {
                 };
                 let duration = distance / speed.get();
                 segments += 1;
+                let partial = duration > remaining;
                 if duration <= remaining {
                     actor.state.position = target;
                     actor.route_step += 1;
@@ -675,16 +723,36 @@ impl Town {
                     )
                     .expect("finite interpolation of validated segment");
                     remaining = 0.0;
+                }
+                if actor.state.position != before {
+                    actor.state.facing = actor.state.facing.moving(before, target);
+                }
+                playback.push(
+                    Seconds::new(elapsed.get() - remaining).unwrap(),
+                    crate::travel::Pose {
+                        position: actor.state.position,
+                        facing: actor.state.facing,
+                        status: crate::travel::Status::Walking,
+                    },
+                );
+                if partial {
                     break;
                 }
             }
             if blocked {
                 actor.route = RouteState::Blocked(request.clone());
             } else if actor.route_step == waypoints.len() {
+                actor.state.travel = TravelIntent::Arrived(request.destination.clone());
                 actor.route = RouteState::Arrived(request.clone());
                 arrived_now = true;
             }
         }
+        playback.push(
+            Seconds::new(elapsed.get() - remaining).unwrap(),
+            actor.pose(),
+        );
+        playback.push(elapsed, actor.pose());
+        actor.playback = Some(playback);
         Ok(crate::travel::Advance {
             status: actor.travel_status(),
             remaining: Seconds::new(remaining).expect("nonnegative finite remainder"),
@@ -696,7 +764,8 @@ impl Town {
     pub fn cancel_route(&mut self, id: &ActorId) -> Result<(), ModelError> {
         let index = self.actor_index(id)?;
         self.actors[index].route = RouteState::Cancelled;
-        self.actors[index].destination = None;
+        self.actors[index].state.travel = TravelIntent::Cancelled;
+        self.actors[index].playback = None;
         self.actors[index].route_step = 0;
         Ok(())
     }
@@ -708,6 +777,7 @@ impl Town {
             return Err(ModelError::RouteNotReady);
         };
         actor.route = RouteState::Blocked(request.clone());
+        actor.playback = None;
         Ok(())
     }
 }

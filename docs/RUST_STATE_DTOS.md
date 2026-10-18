@@ -7,19 +7,22 @@ responses, action bodies, browser behavior, rates and saves remain unchanged.
 ## Formats and conversion
 
 `lantern-host::dto::encode_save` / `decode_save` use the explicit discriminator
-`{"format":"lantern-model","version":1,...}`. This format is only for the
-experimental R05 model. It is neither the Python format nor the durable Rust save
-format promised by R19. No disk reader/writer, migration or HTTP endpoint is added.
+`{"format":"lantern-model","version":2,...}` after R11 slice 3. This format is
+only for the experimental model. It is neither the Python format nor the durable
+Rust save format promised by R19. The decoder explicitly migrates v1 with
+right-facing/no travel intent, since v1 did not store either fact; other existing
+facts remain intact. No disk reader/writer, durable migration or HTTP endpoint is added.
 The decoder rejects Python saves, unsupported versions, missing fields, unknown
 fields at every modeled level, duplicate object keys and unsupported task variants.
 There is no generic extension bag that could silently drop gameplay or leak data.
 
 `public_snapshot` creates a distinct Serialize-only `PublicWorldDto` with format
-`lantern-model-observation-v1`. It is an experimental observation, **not** a partial
+`lantern-model-observation-v2`. It is an experimental observation, **not** a partial
 implementation of `/api/world`. Its list/coordinate fields use familiar
 `buildings`, `villagers`, `x`, `y`, `building_index`, and `pending_output` names.
 R20–21 must implement the complete existing browser contract, including omitted
-catalogs/playback/state, before serving the browser. This observation cannot be
+catalogs/browser playback/state, before serving the browser. The v2 observation
+includes generic confirmed travel samples; it cannot be
 loaded as a save. Neither DTO automatically serializes internal structures.
 
 The host's `ModelWorld` validates ownership and unique town/entity identities
@@ -61,22 +64,24 @@ so malformed private account material cannot appear in diagnostics.
 
 ## Field coverage
 
-This table is exhaustive for current R05 internal model fields. Subsystems in the
+This table covers the R05 model with its R11 travel extension. Subsystems in the
 [R01 saved-state matrix](RUST_CONTRACTS.md#saved-subsystem-coverage-and-featuretest-mapping)
 still require feature ports and cross-host evidence; these DTO tests do not mark
 any existing gameplay subsystem as verified.
 
-| Internal fact | Model save v1 | Public observation | Boundary evidence |
+| Internal fact | Model save v2 | Public observation | Boundary evidence |
 | --- | --- | --- | --- |
 | World ID, numeric seed | Opaque string / exact decimal string | Same | Unicode/large seed roundtrip |
 | World-wide allocator high-water mark | Exact decimal string; validate all live IDs across all towns/kinds | Excluded | Deleted-ID gap, stale counter, cross-town collisions, post-reload allocation |
 | Town ownership and record order | Town keys plus fully qualified entity IDs; order retained | Town map, ordered entity arrays | Reorder/reload/foreign ownership tests |
 | Building ID, tile, construction state/work | Explicit ID/x/y/state DTO | Separate building DTO fields | Exact IDs >2^53; both construction variants; reference and quantity validation |
 | Actor ID and fractional position | Explicit ID/position DTO | ID/x/y | Fractional/signed-zero/subnormal roundtrip |
+| Actor facing and travel intent | Required facing ±1 and tagged none/active/arrived/cancelled intent with stable destination | Facing and truthful route status | JSON active/terminal continuity; stale request rejection; completed arrival not replayed |
 | Actor cargo | Unique map of finite fractional goods | Copied `pending_output` map | Duplicate-key/negative rejection; no alias into authoritative state |
 | Actor task, references, phases/legs, elapsed time | Exhaustive tagged DTOs with explicit phase mapping | Task DTO; derived optional `building_index` | All current task/phase variants roundtrip; foreign/dangling links rejected |
 | Actor task/request generations | Exact decimal strings | Excluded | JSON reload clears pending route, increments subsequent request generation |
 | Derived RouteState/request/path | Excluded; rebuild `NotRequested` | Explicit status string only | Sentinel path/request exclusion; stale-result rejection after reload |
+| Confirmed travel playback | Excluded; rebuild stationary anchor | Relative-time confirmed pose samples only | Corners, blocked/arrival holds, end clamping, detached DTO and speed-capped visual join tests |
 | Token→town mapping | Separate private credentials DTO | Excluded | Preserve tokens, validate owners, reject duplicate keys |
 | Account login key/name/town/salt/PIN hash | Separate private account DTO | Excluded | Credential roundtrip; allowlist/sentinel and sanitized-error tests |
 | Search frontiers, caches, indexes, deadlines | No fields; decoder rejects attempted injection | No fields | Unknown-field tests, no flatten/Value passthrough, internal types have no Serialize |
@@ -165,9 +170,10 @@ No omitted feature is approved for removal. The saved subsystem matrix assigns:
   fractional travel/wait/arrival with actor-owned position/cargo, injected segment
   checks/speeds and bounded traversal. R11 slice 2 retains the selected destination
   across path invalidation, adds relocation/reassignment continuity, revision-gated
-  negative retry and current fractional-segment checks. Facing, confirmed playback
-  DTOs and complete reload continuity remain R11 slice 3; no public
-  wire/save schema changes or gameplay-host integration are claimed.
+  negative retry and current fractional-segment checks. R11 slice 3 adds actor-owned
+  facing and active/terminal travel intent, v2 model save migration, confirmed
+  playback observations and JSON reload traces. Full worker/accounting rules,
+  browser wire integration and measured W2/W3 acceptance remain open.
 - R12–13: complete buildings/footprints/roads/links, residents/assignments, stock,
   costs/capacities, skills, food/progression, hall unlocks and balance migrations.
 - R14–17: trips/reservations/accounting, markets/resource activity, every production
@@ -177,7 +183,7 @@ No omitted feature is approved for removal. The saved subsystem matrix assigns:
 - R20–21: complete existing public DTOs/catalogs/auth/command dispatch, queued
   reference metadata, browser prediction/playback and full client acceptance.
 
-The v1 model decoder rejects these extra fields rather than claiming a successful
+The model decoder rejects these extra fields rather than claiming a successful
 import of them. R06 must inspect copies and preserve or explicitly reject every
 unported legacy feature; it must never discard them into this minimal schema.
 R06 now provides [separate private staging](RUST_LEGACY_IMPORT.md) for

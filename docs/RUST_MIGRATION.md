@@ -2,9 +2,9 @@
 
 A migration that can be completed one task at a time, with a prompt for each task.
 
-**Status:** R01–R10 complete as experimental migration foundations; R11 slices 1–2
-add generic worker travel/wait/arrival, task-change continuity and blocked recovery.
-Confirmed playback/reload continuity remain in R11 slice 3. R08 spatial
+**Status:** R01–R10 complete as experimental migration foundations; all three R11
+code slices are implemented at the experimental model boundary. Integrated W2/W3
+movement/accounting acceptance remains open. R08 spatial
 rules and founder movement is complete as an experimental private-copy foundation. R07 includes saved-first terrain versions 1–7,
 nonchunked maps, authored starter/town sites, ordinary/swamp metadata and overlays,
 post-overlay water repair, private authoritative chunk lifecycle/resource renewal,
@@ -233,7 +233,7 @@ only after work is performed. Keep unfinished stages visible in the roadmap.
 | R08 | Spatial rules and founder movement | R07 | Complete as experimental geometry/movement foundation; slices 1–3 and boundary audit below; Python remains default |
 | R09 | Search algorithms and library decision | R08 | Complete at experimental core boundary: library/custom decision, bounded no_std backend and actual Python route/access/cost parity; [evaluation/evidence](RUST_SEARCH_EVALUATION.md) |
 | R10 | Request scheduler and cache invalidation | R09 | Complete as experimental navigation foundation; slices 1–3 and completion audit below; integrated W1–W6 acceptance retained in R11/R19–R23 |
-| R11 | Persistent worker movement and playback | R10 | Slices 1–2 complete: generic travel, task-change continuity and blocked recovery; playback/reload continuity remain |
+| R11 | Persistent worker movement and playback | R10 | Slices 1–3 implemented at experimental model boundary; integrated W2/W3 movement/accounting acceptance remains open |
 | R12 | Construction and building operations | R11 | Not started |
 | R13 | Resource ledger, storage, and progression rules | R12 | Not started |
 | R14 | Hauling, delivery, and merchant trips | R13 | Not started |
@@ -2510,10 +2510,70 @@ Performance comparisons are not run: this is new recovery behavior rather than a
 performance investigation or fix. W2 first-movement latency and W3 recovery budgets
 under the complete agreed load remain acceptance work.
 
-**Remaining:** slice 3 owns facing, confirmed movement/playback DTOs and persistence
-of travel intent/reload continuity without duplicate actions. This slice's retained
-destination and query-attempt metadata are not serialized. R19–R21 own playable
+**Follow-on:** slice 3 below adds facing, confirmed movement/playback DTOs and
+persistent travel intent/reload continuity. At the slice 2 checkpoint, the retained
+destination and query-attempt metadata were not serialized. R19–R21 own playable
 host/save/HTTP integration and R23 retains integrated W1–W6 release budgets.
+Python remains the playable default.
+
+### R11 slice 3 — Confirmed playback and reload continuity
+
+`ActorState` now owns facing and an explicit saved travel intent: none, active,
+arrived or cancelled. The selected stable destination belongs to active/arrived
+intent, independently of the route cursor, search job and visual samples. Actual
+movement follows Python's screen-facing rule (`dx == dy` retains facing); waiting,
+reassignment, relocation and restoration preserve it. Active legs reconstruct a
+new request from the exact saved position and current geometry. Arrived/cancelled
+legs remain terminal through reload; neither restarting navigation nor moving the
+old building replays their arrival. A new leg requires explicit task-rule intent.
+
+Each travel update retains only its confirmed timeline: initial pose, traversed
+corners/partial endpoint, blocked/arrival transition and a stationary remainder.
+Sample count is bounded by the caller's segment allowance plus three; no future
+route is exposed. `Playback::pose_at` interpolates inside confirmed intervals and
+clamps after their end. Commands, route adoption, relocation and explicit recovery
+discard obsolete visual samples and publish a stationary anchor. Restore also
+rebuilds that anchor, without saving playback/search/cursors or navigation retry
+revisions. An active restored actor reports waiting until its fresh route arrives.
+
+The experimental save is now `lantern-model` v2, with required facing and tagged
+travel fields. The explicit v1 migration retains existing facts and initializes
+right-facing/no travel intent: v1 did not store facing or the selected leg, so the
+decoder cannot safely reconstruct them. V2 rejects missing/null/invalid fields,
+foreign/dangling destinations and active travel on an idle task. Unknown fields,
+duplicate keys and numeric precision checks remain strict. These are offline model
+DTOs; Python saves and the later R19 durable format are unchanged.
+
+The Serialize-only observation is `lantern-model-observation-v2`. It adds facing
+and detached relative-time playback samples containing only position, facing and
+travel phase. Visual samples carry no cargo transfer, work event or arrival-action
+authorization. `rejoin` is a read-only presentation helper that caps correction
+toward a confirmed pose at the supplied walking speed. Snapshot ordering,
+geometry-aware joins across missing batches, browser consumption and complete
+existing wire compatibility remain R21; no `/api/world` integration is claimed.
+
+Evidence: six new core traces cover corners/timing/arrival tails, blocked holds,
+facing retention, active/terminal restoration, speed-capped missed-observation joins
+and relocation after reload. Three new boundary tests cover explicit v1 migration,
+strict v2 validation, every route status across JSON and detached confirmed DTOs.
+The 16-worker/four-town/two-slot return trace now serializes/reloads unreachable
+returns, retires the old navigation instance, rebuilds fresh searches, resumes at
+walking speed and reloads completed returns without another arrival notification.
+Cargo and task phase/work elapsed remain unchanged by travel, samples and reload.
+`python3 tools/check.py` selected `lantern-core` and dependent `lantern-host`;
+all six formatting, test and Clippy commands passed, including the existing
+DTO/save checks. Report: `performance-results/20261018-152533/report.md` (local,
+ignored artifact).
+
+**Acceptance still open:** these traces prove generic travel/model behavior, not
+complete worker accounting or playable-host compatibility. Production pickup,
+unload and work actions remain R12–R17; those rules must commit phase/inventory
+changes together, independently of visual playback. R19 retains disk/crash recovery,
+R20–R21 HTTP/snapshots/browser behavior, and R23 complete W1–W6 release acceptance.
+The R11 W2 actual-first-movement and W3 blocked/reopen latency and exactly-once
+gameplay gates are not satisfied by deterministic traces. Keep R11's acceptance
+entry open until measured with those integrated rules. Performance comparisons
+were not run for this new behavior slice; no performance problem is being fixed.
 Python remains the playable default.
 
 ## R12 — Building operations and construction

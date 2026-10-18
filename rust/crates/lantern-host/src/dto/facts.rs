@@ -2,7 +2,10 @@ use super::wire::{Decimal, Number};
 use crate::{BoundaryError, ErrorKind};
 use lantern_core::{
     ids::{EntityIdentity, Owner, PersistentId, TownId, WorldId},
-    model::{ConstructionPhase, ConstructionState, Destination, Task, TransportPhase, WorkPhase},
+    model::{
+        ConstructionPhase, ConstructionState, Destination, Task, TransportPhase, TravelIntent,
+        WorkPhase,
+    },
     units::{Position, Seconds, Work},
 };
 use serde::{Deserialize, Serialize};
@@ -83,7 +86,7 @@ impl From<&Destination> for DestinationDto {
 }
 
 impl DestinationDto {
-    fn into_core(self, path: &str) -> Result<Destination, BoundaryError> {
+    pub(crate) fn into_core(self, path: &str) -> Result<Destination, BoundaryError> {
         match self {
             Self::Building { id } => Ok(Destination::Building(
                 id.into_id(&format!("{path}.building.id"))?,
@@ -91,6 +94,43 @@ impl DestinationDto {
             Self::Position { position } => Ok(Destination::Position(
                 position.into_core(&format!("{path}.position.position"))?,
             )),
+        }
+    }
+}
+
+#[derive(Serialize, Deserialize)]
+#[serde(rename_all = "snake_case", deny_unknown_fields)]
+pub enum TravelDto {
+    None {},
+    Active { destination: DestinationDto },
+    Arrived { destination: DestinationDto },
+    Cancelled {},
+}
+impl From<&TravelIntent> for TravelDto {
+    fn from(value: &TravelIntent) -> Self {
+        match value {
+            TravelIntent::None => Self::None {},
+            TravelIntent::Active(d) => Self::Active {
+                destination: d.into(),
+            },
+            TravelIntent::Arrived(d) => Self::Arrived {
+                destination: d.into(),
+            },
+            TravelIntent::Cancelled => Self::Cancelled {},
+        }
+    }
+}
+impl TravelDto {
+    pub fn into_core(self, path: &str) -> Result<TravelIntent, BoundaryError> {
+        match self {
+            Self::None {} => Ok(TravelIntent::None),
+            Self::Active { destination } => Ok(TravelIntent::Active(
+                destination.into_core(&format!("{path}.active.destination"))?,
+            )),
+            Self::Arrived { destination } => Ok(TravelIntent::Arrived(
+                destination.into_core(&format!("{path}.arrived.destination"))?,
+            )),
+            Self::Cancelled {} => Ok(TravelIntent::Cancelled),
         }
     }
 }

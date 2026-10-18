@@ -121,6 +121,201 @@ fn value(world: &ModelWorld) -> Value {
     serde_json::from_str(&encode_save(world).unwrap()).unwrap()
 }
 
+#[test]
+fn v1_migrates_explicitly_without_guessing_an_unsaved_leg_and_v2_requires_travel_facts() {
+    use lantern_core::{model::TravelIntent, travel::Facing};
+    let mut old = value(&fixture());
+    assert_eq!(old["version"], 2);
+    old["version"] = json!(1);
+    for town in old["towns"].as_array_mut().unwrap() {
+        for actor in town["actors"].as_array_mut().unwrap() {
+            actor.as_object_mut().unwrap().remove("facing");
+            actor.as_object_mut().unwrap().remove("travel");
+        }
+    }
+    let migrated = decode_save(&old.to_string()).unwrap();
+    for town in migrated.towns() {
+        for actor in town.actors() {
+            assert_eq!(actor.state().facing, Facing::Right);
+            assert_eq!(actor.state().travel, TravelIntent::None);
+        }
+    }
+    assert_eq!(value(&migrated)["version"], 2);
+    for field in ["facing", "travel"] {
+        let mut bad = value(&fixture());
+        bad["towns"][0]["actors"][0]
+            .as_object_mut()
+            .unwrap()
+            .remove(field);
+        assert!(decode_save(&bad.to_string()).is_err());
+        let mut bad = old.clone();
+        bad["towns"][0]["actors"][0][field] = Value::Null;
+        assert!(decode_save(&bad.to_string()).is_err());
+    }
+    let original = value(&fixture());
+    for (path, invalid) in [
+        ("/towns/0/actors/0/facing", json!(0)),
+        ("/towns/0/actors/0/facing", json!(2)),
+        ("/towns/0/actors/0/facing", json!(1.0)),
+        ("/towns/0/actors/0/facing", Value::Null),
+        ("/towns/0/actors/0/travel", Value::Null),
+        (
+            "/towns/0/actors/0/travel/active/destination/building/id/town_id",
+            json!("foreign"),
+        ),
+        (
+            "/towns/0/actors/0/travel/active/destination/building/id/serial",
+            json!("999"),
+        ),
+        ("/towns/0/actors/0/task", json!({"idle":{}})),
+    ] {
+        let mut bad = original.clone();
+        *bad.pointer_mut(path).unwrap() = invalid;
+        assert!(decode_save(&bad.to_string()).is_err(), "accepted {path}");
+    }
+    for path in [
+        "/towns/0/actors/0/travel",
+        "/towns/0/actors/0/travel/active",
+        "/towns/0/actors/0/travel/active/destination/building",
+    ] {
+        let mut bad = original.clone();
+        bad.pointer_mut(path)
+            .unwrap()
+            .as_object_mut()
+            .unwrap()
+            .insert("waypoints".into(), json!([]));
+        assert!(decode_save(&bad.to_string()).is_err());
+    }
+}
+
+#[test]
+fn every_route_status_roundtrips_pose_cargo_and_intent_but_not_paths_or_playback() {
+    use lantern_core::travel::{Facing, Speed, Status};
+    for kind in [
+        "pending",
+        "ready",
+        "blocked",
+        "unreachable",
+        "arrived",
+        "cancelled",
+    ] {
+        let mut world = fixture();
+        let town_id = world.towns()[0].owner().town.clone();
+        let id = world.towns()[0].actors()[0].state().id.clone();
+        let destination = world.towns()[0].buildings()[0].id.clone();
+        let town = world.town_mut(&town_id).unwrap();
+        let r = town
+            .request_route(
+                &id,
+                Destination::Building(destination),
+                NavigationRevision(9),
+            )
+            .unwrap();
+        match kind {
+            "pending" => {}
+            "unreachable" => town
+                .accept_route(&id, &r, r.navigation(), RouteOutcome::Unreachable)
+                .unwrap(),
+            _ => {
+                let from = town.actor(&id).unwrap().state().position;
+                town.accept_route(
+                    &id,
+                    &r,
+                    r.navigation(),
+                    RouteOutcome::Ready(vec![position(from.x.get() - 1.0, from.y.get())]),
+                )
+                .unwrap();
+                town.advance_travel(
+                    &id,
+                    Seconds::new(if kind == "arrived" { 2.0 } else { 0.125 }).unwrap(),
+                    10,
+                    |_, _| Speed::new(1.0),
+                )
+                .unwrap();
+                assert_eq!(town.actor(&id).unwrap().state().facing, Facing::Left);
+                if kind == "blocked" {
+                    town.block_route(&id).unwrap();
+                }
+                if kind == "cancelled" {
+                    town.cancel_route(&id).unwrap();
+                }
+            }
+        }
+        let before = town.actor(&id).unwrap().state().clone();
+        let saved = encode_save(&world).unwrap();
+        assert!(!saved.contains("samples"));
+        assert!(!saved.contains("waypoints"));
+        let mut restored = decode_save(&saved).unwrap();
+        let town = restored.town_mut(&town_id).unwrap();
+        assert_eq!(town.actor(&id).unwrap().state(), &before);
+        assert_eq!(town.actor(&id).unwrap().route(), &RouteState::NotRequested);
+        assert_eq!(
+            town.actor(&id)
+                .unwrap()
+                .confirmed_playback()
+                .samples()
+                .len(),
+            1
+        );
+        if ["arrived", "cancelled"].contains(&kind) {
+            assert_eq!(
+                town.resume_travel(&id, NavigationRevision(10)).unwrap(),
+                None
+            );
+            assert!(
+                !town
+                    .advance_travel(&id, Seconds::new(10.0).unwrap(), 10, |_, _| panic!(
+                        "terminal leg"
+                    ))
+                    .unwrap()
+                    .arrived_now
+            );
+            assert_eq!(
+                town.actor(&id).unwrap().travel_status(),
+                if kind == "arrived" {
+                    Status::Arrived
+                } else {
+                    Status::Cancelled
+                }
+            );
+        } else {
+            let new = town
+                .resume_travel(&id, NavigationRevision(10))
+                .unwrap()
+                .unwrap();
+            assert_eq!(new.origin(), before.position);
+            assert_ne!(new.route_generation(), r.route_generation());
+            assert!(
+                town.accept_route(&id, &r, r.navigation(), RouteOutcome::Arrived)
+                    .is_err()
+            );
+        }
+    }
+}
+
+#[test]
+fn public_playback_contains_only_confirmed_samples_and_is_detached_from_actor_state() {
+    use lantern_core::travel::Speed;
+    let mut world = fixture();
+    let town_id = world.towns()[0].owner().town.clone();
+    let id = world.towns()[0].actors()[0].state().id.clone();
+    let town = world.town_mut(&town_id).unwrap();
+    town.advance_travel(&id, Seconds::new(0.125).unwrap(), 1, |_, _| Speed::new(1.0))
+        .unwrap();
+    let facts = town.actor(&id).unwrap().state().clone();
+    let mut public = serde_json::to_value(public_snapshot(&world)).unwrap();
+    assert_eq!(public["format"], "lantern-model-observation-v2");
+    let samples = &public["towns"]["a"]["villagers"][0]["playback"]["samples"];
+    assert_eq!(samples.as_array().unwrap().len(), 2);
+    assert_eq!(samples[1]["x"], json!(facts.position.x.get()));
+    assert!(!samples.to_string().contains("cargo"));
+    assert!(!samples.to_string().contains("task"));
+    assert!(!samples.to_string().contains("arrived_now"));
+    public["towns"]["a"]["villagers"][0]["playback"]["samples"][1]["x"] = json!(999);
+    assert_eq!(world.towns()[0].actor(&id).unwrap().state(), &facts);
+    assert!(decode_save(&public.to_string()).is_err());
+}
+
 fn rejected(value: Value) -> BoundaryError {
     match decode_save(&value.to_string()) {
         Err(e) => e,
@@ -424,7 +619,7 @@ fn unknown_fields_and_versions_are_rejected_at_every_boundary_depth() {
         );
     }
     let mut bad = original.clone();
-    bad["version"] = json!(2);
+    bad["version"] = json!(3);
     assert_eq!(rejected(bad).path, "$.version");
     let mut bad = original;
     bad["towns"][0]["actors"][1]["task"] = json!({"idle":{"private_cache":123}});
@@ -441,7 +636,7 @@ fn duplicate_objects_do_not_overwrite_goods_tokens_or_accounts() {
             "\"tokens\":{",
             "\"tokens\":{\"duplicate\":\"a\",\"duplicate\":\"b\",",
         ),
-        ("\"version\":1", "\"version\":1,\"version\":1"),
+        ("\"version\":2", "\"version\":2,\"version\":2"),
     ] {
         assert!(decode_save(&raw.replacen(needle, replacement, 1)).is_err());
     }

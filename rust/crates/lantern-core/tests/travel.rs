@@ -47,6 +47,215 @@ fn refreshed_pending_failure_waits_for_a_change_after_the_latest_query_revision(
 fn p(x: f64, y: f64) -> Position {
     Position::new(x, y).unwrap()
 }
+
+#[test]
+fn relocation_after_reload_retargets_active_leg_but_does_not_restart_completed_leg() {
+    let (mut town, id) = fixture();
+    let building = town.buildings()[0].id.clone();
+    let r = town
+        .request_route(
+            &id,
+            Destination::Building(building.clone()),
+            NavigationRevision(1),
+        )
+        .unwrap();
+    let state = town.actor(&id).unwrap().state().clone();
+    let mut restored =
+        Town::restore(town.owner().clone(), town.buildings().to_vec(), vec![state]).unwrap();
+    restored
+        .relocate_building(&building, Tile { x: 5, y: 5 })
+        .unwrap();
+    let new = restored
+        .resume_travel(&id, NavigationRevision(2))
+        .unwrap()
+        .unwrap();
+    assert_eq!(new.goal(), p(5.0, 5.0));
+    assert!(
+        restored
+            .accept_route(&id, &r, r.navigation(), RouteOutcome::Arrived)
+            .is_err()
+    );
+    restored
+        .accept_route(&id, &new, new.navigation(), RouteOutcome::Arrived)
+        .unwrap();
+    let state = restored.actor(&id).unwrap().state().clone();
+    let mut completed = Town::restore(
+        restored.owner().clone(),
+        restored.buildings().to_vec(),
+        vec![state],
+    )
+    .unwrap();
+    completed
+        .relocate_building(&building, Tile { x: 6, y: 6 })
+        .unwrap();
+    assert_eq!(
+        completed.resume_travel(&id, NavigationRevision(3)).unwrap(),
+        None
+    );
+    assert_eq!(
+        completed.actor(&id).unwrap().travel_status(),
+        Status::Arrived
+    );
+    assert!(!walk(&mut completed, &id, 1.0).arrived_now);
+}
+
+#[test]
+fn confirmed_playback_keeps_corners_timing_facing_and_stationary_arrival_tail() {
+    use lantern_core::travel::Facing;
+    let (mut town, id) = fixture();
+    ready(&mut town, &id, vec![p(1.0, 0.0), p(1.0, 1.0), p(2.0, 1.0)]);
+    walk(&mut town, &id, 3.0);
+    let actor = town.actor(&id).unwrap();
+    let playback = actor.confirmed_playback();
+    assert_eq!(
+        playback
+            .samples()
+            .iter()
+            .map(|s| s.time.get())
+            .collect::<Vec<_>>(),
+        vec![0.0, 0.75, 1.75, 2.75, 3.0]
+    );
+    let middle = playback.pose_at(seconds(1.25));
+    assert_eq!(middle.position, p(1.0, 0.5));
+    assert_eq!(middle.facing, Facing::Left);
+    assert_eq!(middle.status, Status::Walking);
+    assert_eq!(playback.pose_at(seconds(2.9)).status, Status::Arrived);
+    assert_eq!(playback.pose_at(seconds(999.0)), actor.pose());
+    assert_eq!(actor.state().facing, Facing::Right);
+    assert_eq!(playback.duration(), seconds(3.0));
+}
+
+#[test]
+fn blocked_playback_confirms_completed_steps_then_holds_and_invalidations_drop_old_samples() {
+    let (mut town, id) = fixture();
+    ready(&mut town, &id, vec![p(1.0, 0.0), p(2.0, 0.0)]);
+    town.advance_travel(&id, seconds(3.0), 10, |_, target| {
+        if target.x.get() > 1.0 {
+            None
+        } else {
+            Speed::new(1.0)
+        }
+    })
+    .unwrap();
+    let playback = town.actor(&id).unwrap().confirmed_playback();
+    assert_eq!(playback.pose_at(seconds(0.5)).position, p(0.75, 0.0));
+    assert_eq!(playback.pose_at(seconds(1.0)).status, Status::Blocked);
+    assert_eq!(playback.pose_at(seconds(3.0)).position, p(1.0, 0.0));
+    town.set_task(&id, Task::Idle).unwrap();
+    let actor = town.actor(&id).unwrap();
+    assert_eq!(actor.confirmed_playback().samples().len(), 1);
+    assert_eq!(actor.confirmed_playback().samples()[0].pose, actor.pose());
+}
+
+#[test]
+fn facing_survives_diagonal_motion_wait_reassignment_and_restore() {
+    use lantern_core::travel::Facing;
+    let (mut town, id) = fixture();
+    ready(&mut town, &id, vec![p(-1.0, 0.0)]);
+    walk(&mut town, &id, 0.25);
+    assert_eq!(town.actor(&id).unwrap().state().facing, Facing::Left);
+    ready(&mut town, &id, vec![p(1.0, 1.0)]);
+    walk(&mut town, &id, 0.25); // dx == dy retains the previous facing.
+    assert_eq!(town.actor(&id).unwrap().state().facing, Facing::Left);
+    town.set_task(&id, Task::Idle).unwrap();
+    walk(&mut town, &id, 100.0);
+    let facts = town.actor(&id).unwrap().state().clone();
+    let restored = Town::restore(
+        town.owner().clone(),
+        town.buildings().to_vec(),
+        vec![facts.clone()],
+    )
+    .unwrap();
+    assert_eq!(restored.actor(&id).unwrap().state(), &facts);
+    assert_eq!(restored.actor(&id).unwrap().state().facing, Facing::Left);
+}
+
+#[test]
+fn reload_rebuilds_active_leg_but_does_not_replay_completed_or_cancelled_arrival() {
+    let (mut town, id) = fixture();
+    ready(&mut town, &id, vec![p(2.0, 0.0)]);
+    walk(&mut town, &id, 0.125);
+    let facts = town.actor(&id).unwrap().state().clone();
+    let mut restored = Town::restore(
+        town.owner().clone(),
+        town.buildings().to_vec(),
+        vec![facts.clone()],
+    )
+    .unwrap();
+    assert_eq!(
+        restored.actor(&id).unwrap().travel_status(),
+        Status::Waiting
+    );
+    assert_eq!(
+        restored
+            .actor(&id)
+            .unwrap()
+            .confirmed_playback()
+            .samples()
+            .len(),
+        1
+    );
+    let r = restored
+        .resume_travel(&id, NavigationRevision(4))
+        .unwrap()
+        .unwrap();
+    assert_eq!(r.origin(), facts.position);
+    assert_eq!(Some(r.destination()), facts.travel.destination());
+    restored
+        .accept_route(
+            &id,
+            &r,
+            r.navigation(),
+            RouteOutcome::Ready(vec![p(2.0, 0.0)]),
+        )
+        .unwrap();
+    assert!(walk(&mut restored, &id, 5.0).arrived_now);
+    for cancelled in [false, true] {
+        if cancelled {
+            restored.cancel_route(&id).unwrap();
+        }
+        let facts = restored.actor(&id).unwrap().state().clone();
+        let mut reloaded = Town::restore(
+            restored.owner().clone(),
+            restored.buildings().to_vec(),
+            vec![facts.clone()],
+        )
+        .unwrap();
+        assert_eq!(
+            reloaded.actor(&id).unwrap().travel_status(),
+            if cancelled {
+                Status::Cancelled
+            } else {
+                Status::Arrived
+            }
+        );
+        assert_eq!(
+            reloaded.resume_travel(&id, NavigationRevision(5)).unwrap(),
+            None
+        );
+        assert!(!walk(&mut reloaded, &id, 5.0).arrived_now);
+        assert_eq!(reloaded.actor(&id).unwrap().state(), &facts);
+    }
+}
+
+#[test]
+fn missed_observations_rejoin_at_walking_speed_without_mutating_authority() {
+    use lantern_core::travel::rejoin;
+    let (mut town, id) = fixture();
+    ready(&mut town, &id, vec![p(2.0, 0.0)]);
+    let visible = town.actor(&id).unwrap().pose();
+    walk(&mut town, &id, 10.0);
+    let actor = town.actor(&id).unwrap().clone();
+    let confirmed = actor.confirmed_playback().pose_at(seconds(1000.0));
+    let mut view = visible;
+    for _ in 0..40 {
+        let next = rejoin(view, confirmed, seconds(0.05), Speed::new(1.0).unwrap()).unwrap();
+        assert!((next.position.x.get() - view.position.x.get()).abs() <= 0.05 + 1e-12);
+        view = next;
+    }
+    assert_eq!(view, confirmed);
+    assert_eq!(town.actor(&id).unwrap(), &actor);
+}
 fn seconds(value: f64) -> Seconds {
     Seconds::new(value).unwrap()
 }

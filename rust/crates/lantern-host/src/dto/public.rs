@@ -3,7 +3,8 @@ use super::{
     wire::{Decimal, Number},
 };
 use crate::state::ModelWorld;
-use lantern_core::model::{RouteState, Task};
+use lantern_core::model::Task;
+use lantern_core::travel::{Playback, Status};
 use serde::Serialize;
 use std::collections::BTreeMap;
 
@@ -35,6 +36,8 @@ struct PublicActorDto {
     id: EntityIdDto,
     x: Number,
     y: Number,
+    facing: i8,
+    playback: PlaybackDto,
     pending_output: BTreeMap<String, Number>,
     task: TaskDto,
     route_status: &'static str,
@@ -42,9 +45,52 @@ struct PublicActorDto {
     building_index: Option<usize>,
 }
 
+#[derive(Serialize)]
+struct PlaybackDto {
+    duration: Number,
+    samples: Vec<SampleDto>,
+}
+#[derive(Serialize)]
+struct SampleDto {
+    time: Number,
+    x: Number,
+    y: Number,
+    facing: i8,
+    phase: &'static str,
+}
+fn phase(status: Status) -> &'static str {
+    match status {
+        Status::NotRequested => "not_requested",
+        Status::Waiting => "waiting",
+        Status::Walking => "walking",
+        Status::Arrived => "arrived",
+        Status::Unreachable => "unreachable",
+        Status::Blocked => "blocked",
+        Status::Cancelled => "cancelled",
+    }
+}
+impl From<Playback> for PlaybackDto {
+    fn from(value: Playback) -> Self {
+        Self {
+            duration: Number::core(value.duration().get()),
+            samples: value
+                .samples()
+                .iter()
+                .map(|s| SampleDto {
+                    time: Number::core(s.time.get()),
+                    x: Number::core(s.pose.position.x.get()),
+                    y: Number::core(s.pose.position.y.get()),
+                    facing: s.pose.facing.get(),
+                    phase: phase(s.pose.status),
+                })
+                .collect(),
+        }
+    }
+}
+
 pub fn public_snapshot(world: &ModelWorld) -> PublicWorldDto {
     PublicWorldDto {
-        format: "lantern-model-observation-v1",
+        format: "lantern-model-observation-v2",
         world_id: world.id.as_str().into(),
         seed: Decimal(world.seed.0),
         towns: world
@@ -71,19 +117,21 @@ pub fn public_snapshot(world: &ModelWorld) -> PublicWorldDto {
                             Task::Construction { site, .. } => Some(site),
                             Task::Idle | Task::Move { .. } | Task::Transport { .. } => None,
                         };
-                        let route_status = match actor.route() {
-                            RouteState::NotRequested => "not_requested",
-                            RouteState::Pending(_) => "pending",
-                            RouteState::Ready { .. } => "ready",
-                            RouteState::Arrived(_) => "arrived",
-                            RouteState::Unreachable(_) => "unreachable",
-                            RouteState::Blocked(_) => "blocked",
-                            RouteState::Cancelled => "cancelled",
+                        let route_status = match actor.travel_status() {
+                            Status::NotRequested => "not_requested",
+                            Status::Waiting => "pending",
+                            Status::Walking => "ready",
+                            Status::Arrived => "arrived",
+                            Status::Unreachable => "unreachable",
+                            Status::Blocked => "blocked",
+                            Status::Cancelled => "cancelled",
                         };
                         PublicActorDto {
                             id: EntityIdDto::from_id(&a.id),
                             x: Number::core(a.position.x.get()),
                             y: Number::core(a.position.y.get()),
+                            facing: a.facing.get(),
+                            playback: actor.confirmed_playback().into(),
                             pending_output: a
                                 .cargo
                                 .goods()
