@@ -957,6 +957,39 @@ impl InputTrips {
         town.set_task(actor, Task::Idle)?;
         Ok(Outcome::Completed(advance.remaining))
     }
+    /// Workshop head changes cancel actual supply records, including stale task
+    /// snapshots and empty return legs. Restore only undelivered cargo once.
+    pub(crate) fn cancel_supplies_to(
+        &mut self,
+        town: &mut Town,
+        ledger: &mut Ledger,
+        destination: &BuildingId,
+        hall: &BuildingId,
+    ) -> Result<(), Error> {
+        let (mut trips, mut model, mut goods) = (self.clone(), town.clone(), ledger.clone());
+        let actors: Vec<_> = town
+            .actors()
+            .iter()
+            .filter_map(|actor| {
+                let id = &actor.state().id;
+                trips
+                    .trips
+                    .get(id)
+                    .filter(|t| {
+                        t.operation == HaulOperation::Supply
+                            && t.destination.id(town).is_ok_and(|d| d == *destination)
+                    })
+                    .map(|_| id.clone())
+            })
+            .collect();
+        for actor in actors {
+            trips.cancel(&mut model, &mut goods, &actor, hall)?;
+        }
+        *self = trips;
+        *town = model;
+        *ledger = goods;
+        Ok(())
+    }
     pub fn cancel(
         &mut self,
         town: &mut Town,

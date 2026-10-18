@@ -531,7 +531,7 @@ fn recipe_change_releases_only_obsolete_inputs_resets_work_and_preserves_goods()
             NavigationRevision(1),
             |_, _, s| Some(s)
         ),
-        Err(Error::Unsupported)
+        Ok(Outcome::Waiting(Wait::Inputs))
     ));
     // Finished base goods can still unload with an advanced recipe selected.
     assert_eq!(f.unload(1, 0.65), Outcome::Unloaded(sec(0.)));

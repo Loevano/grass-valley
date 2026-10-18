@@ -8,7 +8,7 @@ and cache rules are in [Backend](BACKEND.md#cached-zoomed-out-map).
 | 1     | Cached zoomed-out town overview    | Implemented              | Show the landscape and city sizes without refreshing animated scene detail.                                      |
 | 2     | Production line balancing          | Wood and grain implemented; fishing remains | Develop clear fishing chains with capped staffing and simple upgrades. |
 | 3     | Scalable villager pathfinding       | Host queue implemented; cache refinement and shared navigation remain | Keep movement responsive as villager counts and towns grow, with bounded routing work. |
-| 4     | Rust migration | R15 gathering/base processor slices implemented; advanced/workshop actors, host integration and release acceptance remain open | Follow the [staged plan and prompts](RUST_MIGRATION.md), preserving playable checkpoints and saved worlds. |
+| 4     | Rust migration | R15 gathering/processor slices implemented; farming and other actors, host integration and release acceptance remain open | Follow the [staged plan and prompts](RUST_MIGRATION.md), preserving playable checkpoints and saved worlds. |
 
 ## Rust migration
 
@@ -35,16 +35,12 @@ Base and top-tier grain accounting match Python under continuous-input assumptio
 R14's three slices implement experimental producer, hauler and merchant trips,
 market purchases/sales and cancellation/reload continuity; see the
 [R14 completion boundary](RUST_MIGRATION.md#r14-slice-3--merchants-purchases-sales-and-completion-audit).
-R15 slice 1 implements experimental woodcutting claims, productive work/return/
-unload clocks, depletion events, tools/practice and pending-output recovery; see
-[its completion boundary](RUST_MIGRATION.md#r15-slice-1--woodcutters-and-resource-claims).
-R15 slice 2 implements twelve base processor families, productive batch clocks,
-shared reserved inputs, mixed-species smoking, finite ore, recipe-change cleanup
-and interruption/reload traces; see
-[its completion boundary](RUST_MIGRATION.md#r15-slice-2--base-processors-and-productive-batch-clocks).
-Advanced recipes and workshop queues remain R15 slice 3; other
-production actors and population integration remain R16–R18; durable saves and
-playable host integration remain R19–R21.
+R15's three slices implement experimental woodcutting claims, productive clocks,
+all processor recipes, species-preserving smoking, finite ore and ordered workshop
+requests, including cancellation and reload; see the
+[R15 completion boundary](RUST_MIGRATION.md#r15-slice-3--workshop-queues-advanced-recipes-and-completion-audit).
+Farming/orchard, fishing/livestock and population integration remain R16–R18;
+durable saves and playable host integration remain R19–R21.
 R11's integrated W2/W3 movement/accounting acceptance remains open; R19–R21 retain
 HTTP/save/snapshot integration and R23 retains complete W1–W6 acceptance. See the
 [R10 completion audit](RUST_MIGRATION.md#final-measurements-and-foundation-completion)

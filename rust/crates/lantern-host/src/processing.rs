@@ -1,5 +1,7 @@
-//! Experimental base-recipe actors. Town owns movement, Ledger owns every input
-//! reservation and finished good. No live host, terrain renewal or workshop queue.
+//! Experimental processor actors and owned workshop orders. Town owns movement;
+//! Ledger owns every input reservation and finished good. No live host or terrain
+//! renewal clock.
+use crate::logistics::{self, LogisticsTrips};
 use crate::{
     progression::{self, Batch, Worker, Workplace},
     resources::{self, Ledger, PendingOwner, Stock},
@@ -15,6 +17,8 @@ use lantern_core::{
 };
 use serde::{Deserialize, Serialize};
 use std::collections::{BTreeMap, BTreeSet};
+mod workshop;
+pub use workshop::WorkshopOrder;
 
 #[derive(Debug, PartialEq)]
 pub enum Error {
@@ -24,6 +28,16 @@ pub enum Error {
     Invalid,
     Busy,
     Unsupported,
+    TripsRequired,
+    QueueFull,
+    MissingOrder,
+    Exhausted,
+    Logistics(logistics::Error),
+}
+impl From<logistics::Error> for Error {
+    fn from(e: logistics::Error) -> Self {
+        Self::Logistics(e)
+    }
 }
 impl From<ModelError> for Error {
     fn from(e: ModelError) -> Self {
@@ -58,17 +72,14 @@ fn kind_supported(kind: &str) -> bool {
             | "mill"
             | "smokehouse"
             | "fish_pond"
+            | "workshop"
     )
 }
-fn base(workplace: &Workplace) -> Result<progression::Recipe, Error> {
-    if !kind_supported(&workplace.kind) || workplace.request.is_some() {
+fn recipe_supported(workplace: &Workplace) -> Result<progression::Recipe, Error> {
+    if !kind_supported(&workplace.kind) {
         return Err(Error::Unsupported);
     }
-    let recipe = workplace.selected_recipe()?;
-    if recipe.level > 1. {
-        return Err(Error::Unsupported);
-    }
-    Ok(recipe)
+    Ok(workplace.selected_recipe()?)
 }
 fn serial_building(town: &Town, serial: u64) -> Result<BuildingId, Error> {
     Ok(BuildingId::from_saved(
@@ -172,6 +183,7 @@ struct PartialWork {
 pub struct Processors {
     jobs: BTreeMap<ActorId, Job>,
     grain: BTreeMap<BuildingId, Vec<PartialWork>>,
+    workshops: workshop::Workshops,
 }
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Wait {
@@ -182,6 +194,7 @@ pub enum Wait {
     IronVein,
     Ore,
     Qualification,
+    Requests,
 }
 #[derive(Clone, Debug, PartialEq)]
 pub enum Outcome {
@@ -213,6 +226,7 @@ impl Processors {
         {
             return Err(Error::Invalid);
         }
+        self.workshops.check_owner(town)?;
         Ok(())
     }
     pub fn elapsed(&self, actor: &ActorId) -> Option<Seconds> {
@@ -233,9 +247,13 @@ impl Processors {
     ) -> Result<(), Error> {
         let (mut owner, mut model, mut goods) = (self.clone(), town.clone(), ledger.clone());
         self.check_owner(town)?;
-        let recipe = base(workplace)?;
+        let effective = self.workplace(id, workplace)?;
+        let workplace = &effective;
+        let recipe = recipe_supported(workplace)?;
         worker.qualification(worker.job())?;
-        workplace.recipe_requirement(worker)?;
+        if workplace.kind != "workshop" || workplace.request.is_some() {
+            workplace.recipe_requirement(worker)?;
+        }
         if workplace.job()? != worker.job() {
             return Err(Error::Invalid);
         }
@@ -371,6 +389,7 @@ impl Processors {
     ) -> Result<(), Error> {
         self.check_owner(town)?;
         if !kind_supported(&workplace.kind)
+            || workplace.kind == "workshop"
             || town.building(id)?.construction != ConstructionState::Complete
             || ledger.store(id)?.policy.construction
             || ledger.store(id)?.policy.kind != workplace.kind
@@ -432,6 +451,7 @@ impl Processors {
             elapsed,
             navigation,
             &mut segment,
+            None,
         )?;
         *self = owner;
         *town = model;
@@ -452,10 +472,16 @@ impl Processors {
         elapsed: Seconds,
         navigation: NavigationRevision,
         segment: &mut impl FnMut(Position, Position, Speed) -> Option<Speed>,
+        trips: Option<(&mut LogisticsTrips, &BuildingId)>,
     ) -> Result<Outcome, Error> {
         let Some(job) = self.jobs.get(actor).cloned() else {
             return Ok(Outcome::Paused);
         };
+        if workplace.kind == "workshop" && trips.is_none() {
+            return Err(Error::TripsRequired);
+        }
+        let effective = self.workplace(&job.id(town)?, workplace)?;
+        let workplace = &effective;
         if !job.available(town, ledger)
             || workplace.kind != job.kind
             || workplace.job()? != worker.job()
@@ -517,7 +543,10 @@ impl Processors {
         {
             return Ok(Outcome::Waiting(Wait::Travel));
         }
-        let recipe = base(workplace)?;
+        if workplace.kind == "workshop" && workplace.request.is_none() {
+            return Ok(Outcome::Waiting(Wait::Requests));
+        }
+        let recipe = recipe_supported(workplace)?;
         if worker.qualification(worker.job()).is_err()
             || workplace.recipe_requirement(worker).is_err()
         {
@@ -583,12 +612,24 @@ impl Processors {
         *worker = trained;
         progress.elapsed = 0.;
         progress.active = false;
+        if workplace.kind == "workshop" {
+            let queue = self.workshops.queues.get_mut(&id).ok_or(Error::Invalid)?;
+            let head = queue.first_mut().ok_or(Error::Invalid)?;
+            let amount: f64 = batch.outputs.entries().values().map(|n| n.get()).sum();
+            head.remaining = (head.remaining - amount).max(0.);
+            if head.remaining <= 1e-9 {
+                queue.remove(0);
+                let (trips, hall) = trips.ok_or(Error::TripsRequired)?;
+                self.workshop_head_changed(town, ledger, trips, hall, &id)?;
+            }
+        }
         Ok(Outcome::Completed(batch))
     }
     pub fn encode(&self, town: &Town) -> Result<String, Error> {
         self.check_owner(town)?;
         serde_json::to_string(&Saved {
-            version: 1,
+            version: 2,
+            workshops: Some(self.workshops.save()),
             world: town.owner().world.as_str().into(),
             town: town.owner().town.as_str().into(),
             jobs: self
@@ -606,13 +647,18 @@ impl Processors {
     }
     pub fn decode(json: &str, town: &Town, ledger: &Ledger) -> Result<Self, Error> {
         let saved: Saved = serde_json::from_str(json).map_err(|_| Error::Invalid)?;
-        if saved.version != 1
+        if !matches!(saved.version, 1 | 2)
+            || (saved.version == 1 && saved.workshops.is_some())
+            || (saved.version == 2 && saved.workshops.is_none())
             || saved.world != town.owner().world.as_str()
             || saved.town != town.owner().town.as_str()
         {
             return Err(Error::Invalid);
         }
         let mut owner = Self::default();
+        if let Some(workshops) = saved.workshops {
+            owner.workshops = workshop::Workshops::decode(workshops, town, ledger)?;
+        }
         for (serial, job) in saved.jobs {
             let actor = ActorId::from_saved(
                 EntityIdentity::from_saved(town.owner().clone(), serial)
@@ -630,6 +676,13 @@ impl Processors {
                 _ => true,
             };
             if !kind_supported(&job.kind)
+                || (saved.version == 1 && job.kind == "workshop")
+                || (job.kind == "workshop"
+                    && job.active
+                    && owner
+                        .workshops
+                        .head(&job.id(town)?)
+                        .is_none_or(|h| h.recipe != job.output))
                 || ledger.store(&job.id(town)?)?.policy.kind != job.kind
                 || (!job.active && job.elapsed != 0.)
                 || !valid_partial(&job.kind, &job.output, job.elapsed)
@@ -669,6 +722,8 @@ fn valid_partial(kind: &str, output: &str, elapsed: f64) -> bool {
 #[serde(deny_unknown_fields)]
 struct Saved {
     version: u32,
+    #[serde(default)]
+    workshops: Option<workshop::SavedWorkshops>,
     world: String,
     town: String,
     jobs: Vec<(u64, Job)>,

@@ -192,9 +192,13 @@ No omitted feature is approved for removal. The saved subsystem matrix assigns:
   phases and ledger buffers; see the [completion boundary](RUST_MIGRATION.md#r15-slice-1--woodcutters-and-resource-claims).
   R15 slice 2 adds separate processor/legacy-grain-partial JSON over the same
   movement/ledger boundary; see the [processor scope](RUST_MIGRATION.md#r15-slice-2--base-processors-and-productive-batch-clocks).
+  R15 slice 3 extends that owner to processor v2 JSON with ordered workshop
+  requests, amounts/remaining counts and ID high-water marks, retaining non-workshop
+  v1 admission; see the [R15 audit](RUST_MIGRATION.md#r15-slice-3--workshop-queues-advanced-recipes-and-completion-audit).
   These do not hydrate ordinary worker saves or persist terrain/ledger generations.
-- R14–17: trips/reservations/accounting, markets/resource activity, every production
-  recipe/queue, farms/orchards/water/claims, species, boats, barn animals and horses.
+- R14–17: R14–15 implement offline trip/accounting, market and processor/queue
+  owners. Full world/worker hydration and integration, farms/orchards/water/claims,
+  fishing species/boats, barn animals and horses remain later work.
 - R18: remaining residents, village routines, trades/stories/gifts, equipment and
   adventure membership/clocks/rewards.
 - R20–21: complete existing public DTOs/catalogs/auth/command dispatch, queued

@@ -1,0 +1,8720 @@
+[
+  {
+    "kind": "bakery",
+    "recipe": "bread_rolls",
+    "skill": 0,
+    "talent": 0,
+    "name": "0_bakery_bread_rolls",
+    "inputs": {
+      "flour": 4.0,
+      "milk": 2.0,
+      "wood": 1.0
+    },
+    "actions": [
+      {
+        "op": "advance",
+        "seconds": 1
+      },
+      {
+        "op": "advance",
+        "seconds": 5
+      },
+      {
+        "op": "dropoff"
+      },
+      {
+        "op": "advance",
+        "seconds": 6
+      },
+      {
+        "op": "dropoff"
+      },
+      {
+        "op": "advance",
+        "seconds": 100
+      }
+    ],
+    "states": [
+      {
+        "status": "Producing bread rolls \u00b7 5s remaining",
+        "inputs": {
+          "flour": 4.0,
+          "milk": 2.0,
+          "wood": 1.0
+        },
+        "output": {},
+        "pending": {},
+        "produced": {},
+        "elapsed": 1,
+        "practice": 0,
+        "queue": [],
+        "flows": {
+          "incoming": {},
+          "outgoing": {}
+        }
+      },
+      {
+        "status": "Working",
+        "inputs": {
+          "flour": 2.0,
+          "milk": 1.0,
+          "wood": 0.5
+        },
+        "output": {},
+        "pending": {
+          "bread_rolls": 3.0
+        },
+        "produced": {
+          "bread_rolls": 3.0
+        },
+        "elapsed": 0,
+        "practice": 0.16,
+        "queue": [],
+        "flows": {
+          "incoming": {
+            "bread_rolls": 3.0,
+            "food": 5.25
+          },
+          "outgoing": {
+            "flour": 2.0,
+            "milk": 1.0,
+            "food": 1.0,
+            "wood": 0.5
+          }
+        }
+      },
+      {
+        "status": null,
+        "inputs": {
+          "flour": 2.0,
+          "milk": 1.0,
+          "wood": 0.5
+        },
+        "output": {
+          "bread_rolls": 3.0
+        },
+        "pending": {},
+        "produced": {
+          "bread_rolls": 3.0
+        },
+        "elapsed": 0,
+        "practice": 0.16,
+        "queue": [],
+        "flows": {
+          "incoming": {
+            "bread_rolls": 3.0,
+            "food": 5.25
+          },
+          "outgoing": {
+            "flour": 2.0,
+            "milk": 1.0,
+            "food": 1.0,
+            "wood": 0.5
+          }
+        }
+      },
+      {
+        "status": "Working",
+        "inputs": {
+          "flour": 0,
+          "milk": 0,
+          "wood": 0
+        },
+        "output": {
+          "bread_rolls": 3.0
+        },
+        "pending": {
+          "bread_rolls": 3.0
+        },
+        "produced": {
+          "bread_rolls": 6.0
+        },
+        "elapsed": 0,
+        "practice": 0.32,
+        "queue": [],
+        "flows": {
+          "incoming": {
+            "bread_rolls": 6.0,
+            "food": 10.5
+          },
+          "outgoing": {
+            "flour": 4.0,
+            "milk": 2.0,
+            "food": 2.0,
+            "wood": 1.0
+          }
+        }
+      },
+      {
+        "status": null,
+        "inputs": {
+          "flour": 0,
+          "milk": 0,
+          "wood": 0
+        },
+        "output": {
+          "bread_rolls": 6.0
+        },
+        "pending": {},
+        "produced": {
+          "bread_rolls": 6.0
+        },
+        "elapsed": 0,
+        "practice": 0.32,
+        "queue": [],
+        "flows": {
+          "incoming": {
+            "bread_rolls": 6.0,
+            "food": 10.5
+          },
+          "outgoing": {
+            "flour": 4.0,
+            "milk": 2.0,
+            "food": 2.0,
+            "wood": 1.0
+          }
+        }
+      },
+      {
+        "status": "Waiting for delivery: flour, milk, wood",
+        "inputs": {
+          "flour": 0,
+          "milk": 0,
+          "wood": 0
+        },
+        "output": {
+          "bread_rolls": 6.0
+        },
+        "pending": {},
+        "produced": {
+          "bread_rolls": 6.0
+        },
+        "elapsed": 0,
+        "practice": 0.32,
+        "queue": [],
+        "flows": {
+          "incoming": {
+            "bread_rolls": 6.0,
+            "food": 10.5
+          },
+          "outgoing": {
+            "flour": 4.0,
+            "milk": 2.0,
+            "food": 2.0,
+            "wood": 1.0
+          }
+        }
+      }
+    ]
+  },
+  {
+    "kind": "bakery",
+    "recipe": "bread_rolls",
+    "skill": 40,
+    "talent": 1,
+    "name": "1_bakery_bread_rolls",
+    "inputs": {
+      "flour": 15.0,
+      "milk": 7.5,
+      "wood": 3.75
+    },
+    "actions": [
+      {
+        "op": "advance",
+        "seconds": 1
+      },
+      {
+        "op": "advance",
+        "seconds": 5
+      },
+      {
+        "op": "dropoff"
+      },
+      {
+        "op": "advance",
+        "seconds": 6
+      },
+      {
+        "op": "dropoff"
+      },
+      {
+        "op": "advance",
+        "seconds": 100
+      }
+    ],
+    "states": [
+      {
+        "status": "Producing bread rolls \u00b7 5s remaining",
+        "inputs": {
+          "flour": 15.0,
+          "milk": 7.5,
+          "wood": 3.75
+        },
+        "output": {},
+        "pending": {},
+        "produced": {},
+        "elapsed": 1,
+        "practice": 40,
+        "queue": [],
+        "flows": {
+          "incoming": {},
+          "outgoing": {}
+        }
+      },
+      {
+        "status": "Working",
+        "inputs": {
+          "flour": 7.5,
+          "milk": 3.75,
+          "wood": 1.875
+        },
+        "output": {},
+        "pending": {
+          "bread_rolls": 11.25
+        },
+        "produced": {
+          "bread_rolls": 11.25
+        },
+        "elapsed": 0,
+        "practice": 40.2,
+        "queue": [],
+        "flows": {
+          "incoming": {
+            "bread_rolls": 11.25,
+            "food": 19.6875
+          },
+          "outgoing": {
+            "flour": 7.5,
+            "milk": 3.75,
+            "food": 3.75,
+            "wood": 1.875
+          }
+        }
+      },
+      {
+        "status": null,
+        "inputs": {
+          "flour": 7.5,
+          "milk": 3.75,
+          "wood": 1.875
+        },
+        "output": {
+          "bread_rolls": 11.25
+        },
+        "pending": {},
+        "produced": {
+          "bread_rolls": 11.25
+        },
+        "elapsed": 0,
+        "practice": 40.2,
+        "queue": [],
+        "flows": {
+          "incoming": {
+            "bread_rolls": 11.25,
+            "food": 19.6875
+          },
+          "outgoing": {
+            "flour": 7.5,
+            "milk": 3.75,
+            "food": 3.75,
+            "wood": 1.875
+          }
+        }
+      },
+      {
+        "status": "Working",
+        "inputs": {
+          "flour": 0,
+          "milk": 0,
+          "wood": 0
+        },
+        "output": {
+          "bread_rolls": 11.25
+        },
+        "pending": {
+          "bread_rolls": 11.25
+        },
+        "produced": {
+          "bread_rolls": 22.5
+        },
+        "elapsed": 0,
+        "practice": 40.4,
+        "queue": [],
+        "flows": {
+          "incoming": {
+            "bread_rolls": 22.5,
+            "food": 39.375
+          },
+          "outgoing": {
+            "flour": 15.0,
+            "milk": 7.5,
+            "food": 7.5,
+            "wood": 3.75
+          }
+        }
+      },
+      {
+        "status": null,
+        "inputs": {
+          "flour": 0,
+          "milk": 0,
+          "wood": 0
+        },
+        "output": {
+          "bread_rolls": 22.5
+        },
+        "pending": {},
+        "produced": {
+          "bread_rolls": 22.5
+        },
+        "elapsed": 0,
+        "practice": 40.4,
+        "queue": [],
+        "flows": {
+          "incoming": {
+            "bread_rolls": 22.5,
+            "food": 39.375
+          },
+          "outgoing": {
+            "flour": 15.0,
+            "milk": 7.5,
+            "food": 7.5,
+            "wood": 3.75
+          }
+        }
+      },
+      {
+        "status": "Waiting for delivery: flour, milk, wood",
+        "inputs": {
+          "flour": 0,
+          "milk": 0,
+          "wood": 0
+        },
+        "output": {
+          "bread_rolls": 22.5
+        },
+        "pending": {},
+        "produced": {
+          "bread_rolls": 22.5
+        },
+        "elapsed": 0,
+        "practice": 40.4,
+        "queue": [],
+        "flows": {
+          "incoming": {
+            "bread_rolls": 22.5,
+            "food": 39.375
+          },
+          "outgoing": {
+            "flour": 15.0,
+            "milk": 7.5,
+            "food": 7.5,
+            "wood": 3.75
+          }
+        }
+      }
+    ]
+  },
+  {
+    "kind": "bakery",
+    "recipe": "herb_bread",
+    "skill": 0,
+    "talent": 0,
+    "name": "2_bakery_herb_bread",
+    "inputs": {
+      "flour": 4.0,
+      "herbs": 2.0,
+      "wood": 1.0
+    },
+    "actions": [
+      {
+        "op": "advance",
+        "seconds": 1
+      },
+      {
+        "op": "advance",
+        "seconds": 5
+      },
+      {
+        "op": "dropoff"
+      },
+      {
+        "op": "advance",
+        "seconds": 6
+      },
+      {
+        "op": "dropoff"
+      },
+      {
+        "op": "advance",
+        "seconds": 100
+      }
+    ],
+    "states": [
+      {
+        "status": "Producing herb bread \u00b7 5s remaining",
+        "inputs": {
+          "flour": 4.0,
+          "herbs": 2.0,
+          "wood": 1.0
+        },
+        "output": {},
+        "pending": {},
+        "produced": {},
+        "elapsed": 1,
+        "practice": 0,
+        "queue": [],
+        "flows": {
+          "incoming": {},
+          "outgoing": {}
+        }
+      },
+      {
+        "status": "Working",
+        "inputs": {
+          "flour": 2.0,
+          "herbs": 1.0,
+          "wood": 0.5
+        },
+        "output": {},
+        "pending": {
+          "herb_bread": 2.0
+        },
+        "produced": {
+          "herb_bread": 2.0
+        },
+        "elapsed": 0,
+        "practice": 0.16,
+        "queue": [],
+        "flows": {
+          "incoming": {
+            "herb_bread": 2.0,
+            "food": 4.0
+          },
+          "outgoing": {
+            "flour": 2.0,
+            "herbs": 1.0,
+            "wood": 0.5
+          }
+        }
+      },
+      {
+        "status": null,
+        "inputs": {
+          "flour": 2.0,
+          "herbs": 1.0,
+          "wood": 0.5
+        },
+        "output": {
+          "herb_bread": 2.0
+        },
+        "pending": {},
+        "produced": {
+          "herb_bread": 2.0
+        },
+        "elapsed": 0,
+        "practice": 0.16,
+        "queue": [],
+        "flows": {
+          "incoming": {
+            "herb_bread": 2.0,
+            "food": 4.0
+          },
+          "outgoing": {
+            "flour": 2.0,
+            "herbs": 1.0,
+            "wood": 0.5
+          }
+        }
+      },
+      {
+        "status": "Working",
+        "inputs": {
+          "flour": 0,
+          "herbs": 0,
+          "wood": 0
+        },
+        "output": {
+          "herb_bread": 2.0
+        },
+        "pending": {
+          "herb_bread": 2.0
+        },
+        "produced": {
+          "herb_bread": 4.0
+        },
+        "elapsed": 0,
+        "practice": 0.32,
+        "queue": [],
+        "flows": {
+          "incoming": {
+            "herb_bread": 4.0,
+            "food": 8.0
+          },
+          "outgoing": {
+            "flour": 4.0,
+            "herbs": 2.0,
+            "wood": 1.0
+          }
+        }
+      },
+      {
+        "status": null,
+        "inputs": {
+          "flour": 0,
+          "herbs": 0,
+          "wood": 0
+        },
+        "output": {
+          "herb_bread": 4.0
+        },
+        "pending": {},
+        "produced": {
+          "herb_bread": 4.0
+        },
+        "elapsed": 0,
+        "practice": 0.32,
+        "queue": [],
+        "flows": {
+          "incoming": {
+            "herb_bread": 4.0,
+            "food": 8.0
+          },
+          "outgoing": {
+            "flour": 4.0,
+            "herbs": 2.0,
+            "wood": 1.0
+          }
+        }
+      },
+      {
+        "status": "Waiting for delivery: flour, herbs, wood",
+        "inputs": {
+          "flour": 0,
+          "herbs": 0,
+          "wood": 0
+        },
+        "output": {
+          "herb_bread": 4.0
+        },
+        "pending": {},
+        "produced": {
+          "herb_bread": 4.0
+        },
+        "elapsed": 0,
+        "practice": 0.32,
+        "queue": [],
+        "flows": {
+          "incoming": {
+            "herb_bread": 4.0,
+            "food": 8.0
+          },
+          "outgoing": {
+            "flour": 4.0,
+            "herbs": 2.0,
+            "wood": 1.0
+          }
+        }
+      }
+    ]
+  },
+  {
+    "kind": "bakery",
+    "recipe": "herb_bread",
+    "skill": 40,
+    "talent": 1,
+    "name": "3_bakery_herb_bread",
+    "inputs": {
+      "flour": 15.0,
+      "herbs": 7.5,
+      "wood": 3.75
+    },
+    "actions": [
+      {
+        "op": "advance",
+        "seconds": 1
+      },
+      {
+        "op": "advance",
+        "seconds": 5
+      },
+      {
+        "op": "dropoff"
+      },
+      {
+        "op": "advance",
+        "seconds": 6
+      },
+      {
+        "op": "dropoff"
+      },
+      {
+        "op": "advance",
+        "seconds": 100
+      }
+    ],
+    "states": [
+      {
+        "status": "Producing herb bread \u00b7 5s remaining",
+        "inputs": {
+          "flour": 15.0,
+          "herbs": 7.5,
+          "wood": 3.75
+        },
+        "output": {},
+        "pending": {},
+        "produced": {},
+        "elapsed": 1,
+        "practice": 40,
+        "queue": [],
+        "flows": {
+          "incoming": {},
+          "outgoing": {}
+        }
+      },
+      {
+        "status": "Working",
+        "inputs": {
+          "flour": 7.5,
+          "herbs": 3.75,
+          "wood": 1.875
+        },
+        "output": {},
+        "pending": {
+          "herb_bread": 7.5
+        },
+        "produced": {
+          "herb_bread": 7.5
+        },
+        "elapsed": 0,
+        "practice": 40.2,
+        "queue": [],
+        "flows": {
+          "incoming": {
+            "herb_bread": 7.5,
+            "food": 15.0
+          },
+          "outgoing": {
+            "flour": 7.5,
+            "herbs": 3.75,
+            "wood": 1.875
+          }
+        }
+      },
+      {
+        "status": null,
+        "inputs": {
+          "flour": 7.5,
+          "herbs": 3.75,
+          "wood": 1.875
+        },
+        "output": {
+          "herb_bread": 7.5
+        },
+        "pending": {},
+        "produced": {
+          "herb_bread": 7.5
+        },
+        "elapsed": 0,
+        "practice": 40.2,
+        "queue": [],
+        "flows": {
+          "incoming": {
+            "herb_bread": 7.5,
+            "food": 15.0
+          },
+          "outgoing": {
+            "flour": 7.5,
+            "herbs": 3.75,
+            "wood": 1.875
+          }
+        }
+      },
+      {
+        "status": "Working",
+        "inputs": {
+          "flour": 0,
+          "herbs": 0,
+          "wood": 0
+        },
+        "output": {
+          "herb_bread": 7.5
+        },
+        "pending": {
+          "herb_bread": 7.5
+        },
+        "produced": {
+          "herb_bread": 15.0
+        },
+        "elapsed": 0,
+        "practice": 40.4,
+        "queue": [],
+        "flows": {
+          "incoming": {
+            "herb_bread": 15.0,
+            "food": 30.0
+          },
+          "outgoing": {
+            "flour": 15.0,
+            "herbs": 7.5,
+            "wood": 3.75
+          }
+        }
+      },
+      {
+        "status": null,
+        "inputs": {
+          "flour": 0,
+          "herbs": 0,
+          "wood": 0
+        },
+        "output": {
+          "herb_bread": 15.0
+        },
+        "pending": {},
+        "produced": {
+          "herb_bread": 15.0
+        },
+        "elapsed": 0,
+        "practice": 40.4,
+        "queue": [],
+        "flows": {
+          "incoming": {
+            "herb_bread": 15.0,
+            "food": 30.0
+          },
+          "outgoing": {
+            "flour": 15.0,
+            "herbs": 7.5,
+            "wood": 3.75
+          }
+        }
+      },
+      {
+        "status": "Waiting for delivery: flour, herbs, wood",
+        "inputs": {
+          "flour": 0,
+          "herbs": 0,
+          "wood": 0
+        },
+        "output": {
+          "herb_bread": 15.0
+        },
+        "pending": {},
+        "produced": {
+          "herb_bread": 15.0
+        },
+        "elapsed": 0,
+        "practice": 40.4,
+        "queue": [],
+        "flows": {
+          "incoming": {
+            "herb_bread": 15.0,
+            "food": 30.0
+          },
+          "outgoing": {
+            "flour": 15.0,
+            "herbs": 7.5,
+            "wood": 3.75
+          }
+        }
+      }
+    ]
+  },
+  {
+    "kind": "bakery",
+    "recipe": "fruit_pies",
+    "skill": 0,
+    "talent": 0,
+    "name": "4_bakery_fruit_pies",
+    "inputs": {
+      "flour": 4.0,
+      "fruit": 4.0,
+      "wood": 1.0
+    },
+    "actions": [
+      {
+        "op": "advance",
+        "seconds": 1
+      },
+      {
+        "op": "advance",
+        "seconds": 8
+      },
+      {
+        "op": "dropoff"
+      },
+      {
+        "op": "advance",
+        "seconds": 9
+      },
+      {
+        "op": "dropoff"
+      },
+      {
+        "op": "advance",
+        "seconds": 100
+      }
+    ],
+    "states": [
+      {
+        "status": "Producing fruit pies \u00b7 8s remaining",
+        "inputs": {
+          "flour": 4.0,
+          "fruit": 4.0,
+          "wood": 1.0
+        },
+        "output": {},
+        "pending": {},
+        "produced": {},
+        "elapsed": 1,
+        "practice": 0,
+        "queue": [],
+        "flows": {
+          "incoming": {},
+          "outgoing": {}
+        }
+      },
+      {
+        "status": "Working",
+        "inputs": {
+          "flour": 2.0,
+          "fruit": 2.0,
+          "wood": 0.5
+        },
+        "output": {},
+        "pending": {
+          "fruit_pies": 2.0
+        },
+        "produced": {
+          "fruit_pies": 2.0
+        },
+        "elapsed": 0,
+        "practice": 0.24,
+        "queue": [],
+        "flows": {
+          "incoming": {
+            "fruit_pies": 2.0,
+            "food": 7.0
+          },
+          "outgoing": {
+            "flour": 2.0,
+            "fruit": 2.0,
+            "food": 2.0,
+            "wood": 0.5
+          }
+        }
+      },
+      {
+        "status": null,
+        "inputs": {
+          "flour": 2.0,
+          "fruit": 2.0,
+          "wood": 0.5
+        },
+        "output": {
+          "fruit_pies": 2.0
+        },
+        "pending": {},
+        "produced": {
+          "fruit_pies": 2.0
+        },
+        "elapsed": 0,
+        "practice": 0.24,
+        "queue": [],
+        "flows": {
+          "incoming": {
+            "fruit_pies": 2.0,
+            "food": 7.0
+          },
+          "outgoing": {
+            "flour": 2.0,
+            "fruit": 2.0,
+            "food": 2.0,
+            "wood": 0.5
+          }
+        }
+      },
+      {
+        "status": "Working",
+        "inputs": {
+          "flour": 0,
+          "fruit": 0,
+          "wood": 0
+        },
+        "output": {
+          "fruit_pies": 2.0
+        },
+        "pending": {
+          "fruit_pies": 2.0
+        },
+        "produced": {
+          "fruit_pies": 4.0
+        },
+        "elapsed": 0,
+        "practice": 0.48,
+        "queue": [],
+        "flows": {
+          "incoming": {
+            "fruit_pies": 4.0,
+            "food": 14.0
+          },
+          "outgoing": {
+            "flour": 4.0,
+            "fruit": 4.0,
+            "food": 4.0,
+            "wood": 1.0
+          }
+        }
+      },
+      {
+        "status": null,
+        "inputs": {
+          "flour": 0,
+          "fruit": 0,
+          "wood": 0
+        },
+        "output": {
+          "fruit_pies": 4.0
+        },
+        "pending": {},
+        "produced": {
+          "fruit_pies": 4.0
+        },
+        "elapsed": 0,
+        "practice": 0.48,
+        "queue": [],
+        "flows": {
+          "incoming": {
+            "fruit_pies": 4.0,
+            "food": 14.0
+          },
+          "outgoing": {
+            "flour": 4.0,
+            "fruit": 4.0,
+            "food": 4.0,
+            "wood": 1.0
+          }
+        }
+      },
+      {
+        "status": "Waiting for delivery: flour, fruit, wood",
+        "inputs": {
+          "flour": 0,
+          "fruit": 0,
+          "wood": 0
+        },
+        "output": {
+          "fruit_pies": 4.0
+        },
+        "pending": {},
+        "produced": {
+          "fruit_pies": 4.0
+        },
+        "elapsed": 0,
+        "practice": 0.48,
+        "queue": [],
+        "flows": {
+          "incoming": {
+            "fruit_pies": 4.0,
+            "food": 14.0
+          },
+          "outgoing": {
+            "flour": 4.0,
+            "fruit": 4.0,
+            "food": 4.0,
+            "wood": 1.0
+          }
+        }
+      }
+    ]
+  },
+  {
+    "kind": "bakery",
+    "recipe": "fruit_pies",
+    "skill": 40,
+    "talent": 1,
+    "name": "5_bakery_fruit_pies",
+    "inputs": {
+      "flour": 15.0,
+      "fruit": 15.0,
+      "wood": 3.75
+    },
+    "actions": [
+      {
+        "op": "advance",
+        "seconds": 1
+      },
+      {
+        "op": "advance",
+        "seconds": 8
+      },
+      {
+        "op": "dropoff"
+      },
+      {
+        "op": "advance",
+        "seconds": 9
+      },
+      {
+        "op": "dropoff"
+      },
+      {
+        "op": "advance",
+        "seconds": 100
+      }
+    ],
+    "states": [
+      {
+        "status": "Producing fruit pies \u00b7 8s remaining",
+        "inputs": {
+          "flour": 15.0,
+          "fruit": 15.0,
+          "wood": 3.75
+        },
+        "output": {},
+        "pending": {},
+        "produced": {},
+        "elapsed": 1,
+        "practice": 40,
+        "queue": [],
+        "flows": {
+          "incoming": {},
+          "outgoing": {}
+        }
+      },
+      {
+        "status": "Working",
+        "inputs": {
+          "flour": 7.5,
+          "fruit": 7.5,
+          "wood": 1.875
+        },
+        "output": {},
+        "pending": {
+          "fruit_pies": 7.5
+        },
+        "produced": {
+          "fruit_pies": 7.5
+        },
+        "elapsed": 0,
+        "practice": 40.3,
+        "queue": [],
+        "flows": {
+          "incoming": {
+            "fruit_pies": 7.5,
+            "food": 26.25
+          },
+          "outgoing": {
+            "flour": 7.5,
+            "fruit": 7.5,
+            "food": 7.5,
+            "wood": 1.875
+          }
+        }
+      },
+      {
+        "status": null,
+        "inputs": {
+          "flour": 7.5,
+          "fruit": 7.5,
+          "wood": 1.875
+        },
+        "output": {
+          "fruit_pies": 7.5
+        },
+        "pending": {},
+        "produced": {
+          "fruit_pies": 7.5
+        },
+        "elapsed": 0,
+        "practice": 40.3,
+        "queue": [],
+        "flows": {
+          "incoming": {
+            "fruit_pies": 7.5,
+            "food": 26.25
+          },
+          "outgoing": {
+            "flour": 7.5,
+            "fruit": 7.5,
+            "food": 7.5,
+            "wood": 1.875
+          }
+        }
+      },
+      {
+        "status": "Working",
+        "inputs": {
+          "flour": 0,
+          "fruit": 0,
+          "wood": 0
+        },
+        "output": {
+          "fruit_pies": 7.5
+        },
+        "pending": {
+          "fruit_pies": 7.5
+        },
+        "produced": {
+          "fruit_pies": 15.0
+        },
+        "elapsed": 0,
+        "practice": 40.6,
+        "queue": [],
+        "flows": {
+          "incoming": {
+            "fruit_pies": 15.0,
+            "food": 52.5
+          },
+          "outgoing": {
+            "flour": 15.0,
+            "fruit": 15.0,
+            "food": 15.0,
+            "wood": 3.75
+          }
+        }
+      },
+      {
+        "status": null,
+        "inputs": {
+          "flour": 0,
+          "fruit": 0,
+          "wood": 0
+        },
+        "output": {
+          "fruit_pies": 15.0
+        },
+        "pending": {},
+        "produced": {
+          "fruit_pies": 15.0
+        },
+        "elapsed": 0,
+        "practice": 40.6,
+        "queue": [],
+        "flows": {
+          "incoming": {
+            "fruit_pies": 15.0,
+            "food": 52.5
+          },
+          "outgoing": {
+            "flour": 15.0,
+            "fruit": 15.0,
+            "food": 15.0,
+            "wood": 3.75
+          }
+        }
+      },
+      {
+        "status": "Waiting for delivery: flour, fruit, wood",
+        "inputs": {
+          "flour": 0,
+          "fruit": 0,
+          "wood": 0
+        },
+        "output": {
+          "fruit_pies": 15.0
+        },
+        "pending": {},
+        "produced": {
+          "fruit_pies": 15.0
+        },
+        "elapsed": 0,
+        "practice": 40.6,
+        "queue": [],
+        "flows": {
+          "incoming": {
+            "fruit_pies": 15.0,
+            "food": 52.5
+          },
+          "outgoing": {
+            "flour": 15.0,
+            "fruit": 15.0,
+            "food": 15.0,
+            "wood": 3.75
+          }
+        }
+      }
+    ]
+  },
+  {
+    "kind": "bakery",
+    "recipe": "cakes",
+    "skill": 0,
+    "talent": 0,
+    "name": "6_bakery_cakes",
+    "inputs": {
+      "flour": 4.0,
+      "eggs": 4.0,
+      "milk": 2.0,
+      "wood": 1.0
+    },
+    "actions": [
+      {
+        "op": "advance",
+        "seconds": 1
+      },
+      {
+        "op": "advance",
+        "seconds": 11
+      },
+      {
+        "op": "dropoff"
+      },
+      {
+        "op": "advance",
+        "seconds": 12
+      },
+      {
+        "op": "dropoff"
+      },
+      {
+        "op": "advance",
+        "seconds": 100
+      }
+    ],
+    "states": [
+      {
+        "status": "Producing cakes \u00b7 11s remaining",
+        "inputs": {
+          "flour": 4.0,
+          "eggs": 4.0,
+          "milk": 2.0,
+          "wood": 1.0
+        },
+        "output": {},
+        "pending": {},
+        "produced": {},
+        "elapsed": 1,
+        "practice": 0,
+        "queue": [],
+        "flows": {
+          "incoming": {},
+          "outgoing": {}
+        }
+      },
+      {
+        "status": "Working",
+        "inputs": {
+          "flour": 2.0,
+          "eggs": 2.0,
+          "milk": 1.0,
+          "wood": 0.5
+        },
+        "output": {},
+        "pending": {
+          "cakes": 2.0
+        },
+        "produced": {
+          "cakes": 2.0
+        },
+        "elapsed": 0,
+        "practice": 0.32,
+        "queue": [],
+        "flows": {
+          "incoming": {
+            "cakes": 2.0,
+            "food": 9.0
+          },
+          "outgoing": {
+            "flour": 2.0,
+            "eggs": 2.0,
+            "food": 3.0,
+            "milk": 1.0,
+            "wood": 0.5
+          }
+        }
+      },
+      {
+        "status": null,
+        "inputs": {
+          "flour": 2.0,
+          "eggs": 2.0,
+          "milk": 1.0,
+          "wood": 0.5
+        },
+        "output": {
+          "cakes": 2.0
+        },
+        "pending": {},
+        "produced": {
+          "cakes": 2.0
+        },
+        "elapsed": 0,
+        "practice": 0.32,
+        "queue": [],
+        "flows": {
+          "incoming": {
+            "cakes": 2.0,
+            "food": 9.0
+          },
+          "outgoing": {
+            "flour": 2.0,
+            "eggs": 2.0,
+            "food": 3.0,
+            "milk": 1.0,
+            "wood": 0.5
+          }
+        }
+      },
+      {
+        "status": "Working",
+        "inputs": {
+          "flour": 0,
+          "eggs": 0,
+          "milk": 0,
+          "wood": 0
+        },
+        "output": {
+          "cakes": 2.0
+        },
+        "pending": {
+          "cakes": 2.0
+        },
+        "produced": {
+          "cakes": 4.0
+        },
+        "elapsed": 0,
+        "practice": 0.64,
+        "queue": [],
+        "flows": {
+          "incoming": {
+            "cakes": 4.0,
+            "food": 18.0
+          },
+          "outgoing": {
+            "flour": 4.0,
+            "eggs": 4.0,
+            "food": 6.0,
+            "milk": 2.0,
+            "wood": 1.0
+          }
+        }
+      },
+      {
+        "status": null,
+        "inputs": {
+          "flour": 0,
+          "eggs": 0,
+          "milk": 0,
+          "wood": 0
+        },
+        "output": {
+          "cakes": 4.0
+        },
+        "pending": {},
+        "produced": {
+          "cakes": 4.0
+        },
+        "elapsed": 0,
+        "practice": 0.64,
+        "queue": [],
+        "flows": {
+          "incoming": {
+            "cakes": 4.0,
+            "food": 18.0
+          },
+          "outgoing": {
+            "flour": 4.0,
+            "eggs": 4.0,
+            "food": 6.0,
+            "milk": 2.0,
+            "wood": 1.0
+          }
+        }
+      },
+      {
+        "status": "Waiting for delivery: flour, eggs, milk, wood",
+        "inputs": {
+          "flour": 0,
+          "eggs": 0,
+          "milk": 0,
+          "wood": 0
+        },
+        "output": {
+          "cakes": 4.0
+        },
+        "pending": {},
+        "produced": {
+          "cakes": 4.0
+        },
+        "elapsed": 0,
+        "practice": 0.64,
+        "queue": [],
+        "flows": {
+          "incoming": {
+            "cakes": 4.0,
+            "food": 18.0
+          },
+          "outgoing": {
+            "flour": 4.0,
+            "eggs": 4.0,
+            "food": 6.0,
+            "milk": 2.0,
+            "wood": 1.0
+          }
+        }
+      }
+    ]
+  },
+  {
+    "kind": "bakery",
+    "recipe": "cakes",
+    "skill": 40,
+    "talent": 1,
+    "name": "7_bakery_cakes",
+    "inputs": {
+      "flour": 15.0,
+      "eggs": 15.0,
+      "milk": 7.5,
+      "wood": 3.75
+    },
+    "actions": [
+      {
+        "op": "advance",
+        "seconds": 1
+      },
+      {
+        "op": "advance",
+        "seconds": 11
+      },
+      {
+        "op": "dropoff"
+      },
+      {
+        "op": "advance",
+        "seconds": 12
+      },
+      {
+        "op": "dropoff"
+      },
+      {
+        "op": "advance",
+        "seconds": 100
+      }
+    ],
+    "states": [
+      {
+        "status": "Producing cakes \u00b7 11s remaining",
+        "inputs": {
+          "flour": 15.0,
+          "eggs": 15.0,
+          "milk": 7.5,
+          "wood": 3.75
+        },
+        "output": {},
+        "pending": {},
+        "produced": {},
+        "elapsed": 1,
+        "practice": 40,
+        "queue": [],
+        "flows": {
+          "incoming": {},
+          "outgoing": {}
+        }
+      },
+      {
+        "status": "Working",
+        "inputs": {
+          "flour": 7.5,
+          "eggs": 7.5,
+          "milk": 3.75,
+          "wood": 1.875
+        },
+        "output": {},
+        "pending": {
+          "cakes": 7.5
+        },
+        "produced": {
+          "cakes": 7.5
+        },
+        "elapsed": 0,
+        "practice": 40.4,
+        "queue": [],
+        "flows": {
+          "incoming": {
+            "cakes": 7.5,
+            "food": 33.75
+          },
+          "outgoing": {
+            "flour": 7.5,
+            "eggs": 7.5,
+            "food": 11.25,
+            "milk": 3.75,
+            "wood": 1.875
+          }
+        }
+      },
+      {
+        "status": null,
+        "inputs": {
+          "flour": 7.5,
+          "eggs": 7.5,
+          "milk": 3.75,
+          "wood": 1.875
+        },
+        "output": {
+          "cakes": 7.5
+        },
+        "pending": {},
+        "produced": {
+          "cakes": 7.5
+        },
+        "elapsed": 0,
+        "practice": 40.4,
+        "queue": [],
+        "flows": {
+          "incoming": {
+            "cakes": 7.5,
+            "food": 33.75
+          },
+          "outgoing": {
+            "flour": 7.5,
+            "eggs": 7.5,
+            "food": 11.25,
+            "milk": 3.75,
+            "wood": 1.875
+          }
+        }
+      },
+      {
+        "status": "Working",
+        "inputs": {
+          "flour": 0,
+          "eggs": 0,
+          "milk": 0,
+          "wood": 0
+        },
+        "output": {
+          "cakes": 7.5
+        },
+        "pending": {
+          "cakes": 7.5
+        },
+        "produced": {
+          "cakes": 15.0
+        },
+        "elapsed": 0,
+        "practice": 40.8,
+        "queue": [],
+        "flows": {
+          "incoming": {
+            "cakes": 15.0,
+            "food": 67.5
+          },
+          "outgoing": {
+            "flour": 15.0,
+            "eggs": 15.0,
+            "food": 22.5,
+            "milk": 7.5,
+            "wood": 3.75
+          }
+        }
+      },
+      {
+        "status": null,
+        "inputs": {
+          "flour": 0,
+          "eggs": 0,
+          "milk": 0,
+          "wood": 0
+        },
+        "output": {
+          "cakes": 15.0
+        },
+        "pending": {},
+        "produced": {
+          "cakes": 15.0
+        },
+        "elapsed": 0,
+        "practice": 40.8,
+        "queue": [],
+        "flows": {
+          "incoming": {
+            "cakes": 15.0,
+            "food": 67.5
+          },
+          "outgoing": {
+            "flour": 15.0,
+            "eggs": 15.0,
+            "food": 22.5,
+            "milk": 7.5,
+            "wood": 3.75
+          }
+        }
+      },
+      {
+        "status": "Waiting for delivery: flour, eggs, milk, wood",
+        "inputs": {
+          "flour": 0,
+          "eggs": 0,
+          "milk": 0,
+          "wood": 0
+        },
+        "output": {
+          "cakes": 15.0
+        },
+        "pending": {},
+        "produced": {
+          "cakes": 15.0
+        },
+        "elapsed": 0,
+        "practice": 40.8,
+        "queue": [],
+        "flows": {
+          "incoming": {
+            "cakes": 15.0,
+            "food": 67.5
+          },
+          "outgoing": {
+            "flour": 15.0,
+            "eggs": 15.0,
+            "food": 22.5,
+            "milk": 7.5,
+            "wood": 3.75
+          }
+        }
+      }
+    ]
+  },
+  {
+    "kind": "butcher",
+    "recipe": "herbed_meat",
+    "skill": 0,
+    "talent": 0,
+    "name": "8_butcher_herbed_meat",
+    "inputs": {
+      "meat": 4.0,
+      "herbs": 2.0
+    },
+    "actions": [
+      {
+        "op": "advance",
+        "seconds": 1
+      },
+      {
+        "op": "advance",
+        "seconds": 5
+      },
+      {
+        "op": "dropoff"
+      },
+      {
+        "op": "advance",
+        "seconds": 6
+      },
+      {
+        "op": "dropoff"
+      },
+      {
+        "op": "advance",
+        "seconds": 100
+      }
+    ],
+    "states": [
+      {
+        "status": "Producing herbed meat \u00b7 5s remaining",
+        "inputs": {
+          "meat": 4.0,
+          "herbs": 2.0
+        },
+        "output": {},
+        "pending": {},
+        "produced": {},
+        "elapsed": 1,
+        "practice": 0,
+        "queue": [],
+        "flows": {
+          "incoming": {},
+          "outgoing": {}
+        }
+      },
+      {
+        "status": "Working",
+        "inputs": {
+          "meat": 2.0,
+          "herbs": 1.0
+        },
+        "output": {},
+        "pending": {
+          "herbed_meat": 2.0
+        },
+        "produced": {
+          "herbed_meat": 2.0
+        },
+        "elapsed": 0,
+        "practice": 0.2,
+        "queue": [],
+        "flows": {
+          "incoming": {
+            "herbed_meat": 2.0,
+            "food": 10.0
+          },
+          "outgoing": {
+            "meat": 2.0,
+            "food": 2.0,
+            "herbs": 1.0
+          }
+        }
+      },
+      {
+        "status": null,
+        "inputs": {
+          "meat": 2.0,
+          "herbs": 1.0
+        },
+        "output": {
+          "herbed_meat": 2.0
+        },
+        "pending": {},
+        "produced": {
+          "herbed_meat": 2.0
+        },
+        "elapsed": 0,
+        "practice": 0.2,
+        "queue": [],
+        "flows": {
+          "incoming": {
+            "herbed_meat": 2.0,
+            "food": 10.0
+          },
+          "outgoing": {
+            "meat": 2.0,
+            "food": 2.0,
+            "herbs": 1.0
+          }
+        }
+      },
+      {
+        "status": "Working",
+        "inputs": {
+          "meat": 0,
+          "herbs": 0
+        },
+        "output": {
+          "herbed_meat": 2.0
+        },
+        "pending": {
+          "herbed_meat": 2.0
+        },
+        "produced": {
+          "herbed_meat": 4.0
+        },
+        "elapsed": 0,
+        "practice": 0.4,
+        "queue": [],
+        "flows": {
+          "incoming": {
+            "herbed_meat": 4.0,
+            "food": 20.0
+          },
+          "outgoing": {
+            "meat": 4.0,
+            "food": 4.0,
+            "herbs": 2.0
+          }
+        }
+      },
+      {
+        "status": null,
+        "inputs": {
+          "meat": 0,
+          "herbs": 0
+        },
+        "output": {
+          "herbed_meat": 4.0
+        },
+        "pending": {},
+        "produced": {
+          "herbed_meat": 4.0
+        },
+        "elapsed": 0,
+        "practice": 0.4,
+        "queue": [],
+        "flows": {
+          "incoming": {
+            "herbed_meat": 4.0,
+            "food": 20.0
+          },
+          "outgoing": {
+            "meat": 4.0,
+            "food": 4.0,
+            "herbs": 2.0
+          }
+        }
+      },
+      {
+        "status": "Waiting for delivery: meat, herbs",
+        "inputs": {
+          "meat": 0,
+          "herbs": 0
+        },
+        "output": {
+          "herbed_meat": 4.0
+        },
+        "pending": {},
+        "produced": {
+          "herbed_meat": 4.0
+        },
+        "elapsed": 0,
+        "practice": 0.4,
+        "queue": [],
+        "flows": {
+          "incoming": {
+            "herbed_meat": 4.0,
+            "food": 20.0
+          },
+          "outgoing": {
+            "meat": 4.0,
+            "food": 4.0,
+            "herbs": 2.0
+          }
+        }
+      }
+    ]
+  },
+  {
+    "kind": "butcher",
+    "recipe": "herbed_meat",
+    "skill": 40,
+    "talent": 1,
+    "name": "9_butcher_herbed_meat",
+    "inputs": {
+      "meat": 15.0,
+      "herbs": 7.5
+    },
+    "actions": [
+      {
+        "op": "advance",
+        "seconds": 1
+      },
+      {
+        "op": "advance",
+        "seconds": 5
+      },
+      {
+        "op": "dropoff"
+      },
+      {
+        "op": "advance",
+        "seconds": 6
+      },
+      {
+        "op": "dropoff"
+      },
+      {
+        "op": "advance",
+        "seconds": 100
+      }
+    ],
+    "states": [
+      {
+        "status": "Producing herbed meat \u00b7 5s remaining",
+        "inputs": {
+          "meat": 15.0,
+          "herbs": 7.5
+        },
+        "output": {},
+        "pending": {},
+        "produced": {},
+        "elapsed": 1,
+        "practice": 40,
+        "queue": [],
+        "flows": {
+          "incoming": {},
+          "outgoing": {}
+        }
+      },
+      {
+        "status": "Working",
+        "inputs": {
+          "meat": 7.5,
+          "herbs": 3.75
+        },
+        "output": {},
+        "pending": {
+          "herbed_meat": 7.5
+        },
+        "produced": {
+          "herbed_meat": 7.5
+        },
+        "elapsed": 0,
+        "practice": 40.25,
+        "queue": [],
+        "flows": {
+          "incoming": {
+            "herbed_meat": 7.5,
+            "food": 37.5
+          },
+          "outgoing": {
+            "meat": 7.5,
+            "food": 7.5,
+            "herbs": 3.75
+          }
+        }
+      },
+      {
+        "status": null,
+        "inputs": {
+          "meat": 7.5,
+          "herbs": 3.75
+        },
+        "output": {
+          "herbed_meat": 7.5
+        },
+        "pending": {},
+        "produced": {
+          "herbed_meat": 7.5
+        },
+        "elapsed": 0,
+        "practice": 40.25,
+        "queue": [],
+        "flows": {
+          "incoming": {
+            "herbed_meat": 7.5,
+            "food": 37.5
+          },
+          "outgoing": {
+            "meat": 7.5,
+            "food": 7.5,
+            "herbs": 3.75
+          }
+        }
+      },
+      {
+        "status": "Working",
+        "inputs": {
+          "meat": 0,
+          "herbs": 0
+        },
+        "output": {
+          "herbed_meat": 7.5
+        },
+        "pending": {
+          "herbed_meat": 7.5
+        },
+        "produced": {
+          "herbed_meat": 15.0
+        },
+        "elapsed": 0,
+        "practice": 40.5,
+        "queue": [],
+        "flows": {
+          "incoming": {
+            "herbed_meat": 15.0,
+            "food": 75.0
+          },
+          "outgoing": {
+            "meat": 15.0,
+            "food": 15.0,
+            "herbs": 7.5
+          }
+        }
+      },
+      {
+        "status": null,
+        "inputs": {
+          "meat": 0,
+          "herbs": 0
+        },
+        "output": {
+          "herbed_meat": 15.0
+        },
+        "pending": {},
+        "produced": {
+          "herbed_meat": 15.0
+        },
+        "elapsed": 0,
+        "practice": 40.5,
+        "queue": [],
+        "flows": {
+          "incoming": {
+            "herbed_meat": 15.0,
+            "food": 75.0
+          },
+          "outgoing": {
+            "meat": 15.0,
+            "food": 15.0,
+            "herbs": 7.5
+          }
+        }
+      },
+      {
+        "status": "Waiting for delivery: meat, herbs",
+        "inputs": {
+          "meat": 0,
+          "herbs": 0
+        },
+        "output": {
+          "herbed_meat": 15.0
+        },
+        "pending": {},
+        "produced": {
+          "herbed_meat": 15.0
+        },
+        "elapsed": 0,
+        "practice": 40.5,
+        "queue": [],
+        "flows": {
+          "incoming": {
+            "herbed_meat": 15.0,
+            "food": 75.0
+          },
+          "outgoing": {
+            "meat": 15.0,
+            "food": 15.0,
+            "herbs": 7.5
+          }
+        }
+      }
+    ]
+  },
+  {
+    "kind": "butcher",
+    "recipe": "smoked_meat",
+    "skill": 0,
+    "talent": 0,
+    "name": "10_butcher_smoked_meat",
+    "inputs": {
+      "meat": 4.0,
+      "wood": 1.0
+    },
+    "actions": [
+      {
+        "op": "advance",
+        "seconds": 1
+      },
+      {
+        "op": "advance",
+        "seconds": 8
+      },
+      {
+        "op": "dropoff"
+      },
+      {
+        "op": "advance",
+        "seconds": 9
+      },
+      {
+        "op": "dropoff"
+      },
+      {
+        "op": "advance",
+        "seconds": 100
+      }
+    ],
+    "states": [
+      {
+        "status": "Producing smoked meat \u00b7 8s remaining",
+        "inputs": {
+          "meat": 4.0,
+          "wood": 1.0
+        },
+        "output": {},
+        "pending": {},
+        "produced": {},
+        "elapsed": 1,
+        "practice": 0,
+        "queue": [],
+        "flows": {
+          "incoming": {},
+          "outgoing": {}
+        }
+      },
+      {
+        "status": "Working",
+        "inputs": {
+          "meat": 2.0,
+          "wood": 0.5
+        },
+        "output": {},
+        "pending": {
+          "smoked_meat": 2.0
+        },
+        "produced": {
+          "smoked_meat": 2.0
+        },
+        "elapsed": 0,
+        "practice": 0.3,
+        "queue": [],
+        "flows": {
+          "incoming": {
+            "smoked_meat": 2.0,
+            "food": 12.0
+          },
+          "outgoing": {
+            "meat": 2.0,
+            "food": 2.0,
+            "wood": 0.5
+          }
+        }
+      },
+      {
+        "status": null,
+        "inputs": {
+          "meat": 2.0,
+          "wood": 0.5
+        },
+        "output": {
+          "smoked_meat": 2.0
+        },
+        "pending": {},
+        "produced": {
+          "smoked_meat": 2.0
+        },
+        "elapsed": 0,
+        "practice": 0.3,
+        "queue": [],
+        "flows": {
+          "incoming": {
+            "smoked_meat": 2.0,
+            "food": 12.0
+          },
+          "outgoing": {
+            "meat": 2.0,
+            "food": 2.0,
+            "wood": 0.5
+          }
+        }
+      },
+      {
+        "status": "Working",
+        "inputs": {
+          "meat": 0,
+          "wood": 0
+        },
+        "output": {
+          "smoked_meat": 2.0
+        },
+        "pending": {
+          "smoked_meat": 2.0
+        },
+        "produced": {
+          "smoked_meat": 4.0
+        },
+        "elapsed": 0,
+        "practice": 0.6,
+        "queue": [],
+        "flows": {
+          "incoming": {
+            "smoked_meat": 4.0,
+            "food": 24.0
+          },
+          "outgoing": {
+            "meat": 4.0,
+            "food": 4.0,
+            "wood": 1.0
+          }
+        }
+      },
+      {
+        "status": null,
+        "inputs": {
+          "meat": 0,
+          "wood": 0
+        },
+        "output": {
+          "smoked_meat": 4.0
+        },
+        "pending": {},
+        "produced": {
+          "smoked_meat": 4.0
+        },
+        "elapsed": 0,
+        "practice": 0.6,
+        "queue": [],
+        "flows": {
+          "incoming": {
+            "smoked_meat": 4.0,
+            "food": 24.0
+          },
+          "outgoing": {
+            "meat": 4.0,
+            "food": 4.0,
+            "wood": 1.0
+          }
+        }
+      },
+      {
+        "status": "Waiting for delivery: meat, wood",
+        "inputs": {
+          "meat": 0,
+          "wood": 0
+        },
+        "output": {
+          "smoked_meat": 4.0
+        },
+        "pending": {},
+        "produced": {
+          "smoked_meat": 4.0
+        },
+        "elapsed": 0,
+        "practice": 0.6,
+        "queue": [],
+        "flows": {
+          "incoming": {
+            "smoked_meat": 4.0,
+            "food": 24.0
+          },
+          "outgoing": {
+            "meat": 4.0,
+            "food": 4.0,
+            "wood": 1.0
+          }
+        }
+      }
+    ]
+  },
+  {
+    "kind": "butcher",
+    "recipe": "smoked_meat",
+    "skill": 40,
+    "talent": 1,
+    "name": "11_butcher_smoked_meat",
+    "inputs": {
+      "meat": 15.0,
+      "wood": 3.75
+    },
+    "actions": [
+      {
+        "op": "advance",
+        "seconds": 1
+      },
+      {
+        "op": "advance",
+        "seconds": 8
+      },
+      {
+        "op": "dropoff"
+      },
+      {
+        "op": "advance",
+        "seconds": 9
+      },
+      {
+        "op": "dropoff"
+      },
+      {
+        "op": "advance",
+        "seconds": 100
+      }
+    ],
+    "states": [
+      {
+        "status": "Producing smoked meat \u00b7 8s remaining",
+        "inputs": {
+          "meat": 15.0,
+          "wood": 3.75
+        },
+        "output": {},
+        "pending": {},
+        "produced": {},
+        "elapsed": 1,
+        "practice": 40,
+        "queue": [],
+        "flows": {
+          "incoming": {},
+          "outgoing": {}
+        }
+      },
+      {
+        "status": "Working",
+        "inputs": {
+          "meat": 7.5,
+          "wood": 1.875
+        },
+        "output": {},
+        "pending": {
+          "smoked_meat": 7.5
+        },
+        "produced": {
+          "smoked_meat": 7.5
+        },
+        "elapsed": 0,
+        "practice": 40.375,
+        "queue": [],
+        "flows": {
+          "incoming": {
+            "smoked_meat": 7.5,
+            "food": 45.0
+          },
+          "outgoing": {
+            "meat": 7.5,
+            "food": 7.5,
+            "wood": 1.875
+          }
+        }
+      },
+      {
+        "status": null,
+        "inputs": {
+          "meat": 7.5,
+          "wood": 1.875
+        },
+        "output": {
+          "smoked_meat": 7.5
+        },
+        "pending": {},
+        "produced": {
+          "smoked_meat": 7.5
+        },
+        "elapsed": 0,
+        "practice": 40.375,
+        "queue": [],
+        "flows": {
+          "incoming": {
+            "smoked_meat": 7.5,
+            "food": 45.0
+          },
+          "outgoing": {
+            "meat": 7.5,
+            "food": 7.5,
+            "wood": 1.875
+          }
+        }
+      },
+      {
+        "status": "Working",
+        "inputs": {
+          "meat": 0,
+          "wood": 0
+        },
+        "output": {
+          "smoked_meat": 7.5
+        },
+        "pending": {
+          "smoked_meat": 7.5
+        },
+        "produced": {
+          "smoked_meat": 15.0
+        },
+        "elapsed": 0,
+        "practice": 40.75,
+        "queue": [],
+        "flows": {
+          "incoming": {
+            "smoked_meat": 15.0,
+            "food": 90.0
+          },
+          "outgoing": {
+            "meat": 15.0,
+            "food": 15.0,
+            "wood": 3.75
+          }
+        }
+      },
+      {
+        "status": null,
+        "inputs": {
+          "meat": 0,
+          "wood": 0
+        },
+        "output": {
+          "smoked_meat": 15.0
+        },
+        "pending": {},
+        "produced": {
+          "smoked_meat": 15.0
+        },
+        "elapsed": 0,
+        "practice": 40.75,
+        "queue": [],
+        "flows": {
+          "incoming": {
+            "smoked_meat": 15.0,
+            "food": 90.0
+          },
+          "outgoing": {
+            "meat": 15.0,
+            "food": 15.0,
+            "wood": 3.75
+          }
+        }
+      },
+      {
+        "status": "Waiting for delivery: meat, wood",
+        "inputs": {
+          "meat": 0,
+          "wood": 0
+        },
+        "output": {
+          "smoked_meat": 15.0
+        },
+        "pending": {},
+        "produced": {
+          "smoked_meat": 15.0
+        },
+        "elapsed": 0,
+        "practice": 40.75,
+        "queue": [],
+        "flows": {
+          "incoming": {
+            "smoked_meat": 15.0,
+            "food": 90.0
+          },
+          "outgoing": {
+            "meat": 15.0,
+            "food": 15.0,
+            "wood": 3.75
+          }
+        }
+      }
+    ]
+  },
+  {
+    "kind": "butcher",
+    "recipe": "sausages",
+    "skill": 0,
+    "talent": 0,
+    "name": "12_butcher_sausages",
+    "inputs": {
+      "meat": 4.0,
+      "herbs": 2.0,
+      "flour": 2.0
+    },
+    "actions": [
+      {
+        "op": "advance",
+        "seconds": 1
+      },
+      {
+        "op": "advance",
+        "seconds": 8
+      },
+      {
+        "op": "dropoff"
+      },
+      {
+        "op": "advance",
+        "seconds": 9
+      },
+      {
+        "op": "dropoff"
+      },
+      {
+        "op": "advance",
+        "seconds": 100
+      }
+    ],
+    "states": [
+      {
+        "status": "Producing sausages \u00b7 8s remaining",
+        "inputs": {
+          "meat": 4.0,
+          "herbs": 2.0,
+          "flour": 2.0
+        },
+        "output": {},
+        "pending": {},
+        "produced": {},
+        "elapsed": 1,
+        "practice": 0,
+        "queue": [],
+        "flows": {
+          "incoming": {},
+          "outgoing": {}
+        }
+      },
+      {
+        "status": "Working",
+        "inputs": {
+          "meat": 2.0,
+          "herbs": 1.0,
+          "flour": 1.0
+        },
+        "output": {},
+        "pending": {
+          "sausages": 3.0
+        },
+        "produced": {
+          "sausages": 3.0
+        },
+        "elapsed": 0,
+        "practice": 0.3,
+        "queue": [],
+        "flows": {
+          "incoming": {
+            "sausages": 3.0,
+            "food": 18.0
+          },
+          "outgoing": {
+            "meat": 2.0,
+            "food": 2.0,
+            "herbs": 1.0,
+            "flour": 1.0
+          }
+        }
+      },
+      {
+        "status": null,
+        "inputs": {
+          "meat": 2.0,
+          "herbs": 1.0,
+          "flour": 1.0
+        },
+        "output": {
+          "sausages": 3.0
+        },
+        "pending": {},
+        "produced": {
+          "sausages": 3.0
+        },
+        "elapsed": 0,
+        "practice": 0.3,
+        "queue": [],
+        "flows": {
+          "incoming": {
+            "sausages": 3.0,
+            "food": 18.0
+          },
+          "outgoing": {
+            "meat": 2.0,
+            "food": 2.0,
+            "herbs": 1.0,
+            "flour": 1.0
+          }
+        }
+      },
+      {
+        "status": "Working",
+        "inputs": {
+          "meat": 0,
+          "herbs": 0,
+          "flour": 0
+        },
+        "output": {
+          "sausages": 3.0
+        },
+        "pending": {
+          "sausages": 3.0
+        },
+        "produced": {
+          "sausages": 6.0
+        },
+        "elapsed": 0,
+        "practice": 0.6,
+        "queue": [],
+        "flows": {
+          "incoming": {
+            "sausages": 6.0,
+            "food": 36.0
+          },
+          "outgoing": {
+            "meat": 4.0,
+            "food": 4.0,
+            "herbs": 2.0,
+            "flour": 2.0
+          }
+        }
+      },
+      {
+        "status": null,
+        "inputs": {
+          "meat": 0,
+          "herbs": 0,
+          "flour": 0
+        },
+        "output": {
+          "sausages": 6.0
+        },
+        "pending": {},
+        "produced": {
+          "sausages": 6.0
+        },
+        "elapsed": 0,
+        "practice": 0.6,
+        "queue": [],
+        "flows": {
+          "incoming": {
+            "sausages": 6.0,
+            "food": 36.0
+          },
+          "outgoing": {
+            "meat": 4.0,
+            "food": 4.0,
+            "herbs": 2.0,
+            "flour": 2.0
+          }
+        }
+      },
+      {
+        "status": "Waiting for delivery: meat, herbs, flour",
+        "inputs": {
+          "meat": 0,
+          "herbs": 0,
+          "flour": 0
+        },
+        "output": {
+          "sausages": 6.0
+        },
+        "pending": {},
+        "produced": {
+          "sausages": 6.0
+        },
+        "elapsed": 0,
+        "practice": 0.6,
+        "queue": [],
+        "flows": {
+          "incoming": {
+            "sausages": 6.0,
+            "food": 36.0
+          },
+          "outgoing": {
+            "meat": 4.0,
+            "food": 4.0,
+            "herbs": 2.0,
+            "flour": 2.0
+          }
+        }
+      }
+    ]
+  },
+  {
+    "kind": "butcher",
+    "recipe": "sausages",
+    "skill": 40,
+    "talent": 1,
+    "name": "13_butcher_sausages",
+    "inputs": {
+      "meat": 15.0,
+      "herbs": 7.5,
+      "flour": 7.5
+    },
+    "actions": [
+      {
+        "op": "advance",
+        "seconds": 1
+      },
+      {
+        "op": "advance",
+        "seconds": 8
+      },
+      {
+        "op": "dropoff"
+      },
+      {
+        "op": "advance",
+        "seconds": 9
+      },
+      {
+        "op": "dropoff"
+      },
+      {
+        "op": "advance",
+        "seconds": 100
+      }
+    ],
+    "states": [
+      {
+        "status": "Producing sausages \u00b7 8s remaining",
+        "inputs": {
+          "meat": 15.0,
+          "herbs": 7.5,
+          "flour": 7.5
+        },
+        "output": {},
+        "pending": {},
+        "produced": {},
+        "elapsed": 1,
+        "practice": 40,
+        "queue": [],
+        "flows": {
+          "incoming": {},
+          "outgoing": {}
+        }
+      },
+      {
+        "status": "Working",
+        "inputs": {
+          "meat": 7.5,
+          "herbs": 3.75,
+          "flour": 3.75
+        },
+        "output": {},
+        "pending": {
+          "sausages": 11.25
+        },
+        "produced": {
+          "sausages": 11.25
+        },
+        "elapsed": 0,
+        "practice": 40.375,
+        "queue": [],
+        "flows": {
+          "incoming": {
+            "sausages": 11.25,
+            "food": 67.5
+          },
+          "outgoing": {
+            "meat": 7.5,
+            "food": 7.5,
+            "herbs": 3.75,
+            "flour": 3.75
+          }
+        }
+      },
+      {
+        "status": null,
+        "inputs": {
+          "meat": 7.5,
+          "herbs": 3.75,
+          "flour": 3.75
+        },
+        "output": {
+          "sausages": 11.25
+        },
+        "pending": {},
+        "produced": {
+          "sausages": 11.25
+        },
+        "elapsed": 0,
+        "practice": 40.375,
+        "queue": [],
+        "flows": {
+          "incoming": {
+            "sausages": 11.25,
+            "food": 67.5
+          },
+          "outgoing": {
+            "meat": 7.5,
+            "food": 7.5,
+            "herbs": 3.75,
+            "flour": 3.75
+          }
+        }
+      },
+      {
+        "status": "Workplace buffer full",
+        "inputs": {
+          "meat": 7.5,
+          "herbs": 3.75,
+          "flour": 3.75
+        },
+        "output": {
+          "sausages": 11.25
+        },
+        "pending": {},
+        "produced": {
+          "sausages": 11.25
+        },
+        "elapsed": 0,
+        "practice": 40.375,
+        "queue": [],
+        "flows": {
+          "incoming": {
+            "sausages": 11.25,
+            "food": 67.5
+          },
+          "outgoing": {
+            "meat": 7.5,
+            "food": 7.5,
+            "herbs": 3.75,
+            "flour": 3.75
+          }
+        }
+      },
+      {
+        "status": null,
+        "inputs": {
+          "meat": 7.5,
+          "herbs": 3.75,
+          "flour": 3.75
+        },
+        "output": {
+          "sausages": 11.25
+        },
+        "pending": {},
+        "produced": {
+          "sausages": 11.25
+        },
+        "elapsed": 0,
+        "practice": 40.375,
+        "queue": [],
+        "flows": {
+          "incoming": {
+            "sausages": 11.25,
+            "food": 67.5
+          },
+          "outgoing": {
+            "meat": 7.5,
+            "food": 7.5,
+            "herbs": 3.75,
+            "flour": 3.75
+          }
+        }
+      },
+      {
+        "status": "Workplace buffer full",
+        "inputs": {
+          "meat": 7.5,
+          "herbs": 3.75,
+          "flour": 3.75
+        },
+        "output": {
+          "sausages": 11.25
+        },
+        "pending": {},
+        "produced": {
+          "sausages": 11.25
+        },
+        "elapsed": 0,
+        "practice": 40.375,
+        "queue": [],
+        "flows": {
+          "incoming": {
+            "sausages": 11.25,
+            "food": 67.5
+          },
+          "outgoing": {
+            "meat": 7.5,
+            "food": 7.5,
+            "herbs": 3.75,
+            "flour": 3.75
+          }
+        }
+      }
+    ]
+  },
+  {
+    "kind": "butcher",
+    "recipe": "meat_pies",
+    "skill": 0,
+    "talent": 0,
+    "name": "14_butcher_meat_pies",
+    "inputs": {
+      "meat": 4.0,
+      "flour": 4.0,
+      "eggs": 2.0,
+      "wood": 1.0
+    },
+    "actions": [
+      {
+        "op": "advance",
+        "seconds": 1
+      },
+      {
+        "op": "advance",
+        "seconds": 11
+      },
+      {
+        "op": "dropoff"
+      },
+      {
+        "op": "advance",
+        "seconds": 12
+      },
+      {
+        "op": "dropoff"
+      },
+      {
+        "op": "advance",
+        "seconds": 100
+      }
+    ],
+    "states": [
+      {
+        "status": "Producing meat pies \u00b7 11s remaining",
+        "inputs": {
+          "meat": 4.0,
+          "flour": 4.0,
+          "eggs": 2.0,
+          "wood": 1.0
+        },
+        "output": {},
+        "pending": {},
+        "produced": {},
+        "elapsed": 1,
+        "practice": 0,
+        "queue": [],
+        "flows": {
+          "incoming": {},
+          "outgoing": {}
+        }
+      },
+      {
+        "status": "Working",
+        "inputs": {
+          "meat": 2.0,
+          "flour": 2.0,
+          "eggs": 1.0,
+          "wood": 0.5
+        },
+        "output": {},
+        "pending": {
+          "meat_pies": 2.0
+        },
+        "produced": {
+          "meat_pies": 2.0
+        },
+        "elapsed": 0,
+        "practice": 0.4,
+        "queue": [],
+        "flows": {
+          "incoming": {
+            "meat_pies": 2.0,
+            "food": 14.0
+          },
+          "outgoing": {
+            "meat": 2.0,
+            "food": 3.0,
+            "flour": 2.0,
+            "eggs": 1.0,
+            "wood": 0.5
+          }
+        }
+      },
+      {
+        "status": null,
+        "inputs": {
+          "meat": 2.0,
+          "flour": 2.0,
+          "eggs": 1.0,
+          "wood": 0.5
+        },
+        "output": {
+          "meat_pies": 2.0
+        },
+        "pending": {},
+        "produced": {
+          "meat_pies": 2.0
+        },
+        "elapsed": 0,
+        "practice": 0.4,
+        "queue": [],
+        "flows": {
+          "incoming": {
+            "meat_pies": 2.0,
+            "food": 14.0
+          },
+          "outgoing": {
+            "meat": 2.0,
+            "food": 3.0,
+            "flour": 2.0,
+            "eggs": 1.0,
+            "wood": 0.5
+          }
+        }
+      },
+      {
+        "status": "Working",
+        "inputs": {
+          "meat": 0,
+          "flour": 0,
+          "eggs": 0,
+          "wood": 0
+        },
+        "output": {
+          "meat_pies": 2.0
+        },
+        "pending": {
+          "meat_pies": 2.0
+        },
+        "produced": {
+          "meat_pies": 4.0
+        },
+        "elapsed": 0,
+        "practice": 0.8,
+        "queue": [],
+        "flows": {
+          "incoming": {
+            "meat_pies": 4.0,
+            "food": 28.0
+          },
+          "outgoing": {
+            "meat": 4.0,
+            "food": 6.0,
+            "flour": 4.0,
+            "eggs": 2.0,
+            "wood": 1.0
+          }
+        }
+      },
+      {
+        "status": null,
+        "inputs": {
+          "meat": 0,
+          "flour": 0,
+          "eggs": 0,
+          "wood": 0
+        },
+        "output": {
+          "meat_pies": 4.0
+        },
+        "pending": {},
+        "produced": {
+          "meat_pies": 4.0
+        },
+        "elapsed": 0,
+        "practice": 0.8,
+        "queue": [],
+        "flows": {
+          "incoming": {
+            "meat_pies": 4.0,
+            "food": 28.0
+          },
+          "outgoing": {
+            "meat": 4.0,
+            "food": 6.0,
+            "flour": 4.0,
+            "eggs": 2.0,
+            "wood": 1.0
+          }
+        }
+      },
+      {
+        "status": "Waiting for delivery: meat, flour, eggs, wood",
+        "inputs": {
+          "meat": 0,
+          "flour": 0,
+          "eggs": 0,
+          "wood": 0
+        },
+        "output": {
+          "meat_pies": 4.0
+        },
+        "pending": {},
+        "produced": {
+          "meat_pies": 4.0
+        },
+        "elapsed": 0,
+        "practice": 0.8,
+        "queue": [],
+        "flows": {
+          "incoming": {
+            "meat_pies": 4.0,
+            "food": 28.0
+          },
+          "outgoing": {
+            "meat": 4.0,
+            "food": 6.0,
+            "flour": 4.0,
+            "eggs": 2.0,
+            "wood": 1.0
+          }
+        }
+      }
+    ]
+  },
+  {
+    "kind": "butcher",
+    "recipe": "meat_pies",
+    "skill": 40,
+    "talent": 1,
+    "name": "15_butcher_meat_pies",
+    "inputs": {
+      "meat": 15.0,
+      "flour": 15.0,
+      "eggs": 7.5,
+      "wood": 3.75
+    },
+    "actions": [
+      {
+        "op": "advance",
+        "seconds": 1
+      },
+      {
+        "op": "advance",
+        "seconds": 11
+      },
+      {
+        "op": "dropoff"
+      },
+      {
+        "op": "advance",
+        "seconds": 12
+      },
+      {
+        "op": "dropoff"
+      },
+      {
+        "op": "advance",
+        "seconds": 100
+      }
+    ],
+    "states": [
+      {
+        "status": "Producing meat pies \u00b7 11s remaining",
+        "inputs": {
+          "meat": 15.0,
+          "flour": 15.0,
+          "eggs": 7.5,
+          "wood": 3.75
+        },
+        "output": {},
+        "pending": {},
+        "produced": {},
+        "elapsed": 1,
+        "practice": 40,
+        "queue": [],
+        "flows": {
+          "incoming": {},
+          "outgoing": {}
+        }
+      },
+      {
+        "status": "Working",
+        "inputs": {
+          "meat": 7.5,
+          "flour": 7.5,
+          "eggs": 3.75,
+          "wood": 1.875
+        },
+        "output": {},
+        "pending": {
+          "meat_pies": 7.5
+        },
+        "produced": {
+          "meat_pies": 7.5
+        },
+        "elapsed": 0,
+        "practice": 40.5,
+        "queue": [],
+        "flows": {
+          "incoming": {
+            "meat_pies": 7.5,
+            "food": 52.5
+          },
+          "outgoing": {
+            "meat": 7.5,
+            "food": 11.25,
+            "flour": 7.5,
+            "eggs": 3.75,
+            "wood": 1.875
+          }
+        }
+      },
+      {
+        "status": null,
+        "inputs": {
+          "meat": 7.5,
+          "flour": 7.5,
+          "eggs": 3.75,
+          "wood": 1.875
+        },
+        "output": {
+          "meat_pies": 7.5
+        },
+        "pending": {},
+        "produced": {
+          "meat_pies": 7.5
+        },
+        "elapsed": 0,
+        "practice": 40.5,
+        "queue": [],
+        "flows": {
+          "incoming": {
+            "meat_pies": 7.5,
+            "food": 52.5
+          },
+          "outgoing": {
+            "meat": 7.5,
+            "food": 11.25,
+            "flour": 7.5,
+            "eggs": 3.75,
+            "wood": 1.875
+          }
+        }
+      },
+      {
+        "status": "Working",
+        "inputs": {
+          "meat": 0,
+          "flour": 0,
+          "eggs": 0,
+          "wood": 0
+        },
+        "output": {
+          "meat_pies": 7.5
+        },
+        "pending": {
+          "meat_pies": 7.5
+        },
+        "produced": {
+          "meat_pies": 15.0
+        },
+        "elapsed": 0,
+        "practice": 41.0,
+        "queue": [],
+        "flows": {
+          "incoming": {
+            "meat_pies": 15.0,
+            "food": 105.0
+          },
+          "outgoing": {
+            "meat": 15.0,
+            "food": 22.5,
+            "flour": 15.0,
+            "eggs": 7.5,
+            "wood": 3.75
+          }
+        }
+      },
+      {
+        "status": null,
+        "inputs": {
+          "meat": 0,
+          "flour": 0,
+          "eggs": 0,
+          "wood": 0
+        },
+        "output": {
+          "meat_pies": 15.0
+        },
+        "pending": {},
+        "produced": {
+          "meat_pies": 15.0
+        },
+        "elapsed": 0,
+        "practice": 41.0,
+        "queue": [],
+        "flows": {
+          "incoming": {
+            "meat_pies": 15.0,
+            "food": 105.0
+          },
+          "outgoing": {
+            "meat": 15.0,
+            "food": 22.5,
+            "flour": 15.0,
+            "eggs": 7.5,
+            "wood": 3.75
+          }
+        }
+      },
+      {
+        "status": "Waiting for delivery: meat, flour, eggs, wood",
+        "inputs": {
+          "meat": 0,
+          "flour": 0,
+          "eggs": 0,
+          "wood": 0
+        },
+        "output": {
+          "meat_pies": 15.0
+        },
+        "pending": {},
+        "produced": {
+          "meat_pies": 15.0
+        },
+        "elapsed": 0,
+        "practice": 41.0,
+        "queue": [],
+        "flows": {
+          "incoming": {
+            "meat_pies": 15.0,
+            "food": 105.0
+          },
+          "outgoing": {
+            "meat": 15.0,
+            "food": 22.5,
+            "flour": 15.0,
+            "eggs": 7.5,
+            "wood": 3.75
+          }
+        }
+      }
+    ]
+  },
+  {
+    "kind": "workshop",
+    "recipe": "tools",
+    "skill": 0,
+    "talent": 0,
+    "name": "16_workshop_tools",
+    "orders": [
+      {
+        "recipe": "tools",
+        "amount": 2
+      }
+    ],
+    "inputs": {
+      "planks": 4.0,
+      "wood": 2.0
+    },
+    "actions": [
+      {
+        "op": "advance",
+        "seconds": 1
+      },
+      {
+        "op": "advance",
+        "seconds": 8
+      },
+      {
+        "op": "dropoff"
+      },
+      {
+        "op": "advance",
+        "seconds": 9
+      },
+      {
+        "op": "dropoff"
+      },
+      {
+        "op": "advance",
+        "seconds": 100
+      }
+    ],
+    "states": [
+      {
+        "status": "Producing tools \u00b7 8s remaining",
+        "inputs": {
+          "planks": 4.0,
+          "wood": 2.0
+        },
+        "output": {},
+        "pending": {},
+        "produced": {},
+        "elapsed": 1,
+        "practice": 0,
+        "queue": [
+          {
+            "id": 1,
+            "recipe": "tools",
+            "amount": 2,
+            "remaining": 2
+          }
+        ],
+        "flows": {
+          "incoming": {},
+          "outgoing": {}
+        }
+      },
+      {
+        "status": "Working",
+        "inputs": {
+          "planks": 2.0,
+          "wood": 1.0
+        },
+        "output": {},
+        "pending": {
+          "tools": 1.0
+        },
+        "produced": {
+          "tools": 1.0
+        },
+        "elapsed": 0,
+        "practice": 0.24,
+        "queue": [
+          {
+            "id": 1,
+            "recipe": "tools",
+            "amount": 2,
+            "remaining": 1.0
+          }
+        ],
+        "flows": {
+          "incoming": {
+            "tools": 1.0
+          },
+          "outgoing": {
+            "planks": 2.0,
+            "wood": 1.0
+          }
+        }
+      },
+      {
+        "status": null,
+        "inputs": {
+          "planks": 2.0,
+          "wood": 1.0
+        },
+        "output": {
+          "tools": 1.0
+        },
+        "pending": {},
+        "produced": {
+          "tools": 1.0
+        },
+        "elapsed": 0,
+        "practice": 0.24,
+        "queue": [
+          {
+            "id": 1,
+            "recipe": "tools",
+            "amount": 2,
+            "remaining": 1.0
+          }
+        ],
+        "flows": {
+          "incoming": {
+            "tools": 1.0
+          },
+          "outgoing": {
+            "planks": 2.0,
+            "wood": 1.0
+          }
+        }
+      },
+      {
+        "status": "Working",
+        "inputs": {},
+        "output": {
+          "tools": 1.0,
+          "planks": 0,
+          "wood": 0
+        },
+        "pending": {
+          "tools": 1.0
+        },
+        "produced": {
+          "tools": 2.0
+        },
+        "elapsed": 0,
+        "practice": 0.48,
+        "queue": [],
+        "flows": {
+          "incoming": {
+            "tools": 2.0
+          },
+          "outgoing": {
+            "planks": 4.0,
+            "wood": 2.0
+          }
+        }
+      },
+      {
+        "status": null,
+        "inputs": {},
+        "output": {
+          "tools": 2.0,
+          "planks": 0,
+          "wood": 0
+        },
+        "pending": {},
+        "produced": {
+          "tools": 2.0
+        },
+        "elapsed": 0,
+        "practice": 0.48,
+        "queue": [],
+        "flows": {
+          "incoming": {
+            "tools": 2.0
+          },
+          "outgoing": {
+            "planks": 4.0,
+            "wood": 2.0
+          }
+        }
+      },
+      {
+        "status": "Waiting for workshop requests",
+        "inputs": {},
+        "output": {
+          "tools": 2.0,
+          "planks": 0,
+          "wood": 0
+        },
+        "pending": {},
+        "produced": {
+          "tools": 2.0
+        },
+        "elapsed": 0,
+        "practice": 0.48,
+        "queue": [],
+        "flows": {
+          "incoming": {
+            "tools": 2.0
+          },
+          "outgoing": {
+            "planks": 4.0,
+            "wood": 2.0
+          }
+        }
+      }
+    ]
+  },
+  {
+    "kind": "workshop",
+    "recipe": "tools",
+    "skill": 40,
+    "talent": 1,
+    "name": "17_workshop_tools",
+    "orders": [
+      {
+        "recipe": "tools",
+        "amount": 2
+      }
+    ],
+    "inputs": {
+      "planks": 8.0,
+      "wood": 4.0
+    },
+    "actions": [
+      {
+        "op": "advance",
+        "seconds": 1
+      },
+      {
+        "op": "advance",
+        "seconds": 8
+      },
+      {
+        "op": "dropoff"
+      },
+      {
+        "op": "advance",
+        "seconds": 9
+      },
+      {
+        "op": "dropoff"
+      },
+      {
+        "op": "advance",
+        "seconds": 100
+      }
+    ],
+    "states": [
+      {
+        "status": "Producing tools \u00b7 8s remaining",
+        "inputs": {
+          "planks": 8.0,
+          "wood": 4.0
+        },
+        "output": {},
+        "pending": {},
+        "produced": {},
+        "elapsed": 1,
+        "practice": 40,
+        "queue": [
+          {
+            "id": 1,
+            "recipe": "tools",
+            "amount": 2,
+            "remaining": 2
+          }
+        ],
+        "flows": {
+          "incoming": {},
+          "outgoing": {}
+        }
+      },
+      {
+        "status": "Working",
+        "inputs": {},
+        "output": {
+          "planks": 4.0,
+          "wood": 2.0
+        },
+        "pending": {
+          "tools": 2.0
+        },
+        "produced": {
+          "tools": 2.0
+        },
+        "elapsed": 0,
+        "practice": 40.3,
+        "queue": [],
+        "flows": {
+          "incoming": {
+            "tools": 2.0
+          },
+          "outgoing": {
+            "planks": 4.0,
+            "wood": 2.0
+          }
+        }
+      },
+      {
+        "status": null,
+        "inputs": {},
+        "output": {
+          "planks": 4.0,
+          "wood": 2.0,
+          "tools": 2.0
+        },
+        "pending": {},
+        "produced": {
+          "tools": 2.0
+        },
+        "elapsed": 0,
+        "practice": 40.3,
+        "queue": [],
+        "flows": {
+          "incoming": {
+            "tools": 2.0
+          },
+          "outgoing": {
+            "planks": 4.0,
+            "wood": 2.0
+          }
+        }
+      },
+      {
+        "status": "Waiting for workshop requests",
+        "inputs": {},
+        "output": {
+          "planks": 4.0,
+          "wood": 2.0,
+          "tools": 2.0
+        },
+        "pending": {},
+        "produced": {
+          "tools": 2.0
+        },
+        "elapsed": 0,
+        "practice": 40.3,
+        "queue": [],
+        "flows": {
+          "incoming": {
+            "tools": 2.0
+          },
+          "outgoing": {
+            "planks": 4.0,
+            "wood": 2.0
+          }
+        }
+      },
+      {
+        "status": null,
+        "inputs": {},
+        "output": {
+          "planks": 4.0,
+          "wood": 2.0,
+          "tools": 2.0
+        },
+        "pending": {},
+        "produced": {
+          "tools": 2.0
+        },
+        "elapsed": 0,
+        "practice": 40.3,
+        "queue": [],
+        "flows": {
+          "incoming": {
+            "tools": 2.0
+          },
+          "outgoing": {
+            "planks": 4.0,
+            "wood": 2.0
+          }
+        }
+      },
+      {
+        "status": "Waiting for workshop requests",
+        "inputs": {},
+        "output": {
+          "planks": 4.0,
+          "wood": 2.0,
+          "tools": 2.0
+        },
+        "pending": {},
+        "produced": {
+          "tools": 2.0
+        },
+        "elapsed": 0,
+        "practice": 40.3,
+        "queue": [],
+        "flows": {
+          "incoming": {
+            "tools": 2.0
+          },
+          "outgoing": {
+            "planks": 4.0,
+            "wood": 2.0
+          }
+        }
+      }
+    ]
+  },
+  {
+    "kind": "workshop",
+    "recipe": "wooden_bowls",
+    "skill": 0,
+    "talent": 0,
+    "name": "18_workshop_wooden_bowls",
+    "orders": [
+      {
+        "recipe": "wooden_bowls",
+        "amount": 2
+      }
+    ],
+    "inputs": {
+      "planks": 2.0,
+      "wood": 2.0
+    },
+    "actions": [
+      {
+        "op": "advance",
+        "seconds": 1
+      },
+      {
+        "op": "advance",
+        "seconds": 5
+      },
+      {
+        "op": "dropoff"
+      },
+      {
+        "op": "advance",
+        "seconds": 6
+      },
+      {
+        "op": "dropoff"
+      },
+      {
+        "op": "advance",
+        "seconds": 100
+      }
+    ],
+    "states": [
+      {
+        "status": "Producing wooden bowls \u00b7 5s remaining",
+        "inputs": {
+          "planks": 2.0,
+          "wood": 2.0
+        },
+        "output": {},
+        "pending": {},
+        "produced": {},
+        "elapsed": 1,
+        "practice": 0,
+        "queue": [
+          {
+            "id": 1,
+            "recipe": "wooden_bowls",
+            "amount": 2,
+            "remaining": 2
+          }
+        ],
+        "flows": {
+          "incoming": {},
+          "outgoing": {}
+        }
+      },
+      {
+        "status": "Working",
+        "inputs": {},
+        "output": {
+          "planks": 1.0,
+          "wood": 1.0
+        },
+        "pending": {
+          "wooden_bowls": 2.0
+        },
+        "produced": {
+          "wooden_bowls": 2.0
+        },
+        "elapsed": 0,
+        "practice": 0.16,
+        "queue": [],
+        "flows": {
+          "incoming": {
+            "wooden_bowls": 2.0
+          },
+          "outgoing": {
+            "planks": 1.0,
+            "wood": 1.0
+          }
+        }
+      },
+      {
+        "status": null,
+        "inputs": {},
+        "output": {
+          "planks": 1.0,
+          "wood": 1.0,
+          "wooden_bowls": 2.0
+        },
+        "pending": {},
+        "produced": {
+          "wooden_bowls": 2.0
+        },
+        "elapsed": 0,
+        "practice": 0.16,
+        "queue": [],
+        "flows": {
+          "incoming": {
+            "wooden_bowls": 2.0
+          },
+          "outgoing": {
+            "planks": 1.0,
+            "wood": 1.0
+          }
+        }
+      },
+      {
+        "status": "Waiting for workshop requests",
+        "inputs": {},
+        "output": {
+          "planks": 1.0,
+          "wood": 1.0,
+          "wooden_bowls": 2.0
+        },
+        "pending": {},
+        "produced": {
+          "wooden_bowls": 2.0
+        },
+        "elapsed": 0,
+        "practice": 0.16,
+        "queue": [],
+        "flows": {
+          "incoming": {
+            "wooden_bowls": 2.0
+          },
+          "outgoing": {
+            "planks": 1.0,
+            "wood": 1.0
+          }
+        }
+      },
+      {
+        "status": null,
+        "inputs": {},
+        "output": {
+          "planks": 1.0,
+          "wood": 1.0,
+          "wooden_bowls": 2.0
+        },
+        "pending": {},
+        "produced": {
+          "wooden_bowls": 2.0
+        },
+        "elapsed": 0,
+        "practice": 0.16,
+        "queue": [],
+        "flows": {
+          "incoming": {
+            "wooden_bowls": 2.0
+          },
+          "outgoing": {
+            "planks": 1.0,
+            "wood": 1.0
+          }
+        }
+      },
+      {
+        "status": "Waiting for workshop requests",
+        "inputs": {},
+        "output": {
+          "planks": 1.0,
+          "wood": 1.0,
+          "wooden_bowls": 2.0
+        },
+        "pending": {},
+        "produced": {
+          "wooden_bowls": 2.0
+        },
+        "elapsed": 0,
+        "practice": 0.16,
+        "queue": [],
+        "flows": {
+          "incoming": {
+            "wooden_bowls": 2.0
+          },
+          "outgoing": {
+            "planks": 1.0,
+            "wood": 1.0
+          }
+        }
+      }
+    ]
+  },
+  {
+    "kind": "workshop",
+    "recipe": "wooden_bowls",
+    "skill": 40,
+    "talent": 1,
+    "name": "19_workshop_wooden_bowls",
+    "orders": [
+      {
+        "recipe": "wooden_bowls",
+        "amount": 2
+      }
+    ],
+    "inputs": {
+      "planks": 2.0,
+      "wood": 2.0
+    },
+    "actions": [
+      {
+        "op": "advance",
+        "seconds": 1
+      },
+      {
+        "op": "advance",
+        "seconds": 5
+      },
+      {
+        "op": "dropoff"
+      },
+      {
+        "op": "advance",
+        "seconds": 6
+      },
+      {
+        "op": "dropoff"
+      },
+      {
+        "op": "advance",
+        "seconds": 100
+      }
+    ],
+    "states": [
+      {
+        "status": "Producing wooden bowls \u00b7 5s remaining",
+        "inputs": {
+          "planks": 2.0,
+          "wood": 2.0
+        },
+        "output": {},
+        "pending": {},
+        "produced": {},
+        "elapsed": 1,
+        "practice": 40,
+        "queue": [
+          {
+            "id": 1,
+            "recipe": "wooden_bowls",
+            "amount": 2,
+            "remaining": 2
+          }
+        ],
+        "flows": {
+          "incoming": {},
+          "outgoing": {}
+        }
+      },
+      {
+        "status": "Working",
+        "inputs": {},
+        "output": {
+          "planks": 1.0,
+          "wood": 1.0
+        },
+        "pending": {
+          "wooden_bowls": 2.0
+        },
+        "produced": {
+          "wooden_bowls": 2.0
+        },
+        "elapsed": 0,
+        "practice": 40.2,
+        "queue": [],
+        "flows": {
+          "incoming": {
+            "wooden_bowls": 2.0
+          },
+          "outgoing": {
+            "planks": 1.0,
+            "wood": 1.0
+          }
+        }
+      },
+      {
+        "status": null,
+        "inputs": {},
+        "output": {
+          "planks": 1.0,
+          "wood": 1.0,
+          "wooden_bowls": 2.0
+        },
+        "pending": {},
+        "produced": {
+          "wooden_bowls": 2.0
+        },
+        "elapsed": 0,
+        "practice": 40.2,
+        "queue": [],
+        "flows": {
+          "incoming": {
+            "wooden_bowls": 2.0
+          },
+          "outgoing": {
+            "planks": 1.0,
+            "wood": 1.0
+          }
+        }
+      },
+      {
+        "status": "Waiting for workshop requests",
+        "inputs": {},
+        "output": {
+          "planks": 1.0,
+          "wood": 1.0,
+          "wooden_bowls": 2.0
+        },
+        "pending": {},
+        "produced": {
+          "wooden_bowls": 2.0
+        },
+        "elapsed": 0,
+        "practice": 40.2,
+        "queue": [],
+        "flows": {
+          "incoming": {
+            "wooden_bowls": 2.0
+          },
+          "outgoing": {
+            "planks": 1.0,
+            "wood": 1.0
+          }
+        }
+      },
+      {
+        "status": null,
+        "inputs": {},
+        "output": {
+          "planks": 1.0,
+          "wood": 1.0,
+          "wooden_bowls": 2.0
+        },
+        "pending": {},
+        "produced": {
+          "wooden_bowls": 2.0
+        },
+        "elapsed": 0,
+        "practice": 40.2,
+        "queue": [],
+        "flows": {
+          "incoming": {
+            "wooden_bowls": 2.0
+          },
+          "outgoing": {
+            "planks": 1.0,
+            "wood": 1.0
+          }
+        }
+      },
+      {
+        "status": "Waiting for workshop requests",
+        "inputs": {},
+        "output": {
+          "planks": 1.0,
+          "wood": 1.0,
+          "wooden_bowls": 2.0
+        },
+        "pending": {},
+        "produced": {
+          "wooden_bowls": 2.0
+        },
+        "elapsed": 0,
+        "practice": 40.2,
+        "queue": [],
+        "flows": {
+          "incoming": {
+            "wooden_bowls": 2.0
+          },
+          "outgoing": {
+            "planks": 1.0,
+            "wood": 1.0
+          }
+        }
+      }
+    ]
+  },
+  {
+    "kind": "workshop",
+    "recipe": "crates",
+    "skill": 0,
+    "talent": 0,
+    "name": "20_workshop_crates",
+    "orders": [
+      {
+        "recipe": "crates",
+        "amount": 2
+      }
+    ],
+    "inputs": {
+      "planks": 6.0
+    },
+    "actions": [
+      {
+        "op": "advance",
+        "seconds": 1
+      },
+      {
+        "op": "advance",
+        "seconds": 8
+      },
+      {
+        "op": "dropoff"
+      },
+      {
+        "op": "advance",
+        "seconds": 9
+      },
+      {
+        "op": "dropoff"
+      },
+      {
+        "op": "advance",
+        "seconds": 100
+      }
+    ],
+    "states": [
+      {
+        "status": "Producing crates \u00b7 8s remaining",
+        "inputs": {
+          "planks": 6.0
+        },
+        "output": {},
+        "pending": {},
+        "produced": {},
+        "elapsed": 1,
+        "practice": 0,
+        "queue": [
+          {
+            "id": 1,
+            "recipe": "crates",
+            "amount": 2,
+            "remaining": 2
+          }
+        ],
+        "flows": {
+          "incoming": {},
+          "outgoing": {}
+        }
+      },
+      {
+        "status": "Working",
+        "inputs": {
+          "planks": 3.0
+        },
+        "output": {},
+        "pending": {
+          "crates": 1.0
+        },
+        "produced": {
+          "crates": 1.0
+        },
+        "elapsed": 0,
+        "practice": 0.24,
+        "queue": [
+          {
+            "id": 1,
+            "recipe": "crates",
+            "amount": 2,
+            "remaining": 1.0
+          }
+        ],
+        "flows": {
+          "incoming": {
+            "crates": 1.0
+          },
+          "outgoing": {
+            "planks": 3.0
+          }
+        }
+      },
+      {
+        "status": null,
+        "inputs": {
+          "planks": 3.0
+        },
+        "output": {
+          "crates": 1.0
+        },
+        "pending": {},
+        "produced": {
+          "crates": 1.0
+        },
+        "elapsed": 0,
+        "practice": 0.24,
+        "queue": [
+          {
+            "id": 1,
+            "recipe": "crates",
+            "amount": 2,
+            "remaining": 1.0
+          }
+        ],
+        "flows": {
+          "incoming": {
+            "crates": 1.0
+          },
+          "outgoing": {
+            "planks": 3.0
+          }
+        }
+      },
+      {
+        "status": "Working",
+        "inputs": {},
+        "output": {
+          "crates": 1.0,
+          "planks": 0
+        },
+        "pending": {
+          "crates": 1.0
+        },
+        "produced": {
+          "crates": 2.0
+        },
+        "elapsed": 0,
+        "practice": 0.48,
+        "queue": [],
+        "flows": {
+          "incoming": {
+            "crates": 2.0
+          },
+          "outgoing": {
+            "planks": 6.0
+          }
+        }
+      },
+      {
+        "status": null,
+        "inputs": {},
+        "output": {
+          "crates": 2.0,
+          "planks": 0
+        },
+        "pending": {},
+        "produced": {
+          "crates": 2.0
+        },
+        "elapsed": 0,
+        "practice": 0.48,
+        "queue": [],
+        "flows": {
+          "incoming": {
+            "crates": 2.0
+          },
+          "outgoing": {
+            "planks": 6.0
+          }
+        }
+      },
+      {
+        "status": "Waiting for workshop requests",
+        "inputs": {},
+        "output": {
+          "crates": 2.0,
+          "planks": 0
+        },
+        "pending": {},
+        "produced": {
+          "crates": 2.0
+        },
+        "elapsed": 0,
+        "practice": 0.48,
+        "queue": [],
+        "flows": {
+          "incoming": {
+            "crates": 2.0
+          },
+          "outgoing": {
+            "planks": 6.0
+          }
+        }
+      }
+    ]
+  },
+  {
+    "kind": "workshop",
+    "recipe": "crates",
+    "skill": 40,
+    "talent": 1,
+    "name": "21_workshop_crates",
+    "orders": [
+      {
+        "recipe": "crates",
+        "amount": 2
+      }
+    ],
+    "inputs": {
+      "planks": 12.0
+    },
+    "actions": [
+      {
+        "op": "advance",
+        "seconds": 1
+      },
+      {
+        "op": "advance",
+        "seconds": 8
+      },
+      {
+        "op": "dropoff"
+      },
+      {
+        "op": "advance",
+        "seconds": 9
+      },
+      {
+        "op": "dropoff"
+      },
+      {
+        "op": "advance",
+        "seconds": 100
+      }
+    ],
+    "states": [
+      {
+        "status": "Producing crates \u00b7 8s remaining",
+        "inputs": {
+          "planks": 12.0
+        },
+        "output": {},
+        "pending": {},
+        "produced": {},
+        "elapsed": 1,
+        "practice": 40,
+        "queue": [
+          {
+            "id": 1,
+            "recipe": "crates",
+            "amount": 2,
+            "remaining": 2
+          }
+        ],
+        "flows": {
+          "incoming": {},
+          "outgoing": {}
+        }
+      },
+      {
+        "status": "Working",
+        "inputs": {},
+        "output": {
+          "planks": 6.0
+        },
+        "pending": {
+          "crates": 2.0
+        },
+        "produced": {
+          "crates": 2.0
+        },
+        "elapsed": 0,
+        "practice": 40.3,
+        "queue": [],
+        "flows": {
+          "incoming": {
+            "crates": 2.0
+          },
+          "outgoing": {
+            "planks": 6.0
+          }
+        }
+      },
+      {
+        "status": null,
+        "inputs": {},
+        "output": {
+          "planks": 6.0,
+          "crates": 2.0
+        },
+        "pending": {},
+        "produced": {
+          "crates": 2.0
+        },
+        "elapsed": 0,
+        "practice": 40.3,
+        "queue": [],
+        "flows": {
+          "incoming": {
+            "crates": 2.0
+          },
+          "outgoing": {
+            "planks": 6.0
+          }
+        }
+      },
+      {
+        "status": "Waiting for workshop requests",
+        "inputs": {},
+        "output": {
+          "planks": 6.0,
+          "crates": 2.0
+        },
+        "pending": {},
+        "produced": {
+          "crates": 2.0
+        },
+        "elapsed": 0,
+        "practice": 40.3,
+        "queue": [],
+        "flows": {
+          "incoming": {
+            "crates": 2.0
+          },
+          "outgoing": {
+            "planks": 6.0
+          }
+        }
+      },
+      {
+        "status": null,
+        "inputs": {},
+        "output": {
+          "planks": 6.0,
+          "crates": 2.0
+        },
+        "pending": {},
+        "produced": {
+          "crates": 2.0
+        },
+        "elapsed": 0,
+        "practice": 40.3,
+        "queue": [],
+        "flows": {
+          "incoming": {
+            "crates": 2.0
+          },
+          "outgoing": {
+            "planks": 6.0
+          }
+        }
+      },
+      {
+        "status": "Waiting for workshop requests",
+        "inputs": {},
+        "output": {
+          "planks": 6.0,
+          "crates": 2.0
+        },
+        "pending": {},
+        "produced": {
+          "crates": 2.0
+        },
+        "elapsed": 0,
+        "practice": 40.3,
+        "queue": [],
+        "flows": {
+          "incoming": {
+            "crates": 2.0
+          },
+          "outgoing": {
+            "planks": 6.0
+          }
+        }
+      }
+    ]
+  },
+  {
+    "kind": "workshop",
+    "recipe": "furniture",
+    "skill": 0,
+    "talent": 0,
+    "name": "22_workshop_furniture",
+    "orders": [
+      {
+        "recipe": "furniture",
+        "amount": 2
+      }
+    ],
+    "inputs": {
+      "planks": 8.0,
+      "wool": 2.0
+    },
+    "actions": [
+      {
+        "op": "advance",
+        "seconds": 1
+      },
+      {
+        "op": "advance",
+        "seconds": 11
+      },
+      {
+        "op": "dropoff"
+      },
+      {
+        "op": "advance",
+        "seconds": 12
+      },
+      {
+        "op": "dropoff"
+      },
+      {
+        "op": "advance",
+        "seconds": 100
+      }
+    ],
+    "states": [
+      {
+        "status": "Producing furniture \u00b7 11s remaining",
+        "inputs": {
+          "planks": 8.0,
+          "wool": 2.0
+        },
+        "output": {},
+        "pending": {},
+        "produced": {},
+        "elapsed": 1,
+        "practice": 0,
+        "queue": [
+          {
+            "id": 1,
+            "recipe": "furniture",
+            "amount": 2,
+            "remaining": 2
+          }
+        ],
+        "flows": {
+          "incoming": {},
+          "outgoing": {}
+        }
+      },
+      {
+        "status": "Working",
+        "inputs": {
+          "planks": 4.0,
+          "wool": 1.0
+        },
+        "output": {},
+        "pending": {
+          "furniture": 1.0
+        },
+        "produced": {
+          "furniture": 1.0
+        },
+        "elapsed": 0,
+        "practice": 0.32,
+        "queue": [
+          {
+            "id": 1,
+            "recipe": "furniture",
+            "amount": 2,
+            "remaining": 1.0
+          }
+        ],
+        "flows": {
+          "incoming": {
+            "furniture": 1.0
+          },
+          "outgoing": {
+            "planks": 4.0,
+            "wool": 1.0
+          }
+        }
+      },
+      {
+        "status": null,
+        "inputs": {
+          "planks": 4.0,
+          "wool": 1.0
+        },
+        "output": {
+          "furniture": 1.0
+        },
+        "pending": {},
+        "produced": {
+          "furniture": 1.0
+        },
+        "elapsed": 0,
+        "practice": 0.32,
+        "queue": [
+          {
+            "id": 1,
+            "recipe": "furniture",
+            "amount": 2,
+            "remaining": 1.0
+          }
+        ],
+        "flows": {
+          "incoming": {
+            "furniture": 1.0
+          },
+          "outgoing": {
+            "planks": 4.0,
+            "wool": 1.0
+          }
+        }
+      },
+      {
+        "status": "Working",
+        "inputs": {},
+        "output": {
+          "furniture": 1.0,
+          "planks": 0,
+          "wool": 0
+        },
+        "pending": {
+          "furniture": 1.0
+        },
+        "produced": {
+          "furniture": 2.0
+        },
+        "elapsed": 0,
+        "practice": 0.64,
+        "queue": [],
+        "flows": {
+          "incoming": {
+            "furniture": 2.0
+          },
+          "outgoing": {
+            "planks": 8.0,
+            "wool": 2.0
+          }
+        }
+      },
+      {
+        "status": null,
+        "inputs": {},
+        "output": {
+          "furniture": 2.0,
+          "planks": 0,
+          "wool": 0
+        },
+        "pending": {},
+        "produced": {
+          "furniture": 2.0
+        },
+        "elapsed": 0,
+        "practice": 0.64,
+        "queue": [],
+        "flows": {
+          "incoming": {
+            "furniture": 2.0
+          },
+          "outgoing": {
+            "planks": 8.0,
+            "wool": 2.0
+          }
+        }
+      },
+      {
+        "status": "Waiting for workshop requests",
+        "inputs": {},
+        "output": {
+          "furniture": 2.0,
+          "planks": 0,
+          "wool": 0
+        },
+        "pending": {},
+        "produced": {
+          "furniture": 2.0
+        },
+        "elapsed": 0,
+        "practice": 0.64,
+        "queue": [],
+        "flows": {
+          "incoming": {
+            "furniture": 2.0
+          },
+          "outgoing": {
+            "planks": 8.0,
+            "wool": 2.0
+          }
+        }
+      }
+    ]
+  },
+  {
+    "kind": "workshop",
+    "recipe": "furniture",
+    "skill": 40,
+    "talent": 1,
+    "name": "23_workshop_furniture",
+    "orders": [
+      {
+        "recipe": "furniture",
+        "amount": 2
+      }
+    ],
+    "inputs": {
+      "planks": 16.0,
+      "wool": 4.0
+    },
+    "actions": [
+      {
+        "op": "advance",
+        "seconds": 1
+      },
+      {
+        "op": "advance",
+        "seconds": 11
+      },
+      {
+        "op": "dropoff"
+      },
+      {
+        "op": "advance",
+        "seconds": 12
+      },
+      {
+        "op": "dropoff"
+      },
+      {
+        "op": "advance",
+        "seconds": 100
+      }
+    ],
+    "states": [
+      {
+        "status": "Producing furniture \u00b7 11s remaining",
+        "inputs": {
+          "planks": 16.0,
+          "wool": 4.0
+        },
+        "output": {},
+        "pending": {},
+        "produced": {},
+        "elapsed": 1,
+        "practice": 40,
+        "queue": [
+          {
+            "id": 1,
+            "recipe": "furniture",
+            "amount": 2,
+            "remaining": 2
+          }
+        ],
+        "flows": {
+          "incoming": {},
+          "outgoing": {}
+        }
+      },
+      {
+        "status": "Working",
+        "inputs": {},
+        "output": {
+          "planks": 8.0,
+          "wool": 2.0
+        },
+        "pending": {
+          "furniture": 2.0
+        },
+        "produced": {
+          "furniture": 2.0
+        },
+        "elapsed": 0,
+        "practice": 40.4,
+        "queue": [],
+        "flows": {
+          "incoming": {
+            "furniture": 2.0
+          },
+          "outgoing": {
+            "planks": 8.0,
+            "wool": 2.0
+          }
+        }
+      },
+      {
+        "status": null,
+        "inputs": {},
+        "output": {
+          "planks": 8.0,
+          "wool": 2.0,
+          "furniture": 2.0
+        },
+        "pending": {},
+        "produced": {
+          "furniture": 2.0
+        },
+        "elapsed": 0,
+        "practice": 40.4,
+        "queue": [],
+        "flows": {
+          "incoming": {
+            "furniture": 2.0
+          },
+          "outgoing": {
+            "planks": 8.0,
+            "wool": 2.0
+          }
+        }
+      },
+      {
+        "status": "Waiting for workshop requests",
+        "inputs": {},
+        "output": {
+          "planks": 8.0,
+          "wool": 2.0,
+          "furniture": 2.0
+        },
+        "pending": {},
+        "produced": {
+          "furniture": 2.0
+        },
+        "elapsed": 0,
+        "practice": 40.4,
+        "queue": [],
+        "flows": {
+          "incoming": {
+            "furniture": 2.0
+          },
+          "outgoing": {
+            "planks": 8.0,
+            "wool": 2.0
+          }
+        }
+      },
+      {
+        "status": null,
+        "inputs": {},
+        "output": {
+          "planks": 8.0,
+          "wool": 2.0,
+          "furniture": 2.0
+        },
+        "pending": {},
+        "produced": {
+          "furniture": 2.0
+        },
+        "elapsed": 0,
+        "practice": 40.4,
+        "queue": [],
+        "flows": {
+          "incoming": {
+            "furniture": 2.0
+          },
+          "outgoing": {
+            "planks": 8.0,
+            "wool": 2.0
+          }
+        }
+      },
+      {
+        "status": "Waiting for workshop requests",
+        "inputs": {},
+        "output": {
+          "planks": 8.0,
+          "wool": 2.0,
+          "furniture": 2.0
+        },
+        "pending": {},
+        "produced": {
+          "furniture": 2.0
+        },
+        "elapsed": 0,
+        "practice": 40.4,
+        "queue": [],
+        "flows": {
+          "incoming": {
+            "furniture": 2.0
+          },
+          "outgoing": {
+            "planks": 8.0,
+            "wool": 2.0
+          }
+        }
+      }
+    ]
+  },
+  {
+    "kind": "workshop",
+    "recipe": "carved_furniture",
+    "skill": 0,
+    "talent": 0,
+    "name": "24_workshop_carved_furniture",
+    "orders": [
+      {
+        "recipe": "carved_furniture",
+        "amount": 2
+      }
+    ],
+    "inputs": {
+      "planks": 10.0,
+      "wool": 4.0
+    },
+    "actions": [
+      {
+        "op": "advance",
+        "seconds": 1
+      },
+      {
+        "op": "advance",
+        "seconds": 14
+      },
+      {
+        "op": "dropoff"
+      },
+      {
+        "op": "advance",
+        "seconds": 15
+      },
+      {
+        "op": "dropoff"
+      },
+      {
+        "op": "advance",
+        "seconds": 100
+      }
+    ],
+    "states": [
+      {
+        "status": "Producing carved furniture \u00b7 14s remaining",
+        "inputs": {
+          "planks": 10.0,
+          "wool": 4.0
+        },
+        "output": {},
+        "pending": {},
+        "produced": {},
+        "elapsed": 1,
+        "practice": 0,
+        "queue": [
+          {
+            "id": 1,
+            "recipe": "carved_furniture",
+            "amount": 2,
+            "remaining": 2
+          }
+        ],
+        "flows": {
+          "incoming": {},
+          "outgoing": {}
+        }
+      },
+      {
+        "status": "Working",
+        "inputs": {
+          "planks": 5.0,
+          "wool": 2.0
+        },
+        "output": {},
+        "pending": {
+          "carved_furniture": 1.0
+        },
+        "produced": {
+          "carved_furniture": 1.0
+        },
+        "elapsed": 0,
+        "practice": 0.4,
+        "queue": [
+          {
+            "id": 1,
+            "recipe": "carved_furniture",
+            "amount": 2,
+            "remaining": 1.0
+          }
+        ],
+        "flows": {
+          "incoming": {
+            "carved_furniture": 1.0
+          },
+          "outgoing": {
+            "planks": 5.0,
+            "wool": 2.0
+          }
+        }
+      },
+      {
+        "status": null,
+        "inputs": {
+          "planks": 5.0,
+          "wool": 2.0
+        },
+        "output": {
+          "carved_furniture": 1.0
+        },
+        "pending": {},
+        "produced": {
+          "carved_furniture": 1.0
+        },
+        "elapsed": 0,
+        "practice": 0.4,
+        "queue": [
+          {
+            "id": 1,
+            "recipe": "carved_furniture",
+            "amount": 2,
+            "remaining": 1.0
+          }
+        ],
+        "flows": {
+          "incoming": {
+            "carved_furniture": 1.0
+          },
+          "outgoing": {
+            "planks": 5.0,
+            "wool": 2.0
+          }
+        }
+      },
+      {
+        "status": "Working",
+        "inputs": {},
+        "output": {
+          "carved_furniture": 1.0,
+          "planks": 0,
+          "wool": 0
+        },
+        "pending": {
+          "carved_furniture": 1.0
+        },
+        "produced": {
+          "carved_furniture": 2.0
+        },
+        "elapsed": 0,
+        "practice": 0.8,
+        "queue": [],
+        "flows": {
+          "incoming": {
+            "carved_furniture": 2.0
+          },
+          "outgoing": {
+            "planks": 10.0,
+            "wool": 4.0
+          }
+        }
+      },
+      {
+        "status": null,
+        "inputs": {},
+        "output": {
+          "carved_furniture": 2.0,
+          "planks": 0,
+          "wool": 0
+        },
+        "pending": {},
+        "produced": {
+          "carved_furniture": 2.0
+        },
+        "elapsed": 0,
+        "practice": 0.8,
+        "queue": [],
+        "flows": {
+          "incoming": {
+            "carved_furniture": 2.0
+          },
+          "outgoing": {
+            "planks": 10.0,
+            "wool": 4.0
+          }
+        }
+      },
+      {
+        "status": "Waiting for workshop requests",
+        "inputs": {},
+        "output": {
+          "carved_furniture": 2.0,
+          "planks": 0,
+          "wool": 0
+        },
+        "pending": {},
+        "produced": {
+          "carved_furniture": 2.0
+        },
+        "elapsed": 0,
+        "practice": 0.8,
+        "queue": [],
+        "flows": {
+          "incoming": {
+            "carved_furniture": 2.0
+          },
+          "outgoing": {
+            "planks": 10.0,
+            "wool": 4.0
+          }
+        }
+      }
+    ]
+  },
+  {
+    "kind": "workshop",
+    "recipe": "carved_furniture",
+    "skill": 40,
+    "talent": 1,
+    "name": "25_workshop_carved_furniture",
+    "orders": [
+      {
+        "recipe": "carved_furniture",
+        "amount": 2
+      }
+    ],
+    "inputs": {
+      "planks": 20.0,
+      "wool": 8.0
+    },
+    "actions": [
+      {
+        "op": "advance",
+        "seconds": 1
+      },
+      {
+        "op": "advance",
+        "seconds": 14
+      },
+      {
+        "op": "dropoff"
+      },
+      {
+        "op": "advance",
+        "seconds": 15
+      },
+      {
+        "op": "dropoff"
+      },
+      {
+        "op": "advance",
+        "seconds": 100
+      }
+    ],
+    "states": [
+      {
+        "status": "Producing carved furniture \u00b7 14s remaining",
+        "inputs": {
+          "planks": 20.0,
+          "wool": 8.0
+        },
+        "output": {},
+        "pending": {},
+        "produced": {},
+        "elapsed": 1,
+        "practice": 40,
+        "queue": [
+          {
+            "id": 1,
+            "recipe": "carved_furniture",
+            "amount": 2,
+            "remaining": 2
+          }
+        ],
+        "flows": {
+          "incoming": {},
+          "outgoing": {}
+        }
+      },
+      {
+        "status": "Working",
+        "inputs": {},
+        "output": {
+          "planks": 10.0,
+          "wool": 4.0
+        },
+        "pending": {
+          "carved_furniture": 2.0
+        },
+        "produced": {
+          "carved_furniture": 2.0
+        },
+        "elapsed": 0,
+        "practice": 40.5,
+        "queue": [],
+        "flows": {
+          "incoming": {
+            "carved_furniture": 2.0
+          },
+          "outgoing": {
+            "planks": 10.0,
+            "wool": 4.0
+          }
+        }
+      },
+      {
+        "status": null,
+        "inputs": {},
+        "output": {
+          "planks": 10.0,
+          "wool": 4.0,
+          "carved_furniture": 2.0
+        },
+        "pending": {},
+        "produced": {
+          "carved_furniture": 2.0
+        },
+        "elapsed": 0,
+        "practice": 40.5,
+        "queue": [],
+        "flows": {
+          "incoming": {
+            "carved_furniture": 2.0
+          },
+          "outgoing": {
+            "planks": 10.0,
+            "wool": 4.0
+          }
+        }
+      },
+      {
+        "status": "Waiting for workshop requests",
+        "inputs": {},
+        "output": {
+          "planks": 10.0,
+          "wool": 4.0,
+          "carved_furniture": 2.0
+        },
+        "pending": {},
+        "produced": {
+          "carved_furniture": 2.0
+        },
+        "elapsed": 0,
+        "practice": 40.5,
+        "queue": [],
+        "flows": {
+          "incoming": {
+            "carved_furniture": 2.0
+          },
+          "outgoing": {
+            "planks": 10.0,
+            "wool": 4.0
+          }
+        }
+      },
+      {
+        "status": null,
+        "inputs": {},
+        "output": {
+          "planks": 10.0,
+          "wool": 4.0,
+          "carved_furniture": 2.0
+        },
+        "pending": {},
+        "produced": {
+          "carved_furniture": 2.0
+        },
+        "elapsed": 0,
+        "practice": 40.5,
+        "queue": [],
+        "flows": {
+          "incoming": {
+            "carved_furniture": 2.0
+          },
+          "outgoing": {
+            "planks": 10.0,
+            "wool": 4.0
+          }
+        }
+      },
+      {
+        "status": "Waiting for workshop requests",
+        "inputs": {},
+        "output": {
+          "planks": 10.0,
+          "wool": 4.0,
+          "carved_furniture": 2.0
+        },
+        "pending": {},
+        "produced": {
+          "carved_furniture": 2.0
+        },
+        "elapsed": 0,
+        "practice": 40.5,
+        "queue": [],
+        "flows": {
+          "incoming": {
+            "carved_furniture": 2.0
+          },
+          "outgoing": {
+            "planks": 10.0,
+            "wool": 4.0
+          }
+        }
+      }
+    ]
+  },
+  {
+    "kind": "workshop",
+    "recipe": "crafted_axe",
+    "skill": 0,
+    "talent": 0,
+    "name": "26_workshop_crafted_axe",
+    "orders": [
+      {
+        "recipe": "crafted_axe",
+        "amount": 2
+      }
+    ],
+    "inputs": {
+      "planks": 4.0,
+      "tools": 2.0
+    },
+    "actions": [
+      {
+        "op": "advance",
+        "seconds": 1
+      },
+      {
+        "op": "advance",
+        "seconds": 8
+      },
+      {
+        "op": "dropoff"
+      },
+      {
+        "op": "advance",
+        "seconds": 9
+      },
+      {
+        "op": "dropoff"
+      },
+      {
+        "op": "advance",
+        "seconds": 100
+      }
+    ],
+    "states": [
+      {
+        "status": "Producing crafted axe \u00b7 8s remaining",
+        "inputs": {
+          "planks": 4.0,
+          "tools": 2.0
+        },
+        "output": {},
+        "pending": {},
+        "produced": {},
+        "elapsed": 1,
+        "practice": 0,
+        "queue": [
+          {
+            "id": 1,
+            "recipe": "crafted_axe",
+            "amount": 2,
+            "remaining": 2
+          }
+        ],
+        "flows": {
+          "incoming": {},
+          "outgoing": {}
+        }
+      },
+      {
+        "status": "Working",
+        "inputs": {
+          "planks": 2.0,
+          "tools": 1.0
+        },
+        "output": {},
+        "pending": {
+          "crafted_axe": 1.0
+        },
+        "produced": {
+          "crafted_axe": 1.0
+        },
+        "elapsed": 0,
+        "practice": 0.24,
+        "queue": [
+          {
+            "id": 1,
+            "recipe": "crafted_axe",
+            "amount": 2,
+            "remaining": 1.0
+          }
+        ],
+        "flows": {
+          "incoming": {
+            "crafted_axe": 1.0
+          },
+          "outgoing": {
+            "planks": 2.0,
+            "tools": 1.0
+          }
+        }
+      },
+      {
+        "status": null,
+        "inputs": {
+          "planks": 2.0,
+          "tools": 1.0
+        },
+        "output": {
+          "crafted_axe": 1.0
+        },
+        "pending": {},
+        "produced": {
+          "crafted_axe": 1.0
+        },
+        "elapsed": 0,
+        "practice": 0.24,
+        "queue": [
+          {
+            "id": 1,
+            "recipe": "crafted_axe",
+            "amount": 2,
+            "remaining": 1.0
+          }
+        ],
+        "flows": {
+          "incoming": {
+            "crafted_axe": 1.0
+          },
+          "outgoing": {
+            "planks": 2.0,
+            "tools": 1.0
+          }
+        }
+      },
+      {
+        "status": "Working",
+        "inputs": {},
+        "output": {
+          "crafted_axe": 1.0,
+          "planks": 0,
+          "tools": 0
+        },
+        "pending": {
+          "crafted_axe": 1.0
+        },
+        "produced": {
+          "crafted_axe": 2.0
+        },
+        "elapsed": 0,
+        "practice": 0.48,
+        "queue": [],
+        "flows": {
+          "incoming": {
+            "crafted_axe": 2.0
+          },
+          "outgoing": {
+            "planks": 4.0,
+            "tools": 2.0
+          }
+        }
+      },
+      {
+        "status": null,
+        "inputs": {},
+        "output": {
+          "crafted_axe": 2.0,
+          "planks": 0,
+          "tools": 0
+        },
+        "pending": {},
+        "produced": {
+          "crafted_axe": 2.0
+        },
+        "elapsed": 0,
+        "practice": 0.48,
+        "queue": [],
+        "flows": {
+          "incoming": {
+            "crafted_axe": 2.0
+          },
+          "outgoing": {
+            "planks": 4.0,
+            "tools": 2.0
+          }
+        }
+      },
+      {
+        "status": "Waiting for workshop requests",
+        "inputs": {},
+        "output": {
+          "crafted_axe": 2.0,
+          "planks": 0,
+          "tools": 0
+        },
+        "pending": {},
+        "produced": {
+          "crafted_axe": 2.0
+        },
+        "elapsed": 0,
+        "practice": 0.48,
+        "queue": [],
+        "flows": {
+          "incoming": {
+            "crafted_axe": 2.0
+          },
+          "outgoing": {
+            "planks": 4.0,
+            "tools": 2.0
+          }
+        }
+      }
+    ]
+  },
+  {
+    "kind": "workshop",
+    "recipe": "crafted_axe",
+    "skill": 40,
+    "talent": 1,
+    "name": "27_workshop_crafted_axe",
+    "orders": [
+      {
+        "recipe": "crafted_axe",
+        "amount": 2
+      }
+    ],
+    "inputs": {
+      "planks": 8.0,
+      "tools": 4.0
+    },
+    "actions": [
+      {
+        "op": "advance",
+        "seconds": 1
+      },
+      {
+        "op": "advance",
+        "seconds": 8
+      },
+      {
+        "op": "dropoff"
+      },
+      {
+        "op": "advance",
+        "seconds": 9
+      },
+      {
+        "op": "dropoff"
+      },
+      {
+        "op": "advance",
+        "seconds": 100
+      }
+    ],
+    "states": [
+      {
+        "status": "Producing crafted axe \u00b7 8s remaining",
+        "inputs": {
+          "planks": 8.0,
+          "tools": 4.0
+        },
+        "output": {},
+        "pending": {},
+        "produced": {},
+        "elapsed": 1,
+        "practice": 40,
+        "queue": [
+          {
+            "id": 1,
+            "recipe": "crafted_axe",
+            "amount": 2,
+            "remaining": 2
+          }
+        ],
+        "flows": {
+          "incoming": {},
+          "outgoing": {}
+        }
+      },
+      {
+        "status": "Working",
+        "inputs": {},
+        "output": {
+          "planks": 4.0,
+          "tools": 2.0
+        },
+        "pending": {
+          "crafted_axe": 2.0
+        },
+        "produced": {
+          "crafted_axe": 2.0
+        },
+        "elapsed": 0,
+        "practice": 40.3,
+        "queue": [],
+        "flows": {
+          "incoming": {
+            "crafted_axe": 2.0
+          },
+          "outgoing": {
+            "planks": 4.0,
+            "tools": 2.0
+          }
+        }
+      },
+      {
+        "status": null,
+        "inputs": {},
+        "output": {
+          "planks": 4.0,
+          "tools": 2.0,
+          "crafted_axe": 2.0
+        },
+        "pending": {},
+        "produced": {
+          "crafted_axe": 2.0
+        },
+        "elapsed": 0,
+        "practice": 40.3,
+        "queue": [],
+        "flows": {
+          "incoming": {
+            "crafted_axe": 2.0
+          },
+          "outgoing": {
+            "planks": 4.0,
+            "tools": 2.0
+          }
+        }
+      },
+      {
+        "status": "Waiting for workshop requests",
+        "inputs": {},
+        "output": {
+          "planks": 4.0,
+          "tools": 2.0,
+          "crafted_axe": 2.0
+        },
+        "pending": {},
+        "produced": {
+          "crafted_axe": 2.0
+        },
+        "elapsed": 0,
+        "practice": 40.3,
+        "queue": [],
+        "flows": {
+          "incoming": {
+            "crafted_axe": 2.0
+          },
+          "outgoing": {
+            "planks": 4.0,
+            "tools": 2.0
+          }
+        }
+      },
+      {
+        "status": null,
+        "inputs": {},
+        "output": {
+          "planks": 4.0,
+          "tools": 2.0,
+          "crafted_axe": 2.0
+        },
+        "pending": {},
+        "produced": {
+          "crafted_axe": 2.0
+        },
+        "elapsed": 0,
+        "practice": 40.3,
+        "queue": [],
+        "flows": {
+          "incoming": {
+            "crafted_axe": 2.0
+          },
+          "outgoing": {
+            "planks": 4.0,
+            "tools": 2.0
+          }
+        }
+      },
+      {
+        "status": "Waiting for workshop requests",
+        "inputs": {},
+        "output": {
+          "planks": 4.0,
+          "tools": 2.0,
+          "crafted_axe": 2.0
+        },
+        "pending": {},
+        "produced": {
+          "crafted_axe": 2.0
+        },
+        "elapsed": 0,
+        "practice": 40.3,
+        "queue": [],
+        "flows": {
+          "incoming": {
+            "crafted_axe": 2.0
+          },
+          "outgoing": {
+            "planks": 4.0,
+            "tools": 2.0
+          }
+        }
+      }
+    ]
+  },
+  {
+    "kind": "workshop",
+    "recipe": "crafted_saw",
+    "skill": 0,
+    "talent": 0,
+    "name": "28_workshop_crafted_saw",
+    "orders": [
+      {
+        "recipe": "crafted_saw",
+        "amount": 2
+      }
+    ],
+    "inputs": {
+      "planks": 4.0,
+      "tools": 4.0
+    },
+    "actions": [
+      {
+        "op": "advance",
+        "seconds": 1
+      },
+      {
+        "op": "advance",
+        "seconds": 11
+      },
+      {
+        "op": "dropoff"
+      },
+      {
+        "op": "advance",
+        "seconds": 12
+      },
+      {
+        "op": "dropoff"
+      },
+      {
+        "op": "advance",
+        "seconds": 100
+      }
+    ],
+    "states": [
+      {
+        "status": "Producing crafted saw \u00b7 11s remaining",
+        "inputs": {
+          "planks": 4.0,
+          "tools": 4.0
+        },
+        "output": {},
+        "pending": {},
+        "produced": {},
+        "elapsed": 1,
+        "practice": 0,
+        "queue": [
+          {
+            "id": 1,
+            "recipe": "crafted_saw",
+            "amount": 2,
+            "remaining": 2
+          }
+        ],
+        "flows": {
+          "incoming": {},
+          "outgoing": {}
+        }
+      },
+      {
+        "status": "Working",
+        "inputs": {
+          "planks": 2.0,
+          "tools": 2.0
+        },
+        "output": {},
+        "pending": {
+          "crafted_saw": 1.0
+        },
+        "produced": {
+          "crafted_saw": 1.0
+        },
+        "elapsed": 0,
+        "practice": 0.32,
+        "queue": [
+          {
+            "id": 1,
+            "recipe": "crafted_saw",
+            "amount": 2,
+            "remaining": 1.0
+          }
+        ],
+        "flows": {
+          "incoming": {
+            "crafted_saw": 1.0
+          },
+          "outgoing": {
+            "planks": 2.0,
+            "tools": 2.0
+          }
+        }
+      },
+      {
+        "status": null,
+        "inputs": {
+          "planks": 2.0,
+          "tools": 2.0
+        },
+        "output": {
+          "crafted_saw": 1.0
+        },
+        "pending": {},
+        "produced": {
+          "crafted_saw": 1.0
+        },
+        "elapsed": 0,
+        "practice": 0.32,
+        "queue": [
+          {
+            "id": 1,
+            "recipe": "crafted_saw",
+            "amount": 2,
+            "remaining": 1.0
+          }
+        ],
+        "flows": {
+          "incoming": {
+            "crafted_saw": 1.0
+          },
+          "outgoing": {
+            "planks": 2.0,
+            "tools": 2.0
+          }
+        }
+      },
+      {
+        "status": "Working",
+        "inputs": {},
+        "output": {
+          "crafted_saw": 1.0,
+          "planks": 0,
+          "tools": 0
+        },
+        "pending": {
+          "crafted_saw": 1.0
+        },
+        "produced": {
+          "crafted_saw": 2.0
+        },
+        "elapsed": 0,
+        "practice": 0.64,
+        "queue": [],
+        "flows": {
+          "incoming": {
+            "crafted_saw": 2.0
+          },
+          "outgoing": {
+            "planks": 4.0,
+            "tools": 4.0
+          }
+        }
+      },
+      {
+        "status": null,
+        "inputs": {},
+        "output": {
+          "crafted_saw": 2.0,
+          "planks": 0,
+          "tools": 0
+        },
+        "pending": {},
+        "produced": {
+          "crafted_saw": 2.0
+        },
+        "elapsed": 0,
+        "practice": 0.64,
+        "queue": [],
+        "flows": {
+          "incoming": {
+            "crafted_saw": 2.0
+          },
+          "outgoing": {
+            "planks": 4.0,
+            "tools": 4.0
+          }
+        }
+      },
+      {
+        "status": "Waiting for workshop requests",
+        "inputs": {},
+        "output": {
+          "crafted_saw": 2.0,
+          "planks": 0,
+          "tools": 0
+        },
+        "pending": {},
+        "produced": {
+          "crafted_saw": 2.0
+        },
+        "elapsed": 0,
+        "practice": 0.64,
+        "queue": [],
+        "flows": {
+          "incoming": {
+            "crafted_saw": 2.0
+          },
+          "outgoing": {
+            "planks": 4.0,
+            "tools": 4.0
+          }
+        }
+      }
+    ]
+  },
+  {
+    "kind": "workshop",
+    "recipe": "crafted_saw",
+    "skill": 40,
+    "talent": 1,
+    "name": "29_workshop_crafted_saw",
+    "orders": [
+      {
+        "recipe": "crafted_saw",
+        "amount": 2
+      }
+    ],
+    "inputs": {
+      "planks": 8.0,
+      "tools": 8.0
+    },
+    "actions": [
+      {
+        "op": "advance",
+        "seconds": 1
+      },
+      {
+        "op": "advance",
+        "seconds": 11
+      },
+      {
+        "op": "dropoff"
+      },
+      {
+        "op": "advance",
+        "seconds": 12
+      },
+      {
+        "op": "dropoff"
+      },
+      {
+        "op": "advance",
+        "seconds": 100
+      }
+    ],
+    "states": [
+      {
+        "status": "Producing crafted saw \u00b7 11s remaining",
+        "inputs": {
+          "planks": 8.0,
+          "tools": 8.0
+        },
+        "output": {},
+        "pending": {},
+        "produced": {},
+        "elapsed": 1,
+        "practice": 40,
+        "queue": [
+          {
+            "id": 1,
+            "recipe": "crafted_saw",
+            "amount": 2,
+            "remaining": 2
+          }
+        ],
+        "flows": {
+          "incoming": {},
+          "outgoing": {}
+        }
+      },
+      {
+        "status": "Working",
+        "inputs": {},
+        "output": {
+          "planks": 4.0,
+          "tools": 4.0
+        },
+        "pending": {
+          "crafted_saw": 2.0
+        },
+        "produced": {
+          "crafted_saw": 2.0
+        },
+        "elapsed": 0,
+        "practice": 40.4,
+        "queue": [],
+        "flows": {
+          "incoming": {
+            "crafted_saw": 2.0
+          },
+          "outgoing": {
+            "planks": 4.0,
+            "tools": 4.0
+          }
+        }
+      },
+      {
+        "status": null,
+        "inputs": {},
+        "output": {
+          "planks": 4.0,
+          "tools": 4.0,
+          "crafted_saw": 2.0
+        },
+        "pending": {},
+        "produced": {
+          "crafted_saw": 2.0
+        },
+        "elapsed": 0,
+        "practice": 40.4,
+        "queue": [],
+        "flows": {
+          "incoming": {
+            "crafted_saw": 2.0
+          },
+          "outgoing": {
+            "planks": 4.0,
+            "tools": 4.0
+          }
+        }
+      },
+      {
+        "status": "Waiting for workshop requests",
+        "inputs": {},
+        "output": {
+          "planks": 4.0,
+          "tools": 4.0,
+          "crafted_saw": 2.0
+        },
+        "pending": {},
+        "produced": {
+          "crafted_saw": 2.0
+        },
+        "elapsed": 0,
+        "practice": 40.4,
+        "queue": [],
+        "flows": {
+          "incoming": {
+            "crafted_saw": 2.0
+          },
+          "outgoing": {
+            "planks": 4.0,
+            "tools": 4.0
+          }
+        }
+      },
+      {
+        "status": null,
+        "inputs": {},
+        "output": {
+          "planks": 4.0,
+          "tools": 4.0,
+          "crafted_saw": 2.0
+        },
+        "pending": {},
+        "produced": {
+          "crafted_saw": 2.0
+        },
+        "elapsed": 0,
+        "practice": 40.4,
+        "queue": [],
+        "flows": {
+          "incoming": {
+            "crafted_saw": 2.0
+          },
+          "outgoing": {
+            "planks": 4.0,
+            "tools": 4.0
+          }
+        }
+      },
+      {
+        "status": "Waiting for workshop requests",
+        "inputs": {},
+        "output": {
+          "planks": 4.0,
+          "tools": 4.0,
+          "crafted_saw": 2.0
+        },
+        "pending": {},
+        "produced": {
+          "crafted_saw": 2.0
+        },
+        "elapsed": 0,
+        "practice": 40.4,
+        "queue": [],
+        "flows": {
+          "incoming": {
+            "crafted_saw": 2.0
+          },
+          "outgoing": {
+            "planks": 4.0,
+            "tools": 4.0
+          }
+        }
+      }
+    ]
+  },
+  {
+    "kind": "workshop",
+    "recipe": "lanterns",
+    "skill": 0,
+    "talent": 0,
+    "name": "30_workshop_lanterns",
+    "orders": [
+      {
+        "recipe": "lanterns",
+        "amount": 2
+      }
+    ],
+    "inputs": {
+      "planks": 4.0,
+      "wood": 2.0
+    },
+    "actions": [
+      {
+        "op": "advance",
+        "seconds": 1
+      },
+      {
+        "op": "advance",
+        "seconds": 8
+      },
+      {
+        "op": "dropoff"
+      },
+      {
+        "op": "advance",
+        "seconds": 9
+      },
+      {
+        "op": "dropoff"
+      },
+      {
+        "op": "advance",
+        "seconds": 100
+      }
+    ],
+    "states": [
+      {
+        "status": "Producing lanterns \u00b7 8s remaining",
+        "inputs": {
+          "planks": 4.0,
+          "wood": 2.0
+        },
+        "output": {},
+        "pending": {},
+        "produced": {},
+        "elapsed": 1,
+        "practice": 0,
+        "queue": [
+          {
+            "id": 1,
+            "recipe": "lanterns",
+            "amount": 2,
+            "remaining": 2
+          }
+        ],
+        "flows": {
+          "incoming": {},
+          "outgoing": {}
+        }
+      },
+      {
+        "status": "Working",
+        "inputs": {
+          "planks": 2.0,
+          "wood": 1.0
+        },
+        "output": {},
+        "pending": {
+          "lanterns": 1.0
+        },
+        "produced": {
+          "lanterns": 1.0
+        },
+        "elapsed": 0,
+        "practice": 0.24,
+        "queue": [
+          {
+            "id": 1,
+            "recipe": "lanterns",
+            "amount": 2,
+            "remaining": 1.0
+          }
+        ],
+        "flows": {
+          "incoming": {
+            "lanterns": 1.0
+          },
+          "outgoing": {
+            "planks": 2.0,
+            "wood": 1.0
+          }
+        }
+      },
+      {
+        "status": null,
+        "inputs": {
+          "planks": 2.0,
+          "wood": 1.0
+        },
+        "output": {
+          "lanterns": 1.0
+        },
+        "pending": {},
+        "produced": {
+          "lanterns": 1.0
+        },
+        "elapsed": 0,
+        "practice": 0.24,
+        "queue": [
+          {
+            "id": 1,
+            "recipe": "lanterns",
+            "amount": 2,
+            "remaining": 1.0
+          }
+        ],
+        "flows": {
+          "incoming": {
+            "lanterns": 1.0
+          },
+          "outgoing": {
+            "planks": 2.0,
+            "wood": 1.0
+          }
+        }
+      },
+      {
+        "status": "Working",
+        "inputs": {},
+        "output": {
+          "lanterns": 1.0,
+          "planks": 0,
+          "wood": 0
+        },
+        "pending": {
+          "lanterns": 1.0
+        },
+        "produced": {
+          "lanterns": 2.0
+        },
+        "elapsed": 0,
+        "practice": 0.48,
+        "queue": [],
+        "flows": {
+          "incoming": {
+            "lanterns": 2.0
+          },
+          "outgoing": {
+            "planks": 4.0,
+            "wood": 2.0
+          }
+        }
+      },
+      {
+        "status": null,
+        "inputs": {},
+        "output": {
+          "lanterns": 2.0,
+          "planks": 0,
+          "wood": 0
+        },
+        "pending": {},
+        "produced": {
+          "lanterns": 2.0
+        },
+        "elapsed": 0,
+        "practice": 0.48,
+        "queue": [],
+        "flows": {
+          "incoming": {
+            "lanterns": 2.0
+          },
+          "outgoing": {
+            "planks": 4.0,
+            "wood": 2.0
+          }
+        }
+      },
+      {
+        "status": "Waiting for workshop requests",
+        "inputs": {},
+        "output": {
+          "lanterns": 2.0,
+          "planks": 0,
+          "wood": 0
+        },
+        "pending": {},
+        "produced": {
+          "lanterns": 2.0
+        },
+        "elapsed": 0,
+        "practice": 0.48,
+        "queue": [],
+        "flows": {
+          "incoming": {
+            "lanterns": 2.0
+          },
+          "outgoing": {
+            "planks": 4.0,
+            "wood": 2.0
+          }
+        }
+      }
+    ]
+  },
+  {
+    "kind": "workshop",
+    "recipe": "lanterns",
+    "skill": 40,
+    "talent": 1,
+    "name": "31_workshop_lanterns",
+    "orders": [
+      {
+        "recipe": "lanterns",
+        "amount": 2
+      }
+    ],
+    "inputs": {
+      "planks": 8.0,
+      "wood": 4.0
+    },
+    "actions": [
+      {
+        "op": "advance",
+        "seconds": 1
+      },
+      {
+        "op": "advance",
+        "seconds": 8
+      },
+      {
+        "op": "dropoff"
+      },
+      {
+        "op": "advance",
+        "seconds": 9
+      },
+      {
+        "op": "dropoff"
+      },
+      {
+        "op": "advance",
+        "seconds": 100
+      }
+    ],
+    "states": [
+      {
+        "status": "Producing lanterns \u00b7 8s remaining",
+        "inputs": {
+          "planks": 8.0,
+          "wood": 4.0
+        },
+        "output": {},
+        "pending": {},
+        "produced": {},
+        "elapsed": 1,
+        "practice": 40,
+        "queue": [
+          {
+            "id": 1,
+            "recipe": "lanterns",
+            "amount": 2,
+            "remaining": 2
+          }
+        ],
+        "flows": {
+          "incoming": {},
+          "outgoing": {}
+        }
+      },
+      {
+        "status": "Working",
+        "inputs": {},
+        "output": {
+          "planks": 4.0,
+          "wood": 2.0
+        },
+        "pending": {
+          "lanterns": 2.0
+        },
+        "produced": {
+          "lanterns": 2.0
+        },
+        "elapsed": 0,
+        "practice": 40.3,
+        "queue": [],
+        "flows": {
+          "incoming": {
+            "lanterns": 2.0
+          },
+          "outgoing": {
+            "planks": 4.0,
+            "wood": 2.0
+          }
+        }
+      },
+      {
+        "status": null,
+        "inputs": {},
+        "output": {
+          "planks": 4.0,
+          "wood": 2.0,
+          "lanterns": 2.0
+        },
+        "pending": {},
+        "produced": {
+          "lanterns": 2.0
+        },
+        "elapsed": 0,
+        "practice": 40.3,
+        "queue": [],
+        "flows": {
+          "incoming": {
+            "lanterns": 2.0
+          },
+          "outgoing": {
+            "planks": 4.0,
+            "wood": 2.0
+          }
+        }
+      },
+      {
+        "status": "Waiting for workshop requests",
+        "inputs": {},
+        "output": {
+          "planks": 4.0,
+          "wood": 2.0,
+          "lanterns": 2.0
+        },
+        "pending": {},
+        "produced": {
+          "lanterns": 2.0
+        },
+        "elapsed": 0,
+        "practice": 40.3,
+        "queue": [],
+        "flows": {
+          "incoming": {
+            "lanterns": 2.0
+          },
+          "outgoing": {
+            "planks": 4.0,
+            "wood": 2.0
+          }
+        }
+      },
+      {
+        "status": null,
+        "inputs": {},
+        "output": {
+          "planks": 4.0,
+          "wood": 2.0,
+          "lanterns": 2.0
+        },
+        "pending": {},
+        "produced": {
+          "lanterns": 2.0
+        },
+        "elapsed": 0,
+        "practice": 40.3,
+        "queue": [],
+        "flows": {
+          "incoming": {
+            "lanterns": 2.0
+          },
+          "outgoing": {
+            "planks": 4.0,
+            "wood": 2.0
+          }
+        }
+      },
+      {
+        "status": "Waiting for workshop requests",
+        "inputs": {},
+        "output": {
+          "planks": 4.0,
+          "wood": 2.0,
+          "lanterns": 2.0
+        },
+        "pending": {},
+        "produced": {
+          "lanterns": 2.0
+        },
+        "elapsed": 0,
+        "practice": 40.3,
+        "queue": [],
+        "flows": {
+          "incoming": {
+            "lanterns": 2.0
+          },
+          "outgoing": {
+            "planks": 4.0,
+            "wood": 2.0
+          }
+        }
+      }
+    ]
+  },
+  {
+    "kind": "workshop",
+    "recipe": "flower_boxes",
+    "skill": 0,
+    "talent": 0,
+    "name": "32_workshop_flower_boxes",
+    "orders": [
+      {
+        "recipe": "flower_boxes",
+        "amount": 2
+      }
+    ],
+    "inputs": {
+      "planks": 4.0,
+      "herbs": 2.0
+    },
+    "actions": [
+      {
+        "op": "advance",
+        "seconds": 1
+      },
+      {
+        "op": "advance",
+        "seconds": 8
+      },
+      {
+        "op": "dropoff"
+      },
+      {
+        "op": "advance",
+        "seconds": 9
+      },
+      {
+        "op": "dropoff"
+      },
+      {
+        "op": "advance",
+        "seconds": 100
+      }
+    ],
+    "states": [
+      {
+        "status": "Producing flower boxes \u00b7 8s remaining",
+        "inputs": {
+          "planks": 4.0,
+          "herbs": 2.0
+        },
+        "output": {},
+        "pending": {},
+        "produced": {},
+        "elapsed": 1,
+        "practice": 0,
+        "queue": [
+          {
+            "id": 1,
+            "recipe": "flower_boxes",
+            "amount": 2,
+            "remaining": 2
+          }
+        ],
+        "flows": {
+          "incoming": {},
+          "outgoing": {}
+        }
+      },
+      {
+        "status": "Working",
+        "inputs": {
+          "planks": 2.0,
+          "herbs": 1.0
+        },
+        "output": {},
+        "pending": {
+          "flower_boxes": 1.0
+        },
+        "produced": {
+          "flower_boxes": 1.0
+        },
+        "elapsed": 0,
+        "practice": 0.24,
+        "queue": [
+          {
+            "id": 1,
+            "recipe": "flower_boxes",
+            "amount": 2,
+            "remaining": 1.0
+          }
+        ],
+        "flows": {
+          "incoming": {
+            "flower_boxes": 1.0
+          },
+          "outgoing": {
+            "planks": 2.0,
+            "herbs": 1.0
+          }
+        }
+      },
+      {
+        "status": null,
+        "inputs": {
+          "planks": 2.0,
+          "herbs": 1.0
+        },
+        "output": {
+          "flower_boxes": 1.0
+        },
+        "pending": {},
+        "produced": {
+          "flower_boxes": 1.0
+        },
+        "elapsed": 0,
+        "practice": 0.24,
+        "queue": [
+          {
+            "id": 1,
+            "recipe": "flower_boxes",
+            "amount": 2,
+            "remaining": 1.0
+          }
+        ],
+        "flows": {
+          "incoming": {
+            "flower_boxes": 1.0
+          },
+          "outgoing": {
+            "planks": 2.0,
+            "herbs": 1.0
+          }
+        }
+      },
+      {
+        "status": "Working",
+        "inputs": {},
+        "output": {
+          "flower_boxes": 1.0,
+          "planks": 0,
+          "herbs": 0
+        },
+        "pending": {
+          "flower_boxes": 1.0
+        },
+        "produced": {
+          "flower_boxes": 2.0
+        },
+        "elapsed": 0,
+        "practice": 0.48,
+        "queue": [],
+        "flows": {
+          "incoming": {
+            "flower_boxes": 2.0
+          },
+          "outgoing": {
+            "planks": 4.0,
+            "herbs": 2.0
+          }
+        }
+      },
+      {
+        "status": null,
+        "inputs": {},
+        "output": {
+          "flower_boxes": 2.0,
+          "planks": 0,
+          "herbs": 0
+        },
+        "pending": {},
+        "produced": {
+          "flower_boxes": 2.0
+        },
+        "elapsed": 0,
+        "practice": 0.48,
+        "queue": [],
+        "flows": {
+          "incoming": {
+            "flower_boxes": 2.0
+          },
+          "outgoing": {
+            "planks": 4.0,
+            "herbs": 2.0
+          }
+        }
+      },
+      {
+        "status": "Waiting for workshop requests",
+        "inputs": {},
+        "output": {
+          "flower_boxes": 2.0,
+          "planks": 0,
+          "herbs": 0
+        },
+        "pending": {},
+        "produced": {
+          "flower_boxes": 2.0
+        },
+        "elapsed": 0,
+        "practice": 0.48,
+        "queue": [],
+        "flows": {
+          "incoming": {
+            "flower_boxes": 2.0
+          },
+          "outgoing": {
+            "planks": 4.0,
+            "herbs": 2.0
+          }
+        }
+      }
+    ]
+  },
+  {
+    "kind": "workshop",
+    "recipe": "flower_boxes",
+    "skill": 40,
+    "talent": 1,
+    "name": "33_workshop_flower_boxes",
+    "orders": [
+      {
+        "recipe": "flower_boxes",
+        "amount": 2
+      }
+    ],
+    "inputs": {
+      "planks": 8.0,
+      "herbs": 4.0
+    },
+    "actions": [
+      {
+        "op": "advance",
+        "seconds": 1
+      },
+      {
+        "op": "advance",
+        "seconds": 8
+      },
+      {
+        "op": "dropoff"
+      },
+      {
+        "op": "advance",
+        "seconds": 9
+      },
+      {
+        "op": "dropoff"
+      },
+      {
+        "op": "advance",
+        "seconds": 100
+      }
+    ],
+    "states": [
+      {
+        "status": "Producing flower boxes \u00b7 8s remaining",
+        "inputs": {
+          "planks": 8.0,
+          "herbs": 4.0
+        },
+        "output": {},
+        "pending": {},
+        "produced": {},
+        "elapsed": 1,
+        "practice": 40,
+        "queue": [
+          {
+            "id": 1,
+            "recipe": "flower_boxes",
+            "amount": 2,
+            "remaining": 2
+          }
+        ],
+        "flows": {
+          "incoming": {},
+          "outgoing": {}
+        }
+      },
+      {
+        "status": "Working",
+        "inputs": {},
+        "output": {
+          "planks": 4.0,
+          "herbs": 2.0
+        },
+        "pending": {
+          "flower_boxes": 2.0
+        },
+        "produced": {
+          "flower_boxes": 2.0
+        },
+        "elapsed": 0,
+        "practice": 40.3,
+        "queue": [],
+        "flows": {
+          "incoming": {
+            "flower_boxes": 2.0
+          },
+          "outgoing": {
+            "planks": 4.0,
+            "herbs": 2.0
+          }
+        }
+      },
+      {
+        "status": null,
+        "inputs": {},
+        "output": {
+          "planks": 4.0,
+          "herbs": 2.0,
+          "flower_boxes": 2.0
+        },
+        "pending": {},
+        "produced": {
+          "flower_boxes": 2.0
+        },
+        "elapsed": 0,
+        "practice": 40.3,
+        "queue": [],
+        "flows": {
+          "incoming": {
+            "flower_boxes": 2.0
+          },
+          "outgoing": {
+            "planks": 4.0,
+            "herbs": 2.0
+          }
+        }
+      },
+      {
+        "status": "Waiting for workshop requests",
+        "inputs": {},
+        "output": {
+          "planks": 4.0,
+          "herbs": 2.0,
+          "flower_boxes": 2.0
+        },
+        "pending": {},
+        "produced": {
+          "flower_boxes": 2.0
+        },
+        "elapsed": 0,
+        "practice": 40.3,
+        "queue": [],
+        "flows": {
+          "incoming": {
+            "flower_boxes": 2.0
+          },
+          "outgoing": {
+            "planks": 4.0,
+            "herbs": 2.0
+          }
+        }
+      },
+      {
+        "status": null,
+        "inputs": {},
+        "output": {
+          "planks": 4.0,
+          "herbs": 2.0,
+          "flower_boxes": 2.0
+        },
+        "pending": {},
+        "produced": {
+          "flower_boxes": 2.0
+        },
+        "elapsed": 0,
+        "practice": 40.3,
+        "queue": [],
+        "flows": {
+          "incoming": {
+            "flower_boxes": 2.0
+          },
+          "outgoing": {
+            "planks": 4.0,
+            "herbs": 2.0
+          }
+        }
+      },
+      {
+        "status": "Waiting for workshop requests",
+        "inputs": {},
+        "output": {
+          "planks": 4.0,
+          "herbs": 2.0,
+          "flower_boxes": 2.0
+        },
+        "pending": {},
+        "produced": {
+          "flower_boxes": 2.0
+        },
+        "elapsed": 0,
+        "practice": 40.3,
+        "queue": [],
+        "flows": {
+          "incoming": {
+            "flower_boxes": 2.0
+          },
+          "outgoing": {
+            "planks": 4.0,
+            "herbs": 2.0
+          }
+        }
+      }
+    ]
+  },
+  {
+    "kind": "workshop",
+    "recipe": "wooden_tables",
+    "skill": 0,
+    "talent": 0,
+    "name": "34_workshop_wooden_tables",
+    "orders": [
+      {
+        "recipe": "wooden_tables",
+        "amount": 2
+      }
+    ],
+    "inputs": {
+      "planks": 8.0,
+      "wood": 4.0
+    },
+    "actions": [
+      {
+        "op": "advance",
+        "seconds": 1
+      },
+      {
+        "op": "advance",
+        "seconds": 11
+      },
+      {
+        "op": "dropoff"
+      },
+      {
+        "op": "advance",
+        "seconds": 12
+      },
+      {
+        "op": "dropoff"
+      },
+      {
+        "op": "advance",
+        "seconds": 100
+      }
+    ],
+    "states": [
+      {
+        "status": "Producing wooden tables \u00b7 11s remaining",
+        "inputs": {
+          "planks": 8.0,
+          "wood": 4.0
+        },
+        "output": {},
+        "pending": {},
+        "produced": {},
+        "elapsed": 1,
+        "practice": 0,
+        "queue": [
+          {
+            "id": 1,
+            "recipe": "wooden_tables",
+            "amount": 2,
+            "remaining": 2
+          }
+        ],
+        "flows": {
+          "incoming": {},
+          "outgoing": {}
+        }
+      },
+      {
+        "status": "Working",
+        "inputs": {
+          "planks": 4.0,
+          "wood": 2.0
+        },
+        "output": {},
+        "pending": {
+          "wooden_tables": 1.0
+        },
+        "produced": {
+          "wooden_tables": 1.0
+        },
+        "elapsed": 0,
+        "practice": 0.32,
+        "queue": [
+          {
+            "id": 1,
+            "recipe": "wooden_tables",
+            "amount": 2,
+            "remaining": 1.0
+          }
+        ],
+        "flows": {
+          "incoming": {
+            "wooden_tables": 1.0
+          },
+          "outgoing": {
+            "planks": 4.0,
+            "wood": 2.0
+          }
+        }
+      },
+      {
+        "status": null,
+        "inputs": {
+          "planks": 4.0,
+          "wood": 2.0
+        },
+        "output": {
+          "wooden_tables": 1.0
+        },
+        "pending": {},
+        "produced": {
+          "wooden_tables": 1.0
+        },
+        "elapsed": 0,
+        "practice": 0.32,
+        "queue": [
+          {
+            "id": 1,
+            "recipe": "wooden_tables",
+            "amount": 2,
+            "remaining": 1.0
+          }
+        ],
+        "flows": {
+          "incoming": {
+            "wooden_tables": 1.0
+          },
+          "outgoing": {
+            "planks": 4.0,
+            "wood": 2.0
+          }
+        }
+      },
+      {
+        "status": "Working",
+        "inputs": {},
+        "output": {
+          "wooden_tables": 1.0,
+          "planks": 0,
+          "wood": 0
+        },
+        "pending": {
+          "wooden_tables": 1.0
+        },
+        "produced": {
+          "wooden_tables": 2.0
+        },
+        "elapsed": 0,
+        "practice": 0.64,
+        "queue": [],
+        "flows": {
+          "incoming": {
+            "wooden_tables": 2.0
+          },
+          "outgoing": {
+            "planks": 8.0,
+            "wood": 4.0
+          }
+        }
+      },
+      {
+        "status": null,
+        "inputs": {},
+        "output": {
+          "wooden_tables": 2.0,
+          "planks": 0,
+          "wood": 0
+        },
+        "pending": {},
+        "produced": {
+          "wooden_tables": 2.0
+        },
+        "elapsed": 0,
+        "practice": 0.64,
+        "queue": [],
+        "flows": {
+          "incoming": {
+            "wooden_tables": 2.0
+          },
+          "outgoing": {
+            "planks": 8.0,
+            "wood": 4.0
+          }
+        }
+      },
+      {
+        "status": "Waiting for workshop requests",
+        "inputs": {},
+        "output": {
+          "wooden_tables": 2.0,
+          "planks": 0,
+          "wood": 0
+        },
+        "pending": {},
+        "produced": {
+          "wooden_tables": 2.0
+        },
+        "elapsed": 0,
+        "practice": 0.64,
+        "queue": [],
+        "flows": {
+          "incoming": {
+            "wooden_tables": 2.0
+          },
+          "outgoing": {
+            "planks": 8.0,
+            "wood": 4.0
+          }
+        }
+      }
+    ]
+  },
+  {
+    "kind": "workshop",
+    "recipe": "wooden_tables",
+    "skill": 40,
+    "talent": 1,
+    "name": "35_workshop_wooden_tables",
+    "orders": [
+      {
+        "recipe": "wooden_tables",
+        "amount": 2
+      }
+    ],
+    "inputs": {
+      "planks": 16.0,
+      "wood": 8.0
+    },
+    "actions": [
+      {
+        "op": "advance",
+        "seconds": 1
+      },
+      {
+        "op": "advance",
+        "seconds": 11
+      },
+      {
+        "op": "dropoff"
+      },
+      {
+        "op": "advance",
+        "seconds": 12
+      },
+      {
+        "op": "dropoff"
+      },
+      {
+        "op": "advance",
+        "seconds": 100
+      }
+    ],
+    "states": [
+      {
+        "status": "Producing wooden tables \u00b7 11s remaining",
+        "inputs": {
+          "planks": 16.0,
+          "wood": 8.0
+        },
+        "output": {},
+        "pending": {},
+        "produced": {},
+        "elapsed": 1,
+        "practice": 40,
+        "queue": [
+          {
+            "id": 1,
+            "recipe": "wooden_tables",
+            "amount": 2,
+            "remaining": 2
+          }
+        ],
+        "flows": {
+          "incoming": {},
+          "outgoing": {}
+        }
+      },
+      {
+        "status": "Working",
+        "inputs": {},
+        "output": {
+          "planks": 8.0,
+          "wood": 4.0
+        },
+        "pending": {
+          "wooden_tables": 2.0
+        },
+        "produced": {
+          "wooden_tables": 2.0
+        },
+        "elapsed": 0,
+        "practice": 40.4,
+        "queue": [],
+        "flows": {
+          "incoming": {
+            "wooden_tables": 2.0
+          },
+          "outgoing": {
+            "planks": 8.0,
+            "wood": 4.0
+          }
+        }
+      },
+      {
+        "status": null,
+        "inputs": {},
+        "output": {
+          "planks": 8.0,
+          "wood": 4.0,
+          "wooden_tables": 2.0
+        },
+        "pending": {},
+        "produced": {
+          "wooden_tables": 2.0
+        },
+        "elapsed": 0,
+        "practice": 40.4,
+        "queue": [],
+        "flows": {
+          "incoming": {
+            "wooden_tables": 2.0
+          },
+          "outgoing": {
+            "planks": 8.0,
+            "wood": 4.0
+          }
+        }
+      },
+      {
+        "status": "Waiting for workshop requests",
+        "inputs": {},
+        "output": {
+          "planks": 8.0,
+          "wood": 4.0,
+          "wooden_tables": 2.0
+        },
+        "pending": {},
+        "produced": {
+          "wooden_tables": 2.0
+        },
+        "elapsed": 0,
+        "practice": 40.4,
+        "queue": [],
+        "flows": {
+          "incoming": {
+            "wooden_tables": 2.0
+          },
+          "outgoing": {
+            "planks": 8.0,
+            "wood": 4.0
+          }
+        }
+      },
+      {
+        "status": null,
+        "inputs": {},
+        "output": {
+          "planks": 8.0,
+          "wood": 4.0,
+          "wooden_tables": 2.0
+        },
+        "pending": {},
+        "produced": {
+          "wooden_tables": 2.0
+        },
+        "elapsed": 0,
+        "practice": 40.4,
+        "queue": [],
+        "flows": {
+          "incoming": {
+            "wooden_tables": 2.0
+          },
+          "outgoing": {
+            "planks": 8.0,
+            "wood": 4.0
+          }
+        }
+      },
+      {
+        "status": "Waiting for workshop requests",
+        "inputs": {},
+        "output": {
+          "planks": 8.0,
+          "wood": 4.0,
+          "wooden_tables": 2.0
+        },
+        "pending": {},
+        "produced": {
+          "wooden_tables": 2.0
+        },
+        "elapsed": 0,
+        "practice": 40.4,
+        "queue": [],
+        "flows": {
+          "incoming": {
+            "wooden_tables": 2.0
+          },
+          "outgoing": {
+            "planks": 8.0,
+            "wood": 4.0
+          }
+        }
+      }
+    ]
+  },
+  {
+    "kind": "workshop",
+    "recipe": "signposts",
+    "skill": 0,
+    "talent": 0,
+    "name": "36_workshop_signposts",
+    "orders": [
+      {
+        "recipe": "signposts",
+        "amount": 2
+      }
+    ],
+    "inputs": {
+      "planks": 4.0,
+      "wood": 2.0
+    },
+    "actions": [
+      {
+        "op": "advance",
+        "seconds": 1
+      },
+      {
+        "op": "advance",
+        "seconds": 8
+      },
+      {
+        "op": "dropoff"
+      },
+      {
+        "op": "advance",
+        "seconds": 9
+      },
+      {
+        "op": "dropoff"
+      },
+      {
+        "op": "advance",
+        "seconds": 100
+      }
+    ],
+    "states": [
+      {
+        "status": "Producing signposts \u00b7 8s remaining",
+        "inputs": {
+          "planks": 4.0,
+          "wood": 2.0
+        },
+        "output": {},
+        "pending": {},
+        "produced": {},
+        "elapsed": 1,
+        "practice": 0,
+        "queue": [
+          {
+            "id": 1,
+            "recipe": "signposts",
+            "amount": 2,
+            "remaining": 2
+          }
+        ],
+        "flows": {
+          "incoming": {},
+          "outgoing": {}
+        }
+      },
+      {
+        "status": "Working",
+        "inputs": {
+          "planks": 2.0,
+          "wood": 1.0
+        },
+        "output": {},
+        "pending": {
+          "signposts": 1.0
+        },
+        "produced": {
+          "signposts": 1.0
+        },
+        "elapsed": 0,
+        "practice": 0.24,
+        "queue": [
+          {
+            "id": 1,
+            "recipe": "signposts",
+            "amount": 2,
+            "remaining": 1.0
+          }
+        ],
+        "flows": {
+          "incoming": {
+            "signposts": 1.0
+          },
+          "outgoing": {
+            "planks": 2.0,
+            "wood": 1.0
+          }
+        }
+      },
+      {
+        "status": null,
+        "inputs": {
+          "planks": 2.0,
+          "wood": 1.0
+        },
+        "output": {
+          "signposts": 1.0
+        },
+        "pending": {},
+        "produced": {
+          "signposts": 1.0
+        },
+        "elapsed": 0,
+        "practice": 0.24,
+        "queue": [
+          {
+            "id": 1,
+            "recipe": "signposts",
+            "amount": 2,
+            "remaining": 1.0
+          }
+        ],
+        "flows": {
+          "incoming": {
+            "signposts": 1.0
+          },
+          "outgoing": {
+            "planks": 2.0,
+            "wood": 1.0
+          }
+        }
+      },
+      {
+        "status": "Working",
+        "inputs": {},
+        "output": {
+          "signposts": 1.0,
+          "planks": 0,
+          "wood": 0
+        },
+        "pending": {
+          "signposts": 1.0
+        },
+        "produced": {
+          "signposts": 2.0
+        },
+        "elapsed": 0,
+        "practice": 0.48,
+        "queue": [],
+        "flows": {
+          "incoming": {
+            "signposts": 2.0
+          },
+          "outgoing": {
+            "planks": 4.0,
+            "wood": 2.0
+          }
+        }
+      },
+      {
+        "status": null,
+        "inputs": {},
+        "output": {
+          "signposts": 2.0,
+          "planks": 0,
+          "wood": 0
+        },
+        "pending": {},
+        "produced": {
+          "signposts": 2.0
+        },
+        "elapsed": 0,
+        "practice": 0.48,
+        "queue": [],
+        "flows": {
+          "incoming": {
+            "signposts": 2.0
+          },
+          "outgoing": {
+            "planks": 4.0,
+            "wood": 2.0
+          }
+        }
+      },
+      {
+        "status": "Waiting for workshop requests",
+        "inputs": {},
+        "output": {
+          "signposts": 2.0,
+          "planks": 0,
+          "wood": 0
+        },
+        "pending": {},
+        "produced": {
+          "signposts": 2.0
+        },
+        "elapsed": 0,
+        "practice": 0.48,
+        "queue": [],
+        "flows": {
+          "incoming": {
+            "signposts": 2.0
+          },
+          "outgoing": {
+            "planks": 4.0,
+            "wood": 2.0
+          }
+        }
+      }
+    ]
+  },
+  {
+    "kind": "workshop",
+    "recipe": "signposts",
+    "skill": 40,
+    "talent": 1,
+    "name": "37_workshop_signposts",
+    "orders": [
+      {
+        "recipe": "signposts",
+        "amount": 2
+      }
+    ],
+    "inputs": {
+      "planks": 8.0,
+      "wood": 4.0
+    },
+    "actions": [
+      {
+        "op": "advance",
+        "seconds": 1
+      },
+      {
+        "op": "advance",
+        "seconds": 8
+      },
+      {
+        "op": "dropoff"
+      },
+      {
+        "op": "advance",
+        "seconds": 9
+      },
+      {
+        "op": "dropoff"
+      },
+      {
+        "op": "advance",
+        "seconds": 100
+      }
+    ],
+    "states": [
+      {
+        "status": "Producing signposts \u00b7 8s remaining",
+        "inputs": {
+          "planks": 8.0,
+          "wood": 4.0
+        },
+        "output": {},
+        "pending": {},
+        "produced": {},
+        "elapsed": 1,
+        "practice": 40,
+        "queue": [
+          {
+            "id": 1,
+            "recipe": "signposts",
+            "amount": 2,
+            "remaining": 2
+          }
+        ],
+        "flows": {
+          "incoming": {},
+          "outgoing": {}
+        }
+      },
+      {
+        "status": "Working",
+        "inputs": {},
+        "output": {
+          "planks": 4.0,
+          "wood": 2.0
+        },
+        "pending": {
+          "signposts": 2.0
+        },
+        "produced": {
+          "signposts": 2.0
+        },
+        "elapsed": 0,
+        "practice": 40.3,
+        "queue": [],
+        "flows": {
+          "incoming": {
+            "signposts": 2.0
+          },
+          "outgoing": {
+            "planks": 4.0,
+            "wood": 2.0
+          }
+        }
+      },
+      {
+        "status": null,
+        "inputs": {},
+        "output": {
+          "planks": 4.0,
+          "wood": 2.0,
+          "signposts": 2.0
+        },
+        "pending": {},
+        "produced": {
+          "signposts": 2.0
+        },
+        "elapsed": 0,
+        "practice": 40.3,
+        "queue": [],
+        "flows": {
+          "incoming": {
+            "signposts": 2.0
+          },
+          "outgoing": {
+            "planks": 4.0,
+            "wood": 2.0
+          }
+        }
+      },
+      {
+        "status": "Waiting for workshop requests",
+        "inputs": {},
+        "output": {
+          "planks": 4.0,
+          "wood": 2.0,
+          "signposts": 2.0
+        },
+        "pending": {},
+        "produced": {
+          "signposts": 2.0
+        },
+        "elapsed": 0,
+        "practice": 40.3,
+        "queue": [],
+        "flows": {
+          "incoming": {
+            "signposts": 2.0
+          },
+          "outgoing": {
+            "planks": 4.0,
+            "wood": 2.0
+          }
+        }
+      },
+      {
+        "status": null,
+        "inputs": {},
+        "output": {
+          "planks": 4.0,
+          "wood": 2.0,
+          "signposts": 2.0
+        },
+        "pending": {},
+        "produced": {
+          "signposts": 2.0
+        },
+        "elapsed": 0,
+        "practice": 40.3,
+        "queue": [],
+        "flows": {
+          "incoming": {
+            "signposts": 2.0
+          },
+          "outgoing": {
+            "planks": 4.0,
+            "wood": 2.0
+          }
+        }
+      },
+      {
+        "status": "Waiting for workshop requests",
+        "inputs": {},
+        "output": {
+          "planks": 4.0,
+          "wood": 2.0,
+          "signposts": 2.0
+        },
+        "pending": {},
+        "produced": {
+          "signposts": 2.0
+        },
+        "elapsed": 0,
+        "practice": 40.3,
+        "queue": [],
+        "flows": {
+          "incoming": {
+            "signposts": 2.0
+          },
+          "outgoing": {
+            "planks": 4.0,
+            "wood": 2.0
+          }
+        }
+      }
+    ]
+  },
+  {
+    "kind": "workshop",
+    "recipe": "garden_arches",
+    "skill": 0,
+    "talent": 0,
+    "name": "38_workshop_garden_arches",
+    "orders": [
+      {
+        "recipe": "garden_arches",
+        "amount": 2
+      }
+    ],
+    "inputs": {
+      "planks": 12.0,
+      "wood": 4.0
+    },
+    "actions": [
+      {
+        "op": "advance",
+        "seconds": 1
+      },
+      {
+        "op": "advance",
+        "seconds": 14
+      },
+      {
+        "op": "dropoff"
+      },
+      {
+        "op": "advance",
+        "seconds": 15
+      },
+      {
+        "op": "dropoff"
+      },
+      {
+        "op": "advance",
+        "seconds": 100
+      }
+    ],
+    "states": [
+      {
+        "status": "Producing garden arches \u00b7 14s remaining",
+        "inputs": {
+          "planks": 12.0,
+          "wood": 4.0
+        },
+        "output": {},
+        "pending": {},
+        "produced": {},
+        "elapsed": 1,
+        "practice": 0,
+        "queue": [
+          {
+            "id": 1,
+            "recipe": "garden_arches",
+            "amount": 2,
+            "remaining": 2
+          }
+        ],
+        "flows": {
+          "incoming": {},
+          "outgoing": {}
+        }
+      },
+      {
+        "status": "Working",
+        "inputs": {
+          "planks": 6.0,
+          "wood": 2.0
+        },
+        "output": {},
+        "pending": {
+          "garden_arches": 1.0
+        },
+        "produced": {
+          "garden_arches": 1.0
+        },
+        "elapsed": 0,
+        "practice": 0.4,
+        "queue": [
+          {
+            "id": 1,
+            "recipe": "garden_arches",
+            "amount": 2,
+            "remaining": 1.0
+          }
+        ],
+        "flows": {
+          "incoming": {
+            "garden_arches": 1.0
+          },
+          "outgoing": {
+            "planks": 6.0,
+            "wood": 2.0
+          }
+        }
+      },
+      {
+        "status": null,
+        "inputs": {
+          "planks": 6.0,
+          "wood": 2.0
+        },
+        "output": {
+          "garden_arches": 1.0
+        },
+        "pending": {},
+        "produced": {
+          "garden_arches": 1.0
+        },
+        "elapsed": 0,
+        "practice": 0.4,
+        "queue": [
+          {
+            "id": 1,
+            "recipe": "garden_arches",
+            "amount": 2,
+            "remaining": 1.0
+          }
+        ],
+        "flows": {
+          "incoming": {
+            "garden_arches": 1.0
+          },
+          "outgoing": {
+            "planks": 6.0,
+            "wood": 2.0
+          }
+        }
+      },
+      {
+        "status": "Working",
+        "inputs": {},
+        "output": {
+          "garden_arches": 1.0,
+          "planks": 0,
+          "wood": 0
+        },
+        "pending": {
+          "garden_arches": 1.0
+        },
+        "produced": {
+          "garden_arches": 2.0
+        },
+        "elapsed": 0,
+        "practice": 0.8,
+        "queue": [],
+        "flows": {
+          "incoming": {
+            "garden_arches": 2.0
+          },
+          "outgoing": {
+            "planks": 12.0,
+            "wood": 4.0
+          }
+        }
+      },
+      {
+        "status": null,
+        "inputs": {},
+        "output": {
+          "garden_arches": 2.0,
+          "planks": 0,
+          "wood": 0
+        },
+        "pending": {},
+        "produced": {
+          "garden_arches": 2.0
+        },
+        "elapsed": 0,
+        "practice": 0.8,
+        "queue": [],
+        "flows": {
+          "incoming": {
+            "garden_arches": 2.0
+          },
+          "outgoing": {
+            "planks": 12.0,
+            "wood": 4.0
+          }
+        }
+      },
+      {
+        "status": "Waiting for workshop requests",
+        "inputs": {},
+        "output": {
+          "garden_arches": 2.0,
+          "planks": 0,
+          "wood": 0
+        },
+        "pending": {},
+        "produced": {
+          "garden_arches": 2.0
+        },
+        "elapsed": 0,
+        "practice": 0.8,
+        "queue": [],
+        "flows": {
+          "incoming": {
+            "garden_arches": 2.0
+          },
+          "outgoing": {
+            "planks": 12.0,
+            "wood": 4.0
+          }
+        }
+      }
+    ]
+  },
+  {
+    "kind": "workshop",
+    "recipe": "garden_arches",
+    "skill": 40,
+    "talent": 1,
+    "name": "39_workshop_garden_arches",
+    "orders": [
+      {
+        "recipe": "garden_arches",
+        "amount": 2
+      }
+    ],
+    "inputs": {
+      "planks": 24.0,
+      "wood": 8.0
+    },
+    "actions": [
+      {
+        "op": "advance",
+        "seconds": 1
+      },
+      {
+        "op": "advance",
+        "seconds": 14
+      },
+      {
+        "op": "dropoff"
+      },
+      {
+        "op": "advance",
+        "seconds": 15
+      },
+      {
+        "op": "dropoff"
+      },
+      {
+        "op": "advance",
+        "seconds": 100
+      }
+    ],
+    "states": [
+      {
+        "status": "Producing garden arches \u00b7 14s remaining",
+        "inputs": {
+          "planks": 24.0,
+          "wood": 8.0
+        },
+        "output": {},
+        "pending": {},
+        "produced": {},
+        "elapsed": 1,
+        "practice": 40,
+        "queue": [
+          {
+            "id": 1,
+            "recipe": "garden_arches",
+            "amount": 2,
+            "remaining": 2
+          }
+        ],
+        "flows": {
+          "incoming": {},
+          "outgoing": {}
+        }
+      },
+      {
+        "status": "Working",
+        "inputs": {},
+        "output": {
+          "planks": 12.0,
+          "wood": 4.0
+        },
+        "pending": {
+          "garden_arches": 2.0
+        },
+        "produced": {
+          "garden_arches": 2.0
+        },
+        "elapsed": 0,
+        "practice": 40.5,
+        "queue": [],
+        "flows": {
+          "incoming": {
+            "garden_arches": 2.0
+          },
+          "outgoing": {
+            "planks": 12.0,
+            "wood": 4.0
+          }
+        }
+      },
+      {
+        "status": null,
+        "inputs": {},
+        "output": {
+          "planks": 12.0,
+          "wood": 4.0,
+          "garden_arches": 2.0
+        },
+        "pending": {},
+        "produced": {
+          "garden_arches": 2.0
+        },
+        "elapsed": 0,
+        "practice": 40.5,
+        "queue": [],
+        "flows": {
+          "incoming": {
+            "garden_arches": 2.0
+          },
+          "outgoing": {
+            "planks": 12.0,
+            "wood": 4.0
+          }
+        }
+      },
+      {
+        "status": "Waiting for workshop requests",
+        "inputs": {},
+        "output": {
+          "planks": 12.0,
+          "wood": 4.0,
+          "garden_arches": 2.0
+        },
+        "pending": {},
+        "produced": {
+          "garden_arches": 2.0
+        },
+        "elapsed": 0,
+        "practice": 40.5,
+        "queue": [],
+        "flows": {
+          "incoming": {
+            "garden_arches": 2.0
+          },
+          "outgoing": {
+            "planks": 12.0,
+            "wood": 4.0
+          }
+        }
+      },
+      {
+        "status": null,
+        "inputs": {},
+        "output": {
+          "planks": 12.0,
+          "wood": 4.0,
+          "garden_arches": 2.0
+        },
+        "pending": {},
+        "produced": {
+          "garden_arches": 2.0
+        },
+        "elapsed": 0,
+        "practice": 40.5,
+        "queue": [],
+        "flows": {
+          "incoming": {
+            "garden_arches": 2.0
+          },
+          "outgoing": {
+            "planks": 12.0,
+            "wood": 4.0
+          }
+        }
+      },
+      {
+        "status": "Waiting for workshop requests",
+        "inputs": {},
+        "output": {
+          "planks": 12.0,
+          "wood": 4.0,
+          "garden_arches": 2.0
+        },
+        "pending": {},
+        "produced": {
+          "garden_arches": 2.0
+        },
+        "elapsed": 0,
+        "practice": 40.5,
+        "queue": [],
+        "flows": {
+          "incoming": {
+            "garden_arches": 2.0
+          },
+          "outgoing": {
+            "planks": 12.0,
+            "wood": 4.0
+          }
+        }
+      }
+    ]
+  },
+  {
+    "kind": "workshop",
+    "recipe": "lanterns",
+    "skill": 40,
+    "talent": 1,
+    "orders": [
+      {
+        "recipe": "lanterns",
+        "amount": 5
+      },
+      {
+        "recipe": "furniture",
+        "amount": 2
+      }
+    ],
+    "actions": [
+      {
+        "op": "advance",
+        "seconds": 9
+      },
+      {
+        "op": "advance",
+        "seconds": 3
+      },
+      {
+        "op": "cancel",
+        "id": 2
+      },
+      {
+        "op": "cancel",
+        "id": 1
+      },
+      {
+        "op": "dropoff"
+      },
+      {
+        "op": "advance",
+        "seconds": 100
+      }
+    ],
+    "name": "40_workshop_lanterns",
+    "inputs": {
+      "planks": 15.0,
+      "wood": 7.5
+    },
+    "states": [
+      {
+        "status": "Working",
+        "inputs": {
+          "planks": 7.5,
+          "wood": 3.75
+        },
+        "output": {},
+        "pending": {
+          "lanterns": 3.75
+        },
+        "produced": {
+          "lanterns": 3.75
+        },
+        "elapsed": 0,
+        "practice": 40.3,
+        "queue": [
+          {
+            "id": 1,
+            "recipe": "lanterns",
+            "amount": 5,
+            "remaining": 1.25
+          },
+          {
+            "id": 2,
+            "recipe": "furniture",
+            "amount": 2,
+            "remaining": 2
+          }
+        ],
+        "flows": {
+          "incoming": {
+            "lanterns": 3.75
+          },
+          "outgoing": {
+            "planks": 7.5,
+            "wood": 3.75
+          }
+        }
+      },
+      {
+        "status": "Producing lanterns \u00b7 6s remaining",
+        "inputs": {
+          "planks": 7.5,
+          "wood": 3.75
+        },
+        "output": {},
+        "pending": {
+          "lanterns": 3.75
+        },
+        "produced": {
+          "lanterns": 3.75
+        },
+        "elapsed": 3,
+        "practice": 40.3,
+        "queue": [
+          {
+            "id": 1,
+            "recipe": "lanterns",
+            "amount": 5,
+            "remaining": 1.25
+          },
+          {
+            "id": 2,
+            "recipe": "furniture",
+            "amount": 2,
+            "remaining": 2
+          }
+        ],
+        "flows": {
+          "incoming": {
+            "lanterns": 3.75
+          },
+          "outgoing": {
+            "planks": 7.5,
+            "wood": 3.75
+          }
+        }
+      },
+      {
+        "status": null,
+        "inputs": {
+          "planks": 7.5,
+          "wood": 3.75
+        },
+        "output": {},
+        "pending": {
+          "lanterns": 3.75
+        },
+        "produced": {
+          "lanterns": 3.75
+        },
+        "elapsed": 3,
+        "practice": 40.3,
+        "queue": [
+          {
+            "id": 1,
+            "recipe": "lanterns",
+            "amount": 5,
+            "remaining": 1.25
+          }
+        ],
+        "flows": {
+          "incoming": {
+            "lanterns": 3.75
+          },
+          "outgoing": {
+            "planks": 7.5,
+            "wood": 3.75
+          }
+        }
+      },
+      {
+        "status": null,
+        "inputs": {},
+        "output": {
+          "planks": 7.5,
+          "wood": 3.75
+        },
+        "pending": {
+          "lanterns": 3.75
+        },
+        "produced": {
+          "lanterns": 3.75
+        },
+        "elapsed": 0,
+        "practice": 40.3,
+        "queue": [],
+        "flows": {
+          "incoming": {
+            "lanterns": 3.75
+          },
+          "outgoing": {
+            "planks": 7.5,
+            "wood": 3.75
+          }
+        }
+      },
+      {
+        "status": null,
+        "inputs": {},
+        "output": {
+          "planks": 7.5,
+          "wood": 3.75,
+          "lanterns": 3.75
+        },
+        "pending": {},
+        "produced": {
+          "lanterns": 3.75
+        },
+        "elapsed": 0,
+        "practice": 40.3,
+        "queue": [],
+        "flows": {
+          "incoming": {
+            "lanterns": 3.75
+          },
+          "outgoing": {
+            "planks": 7.5,
+            "wood": 3.75
+          }
+        }
+      },
+      {
+        "status": "Waiting for workshop requests",
+        "inputs": {},
+        "output": {
+          "planks": 7.5,
+          "wood": 3.75,
+          "lanterns": 3.75
+        },
+        "pending": {},
+        "produced": {
+          "lanterns": 3.75
+        },
+        "elapsed": 0,
+        "practice": 40.3,
+        "queue": [],
+        "flows": {
+          "incoming": {
+            "lanterns": 3.75
+          },
+          "outgoing": {
+            "planks": 7.5,
+            "wood": 3.75
+          }
+        }
+      }
+    ]
+  },
+  {
+    "kind": "workshop",
+    "recipe": "furniture",
+    "skill": 40,
+    "talent": 1,
+    "orders": [
+      {
+        "recipe": "furniture",
+        "amount": 5
+      },
+      {
+        "recipe": "lanterns",
+        "amount": 2
+      }
+    ],
+    "inputs": {
+      "planks": 20,
+      "wool": 5,
+      "wood": 2
+    },
+    "actions": [
+      {
+        "op": "advance",
+        "seconds": 12
+      },
+      {
+        "op": "dropoff"
+      },
+      {
+        "op": "advance",
+        "seconds": 12
+      },
+      {
+        "op": "dropoff"
+      },
+      {
+        "op": "advance",
+        "seconds": 3
+      }
+    ],
+    "name": "41_workshop_furniture",
+    "states": [
+      {
+        "status": "Working",
+        "inputs": {
+          "planks": 5.0,
+          "wool": 1.25,
+          "wood": 2
+        },
+        "output": {},
+        "pending": {
+          "furniture": 3.75
+        },
+        "produced": {
+          "furniture": 3.75
+        },
+        "elapsed": 0,
+        "practice": 40.4,
+        "queue": [
+          {
+            "id": 1,
+            "recipe": "furniture",
+            "amount": 5,
+            "remaining": 1.25
+          },
+          {
+            "id": 2,
+            "recipe": "lanterns",
+            "amount": 2,
+            "remaining": 2
+          }
+        ],
+        "flows": {
+          "incoming": {
+            "furniture": 3.75
+          },
+          "outgoing": {
+            "planks": 15.0,
+            "wool": 3.75
+          }
+        }
+      },
+      {
+        "status": null,
+        "inputs": {
+          "planks": 5.0,
+          "wool": 1.25,
+          "wood": 2
+        },
+        "output": {
+          "furniture": 3.75
+        },
+        "pending": {},
+        "produced": {
+          "furniture": 3.75
+        },
+        "elapsed": 0,
+        "practice": 40.4,
+        "queue": [
+          {
+            "id": 1,
+            "recipe": "furniture",
+            "amount": 5,
+            "remaining": 1.25
+          },
+          {
+            "id": 2,
+            "recipe": "lanterns",
+            "amount": 2,
+            "remaining": 2
+          }
+        ],
+        "flows": {
+          "incoming": {
+            "furniture": 3.75
+          },
+          "outgoing": {
+            "planks": 15.0,
+            "wool": 3.75
+          }
+        }
+      },
+      {
+        "status": "Working",
+        "inputs": {
+          "planks": 0,
+          "wood": 2
+        },
+        "output": {
+          "furniture": 3.75,
+          "wool": 0
+        },
+        "pending": {
+          "furniture": 1.25
+        },
+        "produced": {
+          "furniture": 5.0
+        },
+        "elapsed": 0,
+        "practice": 40.8,
+        "queue": [
+          {
+            "id": 2,
+            "recipe": "lanterns",
+            "amount": 2,
+            "remaining": 2
+          }
+        ],
+        "flows": {
+          "incoming": {
+            "furniture": 5.0
+          },
+          "outgoing": {
+            "planks": 20.0,
+            "wool": 5.0
+          }
+        }
+      },
+      {
+        "status": null,
+        "inputs": {
+          "planks": 0,
+          "wood": 2
+        },
+        "output": {
+          "furniture": 5.0,
+          "wool": 0
+        },
+        "pending": {},
+        "produced": {
+          "furniture": 5.0
+        },
+        "elapsed": 0,
+        "practice": 40.8,
+        "queue": [
+          {
+            "id": 2,
+            "recipe": "lanterns",
+            "amount": 2,
+            "remaining": 2
+          }
+        ],
+        "flows": {
+          "incoming": {
+            "furniture": 5.0
+          },
+          "outgoing": {
+            "planks": 20.0,
+            "wool": 5.0
+          }
+        }
+      },
+      {
+        "status": "Waiting for delivery: planks",
+        "inputs": {
+          "planks": 0,
+          "wood": 2
+        },
+        "output": {
+          "furniture": 5.0,
+          "wool": 0
+        },
+        "pending": {},
+        "produced": {
+          "furniture": 5.0
+        },
+        "elapsed": 0,
+        "practice": 40.8,
+        "queue": [
+          {
+            "id": 2,
+            "recipe": "lanterns",
+            "amount": 2,
+            "remaining": 2
+          }
+        ],
+        "flows": {
+          "incoming": {
+            "furniture": 5.0
+          },
+          "outgoing": {
+            "planks": 20.0,
+            "wool": 5.0
+          }
+        }
+      }
+    ]
+  },
+  {
+    "kind": "workshop",
+    "recipe": "lanterns",
+    "orders": [
+      {
+        "recipe": "lanterns",
+        "amount": 2
+      }
+    ],
+    "cap": 0,
+    "actions": [
+      {
+        "op": "advance",
+        "seconds": 100
+      },
+      {
+        "op": "uncap"
+      },
+      {
+        "op": "advance",
+        "seconds": 3
+      },
+      {
+        "op": "cancel",
+        "id": 1
+      },
+      {
+        "op": "dropoff"
+      }
+    ],
+    "name": "42_workshop_lanterns",
+    "inputs": {
+      "planks": 4.0,
+      "wood": 2.0
+    },
+    "states": [
+      {
+        "status": "Production cap reached",
+        "inputs": {
+          "planks": 4.0,
+          "wood": 2.0
+        },
+        "output": {},
+        "pending": {},
+        "produced": {},
+        "elapsed": 0,
+        "practice": 0,
+        "queue": [
+          {
+            "id": 1,
+            "recipe": "lanterns",
+            "amount": 2,
+            "remaining": 2
+          }
+        ],
+        "flows": {
+          "incoming": {},
+          "outgoing": {}
+        }
+      },
+      {
+        "status": null,
+        "inputs": {
+          "planks": 4.0,
+          "wood": 2.0
+        },
+        "output": {},
+        "pending": {},
+        "produced": {},
+        "elapsed": 0,
+        "practice": 0,
+        "queue": [
+          {
+            "id": 1,
+            "recipe": "lanterns",
+            "amount": 2,
+            "remaining": 2
+          }
+        ],
+        "flows": {
+          "incoming": {},
+          "outgoing": {}
+        }
+      },
+      {
+        "status": "Producing lanterns \u00b7 6s remaining",
+        "inputs": {
+          "planks": 4.0,
+          "wood": 2.0
+        },
+        "output": {},
+        "pending": {},
+        "produced": {},
+        "elapsed": 3,
+        "practice": 0,
+        "queue": [
+          {
+            "id": 1,
+            "recipe": "lanterns",
+            "amount": 2,
+            "remaining": 2
+          }
+        ],
+        "flows": {
+          "incoming": {},
+          "outgoing": {}
+        }
+      },
+      {
+        "status": null,
+        "inputs": {},
+        "output": {
+          "planks": 4.0,
+          "wood": 2.0
+        },
+        "pending": {},
+        "produced": {},
+        "elapsed": 0,
+        "practice": 0,
+        "queue": [],
+        "flows": {
+          "incoming": {},
+          "outgoing": {}
+        }
+      },
+      {
+        "status": null,
+        "inputs": {},
+        "output": {
+          "planks": 4.0,
+          "wood": 2.0
+        },
+        "pending": {},
+        "produced": {},
+        "elapsed": 0,
+        "practice": 0,
+        "queue": [],
+        "flows": {
+          "incoming": {},
+          "outgoing": {}
+        }
+      }
+    ]
+  }
+]
