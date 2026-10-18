@@ -1,0 +1,430 @@
+[
+  {
+    "spec": {
+      "name": "water_round",
+      "crops": [
+        "wheat",
+        "wheat"
+      ],
+      "stages": [
+        "thirsty",
+        "thirsty"
+      ]
+    },
+    "snapshots": [
+      {
+        "action": "work",
+        "collections": 1,
+        "fields": [
+          {
+            "stage": "growing",
+            "elapsed": 0,
+            "progress": 0,
+            "cycle": 0,
+            "crop": "wheat"
+          },
+          {
+            "stage": "growing",
+            "elapsed": 0,
+            "progress": 0,
+            "cycle": 0,
+            "crop": "wheat"
+          }
+        ],
+        "free": {
+          "wheat": 0
+        },
+        "produced": {
+          "wheat": 0
+        },
+        "pending": {},
+        "round": [
+          "farm",
+          3,
+          3,
+          0
+        ]
+      }
+    ]
+  },
+  {
+    "spec": {
+      "name": "next_round",
+      "crops": [
+        "wheat",
+        "wheat"
+      ],
+      "stages": [
+        "thirsty",
+        "thirsty"
+      ],
+      "actions": [
+        "work",
+        "grow",
+        "work",
+        "grow",
+        "work"
+      ]
+    },
+    "snapshots": [
+      {
+        "action": "work",
+        "collections": 1,
+        "fields": [
+          {
+            "stage": "growing",
+            "elapsed": 0,
+            "progress": 0,
+            "cycle": 0,
+            "crop": "wheat"
+          },
+          {
+            "stage": "growing",
+            "elapsed": 0,
+            "progress": 0,
+            "cycle": 0,
+            "crop": "wheat"
+          }
+        ],
+        "free": {
+          "wheat": 0
+        },
+        "produced": {
+          "wheat": 0
+        },
+        "pending": {},
+        "round": [
+          "farm",
+          3,
+          3,
+          0
+        ]
+      },
+      {
+        "action": "grow",
+        "collections": 0,
+        "fields": [
+          {
+            "stage": "ripe",
+            "elapsed": 0,
+            "progress": 0,
+            "cycle": 0,
+            "crop": "wheat"
+          },
+          {
+            "stage": "ripe",
+            "elapsed": 0,
+            "progress": 0,
+            "cycle": 0,
+            "crop": "wheat"
+          }
+        ],
+        "free": {
+          "wheat": 0
+        },
+        "produced": {
+          "wheat": 0
+        },
+        "pending": {},
+        "round": [
+          "farm",
+          3,
+          3,
+          0
+        ]
+      },
+      {
+        "action": "work",
+        "collections": 0,
+        "fields": [
+          {
+            "stage": "sprouting",
+            "elapsed": 0,
+            "progress": 0,
+            "cycle": 1,
+            "crop": "wheat"
+          },
+          {
+            "stage": "sprouting",
+            "elapsed": 0,
+            "progress": 0,
+            "cycle": 1,
+            "crop": "wheat"
+          }
+        ],
+        "free": {
+          "wheat": 20.0
+        },
+        "produced": {
+          "wheat": 20.0
+        },
+        "pending": {},
+        "round": [
+          "farm",
+          3,
+          3,
+          0
+        ]
+      },
+      {
+        "action": "grow",
+        "collections": 0,
+        "fields": [
+          {
+            "stage": "thirsty",
+            "elapsed": 0,
+            "progress": 0,
+            "cycle": 1,
+            "crop": "wheat"
+          },
+          {
+            "stage": "thirsty",
+            "elapsed": 0,
+            "progress": 0,
+            "cycle": 1,
+            "crop": "wheat"
+          }
+        ],
+        "free": {
+          "wheat": 20.0
+        },
+        "produced": {
+          "wheat": 20.0
+        },
+        "pending": {},
+        "round": [
+          "farm",
+          3,
+          3,
+          0
+        ]
+      },
+      {
+        "action": "work",
+        "collections": 1,
+        "fields": [
+          {
+            "stage": "growing",
+            "elapsed": 0,
+            "progress": 0,
+            "cycle": 1,
+            "crop": "wheat"
+          },
+          {
+            "stage": "growing",
+            "elapsed": 0,
+            "progress": 0,
+            "cycle": 1,
+            "crop": "wheat"
+          }
+        ],
+        "free": {
+          "wheat": 20.0
+        },
+        "produced": {
+          "wheat": 20.0
+        },
+        "pending": {},
+        "round": [
+          "farm",
+          3,
+          3,
+          1
+        ]
+      }
+    ]
+  },
+  {
+    "spec": {
+      "name": "mixed_harvest",
+      "crops": [
+        "wheat",
+        "vegetables",
+        "fodder"
+      ],
+      "stages": [
+        "ripe",
+        "ripe",
+        "ripe"
+      ]
+    },
+    "snapshots": [
+      {
+        "action": "work",
+        "collections": 0,
+        "fields": [
+          {
+            "stage": "sprouting",
+            "elapsed": 0,
+            "progress": 0,
+            "cycle": 1,
+            "crop": "wheat"
+          },
+          {
+            "stage": "sprouting",
+            "elapsed": 0,
+            "progress": 0,
+            "cycle": 1,
+            "crop": "vegetables"
+          },
+          {
+            "stage": "sprouting",
+            "elapsed": 0,
+            "progress": 0,
+            "cycle": 1,
+            "crop": "fodder"
+          }
+        ],
+        "free": {
+          "wheat": 10.0,
+          "vegetables": 4.8,
+          "fodder": 10.0
+        },
+        "produced": {
+          "wheat": 10.0,
+          "vegetables": 4.8,
+          "fodder": 10.0
+        },
+        "pending": {},
+        "round": null
+      }
+    ]
+  },
+  {
+    "spec": {
+      "name": "cap",
+      "crops": [
+        "wheat",
+        "wheat"
+      ],
+      "stages": [
+        "ripe",
+        "ripe"
+      ],
+      "cap": 15
+    },
+    "snapshots": [
+      {
+        "action": "work",
+        "collections": 0,
+        "fields": [
+          {
+            "stage": "unplowed",
+            "elapsed": 0,
+            "progress": 0,
+            "cycle": 1
+          },
+          {
+            "stage": "ripe",
+            "elapsed": 0,
+            "progress": 2,
+            "cycle": 0,
+            "crop": "wheat",
+            "yield_remaining": 5.0
+          }
+        ],
+        "free": {
+          "wheat": 15.0
+        },
+        "produced": {
+          "wheat": 15.0
+        },
+        "pending": {},
+        "round": null
+      }
+    ]
+  },
+  {
+    "spec": {
+      "name": "buffer",
+      "crops": [
+        "wheat",
+        "wheat"
+      ],
+      "stages": [
+        "ripe",
+        "ripe"
+      ],
+      "stored": 465
+    },
+    "snapshots": [
+      {
+        "action": "work",
+        "collections": 0,
+        "fields": [
+          {
+            "stage": "unplowed",
+            "elapsed": 0,
+            "progress": 0,
+            "cycle": 1
+          },
+          {
+            "stage": "ripe",
+            "elapsed": 0,
+            "progress": 2,
+            "cycle": 0,
+            "crop": "wheat",
+            "yield_remaining": 5.0
+          }
+        ],
+        "free": {
+          "wheat": 480.0
+        },
+        "produced": {
+          "wheat": 15.0
+        },
+        "pending": {},
+        "round": null
+      }
+    ]
+  },
+  {
+    "spec": {
+      "name": "carried_cross_pass",
+      "crops": [
+        "wheat",
+        "vegetables"
+      ],
+      "stages": [
+        "ripe",
+        "unplowed"
+      ],
+      "cycles": [
+        2,
+        0
+      ],
+      "pending": 1
+    },
+    "snapshots": [
+      {
+        "action": "work",
+        "collections": 0,
+        "fields": [
+          {
+            "stage": "unplowed",
+            "elapsed": 0,
+            "progress": 0,
+            "cycle": 3
+          },
+          {
+            "stage": "sprouting",
+            "elapsed": 0,
+            "progress": 0,
+            "cycle": 0,
+            "crop": "vegetables"
+          }
+        ],
+        "free": {
+          "wheat": 11.0,
+          "vegetables": 0
+        },
+        "produced": {
+          "wheat": 11.0,
+          "vegetables": 0
+        },
+        "pending": {},
+        "round": null
+      }
+    ]
+  }
+]

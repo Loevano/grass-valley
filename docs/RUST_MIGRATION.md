@@ -9,8 +9,8 @@ R13 slices 1–3 implement reviewed catalogs, fractional quantities, a single-ow
 resource ledger and recipe/personal progression/equipment/hall rule evaluation at
 the experimental offline boundary. R14 slices 1–3 implement producer, hauler and
 merchant trips plus market execution over movement and accounting. R15 slices 1–3 implement offline woodcutters/resource claims and all processor
-recipe/workshop actors. R16 slice 1 implements shared offline field cycles, claims
-and harvest reservations. Remaining water/orchard/fishing/livestock/resident actors and
+recipe/workshop actors. R16 slices 1–2 implement shared offline field cycles, claims,
+water rounds, harvest reservations and returns. Remaining orchard/fishing/livestock/resident actors and
 playable integration remain in R16–R21; complete W1–W6 acceptance remains R23.
 Integrated W2/W3 movement/accounting acceptance remains open. R08 spatial
 rules and founder movement is complete as an experimental private-copy foundation. R07 includes saved-first terrain versions 1–7,
@@ -246,7 +246,7 @@ only after work is performed. Keep unfinished stages visible in the roadmap.
 | R13 | Resource ledger, storage, and progression rules | R12 | Slices 1–3 implemented at offline model boundary: reviewed catalogs, ledger/storage/reservations/caps/flows and progression rules; actor/save/HTTP integration and full W1–W6 acceptance remain R14–R23 |
 | R14 | Hauling, delivery, and merchant trips | R13 | Slices 1–3 implemented at the experimental offline boundary: producer/hauler/merchant trips, thresholds, purchases, sales and recovery; integrated production, durable saves and playable host remain R15–R23 |
 | R15 | Gathering and processing professions | R14 | All three slices implemented at the experimental offline boundary: woodcutters/claims, all 13 processor families/32 recipes, ordered workshop requests and recovery; durable/live integration and integrated acceptance remain R19–R23 |
-| R16 | Farming and orchards | R15 | Slice 1 implemented at the experimental offline boundary: shared field work/growth, pass ordering, roster-aware claims and harvest reservations; water trips/multi-acre returns remain slice 2, orchards/crop edits/relocation/reload slice 3 |
+| R16 | Farming and orchards | R15 | Slices 1–2 implemented offline: shared fields/claims/passes, water trips/rounds, multi-acre harvest and blocked crop returns; orchards/crop edits/relocation/reload remain slice 3 |
 | R17 | Fishing, boats, animals, and horses | R16 | Not started |
 | R18 | Residents, villages, trade, and adventures | R17 | Not started |
 | R19 | Durable Rust saves and recovery | R18 | Not started |
@@ -3479,7 +3479,7 @@ Commit message: `feat: port Rust base processor batch actors`.
 This completes all three R15 code slices at the experimental offline model
 boundary. `processing/workshop.rs` owns ordered requests and processor v2 JSON;
 all 13 R01 processor families and 32 catalog recipes now execute. Python remains
-the playable default. R16 slice 1 is recorded below; its next unfinished slice is slice 2.
+the playable default. R16 slice 1 is recorded below; its next unfinished slice is slice 3.
 
 - Advanced bakery recipes (bread rolls, herb bread, fruit pies, cakes) and butcher
   recipes (herbed/smoked meat, sausages, meat pies) use the existing productive
@@ -3588,7 +3588,7 @@ and commit the completed slice.
 
 `lantern-host::farming` implements an experimental offline field owner over R11
 movement and the R13 ledger. This completes slice 1 only. Python remains the
-playable default; the next unfinished slice is R16 slice 2.
+playable default; slice 2 is recorded below and the next unfinished slice is R16 slice 3.
 
 - Fields use stable building/farm IDs, selected and sown crops, shared work and
   growth clocks, cycle numbers and optional remaining harvest yield. Admission
@@ -3645,9 +3645,9 @@ capacities, admission failures, 48-acre admission/49-acre rejection and atomic
 completion failure. Regenerate/check the synthetic oracle with:
 `python3 rust/crates/lantern-host/tests/fixtures/farming/generate.py --check`.
 
-Remaining: slice 2 owns water-source selection, collection/return and per-round
+Slice 2 below completes water-source selection, collection/return and per-round
 state, carrying-water pass exceptions, carried-crop harvest continuation across
-passes, return/deposit scheduling and their blocked recovery. Slice 3 owns orchard
+passes, return/deposit scheduling and their blocked recovery. Slice 3 still owns orchard
 stages/harvest/restock, crop edits, moved linked groups, owner JSON/reload and legacy
 field admission. R19 owns durable generations; R20–R21 own host/roster scheduling,
 commands, resource/playback adapters and integrated clocks. This is not full-tick,
@@ -3663,6 +3663,93 @@ warnings denied passed (3/3 commands). The Python farming oracle check and
 before the final affected run. Report: `performance-results/20261018-220047/report.md`.
 
 Commit message: `feat: port Rust field cycles and farming claims`.
+
+### R16 slice 2 — Water trips and multi-acre harvest
+
+`farming/trips.rs` extends the experimental field owner with water collection,
+rounds and harvest return/deposit phases. This completes slice 2 only. The next
+unfinished slice is R16 slice 3; Python remains the playable default.
+
+- Water comes from current authoritative surface tiles and completed well facts.
+  Local wells are validated against model/ledger construction and kind; the shared
+  landscape adapter can supply current completed foreign-town wells with their
+  stable IDs and positions. Banks are cardinal neighbors, deduplicated with later
+  wells taking precedence as in Python. `advance_with_water` asks an authoritative
+  navigation selector to choose among these admitted banks using actual bounds,
+  farmer access, fences and weighted route costs. Pending/unreachable selection
+  waits without work or banked time; out-of-set answers fail atomically. This
+  query callback is an offline adapter boundary, not client-supplied navigation.
+- Farmers approach their actual acre work spot, travel to the selected bank,
+  collect for 0.65 seconds and return to that same spot before watering for two
+  shared work seconds. Collection grants one round per actor, workplace ID and
+  crop cycle. The round survives field changes, cancelled animation/task state,
+  intervening returns and a removed source after collection. A different farmer,
+  workplace or next crop cycle needs a new fill. Water trips hold exclusive acre
+  claims and continue through intervening pass changes. A filled can bypasses
+  pass ordering to finish its thirsty acre.
+- Removing/upgrading a well or withdrawing a current landscape source before
+  collection completes resets that incomplete fill and reselects; no can is granted.
+  Failed fetches can choose another reachable bank. Completed collection survives
+  blocked/unreachable returns without collecting or training again. R11's existing
+  relevant navigation revisions govern route recovery, with continuous position
+  and remaining movement time preserved.
+- A farmer carrying ledger-owned crop output chooses any eligible ripe acre in
+  that workplace, including a later cycle while slower acres hold an earlier pass.
+  Mixed crops accumulate under the same pending owner and reserve existing buffers
+  and caps exactly once. When no unclaimed ripe acre fits, or a clipped harvest
+  fills its allowance, the farmer returns to the original workplace. Returning and
+  depositing actors release exclusive field claims; another actor may tend that
+  field subject to direct-assignment priority and shared yield/cap accounting.
+- Once a return starts it completes before new field work, even if more ripe acres
+  become available. Deposit requires actual arrival and 0.65 seconds, then one
+  ledger drop-off makes all carried crops available. Blockage preserves cargo and
+  partial work. Reassignment to another farm first recovers the original pending
+  workplace cargo; it cannot silently transfer those goods to the new farm. A
+  completed partial harvest keeps its frozen yield and requires no further work,
+  practice or manure after the return.
+- `assign` selects/retains the active leg; `advance_with_water` advances it. The
+  caller pumps R11 navigation and can reuse returned time after a newly requested
+  leg, completed water collection, field action or unload. It must consume each
+  returned remainder once within that update; waiting time is never saved credit.
+  Collection, watering, crop reservation and unloading events are emitted only
+  after their authoritative transaction commits. Navigation admission errors roll
+  back rounds, clocks, movement, fields, goods and practice. Browser playback and
+  integrated town-clock scheduling remain R20–R21.
+
+Evidence: 14 new focused trip tests (30 farming tests total) include six real-Python
+scenarios with ten committed snapshots: full water pass, a second crop round,
+mixed-crop harvesting, production caps, existing buffers and carried crops across
+passes. Comparisons cover exact field stages/cycles, counts and round ownership,
+and 1e-9 quantities/clocks. Python uses real farmer routes; these paired snapshots
+are resting semantic boundaries, not claims of identical optimal waypoints. Separate
+Rust tests admit explicit paths to compare event times, movement subtraction and
+independent 30s/1s/0.25s subdivisions. Other traces cover independent farmers,
+missing/unfinished/removed wells, shared foreign wells, invalid bank answers,
+alternative banks after an unreachable fetch, partial collection, blocked water
+and crop returns, mixed cargo conservation, reassignment and completion rollback.
+The slice-1 34-case Python oracle and field/cap/claim invariants remain applicable.
+Check the new fixture with:
+`python3 rust/crates/lantern-host/tests/fixtures/farming/trips.py --check`.
+
+Remaining slice 3: orchards and restock, crop changes, coherent linked relocation,
+explicit owner JSON/reload and ordinary-save hydration. Its schema must retain
+water rounds, selected sources, collection/deposit clocks, original cargo workplace
+and cumulative practice contributions alongside field and model/ledger owners.
+R19 owns durable generations; R20–R21 own live source/navigation/roster adapters,
+commands, wire playback and full-tick integration; R23 retains W1–W6 acceptance.
+
+Performance comparisons were not run: this is a behavior port, with no performance
+investigation, optimization or performance claim.
+
+Validation: `python3 tools/check.py --list` selected only `rust:lantern-host`.
+The affected runner passed formatting, locked offline package tests/doc tests and
+all-target Clippy with warnings denied (3/3 commands). Both Python farming fixture
+checks and `git diff --check` passed. Two slice-1 assertions were updated to require
+the newly implemented cargo return before the next pass or clipped-yield retry;
+the shared yield, practice and conservation assertions remain intact.
+Report: `performance-results/20261018-221432/report.md`.
+
+Commit message: `feat: port Rust farming water and harvest trips`.
 
 ## R17 — Fishing, livestock, and horses
 

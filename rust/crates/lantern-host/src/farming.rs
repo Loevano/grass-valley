@@ -1,9 +1,10 @@
-//! R16 slice 1: offline shared fields and exclusive tenders. Navigation is supplied
-//! by R11; growth is called once per town update, never once per farmer. Water trips,
-//! harvest return scheduling and ordinary-save adapters belong to later slices.
+//! Experimental shared fields, exclusive tenders, water and crop return trips.
+//! Navigation is supplied by R11; growth runs once per town update. Ordinary-save
+//! adapters, relocation and orchards remain R16 slice 3.
+mod trips;
 use crate::{
     progression::{self, Worker},
-    resources::{self, Ledger, ResourceKey, Stock},
+    resources::{self, Ledger, PendingOwner, ResourceKey, Stock},
 };
 use lantern_core::{
     ids::{ActorId, BuildingId},
@@ -12,9 +13,10 @@ use lantern_core::{
         WorkPhase,
     },
     travel::Speed,
-    units::{Position, Quantity, Seconds},
+    units::{Position, Quantity, Seconds, Tile},
 };
 use std::collections::{BTreeMap, BTreeSet};
+pub use trips::{WaterBank, WaterSource, WaterSources};
 
 pub const GROWTH_SECONDS: f64 = 15.;
 pub const WORK_SECONDS: f64 = 2.;
@@ -94,6 +96,8 @@ struct Claim {
     destination: Destination,
     practice_start: Option<f64>,
     practice_seconds: f64,
+    clock: f64,
+    water: Option<WaterBank>,
 }
 #[derive(Clone, Debug, PartialEq, Default)]
 pub struct Fields {
@@ -101,12 +105,14 @@ pub struct Fields {
     claims: BTreeMap<ActorId, Claim>,
     previous: BTreeMap<ActorId, Claim>,
     assignments: BTreeMap<ActorId, BuildingId>,
+    rounds: BTreeMap<ActorId, (BuildingId, u64)>,
 }
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Action {
     Plow,
     Sow,
     Harvest,
+    Water,
 }
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Wait {
@@ -122,6 +128,16 @@ pub enum Wait {
 pub enum Outcome {
     Waiting(Wait),
     Progress,
+    /// Newly requested leg; the caller may pump navigation then reuse this time.
+    TravelStarted(Seconds),
+    WaterCollected {
+        field: BuildingId,
+        remaining: Seconds,
+    },
+    Unloaded {
+        workplace: BuildingId,
+        remaining: Seconds,
+    },
     /// Emitted only after the field and resource transaction commits. A partial
     /// harvest reports its actual remaining yield, never a visually emptied acre.
     Completed {
@@ -146,6 +162,7 @@ impl Fields {
             claims: BTreeMap::new(),
             previous: BTreeMap::new(),
             assignments,
+            rounds: BTreeMap::new(),
         };
         let mut ids = BTreeSet::new();
         for f in &result.fields {
@@ -337,7 +354,7 @@ impl Fields {
         }
     }
     fn matches(town: &Town, actor: &ActorId, c: &Claim) -> bool {
-        matches!(town.actor(actor).map(|a| &a.state().task), Ok(Task::Work { workplace, target, phase: WorkPhase::Outbound | WorkPhase::Working, elapsed }) if workplace == &c.workplace && target == &c.destination && elapsed.get() == 0.)
+        matches!(town.actor(actor).map(|a| &a.state().task), Ok(Task::Work { workplace, target, phase: WorkPhase::Outbound | WorkPhase::Working | WorkPhase::FetchingWater | WorkPhase::CollectingWater | WorkPhase::ReturningWater | WorkPhase::Returning | WorkPhase::Depositing, elapsed }) if workplace == &c.workplace && target == &c.destination && elapsed.get() == 0.)
     }
     pub fn target(&self, actor: &ActorId) -> Option<&BuildingId> {
         self.claims.get(actor).map(|c| &c.field)
@@ -389,8 +406,24 @@ impl Fields {
         self.claims
             .retain(|a, c| Self::matches(town, a, c) && Self::complete(town, ledger, &c.field));
         if let Some(c) = self.claims.get(actor) {
-            if &c.workplace == workplace {
+            let phase = phase(town, actor)?;
+            if matches!(phase, WorkPhase::Returning | WorkPhase::Depositing) {
                 return Ok(Some(c.field.clone()));
+            }
+            if &c.workplace == workplace {
+                if pending(ledger, actor)?.as_ref() == Some(workplace)
+                    && harvest_room(self.field(&c.field)?, ledger, workplace)? <= 1e-9
+                    && !matches!(
+                        phase,
+                        WorkPhase::FetchingWater
+                            | WorkPhase::CollectingWater
+                            | WorkPhase::ReturningWater
+                    )
+                {
+                    let c = c.clone();
+                    self.start_return(town, actor, c, navigation)?;
+                }
+                return Ok(self.target(actor).cloned());
             }
             self.cancel(town, actor)?;
         }
@@ -399,6 +432,11 @@ impl Fields {
             || !town.actor(actor)?.state().cargo.goods().is_empty()
         {
             return Err(Error::Busy);
+        }
+        let cargo = pending(ledger, actor)?;
+        if let Some(source) = cargo.as_ref().filter(|source| *source != workplace) {
+            self.return_cargo(town, actor, source, navigation)?;
+            return Ok(self.target(actor).cloned());
         }
         let linked = ledger.store(workplace)?.policy.kind == "farm";
         let fields = if linked {
@@ -411,9 +449,20 @@ impl Fields {
         let mut rows: BTreeMap<i32, Vec<BuildingId>> = BTreeMap::new();
         for id in fields {
             let s = &self.field(&id)?.state;
-            if (s.cycle, s.stage) != pass
-                || (s.stage == Stage::Plowed && !self.can_sow(farm, s.cycle))
-                || self.claims.values().any(|c| c.field == id)
+            let ready = if cargo.is_some() {
+                harvest_room(self.field(&id)?, ledger, workplace)? > 1e-9
+            } else {
+                (s.cycle, s.stage) == pass
+                    && (s.stage != Stage::Plowed || self.can_sow(farm, s.cycle))
+            };
+            if !ready
+                || self.claims.iter().any(|(a, c)| {
+                    c.field == id
+                        && !matches!(
+                            phase(town, a),
+                            Ok(WorkPhase::Returning | WorkPhase::Depositing)
+                        )
+                })
                 || self.assignments.iter().any(|(other, assigned)| {
                     other != actor
                         && assigned == &id
@@ -470,6 +519,10 @@ impl Fields {
             })
         });
         let Some(row) = row else {
+            if cargo.is_some() {
+                self.return_cargo(town, actor, workplace, navigation)?;
+                return Ok(self.target(actor).cloned());
+            }
             return Ok(None);
         };
         let mut ends = rows[&row].clone();
@@ -510,6 +563,8 @@ impl Fields {
             destination: Destination::Position(Position::new(x, y).map_err(|_| Error::Invalid)?),
             practice_start: None,
             practice_seconds: 0.,
+            clock: 0.,
+            water: None,
         };
         town.set_task(actor, task(&c, WorkPhase::Outbound))?;
         town.request_route(actor, c.destination.clone(), navigation)?;
@@ -527,6 +582,34 @@ impl Fields {
         navigation: NavigationRevision,
         mut segment: impl FnMut(Position, Position, Speed) -> Option<Speed>,
     ) -> Result<Outcome, Error> {
+        self.advance_with_water(
+            town,
+            ledger,
+            actor,
+            worker,
+            elapsed,
+            navigation,
+            &WaterSources::default(),
+            |_, _| None,
+            &mut segment,
+        )
+    }
+    /// Water selection is a host navigation query over the admitted banks. It
+    /// must use farmer access, fences and weighted route costs. None means pending
+    /// or no reachable bank; no simulation time is banked while that query waits.
+    #[allow(clippy::too_many_arguments)]
+    pub fn advance_with_water(
+        &mut self,
+        town: &mut Town,
+        ledger: &mut Ledger,
+        actor: &ActorId,
+        worker: &mut Worker,
+        elapsed: Seconds,
+        navigation: NavigationRevision,
+        sources: &WaterSources,
+        mut select: impl FnMut(Position, &[WaterBank]) -> Option<WaterBank>,
+        mut segment: impl FnMut(Position, Position, Speed) -> Option<Speed>,
+    ) -> Result<Outcome, Error> {
         let (mut owner, mut model, mut goods, mut person) =
             (self.clone(), town.clone(), ledger.clone(), worker.clone());
         let result = owner.advance_inner(
@@ -536,6 +619,8 @@ impl Fields {
             &mut person,
             elapsed,
             navigation,
+            sources,
+            &mut select,
             &mut segment,
         )?;
         *self = owner;
@@ -553,6 +638,8 @@ impl Fields {
         worker: &mut Worker,
         elapsed: Seconds,
         navigation: NavigationRevision,
+        sources: &WaterSources,
+        select: &mut impl FnMut(Position, &[WaterBank]) -> Option<WaterBank>,
         segment: &mut impl FnMut(Position, Position, Speed) -> Option<Speed>,
     ) -> Result<Outcome, Error> {
         let Some(c) = self.claims.get(actor).cloned() else {
@@ -567,19 +654,42 @@ impl Fields {
             return Ok(Outcome::Waiting(Wait::Cancelled));
         }
         worker.qualification("farming")?;
+        if matches!(
+            phase(town, actor)?,
+            WorkPhase::Returning | WorkPhase::Depositing
+        ) {
+            return self.advance_return(town, ledger, actor, elapsed, navigation, segment);
+        }
         let i = self.index(&c.field)?;
         let farm = &c.workplace;
         let s = &self.fields[i].state;
         if matches!(s.stage, Stage::Sprouting | Stage::Growing) {
             return Ok(Outcome::Waiting(Wait::Growth));
         }
-        if (s.cycle, s.stage) != self.work_pass(town, ledger, farm)?
+        let water_trip = matches!(
+            phase(town, actor)?,
+            WorkPhase::FetchingWater | WorkPhase::CollectingWater | WorkPhase::ReturningWater
+        );
+        let carrying_water = s.stage == Stage::Thirsty && self.water_ready(actor, farm, s.cycle);
+        let harvesting = s.stage == Stage::Ripe && pending(ledger, actor)?.as_ref() == Some(farm);
+        if (!(carrying_water || harvesting || water_trip)
+            && (s.cycle, s.stage) != self.work_pass(town, ledger, farm)?)
             || (s.stage == Stage::Plowed && !self.can_sow(farm, s.cycle))
         {
             return Ok(Outcome::Waiting(Wait::Pass));
         }
-        if s.stage == Stage::Thirsty {
-            return Ok(Outcome::Waiting(Wait::Water));
+        if s.stage == Stage::Thirsty
+            && (!carrying_water
+                || matches!(
+                    phase(town, actor)?,
+                    WorkPhase::FetchingWater
+                        | WorkPhase::CollectingWater
+                        | WorkPhase::ReturningWater
+                ))
+        {
+            return self.advance_water(
+                town, ledger, actor, worker, elapsed, navigation, sources, select, segment,
+            );
         }
         let crop = if s.stage == Stage::Plowed {
             self.fields[i].selected_crop.clone()
@@ -593,6 +703,10 @@ impl Fields {
             .local_room(crop.as_str())?
             .min(ledger.production_room(&crop)?);
         if s.stage == Stage::Ripe && room <= 1e-9 {
+            if pending(ledger, actor)?.as_ref() == Some(&c.workplace) {
+                self.start_return(town, actor, c.clone(), navigation)?;
+                return Ok(Outcome::TravelStarted(elapsed));
+            }
             return Ok(Outcome::Waiting(Wait::Storage));
         }
         let mut remaining = elapsed.get();
@@ -648,6 +762,12 @@ impl Fields {
                 s.elapsed = secs(0.);
                 s.progress = secs(0.);
                 Action::Sow
+            }
+            Stage::Thirsty => {
+                s.stage = Stage::Growing;
+                s.elapsed = secs(0.);
+                s.progress = secs(0.);
+                Action::Water
             }
             Stage::Ripe => {
                 let yield_left = if let Some(n) = s.yield_remaining {
@@ -733,4 +853,28 @@ fn task(c: &Claim, phase: WorkPhase) -> Task {
         phase,
         elapsed: secs(0.),
     }
+}
+
+fn phase(town: &Town, actor: &ActorId) -> Result<WorkPhase, Error> {
+    match town.actor(actor)?.state().task {
+        Task::Work { phase, .. } => Ok(phase),
+        _ => Err(Error::Invalid),
+    }
+}
+fn pending(ledger: &Ledger, actor: &ActorId) -> Result<Option<BuildingId>, Error> {
+    Ok(ledger
+        .stores()
+        .iter()
+        .find(|s| s.pending.contains_key(&PendingOwner::Worker(actor.clone())))
+        .map(|s| s.id.clone()))
+}
+fn harvest_room(field: &Field, ledger: &Ledger, workplace: &BuildingId) -> Result<f64, Error> {
+    if field.state.stage != Stage::Ripe {
+        return Ok(0.);
+    }
+    let crop = field.state.crop.as_ref().unwrap_or(&field.selected_crop);
+    Ok(ledger
+        .store(workplace)?
+        .local_room(crop.as_str())?
+        .min(ledger.production_room(crop)?))
 }

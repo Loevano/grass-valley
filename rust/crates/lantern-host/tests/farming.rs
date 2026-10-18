@@ -330,6 +330,9 @@ fn construction_barriers_and_harvested_next_pass_do_not_replow_early() {
         panic!("harvest")
     };
     assert_eq!(state.cycle, 1);
+    assert_eq!(f.assign(1), Some(b(3))); // Finish cargo return before the next pass.
+    f.route(1, RouteOutcome::Arrived);
+    assert!(matches!(f.advance(1, 0.65), Outcome::Unloaded { .. }));
     assert_eq!(f.assign(1), Some(b(2)));
 }
 #[test]
@@ -416,9 +419,12 @@ fn partial_yield_is_frozen_and_cannot_be_double_claimed_or_retrained() {
     close(state.yield_remaining.unwrap().get(), 8.);
     assert_eq!(f.assign(2), None);
     let trained = f.worker.practice_value("farming");
-    assert_eq!(f.advance(1, 100.), Outcome::Waiting(Wait::Storage));
+    assert_eq!(f.advance(1, 100.), Outcome::TravelStarted(sec(100.)));
+    f.route(1, RouteOutcome::Arrived);
+    assert!(matches!(f.advance(1, 0.65), Outcome::Unloaded { .. }));
     f.worker.tool = Some("masterwork_sickle".into());
     f.ledger.configure_cap(key("wheat"), None).unwrap();
+    f.ready(1);
     let Outcome::Completed { produced, .. } = f.advance(1, 100.) else {
         panic!("rest")
     };
@@ -673,3 +679,6 @@ fn roster_reassignment_releases_direct_priority_and_preserves_work_and_cargo() {
         .unwrap();
     assert_eq!(f.ledger, before);
 }
+
+#[path = "farming/trips.rs"]
+mod trips;
