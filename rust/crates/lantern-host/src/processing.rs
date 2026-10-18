@@ -322,6 +322,37 @@ impl Processors {
         town.set_task(actor, job.task(town, WorkPhase::Depositing, 0.)?)?;
         Ok(())
     }
+    /// Manual animal butchery temporarily owns the same shop and worker. Keep
+    /// the recipe's saved partial batch so start() can resume after the order.
+    pub fn pause_for_manual_butchery(
+        &self,
+        town: &mut Town,
+        ledger: &mut Ledger,
+        actor: &ActorId,
+        shop: &BuildingId,
+    ) -> Result<(), Error> {
+        self.check_owner(town)?;
+        let Some(job) = self.jobs.get(actor) else {
+            return Ok(());
+        };
+        if job.kind != "butcher" || job.id(town)? != *shop {
+            return Err(Error::Busy);
+        }
+        let (mut model, mut goods) = (town.clone(), ledger.clone());
+        if goods
+            .store(shop)?
+            .pending
+            .contains_key(&PendingOwner::Worker(actor.clone()))
+        {
+            goods.orphan_pending(shop, actor)?;
+        }
+        if job.matches(&model, actor) {
+            model.set_task(actor, Task::Idle)?;
+        }
+        *town = model;
+        *ledger = goods;
+        Ok(())
+    }
     pub fn cancel(
         &mut self,
         town: &mut Town,

@@ -20,6 +20,7 @@ pub mod farming;
 pub mod fishing;
 pub mod gathering;
 pub mod legacy;
+pub mod livestock;
 pub mod logistics;
 pub mod navigation;
 pub mod orchards;

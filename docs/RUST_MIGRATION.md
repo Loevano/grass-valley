@@ -10,9 +10,9 @@ resource ledger and recipe/personal progression/equipment/hall rule evaluation a
 the experimental offline boundary. R14 slices 1–3 implement producer, hauler and
 merchant trips plus market execution over movement and accounting. R15 slices 1–3 implement offline woodcutters/resource claims and all processor
 recipe/workshop actors. R16 slices 1–3 implement shared offline field cycles, claims, water rounds,
-harvest returns, orchards, crop edits, linked relocation and owner reload. R17 slices 1–2
+harvest returns, orchards, crop edits, linked relocation and owner reload. R17 slices 1–3
 implement saved piers, land/boat fishing, shared crew voyages, species cargo and
-exploration boats offline. Remaining livestock/horse/resident actors and playable integration remain in R17–R21; complete W1–W6 acceptance remains R23.
+exploration boats, named barn growth, keeper rounds and manual butchery offline. Remaining horse/resident actors and playable integration remain in R17–R21; complete W1–W6 acceptance remains R23.
 Integrated W2/W3 movement/accounting acceptance remains open. R08 spatial
 rules and founder movement is complete as an experimental private-copy foundation. R07 includes saved-first terrain versions 1–7,
 nonchunked maps, authored starter/town sites, ordinary/swamp metadata and overlays,
@@ -248,7 +248,7 @@ only after work is performed. Keep unfinished stages visible in the roadmap.
 | R14 | Hauling, delivery, and merchant trips | R13 | Slices 1–3 implemented at the experimental offline boundary: producer/hauler/merchant trips, thresholds, purchases, sales and recovery; integrated production, durable saves and playable host remain R15–R23 |
 | R15 | Gathering and processing professions | R14 | All three slices implemented at the experimental offline boundary: woodcutters/claims, all 13 processor families/32 recipes, ordered workshop requests and recovery; durable/live integration and integrated acceptance remain R19–R23 |
 | R16 | Farming and orchards | R15 | All three code slices implemented offline: fields/claims/passes, water rounds, harvest returns, orchards/restock, crop edits, linked relocation and validated owner reload; integrated legacy actor/save/host adapters and acceptance remain R19–23 |
-| R17 | Fishing, boats, animals, and horses | R16 | Slices 1–2 implemented offline: saved piers, land fishing, boat/crew voyages, species cargo and exploration boats; slices 3–4 (livestock/butchery, horses/riding) remain |
+| R17 | Fishing, boats, animals, and horses | R16 | Slices 1–3 implemented offline: saved piers, land fishing, boat/crew voyages, species cargo, exploration boats, barn growth/keepers and manual butchery; slice 4 (horses/riding) remains |
 | R18 | Residents, villages, trade, and adventures | R17 | Not started |
 | R19 | Durable Rust saves and recovery | R18 | Not started |
 | R20 | HTTP, accounts, and world lifecycle | R19 | Not started |
@@ -3590,7 +3590,7 @@ and commit the completed slice.
 `lantern-host::farming` implements an experimental offline field owner over R11
 movement and the R13 ledger. This completes slice 1 only. Python remains the
 playable default; the remaining R16 slices and R17 slices 1–2 are recorded below.
-R17 slice 3 is next.
+R17 slice 4 is next.
 
 - Fields use stable building/farm IDs, selected and sown crops, shared work and
   growth clocks, cycle numbers and optional remaining harvest yield. Admission
@@ -3758,7 +3758,7 @@ Commit message: `feat: port Rust farming water and harvest trips`.
 This completes all three R16 code slices at the experimental offline owner boundary.
 `orchards.rs`, `orchards/save.rs`, `farming/lifecycle.rs` and `farming/save.rs` own
 fruit trees, field edits, relocation reconciliation and versioned reload. Python
-remains the playable default. R17 slice 1 is recorded below; its next unfinished slice is livestock/butchery (slice 3).
+remains the playable default. R17 slice 1 is recorded below; its next unfinished slice is horses/riding (slice 4).
 
 - Orchard trees advance through sapling (60s), blossom (30s), fruit (60s), ripe,
   harvested (30s), blossom and fruit. Growth continues independently of workers,
@@ -3945,8 +3945,7 @@ Commit message: `feat: port Rust piers and land fishing`.
 ### R17 slice 2 — Boats, crews, species cargo and return trips
 
 Implemented at the experimental offline owner boundary. Python remains the playable
-default. R17 slices 1–2 are implemented; slice 3 (barn growth, keepers and manual
-butchery) is next. Horses/riding remain slice 4.
+default. Slice 3 is recorded below; horses/riding remain slice 4.
 
 - `fishing::Boats` admits an ordered, already assigned fishing roster to stable
   hut/actor IDs. The first one/two/three workers crew that hut's boat; excess
@@ -4010,8 +4009,7 @@ in one generation, including legacy implicit exploration tier 1 and all legacy
 animation/crew facts. This is not a new broad legacy-save adapter. R20–R21 retain
 whole-town tick ordering, construction/ledger synchronization, geometry/roster
 reconciliation, command authorization, browser snapshots and playable integration.
-R23 retains integrated acceptance. Barn growth/butchery and horses/riding remain
-unimplemented R17 slices 3–4.
+R23 retains integrated acceptance. Barn growth/butchery follows in slice 3 below; horses/riding remain slice 4.
 
 Performance comparisons were not run: this is a behavior port with no performance
 investigation, optimization or performance claim.
@@ -4026,6 +4024,70 @@ fixture checks, final formatting and `git diff --check` passed. Reports:
 `performance-results/20261018-233822/report.md`.
 
 Commit message: `feat: port Rust fishing boats and shared crew voyages`.
+
+### R17 slice 3 — Barn growth, keepers and manual butchery
+
+Implemented at the experimental offline owner boundary. Python remains the playable
+default. R17 slices 1–3 are implemented; horses/riding are the next slice (4).
+
+- `livestock::Livestock` owns stable barn/animal/order identities, ordered chicken,
+  sheep, pig and cow herds, ages, unique names and explicit per-barn growth batches.
+  Legacy barn admission repairs missing/duplicate names deterministically and treats
+  missing ages as adults. Count edits preserve surviving identities/ages/names,
+  enforce unlocks and shared structural capacity, and retain explicit empty herds.
+  Legacy purchases use current catalog costs without adding horse behavior.
+- Growth runs independently of keeper routes, output caps, full buffers and feed.
+  Assigned keepers accelerate growth; construction helpers do not. Initial
+  construction pauses growth, while existing barns grow during upgrades. Lifetime
+  products and manure clip through the ledger without delaying maturity. Replayed
+  update IDs cannot grow or reward twice. Adults await manual butchery.
+- Keepers reserve distinct tending destinations, work, return and unload on separate
+  saved clocks. Queries use actual saved footprints, shared terrain and pen fences.
+  Reassignment, paused construction/transport, relocation and reload preserve actor
+  position, herd facts and personal practice. Keeper movement does not award goods.
+- Manual selection removes the first adult immediately and preserves its name in
+  one shop order. Only removing the last member of that species in that barn adds
+  a fresh named youngster; selection awards nothing. The first eligible butcher
+  walks to the barn, picks up the animal, drags at the existing reduced speed and
+  processes for 60 seconds after arrival. Helpers do not accelerate the order.
+  Blocked dragging freezes processing; replacement handlers collect the saved
+  fractional animal position. Moved barns/shops replan without resetting work.
+- At zero remaining time, meat/hides and full-batch practice commit once only when
+  all output fits. Full caps/buffers wait without consuming the order. Manual
+  interruption cancels hauling with cargo restitution and suspends recipe work
+  while retaining its partial batch. Errors roll back all affected owners.
+- Strict versioned owner DTOs validate identities, names, stages, clocks and
+  model/ledger agreement. Growth, pickup and rewards never run during decoding;
+  navigation/playback rebuild from saved actor facts.
+
+Evidence: 24 livestock tests and 97 real-Python fixture cases (72 growth vectors,
+five naming/count snapshots, 12 last-member replacement cases and eight manual
+reward/cap cases). Coverage includes independent/subdivided growth clocks, full
+output, upgrades and construction helpers, distinct keeper rounds, interrupted
+recipe work, no assigned butcher, fractional pickup/drag reload, blocked/retried
+routes, moved barns/shops, explicit clearing, atomic failures and malformed saves.
+Fixture verification:
+`python3 rust/crates/lantern-host/tests/fixtures/livestock/generate_livestock_cases.py --check`.
+
+Completion boundary: R18 still admits qualified resident rosters. R19 must persist
+model, ledger, personal practice, construction and livestock owners in one save
+generation and convert complete legacy butchering/animation facts; explicit barn
+admission is not a broad old-save adapter. R20–R21 retain command authorization,
+whole-town tick ordering, manual-order precedence over recipe/transport work,
+construction classification/ledger synchronization and browser snapshots. R23
+retains integrated acceptance. Horses, stable breeding/equipment and riding remain
+R17 slice 4.
+
+Performance comparisons were not run: this is a behavior port with no performance
+investigation, optimization or performance claim.
+
+Validation: `python3 tools/check.py --list` selected only `rust:lantern-host`.
+The affected runner passed formatting, locked offline host package tests/doc tests
+and all-target Clippy with warnings denied (3/3 commands), including all 24
+livestock tests. The Python fixture check and `git diff --check` passed. Report:
+`performance-results/20261019-005536/report.md`.
+
+Commit message: `feat: port Rust barn growth and manual butchery`.
 
 ## R18 — Remaining residents, villages, trade, and adventures
 

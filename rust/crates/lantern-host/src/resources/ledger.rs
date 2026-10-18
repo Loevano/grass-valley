@@ -578,6 +578,25 @@ impl Ledger {
             Ok(())
         })
     }
+    /// An existing barn grows during an R12 upgrade. Its ordinary storage is
+    /// unavailable to hauling then, but Python still records clipped herd output.
+    /// The livestock owner must reject initial construction before invoking this.
+    pub(crate) fn produce_barn_growth(
+        &mut self,
+        id: &BuildingId,
+        outputs: &Stock,
+    ) -> Result<(), Error> {
+        self.apply(|ledger| {
+            if ledger.store(id)?.policy.kind != "barn" {
+                return Err(Error::InvalidStorage);
+            }
+            let construction = ledger.store(id)?.policy.construction;
+            ledger.store_mut(id)?.policy.construction = false;
+            ledger.produce(id, None, &Stock::default(), outputs)?;
+            ledger.store_mut(id)?.policy.construction = construction;
+            Ok(())
+        })
+    }
     /// Low-level batch accounting. `progression::complete_batch` evaluates current
     /// recipes, personal qualification and practice before calling this operation.
     pub fn produce(

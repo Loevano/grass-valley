@@ -1,0 +1,1234 @@
+{
+  "growth": [
+    {
+      "species": "chicken",
+      "age": 0,
+      "elapsed": 3,
+      "keepers": 0,
+      "room": 100,
+      "grown": 3,
+      "output": {
+        "eggs": 1.25,
+        "manure": 0.10000000000000002
+      }
+    },
+    {
+      "species": "chicken",
+      "age": 59,
+      "elapsed": 3,
+      "keepers": 0,
+      "room": 100,
+      "grown": 60,
+      "output": {
+        "eggs": 0.4166666666666667,
+        "manure": 0.03333333333333333
+      }
+    },
+    {
+      "species": "chicken",
+      "age": 0,
+      "elapsed": 120,
+      "keepers": 0,
+      "room": 100,
+      "grown": 60,
+      "output": {
+        "eggs": 20,
+        "manure": 2.0
+      }
+    },
+    {
+      "species": "chicken",
+      "age": 60,
+      "elapsed": 3,
+      "keepers": 0,
+      "room": 100,
+      "grown": 60,
+      "output": {}
+    },
+    {
+      "species": "chicken",
+      "age": 0,
+      "elapsed": 3,
+      "keepers": 0,
+      "room": 0,
+      "grown": 3,
+      "output": {}
+    },
+    {
+      "species": "chicken",
+      "age": 0,
+      "elapsed": 3,
+      "keepers": 0,
+      "room": 0.1,
+      "grown": 3,
+      "output": {
+        "eggs": 0.1,
+        "manure": 0.1
+      }
+    },
+    {
+      "species": "chicken",
+      "age": 0,
+      "elapsed": 3,
+      "keepers": 1,
+      "room": 100,
+      "grown": 6,
+      "output": {
+        "eggs": 2.5,
+        "manure": 0.20000000000000004
+      }
+    },
+    {
+      "species": "chicken",
+      "age": 59,
+      "elapsed": 3,
+      "keepers": 1,
+      "room": 100,
+      "grown": 60,
+      "output": {
+        "eggs": 0.4166666666666667,
+        "manure": 0.03333333333333333
+      }
+    },
+    {
+      "species": "chicken",
+      "age": 0,
+      "elapsed": 120,
+      "keepers": 1,
+      "room": 100,
+      "grown": 60,
+      "output": {
+        "eggs": 20,
+        "manure": 2.0
+      }
+    },
+    {
+      "species": "chicken",
+      "age": 60,
+      "elapsed": 3,
+      "keepers": 1,
+      "room": 100,
+      "grown": 60,
+      "output": {}
+    },
+    {
+      "species": "chicken",
+      "age": 0,
+      "elapsed": 3,
+      "keepers": 1,
+      "room": 0,
+      "grown": 6,
+      "output": {}
+    },
+    {
+      "species": "chicken",
+      "age": 0,
+      "elapsed": 3,
+      "keepers": 1,
+      "room": 0.1,
+      "grown": 6,
+      "output": {
+        "eggs": 0.1,
+        "manure": 0.1
+      }
+    },
+    {
+      "species": "chicken",
+      "age": 0,
+      "elapsed": 3,
+      "keepers": 3,
+      "room": 100,
+      "grown": 12,
+      "output": {
+        "eggs": 5.0,
+        "manure": 0.4000000000000001
+      }
+    },
+    {
+      "species": "chicken",
+      "age": 59,
+      "elapsed": 3,
+      "keepers": 3,
+      "room": 100,
+      "grown": 60,
+      "output": {
+        "eggs": 0.4166666666666667,
+        "manure": 0.03333333333333333
+      }
+    },
+    {
+      "species": "chicken",
+      "age": 0,
+      "elapsed": 120,
+      "keepers": 3,
+      "room": 100,
+      "grown": 60,
+      "output": {
+        "eggs": 20,
+        "manure": 2.0
+      }
+    },
+    {
+      "species": "chicken",
+      "age": 60,
+      "elapsed": 3,
+      "keepers": 3,
+      "room": 100,
+      "grown": 60,
+      "output": {}
+    },
+    {
+      "species": "chicken",
+      "age": 0,
+      "elapsed": 3,
+      "keepers": 3,
+      "room": 0,
+      "grown": 12,
+      "output": {}
+    },
+    {
+      "species": "chicken",
+      "age": 0,
+      "elapsed": 3,
+      "keepers": 3,
+      "room": 0.1,
+      "grown": 12,
+      "output": {
+        "eggs": 0.1,
+        "manure": 0.1
+      }
+    },
+    {
+      "species": "sheep",
+      "age": 0,
+      "elapsed": 3,
+      "keepers": 0,
+      "room": 100,
+      "grown": 3,
+      "output": {
+        "wool": 0.625,
+        "manure": 0.10000000000000002
+      }
+    },
+    {
+      "species": "sheep",
+      "age": 119,
+      "elapsed": 3,
+      "keepers": 0,
+      "room": 100,
+      "grown": 120,
+      "output": {
+        "wool": 0.20833333333333334,
+        "manure": 0.03333333333333333
+      }
+    },
+    {
+      "species": "sheep",
+      "age": 0,
+      "elapsed": 240,
+      "keepers": 0,
+      "room": 100,
+      "grown": 120,
+      "output": {
+        "wool": 10,
+        "manure": 4.0
+      }
+    },
+    {
+      "species": "sheep",
+      "age": 120,
+      "elapsed": 3,
+      "keepers": 0,
+      "room": 100,
+      "grown": 120,
+      "output": {}
+    },
+    {
+      "species": "sheep",
+      "age": 0,
+      "elapsed": 3,
+      "keepers": 0,
+      "room": 0,
+      "grown": 3,
+      "output": {}
+    },
+    {
+      "species": "sheep",
+      "age": 0,
+      "elapsed": 3,
+      "keepers": 0,
+      "room": 0.1,
+      "grown": 3,
+      "output": {
+        "wool": 0.1,
+        "manure": 0.1
+      }
+    },
+    {
+      "species": "sheep",
+      "age": 0,
+      "elapsed": 3,
+      "keepers": 1,
+      "room": 100,
+      "grown": 6,
+      "output": {
+        "wool": 1.25,
+        "manure": 0.20000000000000004
+      }
+    },
+    {
+      "species": "sheep",
+      "age": 119,
+      "elapsed": 3,
+      "keepers": 1,
+      "room": 100,
+      "grown": 120,
+      "output": {
+        "wool": 0.20833333333333334,
+        "manure": 0.03333333333333333
+      }
+    },
+    {
+      "species": "sheep",
+      "age": 0,
+      "elapsed": 240,
+      "keepers": 1,
+      "room": 100,
+      "grown": 120,
+      "output": {
+        "wool": 10,
+        "manure": 4.0
+      }
+    },
+    {
+      "species": "sheep",
+      "age": 120,
+      "elapsed": 3,
+      "keepers": 1,
+      "room": 100,
+      "grown": 120,
+      "output": {}
+    },
+    {
+      "species": "sheep",
+      "age": 0,
+      "elapsed": 3,
+      "keepers": 1,
+      "room": 0,
+      "grown": 6,
+      "output": {}
+    },
+    {
+      "species": "sheep",
+      "age": 0,
+      "elapsed": 3,
+      "keepers": 1,
+      "room": 0.1,
+      "grown": 6,
+      "output": {
+        "wool": 0.1,
+        "manure": 0.1
+      }
+    },
+    {
+      "species": "sheep",
+      "age": 0,
+      "elapsed": 3,
+      "keepers": 3,
+      "room": 100,
+      "grown": 12,
+      "output": {
+        "wool": 2.5,
+        "manure": 0.4000000000000001
+      }
+    },
+    {
+      "species": "sheep",
+      "age": 119,
+      "elapsed": 3,
+      "keepers": 3,
+      "room": 100,
+      "grown": 120,
+      "output": {
+        "wool": 0.20833333333333334,
+        "manure": 0.03333333333333333
+      }
+    },
+    {
+      "species": "sheep",
+      "age": 0,
+      "elapsed": 240,
+      "keepers": 3,
+      "room": 100,
+      "grown": 120,
+      "output": {
+        "wool": 10,
+        "manure": 4.0
+      }
+    },
+    {
+      "species": "sheep",
+      "age": 120,
+      "elapsed": 3,
+      "keepers": 3,
+      "room": 100,
+      "grown": 120,
+      "output": {}
+    },
+    {
+      "species": "sheep",
+      "age": 0,
+      "elapsed": 3,
+      "keepers": 3,
+      "room": 0,
+      "grown": 12,
+      "output": {}
+    },
+    {
+      "species": "sheep",
+      "age": 0,
+      "elapsed": 3,
+      "keepers": 3,
+      "room": 0.1,
+      "grown": 12,
+      "output": {
+        "wool": 0.1,
+        "manure": 0.1
+      }
+    },
+    {
+      "species": "pig",
+      "age": 0,
+      "elapsed": 3,
+      "keepers": 0,
+      "room": 100,
+      "grown": 3,
+      "output": {
+        "manure": 0.10000000000000002
+      }
+    },
+    {
+      "species": "pig",
+      "age": 239,
+      "elapsed": 3,
+      "keepers": 0,
+      "room": 100,
+      "grown": 240,
+      "output": {
+        "manure": 0.03333333333333333
+      }
+    },
+    {
+      "species": "pig",
+      "age": 0,
+      "elapsed": 480,
+      "keepers": 0,
+      "room": 100,
+      "grown": 240,
+      "output": {
+        "manure": 5
+      }
+    },
+    {
+      "species": "pig",
+      "age": 240,
+      "elapsed": 3,
+      "keepers": 0,
+      "room": 100,
+      "grown": 240,
+      "output": {}
+    },
+    {
+      "species": "pig",
+      "age": 0,
+      "elapsed": 3,
+      "keepers": 0,
+      "room": 0,
+      "grown": 3,
+      "output": {}
+    },
+    {
+      "species": "pig",
+      "age": 0,
+      "elapsed": 3,
+      "keepers": 0,
+      "room": 0.1,
+      "grown": 3,
+      "output": {
+        "manure": 0.1
+      }
+    },
+    {
+      "species": "pig",
+      "age": 0,
+      "elapsed": 3,
+      "keepers": 1,
+      "room": 100,
+      "grown": 6,
+      "output": {
+        "manure": 0.20000000000000004
+      }
+    },
+    {
+      "species": "pig",
+      "age": 239,
+      "elapsed": 3,
+      "keepers": 1,
+      "room": 100,
+      "grown": 240,
+      "output": {
+        "manure": 0.03333333333333333
+      }
+    },
+    {
+      "species": "pig",
+      "age": 0,
+      "elapsed": 480,
+      "keepers": 1,
+      "room": 100,
+      "grown": 240,
+      "output": {
+        "manure": 5
+      }
+    },
+    {
+      "species": "pig",
+      "age": 240,
+      "elapsed": 3,
+      "keepers": 1,
+      "room": 100,
+      "grown": 240,
+      "output": {}
+    },
+    {
+      "species": "pig",
+      "age": 0,
+      "elapsed": 3,
+      "keepers": 1,
+      "room": 0,
+      "grown": 6,
+      "output": {}
+    },
+    {
+      "species": "pig",
+      "age": 0,
+      "elapsed": 3,
+      "keepers": 1,
+      "room": 0.1,
+      "grown": 6,
+      "output": {
+        "manure": 0.1
+      }
+    },
+    {
+      "species": "pig",
+      "age": 0,
+      "elapsed": 3,
+      "keepers": 3,
+      "room": 100,
+      "grown": 12,
+      "output": {
+        "manure": 0.4000000000000001
+      }
+    },
+    {
+      "species": "pig",
+      "age": 239,
+      "elapsed": 3,
+      "keepers": 3,
+      "room": 100,
+      "grown": 240,
+      "output": {
+        "manure": 0.03333333333333333
+      }
+    },
+    {
+      "species": "pig",
+      "age": 0,
+      "elapsed": 480,
+      "keepers": 3,
+      "room": 100,
+      "grown": 240,
+      "output": {
+        "manure": 5
+      }
+    },
+    {
+      "species": "pig",
+      "age": 240,
+      "elapsed": 3,
+      "keepers": 3,
+      "room": 100,
+      "grown": 240,
+      "output": {}
+    },
+    {
+      "species": "pig",
+      "age": 0,
+      "elapsed": 3,
+      "keepers": 3,
+      "room": 0,
+      "grown": 12,
+      "output": {}
+    },
+    {
+      "species": "pig",
+      "age": 0,
+      "elapsed": 3,
+      "keepers": 3,
+      "room": 0.1,
+      "grown": 12,
+      "output": {
+        "manure": 0.1
+      }
+    },
+    {
+      "species": "cow",
+      "age": 0,
+      "elapsed": 3,
+      "keepers": 0,
+      "room": 100,
+      "grown": 3,
+      "output": {
+        "milk": 0.20833333333333334,
+        "manure": 0.10000000000000002
+      }
+    },
+    {
+      "species": "cow",
+      "age": 359,
+      "elapsed": 3,
+      "keepers": 0,
+      "room": 100,
+      "grown": 360,
+      "output": {
+        "milk": 0.06944444444444445,
+        "manure": 0.03333333333333333
+      }
+    },
+    {
+      "species": "cow",
+      "age": 0,
+      "elapsed": 720,
+      "keepers": 0,
+      "room": 100,
+      "grown": 360,
+      "output": {
+        "milk": 20,
+        "manure": 5
+      }
+    },
+    {
+      "species": "cow",
+      "age": 360,
+      "elapsed": 3,
+      "keepers": 0,
+      "room": 100,
+      "grown": 360,
+      "output": {}
+    },
+    {
+      "species": "cow",
+      "age": 0,
+      "elapsed": 3,
+      "keepers": 0,
+      "room": 0,
+      "grown": 3,
+      "output": {}
+    },
+    {
+      "species": "cow",
+      "age": 0,
+      "elapsed": 3,
+      "keepers": 0,
+      "room": 0.1,
+      "grown": 3,
+      "output": {
+        "milk": 0.1,
+        "manure": 0.1
+      }
+    },
+    {
+      "species": "cow",
+      "age": 0,
+      "elapsed": 3,
+      "keepers": 1,
+      "room": 100,
+      "grown": 6,
+      "output": {
+        "milk": 0.4166666666666667,
+        "manure": 0.20000000000000004
+      }
+    },
+    {
+      "species": "cow",
+      "age": 359,
+      "elapsed": 3,
+      "keepers": 1,
+      "room": 100,
+      "grown": 360,
+      "output": {
+        "milk": 0.06944444444444445,
+        "manure": 0.03333333333333333
+      }
+    },
+    {
+      "species": "cow",
+      "age": 0,
+      "elapsed": 720,
+      "keepers": 1,
+      "room": 100,
+      "grown": 360,
+      "output": {
+        "milk": 20,
+        "manure": 5
+      }
+    },
+    {
+      "species": "cow",
+      "age": 360,
+      "elapsed": 3,
+      "keepers": 1,
+      "room": 100,
+      "grown": 360,
+      "output": {}
+    },
+    {
+      "species": "cow",
+      "age": 0,
+      "elapsed": 3,
+      "keepers": 1,
+      "room": 0,
+      "grown": 6,
+      "output": {}
+    },
+    {
+      "species": "cow",
+      "age": 0,
+      "elapsed": 3,
+      "keepers": 1,
+      "room": 0.1,
+      "grown": 6,
+      "output": {
+        "milk": 0.1,
+        "manure": 0.1
+      }
+    },
+    {
+      "species": "cow",
+      "age": 0,
+      "elapsed": 3,
+      "keepers": 3,
+      "room": 100,
+      "grown": 12,
+      "output": {
+        "milk": 0.8333333333333334,
+        "manure": 0.4000000000000001
+      }
+    },
+    {
+      "species": "cow",
+      "age": 359,
+      "elapsed": 3,
+      "keepers": 3,
+      "room": 100,
+      "grown": 360,
+      "output": {
+        "milk": 0.06944444444444445,
+        "manure": 0.03333333333333333
+      }
+    },
+    {
+      "species": "cow",
+      "age": 0,
+      "elapsed": 720,
+      "keepers": 3,
+      "room": 100,
+      "grown": 360,
+      "output": {
+        "milk": 20,
+        "manure": 5
+      }
+    },
+    {
+      "species": "cow",
+      "age": 360,
+      "elapsed": 3,
+      "keepers": 3,
+      "room": 100,
+      "grown": 360,
+      "output": {}
+    },
+    {
+      "species": "cow",
+      "age": 0,
+      "elapsed": 3,
+      "keepers": 3,
+      "room": 0,
+      "grown": 12,
+      "output": {}
+    },
+    {
+      "species": "cow",
+      "age": 0,
+      "elapsed": 3,
+      "keepers": 3,
+      "room": 0.1,
+      "grown": 12,
+      "output": {
+        "milk": 0.1,
+        "manure": 0.1
+      }
+    }
+  ],
+  "names": [
+    {
+      "op": "admit",
+      "state": {
+        "animals": {
+          "chicken": 2,
+          "sheep": 1
+        },
+        "ages": {
+          "chicken": [
+            10,
+            60
+          ],
+          "sheep": [
+            40
+          ]
+        },
+        "names": {
+          "chicken": [
+            "Poppy",
+            "Clover"
+          ],
+          "sheep": [
+            "Hazel"
+          ]
+        }
+      }
+    },
+    {
+      "op": "count",
+      "count": 1,
+      "state": {
+        "animals": {
+          "chicken": 1,
+          "sheep": 1
+        },
+        "ages": {
+          "chicken": [
+            10
+          ],
+          "sheep": [
+            40
+          ]
+        },
+        "names": {
+          "chicken": [
+            "Poppy"
+          ],
+          "sheep": [
+            "Hazel"
+          ]
+        }
+      }
+    },
+    {
+      "op": "count",
+      "count": 3,
+      "state": {
+        "animals": {
+          "chicken": 3,
+          "sheep": 1
+        },
+        "ages": {
+          "chicken": [
+            10,
+            0,
+            0
+          ],
+          "sheep": [
+            40
+          ]
+        },
+        "names": {
+          "chicken": [
+            "Poppy",
+            "Biscuit",
+            "Mabel"
+          ],
+          "sheep": [
+            "Hazel"
+          ]
+        }
+      }
+    },
+    {
+      "op": "count",
+      "count": 0,
+      "state": {
+        "animals": {
+          "chicken": 0,
+          "sheep": 1
+        },
+        "ages": {
+          "chicken": [],
+          "sheep": [
+            40
+          ]
+        },
+        "names": {
+          "chicken": [],
+          "sheep": [
+            "Hazel"
+          ]
+        }
+      }
+    },
+    {
+      "op": "count",
+      "count": 2,
+      "state": {
+        "animals": {
+          "chicken": 2,
+          "sheep": 1
+        },
+        "ages": {
+          "chicken": [
+            0,
+            0
+          ],
+          "sheep": [
+            40
+          ]
+        },
+        "names": {
+          "chicken": [
+            "Pip",
+            "Daisy"
+          ],
+          "sheep": [
+            "Hazel"
+          ]
+        }
+      }
+    }
+  ],
+  "replacement": [
+    {
+      "species": "chicken",
+      "state": {
+        "animals": {
+          "chicken": 2
+        },
+        "ages": {
+          "chicken": [
+            60,
+            60
+          ]
+        },
+        "names": {
+          "chicken": [
+            "Clover",
+            "Hazel"
+          ]
+        }
+      },
+      "name": "Poppy"
+    },
+    {
+      "species": "chicken",
+      "state": {
+        "animals": {
+          "chicken": 1
+        },
+        "ages": {
+          "chicken": [
+            60
+          ]
+        },
+        "names": {
+          "chicken": [
+            "Hazel"
+          ]
+        }
+      },
+      "name": "Clover"
+    },
+    {
+      "species": "chicken",
+      "state": {
+        "animals": {
+          "chicken": 1
+        },
+        "ages": {
+          "chicken": [
+            0
+          ]
+        },
+        "names": {
+          "chicken": [
+            "Biscuit"
+          ]
+        }
+      },
+      "name": "Hazel"
+    },
+    {
+      "species": "sheep",
+      "state": {
+        "animals": {
+          "sheep": 2
+        },
+        "ages": {
+          "sheep": [
+            120,
+            120
+          ]
+        },
+        "names": {
+          "sheep": [
+            "Clover",
+            "Hazel"
+          ]
+        }
+      },
+      "name": "Poppy"
+    },
+    {
+      "species": "sheep",
+      "state": {
+        "animals": {
+          "sheep": 1
+        },
+        "ages": {
+          "sheep": [
+            120
+          ]
+        },
+        "names": {
+          "sheep": [
+            "Hazel"
+          ]
+        }
+      },
+      "name": "Clover"
+    },
+    {
+      "species": "sheep",
+      "state": {
+        "animals": {
+          "sheep": 1
+        },
+        "ages": {
+          "sheep": [
+            0
+          ]
+        },
+        "names": {
+          "sheep": [
+            "Biscuit"
+          ]
+        }
+      },
+      "name": "Hazel"
+    },
+    {
+      "species": "pig",
+      "state": {
+        "animals": {
+          "pig": 2
+        },
+        "ages": {
+          "pig": [
+            240,
+            240
+          ]
+        },
+        "names": {
+          "pig": [
+            "Clover",
+            "Hazel"
+          ]
+        }
+      },
+      "name": "Poppy"
+    },
+    {
+      "species": "pig",
+      "state": {
+        "animals": {
+          "pig": 1
+        },
+        "ages": {
+          "pig": [
+            240
+          ]
+        },
+        "names": {
+          "pig": [
+            "Hazel"
+          ]
+        }
+      },
+      "name": "Clover"
+    },
+    {
+      "species": "pig",
+      "state": {
+        "animals": {
+          "pig": 1
+        },
+        "ages": {
+          "pig": [
+            0
+          ]
+        },
+        "names": {
+          "pig": [
+            "Biscuit"
+          ]
+        }
+      },
+      "name": "Hazel"
+    },
+    {
+      "species": "cow",
+      "state": {
+        "animals": {
+          "cow": 2
+        },
+        "ages": {
+          "cow": [
+            360,
+            360
+          ]
+        },
+        "names": {
+          "cow": [
+            "Clover",
+            "Hazel"
+          ]
+        }
+      },
+      "name": "Poppy"
+    },
+    {
+      "species": "cow",
+      "state": {
+        "animals": {
+          "cow": 1
+        },
+        "ages": {
+          "cow": [
+            360
+          ]
+        },
+        "names": {
+          "cow": [
+            "Hazel"
+          ]
+        }
+      },
+      "name": "Clover"
+    },
+    {
+      "species": "cow",
+      "state": {
+        "animals": {
+          "cow": 1
+        },
+        "ages": {
+          "cow": [
+            0
+          ]
+        },
+        "names": {
+          "cow": [
+            "Biscuit"
+          ]
+        }
+      },
+      "name": "Hazel"
+    }
+  ],
+  "rewards": [
+    {
+      "species": "chicken",
+      "cap": false,
+      "output": {
+        "meat": 2
+      },
+      "practice": 2.0,
+      "pending": false,
+      "remaining": 0
+    },
+    {
+      "species": "chicken",
+      "cap": true,
+      "output": {},
+      "practice": 0,
+      "pending": true,
+      "remaining": 0
+    },
+    {
+      "species": "sheep",
+      "cap": false,
+      "output": {
+        "meat": 4,
+        "hides": 1
+      },
+      "practice": 2.0,
+      "pending": false,
+      "remaining": 0
+    },
+    {
+      "species": "sheep",
+      "cap": true,
+      "output": {},
+      "practice": 0,
+      "pending": true,
+      "remaining": 0
+    },
+    {
+      "species": "pig",
+      "cap": false,
+      "output": {
+        "meat": 8,
+        "hides": 2
+      },
+      "practice": 2.0,
+      "pending": false,
+      "remaining": 0
+    },
+    {
+      "species": "pig",
+      "cap": true,
+      "output": {},
+      "practice": 0,
+      "pending": true,
+      "remaining": 0
+    },
+    {
+      "species": "cow",
+      "cap": false,
+      "output": {
+        "meat": 10,
+        "hides": 3
+      },
+      "practice": 2.0,
+      "pending": false,
+      "remaining": 0
+    },
+    {
+      "species": "cow",
+      "cap": true,
+      "output": {},
+      "practice": 0,
+      "pending": true,
+      "remaining": 0
+    }
+  ]
+}
