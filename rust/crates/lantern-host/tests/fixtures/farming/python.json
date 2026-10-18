@@ -1,0 +1,680 @@
+{
+  "yields": [
+    {
+      "crop": "vegetables",
+      "level": 1,
+      "tool": null,
+      "skill": 0,
+      "talent": 0,
+      "manure": 0,
+      "cap": null,
+      "success": true,
+      "state": {
+        "stage": "unplowed",
+        "elapsed": 0,
+        "progress": 0,
+        "cycle": 1
+      },
+      "produced": 4.8,
+      "manure_left": 0
+    },
+    {
+      "crop": "vegetables",
+      "level": 3,
+      "tool": "fine_sickle",
+      "skill": 20,
+      "talent": 1,
+      "manure": 0.2,
+      "cap": null,
+      "success": true,
+      "state": {
+        "stage": "unplowed",
+        "elapsed": 0,
+        "progress": 0,
+        "cycle": 1
+      },
+      "produced": 26.25,
+      "manure_left": 0.1
+    },
+    {
+      "crop": "vegetables",
+      "level": 2,
+      "tool": "steel_sickle",
+      "skill": 40,
+      "talent": -1,
+      "manure": 0.1,
+      "cap": 2,
+      "success": true,
+      "state": {
+        "stage": "ripe",
+        "elapsed": 0,
+        "progress": 2,
+        "cycle": 0,
+        "crop": "vegetables",
+        "yield_remaining": 21.625000000000004
+      },
+      "produced": 2,
+      "manure_left": 0
+    },
+    {
+      "crop": "vegetables",
+      "level": 3,
+      "tool": "masterwork_sickle",
+      "skill": 0,
+      "talent": 0,
+      "manure": 0.1,
+      "cap": 0,
+      "success": false,
+      "state": {
+        "stage": "ripe",
+        "elapsed": 0,
+        "progress": 2,
+        "cycle": 0,
+        "crop": "vegetables"
+      },
+      "produced": 0,
+      "manure_left": 0.1
+    },
+    {
+      "crop": "wheat",
+      "level": 1,
+      "tool": null,
+      "skill": 0,
+      "talent": 0,
+      "manure": 0,
+      "cap": null,
+      "success": true,
+      "state": {
+        "stage": "unplowed",
+        "elapsed": 0,
+        "progress": 0,
+        "cycle": 1
+      },
+      "produced": 10.0,
+      "manure_left": 0
+    },
+    {
+      "crop": "wheat",
+      "level": 3,
+      "tool": "fine_sickle",
+      "skill": 20,
+      "talent": 1,
+      "manure": 0.2,
+      "cap": null,
+      "success": true,
+      "state": {
+        "stage": "unplowed",
+        "elapsed": 0,
+        "progress": 0,
+        "cycle": 1
+      },
+      "produced": 54.6875,
+      "manure_left": 0.1
+    },
+    {
+      "crop": "wheat",
+      "level": 2,
+      "tool": "steel_sickle",
+      "skill": 40,
+      "talent": -1,
+      "manure": 0.1,
+      "cap": 2,
+      "success": true,
+      "state": {
+        "stage": "ripe",
+        "elapsed": 0,
+        "progress": 2,
+        "cycle": 0,
+        "crop": "wheat",
+        "yield_remaining": 47.21875
+      },
+      "produced": 2,
+      "manure_left": 0
+    },
+    {
+      "crop": "wheat",
+      "level": 3,
+      "tool": "masterwork_sickle",
+      "skill": 0,
+      "talent": 0,
+      "manure": 0.1,
+      "cap": 0,
+      "success": false,
+      "state": {
+        "stage": "ripe",
+        "elapsed": 0,
+        "progress": 2,
+        "cycle": 0,
+        "crop": "wheat"
+      },
+      "produced": 0,
+      "manure_left": 0.1
+    },
+    {
+      "crop": "carrots",
+      "level": 1,
+      "tool": null,
+      "skill": 0,
+      "talent": 0,
+      "manure": 0,
+      "cap": null,
+      "success": true,
+      "state": {
+        "stage": "unplowed",
+        "elapsed": 0,
+        "progress": 0,
+        "cycle": 1
+      },
+      "produced": 10.0,
+      "manure_left": 0
+    },
+    {
+      "crop": "carrots",
+      "level": 3,
+      "tool": "fine_sickle",
+      "skill": 20,
+      "talent": 1,
+      "manure": 0.2,
+      "cap": null,
+      "success": true,
+      "state": {
+        "stage": "unplowed",
+        "elapsed": 0,
+        "progress": 0,
+        "cycle": 1
+      },
+      "produced": 54.6875,
+      "manure_left": 0.1
+    },
+    {
+      "crop": "carrots",
+      "level": 2,
+      "tool": "steel_sickle",
+      "skill": 40,
+      "talent": -1,
+      "manure": 0.1,
+      "cap": 2,
+      "success": true,
+      "state": {
+        "stage": "ripe",
+        "elapsed": 0,
+        "progress": 2,
+        "cycle": 0,
+        "crop": "carrots",
+        "yield_remaining": 47.21875
+      },
+      "produced": 2,
+      "manure_left": 0
+    },
+    {
+      "crop": "carrots",
+      "level": 3,
+      "tool": "masterwork_sickle",
+      "skill": 0,
+      "talent": 0,
+      "manure": 0.1,
+      "cap": 0,
+      "success": false,
+      "state": {
+        "stage": "ripe",
+        "elapsed": 0,
+        "progress": 2,
+        "cycle": 0,
+        "crop": "carrots"
+      },
+      "produced": 0,
+      "manure_left": 0.1
+    },
+    {
+      "crop": "fodder",
+      "level": 1,
+      "tool": null,
+      "skill": 0,
+      "talent": 0,
+      "manure": 0,
+      "cap": null,
+      "success": true,
+      "state": {
+        "stage": "unplowed",
+        "elapsed": 0,
+        "progress": 0,
+        "cycle": 1
+      },
+      "produced": 10.0,
+      "manure_left": 0
+    },
+    {
+      "crop": "fodder",
+      "level": 3,
+      "tool": "fine_sickle",
+      "skill": 20,
+      "talent": 1,
+      "manure": 0.2,
+      "cap": null,
+      "success": true,
+      "state": {
+        "stage": "unplowed",
+        "elapsed": 0,
+        "progress": 0,
+        "cycle": 1
+      },
+      "produced": 54.6875,
+      "manure_left": 0.1
+    },
+    {
+      "crop": "fodder",
+      "level": 2,
+      "tool": "steel_sickle",
+      "skill": 40,
+      "talent": -1,
+      "manure": 0.1,
+      "cap": 2,
+      "success": true,
+      "state": {
+        "stage": "ripe",
+        "elapsed": 0,
+        "progress": 2,
+        "cycle": 0,
+        "crop": "fodder",
+        "yield_remaining": 47.21875
+      },
+      "produced": 2,
+      "manure_left": 0
+    },
+    {
+      "crop": "fodder",
+      "level": 3,
+      "tool": "masterwork_sickle",
+      "skill": 0,
+      "talent": 0,
+      "manure": 0.1,
+      "cap": 0,
+      "success": false,
+      "state": {
+        "stage": "ripe",
+        "elapsed": 0,
+        "progress": 2,
+        "cycle": 0,
+        "crop": "fodder"
+      },
+      "produced": 0,
+      "manure_left": 0.1
+    }
+  ],
+  "growth": [
+    {
+      "stage": "sprouting",
+      "parts": [
+        15
+      ],
+      "state": {
+        "stage": "thirsty",
+        "elapsed": 0,
+        "progress": 0,
+        "cycle": 0,
+        "crop": "wheat"
+      }
+    },
+    {
+      "stage": "sprouting",
+      "parts": [
+        2,
+        3,
+        10
+      ],
+      "state": {
+        "stage": "thirsty",
+        "elapsed": 0,
+        "progress": 0,
+        "cycle": 0,
+        "crop": "wheat"
+      }
+    },
+    {
+      "stage": "sprouting",
+      "parts": [
+        30
+      ],
+      "state": {
+        "stage": "thirsty",
+        "elapsed": 0,
+        "progress": 0,
+        "cycle": 0,
+        "crop": "wheat"
+      }
+    },
+    {
+      "stage": "sprouting",
+      "parts": [
+        0.25,
+        0.25,
+        0.25,
+        0.25,
+        0.25,
+        0.25,
+        0.25,
+        0.25,
+        0.25,
+        0.25,
+        0.25,
+        0.25,
+        0.25,
+        0.25,
+        0.25,
+        0.25,
+        0.25,
+        0.25,
+        0.25,
+        0.25,
+        0.25,
+        0.25,
+        0.25,
+        0.25,
+        0.25,
+        0.25,
+        0.25,
+        0.25,
+        0.25,
+        0.25,
+        0.25,
+        0.25,
+        0.25,
+        0.25,
+        0.25,
+        0.25,
+        0.25,
+        0.25,
+        0.25,
+        0.25,
+        0.25,
+        0.25,
+        0.25,
+        0.25,
+        0.25,
+        0.25,
+        0.25,
+        0.25,
+        0.25,
+        0.25,
+        0.25,
+        0.25,
+        0.25,
+        0.25,
+        0.25,
+        0.25,
+        0.25,
+        0.25,
+        0.25,
+        0.25
+      ],
+      "state": {
+        "stage": "thirsty",
+        "elapsed": 0,
+        "progress": 0,
+        "cycle": 0,
+        "crop": "wheat"
+      }
+    },
+    {
+      "stage": "growing",
+      "parts": [
+        15
+      ],
+      "state": {
+        "stage": "ripe",
+        "elapsed": 0,
+        "progress": 0,
+        "cycle": 0,
+        "crop": "wheat"
+      }
+    },
+    {
+      "stage": "growing",
+      "parts": [
+        2,
+        3,
+        10
+      ],
+      "state": {
+        "stage": "ripe",
+        "elapsed": 0,
+        "progress": 0,
+        "cycle": 0,
+        "crop": "wheat"
+      }
+    },
+    {
+      "stage": "growing",
+      "parts": [
+        30
+      ],
+      "state": {
+        "stage": "ripe",
+        "elapsed": 0,
+        "progress": 0,
+        "cycle": 0,
+        "crop": "wheat"
+      }
+    },
+    {
+      "stage": "growing",
+      "parts": [
+        0.25,
+        0.25,
+        0.25,
+        0.25,
+        0.25,
+        0.25,
+        0.25,
+        0.25,
+        0.25,
+        0.25,
+        0.25,
+        0.25,
+        0.25,
+        0.25,
+        0.25,
+        0.25,
+        0.25,
+        0.25,
+        0.25,
+        0.25,
+        0.25,
+        0.25,
+        0.25,
+        0.25,
+        0.25,
+        0.25,
+        0.25,
+        0.25,
+        0.25,
+        0.25,
+        0.25,
+        0.25,
+        0.25,
+        0.25,
+        0.25,
+        0.25,
+        0.25,
+        0.25,
+        0.25,
+        0.25,
+        0.25,
+        0.25,
+        0.25,
+        0.25,
+        0.25,
+        0.25,
+        0.25,
+        0.25,
+        0.25,
+        0.25,
+        0.25,
+        0.25,
+        0.25,
+        0.25,
+        0.25,
+        0.25,
+        0.25,
+        0.25,
+        0.25,
+        0.25
+      ],
+      "state": {
+        "stage": "ripe",
+        "elapsed": 0,
+        "progress": 0,
+        "cycle": 0,
+        "crop": "wheat"
+      }
+    }
+  ],
+  "selection": [
+    {
+      "stages": [
+        "unplowed",
+        "unplowed",
+        "unplowed",
+        "unplowed"
+      ],
+      "chosen": [
+        2,
+        4
+      ],
+      "work_pass": [
+        0,
+        "unplowed"
+      ]
+    },
+    {
+      "stages": [
+        "plowed",
+        "unplowed",
+        "plowed",
+        "plowed"
+      ],
+      "chosen": [
+        3,
+        null
+      ],
+      "work_pass": [
+        0,
+        "unplowed"
+      ]
+    },
+    {
+      "stages": [
+        "sprouting",
+        "ripe",
+        "thirsty",
+        "growing"
+      ],
+      "chosen": [
+        4,
+        null
+      ],
+      "work_pass": [
+        0,
+        "thirsty"
+      ]
+    },
+    {
+      "stages": [
+        "ripe",
+        "ripe",
+        "ripe",
+        "ripe"
+      ],
+      "chosen": [
+        2,
+        4
+      ],
+      "work_pass": [
+        0,
+        "ripe"
+      ]
+    }
+  ],
+  "actions": [
+    {
+      "stage": "unplowed",
+      "progress": 0,
+      "seconds": 0.75,
+      "state": {
+        "stage": "unplowed",
+        "elapsed": 0,
+        "progress": 0.75,
+        "cycle": 0
+      },
+      "remaining": 0,
+      "practice": 0.02
+    },
+    {
+      "stage": "unplowed",
+      "progress": 0,
+      "seconds": 2,
+      "state": {
+        "stage": "plowed",
+        "elapsed": 0,
+        "progress": 0,
+        "cycle": 0
+      },
+      "remaining": 0,
+      "practice": 0.053
+    },
+    {
+      "stage": "unplowed",
+      "progress": 0.5,
+      "seconds": 3,
+      "state": {
+        "stage": "plowed",
+        "elapsed": 0,
+        "progress": 0,
+        "cycle": 0
+      },
+      "remaining": 1.5,
+      "practice": 0.04
+    },
+    {
+      "stage": "plowed",
+      "progress": 0,
+      "seconds": 0.75,
+      "state": {
+        "stage": "plowed",
+        "elapsed": 0,
+        "progress": 0.75,
+        "cycle": 0
+      },
+      "remaining": 0,
+      "practice": 0.02
+    },
+    {
+      "stage": "plowed",
+      "progress": 0,
+      "seconds": 2,
+      "state": {
+        "stage": "sprouting",
+        "elapsed": 0,
+        "progress": 0,
+        "cycle": 0,
+        "crop": "wheat"
+      },
+      "remaining": 0,
+      "practice": 0.053
+    },
+    {
+      "stage": "plowed",
+      "progress": 0.5,
+      "seconds": 3,
+      "state": {
+        "stage": "sprouting",
+        "elapsed": 0,
+        "progress": 0,
+        "cycle": 0,
+        "crop": "wheat"
+      },
+      "remaining": 1.5,
+      "practice": 0.04
+    }
+  ]
+}

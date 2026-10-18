@@ -9,7 +9,8 @@ R13 slices 1–3 implement reviewed catalogs, fractional quantities, a single-ow
 resource ledger and recipe/personal progression/equipment/hall rule evaluation at
 the experimental offline boundary. R14 slices 1–3 implement producer, hauler and
 merchant trips plus market execution over movement and accounting. R15 slices 1–3 implement offline woodcutters/resource claims and all processor
-recipe/workshop actors. Remaining farming/fishing/livestock/resident actors and
+recipe/workshop actors. R16 slice 1 implements shared offline field cycles, claims
+and harvest reservations. Remaining water/orchard/fishing/livestock/resident actors and
 playable integration remain in R16–R21; complete W1–W6 acceptance remains R23.
 Integrated W2/W3 movement/accounting acceptance remains open. R08 spatial
 rules and founder movement is complete as an experimental private-copy foundation. R07 includes saved-first terrain versions 1–7,
@@ -245,7 +246,7 @@ only after work is performed. Keep unfinished stages visible in the roadmap.
 | R13 | Resource ledger, storage, and progression rules | R12 | Slices 1–3 implemented at offline model boundary: reviewed catalogs, ledger/storage/reservations/caps/flows and progression rules; actor/save/HTTP integration and full W1–W6 acceptance remain R14–R23 |
 | R14 | Hauling, delivery, and merchant trips | R13 | Slices 1–3 implemented at the experimental offline boundary: producer/hauler/merchant trips, thresholds, purchases, sales and recovery; integrated production, durable saves and playable host remain R15–R23 |
 | R15 | Gathering and processing professions | R14 | All three slices implemented at the experimental offline boundary: woodcutters/claims, all 13 processor families/32 recipes, ordered workshop requests and recovery; durable/live integration and integrated acceptance remain R19–R23 |
-| R16 | Farming and orchards | R15 | Not started |
+| R16 | Farming and orchards | R15 | Slice 1 implemented at the experimental offline boundary: shared field work/growth, pass ordering, roster-aware claims and harvest reservations; water trips/multi-acre returns remain slice 2, orchards/crop edits/relocation/reload slice 3 |
 | R17 | Fishing, boats, animals, and horses | R16 | Not started |
 | R18 | Residents, villages, trade, and adventures | R17 | Not started |
 | R19 | Durable Rust saves and recovery | R18 | Not started |
@@ -3478,7 +3479,7 @@ Commit message: `feat: port Rust base processor batch actors`.
 This completes all three R15 code slices at the experimental offline model
 boundary. `processing/workshop.rs` owns ordered requests and processor v2 JSON;
 all 13 R01 processor families and 32 catalog recipes now execute. Python remains
-the playable default. The next migration slice is R16 slice 1.
+the playable default. R16 slice 1 is recorded below; its next unfinished slice is slice 2.
 
 - Advanced bakery recipes (bread rolls, herb bread, fruit pies, cakes) and butcher
   recipes (herbed/smoked meat, sausages, meat pies) use the existing productive
@@ -3582,6 +3583,86 @@ and relocation/reload. Preserve crop rates and action-aligned playback. Validate
 the relevant farming/orchard scenarios and invariants, update coverage/progress,
 and commit the completed slice.
 ```
+
+### R16 slice 1 — Field cycles and claims
+
+`lantern-host::farming` implements an experimental offline field owner over R11
+movement and the R13 ledger. This completes slice 1 only. Python remains the
+playable default; the next unfinished slice is R16 slice 2.
+
+- Fields use stable building/farm IDs, selected and sown crops, shared work and
+  growth clocks, cycle numbers and optional remaining harvest yield. Admission
+  checks kinds, crops, links, duplicate/foreign/missing identities, clock/stage
+  consistency, assignment references and the 48-acre limit. Complete linked acres
+  replace the farm fallback field; incomplete acres cannot be worked or grown,
+  but retain Python's sowing barrier until plowed or in a later cycle.
+- Farm passes choose the oldest cycle and then plowing, sowing, watering/growth
+  or harvest. Harvested acres in the next cycle cannot block the current pass.
+  The complete admitted assignment roster gives direct acre workers priority,
+  with town actor order breaking duplicate direct assignments. Pending routes
+  hold exclusive claims; cancellation/reassignment releases claims without erasing
+  shared work. Roster edits atomically revoke conflicting approaches and release
+  direct-assignment priority without changing goods. Selection retains active targets
+  and previous rows, prefers rows unoccupied by colleagues, and chooses their nearest
+  endpoint deterministically.
+- Outbound movement uses R11 continuous travel at 1.8 tiles/s and Python's fractional
+  tool-length acre approaches. Caller routes must use the existing farmer access
+  profile (completed acres walkable; construction acres still blocked). Route
+  pending/unreachable/blocked time performs no work and cannot be banked. Actual
+  arrival subtracts travel time before stationary work. Plowing and sowing consume
+  two shared seconds and return unused time for caller scheduling. Thirsty fields
+  explicitly wait for slice 2's water owner; no supplied boolean bypasses watering.
+- Growth is a once-per-town explicit update, independent of worker count. Each
+  15-second growth period stops at its next barrier (sprouting to thirsty, growing
+  to ripe), discarding surplus time as Python does. It never silently waters a field.
+- Completed harvest work freezes the sown crop's yield, including farm level,
+  sickle, skill/talent and one-time 0.1 manure/25% bonus. Vegetables yield 4.8 and
+  the other three crops 10 before bonuses. Output clips to existing farm/acre
+  buffers and town production caps, reserves ledger-owned worker pending goods,
+  and advances the cycle only when the remaining yield is exhausted. A clipped
+  harvest retains its completed work and frozen yield, without further practice
+  or fertilizer spending on retry. New field claims and cancellation preserve
+  completed cargo; existing ledger unload operations conserve it.
+- Each completed action returns its actual field snapshot, output and unused time
+  only after the field/model/ledger/practice transaction succeeds. Partial work,
+  waiting, route failures and rolled-back completions emit no completed action.
+  Returned field snapshots do not change when subsequent growth occurs. Live
+  browser playback/wire adaptation remains R20–R21.
+- Farming practice retains Python's rate and three-decimal rounding, applying it
+  to the cumulative contribution within an uninterrupted action. This deliberately
+  normalizes Python's per-call rounding: splitting that action cannot change XP
+  at a 20-point efficiency boundary and thereby double the harvest. Claim-local
+  practice contributions must be included in slice 3's reload schema.
+
+Evidence: `tests/farming.rs` contains 16 focused tests, with 34 real-Python cases
+(16 yields, 8 growth, 4 row/pass selection and 6 plow/sow clocks). Comparisons use
+absolute 1e-9 quantity/time tolerance and exact identity/stage/cycle/action counts.
+Additional traces cover cancellation/replacement with shared progress, direct-acre
+priority before worker stepping, pending/blocked/unreachable recovery, construction
+barriers and fallback fields, partial yield/cap retry, conserved pending cargo,
+subdivisions including a skill boundary, immutable completion snapshots, farm
+capacities, admission failures, 48-acre admission/49-acre rejection and atomic
+completion failure. Regenerate/check the synthetic oracle with:
+`python3 rust/crates/lantern-host/tests/fixtures/farming/generate.py --check`.
+
+Remaining: slice 2 owns water-source selection, collection/return and per-round
+state, carrying-water pass exceptions, carried-crop harvest continuation across
+passes, return/deposit scheduling and their blocked recovery. Slice 3 owns orchard
+stages/harvest/restock, crop edits, moved linked groups, owner JSON/reload and legacy
+field admission. R19 owns durable generations; R20–R21 own host/roster scheduling,
+commands, resource/playback adapters and integrated clocks. This is not full-tick,
+water/orchard, playable-host or durable-save parity.
+
+Performance comparisons were not run: this is a behavior port with no performance
+investigation, optimization or performance claim.
+
+Validation: `python3 tools/check.py` selected only `rust:lantern-host`;
+formatting, locked offline package tests/doc tests and all-target Clippy with
+warnings denied passed (3/3 commands). The Python farming oracle check and
+`git diff --check` passed. An initial Clippy nested-condition warning was fixed
+before the final affected run. Report: `performance-results/20261018-220047/report.md`.
+
+Commit message: `feat: port Rust field cycles and farming claims`.
 
 ## R17 — Fishing, livestock, and horses
 
