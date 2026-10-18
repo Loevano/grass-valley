@@ -7,10 +7,10 @@ code slices are implemented at the experimental model boundary. R12 slices 1–3
 including upgrades, linked groups, helpers and offline reload.
 R13 slices 1–3 implement reviewed catalogs, fractional quantities, a single-owner
 resource ledger and recipe/personal progression/equipment/hall rule evaluation at
-the experimental offline boundary. R14 slices 1–2 add experimental producer input
-and hauler output/supply trips over movement and accounting. Remaining markets,
-production actors and playable integration remain in R14–R21; complete W1–W6
-acceptance remains R23.
+the experimental offline boundary. R14 slices 1–3 implement producer, hauler and
+merchant trips plus market execution over movement and accounting. Production
+actors and playable integration remain in R15–R21; complete W1–W6 acceptance
+remains R23.
 Integrated W2/W3 movement/accounting acceptance remains open. R08 spatial
 rules and founder movement is complete as an experimental private-copy foundation. R07 includes saved-first terrain versions 1–7,
 nonchunked maps, authored starter/town sites, ordinary/swamp metadata and overlays,
@@ -243,7 +243,7 @@ only after work is performed. Keep unfinished stages visible in the roadmap.
 | R11 | Persistent worker movement and playback | R10 | Slices 1–3 implemented at experimental model boundary; integrated W2/W3 movement/accounting acceptance remains open |
 | R12 | Construction and building operations | R11 | Slices 1–3 implemented at explicit synthetic-model boundary; full economy/resident rules, durable/public host integration and release acceptance remain in R13–R23; completion boundary below |
 | R13 | Resource ledger, storage, and progression rules | R12 | Slices 1–3 implemented at offline model boundary: reviewed catalogs, ledger/storage/reservations/caps/flows and progression rules; actor/save/HTTP integration and full W1–W6 acceptance remain R14–R23 |
-| R14 | Hauling, delivery, and merchant trips | R13 | Slices 1–2 implemented at the experimental offline boundary: producer input and hauler output/supply trips; slice 3 (merchants) remains |
+| R14 | Hauling, delivery, and merchant trips | R13 | Slices 1–3 implemented at the experimental offline boundary: producer/hauler/merchant trips, thresholds, purchases, sales and recovery; integrated production, durable saves and playable host remain R15–R23 |
 | R15 | Gathering and processing professions | R14 | Not started |
 | R16 | Farming and orchards | R15 | Not started |
 | R17 | Fishing, boats, animals, and horses | R16 | Not started |
@@ -3170,8 +3170,8 @@ Commit message:
 
 Implemented at the same experimental offline boundary in `lantern-host::logistics`.
 `LogisticsTrips` names the shared trip owner; the slice-1 `InputTrips` API and v1
-producer trip JSON remain supported. The next unfinished slice is R14 slice 3:
-merchant sale/purchase rules and merchant cancellation/recovery.
+producer trip JSON remain supported. This records slice 2; merchant execution
+and the completion audit follow in slice 3 below.
 
 - Candidate ranking preserves Python's supplies-first, descending-buffered-stock,
   then Manhattan-distance order with stable building-order ties. Completed sources
@@ -3211,10 +3211,9 @@ Navigation admission/pump ownership and resident/production scheduling remain
 explicit caller responsibilities at this boundary. Reload re-admits trip JSON
 alongside independently restored model, physical ledger and personal facts;
 R19 retains durable, generation-consistent persistence of every owner and buffer
-order. Python stays the playable default. Merchant thresholds, purchases, sales,
-trade totals and their transaction/recovery tests remain R14 slice 3; production
-and animal clocks remain R15–R18, live integration R20–R21 and integrated acceptance
-R23. Performance comparisons were not run: this is a behavior port with no
+order. Python stays the playable default. Merchant execution follows in slice 3
+below; production and animal clocks remain R15–R18, live integration R20–R21 and
+integrated acceptance R23. Performance comparisons were not run: this is a behavior port with no
 performance investigation or performance claim.
 
 Validation: `python3 tools/check.py` selected only `rust:lantern-host`;
@@ -3222,6 +3221,73 @@ formatting, locked offline package tests/doc tests and all-target Clippy with
 warnings denied passed (3/3 commands). Both producer and hauler Python fixture
 verification passed. Report: `performance-results/20261018-194342/report.md`.
 Commit message: `feat: port Rust hauler output and supply trips`.
+
+### R14 slice 3 — Merchants, purchases, sales and completion audit
+
+This completes all three R14 code slices at the experimental offline model
+boundary. `logistics/market.rs` owns ordered trade rules, merchant purchase progress
+and update receipts. Sale trips reuse the existing trip/movement/cargo owner;
+`Ledger` owns all goods, coin flows and the cumulative `market_sales` quantity.
+Python remains the playable default. The next migration slice is R15 slice 1.
+
+- Paired buy/sell thresholds are configured atomically with a strict gap; the
+  legacy sale editor retains its cap, enabled flag, batch (1–10) and strictness.
+  Rule insertion order survives edits/reload. Configuration and quick sales
+  require a completed market. Source selection is stable nearest-first, excludes
+  markets and construction, and gives eligible purchases priority over new sales.
+- Pickup rechecks current source stock, thresholds, batch and merchant hauling
+  capacity. Only free stored/output goods are eligible: reserved inputs and owned
+  or orphan pending output cannot be sold. No activity or coins accrue at pickup.
+  At market arrival, current rules determine the sale, coins and cumulative sale
+  count, resource/food outflow, coin inflow and trading/hauling practice. Disabled,
+  reduced or newly strict rules restore unsold cargo to its captured source.
+- Blockage retains sale cargo without practice. Moved/deleted/upgrading endpoints
+  and reassignment use the same once-only source-or-hall cancellation as other
+  trips; failed restitution or accounting overflow commits no goods, trip,
+  movement or training changes. Physical pickup never uses affordability epsilon
+  to invent goods near an integer boundary; quantity comparisons use 1e-9 tolerance.
+- Purchases accumulate three seconds of explicit simulation time, perform at most
+  one ten-item batch per invocation, rotate products and recheck free stock,
+  capacity, coins and doubled sale prices for every merchant. They charge only
+  admitted goods, record import/coin activity and trading practice, and never
+  advance production milestones. Full/disabled storage or no eligible target
+  clears partial work; moved/unavailable market endpoints interrupt partial work.
+- v3 trip JSON adds ordered market rules, per-merchant partial work/last product,
+  endpoint and simulation-update high-water marks, plus a town quick-sale command
+  high-water mark. Repeated/older update IDs cannot bank time, buy again or repeat
+  a manual sale. Quick-sale commands retain the integer 1–200 limit and free-stock
+  pricing without worker practice. v1 producer and v2 hauler DTOs remain admitted;
+  legacy versions reject injected market state/new sale operations.
+
+Evidence: `tests/merchant_trips.rs` has 14 focused cases, including all eight
+source/market move-or-delete before/after pickup variants, upgrades, blocked
+cargo, threshold/batch/enable edits, competing merchants, reserved/pending stock,
+partial-work reload/rotation, coin/storage limits, update replay, manual commands,
+reassignment, finite overflow, failed hall fallback and malformed saved state.
+Sixteen real-Python traces (57 intermediate snapshots) compare free stock, food,
+held cargo, prices, coins, cumulative sales, practice and minute activity for
+ordinary/strict sales, edits in transit, purchases/rotation and quick sales.
+Verify with `python3 rust/crates/lantern-host/tests/fixtures/logistics/markets.py --check`.
+Earlier producer/hauler fixtures and conservation cases remain applicable.
+
+Completion boundary: R14 trip/rule/accounting APIs are implemented for explicit
+admitted facts. Navigation admission/pump calls and resident assignment scheduling
+remain caller responsibilities. The host must supply monotonically increasing
+purchase-event IDs per merchant and manual-command IDs per town. Reload admits
+trip/rule/receipt JSON alongside independently restored physical ledger, sale
+counts, minute history, personal skills and model facts; it is not a durable save
+writer or ordinary-save importer. R19 must persist all owners and event counters
+in one generation, including R13 ledger history and R14 receipts. R15–R18 retain
+production/resident/world actors, R20–R21 live HTTP/browser integration and R23
+integrated W2/W3/W1–W6 acceptance. Completing R14 does not pass those release gates.
+Performance comparisons were not run: this is a behavior port, with no performance
+investigation or performance claim.
+
+Validation: `python3 tools/check.py` selected only `rust:lantern-host`; formatting,
+locked offline package tests/doc tests and all-target Clippy with warnings denied
+passed (3/3 commands). All three producer/hauler/merchant Python fixture checks
+passed. Report: `performance-results/20261018-200829/report.md`.
+Commit message: `feat: port Rust merchant sales purchases and recovery`.
 
 ## R15 — Gathering and processing
 

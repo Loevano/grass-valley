@@ -1,0 +1,1285 @@
+[
+  {
+    "actions": [
+      {
+        "amount": 4,
+        "cap": 10,
+        "enabled": true,
+        "key": "planks",
+        "op": "sale"
+      },
+      {
+        "op": "pickup"
+      },
+      {
+        "op": "sell"
+      }
+    ],
+    "goods": {
+      "planks": 13
+    },
+    "name": "planks_False",
+    "states": [
+      {
+        "coins": 1000,
+        "food": 0,
+        "free": {
+          "planks": 13
+        },
+        "hauling": 0,
+        "held": {},
+        "incoming": {},
+        "outgoing": {},
+        "sales": 0,
+        "trading": 0
+      },
+      {
+        "coins": 1000,
+        "food": 0,
+        "free": {
+          "planks": 9
+        },
+        "hauling": 0,
+        "held": {
+          "planks": 4
+        },
+        "incoming": {},
+        "outgoing": {},
+        "sales": 0,
+        "trading": 0
+      },
+      {
+        "coins": 1004,
+        "food": 0,
+        "free": {
+          "planks": 9
+        },
+        "hauling": 0.08,
+        "held": {},
+        "incoming": {
+          "coins": 4
+        },
+        "outgoing": {
+          "planks": 4
+        },
+        "sales": 4,
+        "trading": 0.08
+      }
+    ]
+  },
+  {
+    "actions": [
+      {
+        "buy": null,
+        "key": "planks",
+        "op": "trade",
+        "sell": 10
+      },
+      {
+        "op": "pickup"
+      },
+      {
+        "op": "sell"
+      }
+    ],
+    "goods": {
+      "planks": 13
+    },
+    "name": "planks_True",
+    "states": [
+      {
+        "coins": 1000,
+        "food": 0,
+        "free": {
+          "planks": 13
+        },
+        "hauling": 0,
+        "held": {},
+        "incoming": {},
+        "outgoing": {},
+        "sales": 0,
+        "trading": 0
+      },
+      {
+        "coins": 1000,
+        "food": 0,
+        "free": {
+          "planks": 10
+        },
+        "hauling": 0,
+        "held": {
+          "planks": 3
+        },
+        "incoming": {},
+        "outgoing": {},
+        "sales": 0,
+        "trading": 0
+      },
+      {
+        "coins": 1003,
+        "food": 0,
+        "free": {
+          "planks": 10
+        },
+        "hauling": 0.08,
+        "held": {},
+        "incoming": {
+          "coins": 3
+        },
+        "outgoing": {
+          "planks": 3
+        },
+        "sales": 3,
+        "trading": 0.08
+      }
+    ]
+  },
+  {
+    "actions": [
+      {
+        "amount": 4,
+        "cap": 10,
+        "enabled": true,
+        "key": "vegetables",
+        "op": "sale"
+      },
+      {
+        "op": "pickup"
+      },
+      {
+        "op": "sell"
+      }
+    ],
+    "goods": {
+      "vegetables": 13
+    },
+    "name": "vegetables_False",
+    "states": [
+      {
+        "coins": 1000,
+        "food": 13,
+        "free": {
+          "vegetables": 13
+        },
+        "hauling": 0,
+        "held": {},
+        "incoming": {},
+        "outgoing": {},
+        "sales": 0,
+        "trading": 0
+      },
+      {
+        "coins": 1000,
+        "food": 9,
+        "free": {
+          "vegetables": 9
+        },
+        "hauling": 0,
+        "held": {
+          "vegetables": 4
+        },
+        "incoming": {},
+        "outgoing": {},
+        "sales": 0,
+        "trading": 0
+      },
+      {
+        "coins": 1004,
+        "food": 9,
+        "free": {
+          "vegetables": 9
+        },
+        "hauling": 0.08,
+        "held": {},
+        "incoming": {
+          "coins": 4
+        },
+        "outgoing": {
+          "food": 4,
+          "vegetables": 4
+        },
+        "sales": 4,
+        "trading": 0.08
+      }
+    ]
+  },
+  {
+    "actions": [
+      {
+        "buy": null,
+        "key": "vegetables",
+        "op": "trade",
+        "sell": 10
+      },
+      {
+        "op": "pickup"
+      },
+      {
+        "op": "sell"
+      }
+    ],
+    "goods": {
+      "vegetables": 13
+    },
+    "name": "vegetables_True",
+    "states": [
+      {
+        "coins": 1000,
+        "food": 13,
+        "free": {
+          "vegetables": 13
+        },
+        "hauling": 0,
+        "held": {},
+        "incoming": {},
+        "outgoing": {},
+        "sales": 0,
+        "trading": 0
+      },
+      {
+        "coins": 1000,
+        "food": 10,
+        "free": {
+          "vegetables": 10
+        },
+        "hauling": 0,
+        "held": {
+          "vegetables": 3
+        },
+        "incoming": {},
+        "outgoing": {},
+        "sales": 0,
+        "trading": 0
+      },
+      {
+        "coins": 1003,
+        "food": 10,
+        "free": {
+          "vegetables": 10
+        },
+        "hauling": 0.08,
+        "held": {},
+        "incoming": {
+          "coins": 3
+        },
+        "outgoing": {
+          "food": 3,
+          "vegetables": 3
+        },
+        "sales": 3,
+        "trading": 0.08
+      }
+    ]
+  },
+  {
+    "actions": [
+      {
+        "amount": 4,
+        "cap": 10,
+        "enabled": true,
+        "key": "smoked_sturgeon",
+        "op": "sale"
+      },
+      {
+        "op": "pickup"
+      },
+      {
+        "op": "sell"
+      }
+    ],
+    "goods": {
+      "smoked_sturgeon": 13
+    },
+    "name": "smoked_sturgeon_False",
+    "states": [
+      {
+        "coins": 1000,
+        "food": 45.5,
+        "free": {
+          "smoked_sturgeon": 13
+        },
+        "hauling": 0,
+        "held": {},
+        "incoming": {},
+        "outgoing": {},
+        "sales": 0,
+        "trading": 0
+      },
+      {
+        "coins": 1000,
+        "food": 31.5,
+        "free": {
+          "smoked_sturgeon": 9
+        },
+        "hauling": 0,
+        "held": {
+          "smoked_sturgeon": 4
+        },
+        "incoming": {},
+        "outgoing": {},
+        "sales": 0,
+        "trading": 0
+      },
+      {
+        "coins": 1024,
+        "food": 31.5,
+        "free": {
+          "smoked_sturgeon": 9
+        },
+        "hauling": 0.08,
+        "held": {},
+        "incoming": {
+          "coins": 24
+        },
+        "outgoing": {
+          "food": 14.0,
+          "smoked_sturgeon": 4
+        },
+        "sales": 4,
+        "trading": 0.08
+      }
+    ]
+  },
+  {
+    "actions": [
+      {
+        "buy": null,
+        "key": "smoked_sturgeon",
+        "op": "trade",
+        "sell": 10
+      },
+      {
+        "op": "pickup"
+      },
+      {
+        "op": "sell"
+      }
+    ],
+    "goods": {
+      "smoked_sturgeon": 13
+    },
+    "name": "smoked_sturgeon_True",
+    "states": [
+      {
+        "coins": 1000,
+        "food": 45.5,
+        "free": {
+          "smoked_sturgeon": 13
+        },
+        "hauling": 0,
+        "held": {},
+        "incoming": {},
+        "outgoing": {},
+        "sales": 0,
+        "trading": 0
+      },
+      {
+        "coins": 1000,
+        "food": 35.0,
+        "free": {
+          "smoked_sturgeon": 10
+        },
+        "hauling": 0,
+        "held": {
+          "smoked_sturgeon": 3
+        },
+        "incoming": {},
+        "outgoing": {},
+        "sales": 0,
+        "trading": 0
+      },
+      {
+        "coins": 1018,
+        "food": 35.0,
+        "free": {
+          "smoked_sturgeon": 10
+        },
+        "hauling": 0.08,
+        "held": {},
+        "incoming": {
+          "coins": 18
+        },
+        "outgoing": {
+          "food": 10.5,
+          "smoked_sturgeon": 3
+        },
+        "sales": 3,
+        "trading": 0.08
+      }
+    ]
+  },
+  {
+    "actions": [
+      {
+        "amount": 4,
+        "cap": 10,
+        "enabled": true,
+        "key": "wood",
+        "op": "sale"
+      },
+      {
+        "op": "pickup"
+      },
+      {
+        "op": "sell"
+      }
+    ],
+    "goods": {
+      "wood": 13
+    },
+    "name": "wood_False",
+    "states": [
+      {
+        "coins": 1000,
+        "food": 0,
+        "free": {
+          "wood": 13
+        },
+        "hauling": 0,
+        "held": {},
+        "incoming": {},
+        "outgoing": {},
+        "sales": 0,
+        "trading": 0
+      },
+      {
+        "coins": 1000,
+        "food": 0,
+        "free": {
+          "wood": 9
+        },
+        "hauling": 0,
+        "held": {
+          "wood": 4
+        },
+        "incoming": {},
+        "outgoing": {},
+        "sales": 0,
+        "trading": 0
+      },
+      {
+        "coins": 1004,
+        "food": 0,
+        "free": {
+          "wood": 9
+        },
+        "hauling": 0.08,
+        "held": {},
+        "incoming": {
+          "coins": 4
+        },
+        "outgoing": {
+          "wood": 4
+        },
+        "sales": 4,
+        "trading": 0.08
+      }
+    ]
+  },
+  {
+    "actions": [
+      {
+        "buy": null,
+        "key": "wood",
+        "op": "trade",
+        "sell": 10
+      },
+      {
+        "op": "pickup"
+      },
+      {
+        "op": "sell"
+      }
+    ],
+    "goods": {
+      "wood": 13
+    },
+    "name": "wood_True",
+    "states": [
+      {
+        "coins": 1000,
+        "food": 0,
+        "free": {
+          "wood": 13
+        },
+        "hauling": 0,
+        "held": {},
+        "incoming": {},
+        "outgoing": {},
+        "sales": 0,
+        "trading": 0
+      },
+      {
+        "coins": 1000,
+        "food": 0,
+        "free": {
+          "wood": 10
+        },
+        "hauling": 0,
+        "held": {
+          "wood": 3
+        },
+        "incoming": {},
+        "outgoing": {},
+        "sales": 0,
+        "trading": 0
+      },
+      {
+        "coins": 1003,
+        "food": 0,
+        "free": {
+          "wood": 10
+        },
+        "hauling": 0.08,
+        "held": {},
+        "incoming": {
+          "coins": 3
+        },
+        "outgoing": {
+          "wood": 3
+        },
+        "sales": 3,
+        "trading": 0.08
+      }
+    ]
+  },
+  {
+    "actions": [
+      {
+        "amount": 4,
+        "cap": 10,
+        "enabled": true,
+        "key": "trade_crates",
+        "op": "sale"
+      },
+      {
+        "op": "pickup"
+      },
+      {
+        "op": "sell"
+      }
+    ],
+    "goods": {
+      "trade_crates": 13
+    },
+    "name": "trade_crates_False",
+    "states": [
+      {
+        "coins": 1000,
+        "food": 0,
+        "free": {
+          "trade_crates": 13
+        },
+        "hauling": 0,
+        "held": {},
+        "incoming": {},
+        "outgoing": {},
+        "sales": 0,
+        "trading": 0
+      },
+      {
+        "coins": 1000,
+        "food": 0,
+        "free": {
+          "trade_crates": 9
+        },
+        "hauling": 0,
+        "held": {
+          "trade_crates": 4
+        },
+        "incoming": {},
+        "outgoing": {},
+        "sales": 0,
+        "trading": 0
+      },
+      {
+        "coins": 1180,
+        "food": 0,
+        "free": {
+          "trade_crates": 9
+        },
+        "hauling": 0.08,
+        "held": {},
+        "incoming": {
+          "coins": 180
+        },
+        "outgoing": {
+          "trade_crates": 4
+        },
+        "sales": 4,
+        "trading": 0.08
+      }
+    ]
+  },
+  {
+    "actions": [
+      {
+        "buy": null,
+        "key": "trade_crates",
+        "op": "trade",
+        "sell": 10
+      },
+      {
+        "op": "pickup"
+      },
+      {
+        "op": "sell"
+      }
+    ],
+    "goods": {
+      "trade_crates": 13
+    },
+    "name": "trade_crates_True",
+    "states": [
+      {
+        "coins": 1000,
+        "food": 0,
+        "free": {
+          "trade_crates": 13
+        },
+        "hauling": 0,
+        "held": {},
+        "incoming": {},
+        "outgoing": {},
+        "sales": 0,
+        "trading": 0
+      },
+      {
+        "coins": 1000,
+        "food": 0,
+        "free": {
+          "trade_crates": 10
+        },
+        "hauling": 0,
+        "held": {
+          "trade_crates": 3
+        },
+        "incoming": {},
+        "outgoing": {},
+        "sales": 0,
+        "trading": 0
+      },
+      {
+        "coins": 1135,
+        "food": 0,
+        "free": {
+          "trade_crates": 10
+        },
+        "hauling": 0.08,
+        "held": {},
+        "incoming": {
+          "coins": 135
+        },
+        "outgoing": {
+          "trade_crates": 3
+        },
+        "sales": 3,
+        "trading": 0.08
+      }
+    ]
+  },
+  {
+    "actions": [
+      {
+        "buy": null,
+        "key": "planks",
+        "op": "trade",
+        "sell": 10
+      },
+      {
+        "op": "pickup"
+      },
+      {
+        "amount": 10,
+        "cap": 12,
+        "enabled": true,
+        "key": "planks",
+        "op": "sale"
+      },
+      {
+        "op": "sell"
+      }
+    ],
+    "goods": {
+      "planks": 13
+    },
+    "name": "changed_True_12_10",
+    "states": [
+      {
+        "coins": 1000,
+        "food": 0,
+        "free": {
+          "planks": 13
+        },
+        "hauling": 0,
+        "held": {},
+        "incoming": {},
+        "outgoing": {},
+        "sales": 0,
+        "trading": 0
+      },
+      {
+        "coins": 1000,
+        "food": 0,
+        "free": {
+          "planks": 10
+        },
+        "hauling": 0,
+        "held": {
+          "planks": 3
+        },
+        "incoming": {},
+        "outgoing": {},
+        "sales": 0,
+        "trading": 0
+      },
+      {
+        "coins": 1000,
+        "food": 0,
+        "free": {
+          "planks": 10
+        },
+        "hauling": 0,
+        "held": {
+          "planks": 3
+        },
+        "incoming": {},
+        "outgoing": {},
+        "sales": 0,
+        "trading": 0
+      },
+      {
+        "coins": 1001,
+        "food": 0,
+        "free": {
+          "planks": 12
+        },
+        "hauling": 0.08,
+        "held": {},
+        "incoming": {
+          "coins": 1
+        },
+        "outgoing": {
+          "planks": 1
+        },
+        "sales": 1,
+        "trading": 0.08
+      }
+    ]
+  },
+  {
+    "actions": [
+      {
+        "buy": null,
+        "key": "planks",
+        "op": "trade",
+        "sell": 10
+      },
+      {
+        "op": "pickup"
+      },
+      {
+        "amount": 10,
+        "cap": 10,
+        "enabled": false,
+        "key": "planks",
+        "op": "sale"
+      },
+      {
+        "op": "sell"
+      }
+    ],
+    "goods": {
+      "planks": 13
+    },
+    "name": "changed_False_10_10",
+    "states": [
+      {
+        "coins": 1000,
+        "food": 0,
+        "free": {
+          "planks": 13
+        },
+        "hauling": 0,
+        "held": {},
+        "incoming": {},
+        "outgoing": {},
+        "sales": 0,
+        "trading": 0
+      },
+      {
+        "coins": 1000,
+        "food": 0,
+        "free": {
+          "planks": 10
+        },
+        "hauling": 0,
+        "held": {
+          "planks": 3
+        },
+        "incoming": {},
+        "outgoing": {},
+        "sales": 0,
+        "trading": 0
+      },
+      {
+        "coins": 1000,
+        "food": 0,
+        "free": {
+          "planks": 10
+        },
+        "hauling": 0,
+        "held": {
+          "planks": 3
+        },
+        "incoming": {},
+        "outgoing": {},
+        "sales": 0,
+        "trading": 0
+      },
+      {
+        "coins": 1000,
+        "food": 0,
+        "free": {
+          "planks": 13
+        },
+        "hauling": 0,
+        "held": {},
+        "incoming": {},
+        "outgoing": {},
+        "sales": 0,
+        "trading": 0
+      }
+    ]
+  },
+  {
+    "actions": [
+      {
+        "buy": null,
+        "key": "planks",
+        "op": "trade",
+        "sell": 10
+      },
+      {
+        "op": "pickup"
+      },
+      {
+        "amount": 1,
+        "cap": 10,
+        "enabled": true,
+        "key": "planks",
+        "op": "sale"
+      },
+      {
+        "op": "sell"
+      }
+    ],
+    "goods": {
+      "planks": 13
+    },
+    "name": "changed_True_10_1",
+    "states": [
+      {
+        "coins": 1000,
+        "food": 0,
+        "free": {
+          "planks": 13
+        },
+        "hauling": 0,
+        "held": {},
+        "incoming": {},
+        "outgoing": {},
+        "sales": 0,
+        "trading": 0
+      },
+      {
+        "coins": 1000,
+        "food": 0,
+        "free": {
+          "planks": 10
+        },
+        "hauling": 0,
+        "held": {
+          "planks": 3
+        },
+        "incoming": {},
+        "outgoing": {},
+        "sales": 0,
+        "trading": 0
+      },
+      {
+        "coins": 1000,
+        "food": 0,
+        "free": {
+          "planks": 10
+        },
+        "hauling": 0,
+        "held": {
+          "planks": 3
+        },
+        "incoming": {},
+        "outgoing": {},
+        "sales": 0,
+        "trading": 0
+      },
+      {
+        "coins": 1001,
+        "food": 0,
+        "free": {
+          "planks": 12
+        },
+        "hauling": 0.08,
+        "held": {},
+        "incoming": {
+          "coins": 1
+        },
+        "outgoing": {
+          "planks": 1
+        },
+        "sales": 1,
+        "trading": 0.08
+      }
+    ]
+  },
+  {
+    "actions": [
+      {
+        "buy": 25,
+        "key": "wood",
+        "op": "trade",
+        "sell": null
+      },
+      {
+        "buy": 25,
+        "key": "vegetables",
+        "op": "trade",
+        "sell": null
+      },
+      {
+        "elapsed": 1,
+        "op": "purchase"
+      },
+      {
+        "elapsed": 2,
+        "op": "purchase"
+      },
+      {
+        "elapsed": 100,
+        "op": "purchase"
+      },
+      {
+        "elapsed": 3,
+        "op": "purchase"
+      },
+      {
+        "elapsed": 3,
+        "op": "purchase"
+      },
+      {
+        "elapsed": 3,
+        "op": "purchase"
+      },
+      {
+        "elapsed": 3,
+        "op": "purchase"
+      },
+      {
+        "elapsed": 3,
+        "op": "purchase"
+      }
+    ],
+    "goods": {},
+    "name": "purchases_rotation",
+    "states": [
+      {
+        "coins": 1000,
+        "food": 0,
+        "free": {},
+        "hauling": 0,
+        "held": {},
+        "incoming": {},
+        "outgoing": {},
+        "sales": 0,
+        "trading": 0
+      },
+      {
+        "coins": 1000,
+        "food": 0,
+        "free": {},
+        "hauling": 0,
+        "held": {},
+        "incoming": {},
+        "outgoing": {},
+        "sales": 0,
+        "trading": 0
+      },
+      {
+        "coins": 1000,
+        "food": 0,
+        "free": {},
+        "hauling": 0,
+        "held": {},
+        "incoming": {},
+        "outgoing": {},
+        "sales": 0,
+        "trading": 0
+      },
+      {
+        "coins": 980,
+        "food": 0,
+        "free": {
+          "wood": 10
+        },
+        "hauling": 0,
+        "held": {},
+        "incoming": {
+          "wood": 10
+        },
+        "outgoing": {
+          "coins": 20
+        },
+        "sales": 0,
+        "trading": 0.08
+      },
+      {
+        "coins": 960,
+        "food": 10,
+        "free": {
+          "vegetables": 10,
+          "wood": 10
+        },
+        "hauling": 0,
+        "held": {},
+        "incoming": {
+          "food": 10,
+          "vegetables": 10,
+          "wood": 10
+        },
+        "outgoing": {
+          "coins": 40
+        },
+        "sales": 0,
+        "trading": 0.16
+      },
+      {
+        "coins": 940,
+        "food": 10,
+        "free": {
+          "vegetables": 10,
+          "wood": 20
+        },
+        "hauling": 0,
+        "held": {},
+        "incoming": {
+          "food": 10,
+          "vegetables": 10,
+          "wood": 20
+        },
+        "outgoing": {
+          "coins": 60
+        },
+        "sales": 0,
+        "trading": 0.24
+      },
+      {
+        "coins": 920,
+        "food": 20,
+        "free": {
+          "vegetables": 20,
+          "wood": 20
+        },
+        "hauling": 0,
+        "held": {},
+        "incoming": {
+          "food": 20,
+          "vegetables": 20,
+          "wood": 20
+        },
+        "outgoing": {
+          "coins": 80
+        },
+        "sales": 0,
+        "trading": 0.32
+      },
+      {
+        "coins": 910,
+        "food": 20,
+        "free": {
+          "vegetables": 20,
+          "wood": 25
+        },
+        "hauling": 0,
+        "held": {},
+        "incoming": {
+          "food": 20,
+          "vegetables": 20,
+          "wood": 25
+        },
+        "outgoing": {
+          "coins": 90
+        },
+        "sales": 0,
+        "trading": 0.4
+      },
+      {
+        "coins": 900,
+        "food": 25,
+        "free": {
+          "vegetables": 25,
+          "wood": 25
+        },
+        "hauling": 0,
+        "held": {},
+        "incoming": {
+          "food": 25,
+          "vegetables": 25,
+          "wood": 25
+        },
+        "outgoing": {
+          "coins": 100
+        },
+        "sales": 0,
+        "trading": 0.48
+      },
+      {
+        "coins": 900,
+        "food": 25,
+        "free": {
+          "vegetables": 25,
+          "wood": 25
+        },
+        "hauling": 0,
+        "held": {},
+        "incoming": {
+          "food": 25,
+          "vegetables": 25,
+          "wood": 25
+        },
+        "outgoing": {
+          "coins": 100
+        },
+        "sales": 0,
+        "trading": 0.48
+      }
+    ]
+  },
+  {
+    "actions": [
+      {
+        "buy": 7,
+        "key": "planks",
+        "op": "trade",
+        "sell": null
+      },
+      {
+        "elapsed": 3,
+        "op": "purchase"
+      },
+      {
+        "elapsed": 3,
+        "op": "purchase"
+      }
+    ],
+    "goods": {},
+    "name": "purchase_price_and_target",
+    "states": [
+      {
+        "coins": 1000,
+        "food": 0,
+        "free": {},
+        "hauling": 0,
+        "held": {},
+        "incoming": {},
+        "outgoing": {},
+        "sales": 0,
+        "trading": 0
+      },
+      {
+        "coins": 986,
+        "food": 0,
+        "free": {
+          "planks": 7
+        },
+        "hauling": 0,
+        "held": {},
+        "incoming": {
+          "planks": 7
+        },
+        "outgoing": {
+          "coins": 14
+        },
+        "sales": 0,
+        "trading": 0.08
+      },
+      {
+        "coins": 986,
+        "food": 0,
+        "free": {
+          "planks": 7
+        },
+        "hauling": 0,
+        "held": {},
+        "incoming": {
+          "planks": 7
+        },
+        "outgoing": {
+          "coins": 14
+        },
+        "sales": 0,
+        "trading": 0.08
+      }
+    ]
+  },
+  {
+    "actions": [
+      {
+        "amount": 5,
+        "key": "planks",
+        "op": "quick"
+      },
+      {
+        "amount": 8,
+        "key": "planks",
+        "op": "quick"
+      }
+    ],
+    "goods": {
+      "planks": 13
+    },
+    "name": "quick_sale",
+    "states": [
+      {
+        "coins": 1005,
+        "food": 0,
+        "free": {
+          "planks": 8
+        },
+        "hauling": 0,
+        "held": {},
+        "incoming": {
+          "coins": 5
+        },
+        "outgoing": {
+          "planks": 5
+        },
+        "sales": 5,
+        "trading": 0
+      },
+      {
+        "coins": 1013,
+        "food": 0,
+        "free": {},
+        "hauling": 0,
+        "held": {},
+        "incoming": {
+          "coins": 13
+        },
+        "outgoing": {
+          "planks": 13
+        },
+        "sales": 13,
+        "trading": 0
+      }
+    ]
+  }
+]

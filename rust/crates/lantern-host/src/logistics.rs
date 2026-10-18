@@ -16,6 +16,8 @@ use lantern_core::{
 };
 use serde::{Deserialize, Serialize};
 use std::collections::BTreeMap;
+mod market;
+pub use market::{PurchaseOutcome, SaleRule};
 
 #[derive(Debug, PartialEq)]
 pub enum Error {
@@ -25,6 +27,8 @@ pub enum Error {
     InvalidSave,
     Busy,
     Exhausted,
+    MarketRule,
+    InvalidUpdate,
 }
 impl From<resources::ResourceError> for Error {
     fn from(e: resources::ResourceError) -> Self {
@@ -104,6 +108,7 @@ struct Trip {
 pub struct InputTrips {
     next: u64,
     trips: BTreeMap<ActorId, Trip>,
+    market: market::MarketState,
 }
 #[derive(Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -113,6 +118,8 @@ struct Saved {
     town: String,
     next: u64,
     trips: Vec<(u64, Trip, BTreeMap<String, f64>)>,
+    #[serde(default)]
+    market: Option<market::MarketState>,
 }
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub enum Outcome {
@@ -135,12 +142,14 @@ pub enum HaulOperation {
     #[default]
     Supply,
     Collect,
+    Sell,
 }
 impl HaulOperation {
     fn cargo(self) -> CargoKind {
         match self {
             Self::Supply => CargoKind::Supply,
             Self::Collect => CargoKind::Collect,
+            Self::Sell => CargoKind::Sell,
         }
     }
 }
@@ -553,6 +562,7 @@ impl InputTrips {
             worker,
             producer,
             &producer_worker,
+            None,
             hall,
             elapsed,
             navigation,
@@ -605,6 +615,7 @@ impl InputTrips {
             worker,
             producer,
             producer_worker,
+            None,
             hall,
             elapsed,
             navigation,
@@ -627,6 +638,7 @@ impl InputTrips {
         let (source, destination) = match candidate.operation {
             HaulOperation::Supply => (storage, &candidate.workplace),
             HaulOperation::Collect => (&candidate.workplace, storage),
+            HaulOperation::Sell => return Err(Error::InvalidSave),
         };
         let id = self.start(town, ledger, actor, source, destination, navigation)?;
         let trip = self.trips.get_mut(actor).unwrap();
@@ -735,6 +747,7 @@ impl InputTrips {
         worker: &mut Worker,
         producer: &Producer,
         producer_worker: &Worker,
+        market_rules: Option<&market::Rules>,
         hall: &BuildingId,
         elapsed: Seconds,
         navigation: NavigationRevision,
@@ -749,6 +762,7 @@ impl InputTrips {
             &mut person,
             producer,
             producer_worker,
+            market_rules,
             hall,
             elapsed,
             navigation,
@@ -769,6 +783,7 @@ impl InputTrips {
         worker: &mut Worker,
         producer: &Producer,
         producer_worker: &Worker,
+        market_rules: Option<&market::Rules>,
         hall: &BuildingId,
         elapsed: Seconds,
         navigation: NavigationRevision,
@@ -820,7 +835,15 @@ impl InputTrips {
             return Ok(Outcome::Travelling);
         }
         if trip.phase == Phase::Pickup {
-            let (cargo, order) = if trip.operation == HaulOperation::Collect {
+            let (cargo, order) = if trip.operation == HaulOperation::Sell {
+                let cargo = market_rules.ok_or(Error::InvalidSave)?.sale_cargo(
+                    ledger,
+                    &trip.source.id(town)?,
+                    worker,
+                )?;
+                let order = cargo.ordered_entries().map(|(k, _)| k.clone()).collect();
+                (cargo, order)
+            } else if trip.operation == HaulOperation::Collect {
                 collection_plan(
                     ledger,
                     &trip.source.id(town)?,
@@ -880,6 +903,25 @@ impl InputTrips {
                 navigation,
             )?;
             return Ok(Outcome::PickedUp(advance.remaining));
+        }
+        if trip.phase == Phase::Delivery
+            && trip.operation == HaulOperation::Sell
+            && ledger.held().contains_key(actor)
+        {
+            let cargo = ledger.held()[actor].goods.clone();
+            let sold = market_rules
+                .ok_or(Error::InvalidSave)?
+                .sale_at_arrival(ledger, &cargo)?;
+            if sum(&sold) > 0. {
+                ledger.sell_held(actor, &sold)?;
+                for _ in sold.entries().values().filter(|n| n.get() > 0.) {
+                    worker.practice("trading", Seconds::new(3.).unwrap())?;
+                    worker.practice("hauling", Seconds::new(3.).unwrap())?;
+                }
+            }
+            if ledger.held().contains_key(actor) {
+                ledger.restore_cargo(actor, &trip.source.id(town)?)?;
+            }
         }
         if trip.phase == Phase::Delivery && ledger.held().contains_key(actor) {
             let order: Vec<_> = trip
@@ -954,7 +996,8 @@ impl InputTrips {
     }
     pub fn encode(&self, town: &Town, ledger: &Ledger) -> Result<String, Error> {
         serde_json::to_string(&Saved {
-            version: 2,
+            version: 3,
+            market: Some(self.market.clone()),
             world: town.owner().world.as_str().into(),
             town: town.owner().town.as_str().into(),
             next: self.next,
@@ -986,15 +1029,23 @@ impl InputTrips {
     /// Routes are rebuilt by Town::resume_travel, never serialized here.
     pub fn decode(json: &str, town: &Town, ledger: &Ledger) -> Result<Self, Error> {
         let saved: Saved = serde_json::from_str(json).map_err(|_| Error::InvalidSave)?;
-        if !matches!(saved.version, 1 | 2)
+        if !matches!(saved.version, 1..=3)
             || saved.world != town.owner().world.as_str()
             || saved.town != town.owner().town.as_str()
         {
             return Err(Error::InvalidSave);
         }
+        if (saved.version < 3 && saved.market.is_some())
+            || (saved.version == 3 && saved.market.is_none())
+        {
+            return Err(Error::InvalidSave);
+        }
+        let market = saved.market.unwrap_or_default();
+        market.validate(town)?;
         let mut result = Self {
             next: saved.next,
             trips: BTreeMap::new(),
+            market,
         };
         let mut ids = std::collections::BTreeSet::new();
         for (serial, trip, cargo) in saved.trips {
@@ -1039,7 +1090,12 @@ impl InputTrips {
                     && (trip.operation != HaulOperation::Supply
                         || trip.return_to.is_some()
                         || trip.phase == Phase::Returning))
-                || (trip.operation == HaulOperation::Collect && trip.return_to.is_some())
+                || (saved.version < 3 && trip.operation == HaulOperation::Sell)
+                || (trip.operation == HaulOperation::Sell
+                    && ledger
+                        .store(&trip.destination.id(town)?)
+                        .is_ok_and(|s| s.policy.kind != "market"))
+                || (trip.operation != HaulOperation::Supply && trip.return_to.is_some())
                 || trip.return_to.as_ref().is_some_and(|e| e != &trip.source)
                 || (trip.phase == Phase::Returning
                     && (trip.return_to.is_none() || ledger.held().contains_key(&actor)))

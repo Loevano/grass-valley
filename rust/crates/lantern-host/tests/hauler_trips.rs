@@ -659,6 +659,7 @@ fn snapshots_keep_return_completion_and_read_original_producer_v1_without_replay
     let mut value: serde_json::Value =
         serde_json::from_str(&f.trips.encode(&f.town, &f.ledger).unwrap()).unwrap();
     value["version"] = 1.into();
+    value.as_object_mut().unwrap().remove("market");
     let trip = value["trips"][0][1].as_object_mut().unwrap();
     trip.remove("operation");
     trip.remove("return_to");
@@ -676,7 +677,7 @@ fn snapshots_keep_return_completion_and_read_original_producer_v1_without_replay
     );
     assert!(
         LogisticsTrips::decode(
-            &json.replace("\"version\":2", "\"version\":1"),
+            &json.replace("\"version\":3", "\"version\":1"),
             &f.town,
             &f.ledger
         )

@@ -88,6 +88,7 @@ pub struct ResourceRow {
 pub struct Ledger {
     owner: Owner,
     coins: Quantity,
+    market_sales: Quantity,
     /// Vec retains Python withdrawal/delivery order; IDs provide stable references.
     stores: Vec<Store>,
     held: BTreeMap<ActorId, HeldCargo>,
@@ -159,6 +160,7 @@ impl Ledger {
         let ledger = Self {
             owner,
             coins,
+            market_sales: q(0.0),
             stores,
             held,
             caps: BTreeMap::new(),
@@ -167,6 +169,77 @@ impl Ledger {
         };
         ledger.overview()?;
         Ok(ledger)
+    }
+    pub fn market_sales(&self) -> Quantity {
+        self.market_sales
+    }
+    /// Explicit offline admission of the saved cumulative sale count. Durable
+    /// ledger/history restoration belongs to the R19 owner, not trip JSON.
+    pub fn restore_market_sales(&mut self, count: Quantity) {
+        self.market_sales = count;
+    }
+    fn record_sale(&mut self, key: &ResourceKey, amount: Quantity) -> Result<(), Error> {
+        let value = Quantity::new(amount.get() * key.sale_price()).map_err(|_| Error::Overflow)?;
+        self.coins = Quantity::new(self.coins.get() + value.get()).map_err(|_| Error::Overflow)?;
+        self.market_sales =
+            Quantity::new(self.market_sales.get() + amount.get()).map_err(|_| Error::Overflow)?;
+        self.activity.record(key, amount, Direction::Out)?;
+        self.activity
+            .record(&ResourceKey::parse("coins")?, value, Direction::In)
+    }
+    /// Market arrival consumes only physically held sale goods; the trip owner
+    /// returns the remainder to its captured source without capacity loss.
+    pub fn sell_held(&mut self, actor: &ActorId, sold: &Stock) -> Result<(), Error> {
+        self.apply(|l| {
+            l.actor(actor)?;
+            let mut cargo = l.held.remove(actor).ok_or(Error::MissingCargo)?;
+            if cargo.kind != CargoKind::Sell {
+                return Err(Error::InvalidStorage);
+            }
+            strict_afford(&cargo.goods, sold)?;
+            cargo.goods.spend(sold)?;
+            for (key, n) in sold.ordered_entries() {
+                l.record_sale(key, *n)?;
+            }
+            if sum(&cargo.goods) > 0.0 {
+                l.held.insert(actor.clone(), cargo);
+            }
+            Ok(())
+        })
+    }
+    /// Manual quick sales have no worker practice and use free stock only.
+    pub fn sell_free(&mut self, key: &ResourceKey, amount: Quantity) -> Result<(), Error> {
+        self.apply(|l| {
+            if !super::public_catalog()["manual_sellable_goods"]
+                .as_array()
+                .unwrap()
+                .iter()
+                .any(|v| v.as_str() == Some(key.as_str()))
+            {
+                return Err(Error::InvalidStorage);
+            }
+            let goods = Stock::from_entries([(key.clone(), amount)])?;
+            if !l.can_afford(&goods)? {
+                return Err(Error::InsufficientStock);
+            }
+            l.withdraw(key, amount, true)?;
+            l.record_sale(key, amount)
+        })
+    }
+    /// Recheck capacity and coins atomically, charging only actually admitted
+    /// imports. Purchase inflow never advances production milestones/caps.
+    pub fn purchase(&mut self, key: &ResourceKey, amount: Quantity) -> Result<Quantity, Error> {
+        self.apply(|l| {
+            let price = 2.0 * key.sale_price();
+            let affordable = Quantity::new(amount.get().min(l.coins.get() / price))
+                .map_err(|_| Error::Overflow)?;
+            let received = l.deliver(key, affordable, false)?;
+            l.spend(&Stock::from_entries([(
+                ResourceKey::parse("coins")?,
+                Quantity::new(received.get() * price).map_err(|_| Error::Overflow)?,
+            )])?)?;
+            Ok(received)
+        })
     }
     pub fn stores(&self) -> &[Store] {
         &self.stores
@@ -451,7 +524,9 @@ impl Ledger {
                     continue;
                 }
                 let take = remaining.min(s.local_room(key.as_str())?);
-                s.stored.credit(key.clone(), q(take))?;
+                if take > 0.0 {
+                    s.stored.credit(key.clone(), q(take))?;
+                }
                 remaining -= take;
             }
             let received = q(offered - remaining);
@@ -596,7 +671,7 @@ impl Ledger {
             Ok(())
         })
     }
-    /// Physical pickup only. Trip planning/timing and sale rules remain R14.
+    /// Physical pickup only; the trip owner authorizes timing and current rules.
     pub fn pickup(
         &mut self,
         actor: &ActorId,
