@@ -1,0 +1,244 @@
+{
+  "acre": {
+    "costs": {
+      "wood": 5
+    },
+    "decoration": false,
+    "level": 1
+  },
+  "bakery": {
+    "costs": {
+      "planks": 5,
+      "wood": 30
+    },
+    "decoration": false,
+    "level": 4
+  },
+  "barn": {
+    "costs": {
+      "wood": 25
+    },
+    "decoration": false,
+    "level": 2
+  },
+  "butcher": {
+    "costs": {
+      "planks": 5,
+      "wood": 25
+    },
+    "decoration": false,
+    "level": 4
+  },
+  "farm": {
+    "costs": {
+      "wood": 15
+    },
+    "decoration": false,
+    "level": 1
+  },
+  "fish_pond": {
+    "costs": {
+      "planks": 10,
+      "wood": 25
+    },
+    "decoration": false,
+    "level": 5
+  },
+  "fishing_hut": {
+    "costs": {
+      "wood": 15
+    },
+    "decoration": false,
+    "level": 1
+  },
+  "flower_box": {
+    "costs": {
+      "flower_boxes": 1
+    },
+    "decoration": true,
+    "level": 4
+  },
+  "garden_arch": {
+    "costs": {
+      "garden_arches": 1
+    },
+    "decoration": true,
+    "level": 4
+  },
+  "home": {
+    "costs": {
+      "wood": 20
+    },
+    "decoration": false,
+    "level": 1
+  },
+  "lantern": {
+    "costs": {
+      "lanterns": 1
+    },
+    "decoration": true,
+    "level": 4
+  },
+  "market": {
+    "costs": {
+      "planks": 5,
+      "wood": 20
+    },
+    "decoration": false,
+    "level": 5
+  },
+  "mill": {
+    "costs": {
+      "planks": 5,
+      "wood": 30
+    },
+    "decoration": false,
+    "level": 4
+  },
+  "mine": {
+    "costs": {
+      "planks": 15,
+      "tools": 3,
+      "wood": 40
+    },
+    "decoration": false,
+    "level": 6
+  },
+  "orchard": {
+    "costs": {
+      "wood": 25
+    },
+    "decoration": false,
+    "level": 5
+  },
+  "orchard_tree": {
+    "costs": {
+      "wood": 5
+    },
+    "decoration": false,
+    "level": 5
+  },
+  "saddler": {
+    "costs": {
+      "planks": 15,
+      "wood": 30
+    },
+    "decoration": false,
+    "level": 8
+  },
+  "sawpit": {
+    "costs": {
+      "wood": 25
+    },
+    "decoration": false,
+    "level": 3
+  },
+  "signpost": {
+    "costs": {
+      "signposts": 1
+    },
+    "decoration": true,
+    "level": 4
+  },
+  "smelter": {
+    "costs": {
+      "planks": 15,
+      "wood": 40
+    },
+    "decoration": false,
+    "level": 7
+  },
+  "smokehouse": {
+    "costs": {
+      "planks": 5,
+      "wood": 25
+    },
+    "decoration": false,
+    "level": 4
+  },
+  "stable": {
+    "costs": {
+      "iron": 5,
+      "planks": 20,
+      "wood": 40
+    },
+    "decoration": false,
+    "level": 8
+  },
+  "steelworks": {
+    "costs": {
+      "iron": 10,
+      "planks": 20,
+      "wood": 40
+    },
+    "decoration": false,
+    "level": 9
+  },
+  "storehouse": {
+    "costs": {
+      "wood": 25
+    },
+    "decoration": false,
+    "level": 1
+  },
+  "tannery": {
+    "costs": {
+      "planks": 10,
+      "wood": 30
+    },
+    "decoration": false,
+    "level": 5
+  },
+  "tradehouse": {
+    "costs": {
+      "planks": 25,
+      "steel": 10,
+      "wood": 50
+    },
+    "decoration": false,
+    "level": 10
+  },
+  "well": {
+    "costs": {
+      "wood": 15
+    },
+    "decoration": false,
+    "level": 1
+  },
+  "woodcutter": {
+    "costs": {
+      "wood": 15
+    },
+    "decoration": false,
+    "level": 1
+  },
+  "wooden_bench": {
+    "costs": {
+      "furniture": 1
+    },
+    "decoration": true,
+    "level": 4
+  },
+  "wooden_statue": {
+    "costs": {
+      "carved_furniture": 1
+    },
+    "decoration": true,
+    "level": 4
+  },
+  "wooden_table": {
+    "costs": {
+      "wooden_tables": 1
+    },
+    "decoration": true,
+    "level": 4
+  },
+  "workshop": {
+    "costs": {
+      "planks": 5,
+      "wood": 30
+    },
+    "decoration": false,
+    "level": 4
+  }
+}

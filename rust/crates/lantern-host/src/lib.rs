@@ -14,6 +14,7 @@
 //! serde_json::to_string(&PrivateCredentials::default()).unwrap();
 //! ```
 
+pub mod building;
 pub mod dto;
 pub mod legacy;
 pub mod navigation;

@@ -3,8 +3,9 @@
 A migration that can be completed one task at a time, with a prompt for each task.
 
 **Status:** R01–R10 complete as experimental migration foundations; all three R11
-code slices are implemented at the experimental model boundary. Integrated W2/W3
-movement/accounting acceptance remains open. R08 spatial
+code slices are implemented at the experimental model boundary. R12 slice 1 adds
+experimental building commands; builder progression and linked groups remain open.
+Integrated W2/W3 movement/accounting acceptance remains open. R08 spatial
 rules and founder movement is complete as an experimental private-copy foundation. R07 includes saved-first terrain versions 1–7,
 nonchunked maps, authored starter/town sites, ordinary/swamp metadata and overlays,
 post-overlay water repair, private authoritative chunk lifecycle/resource renewal,
@@ -234,7 +235,7 @@ only after work is performed. Keep unfinished stages visible in the roadmap.
 | R09 | Search algorithms and library decision | R08 | Complete at experimental core boundary: library/custom decision, bounded no_std backend and actual Python route/access/cost parity; [evaluation/evidence](RUST_SEARCH_EVALUATION.md) |
 | R10 | Request scheduler and cache invalidation | R09 | Complete as experimental navigation foundation; slices 1–3 and completion audit below; integrated W1–W6 acceptance retained in R11/R19–R23 |
 | R11 | Persistent worker movement and playback | R10 | Slices 1–3 implemented at experimental model boundary; integrated W2/W3 movement/accounting acceptance remains open |
-| R12 | Construction and building operations | R11 | Not started |
+| R12 | Construction and building operations | R11 | Slice 1 implemented at explicit synthetic-model boundary; slices 2–3, gameplay accounting/cancellation and durable integration remain open; evidence below |
 | R13 | Resource ledger, storage, and progression rules | R12 | Not started |
 | R14 | Hauling, delivery, and merchant trips | R13 | Not started |
 | R15 | Gathering and processing professions | R14 | Not started |
@@ -2598,6 +2599,76 @@ sandbox, and cancellation rules. Test atomic command failure and relocation duri
 work/travel. Validate the affected paired scenarios, update coverage/progress,
 and commit the completed slice.
 ```
+
+### R12 slice 1 — Atomic building commands
+
+`lantern-host::building::BuildingWorld` exclusively owns the experimental model,
+explicit per-town building metadata/inventory/roads, and a materialized synthetic
+landscape. Commands use world-qualified stable building IDs and an owner supplied
+by the future authenticated host. Python remains the playable default; this API
+has no HTTP dispatch, live-save access or legacy construction importer.
+
+Implemented at that boundary:
+
+- Build ordinary buildings and decorations using a reviewed generated subset of
+  Python's current construction catalog. Enforce level unlocks, fractional material
+  affordability (including the existing `1e-9` tolerance), oriented footprints,
+  map/void limits, hall range, original shared territory, resources, locals,
+  founders, foreign buildings/roads, and barn pen protection.
+- Preserve normal 30-second construction sites and 10-second roads; decorations
+  complete immediately. Sandbox placement is free and immediate. Build/remove
+  roads idempotently and clear covered berries/herbs only after success. Single
+  tile structures may overlap roads, matching Python; larger footprints may not.
+- Relocate ordinary buildings, expanding compact saved dimensions to the current
+  catalog footprint. Charge at most one available coin outside sandbox. Preserve
+  worker position, cargo, task phase and elapsed work; invalidate a selected active
+  building leg and resume from its actual fractional position toward the new site.
+  Hall separation stays at 40 Euclidean tiles in shared worlds.
+- Rotate completed buildings/decorations with saved footprint dimensions; validate
+  only changed occupancy, preserving free turns without spatial changes. Barn
+  gates must face inward and clear actual founder/worker/local routine positions.
+- Protect halls from demolition, salvage stored inventory and pending output at
+  the hall once, and release all affected task/travel references without deleting
+  or moving actors. Unrelated IDs/tasks remain intact. Preflight actor generation
+  exhaustion; quantity overflow rejects without partial salvage.
+
+Commands stage candidate town facts and commit once. Rejected commands leave
+inventory, coins, entity allocation, forage, actors and geometry unchanged.
+`Town::insert_building` and `remove_building` provide the checked structural
+primitives. The host retains the world-wide allocator high-water mark after removal.
+Geometry projections are read-only; future navigation integration must supply
+fresh dependency-validated geometry after a successful structural change.
+
+Validation: the applicable `python3 tools/check.py` selection is `rust:lantern-core`
+and `rust:lantern-host` (format, locked offline tests/doc tests, and Clippy).
+All six commands passed in `performance-results/20261018-155258/report.md`;
+the nine R12 tests include 16 Python scenarios with 52 command outcomes. This slice
+is committed as `feat: add atomic Rust building operations`.
+`tests/building.rs` pairs the Python command vectors in
+`tests/fixtures/building/python.json`, checks the generated catalog, and exercises
+shared ownership/territory/player/road restrictions, pending-stock exclusion,
+worker return travel and task cancellation, generation/quantity/allocator exhaustion,
+exactly-once salvage, and explicit-facts restoration between commands. Regenerate
+vectors with `python3 rust/crates/lantern-host/tests/fixtures/building/generate.py`;
+refresh the reviewed catalog with its sibling `catalog.py`. Performance comparison
+is not required: this is a functionality port, not a performance investigation.
+Candidate cloning is an experimental correctness boundary, not scalability evidence.
+
+Remaining R12 scope: slice 2 owns builder priority/claims/progress, arrival actions,
+saved construction walks and complete construction-record serialization; slice 3
+owns upgrades, linked acres/orchard trees and gameplay cancellation interactions.
+This slice rejects linked children on build/restoration rather than accepting an
+incomplete movable group. Farms/orchards without children use ordinary commands.
+Inventory here contains only explicitly supplied stored/pending facts: R13–R17
+still own the complete resource ledger, reservations, output/input buffers,
+activity totals, housing residents, assignments, logistics refunds and production
+cancellation policies. No legacy economic record is inferred into these facts.
+
+Restoration currently consumes all explicit facts through `restore`/`into_parts`;
+it is **not** a JSON save/reload acceptance claim. The generic `lantern-model` v2
+DTO covers only its existing substrate and must not be used to persist this wrapper.
+R19–R21 retain durable saves, command/HTTP/snapshot integration; R11's integrated
+W2/W3 movement/accounting and R23's W1–W6 acceptance remain open.
 
 ## R13 — Resource accounting and progression rules
 

@@ -4,6 +4,13 @@ R05 is a foundation checkpoint, not a playable Rust host. The host library expos
 offline conversion of the model built in R05 slices 1–2. Python launch, HTTP
 responses, action bodies, browser behavior, rates and saves remain unchanged.
 
+R12 slice 1 adds a separate exclusive `BuildingWorld` wrapper around this substrate
+with explicit site/catalog/inventory/road/landscape facts. Its `restore`/`into_parts`
+boundary requires those facts; the v2 DTO below does not serialize them. Encoding
+only `BuildingWorld::model()` is not a save of the construction world. Builder
+serialization and durable/public integration remain later work; see the
+[R12 scope and evidence](RUST_MIGRATION.md#r12-slice-1--atomic-building-commands).
+
 ## Formats and conversion
 
 `lantern-host::dto::encode_save` / `decode_save` use the explicit discriminator
@@ -174,7 +181,8 @@ No omitted feature is approved for removal. The saved subsystem matrix assigns:
   facing and active/terminal travel intent, v2 model save migration, confirmed
   playback observations and JSON reload traces. Full worker/accounting rules,
   browser wire integration and measured W2/W3 acceptance remain open.
-- R12–13: complete buildings/footprints/roads/links, residents/assignments, stock,
+- R12–13: slice 1 implements ordinary building/road commands on explicit facts;
+  builder progression, upgrades/links, residents/assignments and full stock,
   costs/capacities, skills, food/progression, hall unlocks and balance migrations.
 - R14–17: trips/reservations/accounting, markets/resource activity, every production
   recipe/queue, farms/orchards/water/claims, species, boats, barn animals and horses.

@@ -352,7 +352,7 @@ impl Actor {
 /// and retire jobs from any previous simulation instance before restoring. A
 /// rollback to an older snapshot also rolls back counters; host job lifetimes
 /// must not cross that boundary.
-#[derive(Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct Town {
     owner: Owner,
     buildings: Vec<Building>,
@@ -422,6 +422,62 @@ impl Town {
 
     pub fn actor(&self, id: &ActorId) -> Result<&Actor, ModelError> {
         Ok(&self.actors[self.actor_index(id)?])
+    }
+
+    /// Validated structural insertion; catalog, cost and spatial rules are the
+    /// command owner's responsibility. Never accepts a reused live serial.
+    pub fn insert_building(&mut self, building: Building) -> Result<(), ModelError> {
+        building.id.identity().validate_owner(&self.owner)?;
+        let serial = building.id.identity().serial();
+        if self
+            .buildings
+            .iter()
+            .any(|b| b.id.identity().serial() == serial)
+            || self
+                .actors
+                .iter()
+                .any(|a| a.state.id.identity().serial() == serial)
+        {
+            return Err(ModelError::Identity(IdentityError::DuplicateSerial));
+        }
+        self.buildings.push(building);
+        Ok(())
+    }
+
+    /// Release all task and travel references before removal, preserving actor
+    /// position/facing/cargo. Preflight generations so a failure is atomic.
+    /// The command owner must salvage building inventory before committing.
+    pub fn remove_building(&mut self, id: &BuildingId) -> Result<Building, ModelError> {
+        self.building(id)?;
+        let references = |actor: &Actor| {
+            let destination = |d: &Destination| matches!(d, Destination::Building(b) if b == id);
+            (match &actor.state.task {
+                Task::Work {
+                    workplace, target, ..
+                } => workplace == id || destination(target),
+                Task::Transport {
+                    source,
+                    destination,
+                    ..
+                } => source == id || destination == id,
+                Task::Construction { site, .. } => site == id,
+                _ => false,
+            }) || actor.state.travel.destination().is_some_and(destination)
+        };
+        let affected: Vec<_> = self
+            .actors
+            .iter()
+            .filter(|a| references(a))
+            .map(|a| {
+                a.state.task_generation.next()?;
+                Ok(a.state.id.clone())
+            })
+            .collect::<Result<_, ModelError>>()?;
+        for actor in affected {
+            self.set_task(&actor, Task::Idle)?;
+        }
+        let index = self.buildings.iter().position(|b| &b.id == id).unwrap();
+        Ok(self.buildings.remove(index))
     }
 
     fn actor_index(&self, id: &ActorId) -> Result<usize, ModelError> {

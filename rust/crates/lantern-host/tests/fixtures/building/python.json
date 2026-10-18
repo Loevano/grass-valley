@@ -1,0 +1,4303 @@
+{
+  "cases": [
+    {
+      "commands": [
+        {
+          "action": "build",
+          "kind": "sawpit",
+          "orientation": 1,
+          "x": 40,
+          "y": 30
+        },
+        {
+          "action": "set_building_orientation",
+          "index": 1,
+          "orientation": 2
+        },
+        {
+          "action": "move",
+          "index": 1,
+          "x": 45,
+          "y": 30
+        },
+        {
+          "action": "move",
+          "index": 1,
+          "x": 50,
+          "y": 30
+        },
+        {
+          "action": "build_road",
+          "x": 40,
+          "y": 30
+        },
+        {
+          "action": "build_road",
+          "x": 40,
+          "y": 30
+        },
+        {
+          "action": "build",
+          "kind": "home",
+          "x": 40,
+          "y": 30
+        },
+        {
+          "action": "remove_road",
+          "x": 40,
+          "y": 30
+        },
+        {
+          "action": "remove_road",
+          "x": 40,
+          "y": 30
+        },
+        {
+          "action": "destroy",
+          "index": 1
+        },
+        {
+          "action": "destroy",
+          "index": 0
+        }
+      ],
+      "name": "ordinary costs, forage, unfinished move, idempotent roads",
+      "outcomes": [
+        {
+          "ok": true,
+          "state": {
+            "buildings": [
+              {
+                "dimensions": [
+                  3,
+                  3
+                ],
+                "fence_orientation": 0,
+                "kind": "hall",
+                "orientation": 0,
+                "pending": {},
+                "remaining": null,
+                "stored": {
+                  "furniture": 2,
+                  "iron": 20,
+                  "planks": 30,
+                  "steel": 15,
+                  "tools": 5,
+                  "wood": 75
+                },
+                "tile": [
+                  30,
+                  30
+                ]
+              },
+              {
+                "dimensions": [
+                  2,
+                  3
+                ],
+                "fence_orientation": 0,
+                "kind": "sawpit",
+                "orientation": 1,
+                "pending": {},
+                "remaining": 30,
+                "stored": {},
+                "tile": [
+                  40,
+                  30
+                ]
+              }
+            ],
+            "coins": 2.5,
+            "resources": [
+              {
+                "kind": "rock",
+                "x": 45,
+                "y": 30
+              }
+            ],
+            "roads": []
+          }
+        },
+        {
+          "ok": false,
+          "state": {
+            "buildings": [
+              {
+                "dimensions": [
+                  3,
+                  3
+                ],
+                "fence_orientation": 0,
+                "kind": "hall",
+                "orientation": 0,
+                "pending": {},
+                "remaining": null,
+                "stored": {
+                  "furniture": 2,
+                  "iron": 20,
+                  "planks": 30,
+                  "steel": 15,
+                  "tools": 5,
+                  "wood": 75
+                },
+                "tile": [
+                  30,
+                  30
+                ]
+              },
+              {
+                "dimensions": [
+                  2,
+                  3
+                ],
+                "fence_orientation": 0,
+                "kind": "sawpit",
+                "orientation": 1,
+                "pending": {},
+                "remaining": 30,
+                "stored": {},
+                "tile": [
+                  40,
+                  30
+                ]
+              }
+            ],
+            "coins": 2.5,
+            "resources": [
+              {
+                "kind": "rock",
+                "x": 45,
+                "y": 30
+              }
+            ],
+            "roads": []
+          }
+        },
+        {
+          "ok": false,
+          "state": {
+            "buildings": [
+              {
+                "dimensions": [
+                  3,
+                  3
+                ],
+                "fence_orientation": 0,
+                "kind": "hall",
+                "orientation": 0,
+                "pending": {},
+                "remaining": null,
+                "stored": {
+                  "furniture": 2,
+                  "iron": 20,
+                  "planks": 30,
+                  "steel": 15,
+                  "tools": 5,
+                  "wood": 75
+                },
+                "tile": [
+                  30,
+                  30
+                ]
+              },
+              {
+                "dimensions": [
+                  2,
+                  3
+                ],
+                "fence_orientation": 0,
+                "kind": "sawpit",
+                "orientation": 1,
+                "pending": {},
+                "remaining": 30,
+                "stored": {},
+                "tile": [
+                  40,
+                  30
+                ]
+              }
+            ],
+            "coins": 2.5,
+            "resources": [
+              {
+                "kind": "rock",
+                "x": 45,
+                "y": 30
+              }
+            ],
+            "roads": []
+          }
+        },
+        {
+          "ok": true,
+          "state": {
+            "buildings": [
+              {
+                "dimensions": [
+                  3,
+                  3
+                ],
+                "fence_orientation": 0,
+                "kind": "hall",
+                "orientation": 0,
+                "pending": {},
+                "remaining": null,
+                "stored": {
+                  "furniture": 2,
+                  "iron": 20,
+                  "planks": 30,
+                  "steel": 15,
+                  "tools": 5,
+                  "wood": 75
+                },
+                "tile": [
+                  30,
+                  30
+                ]
+              },
+              {
+                "dimensions": [
+                  2,
+                  3
+                ],
+                "fence_orientation": 0,
+                "kind": "sawpit",
+                "orientation": 1,
+                "pending": {},
+                "remaining": 30,
+                "stored": {},
+                "tile": [
+                  50,
+                  30
+                ]
+              }
+            ],
+            "coins": 1.5,
+            "resources": [
+              {
+                "kind": "rock",
+                "x": 45,
+                "y": 30
+              }
+            ],
+            "roads": []
+          }
+        },
+        {
+          "ok": true,
+          "state": {
+            "buildings": [
+              {
+                "dimensions": [
+                  3,
+                  3
+                ],
+                "fence_orientation": 0,
+                "kind": "hall",
+                "orientation": 0,
+                "pending": {},
+                "remaining": null,
+                "stored": {
+                  "furniture": 2,
+                  "iron": 20,
+                  "planks": 30,
+                  "steel": 15,
+                  "tools": 5,
+                  "wood": 75
+                },
+                "tile": [
+                  30,
+                  30
+                ]
+              },
+              {
+                "dimensions": [
+                  2,
+                  3
+                ],
+                "fence_orientation": 0,
+                "kind": "sawpit",
+                "orientation": 1,
+                "pending": {},
+                "remaining": 30,
+                "stored": {},
+                "tile": [
+                  50,
+                  30
+                ]
+              }
+            ],
+            "coins": 1.5,
+            "resources": [
+              {
+                "kind": "rock",
+                "x": 45,
+                "y": 30
+              }
+            ],
+            "roads": [
+              {
+                "remaining": 10,
+                "tile": [
+                  40,
+                  30
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "ok": true,
+          "state": {
+            "buildings": [
+              {
+                "dimensions": [
+                  3,
+                  3
+                ],
+                "fence_orientation": 0,
+                "kind": "hall",
+                "orientation": 0,
+                "pending": {},
+                "remaining": null,
+                "stored": {
+                  "furniture": 2,
+                  "iron": 20,
+                  "planks": 30,
+                  "steel": 15,
+                  "tools": 5,
+                  "wood": 75
+                },
+                "tile": [
+                  30,
+                  30
+                ]
+              },
+              {
+                "dimensions": [
+                  2,
+                  3
+                ],
+                "fence_orientation": 0,
+                "kind": "sawpit",
+                "orientation": 1,
+                "pending": {},
+                "remaining": 30,
+                "stored": {},
+                "tile": [
+                  50,
+                  30
+                ]
+              }
+            ],
+            "coins": 1.5,
+            "resources": [
+              {
+                "kind": "rock",
+                "x": 45,
+                "y": 30
+              }
+            ],
+            "roads": [
+              {
+                "remaining": 10,
+                "tile": [
+                  40,
+                  30
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "ok": true,
+          "state": {
+            "buildings": [
+              {
+                "dimensions": [
+                  3,
+                  3
+                ],
+                "fence_orientation": 0,
+                "kind": "hall",
+                "orientation": 0,
+                "pending": {},
+                "remaining": null,
+                "stored": {
+                  "furniture": 2,
+                  "iron": 20,
+                  "planks": 30,
+                  "steel": 15,
+                  "tools": 5,
+                  "wood": 55
+                },
+                "tile": [
+                  30,
+                  30
+                ]
+              },
+              {
+                "dimensions": [
+                  2,
+                  3
+                ],
+                "fence_orientation": 0,
+                "kind": "sawpit",
+                "orientation": 1,
+                "pending": {},
+                "remaining": 30,
+                "stored": {},
+                "tile": [
+                  50,
+                  30
+                ]
+              },
+              {
+                "dimensions": [
+                  1,
+                  1
+                ],
+                "fence_orientation": 0,
+                "kind": "home",
+                "orientation": 0,
+                "pending": {},
+                "remaining": 30,
+                "stored": {},
+                "tile": [
+                  40,
+                  30
+                ]
+              }
+            ],
+            "coins": 1.5,
+            "resources": [
+              {
+                "kind": "rock",
+                "x": 45,
+                "y": 30
+              }
+            ],
+            "roads": [
+              {
+                "remaining": 10,
+                "tile": [
+                  40,
+                  30
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "ok": true,
+          "state": {
+            "buildings": [
+              {
+                "dimensions": [
+                  3,
+                  3
+                ],
+                "fence_orientation": 0,
+                "kind": "hall",
+                "orientation": 0,
+                "pending": {},
+                "remaining": null,
+                "stored": {
+                  "furniture": 2,
+                  "iron": 20,
+                  "planks": 30,
+                  "steel": 15,
+                  "tools": 5,
+                  "wood": 55
+                },
+                "tile": [
+                  30,
+                  30
+                ]
+              },
+              {
+                "dimensions": [
+                  2,
+                  3
+                ],
+                "fence_orientation": 0,
+                "kind": "sawpit",
+                "orientation": 1,
+                "pending": {},
+                "remaining": 30,
+                "stored": {},
+                "tile": [
+                  50,
+                  30
+                ]
+              },
+              {
+                "dimensions": [
+                  1,
+                  1
+                ],
+                "fence_orientation": 0,
+                "kind": "home",
+                "orientation": 0,
+                "pending": {},
+                "remaining": 30,
+                "stored": {},
+                "tile": [
+                  40,
+                  30
+                ]
+              }
+            ],
+            "coins": 1.5,
+            "resources": [
+              {
+                "kind": "rock",
+                "x": 45,
+                "y": 30
+              }
+            ],
+            "roads": []
+          }
+        },
+        {
+          "ok": true,
+          "state": {
+            "buildings": [
+              {
+                "dimensions": [
+                  3,
+                  3
+                ],
+                "fence_orientation": 0,
+                "kind": "hall",
+                "orientation": 0,
+                "pending": {},
+                "remaining": null,
+                "stored": {
+                  "furniture": 2,
+                  "iron": 20,
+                  "planks": 30,
+                  "steel": 15,
+                  "tools": 5,
+                  "wood": 55
+                },
+                "tile": [
+                  30,
+                  30
+                ]
+              },
+              {
+                "dimensions": [
+                  2,
+                  3
+                ],
+                "fence_orientation": 0,
+                "kind": "sawpit",
+                "orientation": 1,
+                "pending": {},
+                "remaining": 30,
+                "stored": {},
+                "tile": [
+                  50,
+                  30
+                ]
+              },
+              {
+                "dimensions": [
+                  1,
+                  1
+                ],
+                "fence_orientation": 0,
+                "kind": "home",
+                "orientation": 0,
+                "pending": {},
+                "remaining": 30,
+                "stored": {},
+                "tile": [
+                  40,
+                  30
+                ]
+              }
+            ],
+            "coins": 1.5,
+            "resources": [
+              {
+                "kind": "rock",
+                "x": 45,
+                "y": 30
+              }
+            ],
+            "roads": []
+          }
+        },
+        {
+          "ok": true,
+          "state": {
+            "buildings": [
+              {
+                "dimensions": [
+                  3,
+                  3
+                ],
+                "fence_orientation": 0,
+                "kind": "hall",
+                "orientation": 0,
+                "pending": {},
+                "remaining": null,
+                "stored": {
+                  "furniture": 2,
+                  "iron": 20,
+                  "planks": 30,
+                  "steel": 15,
+                  "tools": 5,
+                  "wood": 55
+                },
+                "tile": [
+                  30,
+                  30
+                ]
+              },
+              {
+                "dimensions": [
+                  1,
+                  1
+                ],
+                "fence_orientation": 0,
+                "kind": "home",
+                "orientation": 0,
+                "pending": {},
+                "remaining": 30,
+                "stored": {},
+                "tile": [
+                  40,
+                  30
+                ]
+              }
+            ],
+            "coins": 1.5,
+            "resources": [
+              {
+                "kind": "rock",
+                "x": 45,
+                "y": 30
+              }
+            ],
+            "roads": []
+          }
+        },
+        {
+          "ok": false,
+          "state": {
+            "buildings": [
+              {
+                "dimensions": [
+                  3,
+                  3
+                ],
+                "fence_orientation": 0,
+                "kind": "hall",
+                "orientation": 0,
+                "pending": {},
+                "remaining": null,
+                "stored": {
+                  "furniture": 2,
+                  "iron": 20,
+                  "planks": 30,
+                  "steel": 15,
+                  "tools": 5,
+                  "wood": 55
+                },
+                "tile": [
+                  30,
+                  30
+                ]
+              },
+              {
+                "dimensions": [
+                  1,
+                  1
+                ],
+                "fence_orientation": 0,
+                "kind": "home",
+                "orientation": 0,
+                "pending": {},
+                "remaining": 30,
+                "stored": {},
+                "tile": [
+                  40,
+                  30
+                ]
+              }
+            ],
+            "coins": 1.5,
+            "resources": [
+              {
+                "kind": "rock",
+                "x": 45,
+                "y": 30
+              }
+            ],
+            "roads": []
+          }
+        }
+      ],
+      "source": {
+        "buildings": [
+          {
+            "footprint": [
+              3,
+              3
+            ],
+            "kind": "hall",
+            "stored_goods": {
+              "furniture": 2,
+              "iron": 20,
+              "planks": 30,
+              "steel": 15,
+              "tools": 5,
+              "wood": 100
+            },
+            "x": 30,
+            "y": 30
+          }
+        ],
+        "coins": 2.5,
+        "level": 10,
+        "locals": [],
+        "origin": [
+          30,
+          30
+        ],
+        "player": [
+          1,
+          1
+        ],
+        "resources": [
+          {
+            "kind": "berry_bush",
+            "x": 40,
+            "y": 30
+          },
+          {
+            "kind": "herb_patch",
+            "x": 41,
+            "y": 30
+          },
+          {
+            "kind": "rock",
+            "x": 45,
+            "y": 30
+          }
+        ],
+        "roads": [],
+        "sandbox": false,
+        "unavailable": []
+      }
+    },
+    {
+      "commands": [
+        {
+          "action": "set_building_orientation",
+          "index": 1,
+          "orientation": 1
+        },
+        {
+          "action": "set_building_orientation",
+          "index": 1,
+          "orientation": 2
+        },
+        {
+          "action": "move",
+          "index": 1,
+          "x": 44,
+          "y": 30
+        },
+        {
+          "action": "build",
+          "kind": "wooden_bench",
+          "orientation": 3,
+          "x": 48,
+          "y": 30
+        },
+        {
+          "action": "set_decoration_orientation",
+          "index": 2,
+          "orientation": 2
+        },
+        {
+          "action": "destroy",
+          "index": 1
+        },
+        {
+          "action": "destroy",
+          "index": 1
+        }
+      ],
+      "name": "rotation, salvage, sandbox",
+      "outcomes": [
+        {
+          "ok": true,
+          "state": {
+            "buildings": [
+              {
+                "dimensions": [
+                  3,
+                  3
+                ],
+                "fence_orientation": 0,
+                "kind": "hall",
+                "orientation": 0,
+                "pending": {},
+                "remaining": null,
+                "stored": {
+                  "furniture": 2,
+                  "iron": 20,
+                  "planks": 30,
+                  "steel": 15,
+                  "tools": 5,
+                  "wood": 100
+                },
+                "tile": [
+                  30,
+                  30
+                ]
+              },
+              {
+                "dimensions": [
+                  2,
+                  3
+                ],
+                "fence_orientation": 0,
+                "kind": "sawpit",
+                "orientation": 1,
+                "pending": {
+                  "planks": 0.375
+                },
+                "remaining": null,
+                "stored": {
+                  "wood": 2.125
+                },
+                "tile": [
+                  40,
+                  30
+                ]
+              }
+            ],
+            "coins": 0,
+            "resources": [
+              {
+                "kind": "berry_bush",
+                "x": 44,
+                "y": 30
+              },
+              {
+                "kind": "tree",
+                "x": 44,
+                "y": 31
+              }
+            ],
+            "roads": []
+          }
+        },
+        {
+          "ok": true,
+          "state": {
+            "buildings": [
+              {
+                "dimensions": [
+                  3,
+                  3
+                ],
+                "fence_orientation": 0,
+                "kind": "hall",
+                "orientation": 0,
+                "pending": {},
+                "remaining": null,
+                "stored": {
+                  "furniture": 2,
+                  "iron": 20,
+                  "planks": 30,
+                  "steel": 15,
+                  "tools": 5,
+                  "wood": 100
+                },
+                "tile": [
+                  30,
+                  30
+                ]
+              },
+              {
+                "dimensions": [
+                  3,
+                  2
+                ],
+                "fence_orientation": 0,
+                "kind": "sawpit",
+                "orientation": 2,
+                "pending": {
+                  "planks": 0.375
+                },
+                "remaining": null,
+                "stored": {
+                  "wood": 2.125
+                },
+                "tile": [
+                  40,
+                  30
+                ]
+              }
+            ],
+            "coins": 0,
+            "resources": [
+              {
+                "kind": "berry_bush",
+                "x": 44,
+                "y": 30
+              },
+              {
+                "kind": "tree",
+                "x": 44,
+                "y": 31
+              }
+            ],
+            "roads": []
+          }
+        },
+        {
+          "ok": false,
+          "state": {
+            "buildings": [
+              {
+                "dimensions": [
+                  3,
+                  3
+                ],
+                "fence_orientation": 0,
+                "kind": "hall",
+                "orientation": 0,
+                "pending": {},
+                "remaining": null,
+                "stored": {
+                  "furniture": 2,
+                  "iron": 20,
+                  "planks": 30,
+                  "steel": 15,
+                  "tools": 5,
+                  "wood": 100
+                },
+                "tile": [
+                  30,
+                  30
+                ]
+              },
+              {
+                "dimensions": [
+                  3,
+                  2
+                ],
+                "fence_orientation": 0,
+                "kind": "sawpit",
+                "orientation": 2,
+                "pending": {
+                  "planks": 0.375
+                },
+                "remaining": null,
+                "stored": {
+                  "wood": 2.125
+                },
+                "tile": [
+                  40,
+                  30
+                ]
+              }
+            ],
+            "coins": 0,
+            "resources": [
+              {
+                "kind": "berry_bush",
+                "x": 44,
+                "y": 30
+              },
+              {
+                "kind": "tree",
+                "x": 44,
+                "y": 31
+              }
+            ],
+            "roads": []
+          }
+        },
+        {
+          "ok": true,
+          "state": {
+            "buildings": [
+              {
+                "dimensions": [
+                  3,
+                  3
+                ],
+                "fence_orientation": 0,
+                "kind": "hall",
+                "orientation": 0,
+                "pending": {},
+                "remaining": null,
+                "stored": {
+                  "furniture": 2,
+                  "iron": 20,
+                  "planks": 30,
+                  "steel": 15,
+                  "tools": 5,
+                  "wood": 100
+                },
+                "tile": [
+                  30,
+                  30
+                ]
+              },
+              {
+                "dimensions": [
+                  3,
+                  2
+                ],
+                "fence_orientation": 0,
+                "kind": "sawpit",
+                "orientation": 2,
+                "pending": {
+                  "planks": 0.375
+                },
+                "remaining": null,
+                "stored": {
+                  "wood": 2.125
+                },
+                "tile": [
+                  40,
+                  30
+                ]
+              },
+              {
+                "dimensions": [
+                  1,
+                  1
+                ],
+                "fence_orientation": 0,
+                "kind": "wooden_bench",
+                "orientation": 3,
+                "pending": {},
+                "remaining": null,
+                "stored": {},
+                "tile": [
+                  48,
+                  30
+                ]
+              }
+            ],
+            "coins": 0,
+            "resources": [
+              {
+                "kind": "berry_bush",
+                "x": 44,
+                "y": 30
+              },
+              {
+                "kind": "tree",
+                "x": 44,
+                "y": 31
+              }
+            ],
+            "roads": []
+          }
+        },
+        {
+          "ok": true,
+          "state": {
+            "buildings": [
+              {
+                "dimensions": [
+                  3,
+                  3
+                ],
+                "fence_orientation": 0,
+                "kind": "hall",
+                "orientation": 0,
+                "pending": {},
+                "remaining": null,
+                "stored": {
+                  "furniture": 2,
+                  "iron": 20,
+                  "planks": 30,
+                  "steel": 15,
+                  "tools": 5,
+                  "wood": 100
+                },
+                "tile": [
+                  30,
+                  30
+                ]
+              },
+              {
+                "dimensions": [
+                  3,
+                  2
+                ],
+                "fence_orientation": 0,
+                "kind": "sawpit",
+                "orientation": 2,
+                "pending": {
+                  "planks": 0.375
+                },
+                "remaining": null,
+                "stored": {
+                  "wood": 2.125
+                },
+                "tile": [
+                  40,
+                  30
+                ]
+              },
+              {
+                "dimensions": [
+                  1,
+                  1
+                ],
+                "fence_orientation": 0,
+                "kind": "wooden_bench",
+                "orientation": 2,
+                "pending": {},
+                "remaining": null,
+                "stored": {},
+                "tile": [
+                  48,
+                  30
+                ]
+              }
+            ],
+            "coins": 0,
+            "resources": [
+              {
+                "kind": "berry_bush",
+                "x": 44,
+                "y": 30
+              },
+              {
+                "kind": "tree",
+                "x": 44,
+                "y": 31
+              }
+            ],
+            "roads": []
+          }
+        },
+        {
+          "ok": true,
+          "state": {
+            "buildings": [
+              {
+                "dimensions": [
+                  3,
+                  3
+                ],
+                "fence_orientation": 0,
+                "kind": "hall",
+                "orientation": 0,
+                "pending": {},
+                "remaining": null,
+                "stored": {
+                  "furniture": 2,
+                  "iron": 20,
+                  "planks": 30.375,
+                  "steel": 15,
+                  "tools": 5,
+                  "wood": 102.125
+                },
+                "tile": [
+                  30,
+                  30
+                ]
+              },
+              {
+                "dimensions": [
+                  1,
+                  1
+                ],
+                "fence_orientation": 0,
+                "kind": "wooden_bench",
+                "orientation": 2,
+                "pending": {},
+                "remaining": null,
+                "stored": {},
+                "tile": [
+                  48,
+                  30
+                ]
+              }
+            ],
+            "coins": 0,
+            "resources": [
+              {
+                "kind": "berry_bush",
+                "x": 44,
+                "y": 30
+              },
+              {
+                "kind": "tree",
+                "x": 44,
+                "y": 31
+              }
+            ],
+            "roads": []
+          }
+        },
+        {
+          "ok": true,
+          "state": {
+            "buildings": [
+              {
+                "dimensions": [
+                  3,
+                  3
+                ],
+                "fence_orientation": 0,
+                "kind": "hall",
+                "orientation": 0,
+                "pending": {},
+                "remaining": null,
+                "stored": {
+                  "furniture": 2,
+                  "iron": 20,
+                  "planks": 30.375,
+                  "steel": 15,
+                  "tools": 5,
+                  "wood": 102.125
+                },
+                "tile": [
+                  30,
+                  30
+                ]
+              }
+            ],
+            "coins": 0,
+            "resources": [
+              {
+                "kind": "berry_bush",
+                "x": 44,
+                "y": 30
+              },
+              {
+                "kind": "tree",
+                "x": 44,
+                "y": 31
+              }
+            ],
+            "roads": []
+          }
+        }
+      ],
+      "source": {
+        "buildings": [
+          {
+            "footprint": [
+              3,
+              3
+            ],
+            "kind": "hall",
+            "stored_goods": {
+              "furniture": 2,
+              "iron": 20,
+              "planks": 30,
+              "steel": 15,
+              "tools": 5,
+              "wood": 100
+            },
+            "x": 30,
+            "y": 30
+          },
+          {
+            "footprint": [
+              3,
+              2
+            ],
+            "kind": "sawpit",
+            "pending_output": {
+              "planks": 0.375
+            },
+            "stored_goods": {
+              "wood": 2.125
+            },
+            "x": 40,
+            "y": 30
+          }
+        ],
+        "coins": 0,
+        "level": 10,
+        "locals": [],
+        "origin": [
+          30,
+          30
+        ],
+        "player": [
+          1,
+          1
+        ],
+        "resources": [
+          {
+            "kind": "berry_bush",
+            "x": 44,
+            "y": 30
+          },
+          {
+            "kind": "tree",
+            "x": 44,
+            "y": 31
+          }
+        ],
+        "roads": [],
+        "sandbox": true,
+        "unavailable": []
+      }
+    },
+    {
+      "commands": [
+        {
+          "action": "build",
+          "kind": "mill",
+          "x": 40,
+          "y": 30
+        },
+        {
+          "action": "build",
+          "kind": "home",
+          "x": 61,
+          "y": 30
+        },
+        {
+          "action": "build",
+          "kind": "home",
+          "x": 60,
+          "y": 30
+        },
+        {
+          "action": "move",
+          "index": 1,
+          "x": 59,
+          "y": 30
+        },
+        {
+          "action": "move",
+          "index": 1,
+          "x": 58,
+          "y": 30
+        },
+        {
+          "action": "build_road",
+          "x": 30,
+          "y": 61
+        },
+        {
+          "action": "build_road",
+          "x": 30,
+          "y": 60
+        }
+      ],
+      "name": "full-footprint bounds, range, unlock and fee clamp",
+      "outcomes": [
+        {
+          "ok": false,
+          "state": {
+            "buildings": [
+              {
+                "dimensions": [
+                  3,
+                  3
+                ],
+                "fence_orientation": 0,
+                "kind": "hall",
+                "orientation": 0,
+                "pending": {},
+                "remaining": null,
+                "stored": {
+                  "furniture": 2,
+                  "iron": 20,
+                  "planks": 30,
+                  "steel": 15,
+                  "tools": 5,
+                  "wood": 100
+                },
+                "tile": [
+                  30,
+                  30
+                ]
+              }
+            ],
+            "coins": 0.25,
+            "resources": [],
+            "roads": []
+          }
+        },
+        {
+          "ok": false,
+          "state": {
+            "buildings": [
+              {
+                "dimensions": [
+                  3,
+                  3
+                ],
+                "fence_orientation": 0,
+                "kind": "hall",
+                "orientation": 0,
+                "pending": {},
+                "remaining": null,
+                "stored": {
+                  "furniture": 2,
+                  "iron": 20,
+                  "planks": 30,
+                  "steel": 15,
+                  "tools": 5,
+                  "wood": 100
+                },
+                "tile": [
+                  30,
+                  30
+                ]
+              }
+            ],
+            "coins": 0.25,
+            "resources": [],
+            "roads": []
+          }
+        },
+        {
+          "ok": true,
+          "state": {
+            "buildings": [
+              {
+                "dimensions": [
+                  3,
+                  3
+                ],
+                "fence_orientation": 0,
+                "kind": "hall",
+                "orientation": 0,
+                "pending": {},
+                "remaining": null,
+                "stored": {
+                  "furniture": 2,
+                  "iron": 20,
+                  "planks": 30,
+                  "steel": 15,
+                  "tools": 5,
+                  "wood": 80
+                },
+                "tile": [
+                  30,
+                  30
+                ]
+              },
+              {
+                "dimensions": [
+                  1,
+                  1
+                ],
+                "fence_orientation": 0,
+                "kind": "home",
+                "orientation": 0,
+                "pending": {},
+                "remaining": 30,
+                "stored": {},
+                "tile": [
+                  60,
+                  30
+                ]
+              }
+            ],
+            "coins": 0.25,
+            "resources": [],
+            "roads": []
+          }
+        },
+        {
+          "ok": true,
+          "state": {
+            "buildings": [
+              {
+                "dimensions": [
+                  3,
+                  3
+                ],
+                "fence_orientation": 0,
+                "kind": "hall",
+                "orientation": 0,
+                "pending": {},
+                "remaining": null,
+                "stored": {
+                  "furniture": 2,
+                  "iron": 20,
+                  "planks": 30,
+                  "steel": 15,
+                  "tools": 5,
+                  "wood": 80
+                },
+                "tile": [
+                  30,
+                  30
+                ]
+              },
+              {
+                "dimensions": [
+                  1,
+                  1
+                ],
+                "fence_orientation": 0,
+                "kind": "home",
+                "orientation": 0,
+                "pending": {},
+                "remaining": 30,
+                "stored": {},
+                "tile": [
+                  59,
+                  30
+                ]
+              }
+            ],
+            "coins": 0,
+            "resources": [],
+            "roads": []
+          }
+        },
+        {
+          "ok": true,
+          "state": {
+            "buildings": [
+              {
+                "dimensions": [
+                  3,
+                  3
+                ],
+                "fence_orientation": 0,
+                "kind": "hall",
+                "orientation": 0,
+                "pending": {},
+                "remaining": null,
+                "stored": {
+                  "furniture": 2,
+                  "iron": 20,
+                  "planks": 30,
+                  "steel": 15,
+                  "tools": 5,
+                  "wood": 80
+                },
+                "tile": [
+                  30,
+                  30
+                ]
+              },
+              {
+                "dimensions": [
+                  1,
+                  1
+                ],
+                "fence_orientation": 0,
+                "kind": "home",
+                "orientation": 0,
+                "pending": {},
+                "remaining": 30,
+                "stored": {},
+                "tile": [
+                  58,
+                  30
+                ]
+              }
+            ],
+            "coins": 0,
+            "resources": [],
+            "roads": []
+          }
+        },
+        {
+          "ok": false,
+          "state": {
+            "buildings": [
+              {
+                "dimensions": [
+                  3,
+                  3
+                ],
+                "fence_orientation": 0,
+                "kind": "hall",
+                "orientation": 0,
+                "pending": {},
+                "remaining": null,
+                "stored": {
+                  "furniture": 2,
+                  "iron": 20,
+                  "planks": 30,
+                  "steel": 15,
+                  "tools": 5,
+                  "wood": 80
+                },
+                "tile": [
+                  30,
+                  30
+                ]
+              },
+              {
+                "dimensions": [
+                  1,
+                  1
+                ],
+                "fence_orientation": 0,
+                "kind": "home",
+                "orientation": 0,
+                "pending": {},
+                "remaining": 30,
+                "stored": {},
+                "tile": [
+                  58,
+                  30
+                ]
+              }
+            ],
+            "coins": 0,
+            "resources": [],
+            "roads": []
+          }
+        },
+        {
+          "ok": true,
+          "state": {
+            "buildings": [
+              {
+                "dimensions": [
+                  3,
+                  3
+                ],
+                "fence_orientation": 0,
+                "kind": "hall",
+                "orientation": 0,
+                "pending": {},
+                "remaining": null,
+                "stored": {
+                  "furniture": 2,
+                  "iron": 20,
+                  "planks": 30,
+                  "steel": 15,
+                  "tools": 5,
+                  "wood": 80
+                },
+                "tile": [
+                  30,
+                  30
+                ]
+              },
+              {
+                "dimensions": [
+                  1,
+                  1
+                ],
+                "fence_orientation": 0,
+                "kind": "home",
+                "orientation": 0,
+                "pending": {},
+                "remaining": 30,
+                "stored": {},
+                "tile": [
+                  58,
+                  30
+                ]
+              }
+            ],
+            "coins": 0,
+            "resources": [],
+            "roads": [
+              {
+                "remaining": 10,
+                "tile": [
+                  30,
+                  60
+                ]
+              }
+            ]
+          }
+        }
+      ],
+      "source": {
+        "buildings": [
+          {
+            "footprint": [
+              3,
+              3
+            ],
+            "kind": "hall",
+            "stored_goods": {
+              "furniture": 2,
+              "iron": 20,
+              "planks": 30,
+              "steel": 15,
+              "tools": 5,
+              "wood": 100
+            },
+            "x": 30,
+            "y": 30
+          }
+        ],
+        "coins": 0.25,
+        "level": 1,
+        "locals": [],
+        "origin": [
+          30,
+          30
+        ],
+        "player": [
+          1,
+          1
+        ],
+        "resources": [],
+        "roads": [],
+        "sandbox": false,
+        "unavailable": []
+      }
+    },
+    {
+      "commands": [
+        {
+          "action": "build",
+          "kind": "home",
+          "x": 43,
+          "y": 33
+        },
+        {
+          "action": "build",
+          "kind": "sawpit",
+          "x": 44,
+          "y": 30
+        },
+        {
+          "action": "set_fence_orientation",
+          "index": 1,
+          "orientation": 2
+        },
+        {
+          "action": "build_road",
+          "x": 42,
+          "y": 30
+        },
+        {
+          "action": "move",
+          "index": 1,
+          "x": 44,
+          "y": 30
+        }
+      ],
+      "name": "barn protection and gate orientation",
+      "outcomes": [
+        {
+          "ok": false,
+          "state": {
+            "buildings": [
+              {
+                "dimensions": [
+                  3,
+                  3
+                ],
+                "fence_orientation": 0,
+                "kind": "hall",
+                "orientation": 0,
+                "pending": {},
+                "remaining": null,
+                "stored": {
+                  "furniture": 2,
+                  "iron": 20,
+                  "planks": 30,
+                  "steel": 15,
+                  "tools": 5,
+                  "wood": 100
+                },
+                "tile": [
+                  30,
+                  30
+                ]
+              },
+              {
+                "dimensions": [
+                  1,
+                  1
+                ],
+                "fence_orientation": 0,
+                "kind": "barn",
+                "orientation": 0,
+                "pending": {},
+                "remaining": null,
+                "stored": {},
+                "tile": [
+                  40,
+                  30
+                ]
+              }
+            ],
+            "coins": 2.5,
+            "resources": [],
+            "roads": []
+          }
+        },
+        {
+          "ok": true,
+          "state": {
+            "buildings": [
+              {
+                "dimensions": [
+                  3,
+                  3
+                ],
+                "fence_orientation": 0,
+                "kind": "hall",
+                "orientation": 0,
+                "pending": {},
+                "remaining": null,
+                "stored": {
+                  "furniture": 2,
+                  "iron": 20,
+                  "planks": 30,
+                  "steel": 15,
+                  "tools": 5,
+                  "wood": 75
+                },
+                "tile": [
+                  30,
+                  30
+                ]
+              },
+              {
+                "dimensions": [
+                  1,
+                  1
+                ],
+                "fence_orientation": 0,
+                "kind": "barn",
+                "orientation": 0,
+                "pending": {},
+                "remaining": null,
+                "stored": {},
+                "tile": [
+                  40,
+                  30
+                ]
+              },
+              {
+                "dimensions": [
+                  3,
+                  2
+                ],
+                "fence_orientation": 0,
+                "kind": "sawpit",
+                "orientation": 0,
+                "pending": {},
+                "remaining": 30,
+                "stored": {},
+                "tile": [
+                  44,
+                  30
+                ]
+              }
+            ],
+            "coins": 2.5,
+            "resources": [],
+            "roads": []
+          }
+        },
+        {
+          "ok": true,
+          "state": {
+            "buildings": [
+              {
+                "dimensions": [
+                  3,
+                  3
+                ],
+                "fence_orientation": 0,
+                "kind": "hall",
+                "orientation": 0,
+                "pending": {},
+                "remaining": null,
+                "stored": {
+                  "furniture": 2,
+                  "iron": 20,
+                  "planks": 30,
+                  "steel": 15,
+                  "tools": 5,
+                  "wood": 75
+                },
+                "tile": [
+                  30,
+                  30
+                ]
+              },
+              {
+                "dimensions": [
+                  1,
+                  1
+                ],
+                "fence_orientation": 2,
+                "kind": "barn",
+                "orientation": 0,
+                "pending": {},
+                "remaining": null,
+                "stored": {},
+                "tile": [
+                  40,
+                  30
+                ]
+              },
+              {
+                "dimensions": [
+                  3,
+                  2
+                ],
+                "fence_orientation": 0,
+                "kind": "sawpit",
+                "orientation": 0,
+                "pending": {},
+                "remaining": 30,
+                "stored": {},
+                "tile": [
+                  44,
+                  30
+                ]
+              }
+            ],
+            "coins": 2.5,
+            "resources": [],
+            "roads": []
+          }
+        },
+        {
+          "ok": true,
+          "state": {
+            "buildings": [
+              {
+                "dimensions": [
+                  3,
+                  3
+                ],
+                "fence_orientation": 0,
+                "kind": "hall",
+                "orientation": 0,
+                "pending": {},
+                "remaining": null,
+                "stored": {
+                  "furniture": 2,
+                  "iron": 20,
+                  "planks": 30,
+                  "steel": 15,
+                  "tools": 5,
+                  "wood": 75
+                },
+                "tile": [
+                  30,
+                  30
+                ]
+              },
+              {
+                "dimensions": [
+                  1,
+                  1
+                ],
+                "fence_orientation": 2,
+                "kind": "barn",
+                "orientation": 0,
+                "pending": {},
+                "remaining": null,
+                "stored": {},
+                "tile": [
+                  40,
+                  30
+                ]
+              },
+              {
+                "dimensions": [
+                  3,
+                  2
+                ],
+                "fence_orientation": 0,
+                "kind": "sawpit",
+                "orientation": 0,
+                "pending": {},
+                "remaining": 30,
+                "stored": {},
+                "tile": [
+                  44,
+                  30
+                ]
+              }
+            ],
+            "coins": 2.5,
+            "resources": [],
+            "roads": [
+              {
+                "remaining": 10,
+                "tile": [
+                  42,
+                  30
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "ok": false,
+          "state": {
+            "buildings": [
+              {
+                "dimensions": [
+                  3,
+                  3
+                ],
+                "fence_orientation": 0,
+                "kind": "hall",
+                "orientation": 0,
+                "pending": {},
+                "remaining": null,
+                "stored": {
+                  "furniture": 2,
+                  "iron": 20,
+                  "planks": 30,
+                  "steel": 15,
+                  "tools": 5,
+                  "wood": 75
+                },
+                "tile": [
+                  30,
+                  30
+                ]
+              },
+              {
+                "dimensions": [
+                  1,
+                  1
+                ],
+                "fence_orientation": 2,
+                "kind": "barn",
+                "orientation": 0,
+                "pending": {},
+                "remaining": null,
+                "stored": {},
+                "tile": [
+                  40,
+                  30
+                ]
+              },
+              {
+                "dimensions": [
+                  3,
+                  2
+                ],
+                "fence_orientation": 0,
+                "kind": "sawpit",
+                "orientation": 0,
+                "pending": {},
+                "remaining": 30,
+                "stored": {},
+                "tile": [
+                  44,
+                  30
+                ]
+              }
+            ],
+            "coins": 2.5,
+            "resources": [],
+            "roads": [
+              {
+                "remaining": 10,
+                "tile": [
+                  42,
+                  30
+                ]
+              }
+            ]
+          }
+        }
+      ],
+      "source": {
+        "buildings": [
+          {
+            "footprint": [
+              3,
+              3
+            ],
+            "kind": "hall",
+            "stored_goods": {
+              "furniture": 2,
+              "iron": 20,
+              "planks": 30,
+              "steel": 15,
+              "tools": 5,
+              "wood": 100
+            },
+            "x": 30,
+            "y": 30
+          },
+          {
+            "kind": "barn",
+            "x": 40,
+            "y": 30
+          }
+        ],
+        "coins": 2.5,
+        "level": 10,
+        "locals": [],
+        "origin": [
+          30,
+          30
+        ],
+        "player": [
+          1,
+          1
+        ],
+        "resources": [],
+        "roads": [],
+        "sandbox": false,
+        "unavailable": []
+      }
+    },
+    {
+      "commands": [
+        {
+          "action": "build",
+          "kind": "sawpit",
+          "x": 40,
+          "y": 30
+        }
+      ],
+      "name": "fractional affordability tolerance",
+      "outcomes": [
+        {
+          "ok": true,
+          "state": {
+            "buildings": [
+              {
+                "dimensions": [
+                  3,
+                  3
+                ],
+                "fence_orientation": 0,
+                "kind": "hall",
+                "orientation": 0,
+                "pending": {},
+                "remaining": null,
+                "stored": {
+                  "wood": 0.0
+                },
+                "tile": [
+                  30,
+                  30
+                ]
+              },
+              {
+                "dimensions": [
+                  3,
+                  2
+                ],
+                "fence_orientation": 0,
+                "kind": "sawpit",
+                "orientation": 0,
+                "pending": {},
+                "remaining": 30,
+                "stored": {},
+                "tile": [
+                  40,
+                  30
+                ]
+              }
+            ],
+            "coins": 2.5,
+            "resources": [],
+            "roads": []
+          }
+        }
+      ],
+      "source": {
+        "buildings": [
+          {
+            "footprint": [
+              3,
+              3
+            ],
+            "kind": "hall",
+            "stored_goods": {
+              "wood": 24.9999999995
+            },
+            "x": 30,
+            "y": 30
+          }
+        ],
+        "coins": 2.5,
+        "level": 10,
+        "locals": [],
+        "origin": [
+          30,
+          30
+        ],
+        "player": [
+          1,
+          1
+        ],
+        "resources": [],
+        "roads": [],
+        "sandbox": false,
+        "unavailable": []
+      }
+    },
+    {
+      "commands": [
+        {
+          "action": "build",
+          "kind": "home",
+          "x": 40,
+          "y": 30
+        }
+      ],
+      "name": "unaffordable failure preserves forage",
+      "outcomes": [
+        {
+          "ok": false,
+          "state": {
+            "buildings": [
+              {
+                "dimensions": [
+                  3,
+                  3
+                ],
+                "fence_orientation": 0,
+                "kind": "hall",
+                "orientation": 0,
+                "pending": {},
+                "remaining": null,
+                "stored": {
+                  "wood": 1
+                },
+                "tile": [
+                  30,
+                  30
+                ]
+              }
+            ],
+            "coins": 2.5,
+            "resources": [
+              {
+                "kind": "berry_bush",
+                "x": 40,
+                "y": 30
+              }
+            ],
+            "roads": []
+          }
+        }
+      ],
+      "source": {
+        "buildings": [
+          {
+            "footprint": [
+              3,
+              3
+            ],
+            "kind": "hall",
+            "stored_goods": {
+              "wood": 1
+            },
+            "x": 30,
+            "y": 30
+          }
+        ],
+        "coins": 2.5,
+        "level": 10,
+        "locals": [],
+        "origin": [
+          30,
+          30
+        ],
+        "player": [
+          1,
+          1
+        ],
+        "resources": [
+          {
+            "kind": "berry_bush",
+            "x": 40,
+            "y": 30
+          }
+        ],
+        "roads": [],
+        "sandbox": false,
+        "unavailable": []
+      }
+    },
+    {
+      "commands": [
+        {
+          "action": "set_building_orientation",
+          "index": 1,
+          "orientation": 1
+        },
+        {
+          "action": "set_building_orientation",
+          "index": 1,
+          "orientation": 2
+        }
+      ],
+      "name": "rotation obstacle: building",
+      "outcomes": [
+        {
+          "ok": false,
+          "state": {
+            "buildings": [
+              {
+                "dimensions": [
+                  3,
+                  3
+                ],
+                "fence_orientation": 0,
+                "kind": "hall",
+                "orientation": 0,
+                "pending": {},
+                "remaining": null,
+                "stored": {
+                  "furniture": 2,
+                  "iron": 20,
+                  "planks": 30,
+                  "steel": 15,
+                  "tools": 5,
+                  "wood": 100
+                },
+                "tile": [
+                  30,
+                  30
+                ]
+              },
+              {
+                "dimensions": [
+                  3,
+                  2
+                ],
+                "fence_orientation": 0,
+                "kind": "sawpit",
+                "orientation": 0,
+                "pending": {},
+                "remaining": null,
+                "stored": {},
+                "tile": [
+                  40,
+                  30
+                ]
+              },
+              {
+                "dimensions": [
+                  1,
+                  1
+                ],
+                "fence_orientation": 0,
+                "kind": "home",
+                "orientation": 0,
+                "pending": {},
+                "remaining": null,
+                "stored": {},
+                "tile": [
+                  41,
+                  32
+                ]
+              }
+            ],
+            "coins": 2.5,
+            "resources": [],
+            "roads": []
+          }
+        },
+        {
+          "ok": true,
+          "state": {
+            "buildings": [
+              {
+                "dimensions": [
+                  3,
+                  3
+                ],
+                "fence_orientation": 0,
+                "kind": "hall",
+                "orientation": 0,
+                "pending": {},
+                "remaining": null,
+                "stored": {
+                  "furniture": 2,
+                  "iron": 20,
+                  "planks": 30,
+                  "steel": 15,
+                  "tools": 5,
+                  "wood": 100
+                },
+                "tile": [
+                  30,
+                  30
+                ]
+              },
+              {
+                "dimensions": [
+                  3,
+                  2
+                ],
+                "fence_orientation": 0,
+                "kind": "sawpit",
+                "orientation": 2,
+                "pending": {},
+                "remaining": null,
+                "stored": {},
+                "tile": [
+                  40,
+                  30
+                ]
+              },
+              {
+                "dimensions": [
+                  1,
+                  1
+                ],
+                "fence_orientation": 0,
+                "kind": "home",
+                "orientation": 0,
+                "pending": {},
+                "remaining": null,
+                "stored": {},
+                "tile": [
+                  41,
+                  32
+                ]
+              }
+            ],
+            "coins": 2.5,
+            "resources": [],
+            "roads": []
+          }
+        }
+      ],
+      "source": {
+        "buildings": [
+          {
+            "footprint": [
+              3,
+              3
+            ],
+            "kind": "hall",
+            "stored_goods": {
+              "furniture": 2,
+              "iron": 20,
+              "planks": 30,
+              "steel": 15,
+              "tools": 5,
+              "wood": 100
+            },
+            "x": 30,
+            "y": 30
+          },
+          {
+            "footprint": [
+              3,
+              2
+            ],
+            "kind": "sawpit",
+            "x": 40,
+            "y": 30
+          },
+          {
+            "kind": "home",
+            "x": 41,
+            "y": 32
+          }
+        ],
+        "coins": 2.5,
+        "level": 10,
+        "locals": [],
+        "origin": [
+          30,
+          30
+        ],
+        "player": [
+          1,
+          1
+        ],
+        "resources": [],
+        "roads": [],
+        "sandbox": false,
+        "unavailable": []
+      }
+    },
+    {
+      "commands": [
+        {
+          "action": "set_building_orientation",
+          "index": 1,
+          "orientation": 1
+        },
+        {
+          "action": "set_building_orientation",
+          "index": 1,
+          "orientation": 2
+        }
+      ],
+      "name": "rotation obstacle: road",
+      "outcomes": [
+        {
+          "ok": false,
+          "state": {
+            "buildings": [
+              {
+                "dimensions": [
+                  3,
+                  3
+                ],
+                "fence_orientation": 0,
+                "kind": "hall",
+                "orientation": 0,
+                "pending": {},
+                "remaining": null,
+                "stored": {
+                  "furniture": 2,
+                  "iron": 20,
+                  "planks": 30,
+                  "steel": 15,
+                  "tools": 5,
+                  "wood": 100
+                },
+                "tile": [
+                  30,
+                  30
+                ]
+              },
+              {
+                "dimensions": [
+                  3,
+                  2
+                ],
+                "fence_orientation": 0,
+                "kind": "sawpit",
+                "orientation": 0,
+                "pending": {},
+                "remaining": null,
+                "stored": {},
+                "tile": [
+                  40,
+                  30
+                ]
+              }
+            ],
+            "coins": 2.5,
+            "resources": [],
+            "roads": [
+              {
+                "remaining": null,
+                "tile": [
+                  41,
+                  32
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "ok": true,
+          "state": {
+            "buildings": [
+              {
+                "dimensions": [
+                  3,
+                  3
+                ],
+                "fence_orientation": 0,
+                "kind": "hall",
+                "orientation": 0,
+                "pending": {},
+                "remaining": null,
+                "stored": {
+                  "furniture": 2,
+                  "iron": 20,
+                  "planks": 30,
+                  "steel": 15,
+                  "tools": 5,
+                  "wood": 100
+                },
+                "tile": [
+                  30,
+                  30
+                ]
+              },
+              {
+                "dimensions": [
+                  3,
+                  2
+                ],
+                "fence_orientation": 0,
+                "kind": "sawpit",
+                "orientation": 2,
+                "pending": {},
+                "remaining": null,
+                "stored": {},
+                "tile": [
+                  40,
+                  30
+                ]
+              }
+            ],
+            "coins": 2.5,
+            "resources": [],
+            "roads": [
+              {
+                "remaining": null,
+                "tile": [
+                  41,
+                  32
+                ]
+              }
+            ]
+          }
+        }
+      ],
+      "source": {
+        "buildings": [
+          {
+            "footprint": [
+              3,
+              3
+            ],
+            "kind": "hall",
+            "stored_goods": {
+              "furniture": 2,
+              "iron": 20,
+              "planks": 30,
+              "steel": 15,
+              "tools": 5,
+              "wood": 100
+            },
+            "x": 30,
+            "y": 30
+          },
+          {
+            "footprint": [
+              3,
+              2
+            ],
+            "kind": "sawpit",
+            "x": 40,
+            "y": 30
+          }
+        ],
+        "coins": 2.5,
+        "level": 10,
+        "locals": [],
+        "origin": [
+          30,
+          30
+        ],
+        "player": [
+          1,
+          1
+        ],
+        "resources": [],
+        "roads": [
+          {
+            "x": 41,
+            "y": 32
+          }
+        ],
+        "sandbox": false,
+        "unavailable": []
+      }
+    },
+    {
+      "commands": [
+        {
+          "action": "set_building_orientation",
+          "index": 1,
+          "orientation": 1
+        },
+        {
+          "action": "set_building_orientation",
+          "index": 1,
+          "orientation": 2
+        }
+      ],
+      "name": "rotation obstacle: resource",
+      "outcomes": [
+        {
+          "ok": false,
+          "state": {
+            "buildings": [
+              {
+                "dimensions": [
+                  3,
+                  3
+                ],
+                "fence_orientation": 0,
+                "kind": "hall",
+                "orientation": 0,
+                "pending": {},
+                "remaining": null,
+                "stored": {
+                  "furniture": 2,
+                  "iron": 20,
+                  "planks": 30,
+                  "steel": 15,
+                  "tools": 5,
+                  "wood": 100
+                },
+                "tile": [
+                  30,
+                  30
+                ]
+              },
+              {
+                "dimensions": [
+                  3,
+                  2
+                ],
+                "fence_orientation": 0,
+                "kind": "sawpit",
+                "orientation": 0,
+                "pending": {},
+                "remaining": null,
+                "stored": {},
+                "tile": [
+                  40,
+                  30
+                ]
+              }
+            ],
+            "coins": 2.5,
+            "resources": [
+              {
+                "kind": "rock",
+                "x": 41,
+                "y": 32
+              }
+            ],
+            "roads": []
+          }
+        },
+        {
+          "ok": true,
+          "state": {
+            "buildings": [
+              {
+                "dimensions": [
+                  3,
+                  3
+                ],
+                "fence_orientation": 0,
+                "kind": "hall",
+                "orientation": 0,
+                "pending": {},
+                "remaining": null,
+                "stored": {
+                  "furniture": 2,
+                  "iron": 20,
+                  "planks": 30,
+                  "steel": 15,
+                  "tools": 5,
+                  "wood": 100
+                },
+                "tile": [
+                  30,
+                  30
+                ]
+              },
+              {
+                "dimensions": [
+                  3,
+                  2
+                ],
+                "fence_orientation": 0,
+                "kind": "sawpit",
+                "orientation": 2,
+                "pending": {},
+                "remaining": null,
+                "stored": {},
+                "tile": [
+                  40,
+                  30
+                ]
+              }
+            ],
+            "coins": 2.5,
+            "resources": [
+              {
+                "kind": "rock",
+                "x": 41,
+                "y": 32
+              }
+            ],
+            "roads": []
+          }
+        }
+      ],
+      "source": {
+        "buildings": [
+          {
+            "footprint": [
+              3,
+              3
+            ],
+            "kind": "hall",
+            "stored_goods": {
+              "furniture": 2,
+              "iron": 20,
+              "planks": 30,
+              "steel": 15,
+              "tools": 5,
+              "wood": 100
+            },
+            "x": 30,
+            "y": 30
+          },
+          {
+            "footprint": [
+              3,
+              2
+            ],
+            "kind": "sawpit",
+            "x": 40,
+            "y": 30
+          }
+        ],
+        "coins": 2.5,
+        "level": 10,
+        "locals": [],
+        "origin": [
+          30,
+          30
+        ],
+        "player": [
+          1,
+          1
+        ],
+        "resources": [
+          {
+            "kind": "rock",
+            "x": 41,
+            "y": 32
+          }
+        ],
+        "roads": [],
+        "sandbox": false,
+        "unavailable": []
+      }
+    },
+    {
+      "commands": [
+        {
+          "action": "set_building_orientation",
+          "index": 1,
+          "orientation": 1
+        },
+        {
+          "action": "set_building_orientation",
+          "index": 1,
+          "orientation": 2
+        }
+      ],
+      "name": "rotation obstacle: local",
+      "outcomes": [
+        {
+          "ok": false,
+          "state": {
+            "buildings": [
+              {
+                "dimensions": [
+                  3,
+                  3
+                ],
+                "fence_orientation": 0,
+                "kind": "hall",
+                "orientation": 0,
+                "pending": {},
+                "remaining": null,
+                "stored": {
+                  "furniture": 2,
+                  "iron": 20,
+                  "planks": 30,
+                  "steel": 15,
+                  "tools": 5,
+                  "wood": 100
+                },
+                "tile": [
+                  30,
+                  30
+                ]
+              },
+              {
+                "dimensions": [
+                  3,
+                  2
+                ],
+                "fence_orientation": 0,
+                "kind": "sawpit",
+                "orientation": 0,
+                "pending": {},
+                "remaining": null,
+                "stored": {},
+                "tile": [
+                  40,
+                  30
+                ]
+              }
+            ],
+            "coins": 2.5,
+            "resources": [],
+            "roads": []
+          }
+        },
+        {
+          "ok": true,
+          "state": {
+            "buildings": [
+              {
+                "dimensions": [
+                  3,
+                  3
+                ],
+                "fence_orientation": 0,
+                "kind": "hall",
+                "orientation": 0,
+                "pending": {},
+                "remaining": null,
+                "stored": {
+                  "furniture": 2,
+                  "iron": 20,
+                  "planks": 30,
+                  "steel": 15,
+                  "tools": 5,
+                  "wood": 100
+                },
+                "tile": [
+                  30,
+                  30
+                ]
+              },
+              {
+                "dimensions": [
+                  3,
+                  2
+                ],
+                "fence_orientation": 0,
+                "kind": "sawpit",
+                "orientation": 2,
+                "pending": {},
+                "remaining": null,
+                "stored": {},
+                "tile": [
+                  40,
+                  30
+                ]
+              }
+            ],
+            "coins": 2.5,
+            "resources": [],
+            "roads": []
+          }
+        }
+      ],
+      "source": {
+        "buildings": [
+          {
+            "footprint": [
+              3,
+              3
+            ],
+            "kind": "hall",
+            "stored_goods": {
+              "furniture": 2,
+              "iron": 20,
+              "planks": 30,
+              "steel": 15,
+              "tools": 5,
+              "wood": 100
+            },
+            "x": 30,
+            "y": 30
+          },
+          {
+            "footprint": [
+              3,
+              2
+            ],
+            "kind": "sawpit",
+            "x": 40,
+            "y": 30
+          }
+        ],
+        "coins": 2.5,
+        "level": 10,
+        "locals": [
+          {
+            "kind": "resident",
+            "x": 41,
+            "y": 32
+          }
+        ],
+        "origin": [
+          30,
+          30
+        ],
+        "player": [
+          1,
+          1
+        ],
+        "resources": [],
+        "roads": [],
+        "sandbox": false,
+        "unavailable": []
+      }
+    },
+    {
+      "commands": [
+        {
+          "action": "set_building_orientation",
+          "index": 1,
+          "orientation": 1
+        },
+        {
+          "action": "set_building_orientation",
+          "index": 1,
+          "orientation": 2
+        }
+      ],
+      "name": "rotation obstacle: player",
+      "outcomes": [
+        {
+          "ok": false,
+          "state": {
+            "buildings": [
+              {
+                "dimensions": [
+                  3,
+                  3
+                ],
+                "fence_orientation": 0,
+                "kind": "hall",
+                "orientation": 0,
+                "pending": {},
+                "remaining": null,
+                "stored": {
+                  "furniture": 2,
+                  "iron": 20,
+                  "planks": 30,
+                  "steel": 15,
+                  "tools": 5,
+                  "wood": 100
+                },
+                "tile": [
+                  30,
+                  30
+                ]
+              },
+              {
+                "dimensions": [
+                  3,
+                  2
+                ],
+                "fence_orientation": 0,
+                "kind": "sawpit",
+                "orientation": 0,
+                "pending": {},
+                "remaining": null,
+                "stored": {},
+                "tile": [
+                  40,
+                  30
+                ]
+              }
+            ],
+            "coins": 2.5,
+            "resources": [],
+            "roads": []
+          }
+        },
+        {
+          "ok": true,
+          "state": {
+            "buildings": [
+              {
+                "dimensions": [
+                  3,
+                  3
+                ],
+                "fence_orientation": 0,
+                "kind": "hall",
+                "orientation": 0,
+                "pending": {},
+                "remaining": null,
+                "stored": {
+                  "furniture": 2,
+                  "iron": 20,
+                  "planks": 30,
+                  "steel": 15,
+                  "tools": 5,
+                  "wood": 100
+                },
+                "tile": [
+                  30,
+                  30
+                ]
+              },
+              {
+                "dimensions": [
+                  3,
+                  2
+                ],
+                "fence_orientation": 0,
+                "kind": "sawpit",
+                "orientation": 2,
+                "pending": {},
+                "remaining": null,
+                "stored": {},
+                "tile": [
+                  40,
+                  30
+                ]
+              }
+            ],
+            "coins": 2.5,
+            "resources": [],
+            "roads": []
+          }
+        }
+      ],
+      "source": {
+        "buildings": [
+          {
+            "footprint": [
+              3,
+              3
+            ],
+            "kind": "hall",
+            "stored_goods": {
+              "furniture": 2,
+              "iron": 20,
+              "planks": 30,
+              "steel": 15,
+              "tools": 5,
+              "wood": 100
+            },
+            "x": 30,
+            "y": 30
+          },
+          {
+            "footprint": [
+              3,
+              2
+            ],
+            "kind": "sawpit",
+            "x": 40,
+            "y": 30
+          }
+        ],
+        "coins": 2.5,
+        "level": 10,
+        "locals": [],
+        "origin": [
+          30,
+          30
+        ],
+        "player": [
+          41.25,
+          31.75
+        ],
+        "resources": [],
+        "roads": [],
+        "sandbox": false,
+        "unavailable": []
+      }
+    },
+    {
+      "commands": [
+        {
+          "action": "set_building_orientation",
+          "index": 1,
+          "orientation": 1
+        },
+        {
+          "action": "set_building_orientation",
+          "index": 1,
+          "orientation": 2
+        }
+      ],
+      "name": "rotation obstacle: void",
+      "outcomes": [
+        {
+          "ok": false,
+          "state": {
+            "buildings": [
+              {
+                "dimensions": [
+                  3,
+                  3
+                ],
+                "fence_orientation": 0,
+                "kind": "hall",
+                "orientation": 0,
+                "pending": {},
+                "remaining": null,
+                "stored": {
+                  "furniture": 2,
+                  "iron": 20,
+                  "planks": 30,
+                  "steel": 15,
+                  "tools": 5,
+                  "wood": 100
+                },
+                "tile": [
+                  30,
+                  30
+                ]
+              },
+              {
+                "dimensions": [
+                  3,
+                  2
+                ],
+                "fence_orientation": 0,
+                "kind": "sawpit",
+                "orientation": 0,
+                "pending": {},
+                "remaining": null,
+                "stored": {},
+                "tile": [
+                  40,
+                  30
+                ]
+              }
+            ],
+            "coins": 2.5,
+            "resources": [],
+            "roads": []
+          }
+        },
+        {
+          "ok": true,
+          "state": {
+            "buildings": [
+              {
+                "dimensions": [
+                  3,
+                  3
+                ],
+                "fence_orientation": 0,
+                "kind": "hall",
+                "orientation": 0,
+                "pending": {},
+                "remaining": null,
+                "stored": {
+                  "furniture": 2,
+                  "iron": 20,
+                  "planks": 30,
+                  "steel": 15,
+                  "tools": 5,
+                  "wood": 100
+                },
+                "tile": [
+                  30,
+                  30
+                ]
+              },
+              {
+                "dimensions": [
+                  3,
+                  2
+                ],
+                "fence_orientation": 0,
+                "kind": "sawpit",
+                "orientation": 2,
+                "pending": {},
+                "remaining": null,
+                "stored": {},
+                "tile": [
+                  40,
+                  30
+                ]
+              }
+            ],
+            "coins": 2.5,
+            "resources": [],
+            "roads": []
+          }
+        }
+      ],
+      "source": {
+        "buildings": [
+          {
+            "footprint": [
+              3,
+              3
+            ],
+            "kind": "hall",
+            "stored_goods": {
+              "furniture": 2,
+              "iron": 20,
+              "planks": 30,
+              "steel": 15,
+              "tools": 5,
+              "wood": 100
+            },
+            "x": 30,
+            "y": 30
+          },
+          {
+            "footprint": [
+              3,
+              2
+            ],
+            "kind": "sawpit",
+            "x": 40,
+            "y": 30
+          }
+        ],
+        "coins": 2.5,
+        "level": 10,
+        "locals": [],
+        "origin": [
+          30,
+          30
+        ],
+        "player": [
+          1,
+          1
+        ],
+        "resources": [],
+        "roads": [],
+        "sandbox": false,
+        "unavailable": [
+          [
+            41,
+            32
+          ]
+        ]
+      }
+    },
+    {
+      "commands": [
+        {
+          "action": "set_building_orientation",
+          "index": 1,
+          "orientation": 1
+        },
+        {
+          "action": "set_building_orientation",
+          "index": 1,
+          "orientation": 2
+        }
+      ],
+      "name": "rotation obstacle: range",
+      "outcomes": [
+        {
+          "ok": false,
+          "state": {
+            "buildings": [
+              {
+                "dimensions": [
+                  3,
+                  3
+                ],
+                "fence_orientation": 0,
+                "kind": "hall",
+                "orientation": 0,
+                "pending": {},
+                "remaining": null,
+                "stored": {
+                  "furniture": 2,
+                  "iron": 20,
+                  "planks": 30,
+                  "steel": 15,
+                  "tools": 5,
+                  "wood": 100
+                },
+                "tile": [
+                  30,
+                  30
+                ]
+              },
+              {
+                "dimensions": [
+                  3,
+                  2
+                ],
+                "fence_orientation": 0,
+                "kind": "sawpit",
+                "orientation": 0,
+                "pending": {},
+                "remaining": null,
+                "stored": {},
+                "tile": [
+                  58,
+                  30
+                ]
+              }
+            ],
+            "coins": 2.5,
+            "resources": [],
+            "roads": []
+          }
+        },
+        {
+          "ok": true,
+          "state": {
+            "buildings": [
+              {
+                "dimensions": [
+                  3,
+                  3
+                ],
+                "fence_orientation": 0,
+                "kind": "hall",
+                "orientation": 0,
+                "pending": {},
+                "remaining": null,
+                "stored": {
+                  "furniture": 2,
+                  "iron": 20,
+                  "planks": 30,
+                  "steel": 15,
+                  "tools": 5,
+                  "wood": 100
+                },
+                "tile": [
+                  30,
+                  30
+                ]
+              },
+              {
+                "dimensions": [
+                  3,
+                  2
+                ],
+                "fence_orientation": 0,
+                "kind": "sawpit",
+                "orientation": 2,
+                "pending": {},
+                "remaining": null,
+                "stored": {},
+                "tile": [
+                  58,
+                  30
+                ]
+              }
+            ],
+            "coins": 2.5,
+            "resources": [],
+            "roads": []
+          }
+        }
+      ],
+      "source": {
+        "buildings": [
+          {
+            "footprint": [
+              3,
+              3
+            ],
+            "kind": "hall",
+            "stored_goods": {
+              "furniture": 2,
+              "iron": 20,
+              "planks": 30,
+              "steel": 15,
+              "tools": 5,
+              "wood": 100
+            },
+            "x": 30,
+            "y": 30
+          },
+          {
+            "footprint": [
+              3,
+              2
+            ],
+            "kind": "sawpit",
+            "x": 58,
+            "y": 30
+          }
+        ],
+        "coins": 2.5,
+        "level": 1,
+        "locals": [],
+        "origin": [
+          30,
+          30
+        ],
+        "player": [
+          1,
+          1
+        ],
+        "resources": [],
+        "roads": [],
+        "sandbox": false,
+        "unavailable": []
+      }
+    },
+    {
+      "commands": [
+        {
+          "action": "set_building_orientation",
+          "index": 1,
+          "orientation": 1
+        },
+        {
+          "action": "set_building_orientation",
+          "index": 1,
+          "orientation": 2
+        }
+      ],
+      "name": "rotation obstacle: edge",
+      "outcomes": [
+        {
+          "ok": false,
+          "state": {
+            "buildings": [
+              {
+                "dimensions": [
+                  3,
+                  3
+                ],
+                "fence_orientation": 0,
+                "kind": "hall",
+                "orientation": 0,
+                "pending": {},
+                "remaining": null,
+                "stored": {
+                  "furniture": 2,
+                  "iron": 20,
+                  "planks": 30,
+                  "steel": 15,
+                  "tools": 5,
+                  "wood": 100
+                },
+                "tile": [
+                  40,
+                  110
+                ]
+              },
+              {
+                "dimensions": [
+                  3,
+                  2
+                ],
+                "fence_orientation": 0,
+                "kind": "sawpit",
+                "orientation": 0,
+                "pending": {},
+                "remaining": null,
+                "stored": {},
+                "tile": [
+                  40,
+                  118
+                ]
+              }
+            ],
+            "coins": 2.5,
+            "resources": [],
+            "roads": []
+          }
+        },
+        {
+          "ok": true,
+          "state": {
+            "buildings": [
+              {
+                "dimensions": [
+                  3,
+                  3
+                ],
+                "fence_orientation": 0,
+                "kind": "hall",
+                "orientation": 0,
+                "pending": {},
+                "remaining": null,
+                "stored": {
+                  "furniture": 2,
+                  "iron": 20,
+                  "planks": 30,
+                  "steel": 15,
+                  "tools": 5,
+                  "wood": 100
+                },
+                "tile": [
+                  40,
+                  110
+                ]
+              },
+              {
+                "dimensions": [
+                  3,
+                  2
+                ],
+                "fence_orientation": 0,
+                "kind": "sawpit",
+                "orientation": 2,
+                "pending": {},
+                "remaining": null,
+                "stored": {},
+                "tile": [
+                  40,
+                  118
+                ]
+              }
+            ],
+            "coins": 2.5,
+            "resources": [],
+            "roads": []
+          }
+        }
+      ],
+      "source": {
+        "buildings": [
+          {
+            "footprint": [
+              3,
+              3
+            ],
+            "kind": "hall",
+            "stored_goods": {
+              "furniture": 2,
+              "iron": 20,
+              "planks": 30,
+              "steel": 15,
+              "tools": 5,
+              "wood": 100
+            },
+            "x": 40,
+            "y": 110
+          },
+          {
+            "footprint": [
+              3,
+              2
+            ],
+            "kind": "sawpit",
+            "x": 40,
+            "y": 118
+          }
+        ],
+        "coins": 2.5,
+        "level": 10,
+        "locals": [],
+        "origin": [
+          30,
+          30
+        ],
+        "player": [
+          1,
+          1
+        ],
+        "resources": [],
+        "roads": [],
+        "sandbox": false,
+        "unavailable": []
+      }
+    },
+    {
+      "commands": [
+        {
+          "action": "set_building_orientation",
+          "index": 1,
+          "orientation": 1
+        },
+        {
+          "action": "set_building_orientation",
+          "index": 1,
+          "orientation": 2
+        }
+      ],
+      "name": "rotation obstacle: barn",
+      "outcomes": [
+        {
+          "ok": false,
+          "state": {
+            "buildings": [
+              {
+                "dimensions": [
+                  3,
+                  3
+                ],
+                "fence_orientation": 0,
+                "kind": "hall",
+                "orientation": 0,
+                "pending": {},
+                "remaining": null,
+                "stored": {
+                  "furniture": 2,
+                  "iron": 20,
+                  "planks": 30,
+                  "steel": 15,
+                  "tools": 5,
+                  "wood": 100
+                },
+                "tile": [
+                  30,
+                  30
+                ]
+              },
+              {
+                "dimensions": [
+                  3,
+                  2
+                ],
+                "fence_orientation": 0,
+                "kind": "sawpit",
+                "orientation": 0,
+                "pending": {},
+                "remaining": null,
+                "stored": {},
+                "tile": [
+                  40,
+                  30
+                ]
+              },
+              {
+                "dimensions": [
+                  1,
+                  1
+                ],
+                "fence_orientation": 0,
+                "kind": "barn",
+                "orientation": 0,
+                "pending": {},
+                "remaining": null,
+                "stored": {},
+                "tile": [
+                  44,
+                  35
+                ]
+              }
+            ],
+            "coins": 2.5,
+            "resources": [],
+            "roads": []
+          }
+        },
+        {
+          "ok": true,
+          "state": {
+            "buildings": [
+              {
+                "dimensions": [
+                  3,
+                  3
+                ],
+                "fence_orientation": 0,
+                "kind": "hall",
+                "orientation": 0,
+                "pending": {},
+                "remaining": null,
+                "stored": {
+                  "furniture": 2,
+                  "iron": 20,
+                  "planks": 30,
+                  "steel": 15,
+                  "tools": 5,
+                  "wood": 100
+                },
+                "tile": [
+                  30,
+                  30
+                ]
+              },
+              {
+                "dimensions": [
+                  3,
+                  2
+                ],
+                "fence_orientation": 0,
+                "kind": "sawpit",
+                "orientation": 2,
+                "pending": {},
+                "remaining": null,
+                "stored": {},
+                "tile": [
+                  40,
+                  30
+                ]
+              },
+              {
+                "dimensions": [
+                  1,
+                  1
+                ],
+                "fence_orientation": 0,
+                "kind": "barn",
+                "orientation": 0,
+                "pending": {},
+                "remaining": null,
+                "stored": {},
+                "tile": [
+                  44,
+                  35
+                ]
+              }
+            ],
+            "coins": 2.5,
+            "resources": [],
+            "roads": []
+          }
+        }
+      ],
+      "source": {
+        "buildings": [
+          {
+            "footprint": [
+              3,
+              3
+            ],
+            "kind": "hall",
+            "stored_goods": {
+              "furniture": 2,
+              "iron": 20,
+              "planks": 30,
+              "steel": 15,
+              "tools": 5,
+              "wood": 100
+            },
+            "x": 30,
+            "y": 30
+          },
+          {
+            "footprint": [
+              3,
+              2
+            ],
+            "kind": "sawpit",
+            "x": 40,
+            "y": 30
+          },
+          {
+            "kind": "barn",
+            "x": 44,
+            "y": 35
+          }
+        ],
+        "coins": 2.5,
+        "level": 10,
+        "locals": [],
+        "origin": [
+          30,
+          30
+        ],
+        "player": [
+          1,
+          1
+        ],
+        "resources": [],
+        "roads": [],
+        "sandbox": false,
+        "unavailable": []
+      }
+    },
+    {
+      "commands": [
+        {
+          "action": "set_building_orientation",
+          "index": 1,
+          "orientation": 1
+        },
+        {
+          "action": "move",
+          "index": 1,
+          "x": 50,
+          "y": 30
+        }
+      ],
+      "name": "compact saved footprint rotates then expands on relocation",
+      "outcomes": [
+        {
+          "ok": true,
+          "state": {
+            "buildings": [
+              {
+                "dimensions": [
+                  3,
+                  3
+                ],
+                "fence_orientation": 0,
+                "kind": "hall",
+                "orientation": 0,
+                "pending": {},
+                "remaining": null,
+                "stored": {
+                  "furniture": 2,
+                  "iron": 20,
+                  "planks": 30,
+                  "steel": 15,
+                  "tools": 5,
+                  "wood": 100
+                },
+                "tile": [
+                  30,
+                  30
+                ]
+              },
+              {
+                "dimensions": [
+                  1,
+                  1
+                ],
+                "fence_orientation": 0,
+                "kind": "sawpit",
+                "orientation": 1,
+                "pending": {},
+                "remaining": null,
+                "stored": {},
+                "tile": [
+                  40,
+                  30
+                ]
+              }
+            ],
+            "coins": 2.5,
+            "resources": [],
+            "roads": []
+          }
+        },
+        {
+          "ok": true,
+          "state": {
+            "buildings": [
+              {
+                "dimensions": [
+                  3,
+                  3
+                ],
+                "fence_orientation": 0,
+                "kind": "hall",
+                "orientation": 0,
+                "pending": {},
+                "remaining": null,
+                "stored": {
+                  "furniture": 2,
+                  "iron": 20,
+                  "planks": 30,
+                  "steel": 15,
+                  "tools": 5,
+                  "wood": 100
+                },
+                "tile": [
+                  30,
+                  30
+                ]
+              },
+              {
+                "dimensions": [
+                  2,
+                  3
+                ],
+                "fence_orientation": 0,
+                "kind": "sawpit",
+                "orientation": 1,
+                "pending": {},
+                "remaining": null,
+                "stored": {},
+                "tile": [
+                  50,
+                  30
+                ]
+              }
+            ],
+            "coins": 1.5,
+            "resources": [],
+            "roads": []
+          }
+        }
+      ],
+      "source": {
+        "buildings": [
+          {
+            "footprint": [
+              3,
+              3
+            ],
+            "kind": "hall",
+            "stored_goods": {
+              "furniture": 2,
+              "iron": 20,
+              "planks": 30,
+              "steel": 15,
+              "tools": 5,
+              "wood": 100
+            },
+            "x": 30,
+            "y": 30
+          },
+          {
+            "footprint": [
+              1,
+              1
+            ],
+            "kind": "sawpit",
+            "x": 40,
+            "y": 30
+          }
+        ],
+        "coins": 2.5,
+        "level": 10,
+        "locals": [],
+        "origin": [
+          30,
+          30
+        ],
+        "player": [
+          1,
+          1
+        ],
+        "resources": [],
+        "roads": [],
+        "sandbox": false,
+        "unavailable": []
+      }
+    }
+  ],
+  "catalog": {
+    "acre": {
+      "costs": {
+        "wood": 5
+      },
+      "decoration": false,
+      "level": 1
+    },
+    "bakery": {
+      "costs": {
+        "planks": 5,
+        "wood": 30
+      },
+      "decoration": false,
+      "level": 4
+    },
+    "barn": {
+      "costs": {
+        "wood": 25
+      },
+      "decoration": false,
+      "level": 2
+    },
+    "butcher": {
+      "costs": {
+        "planks": 5,
+        "wood": 25
+      },
+      "decoration": false,
+      "level": 4
+    },
+    "farm": {
+      "costs": {
+        "wood": 15
+      },
+      "decoration": false,
+      "level": 1
+    },
+    "fish_pond": {
+      "costs": {
+        "planks": 10,
+        "wood": 25
+      },
+      "decoration": false,
+      "level": 5
+    },
+    "fishing_hut": {
+      "costs": {
+        "wood": 15
+      },
+      "decoration": false,
+      "level": 1
+    },
+    "flower_box": {
+      "costs": {
+        "flower_boxes": 1
+      },
+      "decoration": true,
+      "level": 4
+    },
+    "garden_arch": {
+      "costs": {
+        "garden_arches": 1
+      },
+      "decoration": true,
+      "level": 4
+    },
+    "home": {
+      "costs": {
+        "wood": 20
+      },
+      "decoration": false,
+      "level": 1
+    },
+    "lantern": {
+      "costs": {
+        "lanterns": 1
+      },
+      "decoration": true,
+      "level": 4
+    },
+    "market": {
+      "costs": {
+        "planks": 5,
+        "wood": 20
+      },
+      "decoration": false,
+      "level": 5
+    },
+    "mill": {
+      "costs": {
+        "planks": 5,
+        "wood": 30
+      },
+      "decoration": false,
+      "level": 4
+    },
+    "mine": {
+      "costs": {
+        "planks": 15,
+        "tools": 3,
+        "wood": 40
+      },
+      "decoration": false,
+      "level": 6
+    },
+    "orchard": {
+      "costs": {
+        "wood": 25
+      },
+      "decoration": false,
+      "level": 5
+    },
+    "orchard_tree": {
+      "costs": {
+        "wood": 5
+      },
+      "decoration": false,
+      "level": 5
+    },
+    "saddler": {
+      "costs": {
+        "planks": 15,
+        "wood": 30
+      },
+      "decoration": false,
+      "level": 8
+    },
+    "sawpit": {
+      "costs": {
+        "wood": 25
+      },
+      "decoration": false,
+      "level": 3
+    },
+    "signpost": {
+      "costs": {
+        "signposts": 1
+      },
+      "decoration": true,
+      "level": 4
+    },
+    "smelter": {
+      "costs": {
+        "planks": 15,
+        "wood": 40
+      },
+      "decoration": false,
+      "level": 7
+    },
+    "smokehouse": {
+      "costs": {
+        "planks": 5,
+        "wood": 25
+      },
+      "decoration": false,
+      "level": 4
+    },
+    "stable": {
+      "costs": {
+        "iron": 5,
+        "planks": 20,
+        "wood": 40
+      },
+      "decoration": false,
+      "level": 8
+    },
+    "steelworks": {
+      "costs": {
+        "iron": 10,
+        "planks": 20,
+        "wood": 40
+      },
+      "decoration": false,
+      "level": 9
+    },
+    "storehouse": {
+      "costs": {
+        "wood": 25
+      },
+      "decoration": false,
+      "level": 1
+    },
+    "tannery": {
+      "costs": {
+        "planks": 10,
+        "wood": 30
+      },
+      "decoration": false,
+      "level": 5
+    },
+    "tradehouse": {
+      "costs": {
+        "planks": 25,
+        "steel": 10,
+        "wood": 50
+      },
+      "decoration": false,
+      "level": 10
+    },
+    "well": {
+      "costs": {
+        "wood": 15
+      },
+      "decoration": false,
+      "level": 1
+    },
+    "woodcutter": {
+      "costs": {
+        "wood": 15
+      },
+      "decoration": false,
+      "level": 1
+    },
+    "wooden_bench": {
+      "costs": {
+        "furniture": 1
+      },
+      "decoration": true,
+      "level": 4
+    },
+    "wooden_statue": {
+      "costs": {
+        "carved_furniture": 1
+      },
+      "decoration": true,
+      "level": 4
+    },
+    "wooden_table": {
+      "costs": {
+        "wooden_tables": 1
+      },
+      "decoration": true,
+      "level": 4
+    },
+    "workshop": {
+      "costs": {
+        "planks": 5,
+        "wood": 30
+      },
+      "decoration": false,
+      "level": 4
+    }
+  }
+}

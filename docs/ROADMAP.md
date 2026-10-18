@@ -8,7 +8,7 @@ and cache rules are in [Backend](BACKEND.md#cached-zoomed-out-map).
 | 1     | Cached zoomed-out town overview    | Implemented              | Show the landscape and city sizes without refreshing animated scene detail.                                      |
 | 2     | Production line balancing          | Wood and grain implemented; fishing remains | Develop clear fishing chains with capped staffing and simple upgrades. |
 | 3     | Scalable villager pathfinding       | Host queue implemented; cache refinement and shared navigation remain | Keep movement responsive as villager counts and towns grow, with bounded routing work. |
-| 4     | Rust migration | R01–R10 foundations complete; R11 code slices implemented, integrated movement/accounting acceptance remains open | Follow the [staged plan and prompts](RUST_MIGRATION.md), preserving playable checkpoints and saved worlds. |
+| 4     | Rust migration | R12 slice 1 building commands implemented; builder progression, linked groups and integrated acceptance remain open | Follow the [staged plan and prompts](RUST_MIGRATION.md), preserving playable checkpoints and saved worlds. |
 
 ## Rust migration
 
@@ -26,6 +26,10 @@ are complete behind the experimental private-copy boundary; see the
 [completion audit](RUST_MIGRATION.md#r08-slice-3--shared-boundaries-recovery-and-completion-audit).
 R11's three code slices add generic worker travel/wait/arrival, task-change and
 blocked recovery, facing, confirmed playback and versioned model reload continuity.
+R12 slice 1 adds atomic experimental building placement, roads, moves, demolition,
+rotation and gate checks on explicit synthetic facts. Builder claims/progress and
+linked acres/orchard trees/upgrades remain in slices 2–3; complete economic
+cancellation, construction serialization and gameplay integration are still open.
 R11's integrated W2/W3 movement/accounting acceptance remains open; R19–R21 retain
 HTTP/save/snapshot integration and R23 retains complete W1–W6 acceptance. See the
 [R10 completion audit](RUST_MIGRATION.md#final-measurements-and-foundation-completion)
