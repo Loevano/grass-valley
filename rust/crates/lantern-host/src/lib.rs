@@ -18,6 +18,7 @@ pub mod building;
 pub mod dto;
 pub mod legacy;
 pub mod navigation;
+pub mod progression;
 pub mod references;
 pub mod resources;
 pub mod state;

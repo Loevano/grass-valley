@@ -503,7 +503,8 @@ impl Ledger {
             Ok(())
         })
     }
-    /// Commit a caller-evaluated batch. Recipe selection/rates/skills belong to slice 3.
+    /// Low-level batch accounting. `progression::complete_batch` evaluates current
+    /// recipes, personal qualification and practice before calling this operation.
     pub fn produce(
         &mut self,
         id: &BuildingId,

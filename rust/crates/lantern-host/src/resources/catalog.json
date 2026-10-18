@@ -1835,6 +1835,42 @@
     "meat_pies"
   ],
   "rules": {
+    "base_staffing": {
+      "acre": 1,
+      "bakery": 1,
+      "barn": 2,
+      "butcher": 2,
+      "farm": 1,
+      "fish_pond": 2,
+      "fishing_hut": 1,
+      "flower_box": 0,
+      "garden_arch": 0,
+      "hall": 1,
+      "home": 2,
+      "lantern": 0,
+      "market": 1,
+      "mill": 1,
+      "mine": 1,
+      "orchard": 2,
+      "orchard_tree": 0,
+      "saddler": 2,
+      "sawpit": 1,
+      "signpost": 0,
+      "smelter": 1,
+      "smokehouse": 2,
+      "stable": 2,
+      "steelworks": 1,
+      "storehouse": 1,
+      "tannery": 2,
+      "tradehouse": 2,
+      "well": 0,
+      "woodcutter": 1,
+      "wooden_bench": 0,
+      "wooden_statue": 0,
+      "wooden_table": 0,
+      "workshop": 1
+    },
+    "build_seconds": 30,
     "edible_order": [
       "vegetables",
       "carrots",
@@ -1862,7 +1898,248 @@
       "sausages",
       "meat_pies"
     ],
+    "equipment_items": {
+      "desert_clothing": {
+        "gather_bonus": 0.2,
+        "gather_good": "berries",
+        "name": "Desert clothing",
+        "price": 20,
+        "slot": "body"
+      },
+      "swamp_boots": {
+        "biome": "b",
+        "gather_bonus": 0.2,
+        "gather_good": "herbs",
+        "name": "Swamp boots",
+        "price": 15,
+        "slot": "feet"
+      }
+    },
+    "fish_order": [
+      "fish",
+      "trout",
+      "salmon",
+      "sturgeon"
+    ],
+    "food_tick_seconds": 3,
+    "hall_costs": {
+      "10": {
+        "planks": 45,
+        "steel": 10,
+        "wood": 120
+      },
+      "2": {
+        "wood": 40
+      },
+      "3": {
+        "wood": 50
+      },
+      "4": {
+        "planks": 15,
+        "wood": 60
+      },
+      "5": {
+        "planks": 20,
+        "tools": 5,
+        "wood": 70
+      },
+      "6": {
+        "leather": 4,
+        "planks": 25,
+        "wood": 80
+      },
+      "7": {
+        "planks": 30,
+        "tools": 5,
+        "wood": 90
+      },
+      "8": {
+        "iron": 10,
+        "planks": 35,
+        "wood": 100
+      },
+      "9": {
+        "iron": 10,
+        "leather": 5,
+        "planks": 40,
+        "wood": 110
+      }
+    },
+    "hall_upgrades": [
+      {
+        "coins": 30,
+        "level": 2,
+        "milestone": "Completed cottage and completed farm or fishing hut within 10 tile steps of natural water or a completed well; at least 20 food (existing buildings count while upgrading)",
+        "seconds": 30,
+        "wood": 40
+      },
+      {
+        "coins": 40,
+        "level": 3,
+        "milestone": "Harvest 20 wheat and produce 6 eggs from your barn",
+        "production": {
+          "eggs": 6,
+          "wheat": 20
+        },
+        "seconds": 60,
+        "wood": 50
+      },
+      {
+        "coins": 50,
+        "level": 4,
+        "milestone": "Produce 20 planks at your sawpit",
+        "planks": 15,
+        "production": {
+          "planks": 20
+        },
+        "seconds": 90,
+        "wood": 60
+      },
+      {
+        "coins": 60,
+        "level": 5,
+        "milestone": "Craft 5 tools and produce 10 baked goods, smoked fish, or prepared meat (any mix)",
+        "planks": 20,
+        "processed_food": 10,
+        "production": {
+          "tools": 5
+        },
+        "seconds": 120,
+        "tools": 5,
+        "wood": 70
+      },
+      {
+        "coins": 70,
+        "leather": 4,
+        "level": 6,
+        "milestone": "Produce 6 leather at your tannery",
+        "planks": 25,
+        "production": {
+          "leather": 6
+        },
+        "seconds": 150,
+        "wood": 80
+      },
+      {
+        "coins": 80,
+        "level": 7,
+        "milestone": "Mine 20 iron ore",
+        "planks": 30,
+        "production": {
+          "iron_ore": 20
+        },
+        "seconds": 180,
+        "tools": 5,
+        "wood": 90
+      },
+      {
+        "coins": 90,
+        "iron": 10,
+        "level": 8,
+        "milestone": "Smelt 10 iron",
+        "planks": 35,
+        "production": {
+          "iron": 10
+        },
+        "seconds": 210,
+        "wood": 100
+      },
+      {
+        "coins": 100,
+        "iron": 10,
+        "leather": 5,
+        "level": 9,
+        "milestone": "Craft 2 saddles at your saddler (horse riding is optional)",
+        "planks": 40,
+        "production": {
+          "saddles": 2
+        },
+        "seconds": 240,
+        "wood": 110
+      },
+      {
+        "coins": 120,
+        "level": 10,
+        "milestone": "Produce 15 steel and complete a town trade or sell 10 goods at your market",
+        "planks": 45,
+        "production": {
+          "steel": 15
+        },
+        "seconds": 270,
+        "steel": 10,
+        "wood": 120
+      }
+    ],
+    "idle_food": 0.03,
+    "jobs": [
+      "baking",
+      "breeding",
+      "building",
+      "butchery",
+      "crafting",
+      "farming",
+      "fishing",
+      "gathering",
+      "hauling",
+      "horsekeeping",
+      "husbandry",
+      "idle",
+      "milling",
+      "mining",
+      "orcharding",
+      "packing",
+      "preserving",
+      "saddlery",
+      "smelting",
+      "steelmaking",
+      "tanning",
+      "trading",
+      "woodcutting",
+      "woodworking"
+    ],
     "max_acres": 48,
+    "practice_rates": {
+      "baking": 0.08,
+      "breeding": 0.08,
+      "building": 0.08,
+      "butchery": 0.1,
+      "crafting": 0.08,
+      "farming": 0.08,
+      "fishing": 0.24,
+      "gathering": 0.08,
+      "hauling": 0.08,
+      "horsekeeping": 0.08,
+      "husbandry": 0.128,
+      "idle": 0.08,
+      "milling": 0.08,
+      "mining": 0.08,
+      "orcharding": 0.08,
+      "packing": 0.08,
+      "preserving": 0.08,
+      "saddlery": 0.08,
+      "smelting": 0.08,
+      "steelmaking": 0.08,
+      "tanning": 0.08,
+      "trading": 0.08,
+      "woodcutting": 0.08,
+      "woodworking": 0.08
+    },
+    "processed_food": [
+      "smoked_fish",
+      "smoked_trout",
+      "smoked_salmon",
+      "smoked_sturgeon",
+      "bread",
+      "bread_rolls",
+      "herb_bread",
+      "fruit_pies",
+      "cakes",
+      "prepared_meat",
+      "herbed_meat",
+      "smoked_meat",
+      "sausages",
+      "meat_pies"
+    ],
     "production_goods": [
       "wood",
       "vegetables",
@@ -1926,6 +2203,68 @@
       250,
       300,
       350
-    ]
+    ],
+    "talents": [
+      "woodcutting",
+      "farming",
+      "fishing",
+      "husbandry"
+    ],
+    "upgrade_costs": {
+      "boat": {
+        "planks": 10
+      },
+      "double_hearth_oven": {
+        "planks": 20,
+        "tools": 5,
+        "wood": 60
+      },
+      "geared_millstones": {
+        "planks": 20,
+        "tools": 5,
+        "wood": 60
+      },
+      "improved_boat": {
+        "coins": 20,
+        "planks": 15
+      },
+      "improved_millstones": {
+        "planks": 10,
+        "wood": 30
+      },
+      "larger_oven": {
+        "planks": 10,
+        "wood": 30
+      },
+      "master_boat": {
+        "coins": 40,
+        "planks": 20
+      },
+      "masterwork_millstones": {
+        "planks": 30,
+        "tools": 10,
+        "wood": 90
+      },
+      "masterwork_oven": {
+        "planks": 30,
+        "tools": 10,
+        "wood": 90
+      },
+      "nets": {
+        "coins": 5,
+        "wood": 10
+      },
+      "steel_pickaxe": {
+        "leather": 3,
+        "steel": 5
+      },
+      "timber_frame": {
+        "planks": 10
+      },
+      "wool_nets": {
+        "wool": 5
+      }
+    },
+    "worker_food": 0.045
   }
 }

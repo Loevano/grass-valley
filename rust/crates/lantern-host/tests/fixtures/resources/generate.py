@@ -9,6 +9,14 @@ sys.path.insert(0, str(ROOT / 'server'))
 import progression as p
 import logistics
 import farming
+import equipment
+import server
+
+
+def practice_rate(job):
+    worker = {}
+    p.practice(worker, job)
+    return worker[job]
 
 
 def outputs():
@@ -16,7 +24,17 @@ def outputs():
                    rules=dict(storehouse_capacities=p.STOREHOUSE_CAPACITIES,
                               max_acres=farming.MAX_ACRES,
                               production_goods=logistics.PRODUCTION_GOODS,
-                              edible_order=list(p.EDIBLE)),
+                              edible_order=list(p.EDIBLE), fish_order=list(p.FISH),
+                              talents=p.TALENTS, jobs=sorted(server.JOBS | {'gathering'}),
+                              practice_rates={job: practice_rate(job) for job in server.JOBS | {'gathering'}},
+                              base_staffing=server.SETTLER_SPACES,
+                              hall_upgrades=p.HALL_UPGRADES, equipment_items=equipment.ITEMS,
+                              hall_costs={str(s["level"]):{k:v for k,v in p.costs_of(s).items() if k != "coins"} for s in p.HALL_UPGRADES},
+                              upgrade_costs={k:p.costs_of(s) for k,s in p.PROFESSION_UPGRADES.items()},
+                              processed_food=[*(f"smoked_{k}" for k in p.FISH),*(r["output"] for kind in ("bakery","butcher") for r in p.PROFESSION_RECIPES[kind])],
+                              idle_food=p.IDLE_FOOD, worker_food=p.WORKER_FOOD,
+                              food_tick_seconds=p.FOOD_TICK_SECONDS,
+                              build_seconds=server.BUILD_SECONDS),
                    resources=list(dict.fromkeys(('coins', *(k for k in p.STORAGE_KEYS if k != 'food')))))
     cases = []
     for stock, costs in [({}, {}), ({}, {'wood': .5}),
@@ -36,8 +54,10 @@ def outputs():
                 after[key] = max(0, p.quantity(town, key) - cost)
         cases.append(dict(stock=stock, costs=costs, affordable=affordable, after=after))
     from accounting import cases as accounting_cases
+    from progression_rules import cases as progression_cases
     return {'src/resources/catalog.json': catalog, 'tests/fixtures/resources/python.json': cases,
-            'tests/fixtures/resources/accounting.json': accounting_cases()}
+            'tests/fixtures/resources/accounting.json': accounting_cases(),
+            'tests/fixtures/resources/progression.json': progression_cases()}
 
 
 if __name__ == '__main__':

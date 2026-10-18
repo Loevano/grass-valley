@@ -2,7 +2,7 @@
 //!
 //! A Stock owns physical item quantities, never the legacy aggregate `food` score.
 //! Ledger derives spendable stock, food value, reserves and pending totals from
-//! its containers. Recipe evaluation, live Cargo/BuildingWorld integration, HTTP
+//! its containers. The progression module evaluates recipes; live Cargo/BuildingWorld integration, HTTP
 //! and legacy save conversion remain later work. A standalone Stock grants no
 //! permission to spend another owner's cargo.
 mod activity;
@@ -21,7 +21,7 @@ pub fn public_catalog() -> &'static Value {
     &catalog()["public"]
 }
 
-fn catalog() -> &'static Value {
+pub(crate) fn catalog() -> &'static Value {
     static CATALOG: OnceLock<Value> = OnceLock::new();
     CATALOG.get_or_init(|| {
         serde_json::from_str(include_str!("resources/catalog.json"))

@@ -8,7 +8,7 @@ and cache rules are in [Backend](BACKEND.md#cached-zoomed-out-map).
 | 1     | Cached zoomed-out town overview    | Implemented              | Show the landscape and city sizes without refreshing animated scene detail.                                      |
 | 2     | Production line balancing          | Wood and grain implemented; fishing remains | Develop clear fishing chains with capped staffing and simple upgrades. |
 | 3     | Scalable villager pathfinding       | Host queue implemented; cache refinement and shared navigation remain | Keep movement responsive as villager counts and towns grow, with bounded routing work. |
-| 4     | Rust migration | R13 catalog/accounting slices implemented; progression, host integration and release acceptance remain open | Follow the [staged plan and prompts](RUST_MIGRATION.md), preserving playable checkpoints and saved worlds. |
+| 4     | Rust migration | R13 accounting/progression slices implemented; production actors, host integration and release acceptance remain open | Follow the [staged plan and prompts](RUST_MIGRATION.md), preserving playable checkpoints and saved worlds. |
 
 ## Rust migration
 
@@ -29,10 +29,10 @@ blocked recovery, facing, confirmed playback and versioned model reload continui
 R12's three slices implement the experimental building/construction model,
 including upgrades, linked groups, upgrade helpers and offline reload; see the
 [completion boundary](RUST_MIGRATION.md#r12-slice-3--upgrades-linked-groups-and-cancellation).
-R13 slices 1–2 add reviewed catalogs, fractional stock and an experimental ledger
-with storage, reservations, production caps and flow accounting. Slice 3 retains
-recipe/skill/equipment evaluation and hall progression; host integration remains later.
-Full economy/production rules and resident qualification remain in R13–R17;
+R13 slices 1–3 implement reviewed catalogs, fractional stock, an experimental
+ledger, recipes, personal skills/talents, equipment and hall requirement evaluation.
+Base and top-tier grain accounting match Python under continuous-input assumptions;
+production actors, logistics and population integration remain in R14–R18;
 durable saves and playable host integration remain in R19–R21.
 R11's integrated W2/W3 movement/accounting acceptance remains open; R19–R21 retain
 HTTP/save/snapshot integration and R23 retains complete W1–W6 acceptance. See the

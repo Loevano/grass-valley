@@ -5,9 +5,10 @@ A migration that can be completed one task at a time, with a prompt for each tas
 **Status:** R01–R10 complete as experimental migration foundations; all three R11
 code slices are implemented at the experimental model boundary. R12 slices 1–3 implement the experimental building/construction model,
 including upgrades, linked groups, helpers and offline reload.
-R13 slices 1–2 add reviewed catalogs, fractional quantities and an experimental
-single-owner resource ledger with storage/cap/reservation/flow rules; recipe and
-progression evaluation remain in slice 3.
+R13 slices 1–3 implement reviewed catalogs, fractional quantities, a single-owner
+resource ledger and recipe/personal progression/equipment/hall rule evaluation at
+the experimental offline boundary. Production actors and playable integration remain
+in R14–R21; complete W1–W6 acceptance remains R23.
 Integrated W2/W3 movement/accounting acceptance remains open. R08 spatial
 rules and founder movement is complete as an experimental private-copy foundation. R07 includes saved-first terrain versions 1–7,
 nonchunked maps, authored starter/town sites, ordinary/swamp metadata and overlays,
@@ -239,7 +240,7 @@ only after work is performed. Keep unfinished stages visible in the roadmap.
 | R10 | Request scheduler and cache invalidation | R09 | Complete as experimental navigation foundation; slices 1–3 and completion audit below; integrated W1–W6 acceptance retained in R11/R19–R23 |
 | R11 | Persistent worker movement and playback | R10 | Slices 1–3 implemented at experimental model boundary; integrated W2/W3 movement/accounting acceptance remains open |
 | R12 | Construction and building operations | R11 | Slices 1–3 implemented at explicit synthetic-model boundary; full economy/resident rules, durable/public host integration and release acceptance remain in R13–R23; completion boundary below |
-| R13 | Resource ledger, storage, and progression rules | R12 | Slices 1–2 implemented at offline model boundary: reviewed catalogs, quantities, ledger/storage/reservations/caps/flows; slice 3 progression evaluation remains |
+| R13 | Resource ledger, storage, and progression rules | R12 | Slices 1–3 implemented at offline model boundary: reviewed catalogs, ledger/storage/reservations/caps/flows and progression rules; actor/save/HTTP integration and full W1–W6 acceptance remain R14–R23 |
 | R14 | Hauling, delivery, and merchant trips | R13 | Not started |
 | R15 | Gathering and processing professions | R14 | Not started |
 | R16 | Farming and orchards | R15 | Not started |
@@ -2979,7 +2980,8 @@ locked offline package tests/doc tests and all-target Clippy with warnings denie
 passed (3/3 commands). Report: `performance-results/20261018-174843/report.md`.
 Commit message: `feat: add Rust resource ledger and storage accounting`.
 
-Remaining: slice 3 owns recipe/crop/fish evaluation, talents/skills/equipment effects,
+Historical slice-2 boundary (rule evaluation superseded by slice 3 below):
+slice 3 owns recipe/crop/fish evaluation, talents/skills/equipment effects,
 hall requirements and integrated grain-chain/progression acceptance. Equipment
 **capacity multipliers** are covered here; unlocks and throughput/worker evaluation
 are not. `Ledger` is authoritative only for its admitted offline facts; it is not
@@ -2989,6 +2991,95 @@ balance migrations), versioned durable ledger/history save/reload and HTTP expor
 remain in subsequent feature/integration stages, with persistence in R19 and playable
 host/browser integration in R20–R21. R14 retains trip IDs/lifecycle and market rules,
 R15–R18 production actors, and R23 complete W1–W6 acceptance. Python remains default.
+
+### R13 slice 3 — Recipes, personal progression, equipment and hall requirements
+
+This completes the three planned R13 code slices at the experimental offline
+model boundary in `lantern_host::progression`. Python remains the playable host.
+
+- `Worker` retains personal practice, saved talents, sandbox status and worker-tool
+  selection. Absent talents receive Python's deterministic index-based defaults;
+  existing empty or populated maps are preserved. Qualification reads each
+  individual's prerequisites. Efficiency uses Python's 20-practice tiers and
+  talent roots. Practice uses the current per-job rates and rounds the binary64
+  value directly to three decimal places, with Python fixture coverage at ties,
+  adjacent floats, tier boundaries and large values. Inventory is never rounded.
+- Recipe selection preserves default/fallback recipes and the workshop head's
+  precedence; empty workshop queues still wait in sandbox. Advanced selection
+  requires an assigned, personally qualified worker at the recipe threshold;
+  the founder or an unassigned town expert cannot qualify another worker.
+  Batch evaluation preserves every recipe's fractional costs, output, time,
+  worker-tool bonus, mining equipment bonus and maximum matching grain throughput.
+  Workshop final quantities scale the whole batch. Smoking consumes raw species
+  in Python's fish order and emits matching smoked species one for one.
+- `complete_batch` re-evaluates the actual ledger input buffer and checks matching
+  workplace/equipment facts. Ledger capacity, caps and ingredients must admit the
+  whole batch before personal practice changes. Qualification, real shortage,
+  full storage, cap, forged equipment or quantity failures preserve the worker,
+  inventories, flows and produced counters. The saved near-five-wood fuel boundary
+  completes without negative stock or a stranded batch. This is a **completed
+  batch** transition; elapsed work, route arrivals, task identity and workshop
+  queue advancement remain the production actor owner's responsibility in R15.
+- Pure crop unlock, fishing boat tier/capacity/species, clothing gathering bonus,
+  independent staffing-capacity and food-demand queries use reviewed source data.
+  Structural/storage/equipment upgrades do not add mill or bakery worker slots.
+  Equipment offers retain hall/skill gates, previous tiers, duplicate rejection,
+  sandbox material/skill exemptions, costs and instant completion in sandbox or
+  for the initial boat.
+  Construction and applying upgrade effects still belong to R12 and later host
+  integration; local clothing trade/ownership and player activity execution remain
+  R17–R18 rather than being implied by a bonus query.
+- Hall evidence checks free food, completed housing/food buildings, Manhattan
+  water range 10, completed wells, and existing buildings during upgrades. Levels
+  3–10 require the current lifetime local output, including level 5's processed
+  food mix and level 10's trade/sale alternatives. Imported stock cannot satisfy
+  production milestones. Hall offers preserve material costs, times and coin
+  rewards (coins are not a hall cost). `construction_evidence` derives R12's
+  explicit progression observations from the ledger and personal skill maxima,
+  including the founder for town-level equipment checks. It does not create a
+  second material balance or mutate R12's independent experimental inventory.
+
+The catalog exporter adds reviewed Python jobs, staffing bases, talent/fish order,
+practice rates queried from the current helper, equipment items, hall offers and
+current cost projections. `StoragePolicy` now shares the same equipment multiplier
+as batch evaluation. `generate.py --check` recomputes the committed data and oracle
+fixtures without writing. Invalid unknown jobs/recipes/crops, nonfinite quantities,
+and talent values that would cause negative/nonfinite rates reject explicitly;
+ordinary-save field reconciliation remains later work, with no silent migration.
+
+Eleven new tests compare 1,302 generated cases: 387 personal practice/qualification/
+efficiency cases, 24 talent defaults, 205 batch/default/qualification cases across
+all processor recipes, 132 real recipe-selection commands, 78 real equipment
+commands, 60 real crop commands, 30 fishing species/tier cases, 15 clothing bonuses,
+204 hall milestones, 165 staffing queries and two grain-chain scenarios. Additional
+boundary assertions cover atomic batch failure, founder versus assigned-worker
+eligibility, imported goods, rule errors and derived construction evidence.
+The disposable command fixtures use fixed small terrain and do not generate worlds.
+
+The grain scenarios run actual Python production helpers and Rust completed-batch
+accounting over the same **active-work** minute: one base mill supplies two base
+bakers (40 flour and 40 bread), and the top-tier mill/bakery pair produces 320 flour
+and 320 bread. The latter supplies 480 food before meals against 300 food demand
+for 200 working residents, leaving 180 food. Wheat and fuel are explicit reserved
+inputs; field growth, walking, work scheduling, hauling pauses, fuel generation
+and continuous delivered supply are not simulated here. This verifies documented
+rates and accounting without claiming the later integrated W2/W3/W1–W6 gates.
+
+Remaining integration: R14 owns transport planning/trip lifecycle/merchants; R15
+production clocks, source access and workshop request lifecycle; R16 field growth,
+water and harvest; R17 fishing/animals/player activity; R18 population/NPC/trade
+and adventure state. R19 retains complete ordinary-save conversion, balance
+migrations and durable progression/ledger/history saves, R20–R21 authenticated
+HTTP/browser integration, R23 full release/math/scenario acceptance and R24 rollback.
+No launcher change, live-save writer or new production dependency is introduced.
+Performance comparisons are not run: this is a rules migration, with no performance
+problem being investigated or performance claim.
+
+Evidence: `python3 tools/check.py` selected only `rust:lantern-host` and passed
+all three commands: formatting, locked offline package tests/doc tests and
+all-target Clippy with warnings denied. Final report after the sandbox-offer
+correction: `performance-results/20261018-182500/report.md`. Commit message:
+`feat: add Rust recipe and progression rules`.
 
 ## R14 — Logistics and markets
 

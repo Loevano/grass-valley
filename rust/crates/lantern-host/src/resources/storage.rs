@@ -65,16 +65,7 @@ impl StoragePolicy {
         {
             return 1.0;
         }
-        let equipment = self
-            .equipment
-            .iter()
-            .filter_map(|name| {
-                let spec = &public_catalog()["upgrades"][name];
-                (spec["building"].as_str() == Some(&self.kind))
-                    .then(|| spec["throughput"].as_f64().unwrap_or(1.0))
-            })
-            .reduce(f64::max)
-            .unwrap_or(1.0);
+        let equipment = crate::progression::equipment_multiplier(&self.kind, &self.equipment);
         (1.0 + 0.25 * (self.level - 1) as f64) * equipment
     }
     pub fn size(&self) -> f64 {
