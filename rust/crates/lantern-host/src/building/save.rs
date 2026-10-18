@@ -1,0 +1,434 @@
+//! Explicit private offline construction schema; no filesystem or HTTP writer.
+use super::*;
+use crate::{
+    BoundaryError,
+    dto::{
+        decode_save, encode_save,
+        facts::{EntityIdDto, PositionDto},
+        wire::{Number, UniqueMap},
+    },
+};
+use serde::{Deserialize, Serialize};
+use serde_json::value::RawValue;
+
+#[derive(Serialize, Deserialize)]
+enum Format {
+    #[serde(rename = "lantern-building-model")]
+    Building,
+}
+#[derive(Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+struct Save {
+    format: Format,
+    version: u32,
+    model: Box<RawValue>,
+    shared: bool,
+    towns: Vec<TownDto>,
+    landscape: LandscapeDto,
+    builders: Vec<BuilderDto>,
+}
+#[derive(Clone, Copy, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+struct TileDto {
+    x: i32,
+    y: i32,
+}
+impl From<Tile> for TileDto {
+    fn from(t: Tile) -> Self {
+        Self { x: t.x, y: t.y }
+    }
+}
+impl From<TileDto> for Tile {
+    fn from(t: TileDto) -> Self {
+        Self { x: t.x, y: t.y }
+    }
+}
+#[derive(Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+struct FootprintDto {
+    origin: TileDto,
+    dimensions: [u32; 2],
+}
+impl From<Footprint> for FootprintDto {
+    fn from(f: Footprint) -> Self {
+        let (w, d) = f.dimensions();
+        Self {
+            origin: f.origin().into(),
+            dimensions: [w, d],
+        }
+    }
+}
+impl FootprintDto {
+    fn core(self, budget: &mut u64) -> Result<Footprint, BoundaryError> {
+        let [w, d] = self.dimensions;
+        *budget = budget
+            .checked_sub(u64::from(w) * u64::from(d))
+            .ok_or_else(|| invalid("geometry expansion limit"))?;
+        Footprint::saved(self.origin.into(), Some((w, d))).map_err(|_| invalid("invalid footprint"))
+    }
+}
+#[derive(Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+struct SiteDto {
+    id: EntityIdDto,
+    kind: String,
+    dimensions: [u32; 2],
+    orientation: u8,
+    fence_orientation: u8,
+    stored: UniqueMap<Number>,
+    pending: UniqueMap<Number>,
+}
+#[derive(Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+struct RoadDto {
+    tile: TileDto,
+    #[serde(deserialize_with = "required_option")]
+    remaining: Option<Number>,
+}
+#[derive(Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+struct TownDto {
+    town_id: String,
+    level: u8,
+    sandbox: bool,
+    origin: TileDto,
+    player: PositionDto,
+    coins: Number,
+    sites: Vec<SiteDto>,
+    roads: Vec<RoadDto>,
+}
+#[derive(Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+struct ResourceDto {
+    kind: String,
+    footprint: FootprintDto,
+}
+#[derive(Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+struct LandscapeDto {
+    size: u32,
+    unavailable: Vec<TileDto>,
+    resources: Vec<ResourceDto>,
+    locals: Vec<FootprintDto>,
+    local_positions: Vec<PositionDto>,
+}
+#[derive(Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+enum RoleDto {
+    Dedicated,
+    Idle,
+    Busy,
+}
+impl From<Role> for RoleDto {
+    fn from(r: Role) -> Self {
+        match r {
+            Role::Dedicated => Self::Dedicated,
+            Role::Idle => Self::Idle,
+            Role::Busy => Self::Busy,
+        }
+    }
+}
+impl From<RoleDto> for Role {
+    fn from(r: RoleDto) -> Self {
+        match r {
+            RoleDto::Dedicated => Self::Dedicated,
+            RoleDto::Idle => Self::Idle,
+            RoleDto::Busy => Self::Busy,
+        }
+    }
+}
+#[derive(Serialize, Deserialize)]
+#[serde(rename_all = "snake_case", deny_unknown_fields)]
+enum ClaimDto {
+    Building { id: EntityIdDto },
+    Road { tile: TileDto },
+}
+impl From<&Claim> for ClaimDto {
+    fn from(c: &Claim) -> Self {
+        match c {
+            Claim::Building(id) => Self::Building {
+                id: EntityIdDto::from_id(id),
+            },
+            Claim::Road(tile) => Self::Road {
+                tile: (*tile).into(),
+            },
+        }
+    }
+}
+impl ClaimDto {
+    fn core(self) -> Result<Claim, BoundaryError> {
+        Ok(match self {
+            Self::Building { id } => Claim::Building(id.into_id("$.builders.claim")?),
+            Self::Road { tile } => Claim::Road(tile.into()),
+        })
+    }
+}
+#[derive(Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+struct WalkDto {
+    claim: ClaimDto,
+    footprint: FootprintDto,
+    role: RoleDto,
+    path: Vec<PositionDto>,
+    step: usize,
+}
+#[derive(Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+struct BuilderDto {
+    id: EntityIdDto,
+    role: RoleDto,
+    #[serde(deserialize_with = "required_option")]
+    claim: Option<ClaimDto>,
+    #[serde(deserialize_with = "required_option")]
+    walk: Option<WalkDto>,
+}
+fn required_option<'de, D: serde::Deserializer<'de>, T: Deserialize<'de>>(
+    d: D,
+) -> Result<Option<T>, D::Error> {
+    Option::<T>::deserialize(d)
+}
+fn numbers(goods: &BTreeMap<String, Quantity>) -> UniqueMap<Number> {
+    UniqueMap(
+        goods
+            .iter()
+            .map(|(k, q)| (k.clone(), Number::core(q.get())))
+            .collect(),
+    )
+}
+fn quantities(goods: UniqueMap<Number>) -> Result<BTreeMap<String, Quantity>, BoundaryError> {
+    goods
+        .0
+        .into_iter()
+        .map(|(k, q)| {
+            Ok((
+                k,
+                Quantity::new(q.get()).map_err(|_| invalid("invalid quantity"))?,
+            ))
+        })
+        .collect()
+}
+fn invalid(reason: &'static str) -> BoundaryError {
+    BoundaryError::invalid("$.building_model", reason)
+}
+
+pub fn encode_building_save(world: &BuildingWorld) -> Result<Vec<u8>, BoundaryError> {
+    for town in world.model.towns() {
+        for actor in town.actors() {
+            if matches!(
+                actor.state().task,
+                lantern_core::model::Task::Construction { .. }
+                    | lantern_core::model::Task::RoadConstruction { .. }
+            ) && !world.builders.contains_key(&actor.state().id)
+            {
+                return Err(invalid("unregistered construction task"));
+            }
+        }
+    }
+    let raw = encode_save(&world.model)?;
+    let model = RawValue::from_string(raw).map_err(|_| invalid("invalid model encoding"))?;
+    let towns = world
+        .rules
+        .iter()
+        .map(|(id, r)| TownDto {
+            town_id: id.as_str().into(),
+            level: r.level,
+            sandbox: r.sandbox,
+            origin: r.origin.into(),
+            player: r.player.into(),
+            coins: Number::core(r.coins.get()),
+            sites: r
+                .sites
+                .iter()
+                .map(|(id, s)| SiteDto {
+                    id: EntityIdDto::from_id(id),
+                    kind: s.kind.clone(),
+                    dimensions: [s.dimensions.0, s.dimensions.1],
+                    orientation: s.orientation,
+                    fence_orientation: s.fence_orientation,
+                    stored: numbers(&s.stored),
+                    pending: numbers(&s.pending),
+                })
+                .collect(),
+            roads: r
+                .roads
+                .iter()
+                .map(|r| RoadDto {
+                    tile: r.tile.into(),
+                    remaining: r.remaining.map(|w| Number::core(w.get())),
+                })
+                .collect(),
+        })
+        .collect();
+    let land = &world.landscape;
+    let landscape = LandscapeDto {
+        size: land.size,
+        unavailable: land.unavailable.iter().copied().map(Into::into).collect(),
+        resources: land
+            .resources
+            .iter()
+            .map(|r| ResourceDto {
+                kind: r.kind.clone(),
+                footprint: r.footprint.into(),
+            })
+            .collect(),
+        locals: land.locals.iter().copied().map(Into::into).collect(),
+        local_positions: land
+            .local_positions
+            .iter()
+            .copied()
+            .map(Into::into)
+            .collect(),
+    };
+    let builders = world
+        .builders
+        .iter()
+        .map(|(id, b)| BuilderDto {
+            id: EntityIdDto::from_id(id),
+            role: b.role.into(),
+            claim: b.claim.as_ref().map(Into::into),
+            walk: b.walk.as_ref().map(|w| WalkDto {
+                claim: (&w.claim).into(),
+                footprint: w.footprint.into(),
+                role: w.role.into(),
+                path: w.path.iter().copied().map(Into::into).collect(),
+                step: w.step,
+            }),
+        })
+        .collect();
+    serde_json::to_vec(&Save {
+        format: Format::Building,
+        version: 1,
+        model,
+        shared: world.shared,
+        towns,
+        landscape,
+        builders,
+    })
+    .map_err(|_| invalid("invalid construction encoding"))
+}
+pub fn decode_building_save(source: &[u8]) -> Result<BuildingWorld, BoundaryError> {
+    let save: Save =
+        serde_json::from_slice(source).map_err(|_| invalid("invalid construction schema"))?;
+    if save.version != 1 {
+        return Err(invalid("unsupported construction version"));
+    }
+    let model = decode_save(save.model.get())?;
+    let mut rules = BTreeMap::new();
+    let mut budget = 1_000_000_u64;
+    for t in save.towns {
+        let id = TownId::new(t.town_id).map_err(|_| invalid("invalid town identity"))?;
+        let mut sites = BTreeMap::new();
+        for s in t.sites {
+            let id = s.id.into_id("$.towns.sites.id")?;
+            let dimensions = (s.dimensions[0], s.dimensions[1]);
+            budget = budget
+                .checked_sub(u64::from(dimensions.0) * u64::from(dimensions.1))
+                .ok_or_else(|| invalid("geometry expansion limit"))?;
+            if sites
+                .insert(
+                    id,
+                    Site {
+                        kind: s.kind,
+                        dimensions,
+                        orientation: s.orientation,
+                        fence_orientation: s.fence_orientation,
+                        stored: quantities(s.stored)?,
+                        pending: quantities(s.pending)?,
+                    },
+                )
+                .is_some()
+            {
+                return Err(invalid("duplicate site identity"));
+            }
+        }
+        let r = Rules {
+            level: t.level,
+            sandbox: t.sandbox,
+            origin: t.origin.into(),
+            player: t.player.into_core("$.towns.player")?,
+            coins: Quantity::new(t.coins.get()).map_err(|_| invalid("invalid coins"))?,
+            sites,
+            roads: t
+                .roads
+                .into_iter()
+                .map(|r| {
+                    Ok(Road {
+                        tile: r.tile.into(),
+                        remaining: r
+                            .remaining
+                            .map(|n| Work::new(n.get()).map_err(|_| invalid("invalid work")))
+                            .transpose()?,
+                    })
+                })
+                .collect::<Result<_, BoundaryError>>()?,
+        };
+        if rules.insert(id, r).is_some() {
+            return Err(invalid("duplicate town identity"));
+        }
+    }
+    let l = save.landscape;
+    let unavailable = l.unavailable.into_iter().map(Into::into).collect();
+    let resources = l
+        .resources
+        .into_iter()
+        .map(|r| {
+            Ok(Resource {
+                kind: r.kind,
+                footprint: r.footprint.core(&mut budget)?,
+            })
+        })
+        .collect::<Result<_, BoundaryError>>()?;
+    let locals = l
+        .locals
+        .into_iter()
+        .map(|f| f.core(&mut budget))
+        .collect::<Result<_, _>>()?;
+    let local_positions = l
+        .local_positions
+        .into_iter()
+        .map(|p| p.into_core("$.landscape.local_positions"))
+        .collect::<Result<_, _>>()?;
+    let landscape = Landscape {
+        size: l.size,
+        unavailable,
+        resources,
+        locals,
+        local_positions,
+    };
+    let mut builders = BTreeMap::new();
+    for b in save.builders {
+        let id = b.id.into_id("$.builders.id")?;
+        let claim = b.claim.map(ClaimDto::core).transpose()?;
+        let walk = b
+            .walk
+            .map(|w| {
+                Ok(Walk {
+                    claim: w.claim.core()?,
+                    footprint: w.footprint.core(&mut budget)?,
+                    role: w.role.into(),
+                    path: w
+                        .path
+                        .into_iter()
+                        .map(|p| p.into_core("$.builders.walk.path"))
+                        .collect::<Result<_, _>>()?,
+                    step: w.step,
+                })
+            })
+            .transpose()?;
+        if builders
+            .insert(
+                id,
+                Builder {
+                    role: b.role.into(),
+                    claim,
+                    walk,
+                },
+            )
+            .is_some()
+        {
+            return Err(invalid("duplicate builder identity"));
+        }
+    }
+    BuildingWorld::restore_with_builders(model, rules, landscape, save.shared, builders)
+        .map_err(|_| invalid("inconsistent construction facts"))
+}

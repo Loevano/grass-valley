@@ -6,7 +6,7 @@ use lantern_core::{
         ConstructionPhase, ConstructionState, Destination, Task, TransportPhase, TravelIntent,
         WorkPhase,
     },
-    units::{Position, Seconds, Work},
+    units::{Position, Seconds, Tile, Work},
 };
 use serde::{Deserialize, Serialize};
 
@@ -202,6 +202,11 @@ pub enum TaskDto {
         phase: ConstructionPhaseDto,
         elapsed: Number,
     },
+    RoadConstruction {
+        x: i32,
+        y: i32,
+        phase: ConstructionPhaseDto,
+    },
 }
 
 impl From<&Task> for TaskDto {
@@ -239,6 +244,11 @@ impl From<&Task> for TaskDto {
                 site: EntityIdDto::from_id(site),
                 phase: phase.into(),
                 elapsed: Number::core(elapsed.get()),
+            },
+            Task::RoadConstruction { tile, phase } => Self::RoadConstruction {
+                x: tile.x,
+                y: tile.y,
+                phase: phase.into(),
             },
         }
     }
@@ -283,6 +293,10 @@ impl TaskDto {
                 site: site.into_id(&format!("{path}.construction.site"))?,
                 phase: phase.into(),
                 elapsed: seconds(elapsed, &format!("{path}.construction.elapsed"))?,
+            },
+            Self::RoadConstruction { x, y, phase } => Task::RoadConstruction {
+                tile: Tile { x, y },
+                phase: phase.into(),
             },
         })
     }

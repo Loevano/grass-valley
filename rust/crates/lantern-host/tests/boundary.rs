@@ -125,7 +125,7 @@ fn value(world: &ModelWorld) -> Value {
 fn v1_migrates_explicitly_without_guessing_an_unsaved_leg_and_v2_requires_travel_facts() {
     use lantern_core::{model::TravelIntent, travel::Facing};
     let mut old = value(&fixture());
-    assert_eq!(old["version"], 2);
+    assert_eq!(old["version"], 3);
     old["version"] = json!(1);
     for town in old["towns"].as_array_mut().unwrap() {
         for actor in town["actors"].as_array_mut().unwrap() {
@@ -140,7 +140,7 @@ fn v1_migrates_explicitly_without_guessing_an_unsaved_leg_and_v2_requires_travel
             assert_eq!(actor.state().travel, TravelIntent::None);
         }
     }
-    assert_eq!(value(&migrated)["version"], 2);
+    assert_eq!(value(&migrated)["version"], 3);
     for field in ["facing", "travel"] {
         let mut bad = value(&fixture());
         bad["towns"][0]["actors"][0]
@@ -304,7 +304,7 @@ fn public_playback_contains_only_confirmed_samples_and_is_detached_from_actor_st
         .unwrap();
     let facts = town.actor(&id).unwrap().state().clone();
     let mut public = serde_json::to_value(public_snapshot(&world)).unwrap();
-    assert_eq!(public["format"], "lantern-model-observation-v2");
+    assert_eq!(public["format"], "lantern-model-observation-v3");
     let samples = &public["towns"]["a"]["villagers"][0]["playback"]["samples"];
     assert_eq!(samples.as_array().unwrap().len(), 2);
     assert_eq!(samples[1]["x"], json!(facts.position.x.get()));
@@ -619,7 +619,7 @@ fn unknown_fields_and_versions_are_rejected_at_every_boundary_depth() {
         );
     }
     let mut bad = original.clone();
-    bad["version"] = json!(3);
+    bad["version"] = json!(4);
     assert_eq!(rejected(bad).path, "$.version");
     let mut bad = original;
     bad["towns"][0]["actors"][1]["task"] = json!({"idle":{"private_cache":123}});
@@ -636,7 +636,7 @@ fn duplicate_objects_do_not_overwrite_goods_tokens_or_accounts() {
             "\"tokens\":{",
             "\"tokens\":{\"duplicate\":\"a\",\"duplicate\":\"b\",",
         ),
-        ("\"version\":2", "\"version\":2,\"version\":2"),
+        ("\"version\":3", "\"version\":3,\"version\":3"),
     ] {
         assert!(decode_save(&raw.replacen(needle, replacement, 1)).is_err());
     }

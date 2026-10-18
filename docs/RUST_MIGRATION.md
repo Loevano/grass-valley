@@ -3,8 +3,9 @@
 A migration that can be completed one task at a time, with a prompt for each task.
 
 **Status:** R01–R10 complete as experimental migration foundations; all three R11
-code slices are implemented at the experimental model boundary. R12 slice 1 adds
-experimental building commands; builder progression and linked groups remain open.
+code slices are implemented at the experimental model boundary. R12 slices 1–2 add
+experimental building commands, construction and offline reload; linked groups
+and upgrades remain open.
 Integrated W2/W3 movement/accounting acceptance remains open. R08 spatial
 rules and founder movement is complete as an experimental private-copy foundation. R07 includes saved-first terrain versions 1–7,
 nonchunked maps, authored starter/town sites, ordinary/swamp metadata and overlays,
@@ -235,7 +236,7 @@ only after work is performed. Keep unfinished stages visible in the roadmap.
 | R09 | Search algorithms and library decision | R08 | Complete at experimental core boundary: library/custom decision, bounded no_std backend and actual Python route/access/cost parity; [evaluation/evidence](RUST_SEARCH_EVALUATION.md) |
 | R10 | Request scheduler and cache invalidation | R09 | Complete as experimental navigation foundation; slices 1–3 and completion audit below; integrated W1–W6 acceptance retained in R11/R19–R23 |
 | R11 | Persistent worker movement and playback | R10 | Slices 1–3 implemented at experimental model boundary; integrated W2/W3 movement/accounting acceptance remains open |
-| R12 | Construction and building operations | R11 | Slice 1 implemented at explicit synthetic-model boundary; slices 2–3, gameplay accounting/cancellation and durable integration remain open; evidence below |
+| R12 | Construction and building operations | R11 | Slices 1–2 implemented at explicit synthetic-model boundary; slice 3 upgrades/linked groups/helpers, gameplay accounting and durable integration remain open; evidence below |
 | R13 | Resource ledger, storage, and progression rules | R12 | Not started |
 | R14 | Hauling, delivery, and merchant trips | R13 | Not started |
 | R15 | Gathering and processing professions | R14 | Not started |
@@ -2654,7 +2655,7 @@ refresh the reviewed catalog with its sibling `catalog.py`. Performance comparis
 is not required: this is a functionality port, not a performance investigation.
 Candidate cloning is an experimental correctness boundary, not scalability evidence.
 
-Remaining R12 scope: slice 2 owns builder priority/claims/progress, arrival actions,
+Historical slice-1 boundary (superseded by slice 2 below): slice 2 owns builder priority/claims/progress, arrival actions,
 saved construction walks and complete construction-record serialization; slice 3
 owns upgrades, linked acres/orchard trees and gameplay cancellation interactions.
 This slice rejects linked children on build/restoration rather than accepting an
@@ -2669,6 +2670,88 @@ it is **not** a JSON save/reload acceptance claim. The generic `lantern-model` v
 DTO covers only its existing substrate and must not be used to persist this wrapper.
 R19–R21 retain durable saves, command/HTTP/snapshot integration; R11's integrated
 W2/W3 movement/accounting and R23's W1–W6 acceptance remain open.
+
+### R12 slice 2 — Builder claims, progress and offline reload
+
+`BuildingWorld` now owns explicit builder enrolment and dedicated/idle/busy roles,
+stable building claims and town-scoped road claims, saved waypoint paths/cursors,
+and construction progress. Actors retain their existing identity, cargo, position
+and facing. The core has typed building/road construction tasks and checked progress
+and waypoint mutations; construction walks remain separate from derived generic
+travel routes, matching Python's existing construction cadence.
+
+Implemented and paired with actual Python `construct` updates:
+
+- Dedicated builders select first, followed by idle helpers in actor-list order.
+  Each unfinished site gets at most one worker. Previous claims precede new sites;
+  busy/unregistered actors contribute no work. Completion releases the claim while
+  preserving the dedicated role. A worker selects another site on a later update.
+- Building sites precede roads in list order. Construction uses footprint perimeter
+  access, diagonal/corner/fence checks, and departure-road costs. Completed roads
+  immediately give the existing `1.8 × 1.5` walking speed; ground uses `1.8`.
+- Planning is injected through `Plan`/`PlanResult`, with an immutable current R09
+  query. Pending searches reserve a claim without work; unreachable results allow
+  another site. Invalid route answers reject the candidate update atomically.
+  The controller itself performs no unbounded route search. Live R10 pump dispatch
+  and construction observations still belong to host integration.
+- Saved paths survive unrelated geometry/road changes and offline reload. Check
+  the current next edge and each traversed edge; replan a blocked next edge or a
+  relocated footprint from the actor's actual pose. Keep complete-waypoint timing:
+  an update that starts travelling never performs construction, even upon arrival.
+  No sub-waypoint time accumulates between updates, matching current Python rules.
+- Each arrived worker contributes only the injected elapsed simulation time.
+  Completion is clamped and removes the site once. Sandbox work completes without
+  workers or elapsed time. Invalid-origin recovery uses Python's nearest-open
+  Manhattan/x/y rule, applied only once a valid route is available.
+- Role changes, building demolition, road removal and site moves reconcile claims
+  with the structural command's candidate facts. Generation exhaustion cannot
+  partially remove a road, finish a building, salvage inventory or clear a worker.
+
+The new private offline schema is `lantern-building-model` version 1, exposed by
+`encode_building_save`/`decode_building_save`. It includes the nested model,
+metadata, stored/pending inventory, roads, landscape, builder roles/claims and
+complete walks. It rejects unknown/duplicate fields, duplicate identities/claims,
+foreign actors, inconsistent tasks/positions, invalid cursors, teleporting paths,
+missing nullable fields, negative/nonfinite work and oversized integer quantities.
+Nested model JSON is decoded directly from retained raw bytes, preserving numeric
+and duplicate-key validation. Unrelated generic routes/frontiers remain derived.
+`into_parts` now returns builder facts too; `restore_with_builders` validates them.
+Unregistered generic R11 construction tasks require explicit controller facts
+before this construction save format can serialize them.
+
+The nested `lantern-model` and Serialize-only model observation advance to v3 for
+road-construction tasks. Model v1/v2 still load explicitly; earlier versions reject
+v3 road-task variants. This is not a browser wire or Python-save format change.
+
+Validation uses the two affected Rust packages: formatting, locked offline tests
+and doc tests, and Clippy with warnings denied. The Python construction vectors
+are generated by
+`python3 rust/crates/lantern-host/tests/fixtures/building/generate_builder_ticks.py`.
+Ten disposable scenarios compare claims, paths/cursors, positions and remaining
+building/road work over 161 updates, with JSON reload on both sides. Additional
+tests cover pending/unreachable planning, stale geometry, fractional poses/facing,
+site/road removal, schema corruption and generation failures. The slice-1 command
+vectors remain applicable. Performance comparisons are not run: this is a rules
+and persistence port, not a performance investigation or scalability claim.
+
+Evidence: `python3 tools/check.py` selected the two Rust packages and passed both
+packages' formatting, test/doc-test commands and core Clippy. Its report is
+`performance-results/20261018-163609/report.md`. Initial host Clippy findings in
+new code/tests were fixed; final `cargo clippy --manifest-path rust/Cargo.toml
+--package lantern-host --all-targets --locked --offline -- -D warnings` and workspace
+format checking passed. All 19 building tests passed after the controller lint fix;
+the final test-only comparison edit was verified with the targeted completion/road
+removal generation-failure case. The failed initial report is retained, not relabeled
+as a passing run. Commit: `feat: add Rust builder claims and construction reload`.
+
+Remaining: R12 slice 3 owns upgrades, hall completion rewards, upgrade-specific
+helpers, linked acres/orchard trees and complete cancellation interactions. Incomplete
+halls and linked children explicitly reject rather than discarding absent upgrade
+or link metadata. R13–R17 retain full economic/production/reservation and resident
+rules. R19–R21 retain durable disk/registry/chunk recovery, authenticated dispatch,
+R10 pump integration and public browser construction observations. No new launcher,
+HTTP listener, legacy construction import or live-save writer is introduced.
+R11's integrated W2/W3 movement/accounting and R23's W1–W6 gates remain open.
 
 ## R13 — Resource accounting and progression rules
 

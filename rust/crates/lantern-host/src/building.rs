@@ -5,7 +5,7 @@
 use std::collections::{BTreeMap, BTreeSet};
 
 use lantern_core::{
-    ids::{BuildingId, EntityIdentity, Owner, TownId},
+    ids::{ActorId, BuildingId, EntityIdentity, Owner, TownId},
     model::{Building, ConstructionState, Town},
     spatial::{self, Construction, Footprint, Resource, Structure},
     units::{Position, Quantity, Tile, Work},
@@ -13,6 +13,11 @@ use lantern_core::{
 use serde::Deserialize;
 
 use crate::state::ModelWorld;
+
+mod construction;
+mod save;
+pub use construction::{Builder, Claim, Plan, PlanResult, Role, Walk};
+pub use save::{decode_building_save, encode_building_save};
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum Error {
@@ -136,6 +141,7 @@ pub struct BuildingWorld {
     landscape: Landscape,
     shared: bool,
     catalog: BTreeMap<String, Spec>,
+    builders: BTreeMap<ActorId, Builder>,
 }
 impl BuildingWorld {
     pub fn restore(
@@ -170,6 +176,11 @@ impl BuildingWorld {
                 }
                 if site.kind == "hall" {
                     halls += 1;
+                    if building.construction != ConstructionState::Complete {
+                        // Hall work is an upgrade with level/reward metadata,
+                        // not an ordinary construction site (R12 slice 3).
+                        return Err(Error::Unsupported);
+                    }
                 } else if !catalog.contains_key(&site.kind) {
                     return Err(Error::Unsupported);
                 }
@@ -207,6 +218,7 @@ impl BuildingWorld {
             landscape,
             shared,
             catalog,
+            builders: BTreeMap::new(),
         })
     }
     pub fn model(&self) -> &ModelWorld {
@@ -219,9 +231,23 @@ impl BuildingWorld {
         &self.landscape
     }
     /// Explicit facts for offline restoration. Durable save integration is R19;
-    /// existing lantern-model v2 must never silently drop these extra facts.
-    pub fn into_parts(self) -> (ModelWorld, BTreeMap<TownId, Rules>, Landscape, bool) {
-        (self.model, self.rules, self.landscape, self.shared)
+    /// the generic lantern-model DTO does not contain these extra facts.
+    pub fn into_parts(
+        self,
+    ) -> (
+        ModelWorld,
+        BTreeMap<TownId, Rules>,
+        Landscape,
+        bool,
+        BTreeMap<ActorId, Builder>,
+    ) {
+        (
+            self.model,
+            self.rules,
+            self.landscape,
+            self.shared,
+            self.builders,
+        )
     }
 
     /// Owner is authenticated by the future host boundary, never client supplied.
@@ -249,6 +275,7 @@ impl BuildingWorld {
             .clone();
         let mut clear = BTreeSet::new();
         let mut created = None;
+        let mut builders = self.builders.clone();
         match command {
             Command::Build {
                 kind,
@@ -442,6 +469,7 @@ impl BuildingWorld {
                 rules.roads.retain(|r| r.tile != tile);
             }
         }
+        construction::reconcile(&mut town, &rules, &mut builders)?;
         if let Some(id) = &created {
             let allocated: BuildingId = self
                 .model
@@ -451,6 +479,7 @@ impl BuildingWorld {
         }
         self.model.towns[index] = town;
         self.rules.insert(owner.town.clone(), rules);
+        self.builders = builders;
         self.landscape
             .resources
             .retain(|r| !forage(&r.kind) || !clear.contains(&r.footprint.origin()));

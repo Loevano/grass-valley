@@ -71,7 +71,15 @@ fn source_world(source: &Value, actors: Vec<ActorState>) -> BuildingWorld {
                     b["x"].as_i64().unwrap() as i32,
                     b["y"].as_i64().unwrap() as i32,
                 ),
-                construction: ConstructionState::Complete,
+                construction: b
+                    .get("construction")
+                    .map(|c| ConstructionState::InProgress {
+                        remaining: Work::new(
+                            c["total"].as_f64().unwrap() - c["progress"].as_f64().unwrap_or(0.),
+                        )
+                        .unwrap(),
+                    })
+                    .unwrap_or(ConstructionState::Complete),
             }
         })
         .collect();
@@ -106,7 +114,10 @@ fn source_world(source: &Value, actors: Vec<ActorState>) -> BuildingWorld {
                     r["x"].as_i64().unwrap() as i32,
                     r["y"].as_i64().unwrap() as i32,
                 ),
-                remaining: None,
+                remaining: r.get("construction").map(|c| {
+                    Work::new(c["total"].as_f64().unwrap() - c["progress"].as_f64().unwrap_or(0.))
+                        .unwrap()
+                }),
             })
             .collect(),
     };
@@ -266,8 +277,9 @@ fn paired_python_building_commands_and_catalog() {
             );
             // Rebuild from explicit authoritative facts between every command.
             // Generic v2 saves cannot carry these construction-specific records.
-            let (model, rules, landscape, shared) = world.into_parts();
-            world = BuildingWorld::restore(model, rules, landscape, shared).unwrap();
+            let (model, rules, landscape, shared, builders) = world.into_parts();
+            world = BuildingWorld::restore_with_builders(model, rules, landscape, shared, builders)
+                .unwrap();
         }
     }
 }
@@ -284,7 +296,7 @@ fn with_actors(states: Vec<ActorState>) -> BuildingWorld {
     source_world(&source, states)
 }
 fn replace_town(world: BuildingWorld, town: Town) -> BuildingWorld {
-    let (model, rules, landscape, shared) = world.into_parts();
+    let (model, rules, landscape, shared, builders) = world.into_parts();
     let model = ModelWorld::new(
         model.id().clone(),
         model.seed(),
@@ -293,7 +305,12 @@ fn replace_town(world: BuildingWorld, town: Town) -> BuildingWorld {
         PrivateCredentials::default(),
     )
     .unwrap();
-    BuildingWorld::restore(model, rules, landscape, shared).unwrap()
+    if builders.is_empty() {
+        // R11 generic task fixtures do not imply R12 builder enrolment.
+        BuildingWorld::restore(model, rules, landscape, shared).unwrap()
+    } else {
+        BuildingWorld::restore_with_builders(model, rules, landscape, shared, builders).unwrap()
+    }
 }
 #[test]
 fn move_during_return_travel_then_demolition_preserves_actor_and_salvages_once() {
@@ -437,12 +454,13 @@ fn owner_checks_unsupported_children_and_pending_stock_fail_without_consuming_id
     }
     assert_eq!(snapshot(&world), before);
     assert_eq!(world.model().high_water(), high);
-    let (model, mut rules, landscape, shared) = world.into_parts();
+    let (model, mut rules, landscape, shared, builders) = world.into_parts();
     for site in rules.get_mut(&owner().town).unwrap().sites.values_mut() {
         site.stored.clear();
         site.pending.insert("wood".into(), q(100.));
     }
-    let mut world = BuildingWorld::restore(model, rules, landscape, shared).unwrap();
+    let mut world =
+        BuildingWorld::restore_with_builders(model, rules, landscape, shared, builders).unwrap();
     assert_eq!(
         world.execute(
             &owner(),
@@ -458,7 +476,7 @@ fn owner_checks_unsupported_children_and_pending_stock_fail_without_consuming_id
 #[test]
 fn shared_territory_foreign_footprints_players_roads_and_hall_separation() {
     let world = with_actors(vec![]);
-    let (model, mut rules, mut landscape, _) = world.into_parts();
+    let (model, mut rules, mut landscape, _, _builders) = world.into_parts();
     let foreign = Owner {
         town: TownId::new("other").unwrap(),
         ..owner()
@@ -537,9 +555,10 @@ fn shared_territory_foreign_footprints_players_roads_and_hall_separation() {
         )
         .unwrap();
     // Current hall range reaches x=0, but original territory excludes this tile.
-    let (model, mut rules, landscape, shared) = world.into_parts();
+    let (model, mut rules, landscape, shared, builders) = world.into_parts();
     rules.get_mut(&owner().town).unwrap().level = 1;
-    let mut world = BuildingWorld::restore(model, rules, landscape, shared).unwrap();
+    let mut world =
+        BuildingWorld::restore_with_builders(model, rules, landscape, shared, builders).unwrap();
     assert_eq!(
         world.execute(&owner(), Command::BuildRoad(tile(0, 29))),
         Err(Error::Territory)
@@ -574,7 +593,7 @@ fn gate_rotation_checks_actual_worker_and_local_positions_and_map_edge() {
         ),
         Err(Error::Player)
     );
-    let (model, rules, mut landscape, shared) = world.into_parts();
+    let (model, rules, mut landscape, shared, builders) = world.into_parts();
     let town = Town::restore(owner(), model.towns()[0].buildings().to_vec(), vec![]).unwrap();
     let model = ModelWorld::new(
         model.id().clone(),
@@ -585,7 +604,8 @@ fn gate_rotation_checks_actual_worker_and_local_positions_and_map_edge() {
     )
     .unwrap();
     landscape.local_positions.push(p(3.5, 10.));
-    let mut world = BuildingWorld::restore(model, rules, landscape, shared).unwrap();
+    let mut world =
+        BuildingWorld::restore_with_builders(model, rules, landscape, shared, builders).unwrap();
     assert_eq!(
         world.execute(&owner(), Command::RotateFence { id, orientation: 1 }),
         Err(Error::Player)
@@ -594,11 +614,11 @@ fn gate_rotation_checks_actual_worker_and_local_positions_and_map_edge() {
 #[test]
 fn restore_rejects_missing_or_unsupported_records() {
     let world = with_actors(vec![]);
-    let (model, mut rules, landscape, shared) = world.into_parts();
+    let (model, mut rules, landscape, shared, builders) = world.into_parts();
     let id = model.towns()[0].buildings()[1].id.clone();
     rules.get_mut(&owner().town).unwrap().sites.remove(&id);
     assert!(matches!(
-        BuildingWorld::restore(model, rules, landscape, shared),
+        BuildingWorld::restore_with_builders(model, rules, landscape, shared, builders),
         Err(Error::InvalidFacts)
     ));
 }
@@ -657,7 +677,7 @@ fn structural_removal_preflights_generations_and_releases_only_related_tasks() {
 #[test]
 fn overflowing_salvage_and_exhausted_allocator_leave_all_facts_unchanged() {
     let world = with_actors(vec![]);
-    let (model, mut rules, landscape, shared) = world.into_parts();
+    let (model, mut rules, landscape, shared, builders) = world.into_parts();
     let id = model.towns()[0].buildings()[1].id.clone();
     for site in rules.get_mut(&owner().town).unwrap().sites.values_mut() {
         site.stored.insert("wood".into(), q(f64::MAX));
@@ -670,7 +690,8 @@ fn overflowing_salvage_and_exhausted_allocator_leave_all_facts_unchanged() {
         PrivateCredentials::default(),
     )
     .unwrap();
-    let mut world = BuildingWorld::restore(model, rules, landscape, shared).unwrap();
+    let mut world =
+        BuildingWorld::restore_with_builders(model, rules, landscape, shared, builders).unwrap();
     let before = snapshot(&world);
     assert_eq!(
         world.execute(&owner(), Command::Destroy { id }),
@@ -690,4 +711,480 @@ fn overflowing_salvage_and_exhausted_allocator_leave_all_facts_unchanged() {
     );
     assert_eq!(snapshot(&world), before);
     assert_eq!(world.model().high_water(), u64::MAX);
+}
+
+fn route(plan: Plan) -> PlanResult {
+    use lantern_core::search::{Outcome, Search};
+    let mut search = Search::new(plan.query);
+    search.advance(1_000_000);
+    match search.into_outcome() {
+        Outcome::Arrived => PlanResult::Ready(vec![]),
+        Outcome::Completed { path, .. } => PlanResult::Ready(path),
+        Outcome::Unreachable => PlanResult::Unreachable,
+        other => panic!("unexpected test planner outcome {other:?}"),
+    }
+}
+fn construction_vectors() -> Value {
+    serde_json::from_str(include_str!("fixtures/building/builder_ticks.json")).unwrap()
+}
+fn construction_world(case: &Value) -> BuildingWorld {
+    let actors = case["roles"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .enumerate()
+        .map(|(i, _)| {
+            let mut a = worker(10 + i as u64);
+            a.position = p(35., 30.);
+            a
+        })
+        .collect();
+    let mut world = source_world(&case["source"], actors);
+    for (i, role) in case["roles"].as_array().unwrap().iter().enumerate() {
+        let id = world.model().towns()[0].actors()[i].state().id.clone();
+        let role = match role.as_str().unwrap() {
+            "building" => Role::Dedicated,
+            "idle" => Role::Idle,
+            _ => Role::Busy,
+        };
+        world.set_builder_role(&owner(), &id, role).unwrap();
+    }
+    world
+}
+fn edit_landscape(world: BuildingWorld, edit: impl FnOnce(&mut Landscape)) -> BuildingWorld {
+    let (model, rules, mut landscape, shared, builders) = world.into_parts();
+    edit(&mut landscape);
+    BuildingWorld::restore_with_builders(model, rules, landscape, shared, builders).unwrap()
+}
+fn construction_snapshot(world: &BuildingWorld) -> Value {
+    let town = &world.model().towns()[0];
+    let rules = &world.rules()[&owner().town];
+    json!({"remaining":town.buildings().iter().map(|b| match b.construction {ConstructionState::Complete=>None,ConstructionState::InProgress{remaining}=>Some(remaining.get())}).collect::<Vec<_>>(),
+        "roads":rules.roads.iter().map(|r|r.remaining.map(|w|w.get())).collect::<Vec<_>>(),
+        "workers":town.actors().iter().map(|a| {
+            let builder=&world.builders()[&a.state().id];
+            let claim=builder.claim.as_ref().map(|c|match c {
+                Claim::Building(id)=>{let b=town.building(id).unwrap();json!([rules.sites[id].kind,b.location.x,b.location.y])},
+                Claim::Road(t)=>json!(["road",t.x,t.y]),
+            });
+            json!({"position":[a.state().position.x.get(),a.state().position.y.get()],"claim":claim,
+                "path":builder.walk.as_ref().map(|w|w.path.iter().map(|p|json!([p.x.get(),p.y.get()])).collect::<Vec<_>>()),
+                "step":builder.walk.as_ref().map(|w|w.step),
+                "working":matches!(a.state().task,Task::Construction{phase:ConstructionPhase::Building,..}|Task::RoadConstruction{phase:ConstructionPhase::Building,..})})
+        }).collect::<Vec<_>>()})
+}
+#[test]
+fn paired_python_builder_claims_progress_walks_and_reload() {
+    for case in construction_vectors().as_array().unwrap() {
+        let mut world = construction_world(case);
+        for (i, dt) in case["steps"].as_array().unwrap().iter().enumerate() {
+            let event = &case["events"][i];
+            match event["kind"].as_str() {
+                Some("block") => {
+                    world = edit_landscape(world, |l| {
+                        l.resources.push(Resource {
+                            kind: "rock".into(),
+                            footprint: Footprint::saved(
+                                tile(
+                                    event["x"].as_i64().unwrap() as i32,
+                                    event["y"].as_i64().unwrap() as i32,
+                                ),
+                                None,
+                            )
+                            .unwrap(),
+                        })
+                    });
+                }
+                Some("open") => {
+                    world = edit_landscape(world, |l| l.resources.clear());
+                }
+                Some("move") => {
+                    let id = world.model().towns()[0].buildings()[1].id.clone();
+                    world
+                        .execute(
+                            &owner(),
+                            Command::Move {
+                                id,
+                                tile: tile(44, 30),
+                            },
+                        )
+                        .unwrap();
+                }
+                Some("busy") | Some("dedicated") => {
+                    let id = world.model().towns()[0].actors()[0].state().id.clone();
+                    world
+                        .set_builder_role(
+                            &owner(),
+                            &id,
+                            if event["kind"] == "busy" {
+                                Role::Busy
+                            } else {
+                                Role::Dedicated
+                            },
+                        )
+                        .unwrap();
+                }
+                None => {}
+                other => panic!("unexpected event {other:?}"),
+            }
+            world
+                .advance_construction(&owner(), Seconds::new(dt.as_f64().unwrap()).unwrap(), route)
+                .unwrap();
+            equal_numbers(
+                &construction_snapshot(&world),
+                &case["outcomes"][i],
+                &format!("{}[{i}]", case["name"]),
+            );
+            let saved = encode_building_save(&world).unwrap();
+            let loaded = decode_building_save(&saved).unwrap();
+            assert_eq!(world.builders(), loaded.builders());
+            assert_eq!(world.model().towns(), loaded.model().towns());
+            assert_eq!(encode_building_save(&loaded).unwrap(), saved);
+            world = loaded;
+        }
+    }
+}
+#[test]
+fn pending_searches_do_not_work_and_invalid_routes_are_atomic() {
+    let mut world = construction_world(&construction_vectors()[0]);
+    let mut calls = 0;
+    world
+        .advance_construction(&owner(), Seconds::new(30.).unwrap(), |_| {
+            calls += 1;
+            PlanResult::Pending
+        })
+        .unwrap();
+    assert_eq!(calls, 2); // dedicated and one idle claim; third helper waits
+    assert_eq!(
+        world
+            .builders()
+            .values()
+            .filter(|b| b.claim.is_some())
+            .count(),
+        2
+    );
+    assert!(world.model().towns()[0].buildings().iter().skip(1).all(|b| matches!(b.construction,ConstructionState::InProgress{remaining} if remaining.get()==30.)));
+    let before = encode_building_save(&world).unwrap();
+    assert_eq!(
+        world.advance_construction(&owner(), Seconds::new(3.).unwrap(), |_| PlanResult::Ready(
+            vec![tile(119, 119)]
+        )),
+        Err(Error::InvalidFacts)
+    );
+    assert_eq!(encode_building_save(&world).unwrap(), before);
+    world
+        .advance_construction(&owner(), Seconds::new(3.).unwrap(), route)
+        .unwrap();
+    assert!(world.builders().values().any(|b| b.walk.is_some()));
+}
+#[test]
+fn saved_routes_survive_unrelated_edits_and_only_replan_a_blocked_edge() {
+    let mut world = construction_world(&construction_vectors()[1]);
+    world
+        .advance_construction(&owner(), Seconds::new(1.).unwrap(), route)
+        .unwrap();
+    let id = world.model().towns()[0].actors()[0].state().id.clone();
+    let old = world.builders()[&id].walk.clone().unwrap();
+    world = edit_landscape(world, |l| {
+        l.resources.push(Resource {
+            kind: "rock".into(),
+            footprint: Footprint::saved(tile(100, 100), None).unwrap(),
+        })
+    });
+    world = decode_building_save(&encode_building_save(&world).unwrap()).unwrap();
+    world
+        .advance_construction(&owner(), Seconds::new(0.).unwrap(), |_| {
+            panic!("valid saved walk was discarded")
+        })
+        .unwrap();
+    assert_eq!(world.builders()[&id].walk.as_ref().unwrap().path, old.path);
+    let next = old.path[old.step + 1];
+    world = edit_landscape(world, |l| {
+        l.resources.push(Resource {
+            kind: "rock".into(),
+            footprint: Footprint::saved(tile(next.x.get() as i32, next.y.get() as i32), None)
+                .unwrap(),
+        })
+    });
+    let mut planned = 0;
+    world
+        .advance_construction(&owner(), Seconds::new(1.).unwrap(), |p| {
+            planned += 1;
+            route(p)
+        })
+        .unwrap();
+    assert_eq!(planned, 1);
+    assert_ne!(world.builders()[&id].walk.as_ref().unwrap().path, old.path);
+}
+#[test]
+fn removal_releases_building_and_road_claims_once_preserving_pose_and_cargo() {
+    let mut world = construction_world(&construction_vectors()[6]);
+    world
+        .advance_construction(&owner(), Seconds::new(0.).unwrap(), route)
+        .unwrap();
+    let road_worker = world
+        .builders()
+        .iter()
+        .find(|(_, b)| matches!(b.claim, Some(Claim::Road(_))))
+        .unwrap()
+        .0
+        .clone();
+    let before = world.model().towns()[0]
+        .actor(&road_worker)
+        .unwrap()
+        .state()
+        .clone();
+    world
+        .execute(&owner(), Command::RemoveRoad(tile(36, 30)))
+        .unwrap();
+    let after = world.model().towns()[0]
+        .actor(&road_worker)
+        .unwrap()
+        .state();
+    assert_eq!(after.position, before.position);
+    assert_eq!(after.cargo, before.cargo);
+    assert_eq!(after.task, Task::Idle);
+    assert!(world.builders()[&road_worker].claim.is_none());
+    let id = world.model().towns()[0].buildings()[1].id.clone();
+    world.execute(&owner(), Command::Destroy { id }).unwrap();
+    let saved = encode_building_save(&world).unwrap();
+    let mut world = decode_building_save(&saved).unwrap();
+    world
+        .advance_construction(&owner(), Seconds::new(0.).unwrap(), route)
+        .unwrap();
+    assert!(
+        world.model().towns()[0]
+            .actors()
+            .iter()
+            .all(|a| a.state().cargo.goods()["wood"].get() == 2.125)
+    );
+}
+#[test]
+fn construction_save_rejects_invalid_fields_numbers_claims_and_walks() {
+    let mut world = construction_world(&construction_vectors()[0]);
+    world
+        .advance_construction(&owner(), Seconds::new(1.).unwrap(), route)
+        .unwrap();
+    let bytes = encode_building_save(&world).unwrap();
+    let source: Value = serde_json::from_slice(&bytes).unwrap();
+    for mutation in 0..10 {
+        let mut bad = source.clone();
+        match mutation {
+            0 => bad["version"] = json!(2),
+            1 => bad["builders"][0]["walk"]["step"] = json!(usize::MAX),
+            2 => bad["builders"][0]["id"]["town_id"] = json!("foreign"),
+            3 => bad["towns"][0]["coins"] = json!(-1),
+            4 => bad["builders"][0]["walk"]["path"][0]["x"] = json!(90),
+            5 => bad["towns"][0]["sites"][0]["stored"]["wood"] = json!(9007199254740993u64),
+            6 => bad["builders"][0]["walk"]["extra"] = json!("private-input"),
+            7 => {
+                let b = bad["builders"][0].clone();
+                bad["builders"].as_array_mut().unwrap().push(b);
+            }
+            8 => {
+                let s = bad["towns"][0]["sites"][0].clone();
+                bad["towns"][0]["sites"].as_array_mut().unwrap().push(s);
+            }
+            9 => {
+                bad["builders"] = json!([]);
+            }
+            _ => unreachable!(),
+        }
+        let raw = bad.to_string();
+        let error = decode_building_save(raw.as_bytes())
+            .err()
+            .expect("invalid save accepted");
+        assert!(!format!("{error:?}").contains("private-input"));
+    }
+    let raw = String::from_utf8(bytes).unwrap();
+    let duplicate = raw.replacen("\"version\":1", "\"version\":1,\"version\":1", 1);
+    assert!(decode_building_save(duplicate.as_bytes()).is_err());
+    let bad = raw.replacen(
+        "\"stored\":{",
+        "\"stored\":{\"duplicate\":1,\"duplicate\":2,",
+        1,
+    );
+    assert!(decode_building_save(bad.as_bytes()).is_err());
+    let bad = raw.replacen("\"version\":3", "\"version\":3,\"version\":3", 1);
+    assert!(decode_building_save(bad.as_bytes()).is_err());
+}
+#[test]
+fn road_task_requires_v3_while_v2_model_saves_still_migrate() {
+    let mut world = construction_world(&construction_vectors()[6]);
+    world
+        .advance_construction(&owner(), Seconds::new(0.).unwrap(), route)
+        .unwrap();
+    let raw = lantern_host::dto::encode_save(world.model()).unwrap();
+    assert!(lantern_host::dto::decode_save(&raw).is_ok());
+    assert!(
+        lantern_host::dto::decode_save(&raw.replacen("\"version\":3", "\"version\":2", 1)).is_err()
+    );
+    let world = with_actors(vec![worker(10)]);
+    let raw = lantern_host::dto::encode_save(world.model()).unwrap();
+    assert!(
+        lantern_host::dto::decode_save(&raw.replacen("\"version\":3", "\"version\":2", 1)).is_ok()
+    );
+}
+
+#[test]
+fn construction_preserves_fractional_pose_until_a_checked_waypoint_and_reloads_facing() {
+    let mut case = construction_vectors()[1].clone();
+    case["source"]["resources"] = json!([]);
+    let mut actor = worker(10);
+    actor.position = p(35.25, 30.);
+    let mut world = source_world(&case["source"], vec![actor]);
+    let id = world.model().towns()[0].actors()[0].state().id.clone();
+    world
+        .set_builder_role(&owner(), &id, Role::Dedicated)
+        .unwrap();
+    world
+        .advance_construction(&owner(), Seconds::new(0.).unwrap(), route)
+        .unwrap();
+    assert_eq!(
+        world.model().towns()[0]
+            .actor(&id)
+            .unwrap()
+            .state()
+            .position,
+        p(35.25, 30.)
+    );
+    world = decode_building_save(&encode_building_save(&world).unwrap()).unwrap();
+    world
+        .advance_construction(&owner(), Seconds::new(1.).unwrap(), route)
+        .unwrap();
+    let state = world.model().towns()[0].actor(&id).unwrap().state();
+    assert_eq!(state.position, p(36., 30.));
+    assert_eq!(state.facing.get(), 1);
+    assert_eq!(state.cargo.goods()["wood"].get(), 2.125);
+    assert_eq!(
+        world.model().towns()[0].buildings()[1].construction,
+        ConstructionState::InProgress {
+            remaining: Work::new(30.).unwrap()
+        }
+    );
+    let loaded = decode_building_save(&encode_building_save(&world).unwrap()).unwrap();
+    assert_eq!(loaded.model().towns()[0].actor(&id).unwrap().state(), state);
+}
+#[test]
+fn completion_and_road_removal_preflight_generation_failure_without_partial_updates() {
+    let case = construction_vectors()[1].clone();
+    let mut actor = worker(10);
+    actor.position = p(39., 30.);
+    let mut world = source_world(&case["source"], vec![actor]);
+    let id = world.model().towns()[0].actors()[0].state().id.clone();
+    world
+        .set_builder_role(&owner(), &id, Role::Dedicated)
+        .unwrap();
+    world
+        .advance_construction(&owner(), Seconds::new(0.).unwrap(), route)
+        .unwrap();
+    let mut save: Value = serde_json::from_slice(&encode_building_save(&world).unwrap()).unwrap();
+    save["model"]["towns"][0]["actors"][0]["task_generation"] = json!(u64::MAX.to_string());
+    let mut world = decode_building_save(save.to_string().as_bytes()).unwrap();
+    let before = encode_building_save(&world).unwrap();
+    assert_eq!(
+        world.advance_construction(&owner(), Seconds::new(30.).unwrap(), route),
+        Err(Error::Model)
+    );
+    assert_eq!(encode_building_save(&world).unwrap(), before);
+    let mut world = construction_world(&construction_vectors()[6]);
+    world
+        .advance_construction(&owner(), Seconds::new(0.).unwrap(), route)
+        .unwrap();
+    let id = world
+        .builders()
+        .iter()
+        .find(|(_, b)| matches!(b.claim, Some(Claim::Road(_))))
+        .unwrap()
+        .0
+        .clone();
+    let mut save: Value = serde_json::from_slice(&encode_building_save(&world).unwrap()).unwrap();
+    let serial = id.identity().serial().to_string();
+    for a in save["model"]["towns"][0]["actors"].as_array_mut().unwrap() {
+        if a["id"]["serial"].as_str() == Some(serial.as_str()) {
+            a["task_generation"] = json!(u64::MAX.to_string());
+        }
+    }
+    let mut world = decode_building_save(save.to_string().as_bytes()).unwrap();
+    let before = encode_building_save(&world).unwrap();
+    assert_eq!(
+        world.execute(&owner(), Command::RemoveRoad(tile(36, 30))),
+        Err(Error::Model)
+    );
+    assert_eq!(encode_building_save(&world).unwrap(), before);
+}
+#[test]
+fn blocked_origin_recovers_only_after_route_readiness_and_unreachable_sites_release_claims() {
+    let case = construction_vectors()[1].clone();
+    let mut actor = worker(10);
+    actor.position = p(40., 30.);
+    let mut world = source_world(&case["source"], vec![actor]);
+    let id = world.model().towns()[0].actors()[0].state().id.clone();
+    world
+        .set_builder_role(&owner(), &id, Role::Dedicated)
+        .unwrap();
+    world
+        .advance_construction(&owner(), Seconds::new(3.).unwrap(), |p| {
+            assert_eq!(p.start, tile(39, 30));
+            PlanResult::Pending
+        })
+        .unwrap();
+    assert_eq!(
+        world.model().towns()[0]
+            .actor(&id)
+            .unwrap()
+            .state()
+            .position,
+        p(40., 30.)
+    );
+    world
+        .advance_construction(&owner(), Seconds::new(0.).unwrap(), route)
+        .unwrap();
+    assert_eq!(
+        world.model().towns()[0]
+            .actor(&id)
+            .unwrap()
+            .state()
+            .position,
+        p(39., 30.)
+    );
+    world.set_builder_role(&owner(), &id, Role::Busy).unwrap();
+    world
+        .set_builder_role(&owner(), &id, Role::Dedicated)
+        .unwrap();
+    world
+        .advance_construction(&owner(), Seconds::new(30.).unwrap(), |_| {
+            PlanResult::Unreachable
+        })
+        .unwrap();
+    assert!(world.builders()[&id].claim.is_none());
+    assert_eq!(
+        world.model().towns()[0].actor(&id).unwrap().state().task,
+        Task::Idle
+    );
+}
+#[test]
+fn nullable_construction_fields_are_required_and_hall_upgrades_are_explicitly_unsupported() {
+    let mut world = construction_world(&construction_vectors()[6]);
+    world
+        .advance_construction(&owner(), Seconds::new(0.).unwrap(), route)
+        .unwrap();
+    let raw: Value = serde_json::from_slice(&encode_building_save(&world).unwrap()).unwrap();
+    for (field, road) in [("claim", false), ("walk", false), ("remaining", true)] {
+        let mut bad = raw.clone();
+        let entry = if road {
+            &mut bad["towns"][0]["roads"][0]
+        } else {
+            &mut bad["builders"][0]
+        };
+        entry.as_object_mut().unwrap().remove(field);
+        assert!(
+            decode_building_save(bad.to_string().as_bytes()).is_err(),
+            "missing {field} accepted"
+        );
+    }
+    let mut bad = raw.clone();
+    bad["model"]["towns"][0]["buildings"][0]["construction"] =
+        json!({"in_progress":{"remaining":30}});
+    assert!(decode_building_save(bad.to_string().as_bytes()).is_err());
 }

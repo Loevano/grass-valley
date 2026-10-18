@@ -90,7 +90,7 @@ impl From<Playback> for PlaybackDto {
 
 pub fn public_snapshot(world: &ModelWorld) -> PublicWorldDto {
     PublicWorldDto {
-        format: "lantern-model-observation-v2",
+        format: "lantern-model-observation-v3",
         world_id: world.id.as_str().into(),
         seed: Decimal(world.seed.0),
         towns: world
@@ -115,7 +115,10 @@ pub fn public_snapshot(world: &ModelWorld) -> PublicWorldDto {
                         let workplace = match &a.task {
                             Task::Work { workplace, .. } => Some(workplace),
                             Task::Construction { site, .. } => Some(site),
-                            Task::Idle | Task::Move { .. } | Task::Transport { .. } => None,
+                            Task::Idle
+                            | Task::Move { .. }
+                            | Task::Transport { .. }
+                            | Task::RoadConstruction { .. } => None,
                         };
                         let route_status = match actor.travel_status() {
                             Status::NotRequested => "not_requested",

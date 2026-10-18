@@ -4,31 +4,32 @@ R05 is a foundation checkpoint, not a playable Rust host. The host library expos
 offline conversion of the model built in R05 slices 1–2. Python launch, HTTP
 responses, action bodies, browser behavior, rates and saves remain unchanged.
 
-R12 slice 1 adds a separate exclusive `BuildingWorld` wrapper around this substrate
-with explicit site/catalog/inventory/road/landscape facts. Its `restore`/`into_parts`
-boundary requires those facts; the v2 DTO below does not serialize them. Encoding
-only `BuildingWorld::model()` is not a save of the construction world. Builder
-serialization and durable/public integration remain later work; see the
-[R12 scope and evidence](RUST_MIGRATION.md#r12-slice-1--atomic-building-commands).
+R12 slices 1–2 add a separate exclusive `BuildingWorld` wrapper around this
+substrate, with explicit site/inventory/road/landscape and builder claim/walk facts.
+Its version-1 `lantern-building-model` offline schema nests the model save and
+roundtrips all construction facts. Encoding only `BuildingWorld::model()` still
+omits the wrapper and is not a save of the construction world. See the
+[R12 scope and evidence](RUST_MIGRATION.md#r12-slice-2--builder-claims-progress-and-offline-reload).
 
 ## Formats and conversion
 
 `lantern-host::dto::encode_save` / `decode_save` use the explicit discriminator
-`{"format":"lantern-model","version":2,...}` after R11 slice 3. This format is
+`{"format":"lantern-model","version":3,...}` after R12 slice 2. This format is
 only for the experimental model. It is neither the Python format nor the durable
-Rust save format promised by R19. The decoder explicitly migrates v1 with
-right-facing/no travel intent, since v1 did not store either fact; other existing
+Rust save format promised by R19. Version 3 adds a typed road-construction task;
+v1/v2 reject that variant, while v3 reads both earlier versions. The decoder
+explicitly migrates v1 with right-facing/no travel intent, since v1 did not store either fact; other existing
 facts remain intact. No disk reader/writer, durable migration or HTTP endpoint is added.
 The decoder rejects Python saves, unsupported versions, missing fields, unknown
 fields at every modeled level, duplicate object keys and unsupported task variants.
 There is no generic extension bag that could silently drop gameplay or leak data.
 
 `public_snapshot` creates a distinct Serialize-only `PublicWorldDto` with format
-`lantern-model-observation-v2`. It is an experimental observation, **not** a partial
+`lantern-model-observation-v3`. It is an experimental observation, **not** a partial
 implementation of `/api/world`. Its list/coordinate fields use familiar
 `buildings`, `villagers`, `x`, `y`, `building_index`, and `pending_output` names.
 R20–21 must implement the complete existing browser contract, including omitted
-catalogs/browser playback/state, before serving the browser. The v2 observation
+catalogs/browser playback/state, before serving the browser. The v3 observation
 includes generic confirmed travel samples; it cannot be
 loaded as a save. Neither DTO automatically serializes internal structures.
 
@@ -76,7 +77,7 @@ This table covers the R05 model with its R11 travel extension. Subsystems in the
 still require feature ports and cross-host evidence; these DTO tests do not mark
 any existing gameplay subsystem as verified.
 
-| Internal fact | Model save v2 | Public observation | Boundary evidence |
+| Internal fact | Model save v3 | Public observation | Boundary evidence |
 | --- | --- | --- | --- |
 | World ID, numeric seed | Opaque string / exact decimal string | Same | Unicode/large seed roundtrip |
 | World-wide allocator high-water mark | Exact decimal string; validate all live IDs across all towns/kinds | Excluded | Deleted-ID gap, stale counter, cross-town collisions, post-reload allocation |
@@ -181,8 +182,9 @@ No omitted feature is approved for removal. The saved subsystem matrix assigns:
   facing and active/terminal travel intent, v2 model save migration, confirmed
   playback observations and JSON reload traces. Full worker/accounting rules,
   browser wire integration and measured W2/W3 acceptance remain open.
-- R12–13: slice 1 implements ordinary building/road commands on explicit facts;
-  builder progression, upgrades/links, residents/assignments and full stock,
+- R12–13: slices 1–2 implement ordinary building/road commands, builder roles/claims,
+  construction progress and saved walks on explicit facts. Remaining work includes
+  upgrades/linked groups, upgrade helpers, residents/assignments and full stock,
   costs/capacities, skills, food/progression, hall unlocks and balance migrations.
 - R14–17: trips/reservations/accounting, markets/resource activity, every production
   recipe/queue, farms/orchards/water/claims, species, boats, barn animals and horses.

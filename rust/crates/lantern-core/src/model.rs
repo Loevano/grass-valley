@@ -176,6 +176,10 @@ pub enum Task {
         phase: ConstructionPhase,
         elapsed: Seconds,
     },
+    RoadConstruction {
+        tile: Tile,
+        phase: ConstructionPhase,
+    },
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -502,7 +506,7 @@ impl Town {
 
     fn validate_task(&self, task: &Task) -> Result<(), ModelError> {
         match task {
-            Task::Idle | Task::Move { .. } => {}
+            Task::Idle | Task::Move { .. } | Task::RoadConstruction { .. } => {}
             Task::Work {
                 workplace, target, ..
             } => {
@@ -537,6 +541,46 @@ impl Town {
         actor.state.travel = TravelIntent::None;
         actor.playback = None;
         actor.route_step = 0;
+        Ok(())
+    }
+
+    /// Construction rules own remaining work; this primitive cannot alter pose,
+    /// inventory or identity when a site progresses or completes.
+    pub fn set_construction(
+        &mut self,
+        id: &BuildingId,
+        state: ConstructionState,
+    ) -> Result<(), ModelError> {
+        self.building(id)?;
+        self.buildings
+            .iter_mut()
+            .find(|b| &b.id == id)
+            .unwrap()
+            .construction = state;
+        Ok(())
+    }
+
+    /// Commit a construction waypoint already checked by current host geometry.
+    /// Construction retains its own saved discrete walk; generic travel remains
+    /// derived. Carrying goods and task phase are untouched by a walking step.
+    pub fn construction_waypoint(
+        &mut self,
+        id: &ActorId,
+        position: Position,
+    ) -> Result<(), ModelError> {
+        let index = self.actor_index(id)?;
+        if !matches!(
+            self.actors[index].state.task,
+            Task::Construction { .. } | Task::RoadConstruction { .. }
+        ) {
+            return Err(ModelError::NoTask);
+        }
+        let before = self.actors[index].state.position;
+        self.reposition_actor(id, position)?;
+        if before != position {
+            self.actors[index].state.facing =
+                self.actors[index].state.facing.moving(before, position);
+        }
         Ok(())
     }
 

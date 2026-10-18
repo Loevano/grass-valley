@@ -2,10 +2,10 @@
 //! Public observations are not the browser's /api/world response. Saves reject
 //! unsupported fields; R06 imports Python and R19 adds durable storage later.
 
-mod facts;
+pub(crate) mod facts;
 mod public;
 mod save;
-mod wire;
+pub(crate) mod wire;
 
 pub use facts::EntityIdDto;
 pub use public::{PublicWorldDto, public_snapshot};

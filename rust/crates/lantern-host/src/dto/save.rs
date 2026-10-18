@@ -105,7 +105,7 @@ impl From<&ModelWorld> for SaveWorldDto {
     fn from(world: &ModelWorld) -> Self {
         Self {
             format: Format::Model,
-            version: 2,
+            version: 3,
             world_id: world.id.as_str().into(),
             seed: Decimal(world.seed.0),
             high_water: Decimal(world.high_water()),
@@ -183,7 +183,7 @@ impl From<&ModelWorld> for SaveWorldDto {
 
 impl SaveWorldDto {
     fn into_world(self) -> Result<ModelWorld, BoundaryError> {
-        if ![1, 2].contains(&self.version) {
+        if ![1, 2, 3].contains(&self.version) {
             return Err(BoundaryError::invalid(
                 "$.version",
                 "unsupported model schema",
@@ -216,6 +216,9 @@ impl SaveWorldDto {
             let mut actors = Vec::new();
             for (ai, a) in town.actors.into_iter().enumerate() {
                 let ap = format!("{path}.actors[{ai}]");
+                if self.version < 3 && matches!(a.task, TaskDto::RoadConstruction { .. }) {
+                    return Err(BoundaryError::invalid(&ap, "v3 road task in earlier save"));
+                }
                 let (facing, travel) = if self.version == 1 {
                     if a.facing.0.is_some() || a.travel.0.is_some() {
                         return Err(BoundaryError::invalid(&ap, "v2 travel fields in v1 save"));
