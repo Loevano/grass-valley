@@ -19,6 +19,7 @@ pub mod dto;
 pub mod legacy;
 pub mod navigation;
 pub mod references;
+pub mod resources;
 pub mod state;
 
 #[derive(Clone, Debug, PartialEq, Eq)]

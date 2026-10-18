@@ -1,0 +1,95 @@
+[
+  {
+    "affordable": true,
+    "after": {},
+    "costs": {},
+    "stock": {}
+  },
+  {
+    "affordable": false,
+    "after": {},
+    "costs": {
+      "wood": 0.5
+    },
+    "stock": {}
+  },
+  {
+    "affordable": true,
+    "after": {
+      "wood": 0
+    },
+    "costs": {
+      "wood": 0.5
+    },
+    "stock": {
+      "wood": 0.4999999995
+    }
+  },
+  {
+    "affordable": false,
+    "after": {
+      "wood": 0.499999998
+    },
+    "costs": {
+      "wood": 0.5
+    },
+    "stock": {
+      "wood": 0.499999998
+    }
+  },
+  {
+    "affordable": true,
+    "after": {
+      "flour": 0,
+      "wood": 0.19999999999999996
+    },
+    "costs": {
+      "flour": 2,
+      "wood": 0.5
+    },
+    "stock": {
+      "flour": 2,
+      "wood": 0.7
+    }
+  },
+  {
+    "affordable": false,
+    "after": {
+      "flour": 2
+    },
+    "costs": {
+      "flour": 2,
+      "wood": 0.5
+    },
+    "stock": {
+      "flour": 2
+    }
+  },
+  {
+    "affordable": true,
+    "after": {
+      "coins": 0,
+      "trout": 0
+    },
+    "costs": {
+      "coins": 0.125,
+      "trout": 0.25
+    },
+    "stock": {
+      "coins": 0.125,
+      "trout": 0.25
+    }
+  },
+  {
+    "affordable": true,
+    "after": {
+      "wood": 5.551115123125783e-17
+    },
+    "costs": {
+      "wood": 0.3
+    },
+    "stock": {
+      "wood": 0.30000000000000004
+    }
+  }
+]

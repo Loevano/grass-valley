@@ -1,0 +1,1837 @@
+{
+  "public": {
+    "animal_growth_seconds": 300,
+    "animal_meat": {
+      "chicken": 2,
+      "cow": 10,
+      "pig": 8,
+      "sheep": 4
+    },
+    "animal_products": {
+      "chicken": 25,
+      "cow": 25,
+      "sheep": 25
+    },
+    "animals": {
+      "chicken": {
+        "coins": 0,
+        "feed": 0.15,
+        "growth_seconds": 60,
+        "level": 2,
+        "output": "eggs"
+      },
+      "cow": {
+        "coins": 0,
+        "feed": 0.5,
+        "growth_seconds": 360,
+        "level": 5,
+        "output": "milk"
+      },
+      "horse": {
+        "coins": 0,
+        "feed": 0.5,
+        "level": 8,
+        "output": "horse"
+      },
+      "pig": {
+        "coins": 0,
+        "feed": 0.1,
+        "growth_seconds": 240,
+        "level": 4,
+        "output": "meat"
+      },
+      "sheep": {
+        "coins": 0,
+        "feed": 0.25,
+        "growth_seconds": 120,
+        "level": 3,
+        "output": "wool"
+      }
+    },
+    "boats": {
+      "1": {
+        "coins": 20,
+        "label": "Exploration boat",
+        "level": 3,
+        "xp": 0
+      },
+      "2": {
+        "coins": 20,
+        "label": "Improved exploration boat",
+        "level": 4,
+        "planks": 15,
+        "xp": 30
+      },
+      "3": {
+        "coins": 40,
+        "label": "Masterwork exploration boat",
+        "level": 5,
+        "planks": 20,
+        "xp": 40
+      }
+    },
+    "building_footprints": {
+      "bakery": [
+        2,
+        2
+      ],
+      "butcher": [
+        2,
+        2
+      ],
+      "hall": [
+        3,
+        3
+      ],
+      "mill": [
+        2,
+        2
+      ],
+      "sawpit": [
+        3,
+        2
+      ],
+      "smokehouse": [
+        2,
+        2
+      ],
+      "tannery": [
+        2,
+        2
+      ],
+      "workshop": [
+        2,
+        2
+      ]
+    },
+    "buildings": {
+      "bakery": {
+        "job": "baking",
+        "label": "Bakery",
+        "level": 4,
+        "planks": 5,
+        "slots": 1,
+        "wood": 30
+      },
+      "barn": {
+        "job": "husbandry",
+        "label": "Barn",
+        "level": 2,
+        "slots": 2,
+        "wood": 25
+      },
+      "butcher": {
+        "job": "butchery",
+        "label": "Butcher shop",
+        "level": 4,
+        "planks": 5,
+        "slots": 2,
+        "wood": 25
+      },
+      "fish_pond": {
+        "job": "breeding",
+        "label": "Fish pond",
+        "level": 5,
+        "planks": 10,
+        "slots": 2,
+        "wood": 25
+      },
+      "flower_box": {
+        "flower_boxes": 1,
+        "label": "Flower box",
+        "level": 4,
+        "slots": 0,
+        "wood": 0
+      },
+      "garden_arch": {
+        "garden_arches": 1,
+        "label": "Garden arch",
+        "level": 4,
+        "slots": 0,
+        "wood": 0
+      },
+      "lantern": {
+        "label": "Lantern",
+        "lanterns": 1,
+        "level": 4,
+        "slots": 0,
+        "wood": 0
+      },
+      "market": {
+        "job": "trading",
+        "label": "Market stall",
+        "level": 5,
+        "planks": 5,
+        "slots": 1,
+        "wood": 20
+      },
+      "mill": {
+        "job": "milling",
+        "label": "Mill",
+        "level": 4,
+        "planks": 5,
+        "slots": 1,
+        "wood": 30
+      },
+      "mine": {
+        "job": "mining",
+        "label": "Mine",
+        "level": 6,
+        "planks": 15,
+        "slots": 1,
+        "tools": 3,
+        "wood": 40
+      },
+      "orchard": {
+        "job": "orcharding",
+        "label": "Orchard",
+        "level": 5,
+        "slots": 2,
+        "wood": 25
+      },
+      "orchard_tree": {
+        "label": "Fruit tree",
+        "level": 5,
+        "slots": 0,
+        "wood": 5
+      },
+      "saddler": {
+        "job": "saddlery",
+        "label": "Saddler",
+        "level": 8,
+        "planks": 15,
+        "slots": 2,
+        "wood": 30
+      },
+      "sawpit": {
+        "job": "woodworking",
+        "label": "Sawpit",
+        "level": 3,
+        "slots": 1,
+        "wood": 25
+      },
+      "signpost": {
+        "label": "Signpost",
+        "level": 4,
+        "signposts": 1,
+        "slots": 0,
+        "wood": 0
+      },
+      "smelter": {
+        "job": "smelting",
+        "label": "Forgery",
+        "level": 7,
+        "planks": 15,
+        "slots": 1,
+        "wood": 40
+      },
+      "smokehouse": {
+        "job": "preserving",
+        "label": "Smokehouse",
+        "level": 4,
+        "planks": 5,
+        "slots": 2,
+        "wood": 25
+      },
+      "stable": {
+        "iron": 5,
+        "job": "horsekeeping",
+        "label": "Stable",
+        "level": 8,
+        "planks": 20,
+        "slots": 2,
+        "wood": 40
+      },
+      "steelworks": {
+        "iron": 10,
+        "job": "steelmaking",
+        "label": "Steelworks",
+        "level": 9,
+        "planks": 20,
+        "slots": 1,
+        "wood": 40
+      },
+      "tannery": {
+        "job": "tanning",
+        "label": "Tannery",
+        "level": 5,
+        "planks": 10,
+        "slots": 2,
+        "wood": 30
+      },
+      "tradehouse": {
+        "job": "packing",
+        "label": "Trade house",
+        "level": 10,
+        "planks": 25,
+        "slots": 2,
+        "steel": 10,
+        "wood": 50
+      },
+      "well": {
+        "label": "Well",
+        "level": 1,
+        "slots": 0,
+        "wood": 15
+      },
+      "wooden_bench": {
+        "furniture": 1,
+        "label": "Wooden bench",
+        "level": 4,
+        "slots": 0,
+        "wood": 0
+      },
+      "wooden_statue": {
+        "carved_furniture": 1,
+        "label": "Carved wooden statue",
+        "level": 4,
+        "slots": 0,
+        "wood": 0
+      },
+      "wooden_table": {
+        "label": "Wooden table",
+        "level": 4,
+        "slots": 0,
+        "wood": 0,
+        "wooden_tables": 1
+      },
+      "workshop": {
+        "job": "crafting",
+        "label": "Workshop",
+        "level": 4,
+        "planks": 5,
+        "slots": 1,
+        "wood": 30
+      }
+    },
+    "butcher_seconds": 60,
+    "buyable_goods": [
+      "wood",
+      "stone",
+      "planks",
+      "wheat",
+      "fodder",
+      "flour",
+      "wool",
+      "tools",
+      "manure",
+      "herbs",
+      "wooden_bowls",
+      "crates",
+      "furniture",
+      "carved_furniture",
+      "crafted_axe",
+      "crafted_saw",
+      "lanterns",
+      "flower_boxes",
+      "wooden_tables",
+      "signposts",
+      "garden_arches",
+      "hides",
+      "leather",
+      "iron_ore",
+      "iron",
+      "saddles",
+      "steel",
+      "trade_crates",
+      "vegetables",
+      "carrots",
+      "fish",
+      "berries",
+      "eggs",
+      "meat",
+      "milk",
+      "fruit",
+      "smoked_fish",
+      "bread",
+      "prepared_meat",
+      "trout",
+      "salmon",
+      "sturgeon",
+      "smoked_trout",
+      "smoked_salmon",
+      "smoked_sturgeon",
+      "bread_rolls",
+      "herb_bread",
+      "fruit_pies",
+      "cakes",
+      "herbed_meat",
+      "smoked_meat",
+      "sausages",
+      "meat_pies"
+    ],
+    "crafted_worker_tools": {
+      "crafted_axe": {
+        "bonus": 0.25,
+        "job": "woodcutting",
+        "name": "Crafted axe"
+      },
+      "crafted_saw": {
+        "bonus": 0.25,
+        "job": "woodworking",
+        "name": "Crafted saw"
+      }
+    },
+    "crops": {
+      "carrots": 3,
+      "fodder": 3,
+      "vegetables": 1,
+      "wheat": 2
+    },
+    "decorations": [
+      "wooden_bench",
+      "wooden_statue",
+      "lantern",
+      "flower_box",
+      "wooden_table",
+      "signpost",
+      "garden_arch"
+    ],
+    "edible": {
+      "berries": 1,
+      "bread": 1.5,
+      "bread_rolls": 1.75,
+      "cakes": 4.5,
+      "carrots": 1,
+      "eggs": 1,
+      "fish": 1,
+      "fruit": 1,
+      "fruit_pies": 3.5,
+      "herb_bread": 2,
+      "herbed_meat": 5,
+      "meat": 1,
+      "meat_pies": 7,
+      "milk": 1,
+      "prepared_meat": 4,
+      "salmon": 2,
+      "sausages": 6,
+      "smoked_fish": 1.5,
+      "smoked_meat": 6,
+      "smoked_salmon": 2.5,
+      "smoked_sturgeon": 3.5,
+      "smoked_trout": 2.0,
+      "sturgeon": 3,
+      "trout": 1.5,
+      "vegetables": 1
+    },
+    "farming_growth_seconds": 15,
+    "farming_harvest_yield": 10.0,
+    "farming_harvest_yields": {
+      "carrots": 10.0,
+      "fodder": 10.0,
+      "vegetables": 4.8,
+      "wheat": 10.0
+    },
+    "fish": {
+      "fish": {
+        "boat": 0,
+        "coins": 1,
+        "depth": 1,
+        "food": 1,
+        "label": "Fish"
+      },
+      "salmon": {
+        "boat": 2,
+        "coins": 3,
+        "depth": 3,
+        "food": 2,
+        "label": "Salmon"
+      },
+      "sturgeon": {
+        "boat": 3,
+        "coins": 5,
+        "depth": 4,
+        "food": 3,
+        "label": "Sturgeon"
+      },
+      "trout": {
+        "boat": 1,
+        "coins": 2,
+        "depth": 2,
+        "food": 1.5,
+        "label": "Trout"
+      }
+    },
+    "fixed_storage": {
+      "acre": {
+        "carrots": 20,
+        "fodder": 10,
+        "manure": 10,
+        "vegetables": 20,
+        "wheat": 10
+      },
+      "bakery": {
+        "bread": 40,
+        "bread_rolls": 40,
+        "cakes": 40,
+        "eggs": 40,
+        "flour": 40,
+        "fruit": 40,
+        "fruit_pies": 40,
+        "herb_bread": 40,
+        "herbs": 20,
+        "milk": 40,
+        "wood": 10
+      },
+      "barn": {
+        "eggs": 20,
+        "fodder": 15,
+        "hides": 10,
+        "manure": 5,
+        "meat": 20,
+        "milk": 20,
+        "vegetables": 20,
+        "wool": 10
+      },
+      "butcher": {
+        "eggs": 20,
+        "flour": 10,
+        "herbed_meat": 20,
+        "herbs": 5,
+        "hides": 10,
+        "meat": 20,
+        "meat_pies": 20,
+        "prepared_meat": 20,
+        "sausages": 20,
+        "smoked_meat": 20,
+        "wood": 5
+      },
+      "farm": {
+        "carrots": 20,
+        "fodder": 10,
+        "manure": 10,
+        "vegetables": 20,
+        "wheat": 10
+      },
+      "fish_pond": {
+        "fish": 35,
+        "fodder": 15
+      },
+      "fishing_hut": {
+        "fish": 50,
+        "salmon": 50,
+        "sturgeon": 50,
+        "trout": 50
+      },
+      "hall": {
+        "berries": 100,
+        "bread": 100,
+        "bread_rolls": 100,
+        "cakes": 100,
+        "carrots": 100,
+        "eggs": 100,
+        "fish": 100,
+        "food": 100,
+        "fruit": 100,
+        "fruit_pies": 100,
+        "herb_bread": 100,
+        "herbed_meat": 100,
+        "meat": 100,
+        "meat_pies": 100,
+        "milk": 100,
+        "prepared_meat": 100,
+        "salmon": 100,
+        "sausages": 100,
+        "smoked_fish": 100,
+        "smoked_meat": 100,
+        "smoked_salmon": 100,
+        "smoked_sturgeon": 100,
+        "smoked_trout": 100,
+        "stone": 100,
+        "sturgeon": 100,
+        "trout": 100,
+        "vegetables": 100,
+        "wood": 100
+      },
+      "home": {},
+      "market": {},
+      "mill": {
+        "flour": 80,
+        "wheat": 80
+      },
+      "mine": {
+        "iron_ore": 50.0
+      },
+      "orchard": {
+        "fruit": 50
+      },
+      "saddler": {
+        "iron": 16.666666666666668,
+        "leather": 16.666666666666668,
+        "saddles": 16.666666666666668
+      },
+      "sawpit": {
+        "planks": 20,
+        "wood": 30
+      },
+      "smelter": {
+        "iron": 16.666666666666668,
+        "iron_ore": 16.666666666666668,
+        "wood": 16.666666666666668
+      },
+      "smokehouse": {
+        "fish": 45,
+        "salmon": 45,
+        "smoked_fish": 45,
+        "smoked_salmon": 45,
+        "smoked_sturgeon": 45,
+        "smoked_trout": 45,
+        "sturgeon": 45,
+        "trout": 45,
+        "wood": 5
+      },
+      "stable": {
+        "fodder": 30,
+        "manure": 5,
+        "vegetables": 15
+      },
+      "steelworks": {
+        "iron": 16.666666666666668,
+        "steel": 16.666666666666668,
+        "wood": 16.666666666666668
+      },
+      "tannery": {
+        "hides": 16.666666666666668,
+        "leather": 16.666666666666668,
+        "wood": 16.666666666666668
+      },
+      "tradehouse": {
+        "leather": 12.5,
+        "planks": 12.5,
+        "steel": 12.5,
+        "trade_crates": 12.5
+      },
+      "woodcutter": {
+        "wood": 50
+      },
+      "workshop": {
+        "carved_furniture": 5,
+        "crafted_axe": 5,
+        "crafted_saw": 5,
+        "crates": 5,
+        "flower_boxes": 5,
+        "furniture": 5,
+        "garden_arches": 5,
+        "herbs": 5,
+        "lanterns": 5,
+        "planks": 15,
+        "signposts": 5,
+        "tools": 5,
+        "wood": 5,
+        "wooden_bowls": 5,
+        "wooden_tables": 5,
+        "wool": 5
+      }
+    },
+    "food_per_minute": {
+      "idle": 0.6,
+      "working": 1.5
+    },
+    "home_stone_cost": 30,
+    "job_requirements": {
+      "baking": {
+        "milling": 2
+      },
+      "breeding": {
+        "fishing": 20
+      },
+      "butchery": {
+        "husbandry": 2
+      },
+      "crafting": {
+        "woodworking": 2
+      },
+      "horsekeeping": {
+        "husbandry": 2
+      },
+      "milling": {
+        "farming": 10
+      },
+      "orcharding": {
+        "farming": 20
+      },
+      "packing": {
+        "crafting": 2
+      },
+      "preserving": {
+        "fishing": 10
+      },
+      "saddlery": {
+        "tanning": 2
+      },
+      "smelting": {
+        "mining": 2
+      },
+      "steelmaking": {
+        "smelting": 2
+      },
+      "tanning": {
+        "husbandry": 2
+      },
+      "woodworking": {
+        "woodcutting": 10
+      }
+    },
+    "manual_sellable_goods": [
+      "hides",
+      "leather",
+      "iron_ore",
+      "iron",
+      "saddles",
+      "steel",
+      "trade_crates",
+      "fish",
+      "trout",
+      "salmon",
+      "sturgeon",
+      "planks",
+      "wool",
+      "flour",
+      "smoked_fish",
+      "smoked_trout",
+      "smoked_salmon",
+      "smoked_sturgeon",
+      "tools",
+      "herbs",
+      "fruit",
+      "milk",
+      "eggs",
+      "meat",
+      "bread",
+      "prepared_meat",
+      "vegetables",
+      "berries",
+      "carrots",
+      "fodder",
+      "manure",
+      "stone",
+      "wheat",
+      "wood",
+      "wooden_bowls",
+      "crates",
+      "furniture",
+      "carved_furniture",
+      "crafted_axe",
+      "crafted_saw",
+      "lanterns",
+      "flower_boxes",
+      "wooden_tables",
+      "signposts",
+      "garden_arches",
+      "bread_rolls",
+      "herb_bread",
+      "fruit_pies",
+      "cakes",
+      "herbed_meat",
+      "smoked_meat",
+      "sausages",
+      "meat_pies"
+    ],
+    "orchard_harvest_yield": 8,
+    "orchard_reach": 3,
+    "orchard_stage_seconds": {
+      "blossom": 30,
+      "fruit": 60,
+      "harvested": 30,
+      "sapling": 60
+    },
+    "production_seconds": {
+      "bread": 6,
+      "bread_rolls": 6,
+      "cakes": 12,
+      "carved_furniture": 15,
+      "crafted_axe": 9,
+      "crafted_saw": 12,
+      "crates": 9,
+      "fish": 3,
+      "flour": 3,
+      "flower_boxes": 9,
+      "fruit_pies": 9,
+      "furniture": 12,
+      "garden_arches": 15,
+      "herb_bread": 6,
+      "herbed_meat": 6,
+      "iron": 12,
+      "iron_ore": 9,
+      "lanterns": 9,
+      "leather": 9,
+      "meat_pies": 12,
+      "planks": 6,
+      "prepared_meat": 6,
+      "saddles": 15,
+      "sausages": 9,
+      "signposts": 9,
+      "smoked_fish": 3,
+      "smoked_meat": 9,
+      "smoked_salmon": 3,
+      "smoked_sturgeon": 3,
+      "smoked_trout": 3,
+      "steel": 15,
+      "tools": 9,
+      "trade_crates": 18,
+      "wooden_bowls": 6,
+      "wooden_tables": 12
+    },
+    "profession_recipes": {
+      "bakery": [
+        {
+          "amount": 2,
+          "inputs": {
+            "flour": 2,
+            "wood": 0.5
+          },
+          "level": 1,
+          "output": "bread"
+        },
+        {
+          "amount": 3,
+          "inputs": {
+            "flour": 2,
+            "milk": 1,
+            "wood": 0.5
+          },
+          "level": 5,
+          "output": "bread_rolls"
+        },
+        {
+          "amount": 2,
+          "inputs": {
+            "flour": 2,
+            "herbs": 1,
+            "wood": 0.5
+          },
+          "level": 10,
+          "output": "herb_bread"
+        },
+        {
+          "amount": 2,
+          "inputs": {
+            "flour": 2,
+            "fruit": 2,
+            "wood": 0.5
+          },
+          "level": 15,
+          "output": "fruit_pies"
+        },
+        {
+          "amount": 2,
+          "inputs": {
+            "eggs": 2,
+            "flour": 2,
+            "milk": 1,
+            "wood": 0.5
+          },
+          "level": 20,
+          "output": "cakes"
+        }
+      ],
+      "butcher": [
+        {
+          "amount": 2,
+          "inputs": {
+            "meat": 2
+          },
+          "level": 1,
+          "output": "prepared_meat"
+        },
+        {
+          "amount": 2,
+          "inputs": {
+            "herbs": 1,
+            "meat": 2
+          },
+          "level": 2,
+          "output": "herbed_meat"
+        },
+        {
+          "amount": 2,
+          "inputs": {
+            "meat": 2,
+            "wood": 0.5
+          },
+          "level": 3,
+          "output": "smoked_meat"
+        },
+        {
+          "amount": 3,
+          "inputs": {
+            "flour": 1,
+            "herbs": 1,
+            "meat": 2
+          },
+          "level": 4,
+          "output": "sausages"
+        },
+        {
+          "amount": 2,
+          "inputs": {
+            "eggs": 1,
+            "flour": 2,
+            "meat": 2,
+            "wood": 0.5
+          },
+          "level": 5,
+          "output": "meat_pies"
+        }
+      ],
+      "workshop": [
+        {
+          "amount": 1,
+          "inputs": {
+            "planks": 2,
+            "wood": 1
+          },
+          "level": 1,
+          "output": "tools"
+        },
+        {
+          "amount": 2,
+          "inputs": {
+            "planks": 1,
+            "wood": 1
+          },
+          "level": 2,
+          "output": "wooden_bowls"
+        },
+        {
+          "amount": 1,
+          "inputs": {
+            "planks": 3
+          },
+          "level": 3,
+          "output": "crates"
+        },
+        {
+          "amount": 1,
+          "inputs": {
+            "planks": 4,
+            "wool": 1
+          },
+          "level": 4,
+          "output": "furniture"
+        },
+        {
+          "amount": 1,
+          "inputs": {
+            "planks": 5,
+            "wool": 2
+          },
+          "level": 5,
+          "output": "carved_furniture"
+        },
+        {
+          "amount": 1,
+          "inputs": {
+            "planks": 2,
+            "tools": 1
+          },
+          "level": 2,
+          "output": "crafted_axe"
+        },
+        {
+          "amount": 1,
+          "inputs": {
+            "planks": 2,
+            "tools": 2
+          },
+          "level": 3,
+          "output": "crafted_saw"
+        },
+        {
+          "amount": 1,
+          "inputs": {
+            "planks": 2,
+            "wood": 1
+          },
+          "level": 2,
+          "output": "lanterns"
+        },
+        {
+          "amount": 1,
+          "inputs": {
+            "herbs": 1,
+            "planks": 2
+          },
+          "level": 2,
+          "output": "flower_boxes"
+        },
+        {
+          "amount": 1,
+          "inputs": {
+            "planks": 4,
+            "wood": 2
+          },
+          "level": 3,
+          "output": "wooden_tables"
+        },
+        {
+          "amount": 1,
+          "inputs": {
+            "planks": 2,
+            "wood": 1
+          },
+          "level": 2,
+          "output": "signposts"
+        },
+        {
+          "amount": 1,
+          "inputs": {
+            "planks": 6,
+            "wood": 2
+          },
+          "level": 4,
+          "output": "garden_arches"
+        }
+      ]
+    },
+    "recipes": {
+      "bakery": [
+        {
+          "flour": 2,
+          "wood": 0.5
+        },
+        "bread",
+        2
+      ],
+      "butcher": [
+        {
+          "meat": 2
+        },
+        "prepared_meat",
+        2
+      ],
+      "fish_pond": [
+        {
+          "fodder": 0.5
+        },
+        "fish",
+        1
+      ],
+      "mill": [
+        {
+          "wheat": 2
+        },
+        "flour",
+        2
+      ],
+      "mine": [
+        {},
+        "iron_ore",
+        2
+      ],
+      "saddler": [
+        {
+          "iron": 1,
+          "leather": 5
+        },
+        "saddles",
+        1
+      ],
+      "sawpit": [
+        {
+          "wood": 2
+        },
+        "planks",
+        1
+      ],
+      "smelter": [
+        {
+          "iron_ore": 3,
+          "wood": 2
+        },
+        "iron",
+        1
+      ],
+      "smokehouse": [
+        {
+          "fish": 1,
+          "wood": 0.25
+        },
+        "smoked_fish",
+        1
+      ],
+      "steelworks": [
+        {
+          "iron": 2,
+          "wood": 3
+        },
+        "steel",
+        1
+      ],
+      "tannery": [
+        {
+          "hides": 2,
+          "wood": 0.5
+        },
+        "leather",
+        2
+      ],
+      "tradehouse": [
+        {
+          "leather": 2,
+          "planks": 3,
+          "steel": 1
+        },
+        "trade_crates",
+        1
+      ],
+      "workshop": [
+        {
+          "planks": 2,
+          "wood": 1
+        },
+        "tools",
+        1
+      ]
+    },
+    "sale_prices": {
+      "bread": 1,
+      "bread_rolls": 2,
+      "cakes": 5,
+      "carved_furniture": 15,
+      "crafted_axe": 8,
+      "crafted_saw": 12,
+      "crates": 6,
+      "flower_boxes": 6,
+      "fruit_pies": 4,
+      "furniture": 10,
+      "garden_arches": 12,
+      "herb_bread": 2,
+      "herbed_meat": 5,
+      "hides": 2,
+      "iron": 10,
+      "iron_ore": 2,
+      "lanterns": 5,
+      "leather": 4,
+      "meat": 2,
+      "meat_pies": 7,
+      "prepared_meat": 4,
+      "saddles": 35,
+      "sausages": 6,
+      "signposts": 5,
+      "smoked_fish": 2,
+      "smoked_meat": 6,
+      "smoked_salmon": 4,
+      "smoked_sturgeon": 6,
+      "smoked_trout": 3,
+      "steel": 26,
+      "tools": 3,
+      "trade_crates": 45,
+      "wooden_bowls": 2,
+      "wooden_tables": 9
+    },
+    "sellable_goods": [
+      "hides",
+      "leather",
+      "iron_ore",
+      "iron",
+      "saddles",
+      "steel",
+      "trade_crates",
+      "fish",
+      "trout",
+      "salmon",
+      "sturgeon",
+      "planks",
+      "wool",
+      "flour",
+      "smoked_fish",
+      "smoked_trout",
+      "smoked_salmon",
+      "smoked_sturgeon",
+      "tools",
+      "herbs",
+      "fruit",
+      "milk",
+      "eggs",
+      "meat",
+      "bread",
+      "prepared_meat",
+      "vegetables",
+      "berries",
+      "carrots",
+      "fodder",
+      "manure",
+      "stone",
+      "wheat",
+      "wood",
+      "wooden_bowls",
+      "crates",
+      "furniture",
+      "carved_furniture",
+      "crafted_axe",
+      "crafted_saw",
+      "lanterns",
+      "flower_boxes",
+      "wooden_tables",
+      "signposts",
+      "garden_arches",
+      "bread_rolls",
+      "herb_bread",
+      "fruit_pies",
+      "cakes",
+      "herbed_meat",
+      "smoked_meat",
+      "sausages",
+      "meat_pies"
+    ],
+    "smoked_fish": {
+      "smoked_fish": {
+        "coins": 2,
+        "food": 1.5
+      },
+      "smoked_salmon": {
+        "coins": 4,
+        "food": 2.5
+      },
+      "smoked_sturgeon": {
+        "coins": 6,
+        "food": 3.5
+      },
+      "smoked_trout": {
+        "coins": 3,
+        "food": 2.0
+      }
+    },
+    "stone_per_rock": 10,
+    "storage_goods": {
+      "acre": [
+        "vegetables",
+        "wheat",
+        "carrots",
+        "fodder",
+        "manure"
+      ],
+      "bakery": [
+        "flour",
+        "wood",
+        "bread",
+        "milk",
+        "bread_rolls",
+        "herbs",
+        "herb_bread",
+        "fruit",
+        "fruit_pies",
+        "eggs",
+        "cakes"
+      ],
+      "barn": [
+        "fodder",
+        "vegetables",
+        "manure",
+        "hides",
+        "eggs",
+        "wool",
+        "meat",
+        "milk",
+        "horse"
+      ],
+      "butcher": [
+        "meat",
+        "prepared_meat",
+        "herbs",
+        "herbed_meat",
+        "wood",
+        "smoked_meat",
+        "flour",
+        "sausages",
+        "eggs",
+        "meat_pies",
+        "hides"
+      ],
+      "farm": [
+        "vegetables",
+        "wheat",
+        "carrots",
+        "fodder",
+        "manure"
+      ],
+      "fish_pond": [
+        "fodder",
+        "fish"
+      ],
+      "fishing_hut": [
+        "fish",
+        "trout",
+        "salmon",
+        "sturgeon"
+      ],
+      "hall": [
+        "wood",
+        "stone",
+        "food",
+        "planks",
+        "wheat",
+        "fodder",
+        "flour",
+        "wool",
+        "tools",
+        "manure",
+        "herbs",
+        "wooden_bowls",
+        "crates",
+        "furniture",
+        "carved_furniture",
+        "crafted_axe",
+        "crafted_saw",
+        "lanterns",
+        "flower_boxes",
+        "wooden_tables",
+        "signposts",
+        "garden_arches",
+        "hides",
+        "leather",
+        "iron_ore",
+        "iron",
+        "saddles",
+        "steel",
+        "trade_crates",
+        "vegetables",
+        "carrots",
+        "fish",
+        "berries",
+        "eggs",
+        "meat",
+        "milk",
+        "fruit",
+        "smoked_fish",
+        "bread",
+        "prepared_meat",
+        "trout",
+        "salmon",
+        "sturgeon",
+        "smoked_trout",
+        "smoked_salmon",
+        "smoked_sturgeon",
+        "bread_rolls",
+        "herb_bread",
+        "fruit_pies",
+        "cakes",
+        "herbed_meat",
+        "smoked_meat",
+        "sausages",
+        "meat_pies"
+      ],
+      "home": [],
+      "market": [],
+      "mill": [
+        "wheat",
+        "flour"
+      ],
+      "mine": [
+        "iron_ore"
+      ],
+      "orchard": [
+        "fruit"
+      ],
+      "saddler": [
+        "leather",
+        "iron",
+        "saddles"
+      ],
+      "sawpit": [
+        "wood",
+        "planks"
+      ],
+      "smelter": [
+        "iron_ore",
+        "wood",
+        "iron"
+      ],
+      "smokehouse": [
+        "fish",
+        "trout",
+        "salmon",
+        "sturgeon",
+        "wood",
+        "smoked_fish",
+        "smoked_trout",
+        "smoked_salmon",
+        "smoked_sturgeon"
+      ],
+      "stable": [
+        "fodder",
+        "vegetables",
+        "manure"
+      ],
+      "steelworks": [
+        "iron",
+        "wood",
+        "steel"
+      ],
+      "storehouse": [
+        "wood",
+        "stone",
+        "food",
+        "planks",
+        "wheat",
+        "fodder",
+        "flour",
+        "wool",
+        "tools",
+        "manure",
+        "herbs",
+        "wooden_bowls",
+        "crates",
+        "furniture",
+        "carved_furniture",
+        "crafted_axe",
+        "crafted_saw",
+        "lanterns",
+        "flower_boxes",
+        "wooden_tables",
+        "signposts",
+        "garden_arches",
+        "hides",
+        "leather",
+        "iron_ore",
+        "iron",
+        "saddles",
+        "steel",
+        "trade_crates",
+        "vegetables",
+        "carrots",
+        "fish",
+        "berries",
+        "eggs",
+        "meat",
+        "milk",
+        "fruit",
+        "smoked_fish",
+        "bread",
+        "prepared_meat",
+        "trout",
+        "salmon",
+        "sturgeon",
+        "smoked_trout",
+        "smoked_salmon",
+        "smoked_sturgeon",
+        "bread_rolls",
+        "herb_bread",
+        "fruit_pies",
+        "cakes",
+        "herbed_meat",
+        "smoked_meat",
+        "sausages",
+        "meat_pies"
+      ],
+      "tannery": [
+        "hides",
+        "wood",
+        "leather"
+      ],
+      "tradehouse": [
+        "planks",
+        "leather",
+        "steel",
+        "trade_crates"
+      ],
+      "woodcutter": [
+        "wood"
+      ],
+      "workshop": [
+        "planks",
+        "wood",
+        "tools",
+        "wooden_bowls",
+        "crates",
+        "wool",
+        "furniture",
+        "carved_furniture",
+        "crafted_axe",
+        "crafted_saw",
+        "lanterns",
+        "herbs",
+        "flower_boxes",
+        "wooden_tables",
+        "signposts",
+        "garden_arches"
+      ]
+    },
+    "storage_keys": [
+      "wood",
+      "stone",
+      "food",
+      "planks",
+      "wheat",
+      "fodder",
+      "flour",
+      "wool",
+      "tools",
+      "manure",
+      "herbs",
+      "wooden_bowls",
+      "crates",
+      "furniture",
+      "carved_furniture",
+      "crafted_axe",
+      "crafted_saw",
+      "lanterns",
+      "flower_boxes",
+      "wooden_tables",
+      "signposts",
+      "garden_arches",
+      "hides",
+      "leather",
+      "iron_ore",
+      "iron",
+      "saddles",
+      "steel",
+      "trade_crates",
+      "vegetables",
+      "carrots",
+      "fish",
+      "berries",
+      "eggs",
+      "meat",
+      "milk",
+      "fruit",
+      "smoked_fish",
+      "bread",
+      "prepared_meat",
+      "trout",
+      "salmon",
+      "sturgeon",
+      "smoked_trout",
+      "smoked_salmon",
+      "smoked_sturgeon",
+      "bread_rolls",
+      "herb_bread",
+      "fruit_pies",
+      "cakes",
+      "herbed_meat",
+      "smoked_meat",
+      "sausages",
+      "meat_pies"
+    ],
+    "storage_upgrade_kinds": [
+      "woodcutter",
+      "sawpit",
+      "workshop",
+      "mill",
+      "bakery"
+    ],
+    "talent_roots": {
+      "baking": "farming",
+      "breeding": "fishing",
+      "butchery": "husbandry",
+      "crafting": "woodcutting",
+      "horsekeeping": "husbandry",
+      "milling": "farming",
+      "mining": "woodcutting",
+      "orcharding": "farming",
+      "packing": "woodcutting",
+      "preserving": "fishing",
+      "saddlery": "husbandry",
+      "smelting": "woodcutting",
+      "steelmaking": "woodcutting",
+      "tanning": "husbandry",
+      "woodworking": "woodcutting"
+    },
+    "tradable_goods": [
+      "coins",
+      "wood",
+      "planks",
+      "wool",
+      "flour",
+      "tools",
+      "wheat",
+      "fodder",
+      "manure",
+      "herbs",
+      "vegetables",
+      "carrots",
+      "fish",
+      "berries",
+      "eggs",
+      "meat",
+      "milk",
+      "fruit",
+      "smoked_fish",
+      "bread",
+      "prepared_meat",
+      "trout",
+      "salmon",
+      "sturgeon",
+      "smoked_trout",
+      "smoked_salmon",
+      "smoked_sturgeon",
+      "bread_rolls",
+      "herb_bread",
+      "fruit_pies",
+      "cakes",
+      "herbed_meat",
+      "smoked_meat",
+      "sausages",
+      "meat_pies",
+      "wooden_bowls",
+      "crates",
+      "furniture",
+      "carved_furniture",
+      "crafted_axe",
+      "crafted_saw",
+      "lanterns",
+      "flower_boxes",
+      "wooden_tables",
+      "signposts",
+      "garden_arches",
+      "hides",
+      "leather",
+      "iron_ore",
+      "iron",
+      "saddles",
+      "steel",
+      "trade_crates"
+    ],
+    "upgrades": {
+      "boat": {
+        "building": "fishing_hut",
+        "capacity": 5,
+        "label": "Fishing boat",
+        "level": 3,
+        "planks": 10,
+        "skill": "fishing",
+        "xp": 20
+      },
+      "double_hearth_oven": {
+        "building": "bakery",
+        "label": "Double hearth oven",
+        "level": 5,
+        "planks": 20,
+        "requires": "larger_oven",
+        "skill": "baking",
+        "throughput": 8,
+        "tools": 5,
+        "wood": 60,
+        "xp": 3
+      },
+      "geared_millstones": {
+        "building": "mill",
+        "label": "Geared millstones",
+        "level": 5,
+        "planks": 20,
+        "requires": "improved_millstones",
+        "skill": "milling",
+        "throughput": 4,
+        "tools": 5,
+        "wood": 60,
+        "xp": 3
+      },
+      "improved_boat": {
+        "building": "fishing_hut",
+        "capacity": 10,
+        "coins": 20,
+        "label": "Improved fishing boat",
+        "level": 4,
+        "planks": 15,
+        "requires": "boat",
+        "skill": "fishing",
+        "xp": 30
+      },
+      "improved_millstones": {
+        "building": "mill",
+        "label": "Improved millstones",
+        "level": 4,
+        "planks": 10,
+        "skill": "milling",
+        "throughput": 2,
+        "wood": 30,
+        "xp": 2
+      },
+      "larger_oven": {
+        "building": "bakery",
+        "label": "Larger oven",
+        "level": 4,
+        "planks": 10,
+        "skill": "baking",
+        "throughput": 4,
+        "wood": 30,
+        "xp": 2
+      },
+      "master_boat": {
+        "building": "fishing_hut",
+        "capacity": 20,
+        "coins": 40,
+        "label": "Masterwork fishing boat",
+        "level": 5,
+        "planks": 20,
+        "requires": "improved_boat",
+        "skill": "fishing",
+        "xp": 40
+      },
+      "masterwork_millstones": {
+        "building": "mill",
+        "label": "Masterwork millstones",
+        "level": 6,
+        "planks": 30,
+        "requires": "geared_millstones",
+        "skill": "milling",
+        "throughput": 8,
+        "tools": 10,
+        "wood": 90,
+        "xp": 5
+      },
+      "masterwork_oven": {
+        "building": "bakery",
+        "label": "Masterwork oven",
+        "level": 6,
+        "planks": 30,
+        "requires": "double_hearth_oven",
+        "skill": "baking",
+        "throughput": 16,
+        "tools": 10,
+        "wood": 90,
+        "xp": 5
+      },
+      "nets": {
+        "building": "fishing_hut",
+        "coins": 5,
+        "label": "Fishing nets",
+        "level": 2,
+        "skill": "fishing",
+        "wood": 10,
+        "xp": 10
+      },
+      "steel_pickaxe": {
+        "building": "mine",
+        "label": "Steel pickaxes",
+        "leather": 3,
+        "level": 9,
+        "skill": "mining",
+        "steel": 5,
+        "xp": 10
+      },
+      "timber_frame": {
+        "building": "home",
+        "label": "Timber framing",
+        "level": 5,
+        "planks": 10
+      },
+      "wool_nets": {
+        "building": "fishing_hut",
+        "label": "Durable wool nets",
+        "level": 3,
+        "skill": "fishing",
+        "wool": 5,
+        "xp": 20
+      }
+    },
+    "wood_per_cycle": 0.75,
+    "wood_worker_capacities": {
+      "sawpit": [
+        1,
+        2
+      ],
+      "woodcutter": [
+        1,
+        2,
+        3
+      ],
+      "workshop": [
+        1
+      ]
+    },
+    "worker_capacities": {
+      "acre": [
+        1
+      ],
+      "bakery": [
+        1
+      ],
+      "farm": [
+        1,
+        2,
+        4
+      ],
+      "mill": [
+        1
+      ],
+      "mine": [
+        1,
+        2,
+        4,
+        8
+      ],
+      "sawpit": [
+        1,
+        2
+      ],
+      "smelter": [
+        1,
+        2,
+        3
+      ],
+      "steelworks": [
+        1
+      ],
+      "woodcutter": [
+        1,
+        2,
+        3
+      ],
+      "workshop": [
+        1
+      ]
+    },
+    "workplace_storage_sizes": {
+      "bakery": 100,
+      "mill": 160
+    }
+  },
+  "resources": [
+    "coins",
+    "wood",
+    "stone",
+    "planks",
+    "wheat",
+    "fodder",
+    "flour",
+    "wool",
+    "tools",
+    "manure",
+    "herbs",
+    "wooden_bowls",
+    "crates",
+    "furniture",
+    "carved_furniture",
+    "crafted_axe",
+    "crafted_saw",
+    "lanterns",
+    "flower_boxes",
+    "wooden_tables",
+    "signposts",
+    "garden_arches",
+    "hides",
+    "leather",
+    "iron_ore",
+    "iron",
+    "saddles",
+    "steel",
+    "trade_crates",
+    "vegetables",
+    "carrots",
+    "fish",
+    "berries",
+    "eggs",
+    "meat",
+    "milk",
+    "fruit",
+    "smoked_fish",
+    "bread",
+    "prepared_meat",
+    "trout",
+    "salmon",
+    "sturgeon",
+    "smoked_trout",
+    "smoked_salmon",
+    "smoked_sturgeon",
+    "bread_rolls",
+    "herb_bread",
+    "fruit_pies",
+    "cakes",
+    "herbed_meat",
+    "smoked_meat",
+    "sausages",
+    "meat_pies"
+  ]
+}

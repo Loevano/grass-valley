@@ -8,7 +8,7 @@ and cache rules are in [Backend](BACKEND.md#cached-zoomed-out-map).
 | 1     | Cached zoomed-out town overview    | Implemented              | Show the landscape and city sizes without refreshing animated scene detail.                                      |
 | 2     | Production line balancing          | Wood and grain implemented; fishing remains | Develop clear fishing chains with capped staffing and simple upgrades. |
 | 3     | Scalable villager pathfinding       | Host queue implemented; cache refinement and shared navigation remain | Keep movement responsive as villager counts and towns grow, with bounded routing work. |
-| 4     | Rust migration | R12 experimental building/construction slices implemented; economy, host integration and release acceptance remain open | Follow the [staged plan and prompts](RUST_MIGRATION.md), preserving playable checkpoints and saved worlds. |
+| 4     | Rust migration | R13 catalog/quantity slice implemented; ledger, progression, host integration and release acceptance remain open | Follow the [staged plan and prompts](RUST_MIGRATION.md), preserving playable checkpoints and saved worlds. |
 
 ## Rust migration
 
@@ -29,6 +29,8 @@ blocked recovery, facing, confirmed playback and versioned model reload continui
 R12's three slices implement the experimental building/construction model,
 including upgrades, linked groups, upgrade helpers and offline reload; see the
 [completion boundary](RUST_MIGRATION.md#r12-slice-3--upgrades-linked-groups-and-cancellation).
+R13 slice 1 adds reviewed catalog metadata and fractional single-container stock;
+its authoritative ledger and progression rules remain in slices 2–3.
 Full economy/production rules and resident qualification remain in R13–R17;
 durable saves and playable host integration remain in R19–R21.
 R11's integrated W2/W3 movement/accounting acceptance remains open; R19–R21 retain

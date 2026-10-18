@@ -5,6 +5,8 @@ A migration that can be completed one task at a time, with a prompt for each tas
 **Status:** R01–R10 complete as experimental migration foundations; all three R11
 code slices are implemented at the experimental model boundary. R12 slices 1–3 implement the experimental building/construction model,
 including upgrades, linked groups, helpers and offline reload.
+R13 slice 1 adds the reviewed resource/catalog/quantity foundation; ledger and
+progression rules remain in slices 2–3.
 Integrated W2/W3 movement/accounting acceptance remains open. R08 spatial
 rules and founder movement is complete as an experimental private-copy foundation. R07 includes saved-first terrain versions 1–7,
 nonchunked maps, authored starter/town sites, ordinary/swamp metadata and overlays,
@@ -236,7 +238,7 @@ only after work is performed. Keep unfinished stages visible in the roadmap.
 | R10 | Request scheduler and cache invalidation | R09 | Complete as experimental navigation foundation; slices 1–3 and completion audit below; integrated W1–W6 acceptance retained in R11/R19–R23 |
 | R11 | Persistent worker movement and playback | R10 | Slices 1–3 implemented at experimental model boundary; integrated W2/W3 movement/accounting acceptance remains open |
 | R12 | Construction and building operations | R11 | Slices 1–3 implemented at explicit synthetic-model boundary; full economy/resident rules, durable/public host integration and release acceptance remain in R13–R23; completion boundary below |
-| R13 | Resource ledger, storage, and progression rules | R12 | Not started |
+| R13 | Resource ledger, storage, and progression rules | R12 | Slice 1 implemented: reviewed catalog and single-container fractional quantities; slices 2–3 remain |
 | R14 | Hauling, delivery, and merchant trips | R13 | Not started |
 | R15 | Gathering and processing professions | R14 | Not started |
 | R16 | Farming and orchards | R15 | Not started |
@@ -2856,6 +2858,58 @@ documented balance. Test conservation, affordability, capacity, skills, and unlo
 with meaningful boundary cases. Update the action/catalog coverage matrix and
 progress, run applicable checks, and commit the completed slice.
 ```
+
+### R13 slice 1 — Reviewed catalogs and fractional quantities
+
+Implemented at the experimental offline model boundary in
+`lantern_host::resources`. `ResourceKey` validates canonical names without merging
+fish species or crafted goods. `Stock` owns one container's binary64 quantities,
+rejects duplicate entries, checks all costs before spending, matches Python's
+`1e-9` affordability tolerance and clamps only spending roundoff to zero. Item
+transfers require the actual available quantity, validate destination overflow
+before mutating either container, and preserve fractional values without rounding.
+Negative/nonfinite quantities cannot enter through the existing `Quantity` type.
+The legacy aggregate `food` score is deliberately rejected as a physical resource:
+food valuation is metadata on edible items, so aggregate food cannot be inserted
+alongside those same goods and counted twice. This does not yet implement Python's
+legacy `quantity(town, 'food')`, `eat`, or multi-storage withdrawal behavior.
+
+The reviewed `src/resources/catalog.json` exports the complete nested
+`progression.public_catalog()` value plus canonical resource names, generated from
+Python's current source rather than hand-maintained parallel tables. It retains
+recipe/crop/fish names, costs, timing, storage filters, unlock thresholds and all
+other public progression metadata, including ordered arrays and duplicate legacy
+storage-key entries. Food and sale values use the same edible/fish/price fallbacks
+as Python. This is **data coverage**, not implemented recipe, skill, hall, storage
+or HTTP behavior. No command coverage is promoted by this slice.
+
+Refresh deliberately with
+`python3 rust/crates/lantern-host/tests/fixtures/resources/generate.py` and review
+the diff. Its `--check` mode recomputes both catalog and independent affordability
+vectors without writing; the Rust tests run that drift check against current Python.
+Six tests cover the full exported metadata, resource references, eight Python
+fractional affordability/debit cases, atomic failed multi-item spending, duplicate/
+unknown keys, negative/nonfinite quantities, species-preserving transfers, strict
+transfer versus spending tolerance, and atomic overflow rejection. Validation uses
+the affected `lantern-host` package (format, locked offline tests/doc tests, Clippy
+with warnings denied). Performance comparisons are not run: this ports a new rules
+foundation and does not investigate a performance problem.
+
+Evidence: `python3 tools/check.py` selected only `rust:lantern-host` and passed
+all three commands; report `performance-results/20261018-171838/report.md`.
+The final strengthened multi-item failure vector and credit assertion also passed
+the targeted six-test resource suite and format check. Commit message:
+`feat: add Rust resource catalogs and fractional stock model`.
+
+Remaining: slice 2 owns authoritative stored/carried/reserved/pending/free accounting,
+capacity/filter semantics, production caps and activity flows; slice 3 owns recipe
+selection, skills/talents/equipment and hall requirement evaluation, including grain
+chain and progression acceptance. `Stock` is not wired into `ModelWorld`, actor
+`Cargo`, R12's explicit-facts inventory, ordinary legacy saves or HTTP. Their
+cross-container ownership, exactly-once operations and save migrations must be
+integrated and tested in later slices/stages; no imported data is silently dropped.
+R14–R18 retain production/logistics actors, R19 durable saves, R20–R21 playable
+host/browser integration, and R23 complete W1–W6 acceptance. Python remains default.
 
 ## R14 — Logistics and markets
 
