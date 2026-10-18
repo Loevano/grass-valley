@@ -1,9 +1,17 @@
-//! Experimental R13 single-container quantities and reviewed catalog data.
+//! Experimental R13 quantities, reviewed catalogs and single-owner town accounting.
 //!
 //! A Stock owns physical item quantities, never the legacy aggregate `food` score.
-//! It is not a town ledger: reservations, pending output, capacity and economic
-//! flows, legacy food withdrawal, and integration with Cargo/BuildingWorld remain
-//! later slices. Holding a Stock does not grant permission to spend town cargo.
+//! Ledger derives spendable stock, food value, reserves and pending totals from
+//! its containers. Recipe evaluation, live Cargo/BuildingWorld integration, HTTP
+//! and legacy save conversion remain later work. A standalone Stock grants no
+//! permission to spend another owner's cargo.
+mod activity;
+mod ledger;
+mod storage;
+pub use activity::{Activity, Bucket, Direction};
+pub use ledger::{CargoKind, HeldCargo, Ledger, PendingOwner, ResourceRow, Store};
+pub use storage::StoragePolicy;
+
 use lantern_core::units::Quantity;
 use serde_json::Value;
 use std::{collections::BTreeMap, sync::OnceLock};
@@ -28,6 +36,17 @@ pub enum ResourceError {
     DuplicateResource,
     InsufficientStock,
     Overflow,
+    InvalidStorage,
+    InvalidCap,
+    Ownership,
+    DuplicateIdentity,
+    MissingBuilding,
+    MissingCargo,
+    MissingPending,
+    CargoExists,
+    Unfinished,
+    Capacity,
+    ProductionCap,
 }
 
 /// Validated canonical item key, preserving species and crafted-good names.

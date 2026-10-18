@@ -5,8 +5,9 @@ A migration that can be completed one task at a time, with a prompt for each tas
 **Status:** R01–R10 complete as experimental migration foundations; all three R11
 code slices are implemented at the experimental model boundary. R12 slices 1–3 implement the experimental building/construction model,
 including upgrades, linked groups, helpers and offline reload.
-R13 slice 1 adds the reviewed resource/catalog/quantity foundation; ledger and
-progression rules remain in slices 2–3.
+R13 slices 1–2 add reviewed catalogs, fractional quantities and an experimental
+single-owner resource ledger with storage/cap/reservation/flow rules; recipe and
+progression evaluation remain in slice 3.
 Integrated W2/W3 movement/accounting acceptance remains open. R08 spatial
 rules and founder movement is complete as an experimental private-copy foundation. R07 includes saved-first terrain versions 1–7,
 nonchunked maps, authored starter/town sites, ordinary/swamp metadata and overlays,
@@ -238,7 +239,7 @@ only after work is performed. Keep unfinished stages visible in the roadmap.
 | R10 | Request scheduler and cache invalidation | R09 | Complete as experimental navigation foundation; slices 1–3 and completion audit below; integrated W1–W6 acceptance retained in R11/R19–R23 |
 | R11 | Persistent worker movement and playback | R10 | Slices 1–3 implemented at experimental model boundary; integrated W2/W3 movement/accounting acceptance remains open |
 | R12 | Construction and building operations | R11 | Slices 1–3 implemented at explicit synthetic-model boundary; full economy/resident rules, durable/public host integration and release acceptance remain in R13–R23; completion boundary below |
-| R13 | Resource ledger, storage, and progression rules | R12 | Slice 1 implemented: reviewed catalog and single-container fractional quantities; slices 2–3 remain |
+| R13 | Resource ledger, storage, and progression rules | R12 | Slices 1–2 implemented at offline model boundary: reviewed catalogs, quantities, ledger/storage/reservations/caps/flows; slice 3 progression evaluation remains |
 | R14 | Hauling, delivery, and merchant trips | R13 | Not started |
 | R15 | Gathering and processing professions | R14 | Not started |
 | R16 | Farming and orchards | R15 | Not started |
@@ -2901,7 +2902,8 @@ The final strengthened multi-item failure vector and credit assertion also passe
 the targeted six-test resource suite and format check. Commit message:
 `feat: add Rust resource catalogs and fractional stock model`.
 
-Remaining: slice 2 owns authoritative stored/carried/reserved/pending/free accounting,
+Historical slice-1 boundary (accounting superseded by slice 2 below): slice 2 owns
+authoritative stored/carried/reserved/pending/free accounting,
 capacity/filter semantics, production caps and activity flows; slice 3 owns recipe
 selection, skills/talents/equipment and hall requirement evaluation, including grain
 chain and progression acceptance. `Stock` is not wired into `ModelWorld`, actor
@@ -2910,6 +2912,83 @@ cross-container ownership, exactly-once operations and save migrations must be
 integrated and tested in later slices/stages; no imported data is silently dropped.
 R14–R18 retain production/logistics actors, R19 durable saves, R20–R21 playable
 host/browser integration, and R23 complete W1–W6 acceptance. Python remains default.
+
+### R13 slice 2 — Storage, reservations, production caps and flows
+
+Implemented in `lantern_host::resources::{Ledger, Store, StoragePolicy, Activity}`
+at the experimental offline model boundary. Each town ledger owns its coins,
+ordered stable-ID buildings, stored goods/output buffers, reserved input buffers,
+worker/orphan pending output and actual held collect/supply/sale cargo. There is
+no separately mutable town balance or worker mirror of building pending output.
+Free/reserved/pending/total rows and aggregate food value are derived from physical
+owners; browser `resourceStocks` supplies the independent overview oracle.
+Collect cargo is pending, supply/sale cargo reserved. Pending worker output is
+counted once through the workplace. Production caps include free stock, pending
+output and collect/sale cargo, excluding inputs and supply cargo. This deliberately
+differs from overview classification of sale cargo, matching current Python.
+
+Storage admission matches current per-resource allowances, material shared space,
+independent edible-item capacities, storehouse levels/enabled filters, farm/acre
+levels, workplace upgrades and maximum matching grain equipment throughput.
+In-progress construction (including upgrades) is excluded from town storage room
+and limits. Existing over-capacity or disabled goods remain available, preserved
+and withdrawable. Legacy Food filters expand only when reading old sparse settings;
+the configure-storage operation disables omitted resources and removes legacy
+allocation settings. Actual legacy untyped provisions are a separate physical
+quantity, never an additional copy of edible food value. Food consumption takes
+provisions first, then edible goods in Python's catalog order, and cannot consume
+reserved or carried food.
+
+Atomic ledger operations cover spending, reservations/releases, caller-evaluated
+batch completion, direct delivery, pending drop-off/orphaning, physical cargo
+pickup/partial deposit and cancellation restitution. Identity/quantity failures,
+insufficient ingredients, whole-batch capacity and production-cap failures leave
+all inventory, history and produced counters unchanged. Repeated pickup/drop-off/
+return cannot duplicate goods. Failed/full/disabled destinations keep held goods;
+cancelled cargo returns to its completed source irrespective of admission capacity,
+or a caller-supplied completed hall when the source is absent/under construction.
+These are accounting transitions, not R14 trip planning, movement or merchant sale
+execution. Caller-evaluated batches do not port recipes, practice or rate evaluation.
+Batch input affordability keeps the `1e-9` tolerance, spending clamps roundoff, and
+transfers require actual goods. Direct production clips to cap and admitted room;
+import delivery records real inflow without advancing production milestones.
+
+Activity uses explicit elapsed simulation time, merges events at the same timestamp,
+records edible item units plus their food value, ignores amounts `<= 1e-9`, and
+expires buckets at `at <= seconds - 60`. Only real consumption and production/import
+arrival record flows; reservation, hauling, drop-off, release and restitution do not.
+Produced counters advance once on production completion, before drop-off. Preview
+work can use an isolated ledger clone and cannot mutate the original's history.
+The catalog generator now includes Python's storehouse capacities, maximum acres,
+production-resource list and edible order as reviewed source data.
+
+Validation: 10 new ledger tests plus the six slice-1 tests. The read-only generator
+check recomputes 110 capacity/allocation/room cases across every building kind,
+storehouse legacy/current filters, levels and each grain equipment tier; it also
+replays 30 accounting transitions on a small deterministic town with actual Python
+helpers and obtains every overview from the existing browser function via Node.
+Boundary tests cover fractional fuel, atomic multi-resource failures, nonspendable
+cargo/reserves, shared caps across workers, orphan collection, partial/full-buffer
+delivery, legacy food consumption, excess/disabled stock, imports, repeated events,
+identity errors, overflow, fallback restitution, minute expiry and preview isolation.
+The tests do not generate terrain or touch live worlds. Performance comparisons
+are not run: this ports accounting rules, with no performance investigation or claim.
+
+Evidence: `python3 tools/check.py` selected only `rust:lantern-host`; formatting,
+locked offline package tests/doc tests and all-target Clippy with warnings denied
+passed (3/3 commands). Report: `performance-results/20261018-174843/report.md`.
+Commit message: `feat: add Rust resource ledger and storage accounting`.
+
+Remaining: slice 3 owns recipe/crop/fish evaluation, talents/skills/equipment effects,
+hall requirements and integrated grain-chain/progression acceptance. Equipment
+**capacity multipliers** are covered here; unlocks and throughput/worker evaluation
+are not. `Ledger` is authoritative only for its admitted offline facts; it is not
+an additional balance cache over R12 `BuildingWorld` or R11 `ModelWorld`/actor Cargo.
+Their integration, complete ordinary-save conversion/reconciliation (including old
+balance migrations), versioned durable ledger/history save/reload and HTTP exports
+remain in subsequent feature/integration stages, with persistence in R19 and playable
+host/browser integration in R20–R21. R14 retains trip IDs/lifecycle and market rules,
+R15–R18 production actors, and R23 complete W1–W6 acceptance. Python remains default.
 
 ## R14 — Logistics and markets
 

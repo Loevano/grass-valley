@@ -7,10 +7,16 @@ import sys
 ROOT = Path(__file__).resolve().parents[6]
 sys.path.insert(0, str(ROOT / 'server'))
 import progression as p
+import logistics
+import farming
 
 
 def outputs():
     catalog = dict(public=p.public_catalog(),
+                   rules=dict(storehouse_capacities=p.STOREHOUSE_CAPACITIES,
+                              max_acres=farming.MAX_ACRES,
+                              production_goods=logistics.PRODUCTION_GOODS,
+                              edible_order=list(p.EDIBLE)),
                    resources=list(dict.fromkeys(('coins', *(k for k in p.STORAGE_KEYS if k != 'food')))))
     cases = []
     for stock, costs in [({}, {}), ({}, {'wood': .5}),
@@ -29,7 +35,9 @@ def outputs():
             for key, cost in costs.items():
                 after[key] = max(0, p.quantity(town, key) - cost)
         cases.append(dict(stock=stock, costs=costs, affordable=affordable, after=after))
-    return {'src/resources/catalog.json': catalog, 'tests/fixtures/resources/python.json': cases}
+    from accounting import cases as accounting_cases
+    return {'src/resources/catalog.json': catalog, 'tests/fixtures/resources/python.json': cases,
+            'tests/fixtures/resources/accounting.json': accounting_cases()}
 
 
 if __name__ == '__main__':
