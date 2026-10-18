@@ -1,4 +1,4 @@
-//! Experimental producer input trips. The ledger alone owns cargo; Town owns
+//! Experimental producer and hauler trips. The ledger alone owns cargo; Town owns
 //! movement. Navigation remains disposable and must use the shared route service.
 //! DTO reload is offline admission, not a durable save or playable host adapter.
 use crate::{
@@ -84,11 +84,16 @@ impl Endpoint {
 enum Phase {
     Pickup,
     Delivery,
+    Returning,
 }
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 struct Trip {
     id: u64,
+    #[serde(default)]
+    operation: HaulOperation,
+    #[serde(default)]
+    return_to: Option<Endpoint>,
     source: Endpoint,
     destination: Endpoint,
     phase: Phase,
@@ -118,6 +123,37 @@ pub enum Outcome {
     WaitingStorage,
     Completed(Seconds),
     Cancelled,
+    /// Delivery completed; service the hauler's empty return leg with this time.
+    Delivered(Seconds),
+}
+
+/// Shared trip owner; the original producer API remains available as InputTrips.
+pub type LogisticsTrips = InputTrips;
+
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
+pub enum HaulOperation {
+    #[default]
+    Supply,
+    Collect,
+}
+impl HaulOperation {
+    fn cargo(self) -> CargoKind {
+        match self {
+            Self::Supply => CargoKind::Supply,
+            Self::Collect => CargoKind::Collect,
+        }
+    }
+}
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct HaulCandidate {
+    pub workplace: BuildingId,
+    pub operation: HaulOperation,
+}
+/// Current producer assignments in resident order, provided by the resident owner.
+pub struct ProducerAssignment<'a> {
+    pub building: &'a BuildingId,
+    pub worker: &'a Worker,
+    pub producer: &'a Producer,
 }
 
 /// Explicit production facts from the recipe/animal owners; this module does
@@ -166,6 +202,49 @@ fn ingredient_order(workplace: &Workplace) -> Result<Vec<ResourceKey>, Error> {
         .iter()
         .map(|v| Ok(ResourceKey::parse(v.as_str().ok_or(Error::InvalidSave)?)?))
         .collect()
+}
+fn carry_capacity(worker: &Worker, workplace: &Workplace) -> Result<f64, Error> {
+    let equipment = if matches!(worker.job(), "milling" | "baking") {
+        progression::equipment_multiplier(&workplace.kind, &workplace.equipment)
+    } else {
+        1.
+    };
+    let capacity = 50. * worker.efficiency("hauling")? * equipment;
+    if !capacity.is_finite() {
+        return Err(Error::InvalidSave);
+    }
+    Ok(capacity)
+}
+/// Preview a real collection batch without mutation. Owned worker pending output
+/// never enters the pickup pool. Each buffer retains its insertion order.
+fn collection_plan(
+    ledger: &Ledger,
+    source: &BuildingId,
+    destination: &BuildingId,
+    worker: &Worker,
+) -> Result<(Stock, Vec<ResourceKey>), Error> {
+    let source = ledger.store(source)?;
+    let mut target = ledger.store(destination)?.clone();
+    let mut remaining = carry_capacity(worker, &Workplace::new(&source.policy.kind))?;
+    let mut cargo = Stock::default();
+    let mut order = Vec::new();
+    for field in [&source.output, &source.stored]
+        .into_iter()
+        .chain(source.pending.get(&resources::PendingOwner::Orphan))
+    {
+        for (key, n) in field.ordered_entries() {
+            let take = n.get().min(target.local_room(key.as_str())?).min(remaining);
+            if take > 0. {
+                if !order.contains(key) {
+                    order.push(key.clone());
+                }
+                cargo.credit(key.clone(), q(take))?;
+                target.stored.credit(key.clone(), q(take))?;
+                remaining -= take;
+            }
+        }
+    }
+    Ok((cargo, order))
 }
 fn request_with_inputs(
     ledger: &Ledger,
@@ -362,6 +441,7 @@ impl InputTrips {
         let mut inputs = store.inputs.clone();
         for (actor, trip) in &self.trips {
             if trip.destination.id(town)? == *destination
+                && trip.operation == HaulOperation::Supply
                 && trip.phase == Phase::Delivery
                 && let Some(cargo) = ledger.held().get(actor)
             {
@@ -422,6 +502,8 @@ impl InputTrips {
         let id = self.next.checked_add(1).ok_or(Error::Exhausted)?;
         let trip = Trip {
             id,
+            operation: HaulOperation::Supply,
+            return_to: None,
             source: Endpoint::capture(town, source)?,
             destination: Endpoint::capture(town, destination)?,
             phase: Phase::Pickup,
@@ -449,8 +531,7 @@ impl InputTrips {
         self.trips.insert(actor.clone(), trip);
         Ok(id)
     }
-    /// Atomic rule/movement update. Segment admission comes from current shared
-    /// collision/road rules. None blocks movement without dropping carried goods.
+    /// Producer input collection; preserve the slice-1 API.
     #[allow(clippy::too_many_arguments)]
     pub fn advance(
         &mut self,
@@ -459,6 +540,201 @@ impl InputTrips {
         actor: &ActorId,
         worker: &mut Worker,
         producer: &Producer,
+        hall: &BuildingId,
+        elapsed: Seconds,
+        navigation: NavigationRevision,
+        segment: impl FnMut(Position, Position, Speed) -> Option<Speed>,
+    ) -> Result<Outcome, Error> {
+        let producer_worker = worker.clone();
+        self.advance_rules(
+            town,
+            ledger,
+            actor,
+            worker,
+            producer,
+            &producer_worker,
+            hall,
+            elapsed,
+            navigation,
+            segment,
+        )
+    }
+    /// Supplies use the first assigned producer's current recipe/skill facts;
+    /// carry speed, capacity, talents and training always belong to the hauler.
+    #[allow(clippy::too_many_arguments)]
+    pub fn advance_hauler(
+        &mut self,
+        town: &mut Town,
+        ledger: &mut Ledger,
+        actor: &ActorId,
+        worker: &mut Worker,
+        assignments: &[ProducerAssignment<'_>],
+        hall: &BuildingId,
+        elapsed: Seconds,
+        navigation: NavigationRevision,
+        segment: impl FnMut(Position, Position, Speed) -> Option<Speed>,
+    ) -> Result<Outcome, Error> {
+        if worker.job() != "hauling" {
+            return Err(Error::InvalidSave);
+        }
+        let Some(trip) = self.trips.get(actor) else {
+            return Ok(Outcome::Idle);
+        };
+        let workplace = if trip.operation == HaulOperation::Supply {
+            trip.destination.id(town)?
+        } else {
+            trip.source.id(town)?
+        };
+        // A removed endpoint cancels before any rule evaluation or lookup.
+        let fallback = Producer::recipe(Workplace::new(
+            ledger
+                .store(&workplace)
+                .map(|s| s.policy.kind.as_str())
+                .unwrap_or(""),
+        ));
+        let fallback_worker = worker.clone();
+        let (producer_worker, producer) = assignments
+            .iter()
+            .find(|a| *a.building == workplace)
+            .map(|a| (a.worker, a.producer))
+            .unwrap_or((&fallback_worker, &fallback));
+        self.advance_rules(
+            town,
+            ledger,
+            actor,
+            worker,
+            producer,
+            producer_worker,
+            hall,
+            elapsed,
+            navigation,
+            segment,
+        )
+    }
+    /// Both route legs must be admitted by the navigation owner before starting.
+    pub fn start_haul(
+        &mut self,
+        town: &mut Town,
+        ledger: &Ledger,
+        actor: &ActorId,
+        storage: &BuildingId,
+        candidate: &HaulCandidate,
+        navigation: NavigationRevision,
+    ) -> Result<u64, Error> {
+        if ledger.store(storage)?.policy.kind != "storehouse" {
+            return Err(Error::InvalidSave);
+        }
+        let (source, destination) = match candidate.operation {
+            HaulOperation::Supply => (storage, &candidate.workplace),
+            HaulOperation::Collect => (&candidate.workplace, storage),
+        };
+        let id = self.start(town, ledger, actor, source, destination, navigation)?;
+        let trip = self.trips.get_mut(actor).unwrap();
+        trip.operation = candidate.operation;
+        if candidate.operation == HaulOperation::Supply {
+            trip.return_to = Some(trip.source.clone());
+        }
+        Ok(id)
+    }
+    /// Python priority: supplies first, then fuller workplaces, then nearest;
+    /// stable ties preserve building order. Try reachable candidates in this order.
+    pub fn hauler_candidates(
+        &self,
+        town: &Town,
+        ledger: &Ledger,
+        storage: &BuildingId,
+        assignments: &[ProducerAssignment<'_>],
+    ) -> Result<Vec<HaulCandidate>, Error> {
+        let storage_store = ledger.store(storage)?;
+        if storage_store.policy.kind != "storehouse"
+            || storage_store.policy.construction
+            || town.building(storage)?.construction != ConstructionState::Complete
+        {
+            return Err(Error::InvalidSave);
+        }
+        let position = town.building(storage)?.location;
+        let inventory = storage_store.inventory()?;
+        let mut ranked = Vec::new();
+        for s in ledger.stores() {
+            if s.id == *storage
+                || s.policy.kind == "storehouse"
+                || s.policy.construction
+                || !town
+                    .building(&s.id)
+                    .is_ok_and(|b| b.construction == ConstructionState::Complete)
+            {
+                continue;
+            }
+            let mut supply = false;
+            for a in assignments.iter().filter(|a| *a.building == s.id) {
+                let request = self.request(town, ledger, &s.id, a.worker, a.producer)?;
+                if request
+                    .entries()
+                    .keys()
+                    .any(|k| inventory.quantity(k).get() > 0.)
+                {
+                    supply = true;
+                    break;
+                }
+            }
+            let available = s.inventory()?;
+            let orphan = s.pending.get(&resources::PendingOwner::Orphan);
+            let collect = available
+                .entries()
+                .iter()
+                .chain(orphan.into_iter().flat_map(|s| s.entries()))
+                .any(|(k, n)| {
+                    n.get() > 0. && storage_store.local_room(k.as_str()).is_ok_and(|r| r > 0.)
+                });
+            let buffered = sum(&available) + sum(&s.pending_stock()?);
+            let p = town.building(&s.id)?.location;
+            let distance = (i64::from(position.x) - i64::from(p.x)).abs()
+                + (i64::from(position.y) - i64::from(p.y)).abs();
+            for (enabled, operation) in [
+                (supply, HaulOperation::Supply),
+                (collect, HaulOperation::Collect),
+            ] {
+                if enabled {
+                    ranked.push((
+                        HaulCandidate {
+                            workplace: s.id.clone(),
+                            operation,
+                        },
+                        buffered,
+                        distance,
+                    ));
+                }
+            }
+        }
+        ranked.sort_by(|a, b| {
+            let priority = |c: &HaulCandidate| {
+                if c.operation == HaulOperation::Supply {
+                    0
+                } else {
+                    1
+                }
+            };
+            priority(&a.0)
+                .cmp(&priority(&b.0))
+                .then_with(|| b.1.total_cmp(&a.1))
+                .then_with(|| a.2.cmp(&b.2))
+        });
+        Ok(ranked
+            .into_iter()
+            .map(|(candidate, _, _)| candidate)
+            .collect())
+    }
+    /// Atomic rule/movement update. Segment admission comes from current shared
+    /// collision/road rules. None blocks movement without dropping carried goods.
+    #[allow(clippy::too_many_arguments)]
+    fn advance_rules(
+        &mut self,
+        town: &mut Town,
+        ledger: &mut Ledger,
+        actor: &ActorId,
+        worker: &mut Worker,
+        producer: &Producer,
+        producer_worker: &Worker,
         hall: &BuildingId,
         elapsed: Seconds,
         navigation: NavigationRevision,
@@ -472,6 +748,7 @@ impl InputTrips {
             actor,
             &mut person,
             producer,
+            producer_worker,
             hall,
             elapsed,
             navigation,
@@ -491,6 +768,7 @@ impl InputTrips {
         actor: &ActorId,
         worker: &mut Worker,
         producer: &Producer,
+        producer_worker: &Worker,
         hall: &BuildingId,
         elapsed: Seconds,
         navigation: NavigationRevision,
@@ -505,6 +783,8 @@ impl InputTrips {
             destination: trip.destination.id(town)?,
             phase: if trip.phase == Phase::Pickup {
                 TransportPhase::ToPickup
+            } else if trip.phase == Phase::Returning {
+                TransportPhase::Returning
             } else {
                 TransportPhase::ToDropoff
             },
@@ -512,6 +792,10 @@ impl InputTrips {
         if town.actor(actor)?.state().task != expected
             || !trip.source.available(town, ledger)
             || !trip.destination.available(town, ledger)
+            || trip
+                .return_to
+                .as_ref()
+                .is_some_and(|e| !e.available(town, ledger))
         {
             self.cancel(town, ledger, actor, hall)?;
             return Ok(Outcome::Cancelled);
@@ -521,7 +805,12 @@ impl InputTrips {
                 .ok_or(Error::InvalidSave)?;
         town.resume_travel(actor, navigation)?;
         let advance = town.advance_travel(actor, elapsed, 4096, |a, b| segment(a, b, speed))?;
-        let target = if trip.phase == Phase::Pickup {
+        let target = if trip.phase == Phase::Returning {
+            trip.return_to
+                .as_ref()
+                .ok_or(Error::InvalidSave)?
+                .id(town)?
+        } else if trip.phase == Phase::Pickup {
             trip.source.id(town)?
         } else {
             trip.destination.id(town)?
@@ -531,28 +820,47 @@ impl InputTrips {
             return Ok(Outcome::Travelling);
         }
         if trip.phase == Phase::Pickup {
-            let request =
-                self.request(town, ledger, &trip.destination.id(town)?, worker, producer)?;
-            let inventory = ledger.store(&trip.source.id(town)?)?.inventory()?;
-            let equipment = if matches!(worker.job(), "milling" | "baking") {
-                progression::equipment_multiplier(&workplace.kind, &workplace.equipment)
+            let (cargo, order) = if trip.operation == HaulOperation::Collect {
+                collection_plan(
+                    ledger,
+                    &trip.source.id(town)?,
+                    &trip.destination.id(town)?,
+                    worker,
+                )?
             } else {
-                1.
-            };
-            let mut room = 50. * worker.efficiency("hauling")? * equipment;
-            let mut cargo = Stock::default();
-            for k in &ingredient_order(workplace)? {
-                let n = request.quantity(k);
-                let take = n.get().min(inventory.quantity(k).get()).min(room);
-                if take > 0. {
-                    cargo.credit(k.clone(), q(take))?;
-                    room -= take;
+                let request = self.request(
+                    town,
+                    ledger,
+                    &trip.destination.id(town)?,
+                    producer_worker,
+                    producer,
+                )?;
+                let inventory = ledger.store(&trip.source.id(town)?)?.inventory()?;
+                let mut room = carry_capacity(worker, workplace)?;
+                let mut cargo = Stock::default();
+                let order = ingredient_order(workplace)?;
+                for k in &order {
+                    let take = request
+                        .quantity(k)
+                        .get()
+                        .min(inventory.quantity(k).get())
+                        .min(room);
+                    if take > 0. {
+                        cargo.credit(k.clone(), q(take))?;
+                        room -= take;
+                    }
                 }
-            }
+                (cargo, order)
+            };
             if sum(&cargo) > 0. {
-                ledger.pickup(actor, &trip.source.id(town)?, CargoKind::Supply, &cargo)?;
+                ledger.pickup(
+                    actor,
+                    &trip.source.id(town)?,
+                    trip.operation.cargo(),
+                    &cargo,
+                )?;
             }
-            self.trips.get_mut(actor).unwrap().cargo_order = ingredient_order(workplace)?
+            self.trips.get_mut(actor).unwrap().cargo_order = order
                 .iter()
                 .filter(|k| cargo.quantity(k).get() > 0.)
                 .map(|k| k.as_str().into())
@@ -573,7 +881,7 @@ impl InputTrips {
             )?;
             return Ok(Outcome::PickedUp(advance.remaining));
         }
-        if ledger.held().contains_key(actor) {
+        if trip.phase == Phase::Delivery && ledger.held().contains_key(actor) {
             let order: Vec<_> = trip
                 .cargo_order
                 .iter()
@@ -587,6 +895,21 @@ impl InputTrips {
             if ledger.held().contains_key(actor) {
                 return Ok(Outcome::WaitingStorage);
             }
+        }
+        if trip.phase == Phase::Delivery
+            && let Some(endpoint) = &trip.return_to
+        {
+            self.trips.get_mut(actor).unwrap().phase = Phase::Returning;
+            town.set_task(
+                actor,
+                Task::Transport {
+                    source: trip.source.id(town)?,
+                    destination: trip.destination.id(town)?,
+                    phase: TransportPhase::Returning,
+                },
+            )?;
+            town.request_route(actor, Destination::Building(endpoint.id(town)?), navigation)?;
+            return Ok(Outcome::Delivered(advance.remaining));
         }
         self.trips.remove(actor);
         town.set_task(actor, Task::Idle)?;
@@ -631,7 +954,7 @@ impl InputTrips {
     }
     pub fn encode(&self, town: &Town, ledger: &Ledger) -> Result<String, Error> {
         serde_json::to_string(&Saved {
-            version: 1,
+            version: 2,
             world: town.owner().world.as_str().into(),
             town: town.owner().town.as_str().into(),
             next: self.next,
@@ -663,7 +986,7 @@ impl InputTrips {
     /// Routes are rebuilt by Town::resume_travel, never serialized here.
     pub fn decode(json: &str, town: &Town, ledger: &Ledger) -> Result<Self, Error> {
         let saved: Saved = serde_json::from_str(json).map_err(|_| Error::InvalidSave)?;
-        if saved.version != 1
+        if !matches!(saved.version, 1 | 2)
             || saved.world != town.owner().world.as_str()
             || saved.town != town.owner().town.as_str()
         {
@@ -686,6 +1009,8 @@ impl InputTrips {
                 destination,
                 phase: if trip.phase == Phase::Pickup {
                     TransportPhase::ToPickup
+                } else if trip.phase == Phase::Returning {
+                    TransportPhase::Returning
                 } else {
                     TransportPhase::ToDropoff
                 },
@@ -710,6 +1035,14 @@ impl InputTrips {
                 || cargo.keys().any(|k| !keys.contains(k))
                 || (trip.phase == Phase::Pickup && !keys.is_empty())
                 || cargo != actual
+                || (saved.version == 1
+                    && (trip.operation != HaulOperation::Supply
+                        || trip.return_to.is_some()
+                        || trip.phase == Phase::Returning))
+                || (trip.operation == HaulOperation::Collect && trip.return_to.is_some())
+                || trip.return_to.as_ref().is_some_and(|e| e != &trip.source)
+                || (trip.phase == Phase::Returning
+                    && (trip.return_to.is_none() || ledger.held().contains_key(&actor)))
                 || trip.source.id == trip.destination.id
                 || trip.id == 0
                 || trip.id > result.next
@@ -722,7 +1055,7 @@ impl InputTrips {
                 || ledger
                     .held()
                     .get(&actor)
-                    .is_some_and(|c| c.kind != CargoKind::Supply || c.source != source)
+                    .is_some_and(|c| c.kind != trip.operation.cargo() || c.source != source)
                 || result.trips.insert(actor, trip).is_some()
             {
                 return Err(Error::InvalidSave);

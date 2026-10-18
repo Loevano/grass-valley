@@ -1,0 +1,777 @@
+[
+  {
+    "enabled": {
+      "food": true,
+      "planks": true,
+      "wood": true
+    },
+    "hauling": 0,
+    "held": [],
+    "initial": {
+      "destination": [],
+      "orphan": [],
+      "output": [
+        [
+          "wood",
+          40
+        ]
+      ],
+      "owned": [],
+      "stored": [
+        [
+          "wood",
+          40
+        ]
+      ]
+    },
+    "kind": "woodcutter",
+    "moved": [
+      [
+        "wood",
+        50.0
+      ]
+    ],
+    "name": "buffers",
+    "operation": "collect",
+    "picked": [
+      [
+        "wood",
+        50.0
+      ]
+    ],
+    "planned": [
+      [
+        "wood",
+        50.0
+      ]
+    ],
+    "talent": 0
+  },
+  {
+    "enabled": {
+      "food": true,
+      "planks": true,
+      "wood": true
+    },
+    "hauling": 0,
+    "held": [],
+    "initial": {
+      "destination": [],
+      "orphan": [],
+      "output": [
+        [
+          "planks",
+          35
+        ],
+        [
+          "wood",
+          25
+        ]
+      ],
+      "owned": [],
+      "stored": []
+    },
+    "kind": "woodcutter",
+    "moved": [
+      [
+        "planks",
+        35
+      ],
+      [
+        "wood",
+        15.0
+      ]
+    ],
+    "name": "resource_order",
+    "operation": "collect",
+    "picked": [
+      [
+        "planks",
+        35
+      ],
+      [
+        "wood",
+        15.0
+      ]
+    ],
+    "planned": [
+      [
+        "planks",
+        35
+      ],
+      [
+        "wood",
+        15.0
+      ]
+    ],
+    "talent": 0
+  },
+  {
+    "enabled": {
+      "food": true,
+      "planks": true,
+      "wood": true
+    },
+    "hauling": 0,
+    "held": [],
+    "initial": {
+      "destination": [
+        [
+          "eggs",
+          47
+        ]
+      ],
+      "orphan": [],
+      "output": [
+        [
+          "bread",
+          2
+        ],
+        [
+          "eggs",
+          4
+        ],
+        [
+          "wood",
+          40
+        ]
+      ],
+      "owned": [],
+      "stored": []
+    },
+    "kind": "woodcutter",
+    "moved": [
+      [
+        "bread",
+        2
+      ],
+      [
+        "eggs",
+        4
+      ],
+      [
+        "wood",
+        40
+      ]
+    ],
+    "name": "mixed_food",
+    "operation": "collect",
+    "picked": [
+      [
+        "bread",
+        2
+      ],
+      [
+        "eggs",
+        4
+      ],
+      [
+        "wood",
+        40
+      ]
+    ],
+    "planned": [
+      [
+        "bread",
+        2
+      ],
+      [
+        "eggs",
+        4
+      ],
+      [
+        "wood",
+        40
+      ]
+    ],
+    "talent": 0
+  },
+  {
+    "enabled": {
+      "food": true,
+      "planks": true,
+      "wood": true
+    },
+    "hauling": 0,
+    "held": [],
+    "initial": {
+      "destination": [],
+      "orphan": [
+        [
+          "wood",
+          9
+        ]
+      ],
+      "output": [
+        [
+          "wood",
+          5
+        ]
+      ],
+      "owned": [
+        [
+          "wood",
+          70
+        ]
+      ],
+      "stored": [
+        [
+          "wood",
+          7
+        ]
+      ]
+    },
+    "kind": "woodcutter",
+    "moved": [
+      [
+        "wood",
+        21
+      ]
+    ],
+    "name": "orphan",
+    "operation": "collect",
+    "picked": [
+      [
+        "wood",
+        21
+      ]
+    ],
+    "planned": [
+      [
+        "wood",
+        21
+      ]
+    ],
+    "talent": 0
+  },
+  {
+    "enabled": {
+      "food": true,
+      "planks": true,
+      "wood": true
+    },
+    "hauling": 20,
+    "held": [],
+    "initial": {
+      "destination": [],
+      "orphan": [],
+      "output": [
+        [
+          "wood",
+          40
+        ]
+      ],
+      "owned": [],
+      "stored": [
+        [
+          "wood",
+          40
+        ]
+      ]
+    },
+    "kind": "woodcutter",
+    "moved": [
+      [
+        "wood",
+        80
+      ]
+    ],
+    "name": "tier20",
+    "operation": "collect",
+    "picked": [
+      [
+        "wood",
+        80
+      ]
+    ],
+    "planned": [
+      [
+        "wood",
+        80
+      ]
+    ],
+    "talent": 0
+  },
+  {
+    "enabled": {
+      "food": true,
+      "planks": true,
+      "wood": true
+    },
+    "hauling": 19.999,
+    "held": [],
+    "initial": {
+      "destination": [],
+      "orphan": [],
+      "output": [
+        [
+          "wood",
+          40
+        ]
+      ],
+      "owned": [],
+      "stored": [
+        [
+          "wood",
+          40
+        ]
+      ]
+    },
+    "kind": "woodcutter",
+    "moved": [
+      [
+        "wood",
+        50.0
+      ]
+    ],
+    "name": "below20",
+    "operation": "collect",
+    "picked": [
+      [
+        "wood",
+        50.0
+      ]
+    ],
+    "planned": [
+      [
+        "wood",
+        50.0
+      ]
+    ],
+    "talent": 0
+  },
+  {
+    "enabled": {
+      "food": true,
+      "planks": true,
+      "wood": true
+    },
+    "hauling": 0,
+    "held": [],
+    "initial": {
+      "destination": [],
+      "orphan": [],
+      "output": [
+        [
+          "wood",
+          80
+        ]
+      ],
+      "owned": [],
+      "stored": []
+    },
+    "kind": "woodcutter",
+    "moved": [
+      [
+        "wood",
+        37.5
+      ]
+    ],
+    "name": "talent",
+    "operation": "collect",
+    "picked": [
+      [
+        "wood",
+        37.5
+      ]
+    ],
+    "planned": [
+      [
+        "wood",
+        37.5
+      ]
+    ],
+    "talent": -1
+  },
+  {
+    "enabled": {},
+    "hauling": 0,
+    "held": [],
+    "initial": {
+      "destination": [],
+      "orphan": [],
+      "output": [
+        [
+          "wood",
+          20
+        ]
+      ],
+      "owned": [],
+      "stored": []
+    },
+    "kind": "woodcutter",
+    "moved": [],
+    "name": "disabled",
+    "operation": "collect",
+    "picked": [],
+    "planned": [],
+    "talent": 0
+  },
+  {
+    "enabled": {
+      "food": true,
+      "planks": true,
+      "wood": true
+    },
+    "hauling": 0,
+    "held": [],
+    "initial": {
+      "destination": [
+        [
+          "wood",
+          100
+        ],
+        [
+          "wheat",
+          100
+        ],
+        [
+          "flour",
+          100
+        ],
+        [
+          "planks",
+          100
+        ],
+        [
+          "fish",
+          100
+        ],
+        [
+          "trout",
+          100
+        ],
+        [
+          "salmon",
+          100
+        ],
+        [
+          "sturgeon",
+          100
+        ]
+      ],
+      "orphan": [],
+      "output": [],
+      "owned": [],
+      "stored": []
+    },
+    "kind": "sawpit",
+    "moved": [
+      [
+        "wood",
+        37.5
+      ]
+    ],
+    "name": "supply_sawpit",
+    "operation": "supply",
+    "picked": [
+      [
+        "wood",
+        37.5
+      ]
+    ],
+    "planned": [
+      [
+        "wood",
+        37.5
+      ]
+    ],
+    "talent": -1
+  },
+  {
+    "enabled": {
+      "food": true,
+      "planks": true,
+      "wood": true
+    },
+    "hauling": 0,
+    "held": [],
+    "initial": {
+      "destination": [
+        [
+          "wood",
+          100
+        ],
+        [
+          "wheat",
+          100
+        ],
+        [
+          "flour",
+          100
+        ],
+        [
+          "planks",
+          100
+        ],
+        [
+          "fish",
+          100
+        ],
+        [
+          "trout",
+          100
+        ],
+        [
+          "salmon",
+          100
+        ],
+        [
+          "sturgeon",
+          100
+        ]
+      ],
+      "orphan": [],
+      "output": [],
+      "owned": [],
+      "stored": []
+    },
+    "kind": "mill",
+    "moved": [
+      [
+        "wheat",
+        37.5
+      ]
+    ],
+    "name": "supply_mill",
+    "operation": "supply",
+    "picked": [
+      [
+        "wheat",
+        37.5
+      ]
+    ],
+    "planned": [
+      [
+        "wheat",
+        37.5
+      ]
+    ],
+    "talent": -1
+  },
+  {
+    "enabled": {
+      "food": true,
+      "planks": true,
+      "wood": true
+    },
+    "hauling": 0,
+    "held": [],
+    "initial": {
+      "destination": [
+        [
+          "wood",
+          100
+        ],
+        [
+          "wheat",
+          100
+        ],
+        [
+          "flour",
+          100
+        ],
+        [
+          "planks",
+          100
+        ],
+        [
+          "fish",
+          100
+        ],
+        [
+          "trout",
+          100
+        ],
+        [
+          "salmon",
+          100
+        ],
+        [
+          "sturgeon",
+          100
+        ]
+      ],
+      "orphan": [],
+      "output": [],
+      "owned": [],
+      "stored": []
+    },
+    "kind": "bakery",
+    "moved": [
+      [
+        "flour",
+        37.5
+      ]
+    ],
+    "name": "supply_bakery",
+    "operation": "supply",
+    "picked": [
+      [
+        "flour",
+        37.5
+      ]
+    ],
+    "planned": [
+      [
+        "flour",
+        37.5
+      ]
+    ],
+    "talent": -1
+  },
+  {
+    "enabled": {
+      "food": true,
+      "planks": true,
+      "wood": true
+    },
+    "hauling": 0,
+    "held": [],
+    "initial": {
+      "destination": [
+        [
+          "wood",
+          100
+        ],
+        [
+          "wheat",
+          100
+        ],
+        [
+          "flour",
+          100
+        ],
+        [
+          "planks",
+          100
+        ],
+        [
+          "fish",
+          100
+        ],
+        [
+          "trout",
+          100
+        ],
+        [
+          "salmon",
+          100
+        ],
+        [
+          "sturgeon",
+          100
+        ]
+      ],
+      "orphan": [],
+      "output": [],
+      "owned": [],
+      "stored": []
+    },
+    "kind": "workshop",
+    "moved": [
+      [
+        "planks",
+        33.333333333333336
+      ],
+      [
+        "wood",
+        4.166666666666664
+      ]
+    ],
+    "name": "supply_workshop",
+    "operation": "supply",
+    "picked": [
+      [
+        "planks",
+        33.333333333333336
+      ],
+      [
+        "wood",
+        4.166666666666664
+      ]
+    ],
+    "planned": [
+      [
+        "planks",
+        33.333333333333336
+      ],
+      [
+        "wood",
+        4.166666666666664
+      ]
+    ],
+    "talent": -1
+  },
+  {
+    "enabled": {
+      "food": true,
+      "planks": true,
+      "wood": true
+    },
+    "hauling": 0,
+    "held": [],
+    "initial": {
+      "destination": [
+        [
+          "wood",
+          100
+        ],
+        [
+          "wheat",
+          100
+        ],
+        [
+          "flour",
+          100
+        ],
+        [
+          "planks",
+          100
+        ],
+        [
+          "fish",
+          100
+        ],
+        [
+          "trout",
+          100
+        ],
+        [
+          "salmon",
+          100
+        ],
+        [
+          "sturgeon",
+          100
+        ]
+      ],
+      "orphan": [],
+      "output": [],
+      "owned": [],
+      "stored": []
+    },
+    "kind": "smokehouse",
+    "moved": [
+      [
+        "fish",
+        37.5
+      ]
+    ],
+    "name": "supply_smokehouse",
+    "operation": "supply",
+    "picked": [
+      [
+        "fish",
+        37.5
+      ]
+    ],
+    "planned": [
+      [
+        "fish",
+        37.5
+      ]
+    ],
+    "talent": -1
+  }
+]

@@ -7,9 +7,10 @@ code slices are implemented at the experimental model boundary. R12 slices 1–3
 including upgrades, linked groups, helpers and offline reload.
 R13 slices 1–3 implement reviewed catalogs, fractional quantities, a single-owner
 resource ledger and recipe/personal progression/equipment/hall rule evaluation at
-the experimental offline boundary. R14 slice 1 adds experimental producer input
-trips over movement and accounting. Remaining logistics, production actors and
-playable integration remain in R14–R21; complete W1–W6 acceptance remains R23.
+the experimental offline boundary. R14 slices 1–2 add experimental producer input
+and hauler output/supply trips over movement and accounting. Remaining markets,
+production actors and playable integration remain in R14–R21; complete W1–W6
+acceptance remains R23.
 Integrated W2/W3 movement/accounting acceptance remains open. R08 spatial
 rules and founder movement is complete as an experimental private-copy foundation. R07 includes saved-first terrain versions 1–7,
 nonchunked maps, authored starter/town sites, ordinary/swamp metadata and overlays,
@@ -242,7 +243,7 @@ only after work is performed. Keep unfinished stages visible in the roadmap.
 | R11 | Persistent worker movement and playback | R10 | Slices 1–3 implemented at experimental model boundary; integrated W2/W3 movement/accounting acceptance remains open |
 | R12 | Construction and building operations | R11 | Slices 1–3 implemented at explicit synthetic-model boundary; full economy/resident rules, durable/public host integration and release acceptance remain in R13–R23; completion boundary below |
 | R13 | Resource ledger, storage, and progression rules | R12 | Slices 1–3 implemented at offline model boundary: reviewed catalogs, ledger/storage/reservations/caps/flows and progression rules; actor/save/HTTP integration and full W1–W6 acceptance remain R14–R23 |
-| R14 | Hauling, delivery, and merchant trips | R13 | Slice 1 implemented at the experimental offline boundary: producer input trips; slices 2–3 (haulers and merchants) remain |
+| R14 | Hauling, delivery, and merchant trips | R13 | Slices 1–2 implemented at the experimental offline boundary: producer input and hauler output/supply trips; slice 3 (merchants) remains |
 | R15 | Gathering and processing professions | R14 | Not started |
 | R16 | Farming and orchards | R15 | Not started |
 | R17 | Fishing, boats, animals, and horses | R16 | Not started |
@@ -3107,8 +3108,8 @@ Update coverage/progress, run affected checks, and commit the completed slice.
 ### R14 slice 1 — Producer input collection
 
 Implemented in `lantern-host::logistics` over R11 `Town` movement and the R13
-single-owner `Ledger`. Python remains the playable default. This completes only
-slice 1; the next slice is hauler output/supply trips. Merchant planning, purchase
+single-owner `Ledger`. Python remains the playable default. This records
+slice 1; hauler output/supply trips follow in slice 2 below. Merchant planning, purchase
 and sale execution, thresholds and trade totals remain slice 3.
 
 - Trip IDs have a saved monotonic high-water mark. Endpoint snapshots retain stable
@@ -3164,6 +3165,63 @@ warnings denied pass (3/3 commands). Fixture drift verification also passes.
 Final report: `performance-results/20261018-191324/report.md`.
 Commit message:
 `feat: port Rust producer input collection trips`.
+
+### R14 slice 2 — Hauler output and supply trips
+
+Implemented at the same experimental offline boundary in `lantern-host::logistics`.
+`LogisticsTrips` names the shared trip owner; the slice-1 `InputTrips` API and v1
+producer trip JSON remain supported. The next unfinished slice is R14 slice 3:
+merchant sale/purchase rules and merchant cancellation/recovery.
+
+- Candidate ranking preserves Python's supplies-first, descending-buffered-stock,
+  then Manhattan-distance order with stable building-order ties. Completed sources
+  exclude the hauler's own storage and other storehouses. Explicit current producer
+  assignments supply recipe/qualification/feed facts; pickup uses the first
+  assigned producer, while capacity, talent, speed and practice belong to the hauler.
+- Collection re-evaluates actual output, stored goods and orphan output at pickup,
+  in that field order, with current destination filters, per-resource/food space
+  and shared carry capacity. Worker-owned pending output is excluded. `Stock`
+  retains insertion order alongside canonical resource lookup; physical ledger
+  transfers preserve that order and zero transfers cannot preinsert resource keys.
+- Hauler supply approaches storage before pickup, delivers at the workplace, then
+  travels empty back to storage. The v2 trip DTO records operation, physical
+  source/destination, pickup/delivery/return phase, return endpoint, cargo order,
+  actual cargo, once-only training and the shared ID high-water mark. Unused pickup,
+  delivery and completion time is returned to the scheduler for subsequent legs.
+- Both operations share source/hall cancellation and atomic movement/accounting
+  with producer trips. Blocked/full/disabled destinations retain actual cargo;
+  partial deliveries train once. Relocation, deletion, upgrades and reassignment
+  restore only undelivered cargo, and return-leg interruptions never refund already
+  reserved inputs. Carried collection still counts toward production caps; supply
+  cargo contributes to the same producer input reservations. Transfers do not
+  create production, resource/trade activity or coins.
+
+Evidence: `tests/hauler_trips.rs` contains 12 focused tests with conservation and
+unchanged activity assertions across travel, competing pickups, both destination
+capacity paths, filters, partial cancellation, all 16 operation/endpoint/move-or-
+delete/before-or-after-pickup combinations, source upgrades, return interruptions,
+reassignment/reload, v1 admission/v2 rejection cases and stable candidate ranking.
+Thirteen frozen real-Python cases compare pickup order, quantities and deposits
+for mixed physical buffers, food, orphan/owned pending output, skill/talent limits
+and five recipe-supply families. Verify with
+`python3 rust/crates/lantern-host/tests/fixtures/logistics/haulers.py --check`;
+the existing producer fixture verification remains applicable.
+
+Navigation admission/pump ownership and resident/production scheduling remain
+explicit caller responsibilities at this boundary. Reload re-admits trip JSON
+alongside independently restored model, physical ledger and personal facts;
+R19 retains durable, generation-consistent persistence of every owner and buffer
+order. Python stays the playable default. Merchant thresholds, purchases, sales,
+trade totals and their transaction/recovery tests remain R14 slice 3; production
+and animal clocks remain R15–R18, live integration R20–R21 and integrated acceptance
+R23. Performance comparisons were not run: this is a behavior port with no
+performance investigation or performance claim.
+
+Validation: `python3 tools/check.py` selected only `rust:lantern-host`;
+formatting, locked offline package tests/doc tests and all-target Clippy with
+warnings denied passed (3/3 commands). Both producer and hauler Python fixture
+verification passed. Report: `performance-results/20261018-194342/report.md`.
+Commit message: `feat: port Rust hauler output and supply trips`.
 
 ## R15 — Gathering and processing
 

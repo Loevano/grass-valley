@@ -84,21 +84,33 @@ impl ResourceKey {
 }
 
 #[derive(Clone, Debug, Default, PartialEq)]
-pub struct Stock(BTreeMap<ResourceKey, Quantity>);
+pub struct Stock(BTreeMap<ResourceKey, Quantity>, Vec<ResourceKey>);
 impl Stock {
     pub fn from_entries(
         entries: impl IntoIterator<Item = (ResourceKey, Quantity)>,
     ) -> Result<Self, ResourceError> {
         let mut stock = Self::default();
         for (key, amount) in entries {
-            if stock.0.insert(key, amount).is_some() {
+            if stock.0.contains_key(&key) {
                 return Err(ResourceError::DuplicateResource);
             }
+            stock.credit(key, amount)?;
         }
         Ok(stock)
     }
     pub fn entries(&self) -> &BTreeMap<ResourceKey, Quantity> {
         &self.0
+    }
+    /// Physical buffer insertion order; sorted entries remain available for
+    /// canonical overviews and resource-key lookup.
+    pub fn ordered_entries(&self) -> impl Iterator<Item = (&ResourceKey, &Quantity)> {
+        self.1.iter().map(|key| (key, &self.0[key]))
+    }
+    fn put(&mut self, key: ResourceKey, amount: Quantity) {
+        if !self.0.contains_key(&key) {
+            self.1.push(key.clone());
+        }
+        self.0.insert(key, amount);
     }
     pub fn quantity(&self, key: &ResourceKey) -> Quantity {
         self.0
@@ -120,8 +132,7 @@ impl Stock {
         }
         for (key, cost) in &costs.0 {
             let remainder = (self.quantity(key).get() - cost.get()).max(0.0);
-            self.0
-                .insert(key.clone(), Quantity::new(remainder).unwrap());
+            self.put(key.clone(), Quantity::new(remainder).unwrap());
         }
         Ok(())
     }
@@ -129,7 +140,7 @@ impl Stock {
     pub fn credit(&mut self, key: ResourceKey, amount: Quantity) -> Result<(), ResourceError> {
         let sum = Quantity::new(self.quantity(&key).get() + amount.get())
             .map_err(|_| ResourceError::Overflow)?;
-        self.0.insert(key, sum);
+        self.put(key, sum);
         Ok(())
     }
     /// Transfer actual available items. No affordability epsilon may create cargo.
@@ -147,8 +158,8 @@ impl Stock {
         let received = Quantity::new(destination.quantity(key).get() + amount.get())
             .map_err(|_| ResourceError::Overflow)?;
         let remaining = Quantity::new(available - amount.get()).unwrap();
-        self.0.insert(key.clone(), remaining);
-        destination.0.insert(key.clone(), received);
+        self.put(key.clone(), remaining);
+        destination.put(key.clone(), received);
         Ok(())
     }
 }

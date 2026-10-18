@@ -485,7 +485,7 @@ impl Ledger {
             if total + sum(goods) > l.store(destination)?.policy.input_size() + 1e-9 {
                 return Err(Error::Capacity);
             }
-            for (key, n) in goods.entries() {
+            for (key, n) in goods.ordered_entries() {
                 take_from(l.store_mut(source)?, key, *n, false)?;
                 l.store_mut(destination)?.inputs.credit(key.clone(), *n)?;
             }
@@ -497,7 +497,7 @@ impl Ledger {
         self.apply(|l| {
             let s = l.store_mut(id)?;
             strict_afford(&s.inputs, goods)?;
-            for (k, n) in goods.entries() {
+            for (k, n) in goods.ordered_entries() {
                 s.inputs.transfer_to(&mut s.output, k, *n)?;
             }
             Ok(())
@@ -530,7 +530,7 @@ impl Ledger {
             let s = l.store(id)?;
             let inventory = s.inventory()?;
             let mut pending = s.pending_stock()?;
-            for (k, n) in outputs.entries() {
+            for (k, n) in outputs.ordered_entries() {
                 if n.get()
                     > s.policy
                         .room(k.as_str(), &inventory, &pending, s.provisions.get())
@@ -557,10 +557,10 @@ impl Ledger {
             } else {
                 &mut s.output
             };
-            for (k, n) in outputs.entries() {
+            for (k, n) in outputs.ordered_entries() {
                 target.credit(k.clone(), *n)?;
             }
-            for (k, n) in outputs.entries() {
+            for (k, n) in outputs.ordered_entries() {
                 l.produced.credit(k.clone(), *n)?;
                 l.activity.record(k, *n, Direction::In)?;
             }
@@ -575,7 +575,7 @@ impl Ledger {
                 .pending
                 .remove(&PendingOwner::Worker(actor.clone()))
                 .ok_or(Error::MissingPending)?;
-            for (k, n) in pending.entries() {
+            for (k, n) in pending.ordered_entries() {
                 s.output.credit(k.clone(), *n)?;
             }
             Ok(())
@@ -590,7 +590,7 @@ impl Ledger {
                 .remove(&PendingOwner::Worker(actor.clone()))
                 .ok_or(Error::MissingPending)?;
             let orphan = s.pending.entry(PendingOwner::Orphan).or_default();
-            for (k, n) in pending.entries() {
+            for (k, n) in pending.ordered_entries() {
                 orphan.credit(k.clone(), *n)?;
             }
             Ok(())
@@ -611,7 +611,7 @@ impl Ledger {
                 return Err(Error::CargoExists);
             }
             l.store(source)?.complete()?;
-            for (k, n) in goods.entries() {
+            for (k, n) in goods.ordered_entries() {
                 take_from(l.store_mut(source)?, k, *n, kind == CargoKind::Collect)?;
             }
             l.held.insert(
@@ -669,6 +669,9 @@ impl Ledger {
                     (s.policy.input_size() - sum(&s.inputs)).max(0.0)
                 };
                 let take = q(n.get().min(room));
+                if take.get() == 0.0 {
+                    continue;
+                }
                 let target = if cargo.kind == CargoKind::Collect {
                     &mut s.stored
                 } else {
@@ -700,7 +703,7 @@ impl Ledger {
                 fallback.clone()
             };
             let s = l.store_mut(&destination)?;
-            for (k, n) in cargo.goods.entries() {
+            for (k, n) in cargo.goods.ordered_entries().filter(|(_, n)| n.get() > 0.0) {
                 s.stored.credit(k.clone(), *n)?;
             }
             Ok(())
@@ -717,7 +720,7 @@ impl Ledger {
             l.actor(actor)?;
             l.store(destination)?.complete()?;
             let cargo = l.held.remove(actor).ok_or(Error::MissingCargo)?;
-            for (key, n) in cargo.goods.entries() {
+            for (key, n) in cargo.goods.ordered_entries().filter(|(_, n)| n.get() > 0.0) {
                 l.store_mut(destination)?.stored.credit(key.clone(), *n)?;
             }
             Ok(())
@@ -776,12 +779,16 @@ fn take_from(
     let mut remaining = amount.get();
     for stock in [&mut store.output, &mut store.stored] {
         let take = remaining.min(stock.quantity(key).get());
-        stock.spend(&Stock::from_entries([(key.clone(), q(take))])?)?;
+        if take > 0.0 {
+            stock.spend(&Stock::from_entries([(key.clone(), q(take))])?)?;
+        }
         remaining -= take;
     }
     if orphan && let Some(stock) = store.pending.get_mut(&PendingOwner::Orphan) {
         let take = remaining.min(stock.quantity(key).get());
-        stock.spend(&Stock::from_entries([(key.clone(), q(take))])?)?;
+        if take > 0.0 {
+            stock.spend(&Stock::from_entries([(key.clone(), q(take))])?)?;
+        }
         remaining -= take;
     }
     if remaining > 0.0 {
