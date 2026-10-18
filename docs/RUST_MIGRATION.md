@@ -10,8 +10,9 @@ resource ledger and recipe/personal progression/equipment/hall rule evaluation a
 the experimental offline boundary. R14 slices 1–3 implement producer, hauler and
 merchant trips plus market execution over movement and accounting. R15 slices 1–3 implement offline woodcutters/resource claims and all processor
 recipe/workshop actors. R16 slices 1–3 implement shared offline field cycles, claims, water rounds,
-harvest returns, orchards, crop edits, linked relocation and owner reload. Remaining fishing/livestock/resident actors and
-playable integration remain in R16–R21; complete W1–W6 acceptance remains R23.
+harvest returns, orchards, crop edits, linked relocation and owner reload. R17 slice 1
+implements saved piers, land-fisher movement/cargo and founder land fishing offline.
+Remaining boat/livestock/horse/resident actors and playable integration remain in R17–R21; complete W1–W6 acceptance remains R23.
 Integrated W2/W3 movement/accounting acceptance remains open. R08 spatial
 rules and founder movement is complete as an experimental private-copy foundation. R07 includes saved-first terrain versions 1–7,
 nonchunked maps, authored starter/town sites, ordinary/swamp metadata and overlays,
@@ -247,7 +248,7 @@ only after work is performed. Keep unfinished stages visible in the roadmap.
 | R14 | Hauling, delivery, and merchant trips | R13 | Slices 1–3 implemented at the experimental offline boundary: producer/hauler/merchant trips, thresholds, purchases, sales and recovery; integrated production, durable saves and playable host remain R15–R23 |
 | R15 | Gathering and processing professions | R14 | All three slices implemented at the experimental offline boundary: woodcutters/claims, all 13 processor families/32 recipes, ordered workshop requests and recovery; durable/live integration and integrated acceptance remain R19–R23 |
 | R16 | Farming and orchards | R15 | All three code slices implemented offline: fields/claims/passes, water rounds, harvest returns, orchards/restock, crop edits, linked relocation and validated owner reload; integrated legacy actor/save/host adapters and acceptance remain R19–23 |
-| R17 | Fishing, boats, animals, and horses | R16 | Not started |
+| R17 | Fishing, boats, animals, and horses | R16 | Slice 1 implemented offline: saved piers, land-fisher trips/catches and founder land activity; slices 2–4 (boats/crews, livestock/butchery, horses/riding) remain |
 | R18 | Residents, villages, trade, and adventures | R17 | Not started |
 | R19 | Durable Rust saves and recovery | R18 | Not started |
 | R20 | HTTP, accounts, and world lifecycle | R19 | Not started |
@@ -3588,7 +3589,7 @@ and commit the completed slice.
 
 `lantern-host::farming` implements an experimental offline field owner over R11
 movement and the R13 ledger. This completes slice 1 only. Python remains the
-playable default; slices 2–3 are recorded below; R17 slice 1 is the next unfinished migration slice.
+playable default; slices 2–3 and R17 slice 1 are recorded below; R17 slice 2 is next.
 
 - Fields use stable building/farm IDs, selected and sown crops, shared work and
   growth clocks, cycle numbers and optional remaining harvest yield. Admission
@@ -3756,7 +3757,7 @@ Commit message: `feat: port Rust farming water and harvest trips`.
 This completes all three R16 code slices at the experimental offline owner boundary.
 `orchards.rs`, `orchards/save.rs`, `farming/lifecycle.rs` and `farming/save.rs` own
 fruit trees, field edits, relocation reconciliation and versioned reload. Python
-remains the playable default. The next migration slice is R17 slice 1.
+remains the playable default. R17 slice 1 is recorded below; its next unfinished slice is boats/crews (slice 2).
 
 - Orchard trees advance through sapling (60s), blossom (30s), fruit (60s), ripe,
   harvested (30s), blossom and fruit. Growth continues independently of workers,
@@ -3864,6 +3865,81 @@ growth, manual butchery, names, and riding rules as applicable. Validate interru
 trips, reload, capacity, and exact-once rewards. Update coverage/progress, run the
 affected checks, and commit the completed slice.
 ```
+
+### R17 slice 1 — Piers and land fishing
+
+Implemented behind the experimental offline owner boundary. Python remains the
+playable default. R17 remains in progress; slice 2 (boats, crews, species/cargo and
+return trips) is next. Barns/manual butchery and horses/riding remain slices 3–4.
+
+- `fishing::Fishers` owns stable actor/hut references, map-order live-first source
+  selection within `2 + hut level`, saved cardinal piers of at most three steps,
+  and outbound/work/return/deposit clocks over R11 movement. Piers use private
+  access exemptions, honor obstacles, fences, terrain and bounds, and are retained
+  until invalidated. Without a usable pier, queries target a cardinal bank.
+  Relocating a hut and reconciling its assignment preserves actor position and
+  pending cargo, rebuilds its deck and returns goods to the same stable workplace.
+- Movement and catch batches deliberately remain separate, matching Python land
+  fishing: 3.2-second casting cycles and 0.65-second unloading do not determine
+  the three-second production cadence. Confirmed land travel can still catch;
+  pending/blocked routes cannot. The caller admits each batch after movement and
+  logistics. Persistent monotonic batch IDs prevent duplicate catch/supply/practice
+  commits, including after reload, cancellation and reassignment.
+- Villagers retain 9/10 catch chance, generic `fish` output, hut/tool/net bonuses,
+  fishing efficiency and practice even on missed catches. Caps, full buffers and
+  shared pending stock constrain production. Failed catches consume supply as
+  Python does. Pending output belongs to the R13 ledger until a confirmed return
+  and timed drop-off; cancellation orphans it once and replacements adopt it
+  without minting rewards. Errors roll back goods, supply, history and practice.
+- Admitted `Waters` facts preserve connected-body minimum supply, including water
+  beyond the worker's range. The shared landscape owner must commit consumed
+  supply with the ledger; R07 alone renews it. Cardinal bank depths and the
+  nearest-bank/depth/reach/occupancy-filtered component match Python; their boat
+  actor execution remains slice 2. Land source selection intentionally has no
+  boat-depth or component filter.
+- `LandAngler` implements founder land activity acquisition/toggle/stop, nearest
+  source within Manhattan range 1.8, facing, out-of-range/source-removal cancellation,
+  4/5 catch chance, direct storage delivery and +6 personal practice per attempt.
+  It has its own saved activity/status/batch history, with external founder position
+  and practice. The caller applies movement's existing `clear_activity` result via `stop()`.
+  Afloat boat bonuses, boat purchases/upgrades and crew ownership remain slice 2.
+- Explicit v1 owner JSON rejects unknown fields, foreign owners, missing/duplicate
+  actors, impossible decks, phases/clocks, task/travel mismatches, unrelated cargo
+  and invalid catch history. Restore uses the model's saved positions/legs and
+  ledger pending output; routes are derived and rebuilt. Load never awards fish.
+
+Evidence: 21 Rust regressions and 223 real-Python fixture cases (180 villager
+catch/rate/supply/practice, five animation clocks, 18 connected-water/depth cases
+and 20 founder catches). Covered interruptions include blocked returns, moved huts,
+full buffers/caps, competing fishers, reassignment/orphan adoption, invalidated
+piers, fences/void/bounds, reload of covered phases and batch retry, malformed
+saves and failed-completion rollback. Quantities/clocks compare at 1e-9; counts,
+IDs, status and catch results compare exactly. Navigation is pumped separately
+when Python's synchronous route would already have reached the hut perimeter.
+Fixture verification:
+`python3 rust/crates/lantern-host/tests/fixtures/fishing/generate.py --check`.
+
+Completion boundary: this is a land-fishing rule/actor port, not integrated host,
+legacy-animation conversion, durable-save or browser acceptance. R18 retains town
+roster/capacity admission and general founder activity arbitration; R19 must save
+model, ledger, water, practice and fishing owners in one generation, including
+monotonic batch IDs, and convert legacy work animations. R20–R21 retain full tick
+ordering, shared-landscape transactions, command and movement/activity adapters,
+roster/geometry reconciliation and wire/playback integration. Offshore reload and
+full boat cargo remain slice 2; blocked animal dragging and independent barn growth
+remain slice 3; mounted movement remains slice 4. R23 retains integrated acceptance.
+
+Performance comparisons were not run: this is a behavior port with no performance
+investigation, optimization or performance claim.
+
+Validation: `python3 tools/check.py --list` selected only `rust:lantern-host`.
+The affected runner passed formatting, locked offline package tests/doc tests and
+all-target Clippy with warnings denied (3/3 commands). The final 21 fishing tests
+also passed after owner/deck admission review. The Python fixture check, final
+formatting check and `git diff --check` passed. Report:
+`performance-results/20261018-231704/report.md`.
+
+Commit message: `feat: port Rust piers and land fishing`.
 
 ## R18 — Remaining residents, villages, trade, and adventures
 

@@ -8,7 +8,7 @@ and cache rules are in [Backend](BACKEND.md#cached-zoomed-out-map).
 | 1     | Cached zoomed-out town overview    | Implemented              | Show the landscape and city sizes without refreshing animated scene detail.                                      |
 | 2     | Production line balancing          | Wood and grain implemented; fishing remains | Develop clear fishing chains with capped staffing and simple upgrades. |
 | 3     | Scalable villager pathfinding       | Host queue implemented; cache refinement and shared navigation remain | Keep movement responsive as villager counts and towns grow, with bounded routing work. |
-| 4     | Rust migration | R16 farming/orchard slices implemented; fishing and other actors, host integration and release acceptance remain open | Follow the [staged plan and prompts](RUST_MIGRATION.md), preserving playable checkpoints and saved worlds. |
+| 4     | Rust migration | R17 piers/land fishing implemented; boats and other actors, host integration and release acceptance remain open | Follow the [staged plan and prompts](RUST_MIGRATION.md), preserving playable checkpoints and saved worlds. |
 
 ## Rust migration
 
@@ -43,8 +43,10 @@ R16's three slices implement experimental field cycles/claims, water rounds,
 multi-acre harvest returns, orchards/restock, crop edits, linked relocation and
 validated owner reload; see the
 [R16 completion boundary](RUST_MIGRATION.md#r16-slice-3--orchards-crop-changes-relocation-and-reload).
-Fishing/livestock and population remain R17–R18; durable saves, complete legacy
-actor conversion and playable host integration remain R19–R21.
+R17 slice 1 implements experimental saved piers, land-fisher movement/cargo/catches,
+shared water/depth rules and founder land fishing with validated owner reload.
+Boat/crew trips, livestock/butchery, horses/riding and population remain R17–R18;
+durable saves, complete legacy actor conversion and playable host integration remain R19–R21.
 R11's integrated W2/W3 movement/accounting acceptance remains open; R19–R21 retain
 HTTP/save/snapshot integration and R23 retains complete W1–W6 acceptance. See the
 [R10 completion audit](RUST_MIGRATION.md#final-measurements-and-foundation-completion)

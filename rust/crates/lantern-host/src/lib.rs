@@ -17,6 +17,7 @@
 pub mod building;
 pub mod dto;
 pub mod farming;
+pub mod fishing;
 pub mod gathering;
 pub mod legacy;
 pub mod logistics;
