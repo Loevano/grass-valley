@@ -628,6 +628,24 @@ impl Ledger {
     }
     /// Keep undeliverable cargo held. No flow or milestones on physical arrival.
     pub fn deposit(&mut self, actor: &ActorId, destination: &BuildingId) -> Result<Stock, Error> {
+        let order: Vec<_> = self
+            .held
+            .get(actor)
+            .ok_or(Error::MissingCargo)?
+            .goods
+            .entries()
+            .keys()
+            .cloned()
+            .collect();
+        self.deposit_ordered(actor, destination, &order)
+    }
+    /// Supply cargo retains its pickup order when a destination only partly fits.
+    pub fn deposit_ordered(
+        &mut self,
+        actor: &ActorId,
+        destination: &BuildingId,
+        order: &[ResourceKey],
+    ) -> Result<Stock, Error> {
         self.apply(|l| {
             l.actor(actor)?;
             let mut cargo = l.held.remove(actor).ok_or(Error::MissingCargo)?;
@@ -637,7 +655,14 @@ impl Ledger {
             let s = l.store_mut(destination)?;
             s.complete()?;
             let mut moved = Stock::default();
-            for (k, n) in cargo.goods.clone().entries() {
+            let unique: BTreeSet<_> = order.iter().collect();
+            if unique.len() != order.len()
+                || cargo.goods.entries().keys().any(|k| !unique.contains(k))
+            {
+                return Err(Error::InvalidStorage);
+            }
+            for k in order {
+                let n = cargo.goods.quantity(k);
                 let room = if cargo.kind == CargoKind::Collect {
                     s.local_room(k.as_str())?
                 } else {
@@ -677,6 +702,23 @@ impl Ledger {
             let s = l.store_mut(&destination)?;
             for (k, n) in cargo.goods.entries() {
                 s.stored.credit(k.clone(), *n)?;
+            }
+            Ok(())
+        })
+    }
+    /// Explicit cancellation endpoint selected by the trip owner, including
+    /// relocation-aware hall salvage. Capacity/filters never destroy actual cargo.
+    pub fn restore_cargo(
+        &mut self,
+        actor: &ActorId,
+        destination: &BuildingId,
+    ) -> Result<(), Error> {
+        self.apply(|l| {
+            l.actor(actor)?;
+            l.store(destination)?.complete()?;
+            let cargo = l.held.remove(actor).ok_or(Error::MissingCargo)?;
+            for (key, n) in cargo.goods.entries() {
+                l.store_mut(destination)?.stored.credit(key.clone(), *n)?;
             }
             Ok(())
         })

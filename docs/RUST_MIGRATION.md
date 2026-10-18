@@ -7,8 +7,9 @@ code slices are implemented at the experimental model boundary. R12 slices 1–3
 including upgrades, linked groups, helpers and offline reload.
 R13 slices 1–3 implement reviewed catalogs, fractional quantities, a single-owner
 resource ledger and recipe/personal progression/equipment/hall rule evaluation at
-the experimental offline boundary. Production actors and playable integration remain
-in R14–R21; complete W1–W6 acceptance remains R23.
+the experimental offline boundary. R14 slice 1 adds experimental producer input
+trips over movement and accounting. Remaining logistics, production actors and
+playable integration remain in R14–R21; complete W1–W6 acceptance remains R23.
 Integrated W2/W3 movement/accounting acceptance remains open. R08 spatial
 rules and founder movement is complete as an experimental private-copy foundation. R07 includes saved-first terrain versions 1–7,
 nonchunked maps, authored starter/town sites, ordinary/swamp metadata and overlays,
@@ -241,7 +242,7 @@ only after work is performed. Keep unfinished stages visible in the roadmap.
 | R11 | Persistent worker movement and playback | R10 | Slices 1–3 implemented at experimental model boundary; integrated W2/W3 movement/accounting acceptance remains open |
 | R12 | Construction and building operations | R11 | Slices 1–3 implemented at explicit synthetic-model boundary; full economy/resident rules, durable/public host integration and release acceptance remain in R13–R23; completion boundary below |
 | R13 | Resource ledger, storage, and progression rules | R12 | Slices 1–3 implemented at offline model boundary: reviewed catalogs, ledger/storage/reservations/caps/flows and progression rules; actor/save/HTTP integration and full W1–W6 acceptance remain R14–R23 |
-| R14 | Hauling, delivery, and merchant trips | R13 | Not started |
+| R14 | Hauling, delivery, and merchant trips | R13 | Slice 1 implemented at the experimental offline boundary: producer input trips; slices 2–3 (haulers and merchants) remain |
 | R15 | Gathering and processing professions | R14 | Not started |
 | R16 | Farming and orchards | R15 | Not started |
 | R17 | Fishing, boats, animals, and horses | R16 | Not started |
@@ -3102,6 +3103,67 @@ storage selection, market thresholds, and interruption semantics. Validate block
 full, relocated, deleted, and reloaded trip cases with conservation assertions.
 Update coverage/progress, run affected checks, and commit the completed slice.
 ```
+
+### R14 slice 1 — Producer input collection
+
+Implemented in `lantern-host::logistics` over R11 `Town` movement and the R13
+single-owner `Ledger`. Python remains the playable default. This completes only
+slice 1; the next slice is hauler output/supply trips. Merchant planning, purchase
+and sale execution, thresholds and trade totals remain slice 3.
+
+- Trip IDs have a saved monotonic high-water mark. Endpoint snapshots retain stable
+  building identity and original location. Pickup/delivery phase, pickup ingredient
+  order, actual carried quantities and the once-only hauling-training flag have an
+  explicit versioned JSON DTO with owner/phase/task/cargo validation.
+- Planning does not remove goods. Current stock, ingredient needs and hauling carry
+  capacity are re-evaluated at authoritative pickup. Picked-up cargo lives solely
+  in the ledger, remains unspendable and contributes to destination reservations.
+  Local inputs become reserved only at delivery; transfers add no production,
+  resource activity, coins or trade totals. Recipe order is frozen separately
+  because sorted ingredient maps change partially full-buffer behavior.
+- Supply selection preserves completed sources, stable nearest-first distance
+  ordering and access to existing stock despite changed storage filters. The
+  caller must try candidates in order, admitting both outward and return paths
+  through R09–R11 access rules; this module does not own the navigation pump. Segment admission supplies current collision
+  and road speeds; fractional position and blocked recovery remain R11-owned.
+  Pickup and completion return unused elapsed time to the scheduler; blocked/full
+  waiting never banks time or advances production.
+- Recipe shares, mixed raw fish, workshop-head quantity limits, hauling talents,
+  grain carrying equipment, hauling speed and once-only delivery practice are
+  retained. Explicit animal-feed/manual-butchering facts come from their later
+  subsystem owners. The production gate gives input collection precedence over
+  full output buffers; it does not run recipe work or animal clocks.
+- Blocked routes retain cargo. Full destinations accept only available space in
+  original pickup order and retain the remainder across retries/reload. Endpoint
+  move/deletion/construction or reassignment cancels once: restore to the original
+  source if still present at its captured location, otherwise salvage to the hall,
+  ignoring capacity/filters. A new assignment survives cancellation. Failed hall
+  restitution commits no model, ledger, trip or training mutation.
+
+Evidence: `tests/logistics.rs` covers conservation at planning, fractional travel,
+pickup, blocked/full/partial delivery, reload, retries and endpoint interruptions;
+9 focused cases include all eight source/destination move/delete × before/after
+pickup combinations. Frozen Python plans and pickups cover all 13 recipe-building
+families with empty and partially occupied inputs (26 paired cases). Regenerate or
+verify with `python3 rust/crates/lantern-host/tests/fixtures/logistics/generate.py --check`;
+its ingredient-order export also checks catalog drift. Physical ledger
+regressions remain in `tests/resource_ledger.rs`.
+
+Reload here explicitly admits trip JSON alongside restored R11 model and R13 ledger
+facts, rejecting mismatched cargo instead of minting a second copy. It is not a
+complete legacy-save importer, durable ledger/skill-history persistence, resident
+assignment scheduler, R12 building-world adapter, or HTTP integration. Those owners
+remain R15–R21; R19 must persist all owners in one generation. Full production task
+pauses/queue changes remain R15, livestock clocks R17, playable integration R20–21,
+and integrated W2/W3/W1–W6 acceptance R23. Performance comparisons were not run:
+this is a behavior port, with no performance investigation or claim.
+
+Validation: `python3 tools/check.py` selects only `rust:lantern-host`;
+formatting, locked offline package tests/doc tests and all-target Clippy with
+warnings denied pass (3/3 commands). Fixture drift verification also passes.
+Final report: `performance-results/20261018-191324/report.md`.
+Commit message:
+`feat: port Rust producer input collection trips`.
 
 ## R15 — Gathering and processing
 

@@ -1,0 +1,157 @@
+{
+  "bakery": {
+    "bread": [
+      "flour",
+      "wood"
+    ],
+    "bread_rolls": [
+      "flour",
+      "milk",
+      "wood"
+    ],
+    "cakes": [
+      "flour",
+      "eggs",
+      "milk",
+      "wood"
+    ],
+    "fruit_pies": [
+      "flour",
+      "fruit",
+      "wood"
+    ],
+    "herb_bread": [
+      "flour",
+      "herbs",
+      "wood"
+    ]
+  },
+  "butcher": {
+    "herbed_meat": [
+      "meat",
+      "herbs"
+    ],
+    "meat_pies": [
+      "meat",
+      "flour",
+      "eggs",
+      "wood"
+    ],
+    "prepared_meat": [
+      "meat"
+    ],
+    "sausages": [
+      "meat",
+      "herbs",
+      "flour"
+    ],
+    "smoked_meat": [
+      "meat",
+      "wood"
+    ]
+  },
+  "fish_pond": {
+    "fish": [
+      "fodder"
+    ]
+  },
+  "mill": {
+    "flour": [
+      "wheat"
+    ]
+  },
+  "mine": {
+    "iron_ore": []
+  },
+  "saddler": {
+    "saddles": [
+      "leather",
+      "iron"
+    ]
+  },
+  "sawpit": {
+    "planks": [
+      "wood"
+    ]
+  },
+  "smelter": {
+    "iron": [
+      "iron_ore",
+      "wood"
+    ]
+  },
+  "smokehouse": {
+    "smoked_fish": [
+      "fish",
+      "wood"
+    ]
+  },
+  "steelworks": {
+    "steel": [
+      "iron",
+      "wood"
+    ]
+  },
+  "tannery": {
+    "leather": [
+      "hides",
+      "wood"
+    ]
+  },
+  "tradehouse": {
+    "trade_crates": [
+      "planks",
+      "leather",
+      "steel"
+    ]
+  },
+  "workshop": {
+    "carved_furniture": [
+      "planks",
+      "wool"
+    ],
+    "crafted_axe": [
+      "planks",
+      "tools"
+    ],
+    "crafted_saw": [
+      "planks",
+      "tools"
+    ],
+    "crates": [
+      "planks"
+    ],
+    "flower_boxes": [
+      "planks",
+      "herbs"
+    ],
+    "furniture": [
+      "planks",
+      "wool"
+    ],
+    "garden_arches": [
+      "planks",
+      "wood"
+    ],
+    "lanterns": [
+      "planks",
+      "wood"
+    ],
+    "signposts": [
+      "planks",
+      "wood"
+    ],
+    "tools": [
+      "planks",
+      "wood"
+    ],
+    "wooden_bowls": [
+      "planks",
+      "wood"
+    ],
+    "wooden_tables": [
+      "planks",
+      "wood"
+    ]
+  }
+}

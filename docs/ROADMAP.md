@@ -31,9 +31,11 @@ including upgrades, linked groups, upgrade helpers and offline reload; see the
 [completion boundary](RUST_MIGRATION.md#r12-slice-3--upgrades-linked-groups-and-cancellation).
 R13 slices 1–3 implement reviewed catalogs, fractional stock, an experimental
 ledger, recipes, personal skills/talents, equipment and hall requirement evaluation.
-Base and top-tier grain accounting match Python under continuous-input assumptions;
-production actors, logistics and population integration remain in R14–R18;
-durable saves and playable host integration remain in R19–R21.
+Base and top-tier grain accounting match Python under continuous-input assumptions.
+R14 slice 1 implements experimental producer input trips with ledger-owned cargo,
+reservations, movement, blocked/full delivery and cancellation/reload continuity.
+Hauler and merchant trips remain R14 slices 2–3; production actors and population
+integration remain R15–R18; durable saves and playable host integration remain in R19–R21.
 R11's integrated W2/W3 movement/accounting acceptance remains open; R19–R21 retain
 HTTP/save/snapshot integration and R23 retains complete W1–W6 acceptance. See the
 [R10 completion audit](RUST_MIGRATION.md#final-measurements-and-foundation-completion)
