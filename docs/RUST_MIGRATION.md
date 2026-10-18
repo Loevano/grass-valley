@@ -2,7 +2,9 @@
 
 A migration that can be completed one task at a time, with a prompt for each task.
 
-**Status:** R01–R10 complete as experimental migration foundations. R08 spatial
+**Status:** R01–R10 complete as experimental migration foundations; R11 slice 1
+adds generic worker travel/wait/arrival. Task-change recovery and confirmed
+playback/reload continuity remain in R11 slices 2–3. R08 spatial
 rules and founder movement is complete as an experimental private-copy foundation. R07 includes saved-first terrain versions 1–7,
 nonchunked maps, authored starter/town sites, ordinary/swamp metadata and overlays,
 post-overlay water repair, private authoritative chunk lifecycle/resource renewal,
@@ -231,7 +233,7 @@ only after work is performed. Keep unfinished stages visible in the roadmap.
 | R08 | Spatial rules and founder movement | R07 | Complete as experimental geometry/movement foundation; slices 1–3 and boundary audit below; Python remains default |
 | R09 | Search algorithms and library decision | R08 | Complete at experimental core boundary: library/custom decision, bounded no_std backend and actual Python route/access/cost parity; [evaluation/evidence](RUST_SEARCH_EVALUATION.md) |
 | R10 | Request scheduler and cache invalidation | R09 | Complete as experimental navigation foundation; slices 1–3 and completion audit below; integrated W1–W6 acceptance retained in R11/R19–R23 |
-| R11 | Persistent worker movement and playback | R10 | Not started |
+| R11 | Persistent worker movement and playback | R10 | Slice 1 complete: generic travel/wait/arrival; task-change recovery and playback/reload continuity remain |
 | R12 | Construction and building operations | R11 | Not started |
 | R13 | Resource ledger, storage, and progression rules | R12 | Not started |
 | R14 | Hauling, delivery, and merchant trips | R13 | Not started |
@@ -2407,6 +2409,51 @@ relocation, task replacement, fractional positions, blocked return legs, and rel
 without duplicate actions. Validate the Rust traces and DTO compatibility, update
 coverage/progress, and commit the completed slice.
 ```
+
+### R11 slice 1 — Generic travel, waiting and arrival
+
+The experimental core now advances accepted R10 routes through
+`Town::advance_travel`. Continuous position remains on `ActorState`, alongside
+cargo and task intent; only the waypoint cursor is derived. Movement uses injected
+simulation seconds and Euclidean segment lengths. A validated per-segment speed
+supports road/equipment policy without coupling the integrator to a profession.
+The caller must check current geometry/access, including fractional origins, and
+return no speed for a blocked segment. Completed movement is retained before a
+later blocked segment. This is an experimental core API, not playable-host wiring.
+
+Traversal has an explicit segment allowance, including zero-length points. Unused
+time is returned to the caller; pending/unreachable/blocked states never bank time
+for a later burst. Not-requested, waiting, walking, arrived, unreachable, blocked
+and cancelled statuses remain distinct. Final-point consumption emits one
+`arrived_now` notification per accepted route. An already-arrived navigation answer
+is observed as a status, without fabricating a movement event. Task rules still
+own phase changes and pickup/unload/work authorization; travel changes none of
+those facts and cannot perform an inventory action.
+
+Evidence: ten core travel tests cover fractional movement, unused time and repeated
+arrival, truthful waits, diagonal/road timing and timestep subdivision, current
+segment blocking, bounded duplicate waypoints, zero time/budget, invalid speed and
+overflowing geometry, very slow finite movement, and return-leg cargo/phase/clock
+retention. A host-pump trace covers 16 actors across four towns with two navigation
+slots: adoption preserves their transforms, then a separate 0.05-second travel
+update moves each 0.05 tiles. This demonstrates the route-ready/first-movement
+boundary; it is not a wall-clock W2 latency measurement. Existing DTO/save tests
+pass without wire/save schema changes. `python3 tools/check.py` selected
+`lantern-core` and dependent `lantern-host`; all six formatting, test and Clippy
+commands passed. Report: `performance-results/20261018-145535/report.md` (local,
+ignored artifact).
+
+Performance comparisons are not required for this new generic behavior slice;
+it does not address a measured performance problem. W2 actual movement latency and
+W3 blocked/reopen recovery under load remain unmeasured acceptance gates.
+
+**Remaining:** slice 2 owns task replacement/relocation continuity, automatic
+blocked-route recovery and the destination/leg policies around those changes.
+Slice 3 owns facing/presentation state, confirmed movement/playback DTOs and
+save/reload reconstruction without duplicate actions. The existing derived-route
+reset on restore is not complete travel-reload continuity. R19–R21 still own
+playable host/save/HTTP integration; R23 still owns integrated W1–W6 release budgets.
+Python remains the playable default.
 
 ## R12 — Building operations and construction
 

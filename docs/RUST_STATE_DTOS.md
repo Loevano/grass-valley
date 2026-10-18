@@ -161,7 +161,11 @@ No omitted feature is approved for removal. The saved subsystem matrix assigns:
   R10 slice 1 adds bounded derived service/admission using the existing model's
   request generations. R10 slice 2 adds bounded dependency-certified caches and
   local query refresh. R10 slice 3 adds the single-owner host pump with injected
-  monotonic deadlines, retries and guarded route adoption; movement remains R11.
+  monotonic deadlines, retries and guarded route adoption. R11 slice 1 adds generic
+  fractional travel/wait/arrival with actor-owned position/cargo, injected segment
+  checks/speeds and bounded traversal. Task-change recovery, facing, confirmed
+  playback DTOs and complete reload continuity remain R11 slices 2–3; no public
+  wire/save schema changes or gameplay-host integration are claimed.
 - R12–13: complete buildings/footprints/roads/links, residents/assignments, stock,
   costs/capacities, skills, food/progression, hall unlocks and balance migrations.
 - R14–17: trips/reservations/accounting, markets/resource activity, every production

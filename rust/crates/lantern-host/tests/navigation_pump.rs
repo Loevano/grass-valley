@@ -60,6 +60,59 @@ fn pump(allowance: usize, jobs: usize) -> NavigationPump {
     )
 }
 #[test]
+fn route_ready_and_actual_first_movement_are_separate_and_preserve_facts() {
+    use lantern_core::{
+        travel::{Speed, Status},
+        units::Seconds,
+    };
+    let (mut towns, keys) = towns(16);
+    let r = requests(&mut towns);
+    let clock = Fake::default();
+    let mut p = pump(32768, 2);
+    let mut adopted = 0;
+    let facts: Vec<_> = keys
+        .iter()
+        .map(|(t, id)| towns[*t].actor(id).unwrap().state().clone())
+        .collect();
+    for _ in 0..100 {
+        clock.0.set(p.next_due());
+        p.poll(
+            &clock,
+            &mut towns,
+            &intents(&r, query("wall", false)),
+            |event| {
+                if let Some((Terminal::Ready, result)) = event.adopted {
+                    result.unwrap();
+                    adopted += 1;
+                }
+            },
+        )
+        .unwrap();
+        if adopted == keys.len() {
+            break;
+        }
+    }
+    assert_eq!(adopted, keys.len());
+    for ((t, id), before) in keys.iter().zip(&facts) {
+        assert_eq!(towns[*t].actor(id).unwrap().state(), before);
+        assert_eq!(
+            towns[*t].actor(id).unwrap().travel_status(),
+            Status::Walking
+        );
+        let a = towns[*t]
+            .advance_travel(id, Seconds::new(0.05).unwrap(), 4, |_, _| Speed::new(1.0))
+            .unwrap();
+        assert_eq!(a.status, Status::Walking);
+        let after = towns[*t].actor(id).unwrap().state();
+        let dx = after.position.x.get() - before.position.x.get();
+        let dy = after.position.y.get() - before.position.y.get();
+        assert!((dx.hypot(dy) - 0.05).abs() < 1e-12);
+        assert_eq!(after.task, before.task);
+        assert_eq!(after.cargo, before.cargo);
+        assert_eq!(after.task_generation, before.task_generation);
+    }
+}
+#[test]
 fn independent_clock_allowance_and_missed_releases_without_catchup() {
     let (mut towns, _) = towns(4);
     let r = requests(&mut towns);

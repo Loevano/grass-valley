@@ -2,7 +2,7 @@
 //!
 //! Actor facts survive task replacement and route invalidation. Route state is
 //! derived and starts empty after restoration; tasks retain their phase/leg.
-//! No serialization, search frontiers, clocks, transfer rules or simulation here.
+//! No serialization, search frontiers, clocks or transfer rules here.
 
 use alloc::{
     collections::{BTreeMap, BTreeSet},
@@ -26,6 +26,7 @@ pub enum ModelError {
     NoTask,
     StaleRoute,
     EmptyRoute,
+    InvalidRouteGeometry,
     RouteNotReady,
 }
 
@@ -273,6 +274,8 @@ pub enum RouteState {
 pub struct Actor {
     state: ActorState,
     route: RouteState,
+    /// Derived cursor, discarded together with the route on restoration.
+    route_step: usize,
 }
 
 impl Actor {
@@ -281,6 +284,18 @@ impl Actor {
     }
     pub fn route(&self) -> &RouteState {
         &self.route
+    }
+    pub fn travel_status(&self) -> crate::travel::Status {
+        use crate::travel::Status;
+        match self.route {
+            RouteState::NotRequested => Status::NotRequested,
+            RouteState::Pending(_) => Status::Waiting,
+            RouteState::Ready { .. } => Status::Walking,
+            RouteState::Arrived(_) => Status::Arrived,
+            RouteState::Unreachable(_) => Status::Unreachable,
+            RouteState::Blocked(_) => Status::Blocked,
+            RouteState::Cancelled => Status::Cancelled,
+        }
     }
 }
 
@@ -321,6 +336,7 @@ impl Town {
                 .map(|state| Actor {
                     state,
                     route: RouteState::NotRequested,
+                    route_step: 0,
                 })
                 .collect(),
         };
@@ -518,6 +534,18 @@ impl Town {
                 if waypoints.is_empty() {
                     return Err(ModelError::EmptyRoute);
                 }
+                let mut previous = actor.state.position;
+                for point in &waypoints {
+                    if !libm::hypot(
+                        point.x.get() - previous.x.get(),
+                        point.y.get() - previous.y.get(),
+                    )
+                    .is_finite()
+                    {
+                        return Err(ModelError::InvalidRouteGeometry);
+                    }
+                    previous = *point;
+                }
                 RouteState::Ready {
                     request: request.clone(),
                     waypoints,
@@ -527,7 +555,87 @@ impl Town {
             RouteOutcome::Unreachable => RouteState::Unreachable(request.clone()),
         };
         actor.route = route;
+        actor.route_step = 0;
         Ok(())
+    }
+
+    /// Advance only a confirmed route, preserving cargo and task/leg/elapsed.
+    /// The host supplies elapsed simulation time, not navigation/wall-clock time.
+    /// `segment` checks CURRENT geometry/access and returns the actual speed
+    /// (including roads/equipment), or None to stop before a blocked segment.
+    /// Fractional origins must be checked too; callers may use the R09 query's
+    /// accepted-route validation, but must not reuse a stale geometry certificate.
+    /// `max_segments` bounds traversal even for duplicate/zero-length waypoints.
+    /// Reaching this bound leaves a Walking route and returns unused time.
+    pub fn advance_travel(
+        &mut self,
+        id: &ActorId,
+        elapsed: Seconds,
+        max_segments: usize,
+        mut segment: impl FnMut(Position, Position) -> Option<crate::travel::Speed>,
+    ) -> Result<crate::travel::Advance, ModelError> {
+        let index = self.actor_index(id)?;
+        let actor = &mut self.actors[index];
+        let mut remaining = elapsed.get();
+        let mut segments = 0;
+        let mut arrived_now = false;
+        if let RouteState::Ready { request, waypoints } = &actor.route {
+            let mut blocked = false;
+            while actor.route_step < waypoints.len() && segments < max_segments {
+                let before = actor.state.position;
+                let target = waypoints[actor.route_step];
+                let dx = target.x.get() - before.x.get();
+                let dy = target.y.get() - before.y.get();
+                let distance = libm::hypot(dx, dy);
+                // Search paths include their origin. Consuming it costs no time.
+                if distance == 0.0 {
+                    actor.route_step += 1;
+                    segments += 1;
+                    continue;
+                }
+                if remaining == 0.0 {
+                    break;
+                }
+                let Some(speed) = segment(before, target) else {
+                    blocked = true;
+                    break;
+                };
+                let duration = distance / speed.get();
+                segments += 1;
+                if duration <= remaining {
+                    actor.state.position = target;
+                    actor.route_step += 1;
+                    remaining -= duration;
+                } else {
+                    let fraction = if duration.is_infinite() {
+                        // Here speed < 1: multiply first to avoid an overflowing
+                        // duration discarding otherwise representable movement.
+                        remaining * speed.get() / distance
+                    } else {
+                        remaining / duration
+                    };
+                    actor.state.position = Position::new(
+                        before.x.get() + dx * fraction,
+                        before.y.get() + dy * fraction,
+                    )
+                    .expect("finite interpolation of validated segment");
+                    remaining = 0.0;
+                    break;
+                }
+            }
+            if blocked {
+                actor.route = RouteState::Blocked(request.clone());
+            } else if actor.route_step == waypoints.len() {
+                actor.route = RouteState::Arrived(request.clone());
+                arrived_now = true;
+            }
+        }
+        Ok(crate::travel::Advance {
+            status: actor.travel_status(),
+            remaining: Seconds::new(remaining).expect("nonnegative finite remainder"),
+            arrived_now,
+            segments,
+        })
     }
 
     pub fn cancel_route(&mut self, id: &ActorId) -> Result<(), ModelError> {

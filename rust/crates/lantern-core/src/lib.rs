@@ -18,4 +18,5 @@ pub mod seed_material;
 pub mod spatial;
 pub mod starter;
 pub mod terrain;
+pub mod travel;
 pub mod units;
