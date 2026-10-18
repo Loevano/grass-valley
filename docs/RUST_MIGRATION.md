@@ -8,9 +8,9 @@ including upgrades, linked groups, helpers and offline reload.
 R13 slices 1–3 implement reviewed catalogs, fractional quantities, a single-owner
 resource ledger and recipe/personal progression/equipment/hall rule evaluation at
 the experimental offline boundary. R14 slices 1–3 implement producer, hauler and
-merchant trips plus market execution over movement and accounting. R15 slice 1
-implements offline woodcutters and resource claims. Remaining production actors
-and playable integration remain in R15–R21; complete W1–W6 acceptance remains R23.
+merchant trips plus market execution over movement and accounting. R15 slices 1–2
+implement offline woodcutters/resource claims and base processor actors. Remaining
+production actors and playable integration remain in R15–R21; complete W1–W6 acceptance remains R23.
 Integrated W2/W3 movement/accounting acceptance remains open. R08 spatial
 rules and founder movement is complete as an experimental private-copy foundation. R07 includes saved-first terrain versions 1–7,
 nonchunked maps, authored starter/town sites, ordinary/swamp metadata and overlays,
@@ -244,7 +244,7 @@ only after work is performed. Keep unfinished stages visible in the roadmap.
 | R12 | Construction and building operations | R11 | Slices 1–3 implemented at explicit synthetic-model boundary; full economy/resident rules, durable/public host integration and release acceptance remain in R13–R23; completion boundary below |
 | R13 | Resource ledger, storage, and progression rules | R12 | Slices 1–3 implemented at offline model boundary: reviewed catalogs, ledger/storage/reservations/caps/flows and progression rules; actor/save/HTTP integration and full W1–W6 acceptance remain R14–R23 |
 | R14 | Hauling, delivery, and merchant trips | R13 | Slices 1–3 implemented at the experimental offline boundary: producer/hauler/merchant trips, thresholds, purchases, sales and recovery; integrated production, durable saves and playable host remain R15–R23 |
-| R15 | Gathering and processing professions | R14 | Slice 1 implemented at the experimental offline boundary: woodcutters, tree claims, productive clocks and ledger output; basic processors and advanced/workshop queues remain slices 2–3 |
+| R15 | Gathering and processing professions | R14 | Slices 1–2 implemented at the experimental offline boundary: woodcutters/claims, twelve base processor families, timed batches and recovery; advanced recipes and workshop queues remain slice 3 |
 | R16 | Farming and orchards | R15 | Not started |
 | R17 | Fishing, boats, animals, and horses | R16 | Not started |
 | R18 | Residents, villages, trade, and adventures | R17 | Not started |
@@ -3316,8 +3316,8 @@ run applicable checks, and commit the completed slice.
 
 Implemented in experimental `lantern-host::gathering`, using R11 `Town` movement,
 R13 personal rules and the single-owner resource ledger. Python stays the playable
-default. This completes slice 1 at the offline admitted-facts boundary; the next
-slice is R15 slice 2. No processor actor or workshop queue is promoted by this slice.
+default. This completes slice 1 at the offline admitted-facts boundary; slice 2
+follows below. No processor actor or workshop queue is promoted by this slice.
 
 - Stable actor/building identities own separate tree-coordinate claims across
   overlapping camps. Candidates retain map-order distance ties and the ten-tile
@@ -3370,12 +3370,10 @@ These are explicit offline event APIs, not full Python-tick, browser-playback or
 playable-host integration acceptance. R19 must persist claims, model phases, skills,
 ledger buffers/history and terrain supply in one generation. R20–21 own live world
 adapters; R23 retains integrated W2/W3 and full W1–W6 acceptance. Producer/hauler
-trip gates remain R14-owned. Remaining R15 slices must implement timed processing,
-input reservations, recipe changes, output limits and request lifecycles for the
-matrix's tannery, mine, smelter, saddler, steelworks, tradehouse, bakery, butcher,
-sawpit, mill, smokehouse, workshop and fish-pond recipe families, including every
-advanced recipe and species-preserving smoking. Fishing/livestock-specific actor
-clocks remain R17 as recorded by the matrix.
+trip gates remain R14-owned. Slice 2 below implements the twelve non-workshop
+base recipe families, including species-preserving smoking. Slice 3 retains
+workshop request lifecycles and every advanced recipe family. Fishing/livestock
+actor clocks remain R17 as recorded by the matrix.
 
 Performance comparisons were not run: this is a behavior port, with no performance
 investigation, optimization or performance claim.
@@ -3386,6 +3384,94 @@ warnings denied passed (3/3 commands). Python gathering fixture verification and
 `git diff --check` passed. Report: `performance-results/20261018-202538/report.md`.
 
 Commit message: `feat: port Rust woodcutters and tree claims`.
+
+### R15 slice 2 — Base processors and productive batch clocks
+
+Implemented in experimental `lantern-host::processing` over R11 movement and the
+R13 single-owner ledger/personal rules. This completes slice 2 at the offline
+admitted-facts boundary. Python remains the playable default. The next migration
+slice is R15 slice 3: workshop queues and advanced recipes.
+
+- All twelve non-workshop base recipe families execute: tannery, mine, smelter,
+  saddler, steelworks, tradehouse, bakery, butcher, sawpit, mill, smokehouse and
+  fish pond. The ordinary butcher conversion is covered here; fetching animals
+  and manual animal-processing clocks remain R17. Advanced recipe execution and
+  workshop orders explicitly return `Unsupported` at this boundary, rather than
+  falling back to a base recipe or being silently counted as ported.
+- Saved per-actor batch timers advance only after an admitted approach reaches
+  the workplace and a whole current batch passes ingredient, capacity, cap and
+  ore checks. A supply/output trip pauses partial work; R14 completion can resume
+  it from its current position. Pending, blocked and travelling actors produce
+  and train nothing. Starved/full/capped batches retain partial time without
+  banking the waiting interval. Ingredients remain reserved at the workplace,
+  shared across workers; completion rechecks them atomically, so competing workers
+  cannot spend the same ingredients or exceed a common output cap.
+- Batch duration, output and matching input demand reuse R13 catalog evaluation.
+  Skills, talents, crafted saws, steel pickaxes and all six grain throughput
+  upgrades preserve Python's rates. Tools/equipment/current ingredients are
+  re-evaluated during partial work. Practice is awarded only for a completed
+  batch's documented duration, matching Python. Each invocation completes at most
+  one batch and discards surplus work time, including very large elapsed values.
+  Legal one-/three-second subdivisions reproduce the base mill's documented rate.
+- Smoking consumes raw fish in catalog order and preserves each species one to
+  one, including mixed batches and fuel. Mines select the richest admitted iron
+  vein within ten Manhattan tiles, with stable map-order ties. Insufficient ore
+  pauses work; only successful completion debits supply. Zero-supply veins remain
+  present for R07 regeneration. The caller commits admitted vein supplies to the
+  authoritative landscape; this module does not create another renewal clock.
+- Finished output stays in worker-owned ledger pending stock until an explicit
+  unload. Unloading consumes its remaining 0.65-second interval and returns the
+  rest of the update; it does not reset an unfinished recipe timer. Cancellation,
+  reassignment and endpoint move/delete/upgrade preserve finished goods in the
+  original ledger store's orphan pool. Replacement production adopts orphans
+  through the existing ledger owner without double-counting production/activity.
+- Recipe selection reuses R13 assigned-worker qualification. Changing a recipe
+  releases only obsolete reserved ingredients, resets attached worker partial
+  work and preserves finished goods, matching Python's command policy. Ordinary
+  `set_recipe` preserves existing supply trips and saved grain queues; workshop
+  head-change cancellation remains slice 3. Selecting an advanced recipe prepares
+  configuration but does not authorize its execution in this slice.
+- Versioned v1 processor JSON retains captured endpoints, output identity, partial
+  elapsed/active state and ordered legacy grain partial-work queues. Queue entries
+  are claimed once, only when a complete batch is admissible; zero-time entries
+  cannot steal the following entry. Reload rejects duplicate/foreign identities,
+  malformed recipe/timer/phase data and mirrored model cargo. Stale assignments
+  remain cancellable and R14 trips remain resumable. Failed admission, accounting
+  or practice commits no partial goods, movement, supply or worker mutations.
+
+Evidence: `tests/processing.rs` has 16 focused tests. The paired fixture calls real
+Python `logistics.produce` for 45 scenarios and 184 intermediate snapshots, comparing
+partial timers, input spending, pending/free/orphan output, produced counters,
+practice, ore and resource activity. It covers every base family, all grain
+throughput upgrades, skill/talent/tool effects, every raw fish species and mixed
+smoking, caps, full buffers, insufficient/missing/distant ore, cancellation and
+fractional-fuel tolerance. Quantity/clock comparisons use absolute 1e-9 tolerance;
+practice matches Python's three-decimal rounding. Additional Rust traces exercise
+partial arrival and blocked recovery, competing workers, actual R14 supply trips,
+unused unload time, recipe changes, zero-time grain queue reload, moved/deleted/
+upgrading/reassigned endpoints, overflow rollback and a stalled mill/bakery chain
+that resumes after unloading, reservation and consumption. Verify fixture drift:
+`python3 rust/crates/lantern-host/tests/fixtures/processing/generate.py --check`.
+
+Completion boundary: these are offline production-event APIs. The caller owns
+roster ordering, route admission/pumping, R14 trip planning, work-cycle unload
+scheduling and consuming returned time. Complete host-tick/playback parity remains
+integration work, not a claim from direct productive-time comparisons. R19 must
+persist processor timers/queues, model, ledger/activity, skills and terrain supplies
+in one generation. R20–21 own ordinary-save/live host/browser adapters, and R23
+retains integrated W2/W3 and full W1–W6 acceptance. Slice 3 must execute all advanced
+bakery/butcher recipes and all workshop recipes, including crafted tools and
+placeable goods, with ordered requests, partial final batches and cancellation.
+
+Performance comparisons were not run: this is a behavior port with no performance
+investigation, optimization or performance claim.
+
+Validation: `python3 tools/check.py` selected only `rust:lantern-host`;
+formatting, locked offline package tests/doc tests and all-target Clippy with
+warnings denied passed (3/3 commands). Python processor fixture verification and
+`git diff --check` passed. Report: `performance-results/20261018-210623/report.md`.
+
+Commit message: `feat: port Rust base processor batch actors`.
 
 ## R16 — Farming and orchards
 

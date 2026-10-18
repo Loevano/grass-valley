@@ -1,0 +1,6440 @@
+[
+  {
+    "kind": "tannery",
+    "skill": 0,
+    "talent": 0,
+    "name": "0_tannery",
+    "inputs": {
+      "hides": 8.0,
+      "wood": 2.0
+    },
+    "ore": [
+      {
+        "x": 6,
+        "y": 0,
+        "supply": 60
+      }
+    ],
+    "output": {},
+    "actions": [
+      {
+        "op": "advance",
+        "seconds": 1
+      },
+      {
+        "op": "advance",
+        "seconds": 8
+      },
+      {
+        "op": "dropoff"
+      },
+      {
+        "op": "advance",
+        "seconds": 100
+      }
+    ],
+    "states": [
+      {
+        "status": "Producing leather \u00b7 8s remaining",
+        "flows": {
+          "incoming": {},
+          "outgoing": {}
+        },
+        "inputs": {
+          "hides": 8.0,
+          "wood": 2.0
+        },
+        "output": {},
+        "pending": {},
+        "orphan": {},
+        "produced": {},
+        "practice": 0,
+        "elapsed": 1,
+        "ore": [
+          60
+        ]
+      },
+      {
+        "status": "Working",
+        "flows": {
+          "incoming": {
+            "leather": 2.0
+          },
+          "outgoing": {
+            "hides": 2.0,
+            "wood": 0.5
+          }
+        },
+        "inputs": {
+          "hides": 6.0,
+          "wood": 1.5
+        },
+        "output": {},
+        "pending": {
+          "leather": 2.0
+        },
+        "orphan": {},
+        "produced": {
+          "leather": 2.0
+        },
+        "practice": 0.24,
+        "elapsed": 0,
+        "ore": [
+          60
+        ]
+      },
+      {
+        "status": null,
+        "flows": {
+          "incoming": {
+            "leather": 2.0
+          },
+          "outgoing": {
+            "hides": 2.0,
+            "wood": 0.5
+          }
+        },
+        "inputs": {
+          "hides": 6.0,
+          "wood": 1.5
+        },
+        "output": {
+          "leather": 2.0
+        },
+        "pending": {},
+        "orphan": {},
+        "produced": {
+          "leather": 2.0
+        },
+        "practice": 0.24,
+        "elapsed": 0,
+        "ore": [
+          60
+        ]
+      },
+      {
+        "status": "Working",
+        "flows": {
+          "incoming": {
+            "leather": 4.0
+          },
+          "outgoing": {
+            "hides": 4.0,
+            "wood": 1.0
+          }
+        },
+        "inputs": {
+          "hides": 4.0,
+          "wood": 1.0
+        },
+        "output": {
+          "leather": 2.0
+        },
+        "pending": {
+          "leather": 2.0
+        },
+        "orphan": {},
+        "produced": {
+          "leather": 4.0
+        },
+        "practice": 0.48,
+        "elapsed": 0,
+        "ore": [
+          60
+        ]
+      }
+    ]
+  },
+  {
+    "kind": "tannery",
+    "skill": 20,
+    "talent": 1,
+    "name": "1_tannery",
+    "inputs": {
+      "hides": 20.0,
+      "wood": 5.0
+    },
+    "ore": [
+      {
+        "x": 6,
+        "y": 0,
+        "supply": 60
+      }
+    ],
+    "output": {},
+    "actions": [
+      {
+        "op": "advance",
+        "seconds": 1
+      },
+      {
+        "op": "advance",
+        "seconds": 8
+      },
+      {
+        "op": "dropoff"
+      },
+      {
+        "op": "advance",
+        "seconds": 100
+      }
+    ],
+    "states": [
+      {
+        "status": "Producing leather \u00b7 8s remaining",
+        "flows": {
+          "incoming": {},
+          "outgoing": {}
+        },
+        "inputs": {
+          "hides": 20.0,
+          "wood": 5.0
+        },
+        "output": {},
+        "pending": {},
+        "orphan": {},
+        "produced": {},
+        "practice": 20,
+        "elapsed": 1,
+        "ore": [
+          60
+        ]
+      },
+      {
+        "status": "Working",
+        "flows": {
+          "incoming": {
+            "leather": 5.0
+          },
+          "outgoing": {
+            "hides": 5.0,
+            "wood": 1.25
+          }
+        },
+        "inputs": {
+          "hides": 15.0,
+          "wood": 3.75
+        },
+        "output": {},
+        "pending": {
+          "leather": 5.0
+        },
+        "orphan": {},
+        "produced": {
+          "leather": 5.0
+        },
+        "practice": 20.3,
+        "elapsed": 0,
+        "ore": [
+          60
+        ]
+      },
+      {
+        "status": null,
+        "flows": {
+          "incoming": {
+            "leather": 5.0
+          },
+          "outgoing": {
+            "hides": 5.0,
+            "wood": 1.25
+          }
+        },
+        "inputs": {
+          "hides": 15.0,
+          "wood": 3.75
+        },
+        "output": {
+          "leather": 5.0
+        },
+        "pending": {},
+        "orphan": {},
+        "produced": {
+          "leather": 5.0
+        },
+        "practice": 20.3,
+        "elapsed": 0,
+        "ore": [
+          60
+        ]
+      },
+      {
+        "status": "Working",
+        "flows": {
+          "incoming": {
+            "leather": 10.0
+          },
+          "outgoing": {
+            "hides": 10.0,
+            "wood": 2.5
+          }
+        },
+        "inputs": {
+          "hides": 10.0,
+          "wood": 2.5
+        },
+        "output": {
+          "leather": 5.0
+        },
+        "pending": {
+          "leather": 5.0
+        },
+        "orphan": {},
+        "produced": {
+          "leather": 10.0
+        },
+        "practice": 20.6,
+        "elapsed": 0,
+        "ore": [
+          60
+        ]
+      }
+    ]
+  },
+  {
+    "kind": "mine",
+    "skill": 0,
+    "talent": 0,
+    "name": "2_mine",
+    "inputs": {},
+    "ore": [
+      {
+        "x": 6,
+        "y": 0,
+        "supply": 60
+      }
+    ],
+    "output": {},
+    "actions": [
+      {
+        "op": "advance",
+        "seconds": 1
+      },
+      {
+        "op": "advance",
+        "seconds": 8
+      },
+      {
+        "op": "dropoff"
+      },
+      {
+        "op": "advance",
+        "seconds": 100
+      }
+    ],
+    "states": [
+      {
+        "status": "Producing iron ore \u00b7 8s remaining",
+        "flows": {
+          "incoming": {},
+          "outgoing": {}
+        },
+        "inputs": {},
+        "output": {},
+        "pending": {},
+        "orphan": {},
+        "produced": {},
+        "practice": 0,
+        "elapsed": 1,
+        "ore": [
+          60
+        ]
+      },
+      {
+        "status": "Working",
+        "flows": {
+          "incoming": {
+            "iron_ore": 2.0
+          },
+          "outgoing": {}
+        },
+        "inputs": {},
+        "output": {},
+        "pending": {
+          "iron_ore": 2.0
+        },
+        "orphan": {},
+        "produced": {
+          "iron_ore": 2.0
+        },
+        "practice": 0.24,
+        "elapsed": 0,
+        "ore": [
+          58.0
+        ]
+      },
+      {
+        "status": null,
+        "flows": {
+          "incoming": {
+            "iron_ore": 2.0
+          },
+          "outgoing": {}
+        },
+        "inputs": {},
+        "output": {
+          "iron_ore": 2.0
+        },
+        "pending": {},
+        "orphan": {},
+        "produced": {
+          "iron_ore": 2.0
+        },
+        "practice": 0.24,
+        "elapsed": 0,
+        "ore": [
+          58.0
+        ]
+      },
+      {
+        "status": "Working",
+        "flows": {
+          "incoming": {
+            "iron_ore": 4.0
+          },
+          "outgoing": {}
+        },
+        "inputs": {},
+        "output": {
+          "iron_ore": 2.0
+        },
+        "pending": {
+          "iron_ore": 2.0
+        },
+        "orphan": {},
+        "produced": {
+          "iron_ore": 4.0
+        },
+        "practice": 0.48,
+        "elapsed": 0,
+        "ore": [
+          56.0
+        ]
+      }
+    ]
+  },
+  {
+    "kind": "mine",
+    "skill": 20,
+    "talent": 1,
+    "name": "3_mine",
+    "inputs": {},
+    "ore": [
+      {
+        "x": 6,
+        "y": 0,
+        "supply": 60
+      }
+    ],
+    "output": {},
+    "actions": [
+      {
+        "op": "advance",
+        "seconds": 1
+      },
+      {
+        "op": "advance",
+        "seconds": 8
+      },
+      {
+        "op": "dropoff"
+      },
+      {
+        "op": "advance",
+        "seconds": 100
+      }
+    ],
+    "states": [
+      {
+        "status": "Producing iron ore \u00b7 8s remaining",
+        "flows": {
+          "incoming": {},
+          "outgoing": {}
+        },
+        "inputs": {},
+        "output": {},
+        "pending": {},
+        "orphan": {},
+        "produced": {},
+        "practice": 20,
+        "elapsed": 1,
+        "ore": [
+          60
+        ]
+      },
+      {
+        "status": "Working",
+        "flows": {
+          "incoming": {
+            "iron_ore": 5.0
+          },
+          "outgoing": {}
+        },
+        "inputs": {},
+        "output": {},
+        "pending": {
+          "iron_ore": 5.0
+        },
+        "orphan": {},
+        "produced": {
+          "iron_ore": 5.0
+        },
+        "practice": 20.3,
+        "elapsed": 0,
+        "ore": [
+          55.0
+        ]
+      },
+      {
+        "status": null,
+        "flows": {
+          "incoming": {
+            "iron_ore": 5.0
+          },
+          "outgoing": {}
+        },
+        "inputs": {},
+        "output": {
+          "iron_ore": 5.0
+        },
+        "pending": {},
+        "orphan": {},
+        "produced": {
+          "iron_ore": 5.0
+        },
+        "practice": 20.3,
+        "elapsed": 0,
+        "ore": [
+          55.0
+        ]
+      },
+      {
+        "status": "Working",
+        "flows": {
+          "incoming": {
+            "iron_ore": 10.0
+          },
+          "outgoing": {}
+        },
+        "inputs": {},
+        "output": {
+          "iron_ore": 5.0
+        },
+        "pending": {
+          "iron_ore": 5.0
+        },
+        "orphan": {},
+        "produced": {
+          "iron_ore": 10.0
+        },
+        "practice": 20.6,
+        "elapsed": 0,
+        "ore": [
+          50.0
+        ]
+      }
+    ]
+  },
+  {
+    "kind": "smelter",
+    "skill": 0,
+    "talent": 0,
+    "name": "4_smelter",
+    "inputs": {
+      "iron_ore": 12.0,
+      "wood": 8.0
+    },
+    "ore": [
+      {
+        "x": 6,
+        "y": 0,
+        "supply": 60
+      }
+    ],
+    "output": {},
+    "actions": [
+      {
+        "op": "advance",
+        "seconds": 1
+      },
+      {
+        "op": "advance",
+        "seconds": 11
+      },
+      {
+        "op": "dropoff"
+      },
+      {
+        "op": "advance",
+        "seconds": 100
+      }
+    ],
+    "states": [
+      {
+        "status": "Producing iron \u00b7 11s remaining",
+        "flows": {
+          "incoming": {},
+          "outgoing": {}
+        },
+        "inputs": {
+          "iron_ore": 12.0,
+          "wood": 8.0
+        },
+        "output": {},
+        "pending": {},
+        "orphan": {},
+        "produced": {},
+        "practice": 0,
+        "elapsed": 1,
+        "ore": [
+          60
+        ]
+      },
+      {
+        "status": "Working",
+        "flows": {
+          "incoming": {
+            "iron": 1.0
+          },
+          "outgoing": {
+            "iron_ore": 3.0,
+            "wood": 2.0
+          }
+        },
+        "inputs": {
+          "iron_ore": 9.0,
+          "wood": 6.0
+        },
+        "output": {},
+        "pending": {
+          "iron": 1.0
+        },
+        "orphan": {},
+        "produced": {
+          "iron": 1.0
+        },
+        "practice": 0.32,
+        "elapsed": 0,
+        "ore": [
+          60
+        ]
+      },
+      {
+        "status": null,
+        "flows": {
+          "incoming": {
+            "iron": 1.0
+          },
+          "outgoing": {
+            "iron_ore": 3.0,
+            "wood": 2.0
+          }
+        },
+        "inputs": {
+          "iron_ore": 9.0,
+          "wood": 6.0
+        },
+        "output": {
+          "iron": 1.0
+        },
+        "pending": {},
+        "orphan": {},
+        "produced": {
+          "iron": 1.0
+        },
+        "practice": 0.32,
+        "elapsed": 0,
+        "ore": [
+          60
+        ]
+      },
+      {
+        "status": "Working",
+        "flows": {
+          "incoming": {
+            "iron": 2.0
+          },
+          "outgoing": {
+            "iron_ore": 6.0,
+            "wood": 4.0
+          }
+        },
+        "inputs": {
+          "iron_ore": 6.0,
+          "wood": 4.0
+        },
+        "output": {
+          "iron": 1.0
+        },
+        "pending": {
+          "iron": 1.0
+        },
+        "orphan": {},
+        "produced": {
+          "iron": 2.0
+        },
+        "practice": 0.64,
+        "elapsed": 0,
+        "ore": [
+          60
+        ]
+      }
+    ]
+  },
+  {
+    "kind": "smelter",
+    "skill": 20,
+    "talent": 1,
+    "name": "5_smelter",
+    "inputs": {
+      "iron_ore": 30.0,
+      "wood": 20.0
+    },
+    "ore": [
+      {
+        "x": 6,
+        "y": 0,
+        "supply": 60
+      }
+    ],
+    "output": {},
+    "actions": [
+      {
+        "op": "advance",
+        "seconds": 1
+      },
+      {
+        "op": "advance",
+        "seconds": 11
+      },
+      {
+        "op": "dropoff"
+      },
+      {
+        "op": "advance",
+        "seconds": 100
+      }
+    ],
+    "states": [
+      {
+        "status": "Producing iron \u00b7 11s remaining",
+        "flows": {
+          "incoming": {},
+          "outgoing": {}
+        },
+        "inputs": {
+          "iron_ore": 30.0,
+          "wood": 20.0
+        },
+        "output": {},
+        "pending": {},
+        "orphan": {},
+        "produced": {},
+        "practice": 20,
+        "elapsed": 1,
+        "ore": [
+          60
+        ]
+      },
+      {
+        "status": "Working",
+        "flows": {
+          "incoming": {
+            "iron": 2.5
+          },
+          "outgoing": {
+            "iron_ore": 7.5,
+            "wood": 5.0
+          }
+        },
+        "inputs": {
+          "iron_ore": 22.5,
+          "wood": 15.0
+        },
+        "output": {},
+        "pending": {
+          "iron": 2.5
+        },
+        "orphan": {},
+        "produced": {
+          "iron": 2.5
+        },
+        "practice": 20.4,
+        "elapsed": 0,
+        "ore": [
+          60
+        ]
+      },
+      {
+        "status": null,
+        "flows": {
+          "incoming": {
+            "iron": 2.5
+          },
+          "outgoing": {
+            "iron_ore": 7.5,
+            "wood": 5.0
+          }
+        },
+        "inputs": {
+          "iron_ore": 22.5,
+          "wood": 15.0
+        },
+        "output": {
+          "iron": 2.5
+        },
+        "pending": {},
+        "orphan": {},
+        "produced": {
+          "iron": 2.5
+        },
+        "practice": 20.4,
+        "elapsed": 0,
+        "ore": [
+          60
+        ]
+      },
+      {
+        "status": "Working",
+        "flows": {
+          "incoming": {
+            "iron": 5.0
+          },
+          "outgoing": {
+            "iron_ore": 15.0,
+            "wood": 10.0
+          }
+        },
+        "inputs": {
+          "iron_ore": 15.0,
+          "wood": 10.0
+        },
+        "output": {
+          "iron": 2.5
+        },
+        "pending": {
+          "iron": 2.5
+        },
+        "orphan": {},
+        "produced": {
+          "iron": 5.0
+        },
+        "practice": 20.8,
+        "elapsed": 0,
+        "ore": [
+          60
+        ]
+      }
+    ]
+  },
+  {
+    "kind": "saddler",
+    "skill": 0,
+    "talent": 0,
+    "name": "6_saddler",
+    "inputs": {
+      "leather": 20.0,
+      "iron": 4.0
+    },
+    "ore": [
+      {
+        "x": 6,
+        "y": 0,
+        "supply": 60
+      }
+    ],
+    "output": {},
+    "actions": [
+      {
+        "op": "advance",
+        "seconds": 1
+      },
+      {
+        "op": "advance",
+        "seconds": 14
+      },
+      {
+        "op": "dropoff"
+      },
+      {
+        "op": "advance",
+        "seconds": 100
+      }
+    ],
+    "states": [
+      {
+        "status": "Producing saddles \u00b7 14s remaining",
+        "flows": {
+          "incoming": {},
+          "outgoing": {}
+        },
+        "inputs": {
+          "leather": 20.0,
+          "iron": 4.0
+        },
+        "output": {},
+        "pending": {},
+        "orphan": {},
+        "produced": {},
+        "practice": 0,
+        "elapsed": 1,
+        "ore": [
+          60
+        ]
+      },
+      {
+        "status": "Working",
+        "flows": {
+          "incoming": {
+            "saddles": 1.0
+          },
+          "outgoing": {
+            "leather": 5.0,
+            "iron": 1.0
+          }
+        },
+        "inputs": {
+          "leather": 15.0,
+          "iron": 3.0
+        },
+        "output": {},
+        "pending": {
+          "saddles": 1.0
+        },
+        "orphan": {},
+        "produced": {
+          "saddles": 1.0
+        },
+        "practice": 0.4,
+        "elapsed": 0,
+        "ore": [
+          60
+        ]
+      },
+      {
+        "status": null,
+        "flows": {
+          "incoming": {
+            "saddles": 1.0
+          },
+          "outgoing": {
+            "leather": 5.0,
+            "iron": 1.0
+          }
+        },
+        "inputs": {
+          "leather": 15.0,
+          "iron": 3.0
+        },
+        "output": {
+          "saddles": 1.0
+        },
+        "pending": {},
+        "orphan": {},
+        "produced": {
+          "saddles": 1.0
+        },
+        "practice": 0.4,
+        "elapsed": 0,
+        "ore": [
+          60
+        ]
+      },
+      {
+        "status": "Working",
+        "flows": {
+          "incoming": {
+            "saddles": 2.0
+          },
+          "outgoing": {
+            "leather": 10.0,
+            "iron": 2.0
+          }
+        },
+        "inputs": {
+          "leather": 10.0,
+          "iron": 2.0
+        },
+        "output": {
+          "saddles": 1.0
+        },
+        "pending": {
+          "saddles": 1.0
+        },
+        "orphan": {},
+        "produced": {
+          "saddles": 2.0
+        },
+        "practice": 0.8,
+        "elapsed": 0,
+        "ore": [
+          60
+        ]
+      }
+    ]
+  },
+  {
+    "kind": "saddler",
+    "skill": 20,
+    "talent": 1,
+    "name": "7_saddler",
+    "inputs": {
+      "leather": 50.0,
+      "iron": 10.0
+    },
+    "ore": [
+      {
+        "x": 6,
+        "y": 0,
+        "supply": 60
+      }
+    ],
+    "output": {},
+    "actions": [
+      {
+        "op": "advance",
+        "seconds": 1
+      },
+      {
+        "op": "advance",
+        "seconds": 14
+      },
+      {
+        "op": "dropoff"
+      },
+      {
+        "op": "advance",
+        "seconds": 100
+      }
+    ],
+    "states": [
+      {
+        "status": "Producing saddles \u00b7 14s remaining",
+        "flows": {
+          "incoming": {},
+          "outgoing": {}
+        },
+        "inputs": {
+          "leather": 50.0,
+          "iron": 10.0
+        },
+        "output": {},
+        "pending": {},
+        "orphan": {},
+        "produced": {},
+        "practice": 20,
+        "elapsed": 1,
+        "ore": [
+          60
+        ]
+      },
+      {
+        "status": "Working",
+        "flows": {
+          "incoming": {
+            "saddles": 2.5
+          },
+          "outgoing": {
+            "leather": 12.5,
+            "iron": 2.5
+          }
+        },
+        "inputs": {
+          "leather": 37.5,
+          "iron": 7.5
+        },
+        "output": {},
+        "pending": {
+          "saddles": 2.5
+        },
+        "orphan": {},
+        "produced": {
+          "saddles": 2.5
+        },
+        "practice": 20.5,
+        "elapsed": 0,
+        "ore": [
+          60
+        ]
+      },
+      {
+        "status": null,
+        "flows": {
+          "incoming": {
+            "saddles": 2.5
+          },
+          "outgoing": {
+            "leather": 12.5,
+            "iron": 2.5
+          }
+        },
+        "inputs": {
+          "leather": 37.5,
+          "iron": 7.5
+        },
+        "output": {
+          "saddles": 2.5
+        },
+        "pending": {},
+        "orphan": {},
+        "produced": {
+          "saddles": 2.5
+        },
+        "practice": 20.5,
+        "elapsed": 0,
+        "ore": [
+          60
+        ]
+      },
+      {
+        "status": "Working",
+        "flows": {
+          "incoming": {
+            "saddles": 5.0
+          },
+          "outgoing": {
+            "leather": 25.0,
+            "iron": 5.0
+          }
+        },
+        "inputs": {
+          "leather": 25.0,
+          "iron": 5.0
+        },
+        "output": {
+          "saddles": 2.5
+        },
+        "pending": {
+          "saddles": 2.5
+        },
+        "orphan": {},
+        "produced": {
+          "saddles": 5.0
+        },
+        "practice": 21.0,
+        "elapsed": 0,
+        "ore": [
+          60
+        ]
+      }
+    ]
+  },
+  {
+    "kind": "steelworks",
+    "skill": 0,
+    "talent": 0,
+    "name": "8_steelworks",
+    "inputs": {
+      "iron": 8.0,
+      "wood": 12.0
+    },
+    "ore": [
+      {
+        "x": 6,
+        "y": 0,
+        "supply": 60
+      }
+    ],
+    "output": {},
+    "actions": [
+      {
+        "op": "advance",
+        "seconds": 1
+      },
+      {
+        "op": "advance",
+        "seconds": 14
+      },
+      {
+        "op": "dropoff"
+      },
+      {
+        "op": "advance",
+        "seconds": 100
+      }
+    ],
+    "states": [
+      {
+        "status": "Producing steel \u00b7 14s remaining",
+        "flows": {
+          "incoming": {},
+          "outgoing": {}
+        },
+        "inputs": {
+          "iron": 8.0,
+          "wood": 12.0
+        },
+        "output": {},
+        "pending": {},
+        "orphan": {},
+        "produced": {},
+        "practice": 0,
+        "elapsed": 1,
+        "ore": [
+          60
+        ]
+      },
+      {
+        "status": "Working",
+        "flows": {
+          "incoming": {
+            "steel": 1.0
+          },
+          "outgoing": {
+            "iron": 2.0,
+            "wood": 3.0
+          }
+        },
+        "inputs": {
+          "iron": 6.0,
+          "wood": 9.0
+        },
+        "output": {},
+        "pending": {
+          "steel": 1.0
+        },
+        "orphan": {},
+        "produced": {
+          "steel": 1.0
+        },
+        "practice": 0.4,
+        "elapsed": 0,
+        "ore": [
+          60
+        ]
+      },
+      {
+        "status": null,
+        "flows": {
+          "incoming": {
+            "steel": 1.0
+          },
+          "outgoing": {
+            "iron": 2.0,
+            "wood": 3.0
+          }
+        },
+        "inputs": {
+          "iron": 6.0,
+          "wood": 9.0
+        },
+        "output": {
+          "steel": 1.0
+        },
+        "pending": {},
+        "orphan": {},
+        "produced": {
+          "steel": 1.0
+        },
+        "practice": 0.4,
+        "elapsed": 0,
+        "ore": [
+          60
+        ]
+      },
+      {
+        "status": "Working",
+        "flows": {
+          "incoming": {
+            "steel": 2.0
+          },
+          "outgoing": {
+            "iron": 4.0,
+            "wood": 6.0
+          }
+        },
+        "inputs": {
+          "iron": 4.0,
+          "wood": 6.0
+        },
+        "output": {
+          "steel": 1.0
+        },
+        "pending": {
+          "steel": 1.0
+        },
+        "orphan": {},
+        "produced": {
+          "steel": 2.0
+        },
+        "practice": 0.8,
+        "elapsed": 0,
+        "ore": [
+          60
+        ]
+      }
+    ]
+  },
+  {
+    "kind": "steelworks",
+    "skill": 20,
+    "talent": 1,
+    "name": "9_steelworks",
+    "inputs": {
+      "iron": 20.0,
+      "wood": 30.0
+    },
+    "ore": [
+      {
+        "x": 6,
+        "y": 0,
+        "supply": 60
+      }
+    ],
+    "output": {},
+    "actions": [
+      {
+        "op": "advance",
+        "seconds": 1
+      },
+      {
+        "op": "advance",
+        "seconds": 14
+      },
+      {
+        "op": "dropoff"
+      },
+      {
+        "op": "advance",
+        "seconds": 100
+      }
+    ],
+    "states": [
+      {
+        "status": "Producing steel \u00b7 14s remaining",
+        "flows": {
+          "incoming": {},
+          "outgoing": {}
+        },
+        "inputs": {
+          "iron": 20.0,
+          "wood": 30.0
+        },
+        "output": {},
+        "pending": {},
+        "orphan": {},
+        "produced": {},
+        "practice": 20,
+        "elapsed": 1,
+        "ore": [
+          60
+        ]
+      },
+      {
+        "status": "Working",
+        "flows": {
+          "incoming": {
+            "steel": 2.5
+          },
+          "outgoing": {
+            "iron": 5.0,
+            "wood": 7.5
+          }
+        },
+        "inputs": {
+          "iron": 15.0,
+          "wood": 22.5
+        },
+        "output": {},
+        "pending": {
+          "steel": 2.5
+        },
+        "orphan": {},
+        "produced": {
+          "steel": 2.5
+        },
+        "practice": 20.5,
+        "elapsed": 0,
+        "ore": [
+          60
+        ]
+      },
+      {
+        "status": null,
+        "flows": {
+          "incoming": {
+            "steel": 2.5
+          },
+          "outgoing": {
+            "iron": 5.0,
+            "wood": 7.5
+          }
+        },
+        "inputs": {
+          "iron": 15.0,
+          "wood": 22.5
+        },
+        "output": {
+          "steel": 2.5
+        },
+        "pending": {},
+        "orphan": {},
+        "produced": {
+          "steel": 2.5
+        },
+        "practice": 20.5,
+        "elapsed": 0,
+        "ore": [
+          60
+        ]
+      },
+      {
+        "status": "Working",
+        "flows": {
+          "incoming": {
+            "steel": 5.0
+          },
+          "outgoing": {
+            "iron": 10.0,
+            "wood": 15.0
+          }
+        },
+        "inputs": {
+          "iron": 10.0,
+          "wood": 15.0
+        },
+        "output": {
+          "steel": 2.5
+        },
+        "pending": {
+          "steel": 2.5
+        },
+        "orphan": {},
+        "produced": {
+          "steel": 5.0
+        },
+        "practice": 21.0,
+        "elapsed": 0,
+        "ore": [
+          60
+        ]
+      }
+    ]
+  },
+  {
+    "kind": "tradehouse",
+    "skill": 0,
+    "talent": 0,
+    "name": "10_tradehouse",
+    "inputs": {
+      "planks": 12.0,
+      "leather": 8.0,
+      "steel": 4.0
+    },
+    "ore": [
+      {
+        "x": 6,
+        "y": 0,
+        "supply": 60
+      }
+    ],
+    "output": {},
+    "actions": [
+      {
+        "op": "advance",
+        "seconds": 1
+      },
+      {
+        "op": "advance",
+        "seconds": 17
+      },
+      {
+        "op": "dropoff"
+      },
+      {
+        "op": "advance",
+        "seconds": 100
+      }
+    ],
+    "states": [
+      {
+        "status": "Producing trade crates \u00b7 17s remaining",
+        "flows": {
+          "incoming": {},
+          "outgoing": {}
+        },
+        "inputs": {
+          "planks": 12.0,
+          "leather": 8.0,
+          "steel": 4.0
+        },
+        "output": {},
+        "pending": {},
+        "orphan": {},
+        "produced": {},
+        "practice": 0,
+        "elapsed": 1,
+        "ore": [
+          60
+        ]
+      },
+      {
+        "status": "Working",
+        "flows": {
+          "incoming": {
+            "trade_crates": 1.0
+          },
+          "outgoing": {
+            "planks": 3.0,
+            "leather": 2.0,
+            "steel": 1.0
+          }
+        },
+        "inputs": {
+          "planks": 9.0,
+          "leather": 6.0,
+          "steel": 3.0
+        },
+        "output": {},
+        "pending": {
+          "trade_crates": 1.0
+        },
+        "orphan": {},
+        "produced": {
+          "trade_crates": 1.0
+        },
+        "practice": 0.48,
+        "elapsed": 0,
+        "ore": [
+          60
+        ]
+      },
+      {
+        "status": null,
+        "flows": {
+          "incoming": {
+            "trade_crates": 1.0
+          },
+          "outgoing": {
+            "planks": 3.0,
+            "leather": 2.0,
+            "steel": 1.0
+          }
+        },
+        "inputs": {
+          "planks": 9.0,
+          "leather": 6.0,
+          "steel": 3.0
+        },
+        "output": {
+          "trade_crates": 1.0
+        },
+        "pending": {},
+        "orphan": {},
+        "produced": {
+          "trade_crates": 1.0
+        },
+        "practice": 0.48,
+        "elapsed": 0,
+        "ore": [
+          60
+        ]
+      },
+      {
+        "status": "Working",
+        "flows": {
+          "incoming": {
+            "trade_crates": 2.0
+          },
+          "outgoing": {
+            "planks": 6.0,
+            "leather": 4.0,
+            "steel": 2.0
+          }
+        },
+        "inputs": {
+          "planks": 6.0,
+          "leather": 4.0,
+          "steel": 2.0
+        },
+        "output": {
+          "trade_crates": 1.0
+        },
+        "pending": {
+          "trade_crates": 1.0
+        },
+        "orphan": {},
+        "produced": {
+          "trade_crates": 2.0
+        },
+        "practice": 0.96,
+        "elapsed": 0,
+        "ore": [
+          60
+        ]
+      }
+    ]
+  },
+  {
+    "kind": "tradehouse",
+    "skill": 20,
+    "talent": 1,
+    "name": "11_tradehouse",
+    "inputs": {
+      "planks": 30.0,
+      "leather": 20.0,
+      "steel": 10.0
+    },
+    "ore": [
+      {
+        "x": 6,
+        "y": 0,
+        "supply": 60
+      }
+    ],
+    "output": {},
+    "actions": [
+      {
+        "op": "advance",
+        "seconds": 1
+      },
+      {
+        "op": "advance",
+        "seconds": 17
+      },
+      {
+        "op": "dropoff"
+      },
+      {
+        "op": "advance",
+        "seconds": 100
+      }
+    ],
+    "states": [
+      {
+        "status": "Producing trade crates \u00b7 17s remaining",
+        "flows": {
+          "incoming": {},
+          "outgoing": {}
+        },
+        "inputs": {
+          "planks": 30.0,
+          "leather": 20.0,
+          "steel": 10.0
+        },
+        "output": {},
+        "pending": {},
+        "orphan": {},
+        "produced": {},
+        "practice": 20,
+        "elapsed": 1,
+        "ore": [
+          60
+        ]
+      },
+      {
+        "status": "Working",
+        "flows": {
+          "incoming": {
+            "trade_crates": 2.5
+          },
+          "outgoing": {
+            "planks": 7.5,
+            "leather": 5.0,
+            "steel": 2.5
+          }
+        },
+        "inputs": {
+          "planks": 22.5,
+          "leather": 15.0,
+          "steel": 7.5
+        },
+        "output": {},
+        "pending": {
+          "trade_crates": 2.5
+        },
+        "orphan": {},
+        "produced": {
+          "trade_crates": 2.5
+        },
+        "practice": 20.6,
+        "elapsed": 0,
+        "ore": [
+          60
+        ]
+      },
+      {
+        "status": null,
+        "flows": {
+          "incoming": {
+            "trade_crates": 2.5
+          },
+          "outgoing": {
+            "planks": 7.5,
+            "leather": 5.0,
+            "steel": 2.5
+          }
+        },
+        "inputs": {
+          "planks": 22.5,
+          "leather": 15.0,
+          "steel": 7.5
+        },
+        "output": {
+          "trade_crates": 2.5
+        },
+        "pending": {},
+        "orphan": {},
+        "produced": {
+          "trade_crates": 2.5
+        },
+        "practice": 20.6,
+        "elapsed": 0,
+        "ore": [
+          60
+        ]
+      },
+      {
+        "status": "Working",
+        "flows": {
+          "incoming": {
+            "trade_crates": 5.0
+          },
+          "outgoing": {
+            "planks": 15.0,
+            "leather": 10.0,
+            "steel": 5.0
+          }
+        },
+        "inputs": {
+          "planks": 15.0,
+          "leather": 10.0,
+          "steel": 5.0
+        },
+        "output": {
+          "trade_crates": 2.5
+        },
+        "pending": {
+          "trade_crates": 2.5
+        },
+        "orphan": {},
+        "produced": {
+          "trade_crates": 5.0
+        },
+        "practice": 21.2,
+        "elapsed": 0,
+        "ore": [
+          60
+        ]
+      }
+    ]
+  },
+  {
+    "kind": "bakery",
+    "skill": 0,
+    "talent": 0,
+    "name": "12_bakery",
+    "inputs": {
+      "flour": 8.0,
+      "wood": 2.0
+    },
+    "ore": [
+      {
+        "x": 6,
+        "y": 0,
+        "supply": 60
+      }
+    ],
+    "output": {},
+    "actions": [
+      {
+        "op": "advance",
+        "seconds": 1
+      },
+      {
+        "op": "advance",
+        "seconds": 5
+      },
+      {
+        "op": "dropoff"
+      },
+      {
+        "op": "advance",
+        "seconds": 100
+      }
+    ],
+    "states": [
+      {
+        "status": "Producing bread \u00b7 5s remaining",
+        "flows": {
+          "incoming": {},
+          "outgoing": {}
+        },
+        "inputs": {
+          "flour": 8.0,
+          "wood": 2.0
+        },
+        "output": {},
+        "pending": {},
+        "orphan": {},
+        "produced": {},
+        "practice": 0,
+        "elapsed": 1,
+        "ore": [
+          60
+        ]
+      },
+      {
+        "status": "Working",
+        "flows": {
+          "incoming": {
+            "bread": 2.0,
+            "food": 3.0
+          },
+          "outgoing": {
+            "flour": 2.0,
+            "wood": 0.5
+          }
+        },
+        "inputs": {
+          "flour": 6.0,
+          "wood": 1.5
+        },
+        "output": {},
+        "pending": {
+          "bread": 2.0
+        },
+        "orphan": {},
+        "produced": {
+          "bread": 2.0
+        },
+        "practice": 0.16,
+        "elapsed": 0,
+        "ore": [
+          60
+        ]
+      },
+      {
+        "status": null,
+        "flows": {
+          "incoming": {
+            "bread": 2.0,
+            "food": 3.0
+          },
+          "outgoing": {
+            "flour": 2.0,
+            "wood": 0.5
+          }
+        },
+        "inputs": {
+          "flour": 6.0,
+          "wood": 1.5
+        },
+        "output": {
+          "bread": 2.0
+        },
+        "pending": {},
+        "orphan": {},
+        "produced": {
+          "bread": 2.0
+        },
+        "practice": 0.16,
+        "elapsed": 0,
+        "ore": [
+          60
+        ]
+      },
+      {
+        "status": "Working",
+        "flows": {
+          "incoming": {
+            "bread": 4.0,
+            "food": 6.0
+          },
+          "outgoing": {
+            "flour": 4.0,
+            "wood": 1.0
+          }
+        },
+        "inputs": {
+          "flour": 4.0,
+          "wood": 1.0
+        },
+        "output": {
+          "bread": 2.0
+        },
+        "pending": {
+          "bread": 2.0
+        },
+        "orphan": {},
+        "produced": {
+          "bread": 4.0
+        },
+        "practice": 0.32,
+        "elapsed": 0,
+        "ore": [
+          60
+        ]
+      }
+    ]
+  },
+  {
+    "kind": "bakery",
+    "skill": 20,
+    "talent": 1,
+    "name": "13_bakery",
+    "inputs": {
+      "flour": 20.0,
+      "wood": 5.0
+    },
+    "ore": [
+      {
+        "x": 6,
+        "y": 0,
+        "supply": 60
+      }
+    ],
+    "output": {},
+    "actions": [
+      {
+        "op": "advance",
+        "seconds": 1
+      },
+      {
+        "op": "advance",
+        "seconds": 5
+      },
+      {
+        "op": "dropoff"
+      },
+      {
+        "op": "advance",
+        "seconds": 100
+      }
+    ],
+    "states": [
+      {
+        "status": "Producing bread \u00b7 5s remaining",
+        "flows": {
+          "incoming": {},
+          "outgoing": {}
+        },
+        "inputs": {
+          "flour": 20.0,
+          "wood": 5.0
+        },
+        "output": {},
+        "pending": {},
+        "orphan": {},
+        "produced": {},
+        "practice": 20,
+        "elapsed": 1,
+        "ore": [
+          60
+        ]
+      },
+      {
+        "status": "Working",
+        "flows": {
+          "incoming": {
+            "bread": 5.0,
+            "food": 7.5
+          },
+          "outgoing": {
+            "flour": 5.0,
+            "wood": 1.25
+          }
+        },
+        "inputs": {
+          "flour": 15.0,
+          "wood": 3.75
+        },
+        "output": {},
+        "pending": {
+          "bread": 5.0
+        },
+        "orphan": {},
+        "produced": {
+          "bread": 5.0
+        },
+        "practice": 20.2,
+        "elapsed": 0,
+        "ore": [
+          60
+        ]
+      },
+      {
+        "status": null,
+        "flows": {
+          "incoming": {
+            "bread": 5.0,
+            "food": 7.5
+          },
+          "outgoing": {
+            "flour": 5.0,
+            "wood": 1.25
+          }
+        },
+        "inputs": {
+          "flour": 15.0,
+          "wood": 3.75
+        },
+        "output": {
+          "bread": 5.0
+        },
+        "pending": {},
+        "orphan": {},
+        "produced": {
+          "bread": 5.0
+        },
+        "practice": 20.2,
+        "elapsed": 0,
+        "ore": [
+          60
+        ]
+      },
+      {
+        "status": "Working",
+        "flows": {
+          "incoming": {
+            "bread": 10.0,
+            "food": 15.0
+          },
+          "outgoing": {
+            "flour": 10.0,
+            "wood": 2.5
+          }
+        },
+        "inputs": {
+          "flour": 10.0,
+          "wood": 2.5
+        },
+        "output": {
+          "bread": 5.0
+        },
+        "pending": {
+          "bread": 5.0
+        },
+        "orphan": {},
+        "produced": {
+          "bread": 10.0
+        },
+        "practice": 20.4,
+        "elapsed": 0,
+        "ore": [
+          60
+        ]
+      }
+    ]
+  },
+  {
+    "kind": "butcher",
+    "skill": 0,
+    "talent": 0,
+    "name": "14_butcher",
+    "inputs": {
+      "meat": 8.0
+    },
+    "ore": [
+      {
+        "x": 6,
+        "y": 0,
+        "supply": 60
+      }
+    ],
+    "output": {},
+    "actions": [
+      {
+        "op": "advance",
+        "seconds": 1
+      },
+      {
+        "op": "advance",
+        "seconds": 5
+      },
+      {
+        "op": "dropoff"
+      },
+      {
+        "op": "advance",
+        "seconds": 100
+      }
+    ],
+    "states": [
+      {
+        "status": "Producing prepared meat \u00b7 5s remaining",
+        "flows": {
+          "incoming": {},
+          "outgoing": {}
+        },
+        "inputs": {
+          "meat": 8.0
+        },
+        "output": {},
+        "pending": {},
+        "orphan": {},
+        "produced": {},
+        "practice": 0,
+        "elapsed": 1,
+        "ore": [
+          60
+        ]
+      },
+      {
+        "status": "Working",
+        "flows": {
+          "incoming": {
+            "prepared_meat": 2.0,
+            "food": 8.0
+          },
+          "outgoing": {
+            "meat": 2.0,
+            "food": 2.0
+          }
+        },
+        "inputs": {
+          "meat": 6.0
+        },
+        "output": {},
+        "pending": {
+          "prepared_meat": 2.0
+        },
+        "orphan": {},
+        "produced": {
+          "prepared_meat": 2.0
+        },
+        "practice": 0.2,
+        "elapsed": 0,
+        "ore": [
+          60
+        ]
+      },
+      {
+        "status": null,
+        "flows": {
+          "incoming": {
+            "prepared_meat": 2.0,
+            "food": 8.0
+          },
+          "outgoing": {
+            "meat": 2.0,
+            "food": 2.0
+          }
+        },
+        "inputs": {
+          "meat": 6.0
+        },
+        "output": {
+          "prepared_meat": 2.0
+        },
+        "pending": {},
+        "orphan": {},
+        "produced": {
+          "prepared_meat": 2.0
+        },
+        "practice": 0.2,
+        "elapsed": 0,
+        "ore": [
+          60
+        ]
+      },
+      {
+        "status": "Working",
+        "flows": {
+          "incoming": {
+            "prepared_meat": 4.0,
+            "food": 16.0
+          },
+          "outgoing": {
+            "meat": 4.0,
+            "food": 4.0
+          }
+        },
+        "inputs": {
+          "meat": 4.0
+        },
+        "output": {
+          "prepared_meat": 2.0
+        },
+        "pending": {
+          "prepared_meat": 2.0
+        },
+        "orphan": {},
+        "produced": {
+          "prepared_meat": 4.0
+        },
+        "practice": 0.4,
+        "elapsed": 0,
+        "ore": [
+          60
+        ]
+      }
+    ]
+  },
+  {
+    "kind": "butcher",
+    "skill": 20,
+    "talent": 1,
+    "name": "15_butcher",
+    "inputs": {
+      "meat": 20.0
+    },
+    "ore": [
+      {
+        "x": 6,
+        "y": 0,
+        "supply": 60
+      }
+    ],
+    "output": {},
+    "actions": [
+      {
+        "op": "advance",
+        "seconds": 1
+      },
+      {
+        "op": "advance",
+        "seconds": 5
+      },
+      {
+        "op": "dropoff"
+      },
+      {
+        "op": "advance",
+        "seconds": 100
+      }
+    ],
+    "states": [
+      {
+        "status": "Producing prepared meat \u00b7 5s remaining",
+        "flows": {
+          "incoming": {},
+          "outgoing": {}
+        },
+        "inputs": {
+          "meat": 20.0
+        },
+        "output": {},
+        "pending": {},
+        "orphan": {},
+        "produced": {},
+        "practice": 20,
+        "elapsed": 1,
+        "ore": [
+          60
+        ]
+      },
+      {
+        "status": "Working",
+        "flows": {
+          "incoming": {
+            "prepared_meat": 5.0,
+            "food": 20.0
+          },
+          "outgoing": {
+            "meat": 5.0,
+            "food": 5.0
+          }
+        },
+        "inputs": {
+          "meat": 15.0
+        },
+        "output": {},
+        "pending": {
+          "prepared_meat": 5.0
+        },
+        "orphan": {},
+        "produced": {
+          "prepared_meat": 5.0
+        },
+        "practice": 20.25,
+        "elapsed": 0,
+        "ore": [
+          60
+        ]
+      },
+      {
+        "status": null,
+        "flows": {
+          "incoming": {
+            "prepared_meat": 5.0,
+            "food": 20.0
+          },
+          "outgoing": {
+            "meat": 5.0,
+            "food": 5.0
+          }
+        },
+        "inputs": {
+          "meat": 15.0
+        },
+        "output": {
+          "prepared_meat": 5.0
+        },
+        "pending": {},
+        "orphan": {},
+        "produced": {
+          "prepared_meat": 5.0
+        },
+        "practice": 20.25,
+        "elapsed": 0,
+        "ore": [
+          60
+        ]
+      },
+      {
+        "status": "Working",
+        "flows": {
+          "incoming": {
+            "prepared_meat": 10.0,
+            "food": 40.0
+          },
+          "outgoing": {
+            "meat": 10.0,
+            "food": 10.0
+          }
+        },
+        "inputs": {
+          "meat": 10.0
+        },
+        "output": {
+          "prepared_meat": 5.0
+        },
+        "pending": {
+          "prepared_meat": 5.0
+        },
+        "orphan": {},
+        "produced": {
+          "prepared_meat": 10.0
+        },
+        "practice": 20.5,
+        "elapsed": 0,
+        "ore": [
+          60
+        ]
+      }
+    ]
+  },
+  {
+    "kind": "sawpit",
+    "skill": 0,
+    "talent": 0,
+    "name": "16_sawpit",
+    "inputs": {
+      "wood": 8.0
+    },
+    "ore": [
+      {
+        "x": 6,
+        "y": 0,
+        "supply": 60
+      }
+    ],
+    "output": {},
+    "actions": [
+      {
+        "op": "advance",
+        "seconds": 1
+      },
+      {
+        "op": "advance",
+        "seconds": 5
+      },
+      {
+        "op": "dropoff"
+      },
+      {
+        "op": "advance",
+        "seconds": 100
+      }
+    ],
+    "states": [
+      {
+        "status": "Producing planks \u00b7 5s remaining",
+        "flows": {
+          "incoming": {},
+          "outgoing": {}
+        },
+        "inputs": {
+          "wood": 8.0
+        },
+        "output": {},
+        "pending": {},
+        "orphan": {},
+        "produced": {},
+        "practice": 0,
+        "elapsed": 1,
+        "ore": [
+          60
+        ]
+      },
+      {
+        "status": "Working",
+        "flows": {
+          "incoming": {
+            "planks": 1.0
+          },
+          "outgoing": {
+            "wood": 2.0
+          }
+        },
+        "inputs": {
+          "wood": 6.0
+        },
+        "output": {},
+        "pending": {
+          "planks": 1.0
+        },
+        "orphan": {},
+        "produced": {
+          "planks": 1.0
+        },
+        "practice": 0.16,
+        "elapsed": 0,
+        "ore": [
+          60
+        ]
+      },
+      {
+        "status": null,
+        "flows": {
+          "incoming": {
+            "planks": 1.0
+          },
+          "outgoing": {
+            "wood": 2.0
+          }
+        },
+        "inputs": {
+          "wood": 6.0
+        },
+        "output": {
+          "planks": 1.0
+        },
+        "pending": {},
+        "orphan": {},
+        "produced": {
+          "planks": 1.0
+        },
+        "practice": 0.16,
+        "elapsed": 0,
+        "ore": [
+          60
+        ]
+      },
+      {
+        "status": "Working",
+        "flows": {
+          "incoming": {
+            "planks": 2.0
+          },
+          "outgoing": {
+            "wood": 4.0
+          }
+        },
+        "inputs": {
+          "wood": 4.0
+        },
+        "output": {
+          "planks": 1.0
+        },
+        "pending": {
+          "planks": 1.0
+        },
+        "orphan": {},
+        "produced": {
+          "planks": 2.0
+        },
+        "practice": 0.32,
+        "elapsed": 0,
+        "ore": [
+          60
+        ]
+      }
+    ]
+  },
+  {
+    "kind": "sawpit",
+    "skill": 20,
+    "talent": 1,
+    "name": "17_sawpit",
+    "inputs": {
+      "wood": 20.0
+    },
+    "ore": [
+      {
+        "x": 6,
+        "y": 0,
+        "supply": 60
+      }
+    ],
+    "output": {},
+    "actions": [
+      {
+        "op": "advance",
+        "seconds": 1
+      },
+      {
+        "op": "advance",
+        "seconds": 5
+      },
+      {
+        "op": "dropoff"
+      },
+      {
+        "op": "advance",
+        "seconds": 100
+      }
+    ],
+    "states": [
+      {
+        "status": "Producing planks \u00b7 5s remaining",
+        "flows": {
+          "incoming": {},
+          "outgoing": {}
+        },
+        "inputs": {
+          "wood": 20.0
+        },
+        "output": {},
+        "pending": {},
+        "orphan": {},
+        "produced": {},
+        "practice": 20,
+        "elapsed": 1,
+        "ore": [
+          60
+        ]
+      },
+      {
+        "status": "Working",
+        "flows": {
+          "incoming": {
+            "planks": 2.5
+          },
+          "outgoing": {
+            "wood": 5.0
+          }
+        },
+        "inputs": {
+          "wood": 15.0
+        },
+        "output": {},
+        "pending": {
+          "planks": 2.5
+        },
+        "orphan": {},
+        "produced": {
+          "planks": 2.5
+        },
+        "practice": 20.2,
+        "elapsed": 0,
+        "ore": [
+          60
+        ]
+      },
+      {
+        "status": null,
+        "flows": {
+          "incoming": {
+            "planks": 2.5
+          },
+          "outgoing": {
+            "wood": 5.0
+          }
+        },
+        "inputs": {
+          "wood": 15.0
+        },
+        "output": {
+          "planks": 2.5
+        },
+        "pending": {},
+        "orphan": {},
+        "produced": {
+          "planks": 2.5
+        },
+        "practice": 20.2,
+        "elapsed": 0,
+        "ore": [
+          60
+        ]
+      },
+      {
+        "status": "Working",
+        "flows": {
+          "incoming": {
+            "planks": 5.0
+          },
+          "outgoing": {
+            "wood": 10.0
+          }
+        },
+        "inputs": {
+          "wood": 10.0
+        },
+        "output": {
+          "planks": 2.5
+        },
+        "pending": {
+          "planks": 2.5
+        },
+        "orphan": {},
+        "produced": {
+          "planks": 5.0
+        },
+        "practice": 20.4,
+        "elapsed": 0,
+        "ore": [
+          60
+        ]
+      }
+    ]
+  },
+  {
+    "kind": "mill",
+    "skill": 0,
+    "talent": 0,
+    "name": "18_mill",
+    "inputs": {
+      "wheat": 8.0
+    },
+    "ore": [
+      {
+        "x": 6,
+        "y": 0,
+        "supply": 60
+      }
+    ],
+    "output": {},
+    "actions": [
+      {
+        "op": "advance",
+        "seconds": 1
+      },
+      {
+        "op": "advance",
+        "seconds": 2
+      },
+      {
+        "op": "dropoff"
+      },
+      {
+        "op": "advance",
+        "seconds": 100
+      }
+    ],
+    "states": [
+      {
+        "status": "Producing flour \u00b7 2s remaining",
+        "flows": {
+          "incoming": {},
+          "outgoing": {}
+        },
+        "inputs": {
+          "wheat": 8.0
+        },
+        "output": {},
+        "pending": {},
+        "orphan": {},
+        "produced": {},
+        "practice": 0,
+        "elapsed": 1,
+        "ore": [
+          60
+        ]
+      },
+      {
+        "status": "Working",
+        "flows": {
+          "incoming": {
+            "flour": 2.0
+          },
+          "outgoing": {
+            "wheat": 2.0
+          }
+        },
+        "inputs": {
+          "wheat": 6.0
+        },
+        "output": {},
+        "pending": {
+          "flour": 2.0
+        },
+        "orphan": {},
+        "produced": {
+          "flour": 2.0
+        },
+        "practice": 0.08,
+        "elapsed": 0,
+        "ore": [
+          60
+        ]
+      },
+      {
+        "status": null,
+        "flows": {
+          "incoming": {
+            "flour": 2.0
+          },
+          "outgoing": {
+            "wheat": 2.0
+          }
+        },
+        "inputs": {
+          "wheat": 6.0
+        },
+        "output": {
+          "flour": 2.0
+        },
+        "pending": {},
+        "orphan": {},
+        "produced": {
+          "flour": 2.0
+        },
+        "practice": 0.08,
+        "elapsed": 0,
+        "ore": [
+          60
+        ]
+      },
+      {
+        "status": "Working",
+        "flows": {
+          "incoming": {
+            "flour": 4.0
+          },
+          "outgoing": {
+            "wheat": 4.0
+          }
+        },
+        "inputs": {
+          "wheat": 4.0
+        },
+        "output": {
+          "flour": 2.0
+        },
+        "pending": {
+          "flour": 2.0
+        },
+        "orphan": {},
+        "produced": {
+          "flour": 4.0
+        },
+        "practice": 0.16,
+        "elapsed": 0,
+        "ore": [
+          60
+        ]
+      }
+    ]
+  },
+  {
+    "kind": "mill",
+    "skill": 20,
+    "talent": 1,
+    "name": "19_mill",
+    "inputs": {
+      "wheat": 20.0
+    },
+    "ore": [
+      {
+        "x": 6,
+        "y": 0,
+        "supply": 60
+      }
+    ],
+    "output": {},
+    "actions": [
+      {
+        "op": "advance",
+        "seconds": 1
+      },
+      {
+        "op": "advance",
+        "seconds": 2
+      },
+      {
+        "op": "dropoff"
+      },
+      {
+        "op": "advance",
+        "seconds": 100
+      }
+    ],
+    "states": [
+      {
+        "status": "Producing flour \u00b7 2s remaining",
+        "flows": {
+          "incoming": {},
+          "outgoing": {}
+        },
+        "inputs": {
+          "wheat": 20.0
+        },
+        "output": {},
+        "pending": {},
+        "orphan": {},
+        "produced": {},
+        "practice": 20,
+        "elapsed": 1,
+        "ore": [
+          60
+        ]
+      },
+      {
+        "status": "Working",
+        "flows": {
+          "incoming": {
+            "flour": 5.0
+          },
+          "outgoing": {
+            "wheat": 5.0
+          }
+        },
+        "inputs": {
+          "wheat": 15.0
+        },
+        "output": {},
+        "pending": {
+          "flour": 5.0
+        },
+        "orphan": {},
+        "produced": {
+          "flour": 5.0
+        },
+        "practice": 20.1,
+        "elapsed": 0,
+        "ore": [
+          60
+        ]
+      },
+      {
+        "status": null,
+        "flows": {
+          "incoming": {
+            "flour": 5.0
+          },
+          "outgoing": {
+            "wheat": 5.0
+          }
+        },
+        "inputs": {
+          "wheat": 15.0
+        },
+        "output": {
+          "flour": 5.0
+        },
+        "pending": {},
+        "orphan": {},
+        "produced": {
+          "flour": 5.0
+        },
+        "practice": 20.1,
+        "elapsed": 0,
+        "ore": [
+          60
+        ]
+      },
+      {
+        "status": "Working",
+        "flows": {
+          "incoming": {
+            "flour": 10.0
+          },
+          "outgoing": {
+            "wheat": 10.0
+          }
+        },
+        "inputs": {
+          "wheat": 10.0
+        },
+        "output": {
+          "flour": 5.0
+        },
+        "pending": {
+          "flour": 5.0
+        },
+        "orphan": {},
+        "produced": {
+          "flour": 10.0
+        },
+        "practice": 20.2,
+        "elapsed": 0,
+        "ore": [
+          60
+        ]
+      }
+    ]
+  },
+  {
+    "kind": "smokehouse",
+    "skill": 0,
+    "talent": 0,
+    "name": "20_smokehouse",
+    "inputs": {
+      "wood": 1.0,
+      "fish": 4.0
+    },
+    "ore": [
+      {
+        "x": 6,
+        "y": 0,
+        "supply": 60
+      }
+    ],
+    "output": {},
+    "actions": [
+      {
+        "op": "advance",
+        "seconds": 1
+      },
+      {
+        "op": "advance",
+        "seconds": 2
+      },
+      {
+        "op": "dropoff"
+      },
+      {
+        "op": "advance",
+        "seconds": 100
+      }
+    ],
+    "states": [
+      {
+        "status": "Producing smoked fish \u00b7 2s remaining",
+        "flows": {
+          "incoming": {},
+          "outgoing": {}
+        },
+        "inputs": {
+          "wood": 1.0,
+          "fish": 4.0
+        },
+        "output": {},
+        "pending": {},
+        "orphan": {},
+        "produced": {},
+        "practice": 0,
+        "elapsed": 1,
+        "ore": [
+          60
+        ]
+      },
+      {
+        "status": "Working",
+        "flows": {
+          "incoming": {
+            "smoked_fish": 1.0,
+            "food": 1.5
+          },
+          "outgoing": {
+            "wood": 0.25,
+            "fish": 1.0,
+            "food": 1.0
+          }
+        },
+        "inputs": {
+          "wood": 0.75,
+          "fish": 3.0
+        },
+        "output": {},
+        "pending": {
+          "smoked_fish": 1.0
+        },
+        "orphan": {},
+        "produced": {
+          "smoked_fish": 1.0
+        },
+        "practice": 0.08,
+        "elapsed": 0,
+        "ore": [
+          60
+        ]
+      },
+      {
+        "status": null,
+        "flows": {
+          "incoming": {
+            "smoked_fish": 1.0,
+            "food": 1.5
+          },
+          "outgoing": {
+            "wood": 0.25,
+            "fish": 1.0,
+            "food": 1.0
+          }
+        },
+        "inputs": {
+          "wood": 0.75,
+          "fish": 3.0
+        },
+        "output": {
+          "smoked_fish": 1.0
+        },
+        "pending": {},
+        "orphan": {},
+        "produced": {
+          "smoked_fish": 1.0
+        },
+        "practice": 0.08,
+        "elapsed": 0,
+        "ore": [
+          60
+        ]
+      },
+      {
+        "status": "Working",
+        "flows": {
+          "incoming": {
+            "smoked_fish": 2.0,
+            "food": 3.0
+          },
+          "outgoing": {
+            "wood": 0.5,
+            "fish": 2.0,
+            "food": 2.0
+          }
+        },
+        "inputs": {
+          "wood": 0.5,
+          "fish": 2.0
+        },
+        "output": {
+          "smoked_fish": 1.0
+        },
+        "pending": {
+          "smoked_fish": 1.0
+        },
+        "orphan": {},
+        "produced": {
+          "smoked_fish": 2.0
+        },
+        "practice": 0.16,
+        "elapsed": 0,
+        "ore": [
+          60
+        ]
+      }
+    ]
+  },
+  {
+    "kind": "smokehouse",
+    "skill": 20,
+    "talent": 1,
+    "name": "21_smokehouse",
+    "inputs": {
+      "wood": 2.5,
+      "fish": 10.0
+    },
+    "ore": [
+      {
+        "x": 6,
+        "y": 0,
+        "supply": 60
+      }
+    ],
+    "output": {},
+    "actions": [
+      {
+        "op": "advance",
+        "seconds": 1
+      },
+      {
+        "op": "advance",
+        "seconds": 2
+      },
+      {
+        "op": "dropoff"
+      },
+      {
+        "op": "advance",
+        "seconds": 100
+      }
+    ],
+    "states": [
+      {
+        "status": "Producing smoked fish \u00b7 2s remaining",
+        "flows": {
+          "incoming": {},
+          "outgoing": {}
+        },
+        "inputs": {
+          "wood": 2.5,
+          "fish": 10.0
+        },
+        "output": {},
+        "pending": {},
+        "orphan": {},
+        "produced": {},
+        "practice": 20,
+        "elapsed": 1,
+        "ore": [
+          60
+        ]
+      },
+      {
+        "status": "Working",
+        "flows": {
+          "incoming": {
+            "smoked_fish": 2.5,
+            "food": 3.75
+          },
+          "outgoing": {
+            "wood": 0.625,
+            "fish": 2.5,
+            "food": 2.5
+          }
+        },
+        "inputs": {
+          "wood": 1.875,
+          "fish": 7.5
+        },
+        "output": {},
+        "pending": {
+          "smoked_fish": 2.5
+        },
+        "orphan": {},
+        "produced": {
+          "smoked_fish": 2.5
+        },
+        "practice": 20.1,
+        "elapsed": 0,
+        "ore": [
+          60
+        ]
+      },
+      {
+        "status": null,
+        "flows": {
+          "incoming": {
+            "smoked_fish": 2.5,
+            "food": 3.75
+          },
+          "outgoing": {
+            "wood": 0.625,
+            "fish": 2.5,
+            "food": 2.5
+          }
+        },
+        "inputs": {
+          "wood": 1.875,
+          "fish": 7.5
+        },
+        "output": {
+          "smoked_fish": 2.5
+        },
+        "pending": {},
+        "orphan": {},
+        "produced": {
+          "smoked_fish": 2.5
+        },
+        "practice": 20.1,
+        "elapsed": 0,
+        "ore": [
+          60
+        ]
+      },
+      {
+        "status": "Working",
+        "flows": {
+          "incoming": {
+            "smoked_fish": 5.0,
+            "food": 7.5
+          },
+          "outgoing": {
+            "wood": 1.25,
+            "fish": 5.0,
+            "food": 5.0
+          }
+        },
+        "inputs": {
+          "wood": 1.25,
+          "fish": 5.0
+        },
+        "output": {
+          "smoked_fish": 2.5
+        },
+        "pending": {
+          "smoked_fish": 2.5
+        },
+        "orphan": {},
+        "produced": {
+          "smoked_fish": 5.0
+        },
+        "practice": 20.2,
+        "elapsed": 0,
+        "ore": [
+          60
+        ]
+      }
+    ]
+  },
+  {
+    "kind": "fish_pond",
+    "skill": 0,
+    "talent": 0,
+    "name": "22_fish_pond",
+    "inputs": {
+      "fodder": 2.0
+    },
+    "ore": [
+      {
+        "x": 6,
+        "y": 0,
+        "supply": 60
+      }
+    ],
+    "output": {},
+    "actions": [
+      {
+        "op": "advance",
+        "seconds": 1
+      },
+      {
+        "op": "advance",
+        "seconds": 2
+      },
+      {
+        "op": "dropoff"
+      },
+      {
+        "op": "advance",
+        "seconds": 100
+      }
+    ],
+    "states": [
+      {
+        "status": "Producing fish \u00b7 2s remaining",
+        "flows": {
+          "incoming": {},
+          "outgoing": {}
+        },
+        "inputs": {
+          "fodder": 2.0
+        },
+        "output": {},
+        "pending": {},
+        "orphan": {},
+        "produced": {},
+        "practice": 0,
+        "elapsed": 1,
+        "ore": [
+          60
+        ]
+      },
+      {
+        "status": "Working",
+        "flows": {
+          "incoming": {
+            "fish": 1.0,
+            "food": 1.0
+          },
+          "outgoing": {
+            "fodder": 0.5
+          }
+        },
+        "inputs": {
+          "fodder": 1.5
+        },
+        "output": {},
+        "pending": {
+          "fish": 1.0
+        },
+        "orphan": {},
+        "produced": {
+          "fish": 1.0
+        },
+        "practice": 0.08,
+        "elapsed": 0,
+        "ore": [
+          60
+        ]
+      },
+      {
+        "status": null,
+        "flows": {
+          "incoming": {
+            "fish": 1.0,
+            "food": 1.0
+          },
+          "outgoing": {
+            "fodder": 0.5
+          }
+        },
+        "inputs": {
+          "fodder": 1.5
+        },
+        "output": {
+          "fish": 1.0
+        },
+        "pending": {},
+        "orphan": {},
+        "produced": {
+          "fish": 1.0
+        },
+        "practice": 0.08,
+        "elapsed": 0,
+        "ore": [
+          60
+        ]
+      },
+      {
+        "status": "Working",
+        "flows": {
+          "incoming": {
+            "fish": 2.0,
+            "food": 2.0
+          },
+          "outgoing": {
+            "fodder": 1.0
+          }
+        },
+        "inputs": {
+          "fodder": 1.0
+        },
+        "output": {
+          "fish": 1.0
+        },
+        "pending": {
+          "fish": 1.0
+        },
+        "orphan": {},
+        "produced": {
+          "fish": 2.0
+        },
+        "practice": 0.16,
+        "elapsed": 0,
+        "ore": [
+          60
+        ]
+      }
+    ]
+  },
+  {
+    "kind": "fish_pond",
+    "skill": 20,
+    "talent": 1,
+    "name": "23_fish_pond",
+    "inputs": {
+      "fodder": 5.0
+    },
+    "ore": [
+      {
+        "x": 6,
+        "y": 0,
+        "supply": 60
+      }
+    ],
+    "output": {},
+    "actions": [
+      {
+        "op": "advance",
+        "seconds": 1
+      },
+      {
+        "op": "advance",
+        "seconds": 2
+      },
+      {
+        "op": "dropoff"
+      },
+      {
+        "op": "advance",
+        "seconds": 100
+      }
+    ],
+    "states": [
+      {
+        "status": "Producing fish \u00b7 2s remaining",
+        "flows": {
+          "incoming": {},
+          "outgoing": {}
+        },
+        "inputs": {
+          "fodder": 5.0
+        },
+        "output": {},
+        "pending": {},
+        "orphan": {},
+        "produced": {},
+        "practice": 20,
+        "elapsed": 1,
+        "ore": [
+          60
+        ]
+      },
+      {
+        "status": "Working",
+        "flows": {
+          "incoming": {
+            "fish": 2.5,
+            "food": 2.5
+          },
+          "outgoing": {
+            "fodder": 1.25
+          }
+        },
+        "inputs": {
+          "fodder": 3.75
+        },
+        "output": {},
+        "pending": {
+          "fish": 2.5
+        },
+        "orphan": {},
+        "produced": {
+          "fish": 2.5
+        },
+        "practice": 20.1,
+        "elapsed": 0,
+        "ore": [
+          60
+        ]
+      },
+      {
+        "status": null,
+        "flows": {
+          "incoming": {
+            "fish": 2.5,
+            "food": 2.5
+          },
+          "outgoing": {
+            "fodder": 1.25
+          }
+        },
+        "inputs": {
+          "fodder": 3.75
+        },
+        "output": {
+          "fish": 2.5
+        },
+        "pending": {},
+        "orphan": {},
+        "produced": {
+          "fish": 2.5
+        },
+        "practice": 20.1,
+        "elapsed": 0,
+        "ore": [
+          60
+        ]
+      },
+      {
+        "status": "Working",
+        "flows": {
+          "incoming": {
+            "fish": 5.0,
+            "food": 5.0
+          },
+          "outgoing": {
+            "fodder": 2.5
+          }
+        },
+        "inputs": {
+          "fodder": 2.5
+        },
+        "output": {
+          "fish": 2.5
+        },
+        "pending": {
+          "fish": 2.5
+        },
+        "orphan": {},
+        "produced": {
+          "fish": 5.0
+        },
+        "practice": 20.2,
+        "elapsed": 0,
+        "ore": [
+          60
+        ]
+      }
+    ]
+  },
+  {
+    "kind": "mill",
+    "equipment": [
+      "improved_millstones"
+    ],
+    "name": "24_mill",
+    "inputs": {
+      "wheat": 16.0
+    },
+    "ore": [
+      {
+        "x": 6,
+        "y": 0,
+        "supply": 60
+      }
+    ],
+    "output": {},
+    "actions": [
+      {
+        "op": "advance",
+        "seconds": 1
+      },
+      {
+        "op": "advance",
+        "seconds": 2
+      },
+      {
+        "op": "dropoff"
+      },
+      {
+        "op": "advance",
+        "seconds": 100
+      }
+    ],
+    "states": [
+      {
+        "status": "Producing flour \u00b7 2s remaining",
+        "flows": {
+          "incoming": {},
+          "outgoing": {}
+        },
+        "inputs": {
+          "wheat": 16.0
+        },
+        "output": {},
+        "pending": {},
+        "orphan": {},
+        "produced": {},
+        "practice": 0,
+        "elapsed": 1,
+        "ore": [
+          60
+        ]
+      },
+      {
+        "status": "Working",
+        "flows": {
+          "incoming": {
+            "flour": 4.0
+          },
+          "outgoing": {
+            "wheat": 4.0
+          }
+        },
+        "inputs": {
+          "wheat": 12.0
+        },
+        "output": {},
+        "pending": {
+          "flour": 4.0
+        },
+        "orphan": {},
+        "produced": {
+          "flour": 4.0
+        },
+        "practice": 0.08,
+        "elapsed": 0,
+        "ore": [
+          60
+        ]
+      },
+      {
+        "status": null,
+        "flows": {
+          "incoming": {
+            "flour": 4.0
+          },
+          "outgoing": {
+            "wheat": 4.0
+          }
+        },
+        "inputs": {
+          "wheat": 12.0
+        },
+        "output": {
+          "flour": 4.0
+        },
+        "pending": {},
+        "orphan": {},
+        "produced": {
+          "flour": 4.0
+        },
+        "practice": 0.08,
+        "elapsed": 0,
+        "ore": [
+          60
+        ]
+      },
+      {
+        "status": "Working",
+        "flows": {
+          "incoming": {
+            "flour": 8.0
+          },
+          "outgoing": {
+            "wheat": 8.0
+          }
+        },
+        "inputs": {
+          "wheat": 8.0
+        },
+        "output": {
+          "flour": 4.0
+        },
+        "pending": {
+          "flour": 4.0
+        },
+        "orphan": {},
+        "produced": {
+          "flour": 8.0
+        },
+        "practice": 0.16,
+        "elapsed": 0,
+        "ore": [
+          60
+        ]
+      }
+    ]
+  },
+  {
+    "kind": "mill",
+    "equipment": [
+      "geared_millstones"
+    ],
+    "name": "25_mill",
+    "inputs": {
+      "wheat": 32.0
+    },
+    "ore": [
+      {
+        "x": 6,
+        "y": 0,
+        "supply": 60
+      }
+    ],
+    "output": {},
+    "actions": [
+      {
+        "op": "advance",
+        "seconds": 1
+      },
+      {
+        "op": "advance",
+        "seconds": 2
+      },
+      {
+        "op": "dropoff"
+      },
+      {
+        "op": "advance",
+        "seconds": 100
+      }
+    ],
+    "states": [
+      {
+        "status": "Producing flour \u00b7 2s remaining",
+        "flows": {
+          "incoming": {},
+          "outgoing": {}
+        },
+        "inputs": {
+          "wheat": 32.0
+        },
+        "output": {},
+        "pending": {},
+        "orphan": {},
+        "produced": {},
+        "practice": 0,
+        "elapsed": 1,
+        "ore": [
+          60
+        ]
+      },
+      {
+        "status": "Working",
+        "flows": {
+          "incoming": {
+            "flour": 8.0
+          },
+          "outgoing": {
+            "wheat": 8.0
+          }
+        },
+        "inputs": {
+          "wheat": 24.0
+        },
+        "output": {},
+        "pending": {
+          "flour": 8.0
+        },
+        "orphan": {},
+        "produced": {
+          "flour": 8.0
+        },
+        "practice": 0.08,
+        "elapsed": 0,
+        "ore": [
+          60
+        ]
+      },
+      {
+        "status": null,
+        "flows": {
+          "incoming": {
+            "flour": 8.0
+          },
+          "outgoing": {
+            "wheat": 8.0
+          }
+        },
+        "inputs": {
+          "wheat": 24.0
+        },
+        "output": {
+          "flour": 8.0
+        },
+        "pending": {},
+        "orphan": {},
+        "produced": {
+          "flour": 8.0
+        },
+        "practice": 0.08,
+        "elapsed": 0,
+        "ore": [
+          60
+        ]
+      },
+      {
+        "status": "Working",
+        "flows": {
+          "incoming": {
+            "flour": 16.0
+          },
+          "outgoing": {
+            "wheat": 16.0
+          }
+        },
+        "inputs": {
+          "wheat": 16.0
+        },
+        "output": {
+          "flour": 8.0
+        },
+        "pending": {
+          "flour": 8.0
+        },
+        "orphan": {},
+        "produced": {
+          "flour": 16.0
+        },
+        "practice": 0.16,
+        "elapsed": 0,
+        "ore": [
+          60
+        ]
+      }
+    ]
+  },
+  {
+    "kind": "mill",
+    "equipment": [
+      "masterwork_millstones"
+    ],
+    "name": "26_mill",
+    "inputs": {
+      "wheat": 64.0
+    },
+    "ore": [
+      {
+        "x": 6,
+        "y": 0,
+        "supply": 60
+      }
+    ],
+    "output": {},
+    "actions": [
+      {
+        "op": "advance",
+        "seconds": 1
+      },
+      {
+        "op": "advance",
+        "seconds": 2
+      },
+      {
+        "op": "dropoff"
+      },
+      {
+        "op": "advance",
+        "seconds": 100
+      }
+    ],
+    "states": [
+      {
+        "status": "Producing flour \u00b7 2s remaining",
+        "flows": {
+          "incoming": {},
+          "outgoing": {}
+        },
+        "inputs": {
+          "wheat": 64.0
+        },
+        "output": {},
+        "pending": {},
+        "orphan": {},
+        "produced": {},
+        "practice": 0,
+        "elapsed": 1,
+        "ore": [
+          60
+        ]
+      },
+      {
+        "status": "Working",
+        "flows": {
+          "incoming": {
+            "flour": 16.0
+          },
+          "outgoing": {
+            "wheat": 16.0
+          }
+        },
+        "inputs": {
+          "wheat": 48.0
+        },
+        "output": {},
+        "pending": {
+          "flour": 16.0
+        },
+        "orphan": {},
+        "produced": {
+          "flour": 16.0
+        },
+        "practice": 0.08,
+        "elapsed": 0,
+        "ore": [
+          60
+        ]
+      },
+      {
+        "status": null,
+        "flows": {
+          "incoming": {
+            "flour": 16.0
+          },
+          "outgoing": {
+            "wheat": 16.0
+          }
+        },
+        "inputs": {
+          "wheat": 48.0
+        },
+        "output": {
+          "flour": 16.0
+        },
+        "pending": {},
+        "orphan": {},
+        "produced": {
+          "flour": 16.0
+        },
+        "practice": 0.08,
+        "elapsed": 0,
+        "ore": [
+          60
+        ]
+      },
+      {
+        "status": "Working",
+        "flows": {
+          "incoming": {
+            "flour": 32.0
+          },
+          "outgoing": {
+            "wheat": 32.0
+          }
+        },
+        "inputs": {
+          "wheat": 32.0
+        },
+        "output": {
+          "flour": 16.0
+        },
+        "pending": {
+          "flour": 16.0
+        },
+        "orphan": {},
+        "produced": {
+          "flour": 32.0
+        },
+        "practice": 0.16,
+        "elapsed": 0,
+        "ore": [
+          60
+        ]
+      }
+    ]
+  },
+  {
+    "kind": "bakery",
+    "equipment": [
+      "larger_oven"
+    ],
+    "name": "27_bakery",
+    "inputs": {
+      "flour": 32.0,
+      "wood": 8.0
+    },
+    "ore": [
+      {
+        "x": 6,
+        "y": 0,
+        "supply": 60
+      }
+    ],
+    "output": {},
+    "actions": [
+      {
+        "op": "advance",
+        "seconds": 1
+      },
+      {
+        "op": "advance",
+        "seconds": 5
+      },
+      {
+        "op": "dropoff"
+      },
+      {
+        "op": "advance",
+        "seconds": 100
+      }
+    ],
+    "states": [
+      {
+        "status": "Producing bread \u00b7 5s remaining",
+        "flows": {
+          "incoming": {},
+          "outgoing": {}
+        },
+        "inputs": {
+          "flour": 32.0,
+          "wood": 8.0
+        },
+        "output": {},
+        "pending": {},
+        "orphan": {},
+        "produced": {},
+        "practice": 0,
+        "elapsed": 1,
+        "ore": [
+          60
+        ]
+      },
+      {
+        "status": "Working",
+        "flows": {
+          "incoming": {
+            "bread": 8.0,
+            "food": 12.0
+          },
+          "outgoing": {
+            "flour": 8.0,
+            "wood": 2.0
+          }
+        },
+        "inputs": {
+          "flour": 24.0,
+          "wood": 6.0
+        },
+        "output": {},
+        "pending": {
+          "bread": 8.0
+        },
+        "orphan": {},
+        "produced": {
+          "bread": 8.0
+        },
+        "practice": 0.16,
+        "elapsed": 0,
+        "ore": [
+          60
+        ]
+      },
+      {
+        "status": null,
+        "flows": {
+          "incoming": {
+            "bread": 8.0,
+            "food": 12.0
+          },
+          "outgoing": {
+            "flour": 8.0,
+            "wood": 2.0
+          }
+        },
+        "inputs": {
+          "flour": 24.0,
+          "wood": 6.0
+        },
+        "output": {
+          "bread": 8.0
+        },
+        "pending": {},
+        "orphan": {},
+        "produced": {
+          "bread": 8.0
+        },
+        "practice": 0.16,
+        "elapsed": 0,
+        "ore": [
+          60
+        ]
+      },
+      {
+        "status": "Working",
+        "flows": {
+          "incoming": {
+            "bread": 16.0,
+            "food": 24.0
+          },
+          "outgoing": {
+            "flour": 16.0,
+            "wood": 4.0
+          }
+        },
+        "inputs": {
+          "flour": 16.0,
+          "wood": 4.0
+        },
+        "output": {
+          "bread": 8.0
+        },
+        "pending": {
+          "bread": 8.0
+        },
+        "orphan": {},
+        "produced": {
+          "bread": 16.0
+        },
+        "practice": 0.32,
+        "elapsed": 0,
+        "ore": [
+          60
+        ]
+      }
+    ]
+  },
+  {
+    "kind": "bakery",
+    "equipment": [
+      "double_hearth_oven"
+    ],
+    "name": "28_bakery",
+    "inputs": {
+      "flour": 64.0,
+      "wood": 16.0
+    },
+    "ore": [
+      {
+        "x": 6,
+        "y": 0,
+        "supply": 60
+      }
+    ],
+    "output": {},
+    "actions": [
+      {
+        "op": "advance",
+        "seconds": 1
+      },
+      {
+        "op": "advance",
+        "seconds": 5
+      },
+      {
+        "op": "dropoff"
+      },
+      {
+        "op": "advance",
+        "seconds": 100
+      }
+    ],
+    "states": [
+      {
+        "status": "Producing bread \u00b7 5s remaining",
+        "flows": {
+          "incoming": {},
+          "outgoing": {}
+        },
+        "inputs": {
+          "flour": 64.0,
+          "wood": 16.0
+        },
+        "output": {},
+        "pending": {},
+        "orphan": {},
+        "produced": {},
+        "practice": 0,
+        "elapsed": 1,
+        "ore": [
+          60
+        ]
+      },
+      {
+        "status": "Working",
+        "flows": {
+          "incoming": {
+            "bread": 16.0,
+            "food": 24.0
+          },
+          "outgoing": {
+            "flour": 16.0,
+            "wood": 4.0
+          }
+        },
+        "inputs": {
+          "flour": 48.0,
+          "wood": 12.0
+        },
+        "output": {},
+        "pending": {
+          "bread": 16.0
+        },
+        "orphan": {},
+        "produced": {
+          "bread": 16.0
+        },
+        "practice": 0.16,
+        "elapsed": 0,
+        "ore": [
+          60
+        ]
+      },
+      {
+        "status": null,
+        "flows": {
+          "incoming": {
+            "bread": 16.0,
+            "food": 24.0
+          },
+          "outgoing": {
+            "flour": 16.0,
+            "wood": 4.0
+          }
+        },
+        "inputs": {
+          "flour": 48.0,
+          "wood": 12.0
+        },
+        "output": {
+          "bread": 16.0
+        },
+        "pending": {},
+        "orphan": {},
+        "produced": {
+          "bread": 16.0
+        },
+        "practice": 0.16,
+        "elapsed": 0,
+        "ore": [
+          60
+        ]
+      },
+      {
+        "status": "Working",
+        "flows": {
+          "incoming": {
+            "bread": 32.0,
+            "food": 48.0
+          },
+          "outgoing": {
+            "flour": 32.0,
+            "wood": 8.0
+          }
+        },
+        "inputs": {
+          "flour": 32.0,
+          "wood": 8.0
+        },
+        "output": {
+          "bread": 16.0
+        },
+        "pending": {
+          "bread": 16.0
+        },
+        "orphan": {},
+        "produced": {
+          "bread": 32.0
+        },
+        "practice": 0.32,
+        "elapsed": 0,
+        "ore": [
+          60
+        ]
+      }
+    ]
+  },
+  {
+    "kind": "bakery",
+    "equipment": [
+      "masterwork_oven"
+    ],
+    "name": "29_bakery",
+    "inputs": {
+      "flour": 128.0,
+      "wood": 32.0
+    },
+    "ore": [
+      {
+        "x": 6,
+        "y": 0,
+        "supply": 60
+      }
+    ],
+    "output": {},
+    "actions": [
+      {
+        "op": "advance",
+        "seconds": 1
+      },
+      {
+        "op": "advance",
+        "seconds": 5
+      },
+      {
+        "op": "dropoff"
+      },
+      {
+        "op": "advance",
+        "seconds": 100
+      }
+    ],
+    "states": [
+      {
+        "status": "Producing bread \u00b7 5s remaining",
+        "flows": {
+          "incoming": {},
+          "outgoing": {}
+        },
+        "inputs": {
+          "flour": 128.0,
+          "wood": 32.0
+        },
+        "output": {},
+        "pending": {},
+        "orphan": {},
+        "produced": {},
+        "practice": 0,
+        "elapsed": 1,
+        "ore": [
+          60
+        ]
+      },
+      {
+        "status": "Working",
+        "flows": {
+          "incoming": {
+            "bread": 32.0,
+            "food": 48.0
+          },
+          "outgoing": {
+            "flour": 32.0,
+            "wood": 8.0
+          }
+        },
+        "inputs": {
+          "flour": 96.0,
+          "wood": 24.0
+        },
+        "output": {},
+        "pending": {
+          "bread": 32.0
+        },
+        "orphan": {},
+        "produced": {
+          "bread": 32.0
+        },
+        "practice": 0.16,
+        "elapsed": 0,
+        "ore": [
+          60
+        ]
+      },
+      {
+        "status": null,
+        "flows": {
+          "incoming": {
+            "bread": 32.0,
+            "food": 48.0
+          },
+          "outgoing": {
+            "flour": 32.0,
+            "wood": 8.0
+          }
+        },
+        "inputs": {
+          "flour": 96.0,
+          "wood": 24.0
+        },
+        "output": {
+          "bread": 32.0
+        },
+        "pending": {},
+        "orphan": {},
+        "produced": {
+          "bread": 32.0
+        },
+        "practice": 0.16,
+        "elapsed": 0,
+        "ore": [
+          60
+        ]
+      },
+      {
+        "status": "Working",
+        "flows": {
+          "incoming": {
+            "bread": 64.0,
+            "food": 96.0
+          },
+          "outgoing": {
+            "flour": 64.0,
+            "wood": 16.0
+          }
+        },
+        "inputs": {
+          "flour": 64.0,
+          "wood": 16.0
+        },
+        "output": {
+          "bread": 32.0
+        },
+        "pending": {
+          "bread": 32.0
+        },
+        "orphan": {},
+        "produced": {
+          "bread": 64.0
+        },
+        "practice": 0.32,
+        "elapsed": 0,
+        "ore": [
+          60
+        ]
+      }
+    ]
+  },
+  {
+    "kind": "mine",
+    "equipment": [
+      "steel_pickaxe"
+    ],
+    "name": "30_mine",
+    "inputs": {},
+    "ore": [
+      {
+        "x": 6,
+        "y": 0,
+        "supply": 60
+      }
+    ],
+    "output": {},
+    "actions": [
+      {
+        "op": "advance",
+        "seconds": 1
+      },
+      {
+        "op": "advance",
+        "seconds": 8
+      },
+      {
+        "op": "dropoff"
+      },
+      {
+        "op": "advance",
+        "seconds": 100
+      }
+    ],
+    "states": [
+      {
+        "status": "Producing iron ore \u00b7 8s remaining",
+        "flows": {
+          "incoming": {},
+          "outgoing": {}
+        },
+        "inputs": {},
+        "output": {},
+        "pending": {},
+        "orphan": {},
+        "produced": {},
+        "practice": 0,
+        "elapsed": 1,
+        "ore": [
+          60
+        ]
+      },
+      {
+        "status": "Working",
+        "flows": {
+          "incoming": {
+            "iron_ore": 2.5
+          },
+          "outgoing": {}
+        },
+        "inputs": {},
+        "output": {},
+        "pending": {
+          "iron_ore": 2.5
+        },
+        "orphan": {},
+        "produced": {
+          "iron_ore": 2.5
+        },
+        "practice": 0.24,
+        "elapsed": 0,
+        "ore": [
+          57.5
+        ]
+      },
+      {
+        "status": null,
+        "flows": {
+          "incoming": {
+            "iron_ore": 2.5
+          },
+          "outgoing": {}
+        },
+        "inputs": {},
+        "output": {
+          "iron_ore": 2.5
+        },
+        "pending": {},
+        "orphan": {},
+        "produced": {
+          "iron_ore": 2.5
+        },
+        "practice": 0.24,
+        "elapsed": 0,
+        "ore": [
+          57.5
+        ]
+      },
+      {
+        "status": "Working",
+        "flows": {
+          "incoming": {
+            "iron_ore": 5.0
+          },
+          "outgoing": {}
+        },
+        "inputs": {},
+        "output": {
+          "iron_ore": 2.5
+        },
+        "pending": {
+          "iron_ore": 2.5
+        },
+        "orphan": {},
+        "produced": {
+          "iron_ore": 5.0
+        },
+        "practice": 0.48,
+        "elapsed": 0,
+        "ore": [
+          55.0
+        ]
+      }
+    ]
+  },
+  {
+    "kind": "sawpit",
+    "tool": "crafted_saw",
+    "name": "31_sawpit",
+    "inputs": {
+      "wood": 10.0
+    },
+    "ore": [
+      {
+        "x": 6,
+        "y": 0,
+        "supply": 60
+      }
+    ],
+    "output": {},
+    "actions": [
+      {
+        "op": "advance",
+        "seconds": 1
+      },
+      {
+        "op": "advance",
+        "seconds": 5
+      },
+      {
+        "op": "dropoff"
+      },
+      {
+        "op": "advance",
+        "seconds": 100
+      }
+    ],
+    "states": [
+      {
+        "status": "Producing planks \u00b7 5s remaining",
+        "flows": {
+          "incoming": {},
+          "outgoing": {}
+        },
+        "inputs": {
+          "wood": 10.0
+        },
+        "output": {},
+        "pending": {},
+        "orphan": {},
+        "produced": {},
+        "practice": 0,
+        "elapsed": 1,
+        "ore": [
+          60
+        ]
+      },
+      {
+        "status": "Working",
+        "flows": {
+          "incoming": {
+            "planks": 1.25
+          },
+          "outgoing": {
+            "wood": 2.5
+          }
+        },
+        "inputs": {
+          "wood": 7.5
+        },
+        "output": {},
+        "pending": {
+          "planks": 1.25
+        },
+        "orphan": {},
+        "produced": {
+          "planks": 1.25
+        },
+        "practice": 0.16,
+        "elapsed": 0,
+        "ore": [
+          60
+        ]
+      },
+      {
+        "status": null,
+        "flows": {
+          "incoming": {
+            "planks": 1.25
+          },
+          "outgoing": {
+            "wood": 2.5
+          }
+        },
+        "inputs": {
+          "wood": 7.5
+        },
+        "output": {
+          "planks": 1.25
+        },
+        "pending": {},
+        "orphan": {},
+        "produced": {
+          "planks": 1.25
+        },
+        "practice": 0.16,
+        "elapsed": 0,
+        "ore": [
+          60
+        ]
+      },
+      {
+        "status": "Working",
+        "flows": {
+          "incoming": {
+            "planks": 2.5
+          },
+          "outgoing": {
+            "wood": 5.0
+          }
+        },
+        "inputs": {
+          "wood": 5.0
+        },
+        "output": {
+          "planks": 1.25
+        },
+        "pending": {
+          "planks": 1.25
+        },
+        "orphan": {},
+        "produced": {
+          "planks": 2.5
+        },
+        "practice": 0.32,
+        "elapsed": 0,
+        "ore": [
+          60
+        ]
+      }
+    ]
+  },
+  {
+    "kind": "smokehouse",
+    "inputs": {
+      "fish": 3,
+      "wood": 3
+    },
+    "name": "32_smokehouse",
+    "ore": [
+      {
+        "x": 6,
+        "y": 0,
+        "supply": 60
+      }
+    ],
+    "output": {},
+    "actions": [
+      {
+        "op": "advance",
+        "seconds": 1
+      },
+      {
+        "op": "advance",
+        "seconds": 2
+      },
+      {
+        "op": "dropoff"
+      },
+      {
+        "op": "advance",
+        "seconds": 100
+      }
+    ],
+    "states": [
+      {
+        "status": "Producing smoked fish \u00b7 2s remaining",
+        "flows": {
+          "incoming": {},
+          "outgoing": {}
+        },
+        "inputs": {
+          "fish": 3,
+          "wood": 3
+        },
+        "output": {},
+        "pending": {},
+        "orphan": {},
+        "produced": {},
+        "practice": 0,
+        "elapsed": 1,
+        "ore": [
+          60
+        ]
+      },
+      {
+        "status": "Working",
+        "flows": {
+          "incoming": {
+            "smoked_fish": 1.0,
+            "food": 1.5
+          },
+          "outgoing": {
+            "fish": 1.0,
+            "food": 1.0,
+            "wood": 0.25
+          }
+        },
+        "inputs": {
+          "fish": 2.0,
+          "wood": 2.75
+        },
+        "output": {},
+        "pending": {
+          "smoked_fish": 1.0
+        },
+        "orphan": {},
+        "produced": {
+          "smoked_fish": 1.0
+        },
+        "practice": 0.08,
+        "elapsed": 0,
+        "ore": [
+          60
+        ]
+      },
+      {
+        "status": null,
+        "flows": {
+          "incoming": {
+            "smoked_fish": 1.0,
+            "food": 1.5
+          },
+          "outgoing": {
+            "fish": 1.0,
+            "food": 1.0,
+            "wood": 0.25
+          }
+        },
+        "inputs": {
+          "fish": 2.0,
+          "wood": 2.75
+        },
+        "output": {
+          "smoked_fish": 1.0
+        },
+        "pending": {},
+        "orphan": {},
+        "produced": {
+          "smoked_fish": 1.0
+        },
+        "practice": 0.08,
+        "elapsed": 0,
+        "ore": [
+          60
+        ]
+      },
+      {
+        "status": "Working",
+        "flows": {
+          "incoming": {
+            "smoked_fish": 2.0,
+            "food": 3.0
+          },
+          "outgoing": {
+            "fish": 2.0,
+            "food": 2.0,
+            "wood": 0.5
+          }
+        },
+        "inputs": {
+          "fish": 1.0,
+          "wood": 2.5
+        },
+        "output": {
+          "smoked_fish": 1.0
+        },
+        "pending": {
+          "smoked_fish": 1.0
+        },
+        "orphan": {},
+        "produced": {
+          "smoked_fish": 2.0
+        },
+        "practice": 0.16,
+        "elapsed": 0,
+        "ore": [
+          60
+        ]
+      }
+    ]
+  },
+  {
+    "kind": "smokehouse",
+    "inputs": {
+      "trout": 3,
+      "wood": 3
+    },
+    "name": "33_smokehouse",
+    "ore": [
+      {
+        "x": 6,
+        "y": 0,
+        "supply": 60
+      }
+    ],
+    "output": {},
+    "actions": [
+      {
+        "op": "advance",
+        "seconds": 1
+      },
+      {
+        "op": "advance",
+        "seconds": 2
+      },
+      {
+        "op": "dropoff"
+      },
+      {
+        "op": "advance",
+        "seconds": 100
+      }
+    ],
+    "states": [
+      {
+        "status": "Producing smoked fish \u00b7 2s remaining",
+        "flows": {
+          "incoming": {},
+          "outgoing": {}
+        },
+        "inputs": {
+          "trout": 3,
+          "wood": 3
+        },
+        "output": {},
+        "pending": {},
+        "orphan": {},
+        "produced": {},
+        "practice": 0,
+        "elapsed": 1,
+        "ore": [
+          60
+        ]
+      },
+      {
+        "status": "Working",
+        "flows": {
+          "incoming": {
+            "smoked_trout": 1.0,
+            "food": 2.0
+          },
+          "outgoing": {
+            "trout": 1.0,
+            "food": 1.5,
+            "wood": 0.25
+          }
+        },
+        "inputs": {
+          "trout": 2.0,
+          "wood": 2.75
+        },
+        "output": {},
+        "pending": {
+          "smoked_trout": 1.0
+        },
+        "orphan": {},
+        "produced": {
+          "smoked_trout": 1.0
+        },
+        "practice": 0.08,
+        "elapsed": 0,
+        "ore": [
+          60
+        ]
+      },
+      {
+        "status": null,
+        "flows": {
+          "incoming": {
+            "smoked_trout": 1.0,
+            "food": 2.0
+          },
+          "outgoing": {
+            "trout": 1.0,
+            "food": 1.5,
+            "wood": 0.25
+          }
+        },
+        "inputs": {
+          "trout": 2.0,
+          "wood": 2.75
+        },
+        "output": {
+          "smoked_trout": 1.0
+        },
+        "pending": {},
+        "orphan": {},
+        "produced": {
+          "smoked_trout": 1.0
+        },
+        "practice": 0.08,
+        "elapsed": 0,
+        "ore": [
+          60
+        ]
+      },
+      {
+        "status": "Working",
+        "flows": {
+          "incoming": {
+            "smoked_trout": 2.0,
+            "food": 4.0
+          },
+          "outgoing": {
+            "trout": 2.0,
+            "food": 3.0,
+            "wood": 0.5
+          }
+        },
+        "inputs": {
+          "trout": 1.0,
+          "wood": 2.5
+        },
+        "output": {
+          "smoked_trout": 1.0
+        },
+        "pending": {
+          "smoked_trout": 1.0
+        },
+        "orphan": {},
+        "produced": {
+          "smoked_trout": 2.0
+        },
+        "practice": 0.16,
+        "elapsed": 0,
+        "ore": [
+          60
+        ]
+      }
+    ]
+  },
+  {
+    "kind": "smokehouse",
+    "inputs": {
+      "salmon": 3,
+      "wood": 3
+    },
+    "name": "34_smokehouse",
+    "ore": [
+      {
+        "x": 6,
+        "y": 0,
+        "supply": 60
+      }
+    ],
+    "output": {},
+    "actions": [
+      {
+        "op": "advance",
+        "seconds": 1
+      },
+      {
+        "op": "advance",
+        "seconds": 2
+      },
+      {
+        "op": "dropoff"
+      },
+      {
+        "op": "advance",
+        "seconds": 100
+      }
+    ],
+    "states": [
+      {
+        "status": "Producing smoked fish \u00b7 2s remaining",
+        "flows": {
+          "incoming": {},
+          "outgoing": {}
+        },
+        "inputs": {
+          "salmon": 3,
+          "wood": 3
+        },
+        "output": {},
+        "pending": {},
+        "orphan": {},
+        "produced": {},
+        "practice": 0,
+        "elapsed": 1,
+        "ore": [
+          60
+        ]
+      },
+      {
+        "status": "Working",
+        "flows": {
+          "incoming": {
+            "smoked_salmon": 1.0,
+            "food": 2.5
+          },
+          "outgoing": {
+            "salmon": 1.0,
+            "food": 2.0,
+            "wood": 0.25
+          }
+        },
+        "inputs": {
+          "salmon": 2.0,
+          "wood": 2.75
+        },
+        "output": {},
+        "pending": {
+          "smoked_salmon": 1.0
+        },
+        "orphan": {},
+        "produced": {
+          "smoked_salmon": 1.0
+        },
+        "practice": 0.08,
+        "elapsed": 0,
+        "ore": [
+          60
+        ]
+      },
+      {
+        "status": null,
+        "flows": {
+          "incoming": {
+            "smoked_salmon": 1.0,
+            "food": 2.5
+          },
+          "outgoing": {
+            "salmon": 1.0,
+            "food": 2.0,
+            "wood": 0.25
+          }
+        },
+        "inputs": {
+          "salmon": 2.0,
+          "wood": 2.75
+        },
+        "output": {
+          "smoked_salmon": 1.0
+        },
+        "pending": {},
+        "orphan": {},
+        "produced": {
+          "smoked_salmon": 1.0
+        },
+        "practice": 0.08,
+        "elapsed": 0,
+        "ore": [
+          60
+        ]
+      },
+      {
+        "status": "Working",
+        "flows": {
+          "incoming": {
+            "smoked_salmon": 2.0,
+            "food": 5.0
+          },
+          "outgoing": {
+            "salmon": 2.0,
+            "food": 4.0,
+            "wood": 0.5
+          }
+        },
+        "inputs": {
+          "salmon": 1.0,
+          "wood": 2.5
+        },
+        "output": {
+          "smoked_salmon": 1.0
+        },
+        "pending": {
+          "smoked_salmon": 1.0
+        },
+        "orphan": {},
+        "produced": {
+          "smoked_salmon": 2.0
+        },
+        "practice": 0.16,
+        "elapsed": 0,
+        "ore": [
+          60
+        ]
+      }
+    ]
+  },
+  {
+    "kind": "smokehouse",
+    "inputs": {
+      "sturgeon": 3,
+      "wood": 3
+    },
+    "name": "35_smokehouse",
+    "ore": [
+      {
+        "x": 6,
+        "y": 0,
+        "supply": 60
+      }
+    ],
+    "output": {},
+    "actions": [
+      {
+        "op": "advance",
+        "seconds": 1
+      },
+      {
+        "op": "advance",
+        "seconds": 2
+      },
+      {
+        "op": "dropoff"
+      },
+      {
+        "op": "advance",
+        "seconds": 100
+      }
+    ],
+    "states": [
+      {
+        "status": "Producing smoked fish \u00b7 2s remaining",
+        "flows": {
+          "incoming": {},
+          "outgoing": {}
+        },
+        "inputs": {
+          "sturgeon": 3,
+          "wood": 3
+        },
+        "output": {},
+        "pending": {},
+        "orphan": {},
+        "produced": {},
+        "practice": 0,
+        "elapsed": 1,
+        "ore": [
+          60
+        ]
+      },
+      {
+        "status": "Working",
+        "flows": {
+          "incoming": {
+            "smoked_sturgeon": 1.0,
+            "food": 3.5
+          },
+          "outgoing": {
+            "sturgeon": 1.0,
+            "food": 3.0,
+            "wood": 0.25
+          }
+        },
+        "inputs": {
+          "sturgeon": 2.0,
+          "wood": 2.75
+        },
+        "output": {},
+        "pending": {
+          "smoked_sturgeon": 1.0
+        },
+        "orphan": {},
+        "produced": {
+          "smoked_sturgeon": 1.0
+        },
+        "practice": 0.08,
+        "elapsed": 0,
+        "ore": [
+          60
+        ]
+      },
+      {
+        "status": null,
+        "flows": {
+          "incoming": {
+            "smoked_sturgeon": 1.0,
+            "food": 3.5
+          },
+          "outgoing": {
+            "sturgeon": 1.0,
+            "food": 3.0,
+            "wood": 0.25
+          }
+        },
+        "inputs": {
+          "sturgeon": 2.0,
+          "wood": 2.75
+        },
+        "output": {
+          "smoked_sturgeon": 1.0
+        },
+        "pending": {},
+        "orphan": {},
+        "produced": {
+          "smoked_sturgeon": 1.0
+        },
+        "practice": 0.08,
+        "elapsed": 0,
+        "ore": [
+          60
+        ]
+      },
+      {
+        "status": "Working",
+        "flows": {
+          "incoming": {
+            "smoked_sturgeon": 2.0,
+            "food": 7.0
+          },
+          "outgoing": {
+            "sturgeon": 2.0,
+            "food": 6.0,
+            "wood": 0.5
+          }
+        },
+        "inputs": {
+          "sturgeon": 1.0,
+          "wood": 2.5
+        },
+        "output": {
+          "smoked_sturgeon": 1.0
+        },
+        "pending": {
+          "smoked_sturgeon": 1.0
+        },
+        "orphan": {},
+        "produced": {
+          "smoked_sturgeon": 2.0
+        },
+        "practice": 0.16,
+        "elapsed": 0,
+        "ore": [
+          60
+        ]
+      }
+    ]
+  },
+  {
+    "kind": "smokehouse",
+    "inputs": {
+      "fish": 0.2,
+      "trout": 0.3,
+      "salmon": 0.4,
+      "sturgeon": 3,
+      "wood": 3
+    },
+    "name": "36_smokehouse",
+    "ore": [
+      {
+        "x": 6,
+        "y": 0,
+        "supply": 60
+      }
+    ],
+    "output": {},
+    "actions": [
+      {
+        "op": "advance",
+        "seconds": 1
+      },
+      {
+        "op": "advance",
+        "seconds": 2
+      },
+      {
+        "op": "dropoff"
+      },
+      {
+        "op": "advance",
+        "seconds": 100
+      }
+    ],
+    "states": [
+      {
+        "status": "Producing smoked fish \u00b7 2s remaining",
+        "flows": {
+          "incoming": {},
+          "outgoing": {}
+        },
+        "inputs": {
+          "fish": 0.2,
+          "trout": 0.3,
+          "salmon": 0.4,
+          "sturgeon": 3,
+          "wood": 3
+        },
+        "output": {},
+        "pending": {},
+        "orphan": {},
+        "produced": {},
+        "practice": 0,
+        "elapsed": 1,
+        "ore": [
+          60
+        ]
+      },
+      {
+        "status": "Working",
+        "flows": {
+          "incoming": {
+            "smoked_fish": 0.2,
+            "food": 2.25,
+            "smoked_trout": 0.3,
+            "smoked_salmon": 0.4,
+            "smoked_sturgeon": 0.09999999999999998
+          },
+          "outgoing": {
+            "fish": 0.2,
+            "food": 1.7500000000000002,
+            "trout": 0.3,
+            "salmon": 0.4,
+            "sturgeon": 0.10000000000000009,
+            "wood": 0.25
+          }
+        },
+        "inputs": {
+          "fish": 0,
+          "trout": 0,
+          "salmon": 0,
+          "sturgeon": 2.9,
+          "wood": 2.75
+        },
+        "output": {},
+        "pending": {
+          "smoked_fish": 0.2,
+          "smoked_trout": 0.3,
+          "smoked_salmon": 0.4,
+          "smoked_sturgeon": 0.09999999999999998
+        },
+        "orphan": {},
+        "produced": {
+          "smoked_fish": 0.2,
+          "smoked_trout": 0.3,
+          "smoked_salmon": 0.4,
+          "smoked_sturgeon": 0.09999999999999998
+        },
+        "practice": 0.08,
+        "elapsed": 0,
+        "ore": [
+          60
+        ]
+      },
+      {
+        "status": null,
+        "flows": {
+          "incoming": {
+            "smoked_fish": 0.2,
+            "food": 2.25,
+            "smoked_trout": 0.3,
+            "smoked_salmon": 0.4,
+            "smoked_sturgeon": 0.09999999999999998
+          },
+          "outgoing": {
+            "fish": 0.2,
+            "food": 1.7500000000000002,
+            "trout": 0.3,
+            "salmon": 0.4,
+            "sturgeon": 0.10000000000000009,
+            "wood": 0.25
+          }
+        },
+        "inputs": {
+          "fish": 0,
+          "trout": 0,
+          "salmon": 0,
+          "sturgeon": 2.9,
+          "wood": 2.75
+        },
+        "output": {
+          "smoked_fish": 0.2,
+          "smoked_trout": 0.3,
+          "smoked_salmon": 0.4,
+          "smoked_sturgeon": 0.09999999999999998
+        },
+        "pending": {},
+        "orphan": {},
+        "produced": {
+          "smoked_fish": 0.2,
+          "smoked_trout": 0.3,
+          "smoked_salmon": 0.4,
+          "smoked_sturgeon": 0.09999999999999998
+        },
+        "practice": 0.08,
+        "elapsed": 0,
+        "ore": [
+          60
+        ]
+      },
+      {
+        "status": "Working",
+        "flows": {
+          "incoming": {
+            "smoked_fish": 0.2,
+            "food": 5.75,
+            "smoked_trout": 0.3,
+            "smoked_salmon": 0.4,
+            "smoked_sturgeon": 1.1
+          },
+          "outgoing": {
+            "fish": 0.2,
+            "food": 4.75,
+            "trout": 0.3,
+            "salmon": 0.4,
+            "sturgeon": 1.1,
+            "wood": 0.5
+          }
+        },
+        "inputs": {
+          "fish": 0,
+          "trout": 0,
+          "salmon": 0,
+          "sturgeon": 1.9,
+          "wood": 2.5
+        },
+        "output": {
+          "smoked_fish": 0.2,
+          "smoked_trout": 0.3,
+          "smoked_salmon": 0.4,
+          "smoked_sturgeon": 0.09999999999999998
+        },
+        "pending": {
+          "smoked_sturgeon": 1.0
+        },
+        "orphan": {},
+        "produced": {
+          "smoked_fish": 0.2,
+          "smoked_trout": 0.3,
+          "smoked_salmon": 0.4,
+          "smoked_sturgeon": 1.1
+        },
+        "practice": 0.16,
+        "elapsed": 0,
+        "ore": [
+          60
+        ]
+      }
+    ]
+  },
+  {
+    "kind": "mill",
+    "inputs": {
+      "wheat": 2
+    },
+    "actions": [
+      {
+        "op": "advance",
+        "seconds": 1
+      },
+      {
+        "op": "cap",
+        "key": "flour",
+        "amount": 1
+      },
+      {
+        "op": "advance",
+        "seconds": 100
+      },
+      {
+        "op": "cap",
+        "key": "flour",
+        "amount": null
+      },
+      {
+        "op": "advance",
+        "seconds": 2
+      },
+      {
+        "op": "advance",
+        "seconds": 100
+      },
+      {
+        "op": "supply",
+        "goods": {
+          "wheat": 2
+        }
+      },
+      {
+        "op": "advance",
+        "seconds": 3
+      },
+      {
+        "op": "dropoff"
+      }
+    ],
+    "name": "37_mill",
+    "ore": [
+      {
+        "x": 6,
+        "y": 0,
+        "supply": 60
+      }
+    ],
+    "output": {},
+    "states": [
+      {
+        "status": "Producing flour \u00b7 2s remaining",
+        "flows": {
+          "incoming": {},
+          "outgoing": {}
+        },
+        "inputs": {
+          "wheat": 2
+        },
+        "output": {},
+        "pending": {},
+        "orphan": {},
+        "produced": {},
+        "practice": 0,
+        "elapsed": 1,
+        "ore": [
+          60
+        ]
+      },
+      {
+        "status": null,
+        "flows": {
+          "incoming": {},
+          "outgoing": {}
+        },
+        "inputs": {
+          "wheat": 2
+        },
+        "output": {},
+        "pending": {},
+        "orphan": {},
+        "produced": {},
+        "practice": 0,
+        "elapsed": 1,
+        "ore": [
+          60
+        ]
+      },
+      {
+        "status": "Production cap reached",
+        "flows": {
+          "incoming": {},
+          "outgoing": {}
+        },
+        "inputs": {
+          "wheat": 2
+        },
+        "output": {},
+        "pending": {},
+        "orphan": {},
+        "produced": {},
+        "practice": 0,
+        "elapsed": 1,
+        "ore": [
+          60
+        ]
+      },
+      {
+        "status": null,
+        "flows": {
+          "incoming": {},
+          "outgoing": {}
+        },
+        "inputs": {
+          "wheat": 2
+        },
+        "output": {},
+        "pending": {},
+        "orphan": {},
+        "produced": {},
+        "practice": 0,
+        "elapsed": 1,
+        "ore": [
+          60
+        ]
+      },
+      {
+        "status": "Working",
+        "flows": {
+          "incoming": {
+            "flour": 2.0
+          },
+          "outgoing": {
+            "wheat": 2
+          }
+        },
+        "inputs": {
+          "wheat": 0
+        },
+        "output": {},
+        "pending": {
+          "flour": 2.0
+        },
+        "orphan": {},
+        "produced": {
+          "flour": 2.0
+        },
+        "practice": 0.08,
+        "elapsed": 0,
+        "ore": [
+          60
+        ]
+      },
+      {
+        "status": "Waiting for delivery: wheat",
+        "flows": {
+          "incoming": {
+            "flour": 2.0
+          },
+          "outgoing": {
+            "wheat": 2
+          }
+        },
+        "inputs": {
+          "wheat": 0
+        },
+        "output": {},
+        "pending": {
+          "flour": 2.0
+        },
+        "orphan": {},
+        "produced": {
+          "flour": 2.0
+        },
+        "practice": 0.08,
+        "elapsed": 0,
+        "ore": [
+          60
+        ]
+      },
+      {
+        "status": null,
+        "flows": {
+          "incoming": {
+            "flour": 2.0
+          },
+          "outgoing": {
+            "wheat": 2
+          }
+        },
+        "inputs": {
+          "wheat": 2
+        },
+        "output": {},
+        "pending": {
+          "flour": 2.0
+        },
+        "orphan": {},
+        "produced": {
+          "flour": 2.0
+        },
+        "practice": 0.08,
+        "elapsed": 0,
+        "ore": [
+          60
+        ]
+      },
+      {
+        "status": "Working",
+        "flows": {
+          "incoming": {
+            "flour": 4.0
+          },
+          "outgoing": {
+            "wheat": 4
+          }
+        },
+        "inputs": {
+          "wheat": 0
+        },
+        "output": {},
+        "pending": {
+          "flour": 4.0
+        },
+        "orphan": {},
+        "produced": {
+          "flour": 4.0
+        },
+        "practice": 0.16,
+        "elapsed": 0,
+        "ore": [
+          60
+        ]
+      },
+      {
+        "status": null,
+        "flows": {
+          "incoming": {
+            "flour": 4.0
+          },
+          "outgoing": {
+            "wheat": 4
+          }
+        },
+        "inputs": {
+          "wheat": 0
+        },
+        "output": {
+          "flour": 4.0
+        },
+        "pending": {},
+        "orphan": {},
+        "produced": {
+          "flour": 4.0
+        },
+        "practice": 0.16,
+        "elapsed": 0,
+        "ore": [
+          60
+        ]
+      }
+    ]
+  },
+  {
+    "kind": "bakery",
+    "inputs": {
+      "flour": 2,
+      "wood": 0.4999999995
+    },
+    "name": "38_bakery",
+    "ore": [
+      {
+        "x": 6,
+        "y": 0,
+        "supply": 60
+      }
+    ],
+    "output": {},
+    "actions": [
+      {
+        "op": "advance",
+        "seconds": 1
+      },
+      {
+        "op": "advance",
+        "seconds": 5
+      },
+      {
+        "op": "dropoff"
+      },
+      {
+        "op": "advance",
+        "seconds": 100
+      }
+    ],
+    "states": [
+      {
+        "status": "Producing bread \u00b7 5s remaining",
+        "flows": {
+          "incoming": {},
+          "outgoing": {}
+        },
+        "inputs": {
+          "flour": 2,
+          "wood": 0.4999999995
+        },
+        "output": {},
+        "pending": {},
+        "orphan": {},
+        "produced": {},
+        "practice": 0,
+        "elapsed": 1,
+        "ore": [
+          60
+        ]
+      },
+      {
+        "status": "Working",
+        "flows": {
+          "incoming": {
+            "bread": 2.0,
+            "food": 3.0
+          },
+          "outgoing": {
+            "flour": 2,
+            "wood": 0.4999999995
+          }
+        },
+        "inputs": {
+          "flour": 0,
+          "wood": 0
+        },
+        "output": {},
+        "pending": {
+          "bread": 2.0
+        },
+        "orphan": {},
+        "produced": {
+          "bread": 2.0
+        },
+        "practice": 0.16,
+        "elapsed": 0,
+        "ore": [
+          60
+        ]
+      },
+      {
+        "status": null,
+        "flows": {
+          "incoming": {
+            "bread": 2.0,
+            "food": 3.0
+          },
+          "outgoing": {
+            "flour": 2,
+            "wood": 0.4999999995
+          }
+        },
+        "inputs": {
+          "flour": 0,
+          "wood": 0
+        },
+        "output": {
+          "bread": 2.0
+        },
+        "pending": {},
+        "orphan": {},
+        "produced": {
+          "bread": 2.0
+        },
+        "practice": 0.16,
+        "elapsed": 0,
+        "ore": [
+          60
+        ]
+      },
+      {
+        "status": "Waiting for delivery: flour, wood",
+        "flows": {
+          "incoming": {
+            "bread": 2.0,
+            "food": 3.0
+          },
+          "outgoing": {
+            "flour": 2,
+            "wood": 0.4999999995
+          }
+        },
+        "inputs": {
+          "flour": 0,
+          "wood": 0
+        },
+        "output": {
+          "bread": 2.0
+        },
+        "pending": {},
+        "orphan": {},
+        "produced": {
+          "bread": 2.0
+        },
+        "practice": 0.16,
+        "elapsed": 0,
+        "ore": [
+          60
+        ]
+      }
+    ]
+  },
+  {
+    "kind": "mine",
+    "ore": [
+      {
+        "x": 6,
+        "y": 0,
+        "supply": 1
+      },
+      {
+        "x": 8,
+        "y": 0,
+        "supply": 60
+      }
+    ],
+    "name": "39_mine",
+    "inputs": {},
+    "output": {},
+    "actions": [
+      {
+        "op": "advance",
+        "seconds": 1
+      },
+      {
+        "op": "advance",
+        "seconds": 8
+      },
+      {
+        "op": "dropoff"
+      },
+      {
+        "op": "advance",
+        "seconds": 100
+      }
+    ],
+    "states": [
+      {
+        "status": "Producing iron ore \u00b7 8s remaining",
+        "flows": {
+          "incoming": {},
+          "outgoing": {}
+        },
+        "inputs": {},
+        "output": {},
+        "pending": {},
+        "orphan": {},
+        "produced": {},
+        "practice": 0,
+        "elapsed": 1,
+        "ore": [
+          1,
+          60
+        ]
+      },
+      {
+        "status": "Working",
+        "flows": {
+          "incoming": {
+            "iron_ore": 2.0
+          },
+          "outgoing": {}
+        },
+        "inputs": {},
+        "output": {},
+        "pending": {
+          "iron_ore": 2.0
+        },
+        "orphan": {},
+        "produced": {
+          "iron_ore": 2.0
+        },
+        "practice": 0.24,
+        "elapsed": 0,
+        "ore": [
+          1,
+          58.0
+        ]
+      },
+      {
+        "status": null,
+        "flows": {
+          "incoming": {
+            "iron_ore": 2.0
+          },
+          "outgoing": {}
+        },
+        "inputs": {},
+        "output": {
+          "iron_ore": 2.0
+        },
+        "pending": {},
+        "orphan": {},
+        "produced": {
+          "iron_ore": 2.0
+        },
+        "practice": 0.24,
+        "elapsed": 0,
+        "ore": [
+          1,
+          58.0
+        ]
+      },
+      {
+        "status": "Working",
+        "flows": {
+          "incoming": {
+            "iron_ore": 4.0
+          },
+          "outgoing": {}
+        },
+        "inputs": {},
+        "output": {
+          "iron_ore": 2.0
+        },
+        "pending": {
+          "iron_ore": 2.0
+        },
+        "orphan": {},
+        "produced": {
+          "iron_ore": 4.0
+        },
+        "practice": 0.48,
+        "elapsed": 0,
+        "ore": [
+          1,
+          56.0
+        ]
+      }
+    ]
+  },
+  {
+    "kind": "mine",
+    "ore": [
+      {
+        "x": 6,
+        "y": 0,
+        "supply": 1
+      }
+    ],
+    "name": "40_mine",
+    "inputs": {},
+    "output": {},
+    "actions": [
+      {
+        "op": "advance",
+        "seconds": 1
+      },
+      {
+        "op": "advance",
+        "seconds": 8
+      },
+      {
+        "op": "dropoff"
+      },
+      {
+        "op": "advance",
+        "seconds": 100
+      }
+    ],
+    "states": [
+      {
+        "status": "Waiting for ore to regenerate",
+        "flows": {
+          "incoming": {},
+          "outgoing": {}
+        },
+        "inputs": {},
+        "output": {},
+        "pending": {},
+        "orphan": {},
+        "produced": {},
+        "practice": 0,
+        "elapsed": 0,
+        "ore": [
+          1
+        ]
+      },
+      {
+        "status": "Waiting for ore to regenerate",
+        "flows": {
+          "incoming": {},
+          "outgoing": {}
+        },
+        "inputs": {},
+        "output": {},
+        "pending": {},
+        "orphan": {},
+        "produced": {},
+        "practice": 0,
+        "elapsed": 0,
+        "ore": [
+          1
+        ]
+      },
+      {
+        "status": null,
+        "flows": {
+          "incoming": {},
+          "outgoing": {}
+        },
+        "inputs": {},
+        "output": {},
+        "pending": {},
+        "orphan": {},
+        "produced": {},
+        "practice": 0,
+        "elapsed": 0,
+        "ore": [
+          1
+        ]
+      },
+      {
+        "status": "Waiting for ore to regenerate",
+        "flows": {
+          "incoming": {},
+          "outgoing": {}
+        },
+        "inputs": {},
+        "output": {},
+        "pending": {},
+        "orphan": {},
+        "produced": {},
+        "practice": 0,
+        "elapsed": 0,
+        "ore": [
+          1
+        ]
+      }
+    ]
+  },
+  {
+    "kind": "mine",
+    "ore": [],
+    "name": "41_mine",
+    "inputs": {},
+    "output": {},
+    "actions": [
+      {
+        "op": "advance",
+        "seconds": 1
+      },
+      {
+        "op": "advance",
+        "seconds": 8
+      },
+      {
+        "op": "dropoff"
+      },
+      {
+        "op": "advance",
+        "seconds": 100
+      }
+    ],
+    "states": [
+      {
+        "status": "Needs an iron vein within 10 tiles",
+        "flows": {
+          "incoming": {},
+          "outgoing": {}
+        },
+        "inputs": {},
+        "output": {},
+        "pending": {},
+        "orphan": {},
+        "produced": {},
+        "practice": 0,
+        "elapsed": 0,
+        "ore": []
+      },
+      {
+        "status": "Needs an iron vein within 10 tiles",
+        "flows": {
+          "incoming": {},
+          "outgoing": {}
+        },
+        "inputs": {},
+        "output": {},
+        "pending": {},
+        "orphan": {},
+        "produced": {},
+        "practice": 0,
+        "elapsed": 0,
+        "ore": []
+      },
+      {
+        "status": null,
+        "flows": {
+          "incoming": {},
+          "outgoing": {}
+        },
+        "inputs": {},
+        "output": {},
+        "pending": {},
+        "orphan": {},
+        "produced": {},
+        "practice": 0,
+        "elapsed": 0,
+        "ore": []
+      },
+      {
+        "status": "Needs an iron vein within 10 tiles",
+        "flows": {
+          "incoming": {},
+          "outgoing": {}
+        },
+        "inputs": {},
+        "output": {},
+        "pending": {},
+        "orphan": {},
+        "produced": {},
+        "practice": 0,
+        "elapsed": 0,
+        "ore": []
+      }
+    ]
+  },
+  {
+    "kind": "mine",
+    "ore": [
+      {
+        "x": 20,
+        "y": 0,
+        "supply": 60
+      }
+    ],
+    "name": "42_mine",
+    "inputs": {},
+    "output": {},
+    "actions": [
+      {
+        "op": "advance",
+        "seconds": 1
+      },
+      {
+        "op": "advance",
+        "seconds": 8
+      },
+      {
+        "op": "dropoff"
+      },
+      {
+        "op": "advance",
+        "seconds": 100
+      }
+    ],
+    "states": [
+      {
+        "status": "Needs an iron vein within 10 tiles",
+        "flows": {
+          "incoming": {},
+          "outgoing": {}
+        },
+        "inputs": {},
+        "output": {},
+        "pending": {},
+        "orphan": {},
+        "produced": {},
+        "practice": 0,
+        "elapsed": 0,
+        "ore": [
+          60
+        ]
+      },
+      {
+        "status": "Needs an iron vein within 10 tiles",
+        "flows": {
+          "incoming": {},
+          "outgoing": {}
+        },
+        "inputs": {},
+        "output": {},
+        "pending": {},
+        "orphan": {},
+        "produced": {},
+        "practice": 0,
+        "elapsed": 0,
+        "ore": [
+          60
+        ]
+      },
+      {
+        "status": null,
+        "flows": {
+          "incoming": {},
+          "outgoing": {}
+        },
+        "inputs": {},
+        "output": {},
+        "pending": {},
+        "orphan": {},
+        "produced": {},
+        "practice": 0,
+        "elapsed": 0,
+        "ore": [
+          60
+        ]
+      },
+      {
+        "status": "Needs an iron vein within 10 tiles",
+        "flows": {
+          "incoming": {},
+          "outgoing": {}
+        },
+        "inputs": {},
+        "output": {},
+        "pending": {},
+        "orphan": {},
+        "produced": {},
+        "practice": 0,
+        "elapsed": 0,
+        "ore": [
+          60
+        ]
+      }
+    ]
+  },
+  {
+    "kind": "sawpit",
+    "output": {
+      "planks": 49.5
+    },
+    "name": "43_sawpit",
+    "inputs": {
+      "wood": 8.0
+    },
+    "ore": [
+      {
+        "x": 6,
+        "y": 0,
+        "supply": 60
+      }
+    ],
+    "actions": [
+      {
+        "op": "advance",
+        "seconds": 1
+      },
+      {
+        "op": "advance",
+        "seconds": 5
+      },
+      {
+        "op": "dropoff"
+      },
+      {
+        "op": "advance",
+        "seconds": 100
+      }
+    ],
+    "states": [
+      {
+        "status": "Workplace buffer full",
+        "flows": {
+          "incoming": {},
+          "outgoing": {}
+        },
+        "inputs": {
+          "wood": 8.0
+        },
+        "output": {
+          "planks": 49.5
+        },
+        "pending": {},
+        "orphan": {},
+        "produced": {},
+        "practice": 0,
+        "elapsed": 0,
+        "ore": [
+          60
+        ]
+      },
+      {
+        "status": "Workplace buffer full",
+        "flows": {
+          "incoming": {},
+          "outgoing": {}
+        },
+        "inputs": {
+          "wood": 8.0
+        },
+        "output": {
+          "planks": 49.5
+        },
+        "pending": {},
+        "orphan": {},
+        "produced": {},
+        "practice": 0,
+        "elapsed": 0,
+        "ore": [
+          60
+        ]
+      },
+      {
+        "status": null,
+        "flows": {
+          "incoming": {},
+          "outgoing": {}
+        },
+        "inputs": {
+          "wood": 8.0
+        },
+        "output": {
+          "planks": 49.5
+        },
+        "pending": {},
+        "orphan": {},
+        "produced": {},
+        "practice": 0,
+        "elapsed": 0,
+        "ore": [
+          60
+        ]
+      },
+      {
+        "status": "Workplace buffer full",
+        "flows": {
+          "incoming": {},
+          "outgoing": {}
+        },
+        "inputs": {
+          "wood": 8.0
+        },
+        "output": {
+          "planks": 49.5
+        },
+        "pending": {},
+        "orphan": {},
+        "produced": {},
+        "practice": 0,
+        "elapsed": 0,
+        "ore": [
+          60
+        ]
+      }
+    ]
+  },
+  {
+    "kind": "tannery",
+    "actions": [
+      {
+        "op": "advance",
+        "seconds": 9
+      },
+      {
+        "op": "cancel"
+      },
+      {
+        "op": "cancel"
+      }
+    ],
+    "name": "44_tannery",
+    "inputs": {
+      "hides": 8.0,
+      "wood": 2.0
+    },
+    "ore": [
+      {
+        "x": 6,
+        "y": 0,
+        "supply": 60
+      }
+    ],
+    "output": {},
+    "states": [
+      {
+        "status": "Working",
+        "flows": {
+          "incoming": {
+            "leather": 2.0
+          },
+          "outgoing": {
+            "hides": 2.0,
+            "wood": 0.5
+          }
+        },
+        "inputs": {
+          "hides": 6.0,
+          "wood": 1.5
+        },
+        "output": {},
+        "pending": {
+          "leather": 2.0
+        },
+        "orphan": {},
+        "produced": {
+          "leather": 2.0
+        },
+        "practice": 0.24,
+        "elapsed": 0,
+        "ore": [
+          60
+        ]
+      },
+      {
+        "status": null,
+        "flows": {
+          "incoming": {
+            "leather": 2.0
+          },
+          "outgoing": {
+            "hides": 2.0,
+            "wood": 0.5
+          }
+        },
+        "inputs": {
+          "hides": 6.0,
+          "wood": 1.5
+        },
+        "output": {},
+        "pending": {},
+        "orphan": {
+          "leather": 2.0
+        },
+        "produced": {
+          "leather": 2.0
+        },
+        "practice": 0.24,
+        "elapsed": 0,
+        "ore": [
+          60
+        ]
+      },
+      {
+        "status": null,
+        "flows": {
+          "incoming": {
+            "leather": 2.0
+          },
+          "outgoing": {
+            "hides": 2.0,
+            "wood": 0.5
+          }
+        },
+        "inputs": {
+          "hides": 6.0,
+          "wood": 1.5
+        },
+        "output": {},
+        "pending": {},
+        "orphan": {
+          "leather": 2.0
+        },
+        "produced": {
+          "leather": 2.0
+        },
+        "practice": 0.24,
+        "elapsed": 0,
+        "ore": [
+          60
+        ]
+      }
+    ]
+  }
+]

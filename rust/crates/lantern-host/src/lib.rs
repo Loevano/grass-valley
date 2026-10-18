@@ -20,6 +20,7 @@ pub mod gathering;
 pub mod legacy;
 pub mod logistics;
 pub mod navigation;
+pub mod processing;
 pub mod progression;
 pub mod references;
 pub mod resources;

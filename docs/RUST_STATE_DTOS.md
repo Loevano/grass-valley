@@ -190,7 +190,9 @@ No omitted feature is approved for removal. The saved subsystem matrix assigns:
   costs/capacities, skills, food/progression, hall unlocks and balance migrations.
 - R15 slice 1 adds separate offline woodcutting claim JSON over generic model
   phases and ledger buffers; see the [completion boundary](RUST_MIGRATION.md#r15-slice-1--woodcutters-and-resource-claims).
-  It does not hydrate ordinary worker saves or persist terrain/ledger generations.
+  R15 slice 2 adds separate processor/legacy-grain-partial JSON over the same
+  movement/ledger boundary; see the [processor scope](RUST_MIGRATION.md#r15-slice-2--base-processors-and-productive-batch-clocks).
+  These do not hydrate ordinary worker saves or persist terrain/ledger generations.
 - R14–17: trips/reservations/accounting, markets/resource activity, every production
   recipe/queue, farms/orchards/water/claims, species, boats, barn animals and horses.
 - R18: remaining residents, village routines, trades/stories/gifts, equipment and
