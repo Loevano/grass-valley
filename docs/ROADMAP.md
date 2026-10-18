@@ -8,7 +8,7 @@ and cache rules are in [Backend](BACKEND.md#cached-zoomed-out-map).
 | 1     | Cached zoomed-out town overview    | Implemented              | Show the landscape and city sizes without refreshing animated scene detail.                                      |
 | 2     | Production line balancing          | Wood and grain implemented; fishing remains | Develop clear fishing chains with capped staffing and simple upgrades. |
 | 3     | Scalable villager pathfinding       | Host queue implemented; cache refinement and shared navigation remain | Keep movement responsive as villager counts and towns grow, with bounded routing work. |
-| 4     | Rust migration | R16 field and water/harvest slices implemented; orchards and other actors, host integration and release acceptance remain open | Follow the [staged plan and prompts](RUST_MIGRATION.md), preserving playable checkpoints and saved worlds. |
+| 4     | Rust migration | R16 farming/orchard slices implemented; fishing and other actors, host integration and release acceptance remain open | Follow the [staged plan and prompts](RUST_MIGRATION.md), preserving playable checkpoints and saved worlds. |
 
 ## Rust migration
 
@@ -39,15 +39,12 @@ R15's three slices implement experimental woodcutting claims, productive clocks,
 all processor recipes, species-preserving smoking, finite ore and ordered workshop
 requests, including cancellation and reload; see the
 [R15 completion boundary](RUST_MIGRATION.md#r15-slice-3--workshop-queues-advanced-recipes-and-completion-audit).
-R16 slice 1 implements shared field work/growth, farm passes, exclusive acre claims,
-row selection and capped harvest reservations; see the
-[R16 slice boundary](RUST_MIGRATION.md#r16-slice-1--field-cycles-and-claims).
-R16 slice 2 adds per-farmer water rounds, collection/return, multi-acre mixed-crop
-harvest and blocked deposit recovery; see the
-[water/harvest slice boundary](RUST_MIGRATION.md#r16-slice-2--water-trips-and-multi-acre-harvest).
-Orchards, crop edits, relocation and reload remain slice 3. Fishing/livestock and
-population remain R17–R18;
-durable saves and playable host integration remain R19–R21.
+R16's three slices implement experimental field cycles/claims, water rounds,
+multi-acre harvest returns, orchards/restock, crop edits, linked relocation and
+validated owner reload; see the
+[R16 completion boundary](RUST_MIGRATION.md#r16-slice-3--orchards-crop-changes-relocation-and-reload).
+Fishing/livestock and population remain R17–R18; durable saves, complete legacy
+actor conversion and playable host integration remain R19–R21.
 R11's integrated W2/W3 movement/accounting acceptance remains open; R19–R21 retain
 HTTP/save/snapshot integration and R23 retains complete W1–W6 acceptance. See the
 [R10 completion audit](RUST_MIGRATION.md#final-measurements-and-foundation-completion)

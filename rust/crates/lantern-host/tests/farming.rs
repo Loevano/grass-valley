@@ -682,3 +682,6 @@ fn roster_reassignment_releases_direct_priority_and_preserves_work_and_cargo() {
 
 #[path = "farming/trips.rs"]
 mod trips;
+
+#[path = "farming/lifecycle.rs"]
+mod lifecycle;

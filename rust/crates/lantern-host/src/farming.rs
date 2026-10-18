@@ -1,6 +1,8 @@
 //! Experimental shared fields, exclusive tenders, water and crop return trips.
 //! Navigation is supplied by R11; growth runs once per town update. Ordinary-save
 //! adapters, relocation and orchards remain R16 slice 3.
+mod lifecycle;
+mod save;
 mod trips;
 use crate::{
     progression::{self, Worker},

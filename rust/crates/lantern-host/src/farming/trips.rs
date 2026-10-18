@@ -12,7 +12,7 @@ pub struct WaterBank {
     pub tile: Tile,
 }
 impl WaterBank {
-    fn destination(&self) -> Destination {
+    pub(super) fn destination(&self) -> Destination {
         Destination::Position(
             Position::new(f64::from(self.tile.x), f64::from(self.tile.y)).unwrap(),
         )

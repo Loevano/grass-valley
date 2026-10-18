@@ -9,8 +9,8 @@ R13 slices 1–3 implement reviewed catalogs, fractional quantities, a single-ow
 resource ledger and recipe/personal progression/equipment/hall rule evaluation at
 the experimental offline boundary. R14 slices 1–3 implement producer, hauler and
 merchant trips plus market execution over movement and accounting. R15 slices 1–3 implement offline woodcutters/resource claims and all processor
-recipe/workshop actors. R16 slices 1–2 implement shared offline field cycles, claims,
-water rounds, harvest reservations and returns. Remaining orchard/fishing/livestock/resident actors and
+recipe/workshop actors. R16 slices 1–3 implement shared offline field cycles, claims, water rounds,
+harvest returns, orchards, crop edits, linked relocation and owner reload. Remaining fishing/livestock/resident actors and
 playable integration remain in R16–R21; complete W1–W6 acceptance remains R23.
 Integrated W2/W3 movement/accounting acceptance remains open. R08 spatial
 rules and founder movement is complete as an experimental private-copy foundation. R07 includes saved-first terrain versions 1–7,
@@ -246,7 +246,7 @@ only after work is performed. Keep unfinished stages visible in the roadmap.
 | R13 | Resource ledger, storage, and progression rules | R12 | Slices 1–3 implemented at offline model boundary: reviewed catalogs, ledger/storage/reservations/caps/flows and progression rules; actor/save/HTTP integration and full W1–W6 acceptance remain R14–R23 |
 | R14 | Hauling, delivery, and merchant trips | R13 | Slices 1–3 implemented at the experimental offline boundary: producer/hauler/merchant trips, thresholds, purchases, sales and recovery; integrated production, durable saves and playable host remain R15–R23 |
 | R15 | Gathering and processing professions | R14 | All three slices implemented at the experimental offline boundary: woodcutters/claims, all 13 processor families/32 recipes, ordered workshop requests and recovery; durable/live integration and integrated acceptance remain R19–R23 |
-| R16 | Farming and orchards | R15 | Slices 1–2 implemented offline: shared fields/claims/passes, water trips/rounds, multi-acre harvest and blocked crop returns; orchards/crop edits/relocation/reload remain slice 3 |
+| R16 | Farming and orchards | R15 | All three code slices implemented offline: fields/claims/passes, water rounds, harvest returns, orchards/restock, crop edits, linked relocation and validated owner reload; integrated legacy actor/save/host adapters and acceptance remain R19–23 |
 | R17 | Fishing, boats, animals, and horses | R16 | Not started |
 | R18 | Residents, villages, trade, and adventures | R17 | Not started |
 | R19 | Durable Rust saves and recovery | R18 | Not started |
@@ -3479,7 +3479,7 @@ Commit message: `feat: port Rust base processor batch actors`.
 This completes all three R15 code slices at the experimental offline model
 boundary. `processing/workshop.rs` owns ordered requests and processor v2 JSON;
 all 13 R01 processor families and 32 catalog recipes now execute. Python remains
-the playable default. R16 slice 1 is recorded below; its next unfinished slice is slice 3.
+the playable default. All three R16 code slices are recorded below; R17 slice 1 follows.
 
 - Advanced bakery recipes (bread rolls, herb bread, fruit pies, cakes) and butcher
   recipes (herbed/smoked meat, sausages, meat pies) use the existing productive
@@ -3588,7 +3588,7 @@ and commit the completed slice.
 
 `lantern-host::farming` implements an experimental offline field owner over R11
 movement and the R13 ledger. This completes slice 1 only. Python remains the
-playable default; slice 2 is recorded below and the next unfinished slice is R16 slice 3.
+playable default; slices 2–3 are recorded below; R17 slice 1 is the next unfinished migration slice.
 
 - Fields use stable building/farm IDs, selected and sown crops, shared work and
   growth clocks, cycle numbers and optional remaining harvest yield. Admission
@@ -3647,7 +3647,7 @@ completion failure. Regenerate/check the synthetic oracle with:
 
 Slice 2 below completes water-source selection, collection/return and per-round
 state, carrying-water pass exceptions, carried-crop harvest continuation across
-passes, return/deposit scheduling and their blocked recovery. Slice 3 still owns orchard
+passes, return/deposit scheduling and their blocked recovery. Slice 3 below implements orchard
 stages/harvest/restock, crop edits, moved linked groups, owner JSON/reload and legacy
 field admission. R19 owns durable generations; R20–R21 own host/roster scheduling,
 commands, resource/playback adapters and integrated clocks. This is not full-tick,
@@ -3667,8 +3667,8 @@ Commit message: `feat: port Rust field cycles and farming claims`.
 ### R16 slice 2 — Water trips and multi-acre harvest
 
 `farming/trips.rs` extends the experimental field owner with water collection,
-rounds and harvest return/deposit phases. This completes slice 2 only. The next
-unfinished slice is R16 slice 3; Python remains the playable default.
+rounds and harvest return/deposit phases. Slice 3 is recorded below;
+Python remains the playable default.
 
 - Water comes from current authoritative surface tiles and completed well facts.
   Local wells are validated against model/ledger construction and kind; the shared
@@ -3731,8 +3731,8 @@ The slice-1 34-case Python oracle and field/cap/claim invariants remain applicab
 Check the new fixture with:
 `python3 rust/crates/lantern-host/tests/fixtures/farming/trips.py --check`.
 
-Remaining slice 3: orchards and restock, crop changes, coherent linked relocation,
-explicit owner JSON/reload and ordinary-save hydration. Its schema must retain
+Slice 3 below implements orchards and restock, crop changes, linked relocation,
+explicit owner JSON/reload and legacy agricultural facts. Its schema retains
 water rounds, selected sources, collection/deposit clocks, original cargo workplace
 and cumulative practice contributions alongside field and model/ledger owners.
 R19 owns durable generations; R20–R21 own live source/navigation/roster adapters,
@@ -3750,6 +3750,97 @@ the shared yield, practice and conservation assertions remain intact.
 Report: `performance-results/20261018-221432/report.md`.
 
 Commit message: `feat: port Rust farming water and harvest trips`.
+
+### R16 slice 3 — Orchards, crop changes, relocation and reload
+
+This completes all three R16 code slices at the experimental offline owner boundary.
+`orchards.rs`, `orchards/save.rs`, `farming/lifecycle.rs` and `farming/save.rs` own
+fruit trees, field edits, relocation reconciliation and versioned reload. Python
+remains the playable default. The next migration slice is R17 slice 1.
+
+- Orchard trees advance through sapling (60s), blossom (30s), fruit (60s), ripe,
+  harvested (30s), blossom and fruit. Growth continues independently of workers,
+  stops at ripe, skips unfinished trees and restores exactly eight fruit per ripe
+  round. It never creates inventory. Stable tree/parent identities, duplicate IDs,
+  stage/clocks, fruit bounds, parent kinds and three-tile reach are validated.
+- Orchard workers require farming qualification and use exclusive tree claims,
+  stable active targets, retained partially picked trees after delivery, and nearest
+  Manhattan selection in admitted tree order.
+  Picking consumes 3.2 seconds divided by skill/talent and orchard-level throughput.
+  The pick duration is fixed at the action's start and practice uses the cumulative
+  action contribution, so subdivisions crossing a skill threshold cannot speed
+  up that same pick or change its output. This normalizes Python's per-call clock
+  and practice recomputation while retaining its start-of-action rates.
+- Completed picking clips to remaining fruit, workplace storage and town caps.
+  A partial pick leaves ripe fruit on the tree; another pick is required after
+  unloading. Every pick returns to its original orchard and deposits for 0.65s
+  before another tree can be selected. Finished fruit remains ledger-owned pending
+  cargo through blockage, tree removal, reassignment and reload; delivery happens
+  once after actual arrival. Empty/growing/unfinished/full/capped orchards do not
+  train or produce. Errors roll back tree state, claims, goods, model and practice.
+- `Fields::set_crop` reuses R13 unlock checks. Farm edits apply to linked acres,
+  including incomplete acres; direct acre edits affect only that acre. As Python
+  does, editing a farm without linked acres does not rewrite its fallback crop.
+  Selected crops change only the next sowing: sown crops, frozen remaining yields,
+  progress, water rounds, claims and already carried mixed crops are preserved.
+- Field and orchard relocation hooks reconcile a private model copy after R12's
+  validated structural group move, then the caller commits both owners together.
+  They preserve stable parent references, actor positions, goods and water rounds,
+  rebuild affected routes and retarget moved work spots, including border offsets.
+  Fields retain shared partial work. Orchard pick clocks reset on a moved source,
+  matching Python. Collection continues at an unmoved water source and its return
+  targets the moved acre. Harvest returns target the moved original workplace.
+  Prior field history also moves, covering relocation between completed harvest
+  and return planning. These hooks do not bypass R12 placement/cost/access rules.
+- Explicit v1 owner JSON stores fields/trees, selected/sown crops, partial yields,
+  stable IDs, roster, claims/history, source banks, water rounds, collection/deposit
+  clocks, original cargo workplaces, previous tree selection and cumulative practice/pick duration. Decode
+  validates version/owner, kinds/links, unique IDs/claims, stages, bounds, phases,
+  task/target/travel consistency, round ownership and ledger pending owners. It
+  rejects malformed/unknown/duplicate/inconsistent facts before mutation. Paths,
+  route results and playback remain disposable R11 state, rebuilt after reload;
+  pending legs and terminal arrivals remain model facts. No load-time production
+  or offline growth is inferred.
+- Legacy admission reads agricultural building/tree facts through explicit original
+  index-to-ID maps, including sown crops and clipped yields. Separate can admission
+  reads saved watering rounds and upgrades old filled-can animations only for a
+  matching field cycle. It validates links/kinds/IDs/clocks and never rewrites the
+  source. Movement, cargo, worker qualification and credentials remain their own
+  owners; this is not a broad importer of opaque legacy actor animations.
+
+Evidence: nine new field lifecycle tests and eleven orchard tests (50 farming/orchard
+Rust tests total), plus 54 real-Python cases: 25 growth/restock subdivisions, 27
+pick skill/talent/level/cap cases, and two crop-edit scope snapshots. Tests reload
+at growth steps and every covered movement/work/collection/deposit phase, reorder
+buildings to verify ID references, preserve blocked cargo after picked-tree removal,
+check linked moves and pre-return history, original-workplace reassignment,
+qualification/cap/buffer pauses, partial picks, strict malformed admission and
+failed-completion rollback. Subdivision tests include a skill threshold; exact
+IDs/stages/cycles/counts and 1e-9 quantities/clocks are compared. The earlier field,
+water and harvest invariants and Python fixtures remain applicable. Verify:
+`python3 rust/crates/lantern-host/tests/fixtures/farming/generate_orchard_cases.py --check`.
+
+Completion boundary: all R16 field/orchard rule and movement owners are implemented.
+R12 child state remains construction/admission scaffolding; live adapters must use
+these R16 owners as the agricultural clocks, with one authoritative copy. R19 must
+persist model, ledger/history, workers and agricultural owners in one generation,
+and convert opaque legacy actor animations to those owners without losing saved
+cargo, clocks or identity. R20–R21 retain integrated source/navigation/roster and
+building-command transactions, full town tick ordering, wire/playback adapters and
+playable integration. R23 retains integrated W2/W3 and W1–W6 acceptance. This is
+not durable-save, full Python-tick or playable-host acceptance.
+
+Performance comparisons were not run: this is a behavior port, with no performance
+investigation, optimization or performance claim.
+
+Validation: `python3 tools/check.py --list` selected only `rust:lantern-host`.
+The affected runner passed formatting, locked offline package tests/doc tests and
+all-target Clippy with warnings denied (3/3 commands), including all 50 agricultural
+tests. The three Python farming/water/orchard fixture checks, final formatting
+check and `git diff --check` passed. Report:
+`performance-results/20261018-223804/report.md`.
+
+Commit message: `feat: port Rust orchards and agricultural lifecycle`.
 
 ## R17 — Fishing, livestock, and horses
 

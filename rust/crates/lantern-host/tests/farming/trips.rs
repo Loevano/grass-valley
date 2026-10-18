@@ -12,7 +12,7 @@ impl Fixture {
                 .unwrap();
         }
     }
-    fn water(&mut self, i: u64, n: f64, sources: &WaterSources) -> Outcome {
+    pub(super) fn water(&mut self, i: u64, n: f64, sources: &WaterSources) -> Outcome {
         self.fields
             .advance_with_water(
                 &mut self.town,

@@ -21,6 +21,7 @@ pub mod gathering;
 pub mod legacy;
 pub mod logistics;
 pub mod navigation;
+pub mod orchards;
 pub mod processing;
 pub mod progression;
 pub mod references;
