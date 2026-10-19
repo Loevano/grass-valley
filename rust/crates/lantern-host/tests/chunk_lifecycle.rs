@@ -643,3 +643,51 @@ fn huge_clock_failures_are_atomic_and_active_reads_bypass_sleeping_arithmetic() 
             .contains("\"chunk_clock\":-0.0")
     );
 }
+
+#[test]
+fn prepared_village_migrations_feed_ambient_owner_without_mutating_chunk_copies() {
+    let case = oracle()
+        .cases
+        .into_iter()
+        .find(|c| c.label == "ordered-swamp-False")
+        .unwrap();
+    let copy = Copy::new(&case);
+    let disk = copy.disk();
+    let imported = copy.import();
+    let active = residents(&case.active, &copy.owner);
+    let camera = residents(&case.camera, &copy.owner);
+    let chunks = ChunkLifecycle::prepare(&imported, &copy.owner, &active, &camera).unwrap();
+    let prepared = chunks.private_world_bytes();
+    let keys = chunks.active_keys();
+    let records: Vec<_> = keys
+        .iter()
+        .map(|key| (*key, chunks.private_active_bytes(*key).unwrap().to_vec()))
+        .collect();
+    let active: Vec<_> = records
+        .iter()
+        .map(|(key, record)| ActiveVillageChunk {
+            world: &copy.owner,
+            key: *key,
+            private_record: record,
+        })
+        .collect();
+    let mut life = VillageLife::restore(copy.owner.clone(), &prepared).unwrap();
+    life.advance(
+        &copy.owner,
+        lantern_core::units::Seconds::new(0.5).unwrap(),
+        &active,
+    )
+    .unwrap();
+    let save = life.encode();
+    assert_eq!(
+        VillageLife::decode(&copy.owner, &save).unwrap().encode(),
+        save
+    );
+    assert_eq!(chunks.private_world_bytes(), prepared);
+    assert_eq!(chunks.active_keys(), keys);
+    for (key, bytes) in &records {
+        assert_eq!(chunks.private_active_bytes(*key).unwrap(), bytes);
+    }
+    assert_eq!(copy.disk(), disk);
+    assert_eq!(imported.private_source_bytes().unwrap(), copy.source);
+}

@@ -8,7 +8,7 @@ and cache rules are in [Backend](BACKEND.md#cached-zoomed-out-map).
 | 1     | Cached zoomed-out town overview    | Implemented              | Show the landscape and city sizes without refreshing animated scene detail.                                      |
 | 2     | Production line balancing          | Wood and grain implemented; fishing remains | Develop clear fishing chains with capped staffing and simple upgrades. |
 | 3     | Scalable villager pathfinding       | Host queue implemented; cache refinement and shared navigation remain | Keep movement responsive as villager counts and towns grow, with bounded routing work. |
-| 4     | Rust migration | R17 fishing/boats/barns and R18 population/assignments implemented offline; horses, NPCs/adventures, host integration and release acceptance remain open | Follow the [staged plan and prompts](RUST_MIGRATION.md), preserving playable checkpoints and saved worlds. |
+| 4     | Rust migration | R17 fishing/boats/barns and R18 population/village routines implemented offline; horses, NPC interactions/adventures, host integration and release acceptance remain open | Follow the [staged plan and prompts](RUST_MIGRATION.md), preserving playable checkpoints and saved worlds. |
 
 ## Rust migration
 
@@ -49,7 +49,10 @@ keeper rounds, manual pickup/drag/processing and validated owner reload.
 R18 slice 1 implements offline population/housing/loyalty, three-second meals,
 arrivals/departures, persistent names/talents, cottage autofill, sandbox and
 owner-checked resident assignments/reload. Horses/riding remain R17 slice 4;
-village routines, NPCs/trade/stories and adventures remain R18 slices 2–4.
+R18 slice 2 implements local village routes/work/waits, organic lanes/boardwalks,
+visitor pauses/sleepers, stable visit identities, separate restock clocks and owner
+reload over R07 migration results. NPC interactions/trade/stories and adventures
+remain R18 slices 3–4.
 Aggregate profession/builder/boat/navigation cleanup and founder tool-receipt
 consumption remain explicit cutover gates in R18 slice 3/R20–21;
 durable saves, complete legacy actor conversion and playable host integration remain R19–R21.

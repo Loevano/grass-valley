@@ -13,7 +13,8 @@ recipe/workshop actors. R16 slices 1–3 implement shared offline field cycles, 
 harvest returns, orchards, crop edits, linked relocation and owner reload. R17 slices 1–3
 implement saved piers, land/boat fishing, shared crew voyages, species cargo and
 exploration boats, named barn growth, keeper rounds and manual butchery offline.
-R18 slice 1 implements offline population, housing, meals and resident assignments.
+R18 slices 1–2 implement offline population/housing/meals/assignments and local
+village routines, visitor pauses, saved visit identities and separate restocks.
 Remaining horse/NPC/adventure actors and playable integration remain in R17–R21;
 complete W1–W6 acceptance remains R23.
 Integrated W2/W3 movement/accounting acceptance remains open. R08 spatial
@@ -252,7 +253,7 @@ only after work is performed. Keep unfinished stages visible in the roadmap.
 | R15 | Gathering and processing professions | R14 | All three slices implemented at the experimental offline boundary: woodcutters/claims, all 13 processor families/32 recipes, ordered workshop requests and recovery; durable/live integration and integrated acceptance remain R19–R23 |
 | R16 | Farming and orchards | R15 | All three code slices implemented offline: fields/claims/passes, water rounds, harvest returns, orchards/restock, crop edits, linked relocation and validated owner reload; integrated legacy actor/save/host adapters and acceptance remain R19–23 |
 | R17 | Fishing, boats, animals, and horses | R16 | Slices 1–3 implemented offline: saved piers, land fishing, boat/crew voyages, species cargo, exploration boats, barn growth/keepers and manual butchery; slice 4 (horses/riding) remains |
-| R18 | Residents, villages, trade, and adventures | R17 | Slice 1 implemented offline: population/housing/meals/assignments, persistent identities and validated owner reload; slices 2–4 and durable/live integration remain |
+| R18 | Residents, villages, trade, and adventures | R17 | Slices 1–2 implemented offline: population/housing/meals/assignments and local village routines, visitor pauses, anchor identities/restocks and owner reload; slices 3–4 and durable/live integration remain |
 | R19 | Durable Rust saves and recovery | R18 | Not started |
 | R20 | HTTP, accounts, and world lifecycle | R19 | Not started |
 | R21 | Browser compatibility and playable Rust checkpoint | R20 | Not started |
@@ -4165,7 +4166,8 @@ receipt idempotency and failed-command rollback. The Python oracle directly call
 cross-host production/HTTP playthrough. Numeric comparisons use absolute `1e-9`
 for food and loyalty; names, IDs, assignments, counters and receipts are exact.
 
-Remaining cutover gates are explicit: R18 slice 2 village migrations/routines and
+Historical slice-1 boundary (village/routine work superseded by slice 2 below):
+R18 slice 2 village migrations/routines and
 visits/restocks; slice 3 all NPC gifts/stories/local and town trades, founder
 gathering/equipment/tool commands; slice 4 quarry/courier membership, hazards,
 separate clock semantics and rewards plus the delegated-command audit. No command
@@ -4191,6 +4193,84 @@ passed all three host commands, including all 16 population tests; final report
 was `not_run`, with no performance acceptance claimed.
 
 Commit message: `feat: port Rust population and resident assignments`.
+
+### R18 slice 2 — Local village routines, visits and restocks
+
+`legacy::VillageLife` now owns experimental ambient routines over an explicit
+prepared private world. It consumes R07's ordinary/swamp metadata and ordered
+active/camera chunk migration results, preserving existing village versions,
+player-ground protection, moved homes/visit keys, routine repairs and sleepers.
+No second placement/layout catalog or terrain loader was introduced. A new seam
+scenario passes actual frozen terrain records through `ChunkLifecycle::prepare`
+then the ambient owner, confirming that source archives, active records, camera
+ownership and disk copies remain unchanged by routine movement. Existing R07
+migration and lifecycle tests remain the evidence for ordered cache updates.
+
+Ambient advance preserves Python's resident iteration order, index-staggered wait,
+0.65-tile/second speed, four work/market/hall/home stops, role/source selection,
+32-transition cap, six-decimal position rounding, facing, phase and elapsed waits.
+Passed-out tavern patrons sleep. Every town's founder can pause nearby locals at
+1.8 tiles; absent towns require no placeholder player. Interactions can query the
+current routine position while visit identity remains the static name/x/y anchor,
+including integral float spelling. Saved progress is never keyed by moving position.
+
+Routes retain deterministic east/south/west/north BFS ties, saved layout/swamp
+bounds, barn fence crossings, organic road/boardwalk preference and dry-footprint
+fallback. A newly obstructed step re-routes from the last saved origin, including
+legacy fractional-origin retreats. Fallback obstacles reuse R07's exact ordinary
+and swamp geometry; only supplied **active** records replace authored blockers.
+Sleeping/camera chunks are not read or activated. Completed/upgrading barns retain
+fences, new barn construction does not, and all player building footprints and
+standalone local anchors remain obstacles. Active records carry explicit world
+ownership and malformed/duplicate/foreign geometry rejects atomically.
+
+Ambient elapsed time and local trade restocks have separate entry points. Only
+an explicit economic interval decreases each town's saved `trade_remaining`;
+ambient movement, reload and world switching do not change cooldowns, met/gift/story
+flags, town production, goods, founder state or adventure clocks. Version-1 private
+owner snapshots preserve routines, visit state and opaque fields/numeric lexemes;
+reload does no migration, movement, restock, production or rewards. Malformed,
+incomplete or future routine/version facts reject explicitly with sanitized errors.
+This is complete-routine admission, not an ordinary-save hydration adapter.
+
+Evidence: seven village tests plus one lifecycle seam test. Twenty actual Python
+traces exercise 1,632 events, 102 full-world checkpoints and 85 exact route queries,
+including organic off-road fallback, three villages/all role jobs, saved fractional
+positions/origins, integral-float goals/sources, sleeping patrons, multiple founders,
+absent towns/villages, fence/construction variants, active resource changes, route
+obstruction, long stalls, reconnect, owner/world mismatch and separate restocks.
+All fields compare exactly after numeric type normalization except routine x/y
+(absolute `1e-6`) and wait/elapsed (absolute `1e-9`); paths, goals, sources, stop,
+phase, job, facing, flags and visit progress are exact. Raw private lexeme checks
+independently cover quantities, unrelated adventure time and saved extensions.
+
+R18 remains in progress. Slice 3 also owns the non-village `ensure_npcs` roster
+(version 3), placement (version 1), canopy-safe relocation and visit-key migration;
+R07's ordinary/swamp village migrations do not cover that separate local roster.
+Slice 3 owns `interact_local`, `claim_local_gift`,
+`advance_local_story`, `trade_local`, `buy_worker_tool`, `inspect_story_rock`, all
+worker-tool/equipment/founder-gathering commands and town trade offers; this slice
+supplies current positions, stable keys and cooldown clocks only. Slice 4 retains
+all quarry/lantern commands, separate adventure clock integration, hazards,
+idempotent rewards and the full delegated-command audit. R19 retains durable save
+hydration and aggregate snapshot persistence; R20–R21 retain world activation,
+scene refresh/ownership, production/restock ordering and public/browser integration.
+A saved-world copy here does not replace those authoritative aggregate owners.
+These remain explicit cutover blockers; Python remains the playable default.
+
+Performance comparisons were not run: this is a behavior port without a performance
+investigation, optimization or performance claim.
+
+Validation: `python3 tools/check.py --list` selected only `rust:lantern-host`.
+The affected runner passed locked offline host package/doc tests, formatting and
+all-target Clippy with warnings denied (3/3 commands). After the final malformed
+ambient-stop overflow guard and its targeted regression, the affected runner
+passed all three commands again, including all seven village tests and the new
+lifecycle seam test. Reports `performance-results/20261019-092139/report.md` and
+`performance-results/20261019-092419/report.md` were inspected. The Python oracle
+`--check` and `git diff --check` passed. Performance was `not_run` in both reports.
+
+Commit message: `feat: port Rust local village routines and restocks`.
 
 ## R19 — Durable Rust saves
 

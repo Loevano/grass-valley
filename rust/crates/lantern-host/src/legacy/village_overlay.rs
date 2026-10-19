@@ -12,6 +12,8 @@ mod swamp_metadata;
 pub use swamp_metadata::{SwampCachePlan, SwampVillageMetadata};
 mod swamp;
 pub use swamp::SwampOverlay;
+mod life;
+pub use life::{ActiveVillageChunk, VillageLife};
 
 const PATH: &str = "$.ordinary_village_overlay";
 const BASE: [(&str, i32, i32); 4] = [

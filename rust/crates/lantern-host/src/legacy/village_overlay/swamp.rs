@@ -394,6 +394,24 @@ pub(super) fn layout() -> &'static Layout {
         }
     })
 }
+
+/// Reuse the actual overlay geometry for ambient collision fallbacks.
+pub(super) fn ambient_obstacles(version: u8) -> BTreeSet<Point> {
+    if version == 1 {
+        let mut result = BTreeSet::new();
+        for (x, y) in super::legacy_swamp_sites() {
+            result.extend([(x, y), (x + 1, y), (x - 1, y + 1), (x, y - 1)]);
+        }
+        result.extend([(10, 5), (14, 4), (14, 8), (-10, 8)]);
+        result
+    } else {
+        SITES
+            .iter()
+            .copied()
+            .chain(layout().decor.iter().map(|r| (r.1, r.2)))
+            .collect()
+    }
+}
 fn apply_organic(
     record: &mut Node,
     village: &Village,

@@ -36,8 +36,8 @@ pub use loaded::{
 pub use materialized::{PostOverlayTerrain, ResidentChunkCopy, TerrainRecord};
 pub use spatial::PrivateSpatialCopy;
 pub use village_overlay::{
-    LegacySwampOverlay, OrdinaryVillageMetadata, OrdinaryVillageOverlay, SwampCachePlan,
-    SwampOverlay, SwampVillageMetadata,
+    ActiveVillageChunk, LegacySwampOverlay, OrdinaryVillageMetadata, OrdinaryVillageOverlay,
+    SwampCachePlan, SwampOverlay, SwampVillageMetadata, VillageLife,
 };
 
 use crate::{BoundaryError, ErrorKind, state::PrivateCredentials};
