@@ -333,6 +333,7 @@ name = "lantern-host"
 version = "0.1.0"
 dependencies = [
  "axum",
+ "blake2",
  "form_urlencoded",
  "lantern-core",
  "num-traits",

@@ -121,6 +121,9 @@ pub struct ImportedChunk {
 }
 
 impl ImportedChunk {
+    pub(super) fn from_validated_archive(key: ChunkKey, bytes: Vec<u8>) -> Self {
+        Self { key, bytes }
+    }
     pub fn key(&self) -> ChunkKey {
         self.key
     }

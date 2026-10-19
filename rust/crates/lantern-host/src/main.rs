@@ -1,4 +1,4 @@
-//! Experimental offline tools and opt-in no-world HTTP bootstrap. No gameplay.
+//! Experimental offline tools and opt-in read-only HTTP snapshots. No gameplay.
 
 mod http_bootstrap;
 mod inspect;
@@ -10,6 +10,9 @@ use std::process::ExitCode;
 
 fn main() -> ExitCode {
     let args: Vec<_> = std::env::args_os().skip(1).collect();
+    if args.first().is_some_and(|arg| arg == "http-read-copy") {
+        return http_bootstrap::run_native(&args[1..]);
+    }
     if args.first().is_some_and(|arg| arg == "http-bootstrap") {
         return http_bootstrap::run(&args[1..]);
     }
@@ -31,7 +34,7 @@ fn main() -> ExitCode {
     }
     if args != [std::ffi::OsString::from("replay")] {
         eprintln!(
-            "Usage: lantern-host replay < request.json (transport smoke only; no gameplay)\n       lantern-host inspect-copy --help (read-only synthetic copies)\n       lantern-host save-convert --help (offline copy/recovery tools)\n       lantern-host http-bootstrap --help (experimental no-world HTTP only)"
+            "Usage: lantern-host replay < request.json (transport smoke only; no gameplay)\n       lantern-host inspect-copy --help (read-only synthetic copies)\n       lantern-host save-convert --help (offline copy/recovery tools)\n       lantern-host http-bootstrap --help (experimental no-world HTTP only)\n       lantern-host http-read-copy --help (experimental uninhabited terrain snapshots)"
         );
         return ExitCode::FAILURE;
     }

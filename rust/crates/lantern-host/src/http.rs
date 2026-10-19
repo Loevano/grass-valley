@@ -1,6 +1,6 @@
-//! Experimental R20 read-only bootstrap boundary. No save or gameplay admission.
+//! Experimental R20 read-only HTTP boundary with explicit native coverage gates.
 //!
-//! The only admitted state is Python's no-active-world registry. In particular,
+//! Admitted native copies are read-only, uninhabited chunked landscapes. In particular,
 //! an offline model observation or preserved legacy archive is NOT a browser DTO.
 //! Serializers own detached values; neither serialization nor network backpressure
 //! holds an authoritative owner lock. Active-world adapters remain coverage gated.
@@ -11,7 +11,19 @@ use axum::{
     http::{Method, StatusCode, header},
     response::{IntoResponse, Response},
 };
+use serde::Serialize;
 use serde_json::{Value, json};
+mod read;
+use crate::legacy::http_snapshot::PublicFrame;
+use read::ReadError;
+pub use read::ReadRegistry;
+
+#[derive(Serialize)]
+#[serde(untagged)]
+enum Reply {
+    Json(Value),
+    Public(PublicFrame),
+}
 use std::{
     collections::BTreeMap,
     net::SocketAddr,
@@ -23,7 +35,7 @@ use tokio::sync::Semaphore;
 use tower_http::services::{ServeDir, ServeFile};
 
 pub const UNSUPPORTED: &str =
-    "Experimental Rust HTTP has no active-world coverage. Use the Python host.";
+    "Experimental Rust HTTP lacks coverage for this state or operation. Use the Python host.";
 
 #[derive(Clone)]
 struct Boundary {
@@ -31,16 +43,23 @@ struct Boundary {
     favicon: PathBuf,
     started: Instant,
     serialization: Arc<Semaphore>,
+    registry: Arc<ReadRegistry>,
 }
 
 /// No API accepts arbitrary saved JSON, credentials or client-provided town IDs.
 /// Concurrency is bounded before spawn_blocking; there is no unbounded job queue.
 pub fn bootstrap_router(web: PathBuf, favicon: PathBuf) -> Router {
+    read_router(web, favicon, ReadRegistry::default())
+}
+
+/// Serves only state that passed native read-only coverage admission.
+pub fn read_router(web: PathBuf, favicon: PathBuf, registry: ReadRegistry) -> Router {
     Router::new().fallback(dispatch).with_state(Boundary {
         web,
         favicon,
         started: Instant::now(),
         serialization: Arc::new(Semaphore::new(4)),
+        registry: Arc::new(registry),
     })
 }
 
@@ -62,7 +81,7 @@ fn error(status: StatusCode, message: &str) -> Response {
         serde_json::to_vec(&json!({"error": message})).expect("error JSON"),
     )
 }
-fn catalogs() -> &'static Value {
+pub(crate) fn catalogs() -> &'static Value {
     static CATALOGS: OnceLock<Value> = OnceLock::new();
     CATALOGS.get_or_init(|| {
         serde_json::from_str(include_str!("http_catalogs.json")).expect("reviewed HTTP catalogs")
@@ -83,32 +102,46 @@ async fn dispatch(
     if request.method() == Method::GET {
         // Python uses parsed paths for world/lanterns but exact raw paths for
         // players/worlds. Empty query separators are significant for the latter.
-        let value: Box<dyn FnOnce() -> Value + Send> = match path {
+        let value: Box<dyn FnOnce() -> Result<Reply, ReadError> + Send> = match path {
             "/api/world" => {
-                if let Err(message) = SnapshotQuery::parse(request.uri().query().unwrap_or("")) {
-                    return error(StatusCode::BAD_REQUEST, message);
-                }
+                let query = match SnapshotQuery::parse(request.uri().query().unwrap_or("")) {
+                    Ok(query) => query,
+                    Err(message) => return error(StatusCode::BAD_REQUEST, message),
+                };
                 let sampled_at = state.started.elapsed().as_secs_f64();
+                let registry = state.registry.clone();
                 Box::new(move || {
-                    json!({"towns": {}, "world_id": null, "name": null,
+                    if registry.active().is_some() {
+                        return registry.frame(&query, sampled_at).map(Reply::Public);
+                    }
+                    Ok(Reply::Json(
+                        json!({"towns": {}, "world_id": null, "name": null,
                     "players_sampled_at": sampled_at,
                     "simulation_clock": {"tick_seconds": 3, "next_tick_in": 3},
                     "hall_upgrades": catalogs()["hall_upgrades"],
                     "progression": crate::resources::public_catalog(),
                     "local_stories": catalogs()["local_stories"],
-                    "quarry_catalog": catalogs()["quarry_catalog"], "hall_ready": {}})
+                    "quarry_catalog": catalogs()["quarry_catalog"], "hall_ready": {}}),
+                    ))
                 })
             }
-            "/api/lanterns" => Box::new(|| json!({"world_id": null, "quest": null})),
+            "/api/lanterns" => {
+                let active = state.registry.active().map(str::to_owned);
+                Box::new(move || Ok(Reply::Json(json!({"world_id": active, "quest": null}))))
+            }
             "/api/players" if raw == path => {
                 let sampled_at = state.started.elapsed().as_secs_f64();
-                Box::new(move || json!({"world_id": null, "sampled_at": sampled_at, "players": {}}))
+                let active = state.registry.active().map(str::to_owned);
+                Box::new(move || {
+                    Ok(Reply::Json(
+                        json!({"world_id": active, "sampled_at": sampled_at, "players": {}}),
+                    ))
+                })
             }
             "/api/worlds" if raw == path => {
                 let can_manage = is_host(peer, request.headers());
-                Box::new(
-                    move || json!({"active_world": null, "can_manage": can_manage, "worlds": []}),
-                )
+                let registry = state.registry.clone();
+                Box::new(move || Ok(Reply::Json(registry.worlds(can_manage))))
             }
             _ => return static_response(state, request).await,
         };
@@ -133,7 +166,7 @@ async fn dispatch(
 
 async fn serialize(
     slots: Arc<Semaphore>,
-    value: impl FnOnce() -> Value + Send + 'static,
+    value: impl FnOnce() -> Result<Reply, ReadError> + Send + 'static,
 ) -> Response {
     let Ok(permit) = slots.try_acquire_owned() else {
         return error(
@@ -143,11 +176,13 @@ async fn serialize(
     };
     match tokio::task::spawn_blocking(move || {
         let _permit = permit;
-        serde_json::to_vec(&value())
+        value().map(|value| serde_json::to_vec(&value))
     })
     .await
     {
-        Ok(Ok(body)) => json_body(StatusCode::OK, body),
+        Ok(Ok(Ok(body))) => json_body(StatusCode::OK, body),
+        Ok(Err(ReadError::Query(message))) => error(StatusCode::BAD_REQUEST, message),
+        Ok(Err(ReadError::Coverage)) => error(StatusCode::NOT_IMPLEMENTED, UNSUPPORTED),
         _ => error(
             StatusCode::INTERNAL_SERVER_ERROR,
             "Snapshot serialization failed.",
@@ -400,12 +435,16 @@ mod tests {
             let slots = Arc::new(Semaphore::new(1));
             let permit = slots.clone().try_acquire_owned().unwrap();
             assert_eq!(
-                serialize(slots.clone(), || json!({})).await.status(),
+                serialize(slots.clone(), || Ok(Reply::Json(json!({}))))
+                    .await
+                    .status(),
                 StatusCode::SERVICE_UNAVAILABLE
             );
             drop(permit);
             assert_eq!(
-                serialize(slots, || json!({})).await.status(),
+                serialize(slots, || Ok(Reply::Json(json!({}))))
+                    .await
+                    .status(),
                 StatusCode::OK
             );
         });
@@ -423,13 +462,15 @@ mod tests {
                 release_rx
                     .recv_timeout(std::time::Duration::from_secs(3))
                     .unwrap();
-                json!({})
+                Ok(Reply::Json(json!({})))
             }));
             entered_rx
                 .recv_timeout(std::time::Duration::from_secs(3))
                 .unwrap();
             assert_eq!(
-                serialize(slots.clone(), || json!({})).await.status(),
+                serialize(slots.clone(), || Ok(Reply::Json(json!({}))))
+                    .await
+                    .status(),
                 StatusCode::OK
             );
             let failed = serialize(slots.clone(), || panic!("synthetic serializer failure")).await;

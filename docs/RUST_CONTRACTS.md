@@ -32,8 +32,8 @@ and boundary cases rather than assume file-level references prove all contracts.
 ## HTTP coverage matrix
 
 The runtime boundary is `server/server.py:Handler`, not the development profiler.
-R20 slice 1a implements only static assets and the no-active-world GET forms;
-active-world and mutation coverage remains open. JSON replies carry `Content-Type: application/json`,
+R20 slices 1a–b implement static assets, no-world GET forms and guarded native
+uninhabited terrain snapshots. Populated-world and mutation coverage remains open. JSON replies carry `Content-Type: application/json`,
 `Cache-Control: no-store`, and `Content-Length`. Successful mutation is HTTP 200.
 POST bodies must be JSON objects of 1–4096 bytes. Caught ValueError/TypeError maps
 to HTTP 400 with `{error: message}`; unknown POST routes return 404. Do not infer
@@ -42,10 +42,10 @@ mutation order. Invalid requests must never gain another town's authority.
 
 | Method / route | Input, authorization, and observable result | Existing evidence | Rust status / stage |
 | --- | --- | --- | --- |
-| GET `/api/world` | Public active-world snapshot; query `world_id`, `chunks`, `known`, `resources`; mismatched world ID clears known caches. Includes towns, shared map, quests, clock, catalogs and readiness. JSON frozen under lock; transmission outside lock. Invalid chunk queries: 400. | `tests/test_http.py`, `tests/test_chunk_world.py`, `tests/test_shared_world.py` | no-world form/query validation paired / R20 slice 1a; active-world/chunk assembly remains |
-| GET `/api/players` | Public `{world_id,sampled_at,players}`; current founder state by town, no ownership tokens. Exact raw path match. | `tests/test_http.py`, `tests/test_remote_players.js`, `tests/test_player_polling.js` | no-world form paired / R20 slice 1a; active founders remain |
-| GET `/api/lanterns` | Public `{world_id,quest}`; quest nullable, hazards and playing flag derived. URL path match allows query. | `tests/test_lanterns.py`, `tests/test_lanterns.js` | null no-world form paired / R20 slice 1a; adventure snapshots remain |
-| GET `/api/worlds` | Public `{active_world,can_manage,worlds:[{id,name,sandbox,town_count}]}`. Exact raw path match. | `tests/test_http.py`, `tests/test_world_creation.js` | empty registry/peer-Host-Origin metadata paired / R20 slice 1a; populated registry remains |
+| GET `/api/world` | Public active-world snapshot; query `world_id`, `chunks`, `known`, `resources`; mismatched world ID clears known caches. Includes towns, shared map, quests, clock, catalogs and readiness. JSON frozen under lock; transmission outside lock. Invalid chunk queries: 400. | `tests/test_http.py`, `tests/test_chunk_world.py`, `tests/test_shared_world.py` | native uninhabited chunked snapshots/payloads/versions/cache invalidation paired at 480/1920 / R20 slice 1b; populated/ordinary/NPC/adventure assembly remains |
+| GET `/api/players` | Public `{world_id,sampled_at,players}`; current founder state by town, no ownership tokens. Exact raw path match. | `tests/test_http.py`, `tests/test_remote_players.js`, `tests/test_player_polling.js` | no-world and active uninhabited ID/empty players paired / R20 slices 1a–b; active founders remain |
+| GET `/api/lanterns` | Public `{world_id,quest}`; quest nullable, hazards and playing flag derived. URL path match allows query. | `tests/test_lanterns.py`, `tests/test_lanterns.js` | null no-world/active uninhabited forms paired / R20 slices 1a–b; adventure snapshots remain |
+| GET `/api/worlds` | Public `{active_world,can_manage,worlds:[{id,name,sandbox,town_count}]}`. Exact raw path match. | `tests/test_http.py`, `tests/test_world_creation.js` | native uninhabited registry names/modes/counts and peer-Host-Origin metadata paired / R20 slices 1a–b; populated registry admission remains |
 | POST `/api/worlds/create` | Host only; trimmed name 1–24 chars, boolean sandbox; random ID, fresh explorable world, activate and save. | `tests/test_http.py`, `tests/test_world_creation.js` | unported / R20 |
 | POST `/api/worlds/open` | Host only; existing `world_id`; flush old chunks, switch state/tokens, save active selection. | `tests/test_http.py`, `tests/test_chunk_world.py` | unported / R20 |
 | POST `/api/worlds/delete` | Host only; existing ID and exact name `confirmation`; delete only selected world and its chunks, clear active selection if necessary, save registry. | `tests/test_http.py`, `tests/test_chunk_world.py` | unported / R20 |

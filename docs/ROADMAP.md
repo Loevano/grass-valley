@@ -74,10 +74,13 @@ but remain unplayable. Complete playable legacy actor hydration/live adapters an
 native gameplay reverse export remain explicit compatibility/cutover gates.
 R20 slice 1a adds an opt-in loopback Axum/Tokio bootstrap with static assets,
 no-world GET snapshots, catalogs and bounded background serialization, paired with
-Python on disposable roots. Slice 1 remains open for active-world DTO/chunk/version
-assembly and founder-command/serialization/socket/save contention. Account dispatch
-and world administration remain slices 2–3; the bootstrap refuses save loading and
-all mutations. See [R20 remaining work](RUST_MIGRATION.md#r20-slice-1a--no-world-http-bootstrap-slice-1-remains-open).
+Python on disposable roots. Slice 1b adds read-only native uninhabited terrain copies,
+active/camera chunk payloads, Python-compatible content versions and cache invalidation, paired on
+480/1920 maps. Slice 1 remains open for populated town/founder/NPC/adventure DTOs,
+ordinary maps and founder-command/serialization/socket/save contention. Account dispatch
+and world administration remain slices 2–3; the bootstrap refuses save loading, and
+the native read-copy mode rejects unsupported generations/coverage and all mutations.
+See [R20 remaining work](RUST_MIGRATION.md#r20-slice-1b--native-terrain-read-snapshots-slice-1-remains-open).
 Python remains the playable default; R19 owns durable persistence/recovery and R23
 retains target-platform math/release validation. Gameplay RNG stream adoption and
 R24 rollback acceptance remain gated by the contracts. Later navigation stages

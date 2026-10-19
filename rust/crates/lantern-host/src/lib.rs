@@ -1,4 +1,4 @@
-//! Experimental offline models, legacy staging and no-world HTTP bootstrap.
+//! Experimental offline models, legacy staging and read-only HTTP snapshots.
 //!
 //! Authoritative state is deliberately not serializable:
 //! ```compile_fail

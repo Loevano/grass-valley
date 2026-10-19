@@ -12,6 +12,7 @@ mod chunks;
 mod clock;
 mod founder;
 mod founder_world;
+pub(crate) mod http_snapshot;
 mod json;
 mod landscapes;
 mod lifecycle;

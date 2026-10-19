@@ -256,7 +256,7 @@ only after work is performed. Keep unfinished stages visible in the roadmap.
 | R17 | Fishing, boats, animals, and horses | R16 | Slices 1–3 implemented offline: saved piers, land fishing, boat/crew voyages, species cargo, exploration boats, barn growth/keepers and manual butchery; slice 4 (horses/riding) remains |
 | R18 | Residents, villages, trade, and adventures | R17 | Slices 1–3 implemented offline: population, village routines/restocks, NPC roster/gifts/stories/tools/equipment, town trades and founder activities with owner reload; slice 4 and durable/live integration remain |
 | R19 | Durable Rust saves and recovery | R18 | Slices 1–3 implemented at offline native/tool boundary: snapshots `9217d66`, atomic generations `bb547bf`, `feat: add explicit save copy archive and recovery tools` (this change); [scope and rollback limits](RUST_SAVES.md). Python archival is explicitly approved as preserved-only; playable legacy actor hydration, live host integration and native reverse export remain compatibility gates |
-| R20 | HTTP, accounts, and world lifecycle | R19 | Slice 1 in progress: experimental no-world HTTP/bootstrap implemented; active-world snapshots/chunk payloads and contention acceptance remain; slices 2–3 not started |
+| R20 | HTTP, accounts, and world lifecycle | R19 | Slice 1 in progress: no-world bootstrap and guarded native uninhabited terrain HTTP implemented/paired, including chunk versions/cache invalidation; populated frames and contention acceptance remain; slices 2–3 not started |
 | R21 | Browser compatibility and playable Rust checkpoint | R20 | Not started |
 | R22 | Shared-destination routing | R21 | Not started |
 | R23 | Cross-host benchmarks and release readiness | R22, or documented deferral | Not started |
@@ -4561,7 +4561,7 @@ ownership failures. Keep Rust experimental, update coverage/progress, and commit
 
 ### R20 slice 1a — No-world HTTP bootstrap (slice 1 remains open)
 
-Implemented the independently testable bootstrap portion of slice 1. This is **not**
+Implemented in `4fc4348`: the independently testable bootstrap portion of slice 1. This is **not**
 an active-world host or completion of R20 slice 1. Launch explicitly with:
 
 ```sh
@@ -4599,7 +4599,7 @@ nonreading client transferring a 16 MiB static asset. Rust unit tests additional
 cover serializer saturation, stalled serialization, failure and capacity recovery.
 The affected selector follows literal Rust source references from protocol tests.
 
-**Remaining in slice 1:** assemble supported active-world browser DTOs from the
+**Remaining after slice 1a (terrain work continues below):** assemble supported active-world browser DTOs from the
 separate native owners, publish actual founder/town/adventure state and chunk
 terrain/resources with Python-compatible content versions and cache invalidation,
 characterize directory-listing/fallback edge cases, and exercise founder commands
@@ -4626,6 +4626,92 @@ Homebrew Rust/Cargo 1.99.1 on macOS, rather than claiming a run of the rustup-pi
 No runtime performance comparison is claimed: this is new bootstrap contract work, with no
 baseline Rust listener or admitted founder workload. Integrated W1–W6 and command
 latency acceptance remain R20–23.
+
+### R20 slice 1b — Native terrain read snapshots (slice 1 remains open)
+
+The experimental boundary now reads an **explicit, exclusively locked native copy**
+through R19's read-only generation loader. It never discovers a default data root,
+opens a writable handle, starts a save worker, advances simulation or accepts a
+mutation. All worlds, including inactive entries, must pass admission before binding
+HTTP. A damaged/unsupported latest generation refuses startup even when R19 recovery
+can find an older valid generation; select/recover copies with offline tools first.
+
+```sh
+cd rust
+cargo run -p lantern-host --locked --offline -- http-read-copy --experimental --source /tmp/explicit-native-copy --bind 127.0.0.1:8001
+```
+
+The verified scope is disposable, uninhabited chunked maps with no NPCs, villages,
+independent resource owners, population or adventures. Starter sites must provide
+one to four bounded active windows. The known NPC and forage migration markers
+must be current; unknown world/map/resource payload fields
+and populated native models are refused. Ordinary maps and playable legacy Python
+archives remain unsupported. The `http_fixture` Cargo example creates **new disposable
+native protocol fixtures only**; it is not a conversion/import path. Python remains
+the playable default. `http-bootstrap --experimental-empty` remains available.
+
+The read adapter assembles detached native R07 terrain owners, activates their
+starter-site windows, applies read catch-up using archived clocks, reads
+saved-first/generated camera chunks and projects only
+audited public fields. `/api/world` now includes the active ID/name, public map
+metadata, active-plus-camera terrain/resource chunks, visible keys, catalogs and
+no-scheduled-tick clock metadata for admitted copies. `/api/players` and
+`/api/lanterns` return that active ID with empty players/null quest; `/api/worlds`
+exports all admitted entries' names/modes/counts. POST routes still return 501
+coverage errors; host/origin metadata grants no operation permission.
+
+Requested chunks enforce actual 480/1920 bounds while cached keys retain the
+legacy query domain. Matching resource versions suppress payloads, known keys suppress
+terrain, and a mismatched world ID clears both caches after syntax validation.
+Visible keys use Python's textual sort. Active records are always included, even
+with an empty camera query. Every request operates on a disposable owner derived
+from the frozen copy, so camera reads and cache decisions cannot mutate source
+snapshots, persisted bytes or another request's owner.
+
+Resource versions use the existing R07 `blake2` 0.10.6 library (BLAKE2b, 8-byte
+output), with Python-compatible compact JSON bytes. An isolated ordered serializer
+retains nested insertion order, ASCII escaping (including DEL and surrogate pairs),
+integer/float identity, negative zero and signed/padded exponents. The read projection
+restores the integer types of Python's supply maxima, tree regeneration zero and
+clamped supplies: native binary64 quantities alone produce different hash bytes.
+Chunk-envelope clocks/private extensions never enter public payloads; unreviewed
+fields inside resources/stumps refuse coverage rather than being hashed or exposed.
+The independent Python oracle includes 300 seeded finite float samples, numeric
+boundaries, wide integers and Unicode; its generator supports `--check`.
+
+Paired protocol tests run independent Python and Rust hosts over disposable roots,
+comparing complete GET payloads except opaque monotonic timestamp origins. Cases
+include saved/generated chunks, active/camera unions, textual ordering, both map
+sizes and the legacy edge chunk, cache reuse/partial updates/world invalidation,
+exact hashes, source locking/byte preservation, inactive-world coverage failure,
+private-field refusal and damaged-latest refusal. Real 49-chunk world responses
+with a nonreading socket leave `/api/players`, `/api/worlds` and `/api/lanterns`
+responsive. These are correctness checks; they do not establish founder-command,
+save-contention or W1–W6 latency acceptance.
+
+**Remaining in slice 1:** aggregate native town/founder presentation and actor DTOs,
+ordinary-map HTTP, NPC/village/adventure snapshots, complete static fallback edge
+characterization and protocol tests with actual founder commands under serialization,
+socket and save contention. Persisted town/founder presentation and aggregate owner
+coverage must be explicit; preserved legacy bytes must not stand in for model
+hydration. Accounts/PIN/Unicode normalization/token ownership remain slice 2; world
+administration/schedules/shutdown remain slice 3. Continue slice 1 next.
+
+Validation: the affected runner selected both protocol suites, the Rust selector
+contract tests and both Cargo crates. All 51 Python cases, 94 core tests and 491 host
+tests (including doctests), formatting and all-target Clippy passed:
+`performance-results/20261020-010329/report.md` and `.json`. Final starter-window
+coverage guards were then confirmed by the 20-case terrain protocol rerun:
+`performance-results/20261020-010717/report.md` and `.json`. Workspace formatting and
+the Python oracle generator's `--check` pass. The new terrain suite covers both hosts
+at both map sizes; existing no-world protocol coverage remains green. No pre-existing
+failures were observed. Local socket checks required sandbox escalation; local
+validation used macOS with Homebrew Rust/Cargo 1.99.1, not a claimed run of the
+rustup-pinned 1.99.0. Reports remain ignored local artifacts.
+
+No performance comparison is claimed: this adds a read-only protocol feature and is not a performance fix;
+the starting revision `4fc43484ce5b25d2e45e5e4a7606624f6e88b464` has no admitted
+active-world workload. Public/gameplay/native-writer contention remains unmeasured.
 
 ## R21 — Playable Rust browser checkpoint
 

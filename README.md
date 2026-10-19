@@ -873,9 +873,9 @@ Every destination must be new and separate; playable Python import and native
 reverse export are explicitly refused. The Python launch and its data are unchanged.
 The core has no external dependencies or I/O; it compiles and its test harness
 runs without a listener. The replay adapter supports only a transport smoke
-fixture. An experimental no-world HTTP bootstrap is available; active-world HTTP
-and playable gameplay integration remain unimplemented. Start the playable game
-with `python3 server/server.py` as before.
+fixture. An experimental no-world HTTP bootstrap and guarded native terrain reader
+are available; populated-world HTTP and playable gameplay integration remain
+unimplemented. Start the playable game with `python3 server/server.py` as before.
 
 Install [Rust with rustup](https://www.rust-lang.org/tools/install), then run
 commands **inside `rust/`** so rustup discovers `rust-toolchain.toml`:
@@ -905,6 +905,25 @@ Run `python3 tools/check.py --tests tests/test_http_bootstrap.py` from the repos
 root for the shared disposable-root protocol tests (Cargo cache and local sockets
 required). Select `test_http_bootstrap.PythonBootstrap` or
 `test_http_bootstrap.RustBootstrap` to run one host's cases.
+
+R20 also provides a read-only endpoint adapter for **explicit native synthetic copies**:
+
+```sh
+cargo run -p lantern-host --locked --offline -- http-read-copy --experimental --source /tmp/explicit-native-copy --bind 127.0.0.1:8001
+```
+
+The source must already exist as a valid R19 generation root. Currently only
+uninhabited chunked maps without NPCs/villages/independent resource owners are admitted;
+all worlds must pass coverage checks. Populated worlds, ordinary maps, unsupported
+fields and damaged/unsupported latest generations refuse startup. The source stays
+locked and byte-for-byte unchanged; there is no simulation, login, command dispatch
+or save worker. Reads include active/camera chunks, compatible resource versions and
+world-ID cache invalidation. Python remains the playable host.
+
+`python3 tools/check.py --tests tests/test_http_snapshots.py` runs paired current/legacy
+terrain protocol checks and constructs its own disposable native roots. The Cargo
+`http_fixture` example is solely a synthetic fixture builder, not a legacy converter.
+See [R20's admission limits and remaining work](docs/RUST_MIGRATION.md#r20-slice-1b--native-terrain-read-snapshots-slice-1-remains-open).
 
 The new HTTP dependencies are Axum 0.8.9 (MIT, Rust ≥1.80), Tokio 1.54.0 (MIT,
 Rust ≥1.85), tower-http 0.6.11 (MIT, Rust ≥1.64) and form_urlencoded 1.2.2
