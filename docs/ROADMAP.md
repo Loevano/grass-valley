@@ -8,7 +8,7 @@ and cache rules are in [Backend](BACKEND.md#cached-zoomed-out-map).
 | 1     | Cached zoomed-out town overview    | Implemented              | Show the landscape and city sizes without refreshing animated scene detail.                                      |
 | 2     | Production line balancing          | Wood and grain implemented; fishing remains | Develop clear fishing chains with capped staffing and simple upgrades. |
 | 3     | Scalable villager pathfinding       | Host queue implemented; cache refinement and shared navigation remain | Keep movement responsive as villager counts and towns grow, with bounded routing work. |
-| 4     | Rust migration | R17 fishing/boats/barns/manual butchery implemented; horses and other actors, host integration and release acceptance remain open | Follow the [staged plan and prompts](RUST_MIGRATION.md), preserving playable checkpoints and saved worlds. |
+| 4     | Rust migration | R17 fishing/boats/barns and R18 population/assignments implemented offline; horses, NPCs/adventures, host integration and release acceptance remain open | Follow the [staged plan and prompts](RUST_MIGRATION.md), preserving playable checkpoints and saved worlds. |
 
 ## Rust migration
 
@@ -46,7 +46,12 @@ validated owner reload; see the
 R17 slices 1–3 implement experimental saved piers, land/boat fishing, shared crew
 voyages, species cargo, exploration boats, named barn herds, independent growth,
 keeper rounds, manual pickup/drag/processing and validated owner reload.
-Horses/riding and population remain R17–R18;
+R18 slice 1 implements offline population/housing/loyalty, three-second meals,
+arrivals/departures, persistent names/talents, cottage autofill, sandbox and
+owner-checked resident assignments/reload. Horses/riding remain R17 slice 4;
+village routines, NPCs/trade/stories and adventures remain R18 slices 2–4.
+Aggregate profession/builder/boat/navigation cleanup and founder tool-receipt
+consumption remain explicit cutover gates in R18 slice 3/R20–21;
 durable saves, complete legacy actor conversion and playable host integration remain R19–R21.
 R11's integrated W2/W3 movement/accounting acceptance remains open; R19–R21 retain
 HTTP/save/snapshot integration and R23 retains complete W1–W6 acceptance. See the

@@ -428,6 +428,27 @@ impl Town {
         Ok(&self.actors[self.actor_index(id)?])
     }
 
+    /// Population admission preserves every existing actor and its playback.
+    /// IDs must come from the world's persistent allocator, never a list index.
+    pub fn insert_actor(&mut self, state: ActorState) -> Result<(), ModelError> {
+        if self.actors.iter().any(|a| a.state.id == state.id) {
+            return Err(IdentityError::DuplicateSerial.into());
+        }
+        let mut admitted = Self::restore(
+            self.owner.clone(),
+            self.buildings.clone(),
+            alloc::vec![state],
+        )?;
+        self.actors.push(admitted.actors.pop().unwrap());
+        Ok(())
+    }
+
+    /// The population owner must first salvage ledger cargo and pending output.
+    pub fn remove_actor(&mut self, id: &ActorId) -> Result<ActorState, ModelError> {
+        let index = self.actor_index(id)?;
+        Ok(self.actors.remove(index).state)
+    }
+
     /// Validated structural insertion; catalog, cost and spatial rules are the
     /// command owner's responsibility. Never accepts a reused live serial.
     pub fn insert_building(&mut self, building: Building) -> Result<(), ModelError> {

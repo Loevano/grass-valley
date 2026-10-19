@@ -12,7 +12,10 @@ merchant trips plus market execution over movement and accounting. R15 slices 1�
 recipe/workshop actors. R16 slices 1–3 implement shared offline field cycles, claims, water rounds,
 harvest returns, orchards, crop edits, linked relocation and owner reload. R17 slices 1–3
 implement saved piers, land/boat fishing, shared crew voyages, species cargo and
-exploration boats, named barn growth, keeper rounds and manual butchery offline. Remaining horse/resident actors and playable integration remain in R17–R21; complete W1–W6 acceptance remains R23.
+exploration boats, named barn growth, keeper rounds and manual butchery offline.
+R18 slice 1 implements offline population, housing, meals and resident assignments.
+Remaining horse/NPC/adventure actors and playable integration remain in R17–R21;
+complete W1–W6 acceptance remains R23.
 Integrated W2/W3 movement/accounting acceptance remains open. R08 spatial
 rules and founder movement is complete as an experimental private-copy foundation. R07 includes saved-first terrain versions 1–7,
 nonchunked maps, authored starter/town sites, ordinary/swamp metadata and overlays,
@@ -249,7 +252,7 @@ only after work is performed. Keep unfinished stages visible in the roadmap.
 | R15 | Gathering and processing professions | R14 | All three slices implemented at the experimental offline boundary: woodcutters/claims, all 13 processor families/32 recipes, ordered workshop requests and recovery; durable/live integration and integrated acceptance remain R19–R23 |
 | R16 | Farming and orchards | R15 | All three code slices implemented offline: fields/claims/passes, water rounds, harvest returns, orchards/restock, crop edits, linked relocation and validated owner reload; integrated legacy actor/save/host adapters and acceptance remain R19–23 |
 | R17 | Fishing, boats, animals, and horses | R16 | Slices 1–3 implemented offline: saved piers, land fishing, boat/crew voyages, species cargo, exploration boats, barn growth/keepers and manual butchery; slice 4 (horses/riding) remains |
-| R18 | Residents, villages, trade, and adventures | R17 | Not started |
+| R18 | Residents, villages, trade, and adventures | R17 | Slice 1 implemented offline: population/housing/meals/assignments, persistent identities and validated owner reload; slices 2–4 and durable/live integration remain |
 | R19 | Durable Rust saves and recovery | R18 | Not started |
 | R20 | HTTP, accounts, and world lifecycle | R19 | Not started |
 | R21 | Browser compatibility and playable Rust checkpoint | R20 | Not started |
@@ -4112,6 +4115,82 @@ progression, and one-time rewards. Check reconnect, multiple towns/players, and
 save-imported state. Reconcile omitted commands instead of silently deferring them.
 Validate targeted scenarios, update coverage/progress, and commit the slice.
 ```
+
+### R18 slice 1 — Population, housing, meals and assignments
+
+Implemented at the same explicit offline model boundary as R12–R17. Python remains
+the playable default. `population::Population` owns the ordered resident roster,
+persistent names, personal practice/talents, assignments, shortage counters,
+replacement delay, departure history and returned-tool receipts. Founder actors
+remain outside the resident roster. New actor IDs must come from the existing
+world allocator; list indexes are never identities. Model insertion preserves
+existing actor routes/playback, and departure removes only the selected resident.
+
+One injected economic boundary performs the existing three-second meal, shortage,
+loyalty/departure, arrival and cottage-fill order **after** production. It does not
+advance movement, resource activity, construction, adventures or wall time. Meals
+include idle construction/road helpers; shortages use the 60-second grace period,
+5% base departure chance and Python rounding. Housing retains existing comfort and
+spaces through upgrades, excludes new construction and distinguishes structural
+comfort, timber frames and staffing. Sandbox suppresses departures and paid
+arrivals while filling available housing and bypassing qualifications.
+
+Offline `assign_settler`, `remove_settler` and `job` equivalents enforce owner,
+resident membership, completion, capacity and personal qualification. Job selection
+keeps the current eligible workplace, otherwise saved building order. Removal
+unassigns without deleting. Reassignment/departure cancels R14 trips, returns held
+cargo to its source/hall, orphans completed output and invalidates the model task
+while retaining position. Departed valid worker tools enter a persisted receipt
+queue; owner-checked draining is exact-once. The founder tool inventory must consume
+that queue within the future aggregate transaction (R18 slice 3/R20).
+
+Explicit imported resident facts preserve named people, skills and saved empty
+talent maps; only absent talents get original resident-order defaults. Old unnamed
+and `Settler <digits>` identities are repaired in Python order, including Python's
+Unicode digit classification. An explicit legacy-assignment resolver preserves
+saved indexes/over-capacity facts and the historical resident-modulo-workplace
+fallback, including its tree/water/reach checks. Version-1 population DTO reload
+checks owner/world, version, actor/building references, duplicate actors, numeric
+facts and required fields. Reload performs no meals, arrivals, autofill or offline
+production. Restore model, ledger, trips and population from one generation.
+
+Evidence: 16 targeted Rust scenarios, including 18 frozen Python post-production
+population boundaries, cover meal-before-arrival, grace/recovery, food/housing/both
+shortages, loyalty, last-resident protection, replacement delay/reload, sandbox,
+cottage autofill, upgrade housing, names beyond the pool, profession qualifications,
+founder exclusion, independent towns, wrong owners/absent towns/world switching,
+legacy import facts, stable identities after list reorder, cargo/output recovery,
+receipt idempotency and failed-command rollback. The Python oracle directly calls
+`feed_settlers`/`fill_cottages` and the arrival block; it does not claim a complete
+cross-host production/HTTP playthrough. Numeric comparisons use absolute `1e-9`
+for food and loyalty; names, IDs, assignments, counters and receipts are exact.
+
+Remaining cutover gates are explicit: R18 slice 2 village migrations/routines and
+visits/restocks; slice 3 all NPC gifts/stories/local and town trades, founder
+gathering/equipment/tool commands; slice 4 quarry/courier membership, hazards,
+separate clock semantics and rewards plus the delegated-command audit. No command
+from those families is considered implemented by this slice. R17 slice 4 still
+owns horses/riding. R19 owns ordinary-save field hydration/durable writes. R20–R21
+must connect authentication, index adapters, economic tick ordering, R12 builder
+roles, profession/boat/claim cancellation owners and navigation job removal to the
+resident roster in one aggregate transaction; resetting a model task alone is not
+proof that those independent subsystem owners have released their saved work.
+These remain cutover blockers, alongside integrated W2/W3 and R23 acceptance.
+
+Performance comparisons were not run: this ports behavior without a performance
+investigation, optimization or performance claim.
+
+Validation: `python3 tools/check.py --list` selected `rust:lantern-core` and
+`rust:lantern-host`. The affected runner passed formatting, locked offline package
+and doc tests and all-target Clippy with warnings denied (6/6 commands), report
+`performance-results/20261019-085453/report.md`. After the final farm-versus-acre
+job-selection correction, `python3 tools/check.py --tests rust:lantern-host`
+passed all three host commands, including all 16 population tests; final report
+`performance-results/20261019-085700/report.md`. The Python population fixture
+`--check` and `git diff --check` passed. Both reports were inspected; performance
+was `not_run`, with no performance acceptance claimed.
+
+Commit message: `feat: port Rust population and resident assignments`.
 
 ## R19 — Durable Rust saves
 

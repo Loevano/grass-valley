@@ -89,6 +89,11 @@ impl Worker {
     pub fn job(&self) -> &str {
         &self.job
     }
+    pub fn set_job(&mut self, job: &str) -> Result<(), Error> {
+        self.qualification(job)?;
+        self.job = job.into();
+        Ok(())
+    }
     pub fn skills(&self) -> &BTreeMap<String, Practice> {
         &self.skills
     }

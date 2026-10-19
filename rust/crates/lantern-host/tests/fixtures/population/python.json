@@ -1,0 +1,2623 @@
+[
+  {
+    "after": {
+      "arrival_delay_seconds": 0,
+      "food": 99.85,
+      "food_shortage_seconds": 0,
+      "housing_shortage_seconds": 0,
+      "sandbox": false,
+      "villagers": [
+        {
+          "job": "idle",
+          "name": "Ada",
+          "talents": {
+            "fishing": -1,
+            "woodcutting": 1
+          }
+        },
+        {
+          "job": "idle",
+          "name": "Rowan",
+          "talents": {
+            "farming": 1,
+            "husbandry": -1
+          }
+        },
+        {
+          "job": "idle",
+          "name": "Wren",
+          "talents": {
+            "fishing": 1,
+            "woodcutting": -1
+          }
+        },
+        {
+          "job": "idle",
+          "name": "Bram",
+          "talents": {
+            "farming": -1,
+            "husbandry": 1
+          }
+        },
+        {
+          "job": "idle",
+          "name": "Hazel",
+          "talents": {
+            "fishing": -1,
+            "woodcutting": 1
+          }
+        }
+      ]
+    },
+    "before": {
+      "buildings": [
+        {
+          "kind": "hall",
+          "x": 1,
+          "y": 1
+        }
+      ],
+      "food": 100,
+      "player": {},
+      "sandbox": false,
+      "villagers": [
+        {
+          "job": "idle",
+          "name": "Ada",
+          "talents": {
+            "fishing": -1,
+            "woodcutting": 1
+          }
+        },
+        {
+          "job": "idle",
+          "name": "Rowan",
+          "talents": {
+            "farming": 1,
+            "husbandry": -1
+          }
+        },
+        {
+          "job": "idle",
+          "name": "Wren",
+          "talents": {
+            "fishing": 1,
+            "woodcutting": -1
+          }
+        },
+        {
+          "job": "idle",
+          "name": "Bram",
+          "talents": {
+            "farming": -1,
+            "husbandry": 1
+          }
+        },
+        {
+          "job": "idle",
+          "name": "Hazel",
+          "talents": {
+            "fishing": -1,
+            "woodcutting": 1
+          }
+        }
+      ]
+    },
+    "housing": 5,
+    "loyalty": 0.0,
+    "name": "no_room",
+    "roll": 9999
+  },
+  {
+    "after": {
+      "arrival_delay_seconds": 0,
+      "food": 19.85,
+      "food_shortage_seconds": 0,
+      "housing_shortage_seconds": 0,
+      "sandbox": false,
+      "villagers": [
+        {
+          "building_index": 1,
+          "job": "idle",
+          "name": "Ada",
+          "talents": {
+            "fishing": -1,
+            "woodcutting": 1
+          }
+        },
+        {
+          "building_index": 1,
+          "job": "idle",
+          "name": "Rowan",
+          "talents": {
+            "farming": 1,
+            "husbandry": -1
+          }
+        },
+        {
+          "job": "idle",
+          "name": "Wren",
+          "talents": {
+            "fishing": 1,
+            "woodcutting": -1
+          }
+        },
+        {
+          "job": "idle",
+          "name": "Bram",
+          "talents": {
+            "farming": -1,
+            "husbandry": 1
+          }
+        },
+        {
+          "job": "idle",
+          "name": "Hazel",
+          "talents": {
+            "fishing": -1,
+            "woodcutting": 1
+          }
+        }
+      ]
+    },
+    "before": {
+      "buildings": [
+        {
+          "kind": "hall",
+          "x": 1,
+          "y": 1
+        },
+        {
+          "kind": "home"
+        }
+      ],
+      "food": 20,
+      "player": {},
+      "sandbox": false,
+      "villagers": [
+        {
+          "job": "idle",
+          "name": "Ada",
+          "talents": {
+            "fishing": -1,
+            "woodcutting": 1
+          }
+        },
+        {
+          "job": "idle",
+          "name": "Rowan",
+          "talents": {
+            "farming": 1,
+            "husbandry": -1
+          }
+        },
+        {
+          "job": "idle",
+          "name": "Wren",
+          "talents": {
+            "fishing": 1,
+            "woodcutting": -1
+          }
+        },
+        {
+          "job": "idle",
+          "name": "Bram",
+          "talents": {
+            "farming": -1,
+            "husbandry": 1
+          }
+        },
+        {
+          "job": "idle",
+          "name": "Hazel",
+          "talents": {
+            "fishing": -1,
+            "woodcutting": 1
+          }
+        }
+      ]
+    },
+    "housing": 7,
+    "loyalty": 0.0,
+    "name": "meal_before_arrival",
+    "roll": 9999
+  },
+  {
+    "after": {
+      "arrival_delay_seconds": 0,
+      "food": 10.850000000000001,
+      "food_shortage_seconds": 0,
+      "housing_shortage_seconds": 0,
+      "sandbox": false,
+      "villagers": [
+        {
+          "building_index": 1,
+          "job": "idle",
+          "name": "Ada",
+          "talents": {
+            "fishing": -1,
+            "woodcutting": 1
+          }
+        },
+        {
+          "building_index": 1,
+          "job": "idle",
+          "name": "Rowan",
+          "talents": {
+            "farming": 1,
+            "husbandry": -1
+          }
+        },
+        {
+          "job": "idle",
+          "name": "Wren",
+          "talents": {
+            "fishing": 1,
+            "woodcutting": -1
+          }
+        },
+        {
+          "job": "idle",
+          "name": "Bram",
+          "talents": {
+            "farming": -1,
+            "husbandry": 1
+          }
+        },
+        {
+          "job": "idle",
+          "name": "Hazel",
+          "talents": {
+            "fishing": -1,
+            "woodcutting": 1
+          }
+        },
+        {
+          "farming": 0,
+          "fishing": 0,
+          "job": "idle",
+          "name": "Finn",
+          "talents": {
+            "farming": 1,
+            "husbandry": -1
+          },
+          "woodcutting": 0
+        }
+      ]
+    },
+    "before": {
+      "buildings": [
+        {
+          "kind": "hall",
+          "x": 1,
+          "y": 1
+        },
+        {
+          "kind": "home"
+        }
+      ],
+      "food": 21,
+      "player": {},
+      "sandbox": false,
+      "villagers": [
+        {
+          "job": "idle",
+          "name": "Ada",
+          "talents": {
+            "fishing": -1,
+            "woodcutting": 1
+          }
+        },
+        {
+          "job": "idle",
+          "name": "Rowan",
+          "talents": {
+            "farming": 1,
+            "husbandry": -1
+          }
+        },
+        {
+          "job": "idle",
+          "name": "Wren",
+          "talents": {
+            "fishing": 1,
+            "woodcutting": -1
+          }
+        },
+        {
+          "job": "idle",
+          "name": "Bram",
+          "talents": {
+            "farming": -1,
+            "husbandry": 1
+          }
+        },
+        {
+          "job": "idle",
+          "name": "Hazel",
+          "talents": {
+            "fishing": -1,
+            "woodcutting": 1
+          }
+        }
+      ]
+    },
+    "housing": 7,
+    "loyalty": 0.0,
+    "name": "arrival",
+    "roll": 9999
+  },
+  {
+    "after": {
+      "arrival_delay_seconds": 0,
+      "food": 0,
+      "food_shortage_seconds": 57,
+      "housing_shortage_seconds": 0,
+      "sandbox": false,
+      "villagers": [
+        {
+          "job": "idle",
+          "name": "Ada",
+          "talents": {
+            "fishing": -1,
+            "woodcutting": 1
+          }
+        },
+        {
+          "job": "idle",
+          "name": "Rowan",
+          "talents": {
+            "farming": 1,
+            "husbandry": -1
+          }
+        },
+        {
+          "job": "idle",
+          "name": "Wren",
+          "talents": {
+            "fishing": 1,
+            "woodcutting": -1
+          }
+        },
+        {
+          "job": "idle",
+          "name": "Bram",
+          "talents": {
+            "farming": -1,
+            "husbandry": 1
+          }
+        },
+        {
+          "job": "idle",
+          "name": "Hazel",
+          "talents": {
+            "fishing": -1,
+            "woodcutting": 1
+          }
+        }
+      ]
+    },
+    "before": {
+      "buildings": [
+        {
+          "kind": "hall",
+          "x": 1,
+          "y": 1
+        }
+      ],
+      "food": 0,
+      "food_shortage_seconds": 54,
+      "player": {},
+      "sandbox": false,
+      "villagers": [
+        {
+          "job": "idle",
+          "name": "Ada",
+          "talents": {
+            "fishing": -1,
+            "woodcutting": 1
+          }
+        },
+        {
+          "job": "idle",
+          "name": "Rowan",
+          "talents": {
+            "farming": 1,
+            "husbandry": -1
+          }
+        },
+        {
+          "job": "idle",
+          "name": "Wren",
+          "talents": {
+            "fishing": 1,
+            "woodcutting": -1
+          }
+        },
+        {
+          "job": "idle",
+          "name": "Bram",
+          "talents": {
+            "farming": -1,
+            "husbandry": 1
+          }
+        },
+        {
+          "job": "idle",
+          "name": "Hazel",
+          "talents": {
+            "fishing": -1,
+            "woodcutting": 1
+          }
+        }
+      ]
+    },
+    "housing": 5,
+    "loyalty": 0.0,
+    "name": "grace",
+    "roll": 0
+  },
+  {
+    "after": {
+      "arrival_delay_seconds": 60,
+      "departure_count": 1,
+      "food": 0,
+      "food_shortage_seconds": 0,
+      "housing_shortage_seconds": 0,
+      "last_departure": {
+        "job": "idle",
+        "name": "Ada",
+        "practice": {},
+        "reason": "food"
+      },
+      "sandbox": false,
+      "villagers": [
+        {
+          "job": "idle",
+          "name": "Rowan",
+          "talents": {
+            "farming": 1,
+            "husbandry": -1
+          }
+        },
+        {
+          "job": "idle",
+          "name": "Wren",
+          "talents": {
+            "fishing": 1,
+            "woodcutting": -1
+          }
+        },
+        {
+          "job": "idle",
+          "name": "Bram",
+          "talents": {
+            "farming": -1,
+            "husbandry": 1
+          }
+        },
+        {
+          "job": "idle",
+          "name": "Hazel",
+          "talents": {
+            "fishing": -1,
+            "woodcutting": 1
+          }
+        }
+      ]
+    },
+    "before": {
+      "buildings": [
+        {
+          "kind": "hall",
+          "x": 1,
+          "y": 1
+        }
+      ],
+      "food": 0,
+      "food_shortage_seconds": 57,
+      "player": {},
+      "sandbox": false,
+      "villagers": [
+        {
+          "job": "idle",
+          "name": "Ada",
+          "talents": {
+            "fishing": -1,
+            "woodcutting": 1
+          }
+        },
+        {
+          "job": "idle",
+          "name": "Rowan",
+          "talents": {
+            "farming": 1,
+            "husbandry": -1
+          }
+        },
+        {
+          "job": "idle",
+          "name": "Wren",
+          "talents": {
+            "fishing": 1,
+            "woodcutting": -1
+          }
+        },
+        {
+          "job": "idle",
+          "name": "Bram",
+          "talents": {
+            "farming": -1,
+            "husbandry": 1
+          }
+        },
+        {
+          "job": "idle",
+          "name": "Hazel",
+          "talents": {
+            "fishing": -1,
+            "woodcutting": 1
+          }
+        }
+      ]
+    },
+    "housing": 5,
+    "loyalty": 0.0,
+    "name": "departure",
+    "roll": 0
+  },
+  {
+    "after": {
+      "arrival_delay_seconds": 0,
+      "food": 0,
+      "food_shortage_seconds": 60,
+      "housing_shortage_seconds": 0,
+      "sandbox": false,
+      "villagers": [
+        {
+          "building_index": 1,
+          "job": "idle",
+          "name": "Ada",
+          "talents": {
+            "fishing": -1,
+            "woodcutting": 1
+          }
+        },
+        {
+          "building_index": 1,
+          "job": "idle",
+          "name": "Rowan",
+          "talents": {
+            "farming": 1,
+            "husbandry": -1
+          }
+        },
+        {
+          "job": "idle",
+          "name": "Wren",
+          "talents": {
+            "fishing": 1,
+            "woodcutting": -1
+          }
+        },
+        {
+          "job": "idle",
+          "name": "Bram",
+          "talents": {
+            "farming": -1,
+            "husbandry": 1
+          }
+        },
+        {
+          "job": "idle",
+          "name": "Hazel",
+          "talents": {
+            "fishing": -1,
+            "woodcutting": 1
+          }
+        }
+      ]
+    },
+    "before": {
+      "buildings": [
+        {
+          "kind": "hall",
+          "x": 1,
+          "y": 1
+        },
+        {
+          "kind": "home",
+          "level": 3
+        }
+      ],
+      "food": 0,
+      "food_shortage_seconds": 57,
+      "player": {},
+      "sandbox": false,
+      "villagers": [
+        {
+          "job": "idle",
+          "name": "Ada",
+          "talents": {
+            "fishing": -1,
+            "woodcutting": 1
+          }
+        },
+        {
+          "job": "idle",
+          "name": "Rowan",
+          "talents": {
+            "farming": 1,
+            "husbandry": -1
+          }
+        },
+        {
+          "job": "idle",
+          "name": "Wren",
+          "talents": {
+            "fishing": 1,
+            "woodcutting": -1
+          }
+        },
+        {
+          "job": "idle",
+          "name": "Bram",
+          "talents": {
+            "farming": -1,
+            "husbandry": 1
+          }
+        },
+        {
+          "job": "idle",
+          "name": "Hazel",
+          "talents": {
+            "fishing": -1,
+            "woodcutting": 1
+          }
+        }
+      ]
+    },
+    "housing": 11,
+    "loyalty": 0.5,
+    "name": "loyalty",
+    "roll": 400
+  },
+  {
+    "after": {
+      "arrival_delay_seconds": 60,
+      "departure_count": 1,
+      "food": 0,
+      "food_shortage_seconds": 0,
+      "housing_shortage_seconds": 0,
+      "last_departure": {
+        "job": "idle",
+        "name": "Ada",
+        "practice": {},
+        "reason": "food"
+      },
+      "sandbox": false,
+      "villagers": [
+        {
+          "building_index": 1,
+          "job": "idle",
+          "name": "Rowan",
+          "talents": {
+            "farming": 1,
+            "husbandry": -1
+          }
+        },
+        {
+          "building_index": 1,
+          "job": "idle",
+          "name": "Wren",
+          "talents": {
+            "fishing": 1,
+            "woodcutting": -1
+          }
+        },
+        {
+          "job": "idle",
+          "name": "Bram",
+          "talents": {
+            "farming": -1,
+            "husbandry": 1
+          }
+        },
+        {
+          "job": "idle",
+          "name": "Hazel",
+          "talents": {
+            "fishing": -1,
+            "woodcutting": 1
+          }
+        }
+      ]
+    },
+    "before": {
+      "buildings": [
+        {
+          "kind": "hall",
+          "x": 1,
+          "y": 1
+        },
+        {
+          "kind": "home"
+        }
+      ],
+      "food": 0,
+      "food_shortage_seconds": 57,
+      "player": {},
+      "sandbox": false,
+      "villagers": [
+        {
+          "job": "idle",
+          "name": "Ada",
+          "talents": {
+            "fishing": -1,
+            "woodcutting": 1
+          }
+        },
+        {
+          "job": "idle",
+          "name": "Rowan",
+          "talents": {
+            "farming": 1,
+            "husbandry": -1
+          }
+        },
+        {
+          "job": "idle",
+          "name": "Wren",
+          "talents": {
+            "fishing": 1,
+            "woodcutting": -1
+          }
+        },
+        {
+          "job": "idle",
+          "name": "Bram",
+          "talents": {
+            "farming": -1,
+            "husbandry": 1
+          }
+        },
+        {
+          "job": "idle",
+          "name": "Hazel",
+          "talents": {
+            "fishing": -1,
+            "woodcutting": 1
+          }
+        }
+      ]
+    },
+    "housing": 7,
+    "loyalty": 0.0,
+    "name": "unprotected",
+    "roll": 400
+  },
+  {
+    "after": {
+      "arrival_delay_seconds": 60,
+      "departure_count": 1,
+      "food": 99.82,
+      "food_shortage_seconds": 0,
+      "housing_shortage_seconds": 0,
+      "last_departure": {
+        "job": "idle",
+        "name": "Ada",
+        "practice": {},
+        "reason": "housing"
+      },
+      "sandbox": false,
+      "villagers": [
+        {
+          "job": "idle",
+          "name": "Rowan",
+          "talents": {
+            "farming": 1,
+            "husbandry": -1
+          }
+        },
+        {
+          "job": "idle",
+          "name": "Wren",
+          "talents": {
+            "fishing": 1,
+            "woodcutting": -1
+          }
+        },
+        {
+          "job": "idle",
+          "name": "Bram",
+          "talents": {
+            "farming": -1,
+            "husbandry": 1
+          }
+        },
+        {
+          "job": "idle",
+          "name": "Hazel",
+          "talents": {
+            "fishing": -1,
+            "woodcutting": 1
+          }
+        },
+        {
+          "job": "idle",
+          "name": "Finn",
+          "talents": {
+            "farming": 1,
+            "husbandry": -1
+          }
+        }
+      ]
+    },
+    "before": {
+      "buildings": [
+        {
+          "kind": "hall",
+          "x": 1,
+          "y": 1
+        }
+      ],
+      "food": 100,
+      "housing_shortage_seconds": 57,
+      "player": {},
+      "sandbox": false,
+      "villagers": [
+        {
+          "job": "idle",
+          "name": "Ada",
+          "talents": {
+            "fishing": -1,
+            "woodcutting": 1
+          }
+        },
+        {
+          "job": "idle",
+          "name": "Rowan",
+          "talents": {
+            "farming": 1,
+            "husbandry": -1
+          }
+        },
+        {
+          "job": "idle",
+          "name": "Wren",
+          "talents": {
+            "fishing": 1,
+            "woodcutting": -1
+          }
+        },
+        {
+          "job": "idle",
+          "name": "Bram",
+          "talents": {
+            "farming": -1,
+            "husbandry": 1
+          }
+        },
+        {
+          "job": "idle",
+          "name": "Hazel",
+          "talents": {
+            "fishing": -1,
+            "woodcutting": 1
+          }
+        },
+        {
+          "job": "idle",
+          "name": "Finn",
+          "talents": {
+            "farming": 1,
+            "husbandry": -1
+          }
+        }
+      ]
+    },
+    "housing": 5,
+    "loyalty": 0.0,
+    "name": "housing",
+    "roll": 0
+  },
+  {
+    "after": {
+      "arrival_delay_seconds": 60,
+      "departure_count": 1,
+      "food": 0,
+      "food_shortage_seconds": 0,
+      "housing_shortage_seconds": 0,
+      "last_departure": {
+        "job": "idle",
+        "name": "Ada",
+        "practice": {},
+        "reason": "food and housing"
+      },
+      "sandbox": false,
+      "villagers": [
+        {
+          "job": "idle",
+          "name": "Rowan",
+          "talents": {
+            "farming": 1,
+            "husbandry": -1
+          }
+        },
+        {
+          "job": "idle",
+          "name": "Wren",
+          "talents": {
+            "fishing": 1,
+            "woodcutting": -1
+          }
+        },
+        {
+          "job": "idle",
+          "name": "Bram",
+          "talents": {
+            "farming": -1,
+            "husbandry": 1
+          }
+        },
+        {
+          "job": "idle",
+          "name": "Hazel",
+          "talents": {
+            "fishing": -1,
+            "woodcutting": 1
+          }
+        },
+        {
+          "job": "idle",
+          "name": "Finn",
+          "talents": {
+            "farming": 1,
+            "husbandry": -1
+          }
+        }
+      ]
+    },
+    "before": {
+      "buildings": [
+        {
+          "kind": "hall",
+          "x": 1,
+          "y": 1
+        }
+      ],
+      "food": 0,
+      "food_shortage_seconds": 57,
+      "housing_shortage_seconds": 57,
+      "player": {},
+      "sandbox": false,
+      "villagers": [
+        {
+          "job": "idle",
+          "name": "Ada",
+          "talents": {
+            "fishing": -1,
+            "woodcutting": 1
+          }
+        },
+        {
+          "job": "idle",
+          "name": "Rowan",
+          "talents": {
+            "farming": 1,
+            "husbandry": -1
+          }
+        },
+        {
+          "job": "idle",
+          "name": "Wren",
+          "talents": {
+            "fishing": 1,
+            "woodcutting": -1
+          }
+        },
+        {
+          "job": "idle",
+          "name": "Bram",
+          "talents": {
+            "farming": -1,
+            "husbandry": 1
+          }
+        },
+        {
+          "job": "idle",
+          "name": "Hazel",
+          "talents": {
+            "fishing": -1,
+            "woodcutting": 1
+          }
+        },
+        {
+          "job": "idle",
+          "name": "Finn",
+          "talents": {
+            "farming": 1,
+            "husbandry": -1
+          }
+        }
+      ]
+    },
+    "housing": 5,
+    "loyalty": 0.0,
+    "name": "both",
+    "roll": 0
+  },
+  {
+    "after": {
+      "arrival_delay_seconds": 0,
+      "food": 0,
+      "food_shortage_seconds": 63,
+      "housing_shortage_seconds": 0,
+      "sandbox": false,
+      "villagers": [
+        {
+          "job": "idle",
+          "name": "Ada",
+          "talents": {
+            "fishing": -1,
+            "woodcutting": 1
+          }
+        }
+      ]
+    },
+    "before": {
+      "buildings": [
+        {
+          "kind": "hall",
+          "x": 1,
+          "y": 1
+        }
+      ],
+      "food": 0,
+      "food_shortage_seconds": 60,
+      "player": {},
+      "sandbox": false,
+      "villagers": [
+        {
+          "job": "idle",
+          "name": "Ada",
+          "talents": {
+            "fishing": -1,
+            "woodcutting": 1
+          }
+        }
+      ]
+    },
+    "housing": 5,
+    "loyalty": 0.0,
+    "name": "last",
+    "roll": 0
+  },
+  {
+    "after": {
+      "arrival_delay_seconds": 3,
+      "food": 99.88,
+      "food_shortage_seconds": 0,
+      "housing_shortage_seconds": 0,
+      "sandbox": false,
+      "villagers": [
+        {
+          "job": "idle",
+          "name": "Ada",
+          "talents": {
+            "fishing": -1,
+            "woodcutting": 1
+          }
+        },
+        {
+          "job": "idle",
+          "name": "Rowan",
+          "talents": {
+            "farming": 1,
+            "husbandry": -1
+          }
+        },
+        {
+          "job": "idle",
+          "name": "Wren",
+          "talents": {
+            "fishing": 1,
+            "woodcutting": -1
+          }
+        },
+        {
+          "job": "idle",
+          "name": "Bram",
+          "talents": {
+            "farming": -1,
+            "husbandry": 1
+          }
+        }
+      ]
+    },
+    "before": {
+      "arrival_delay_seconds": 6,
+      "buildings": [
+        {
+          "kind": "hall",
+          "x": 1,
+          "y": 1
+        }
+      ],
+      "food": 100,
+      "player": {},
+      "sandbox": false,
+      "villagers": [
+        {
+          "job": "idle",
+          "name": "Ada",
+          "talents": {
+            "fishing": -1,
+            "woodcutting": 1
+          }
+        },
+        {
+          "job": "idle",
+          "name": "Rowan",
+          "talents": {
+            "farming": 1,
+            "husbandry": -1
+          }
+        },
+        {
+          "job": "idle",
+          "name": "Wren",
+          "talents": {
+            "fishing": 1,
+            "woodcutting": -1
+          }
+        },
+        {
+          "job": "idle",
+          "name": "Bram",
+          "talents": {
+            "farming": -1,
+            "husbandry": 1
+          }
+        }
+      ]
+    },
+    "housing": 5,
+    "loyalty": 0.0,
+    "name": "replacement_wait",
+    "roll": 0
+  },
+  {
+    "after": {
+      "arrival_delay_seconds": 0,
+      "food": 89.88,
+      "food_shortage_seconds": 0,
+      "housing_shortage_seconds": 0,
+      "sandbox": false,
+      "villagers": [
+        {
+          "job": "idle",
+          "name": "Ada",
+          "talents": {
+            "fishing": -1,
+            "woodcutting": 1
+          }
+        },
+        {
+          "job": "idle",
+          "name": "Rowan",
+          "talents": {
+            "farming": 1,
+            "husbandry": -1
+          }
+        },
+        {
+          "job": "idle",
+          "name": "Wren",
+          "talents": {
+            "fishing": 1,
+            "woodcutting": -1
+          }
+        },
+        {
+          "job": "idle",
+          "name": "Bram",
+          "talents": {
+            "farming": -1,
+            "husbandry": 1
+          }
+        },
+        {
+          "farming": 0,
+          "fishing": 0,
+          "job": "idle",
+          "name": "Hazel",
+          "talents": {
+            "fishing": -1,
+            "woodcutting": 1
+          },
+          "woodcutting": 0
+        }
+      ]
+    },
+    "before": {
+      "arrival_delay_seconds": 3,
+      "buildings": [
+        {
+          "kind": "hall",
+          "x": 1,
+          "y": 1
+        }
+      ],
+      "food": 100,
+      "player": {},
+      "sandbox": false,
+      "villagers": [
+        {
+          "job": "idle",
+          "name": "Ada",
+          "talents": {
+            "fishing": -1,
+            "woodcutting": 1
+          }
+        },
+        {
+          "job": "idle",
+          "name": "Rowan",
+          "talents": {
+            "farming": 1,
+            "husbandry": -1
+          }
+        },
+        {
+          "job": "idle",
+          "name": "Wren",
+          "talents": {
+            "fishing": 1,
+            "woodcutting": -1
+          }
+        },
+        {
+          "job": "idle",
+          "name": "Bram",
+          "talents": {
+            "farming": -1,
+            "husbandry": 1
+          }
+        }
+      ]
+    },
+    "housing": 5,
+    "loyalty": 0.0,
+    "name": "replacement_due",
+    "roll": 0
+  },
+  {
+    "after": {
+      "arrival_delay_seconds": 0,
+      "food": 0,
+      "food_shortage_seconds": 0,
+      "housing_shortage_seconds": 0,
+      "sandbox": false,
+      "villagers": [
+        {
+          "job": "idle",
+          "name": "Ada",
+          "talents": {
+            "fishing": -1,
+            "woodcutting": 1
+          }
+        },
+        {
+          "job": "idle",
+          "name": "Rowan",
+          "talents": {
+            "farming": 1,
+            "husbandry": -1
+          }
+        },
+        {
+          "job": "idle",
+          "name": "Wren",
+          "talents": {
+            "fishing": 1,
+            "woodcutting": -1
+          }
+        },
+        {
+          "job": "idle",
+          "name": "Bram",
+          "talents": {
+            "farming": -1,
+            "husbandry": 1
+          }
+        },
+        {
+          "job": "idle",
+          "name": "Hazel",
+          "talents": {
+            "fishing": -1,
+            "woodcutting": 1
+          }
+        }
+      ]
+    },
+    "before": {
+      "buildings": [
+        {
+          "kind": "hall",
+          "x": 1,
+          "y": 1
+        }
+      ],
+      "food": 0.15,
+      "food_shortage_seconds": 57,
+      "player": {},
+      "sandbox": false,
+      "villagers": [
+        {
+          "job": "idle",
+          "name": "Ada",
+          "talents": {
+            "fishing": -1,
+            "woodcutting": 1
+          }
+        },
+        {
+          "job": "idle",
+          "name": "Rowan",
+          "talents": {
+            "farming": 1,
+            "husbandry": -1
+          }
+        },
+        {
+          "job": "idle",
+          "name": "Wren",
+          "talents": {
+            "fishing": 1,
+            "woodcutting": -1
+          }
+        },
+        {
+          "job": "idle",
+          "name": "Bram",
+          "talents": {
+            "farming": -1,
+            "husbandry": 1
+          }
+        },
+        {
+          "job": "idle",
+          "name": "Hazel",
+          "talents": {
+            "fishing": -1,
+            "woodcutting": 1
+          }
+        }
+      ]
+    },
+    "housing": 5,
+    "loyalty": 0.0,
+    "name": "recovery",
+    "roll": 0
+  },
+  {
+    "after": {
+      "arrival_delay_seconds": 0,
+      "food": 0,
+      "food_shortage_seconds": 60,
+      "housing_shortage_seconds": 0,
+      "sandbox": true,
+      "villagers": [
+        {
+          "building_index": 1,
+          "job": "idle",
+          "name": "Ada",
+          "talents": {
+            "fishing": -1,
+            "woodcutting": 1
+          }
+        },
+        {
+          "building_index": 1,
+          "job": "idle",
+          "name": "Rowan",
+          "talents": {
+            "farming": 1,
+            "husbandry": -1
+          }
+        },
+        {
+          "building_index": 1,
+          "job": "idle",
+          "name": "Wren",
+          "talents": {
+            "fishing": 1,
+            "woodcutting": -1
+          }
+        },
+        {
+          "building_index": 1,
+          "job": "idle",
+          "name": "Bram",
+          "talents": {
+            "farming": -1,
+            "husbandry": 1
+          }
+        },
+        {
+          "building_index": 1,
+          "job": "idle",
+          "name": "Hazel",
+          "talents": {
+            "fishing": -1,
+            "woodcutting": 1
+          }
+        },
+        {
+          "building_index": 1,
+          "farming": 0,
+          "fishing": 0,
+          "job": "idle",
+          "name": "Finn",
+          "sandbox": true,
+          "talents": {
+            "farming": 1,
+            "husbandry": -1
+          },
+          "woodcutting": 0
+        },
+        {
+          "farming": 0,
+          "fishing": 0,
+          "job": "idle",
+          "name": "Mira",
+          "sandbox": true,
+          "talents": {
+            "fishing": 1,
+            "woodcutting": -1
+          },
+          "woodcutting": 0
+        },
+        {
+          "farming": 0,
+          "fishing": 0,
+          "job": "idle",
+          "name": "Jasper",
+          "sandbox": true,
+          "talents": {
+            "farming": -1,
+            "husbandry": 1
+          },
+          "woodcutting": 0
+        },
+        {
+          "farming": 0,
+          "fishing": 0,
+          "job": "idle",
+          "name": "Elara",
+          "sandbox": true,
+          "talents": {
+            "fishing": -1,
+            "woodcutting": 1
+          },
+          "woodcutting": 0
+        },
+        {
+          "farming": 0,
+          "fishing": 0,
+          "job": "idle",
+          "name": "Theo",
+          "sandbox": true,
+          "talents": {
+            "farming": 1,
+            "husbandry": -1
+          },
+          "woodcutting": 0
+        },
+        {
+          "farming": 0,
+          "fishing": 0,
+          "job": "idle",
+          "name": "Ivy",
+          "sandbox": true,
+          "talents": {
+            "fishing": 1,
+            "woodcutting": -1
+          },
+          "woodcutting": 0
+        }
+      ]
+    },
+    "before": {
+      "buildings": [
+        {
+          "kind": "hall",
+          "x": 1,
+          "y": 1
+        },
+        {
+          "kind": "home",
+          "settler_level": 3
+        }
+      ],
+      "food": 0,
+      "food_shortage_seconds": 57,
+      "player": {},
+      "sandbox": true,
+      "villagers": [
+        {
+          "job": "idle",
+          "name": "Ada",
+          "talents": {
+            "fishing": -1,
+            "woodcutting": 1
+          }
+        },
+        {
+          "job": "idle",
+          "name": "Rowan",
+          "talents": {
+            "farming": 1,
+            "husbandry": -1
+          }
+        },
+        {
+          "job": "idle",
+          "name": "Wren",
+          "talents": {
+            "fishing": 1,
+            "woodcutting": -1
+          }
+        },
+        {
+          "job": "idle",
+          "name": "Bram",
+          "talents": {
+            "farming": -1,
+            "husbandry": 1
+          }
+        },
+        {
+          "job": "idle",
+          "name": "Hazel",
+          "talents": {
+            "fishing": -1,
+            "woodcutting": 1
+          }
+        }
+      ]
+    },
+    "housing": 11,
+    "loyalty": 0.0,
+    "name": "sandbox",
+    "roll": 0
+  },
+  {
+    "after": {
+      "arrival_delay_seconds": 0,
+      "food": 89.01,
+      "food_shortage_seconds": 0,
+      "housing_shortage_seconds": 0,
+      "sandbox": false,
+      "villagers": [
+        {
+          "building_index": 1,
+          "job": "idle",
+          "name": "Ada",
+          "talents": {
+            "fishing": -1,
+            "woodcutting": 1
+          }
+        },
+        {
+          "building_index": 1,
+          "job": "idle",
+          "name": "Rowan",
+          "talents": {
+            "farming": 1,
+            "husbandry": -1
+          }
+        },
+        {
+          "building_index": 2,
+          "job": "idle",
+          "name": "Wren",
+          "talents": {
+            "fishing": 1,
+            "woodcutting": -1
+          }
+        },
+        {
+          "building_index": 2,
+          "job": "idle",
+          "name": "Bram",
+          "talents": {
+            "farming": -1,
+            "husbandry": 1
+          }
+        },
+        {
+          "building_index": 3,
+          "job": "idle",
+          "name": "Hazel",
+          "talents": {
+            "fishing": -1,
+            "woodcutting": 1
+          }
+        },
+        {
+          "building_index": 3,
+          "job": "idle",
+          "name": "Finn",
+          "talents": {
+            "farming": 1,
+            "husbandry": -1
+          }
+        },
+        {
+          "building_index": 4,
+          "job": "idle",
+          "name": "Mira",
+          "talents": {
+            "fishing": 1,
+            "woodcutting": -1
+          }
+        },
+        {
+          "building_index": 4,
+          "job": "idle",
+          "name": "Jasper",
+          "talents": {
+            "farming": -1,
+            "husbandry": 1
+          }
+        },
+        {
+          "building_index": 5,
+          "job": "idle",
+          "name": "Elara",
+          "talents": {
+            "fishing": -1,
+            "woodcutting": 1
+          }
+        },
+        {
+          "building_index": 5,
+          "job": "idle",
+          "name": "Theo",
+          "talents": {
+            "farming": 1,
+            "husbandry": -1
+          }
+        },
+        {
+          "building_index": 6,
+          "job": "idle",
+          "name": "Ivy",
+          "talents": {
+            "fishing": 1,
+            "woodcutting": -1
+          }
+        },
+        {
+          "building_index": 6,
+          "job": "idle",
+          "name": "Silas",
+          "talents": {
+            "farming": -1,
+            "husbandry": 1
+          }
+        },
+        {
+          "job": "idle",
+          "name": "Nora",
+          "talents": {
+            "fishing": -1,
+            "woodcutting": 1
+          }
+        },
+        {
+          "job": "idle",
+          "name": "Felix",
+          "talents": {
+            "farming": 1,
+            "husbandry": -1
+          }
+        },
+        {
+          "job": "idle",
+          "name": "Willow",
+          "talents": {
+            "fishing": 1,
+            "woodcutting": -1
+          }
+        },
+        {
+          "job": "idle",
+          "name": "Owen",
+          "talents": {
+            "farming": -1,
+            "husbandry": 1
+          }
+        },
+        {
+          "job": "idle",
+          "name": "Cora",
+          "talents": {
+            "fishing": -1,
+            "woodcutting": 1
+          }
+        },
+        {
+          "job": "idle",
+          "name": "Alden",
+          "talents": {
+            "farming": 1,
+            "husbandry": -1
+          }
+        },
+        {
+          "job": "idle",
+          "name": "Flora",
+          "talents": {
+            "fishing": 1,
+            "woodcutting": -1
+          }
+        },
+        {
+          "job": "idle",
+          "name": "Hugo",
+          "talents": {
+            "farming": -1,
+            "husbandry": 1
+          }
+        },
+        {
+          "job": "idle",
+          "name": "Lila",
+          "talents": {
+            "fishing": -1,
+            "woodcutting": 1
+          }
+        },
+        {
+          "job": "idle",
+          "name": "Emmett",
+          "talents": {
+            "farming": 1,
+            "husbandry": -1
+          }
+        },
+        {
+          "job": "idle",
+          "name": "Pearl",
+          "talents": {
+            "fishing": 1,
+            "woodcutting": -1
+          }
+        },
+        {
+          "job": "idle",
+          "name": "Arthur",
+          "talents": {
+            "farming": -1,
+            "husbandry": 1
+          }
+        },
+        {
+          "job": "idle",
+          "name": "Clara",
+          "talents": {
+            "fishing": -1,
+            "woodcutting": 1
+          }
+        },
+        {
+          "job": "idle",
+          "name": "Tobin",
+          "talents": {
+            "farming": 1,
+            "husbandry": -1
+          }
+        },
+        {
+          "job": "idle",
+          "name": "Rose",
+          "talents": {
+            "fishing": 1,
+            "woodcutting": -1
+          }
+        },
+        {
+          "job": "idle",
+          "name": "Cedric",
+          "talents": {
+            "farming": -1,
+            "husbandry": 1
+          }
+        },
+        {
+          "job": "idle",
+          "name": "Iris",
+          "talents": {
+            "fishing": -1,
+            "woodcutting": 1
+          }
+        },
+        {
+          "job": "idle",
+          "name": "Elias",
+          "talents": {
+            "farming": 1,
+            "husbandry": -1
+          }
+        },
+        {
+          "job": "idle",
+          "name": "Mae",
+          "talents": {
+            "fishing": 1,
+            "woodcutting": -1
+          }
+        },
+        {
+          "job": "idle",
+          "name": "Oscar",
+          "talents": {
+            "farming": -1,
+            "husbandry": 1
+          }
+        },
+        {
+          "job": "idle",
+          "name": "Ada 2",
+          "talents": {
+            "fishing": -1,
+            "woodcutting": 1
+          }
+        },
+        {
+          "farming": 0,
+          "fishing": 0,
+          "job": "idle",
+          "name": "Rowan 2",
+          "talents": {
+            "farming": 1,
+            "husbandry": -1
+          },
+          "woodcutting": 0
+        }
+      ]
+    },
+    "before": {
+      "buildings": [
+        {
+          "kind": "hall",
+          "x": 1,
+          "y": 1
+        },
+        {
+          "kind": "home",
+          "level": 3
+        },
+        {
+          "kind": "home",
+          "level": 3
+        },
+        {
+          "kind": "home",
+          "level": 3
+        },
+        {
+          "kind": "home",
+          "level": 3
+        },
+        {
+          "kind": "home",
+          "level": 3
+        },
+        {
+          "kind": "home",
+          "level": 3
+        }
+      ],
+      "food": 100,
+      "player": {},
+      "sandbox": false,
+      "villagers": [
+        {
+          "job": "idle",
+          "name": "Ada",
+          "talents": {
+            "fishing": -1,
+            "woodcutting": 1
+          }
+        },
+        {
+          "job": "idle",
+          "name": "Rowan",
+          "talents": {
+            "farming": 1,
+            "husbandry": -1
+          }
+        },
+        {
+          "job": "idle",
+          "name": "Wren",
+          "talents": {
+            "fishing": 1,
+            "woodcutting": -1
+          }
+        },
+        {
+          "job": "idle",
+          "name": "Bram",
+          "talents": {
+            "farming": -1,
+            "husbandry": 1
+          }
+        },
+        {
+          "job": "idle",
+          "name": "Hazel",
+          "talents": {
+            "fishing": -1,
+            "woodcutting": 1
+          }
+        },
+        {
+          "job": "idle",
+          "name": "Finn",
+          "talents": {
+            "farming": 1,
+            "husbandry": -1
+          }
+        },
+        {
+          "job": "idle",
+          "name": "Mira",
+          "talents": {
+            "fishing": 1,
+            "woodcutting": -1
+          }
+        },
+        {
+          "job": "idle",
+          "name": "Jasper",
+          "talents": {
+            "farming": -1,
+            "husbandry": 1
+          }
+        },
+        {
+          "job": "idle",
+          "name": "Elara",
+          "talents": {
+            "fishing": -1,
+            "woodcutting": 1
+          }
+        },
+        {
+          "job": "idle",
+          "name": "Theo",
+          "talents": {
+            "farming": 1,
+            "husbandry": -1
+          }
+        },
+        {
+          "job": "idle",
+          "name": "Ivy",
+          "talents": {
+            "fishing": 1,
+            "woodcutting": -1
+          }
+        },
+        {
+          "job": "idle",
+          "name": "Silas",
+          "talents": {
+            "farming": -1,
+            "husbandry": 1
+          }
+        },
+        {
+          "job": "idle",
+          "name": "Nora",
+          "talents": {
+            "fishing": -1,
+            "woodcutting": 1
+          }
+        },
+        {
+          "job": "idle",
+          "name": "Felix",
+          "talents": {
+            "farming": 1,
+            "husbandry": -1
+          }
+        },
+        {
+          "job": "idle",
+          "name": "Willow",
+          "talents": {
+            "fishing": 1,
+            "woodcutting": -1
+          }
+        },
+        {
+          "job": "idle",
+          "name": "Owen",
+          "talents": {
+            "farming": -1,
+            "husbandry": 1
+          }
+        },
+        {
+          "job": "idle",
+          "name": "Cora",
+          "talents": {
+            "fishing": -1,
+            "woodcutting": 1
+          }
+        },
+        {
+          "job": "idle",
+          "name": "Alden",
+          "talents": {
+            "farming": 1,
+            "husbandry": -1
+          }
+        },
+        {
+          "job": "idle",
+          "name": "Flora",
+          "talents": {
+            "fishing": 1,
+            "woodcutting": -1
+          }
+        },
+        {
+          "job": "idle",
+          "name": "Hugo",
+          "talents": {
+            "farming": -1,
+            "husbandry": 1
+          }
+        },
+        {
+          "job": "idle",
+          "name": "Lila",
+          "talents": {
+            "fishing": -1,
+            "woodcutting": 1
+          }
+        },
+        {
+          "job": "idle",
+          "name": "Emmett",
+          "talents": {
+            "farming": 1,
+            "husbandry": -1
+          }
+        },
+        {
+          "job": "idle",
+          "name": "Pearl",
+          "talents": {
+            "fishing": 1,
+            "woodcutting": -1
+          }
+        },
+        {
+          "job": "idle",
+          "name": "Arthur",
+          "talents": {
+            "farming": -1,
+            "husbandry": 1
+          }
+        },
+        {
+          "job": "idle",
+          "name": "Clara",
+          "talents": {
+            "fishing": -1,
+            "woodcutting": 1
+          }
+        },
+        {
+          "job": "idle",
+          "name": "Tobin",
+          "talents": {
+            "farming": 1,
+            "husbandry": -1
+          }
+        },
+        {
+          "job": "idle",
+          "name": "Rose",
+          "talents": {
+            "fishing": 1,
+            "woodcutting": -1
+          }
+        },
+        {
+          "job": "idle",
+          "name": "Cedric",
+          "talents": {
+            "farming": -1,
+            "husbandry": 1
+          }
+        },
+        {
+          "job": "idle",
+          "name": "Iris",
+          "talents": {
+            "fishing": -1,
+            "woodcutting": 1
+          }
+        },
+        {
+          "job": "idle",
+          "name": "Elias",
+          "talents": {
+            "farming": 1,
+            "husbandry": -1
+          }
+        },
+        {
+          "job": "idle",
+          "name": "Mae",
+          "talents": {
+            "fishing": 1,
+            "woodcutting": -1
+          }
+        },
+        {
+          "job": "idle",
+          "name": "Oscar",
+          "talents": {
+            "farming": -1,
+            "husbandry": 1
+          }
+        },
+        {
+          "job": "idle",
+          "name": "Ada 2",
+          "talents": {
+            "fishing": -1,
+            "woodcutting": 1
+          }
+        }
+      ]
+    },
+    "housing": 41,
+    "loyalty": 0.5,
+    "name": "names_beyond_pool",
+    "roll": 0
+  },
+  {
+    "after": {
+      "arrival_delay_seconds": 0,
+      "food": 0,
+      "food_shortage_seconds": 3,
+      "housing_shortage_seconds": 0,
+      "sandbox": false,
+      "villagers": [
+        {
+          "building_index": 1,
+          "job": "idle",
+          "name": "Ada",
+          "talents": {
+            "fishing": -1,
+            "woodcutting": 1
+          }
+        },
+        {
+          "building_index": 1,
+          "job": "idle",
+          "name": "Rowan",
+          "talents": {
+            "farming": 1,
+            "husbandry": -1
+          }
+        },
+        {
+          "building_index": 2,
+          "job": "idle",
+          "name": "Wren",
+          "talents": {
+            "fishing": 1,
+            "woodcutting": -1
+          }
+        },
+        {
+          "building_index": 2,
+          "job": "idle",
+          "name": "Bram",
+          "talents": {
+            "farming": -1,
+            "husbandry": 1
+          }
+        },
+        {
+          "building_index": 2,
+          "job": "idle",
+          "name": "Hazel",
+          "talents": {
+            "fishing": -1,
+            "woodcutting": 1
+          }
+        }
+      ]
+    },
+    "before": {
+      "buildings": [
+        {
+          "kind": "hall",
+          "x": 1,
+          "y": 1
+        },
+        {
+          "kind": "home"
+        },
+        {
+          "kind": "home",
+          "settler_level": 2
+        }
+      ],
+      "food": 0,
+      "player": {},
+      "sandbox": false,
+      "villagers": [
+        {
+          "job": "idle",
+          "name": "Ada",
+          "talents": {
+            "fishing": -1,
+            "woodcutting": 1
+          }
+        },
+        {
+          "job": "idle",
+          "name": "Rowan",
+          "talents": {
+            "farming": 1,
+            "husbandry": -1
+          }
+        },
+        {
+          "job": "idle",
+          "name": "Wren",
+          "talents": {
+            "fishing": 1,
+            "woodcutting": -1
+          }
+        },
+        {
+          "job": "idle",
+          "name": "Bram",
+          "talents": {
+            "farming": -1,
+            "husbandry": 1
+          }
+        },
+        {
+          "job": "idle",
+          "name": "Hazel",
+          "talents": {
+            "fishing": -1,
+            "woodcutting": 1
+          }
+        }
+      ]
+    },
+    "housing": 9,
+    "loyalty": 0.0,
+    "name": "autofill",
+    "roll": 9999
+  },
+  {
+    "after": {
+      "arrival_delay_seconds": 0,
+      "food": 99.85,
+      "food_shortage_seconds": 0,
+      "housing_shortage_seconds": 0,
+      "sandbox": false,
+      "villagers": [
+        {
+          "job": "idle",
+          "name": "Ada",
+          "talents": {
+            "fishing": -1,
+            "woodcutting": 1
+          }
+        },
+        {
+          "job": "idle",
+          "name": "Rowan",
+          "talents": {
+            "farming": 1,
+            "husbandry": -1
+          }
+        },
+        {
+          "job": "idle",
+          "name": "Wren",
+          "talents": {
+            "fishing": 1,
+            "woodcutting": -1
+          }
+        },
+        {
+          "job": "idle",
+          "name": "Bram",
+          "talents": {
+            "farming": -1,
+            "husbandry": 1
+          }
+        },
+        {
+          "job": "idle",
+          "name": "Hazel",
+          "talents": {
+            "fishing": -1,
+            "woodcutting": 1
+          }
+        }
+      ]
+    },
+    "before": {
+      "buildings": [
+        {
+          "kind": "hall",
+          "x": 1,
+          "y": 1
+        },
+        {
+          "construction": {
+            "progress": 0,
+            "total": 30
+          },
+          "kind": "home"
+        }
+      ],
+      "food": 100,
+      "player": {},
+      "sandbox": false,
+      "villagers": [
+        {
+          "job": "idle",
+          "name": "Ada",
+          "talents": {
+            "fishing": -1,
+            "woodcutting": 1
+          }
+        },
+        {
+          "job": "idle",
+          "name": "Rowan",
+          "talents": {
+            "farming": 1,
+            "husbandry": -1
+          }
+        },
+        {
+          "job": "idle",
+          "name": "Wren",
+          "talents": {
+            "fishing": 1,
+            "woodcutting": -1
+          }
+        },
+        {
+          "job": "idle",
+          "name": "Bram",
+          "talents": {
+            "farming": -1,
+            "husbandry": 1
+          }
+        },
+        {
+          "job": "idle",
+          "name": "Hazel",
+          "talents": {
+            "fishing": -1,
+            "woodcutting": 1
+          }
+        }
+      ]
+    },
+    "housing": 5,
+    "loyalty": 0.0,
+    "name": "new_construction",
+    "roll": 9999
+  },
+  {
+    "after": {
+      "arrival_delay_seconds": 0,
+      "food": 99.73,
+      "food_shortage_seconds": 0,
+      "housing_shortage_seconds": 0,
+      "sandbox": false,
+      "villagers": [
+        {
+          "job": "idle",
+          "name": "Ada",
+          "talents": {
+            "fishing": -1,
+            "woodcutting": 1
+          }
+        },
+        {
+          "job": "idle",
+          "name": "Rowan",
+          "talents": {
+            "farming": 1,
+            "husbandry": -1
+          }
+        },
+        {
+          "job": "idle",
+          "name": "Wren",
+          "talents": {
+            "fishing": 1,
+            "woodcutting": -1
+          }
+        },
+        {
+          "job": "idle",
+          "name": "Bram",
+          "talents": {
+            "farming": -1,
+            "husbandry": 1
+          }
+        },
+        {
+          "job": "idle",
+          "name": "Hazel",
+          "talents": {
+            "fishing": -1,
+            "woodcutting": 1
+          }
+        },
+        {
+          "job": "idle",
+          "name": "Finn",
+          "talents": {
+            "farming": 1,
+            "husbandry": -1
+          }
+        },
+        {
+          "job": "idle",
+          "name": "Mira",
+          "talents": {
+            "fishing": 1,
+            "woodcutting": -1
+          }
+        },
+        {
+          "job": "idle",
+          "name": "Jasper",
+          "talents": {
+            "farming": -1,
+            "husbandry": 1
+          }
+        },
+        {
+          "job": "idle",
+          "name": "Elara",
+          "talents": {
+            "fishing": -1,
+            "woodcutting": 1
+          }
+        }
+      ]
+    },
+    "before": {
+      "buildings": [
+        {
+          "kind": "hall",
+          "x": 1,
+          "y": 1
+        },
+        {
+          "construction": {
+            "progress": 0,
+            "total": 60,
+            "upgrade": {
+              "level": 3
+            }
+          },
+          "kind": "home",
+          "level": 2
+        }
+      ],
+      "food": 100,
+      "housing_shortage_seconds": 57,
+      "player": {},
+      "sandbox": false,
+      "villagers": [
+        {
+          "job": "idle",
+          "name": "Ada",
+          "talents": {
+            "fishing": -1,
+            "woodcutting": 1
+          }
+        },
+        {
+          "job": "idle",
+          "name": "Rowan",
+          "talents": {
+            "farming": 1,
+            "husbandry": -1
+          }
+        },
+        {
+          "job": "idle",
+          "name": "Wren",
+          "talents": {
+            "fishing": 1,
+            "woodcutting": -1
+          }
+        },
+        {
+          "job": "idle",
+          "name": "Bram",
+          "talents": {
+            "farming": -1,
+            "husbandry": 1
+          }
+        },
+        {
+          "job": "idle",
+          "name": "Hazel",
+          "talents": {
+            "fishing": -1,
+            "woodcutting": 1
+          }
+        },
+        {
+          "job": "idle",
+          "name": "Finn",
+          "talents": {
+            "farming": 1,
+            "husbandry": -1
+          }
+        },
+        {
+          "job": "idle",
+          "name": "Mira",
+          "talents": {
+            "fishing": 1,
+            "woodcutting": -1
+          }
+        },
+        {
+          "job": "idle",
+          "name": "Jasper",
+          "talents": {
+            "farming": -1,
+            "husbandry": 1
+          }
+        },
+        {
+          "job": "idle",
+          "name": "Elara",
+          "talents": {
+            "fishing": -1,
+            "woodcutting": 1
+          }
+        }
+      ]
+    },
+    "housing": 9,
+    "loyalty": 0.1111111111111111,
+    "name": "upgrade_preserves",
+    "roll": 0
+  }
+]
