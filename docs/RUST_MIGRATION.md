@@ -256,7 +256,7 @@ only after work is performed. Keep unfinished stages visible in the roadmap.
 | R17 | Fishing, boats, animals, and horses | R16 | Slices 1–3 implemented offline: saved piers, land fishing, boat/crew voyages, species cargo, exploration boats, barn growth/keepers and manual butchery; slice 4 (horses/riding) remains |
 | R18 | Residents, villages, trade, and adventures | R17 | Slices 1–3 implemented offline: population, village routines/restocks, NPC roster/gifts/stories/tools/equipment, town trades and founder activities with owner reload; slice 4 and durable/live integration remain |
 | R19 | Durable Rust saves and recovery | R18 | Slices 1–3 implemented at offline native/tool boundary: snapshots `9217d66`, atomic generations `bb547bf`, `feat: add explicit save copy archive and recovery tools` (this change); [scope and rollback limits](RUST_SAVES.md). Python archival is explicitly approved as preserved-only; playable legacy actor hydration, live host integration and native reverse export remain compatibility gates |
-| R20 | HTTP, accounts, and world lifecycle | R19 | Not started |
+| R20 | HTTP, accounts, and world lifecycle | R19 | Slice 1 in progress: experimental no-world HTTP/bootstrap implemented; active-world snapshots/chunk payloads and contention acceptance remain; slices 2–3 not started |
 | R21 | Browser compatibility and playable Rust checkpoint | R20 | Not started |
 | R22 | Shared-destination routing | R21 | Not started |
 | R23 | Cross-host benchmarks and release readiness | R22, or documented deferral | Not started |
@@ -4558,6 +4558,74 @@ token privacy, town ownership, host-only administration, catalogs, and chunk que
 Run both-host protocol tests with disposable roots, including slow-transfer and
 ownership failures. Keep Rust experimental, update coverage/progress, and commit.
 ```
+
+### R20 slice 1a — No-world HTTP bootstrap (slice 1 remains open)
+
+Implemented the independently testable bootstrap portion of slice 1. This is **not**
+an active-world host or completion of R20 slice 1. Launch explicitly with:
+
+```sh
+cd rust
+cargo run -p lantern-host --locked --offline -- http-bootstrap --experimental-empty --bind 127.0.0.1:8001
+```
+
+Optional `--asset-root DIRECTORY` selects an explicit directory containing `web/`
+and `icons/favicon.ico`. The bootstrap accepts only a loopback bind, never discovers
+or loads a save, never writes data and cannot admit an offline observation DTO or
+preserved-only legacy archive as a playable world. All POST requests return an
+explicit experimental coverage error (501); this deliberately does not claim the
+Python account/command/admin POST contracts. Python remains the playable default.
+
+Axum/Tokio serve static assets and Python's no-active-world forms of `/api/world`,
+`/api/players`, `/api/worlds` and `/api/lanterns`. Public catalogs are drift-checked
+against Python, with the existing R13 progression catalog reused. Query parsing
+preserves first-nonempty duplicates, 49 view/128 known/resource limits, canonical
+Unicode decimal chunk keys (Python 3.9 / Unicode 13), lowercase resource versions,
+and error precedence. These validate syntax only: active-map bounds, world-ID
+cache invalidation and resource/terrain payload assembly remain unimplemented.
+Monotonic sample timestamps share a process-local epoch; no-world clock metadata
+matches Python's no-scheduled-tick state. No simulation is running.
+
+Detached snapshot construction/serialization uses at most four background jobs;
+saturation returns 503 and failed jobs return 500. Jobs release their permits on
+failure. Static transfers stream independently. `can_manage` requires the actual
+loopback peer, local Host and matching optional Origin, ignoring forwarded headers;
+this metadata does not authorize a mutation. No credentials enter public DTOs.
+
+Shared disposable-root protocol tests cover both hosts' no-world payloads, complete
+catalog values, clock metadata, JSON headers, raw-path matching, chunk-query errors,
+static bytes/MIME/HEAD/Last-Modified/304/range behavior, Python 3.9 static errors, host/origin failures and a
+nonreading client transferring a 16 MiB static asset. Rust unit tests additionally
+cover serializer saturation, stalled serialization, failure and capacity recovery.
+The affected selector follows literal Rust source references from protocol tests.
+
+**Remaining in slice 1:** assemble supported active-world browser DTOs from the
+separate native owners, publish actual founder/town/adventure state and chunk
+terrain/resources with Python-compatible content versions and cache invalidation,
+characterize directory-listing/fallback edge cases, and exercise founder commands
+under slow world serialization/socket/save contention on both hosts. Existing
+preserved-only legacy imports and missing horses/adventures/aggregate integration
+are not evidence of that coverage. Account PIN verification/Unicode normalization,
+private provisioning, tokens and per-town authorization remain slice 2; world
+administration/schedules/shutdown remain slice 3. Their acceptance is not claimed
+by bootstrap refusal tests. Next continuation must finish **R20 slice 1**, not skip
+to slice 2.
+
+Validation: the affected selection covered the shared protocol suite, three test
+selector/reporting suites and both Cargo crates. All 38 selector/reporting cases,
+94 core tests, 489 host tests (including doctests), formatting and all-target Clippy
+passed (`performance-results/20261020-003444/report.md`). That report's Python
+command initially failed four newly added static-error assertions; the audited
+Python 3.9 HTTPStatus formatting was corrected, and all 14 shared protocol cases
+then passed (`performance-results/20261020-003641/report.md`). Final HTTP unit
+checks (four cases) and workspace formatting also pass. No pre-existing failures
+were observed. Local sockets required sandbox escalation; checks used the available
+Homebrew Rust/Cargo 1.99.1 on macOS, rather than claiming a run of the rustup-pinned
+1.99.0. Reports are ignored local artifacts.
+
+No runtime performance comparison is claimed: this is new bootstrap contract work, with no
+baseline Rust listener or admitted founder workload. Integrated W1–W6 and command
+latency acceptance remain R20–23.
 
 ## R21 — Playable Rust browser checkpoint
 

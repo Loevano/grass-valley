@@ -69,7 +69,7 @@ def dependency_graph(root, changed=()):
             imports = imported_modules(literal) if 'import ' in literal else set()
             imports.add(literal.split('.', 1)[0])
             graph[name].update(modules[module] for module in imports if module in modules)
-            references = ([literal] if Path(literal).suffix in SOURCE_SUFFIXES else
+            references = ([literal] if Path(literal).suffix in SOURCE_SUFFIXES | {'.rs'} else
                           [literal + suffix for suffix in ('.js', '.mjs', '.json')]
                           + [literal + '/index.js'] if literal.startswith(('./', '../')) else [])
             if not references:

@@ -1,5 +1,6 @@
-//! Offline replay smoke test and read-only copy inspection. No gameplay or HTTP.
+//! Experimental offline tools and opt-in no-world HTTP bootstrap. No gameplay.
 
+mod http_bootstrap;
 mod inspect;
 mod replay;
 mod save_tools;
@@ -9,6 +10,9 @@ use std::process::ExitCode;
 
 fn main() -> ExitCode {
     let args: Vec<_> = std::env::args_os().skip(1).collect();
+    if args.first().is_some_and(|arg| arg == "http-bootstrap") {
+        return http_bootstrap::run(&args[1..]);
+    }
     if let Some(command) = args.first().and_then(|arg| arg.to_str())
         && [
             "save-convert",
@@ -27,7 +31,7 @@ fn main() -> ExitCode {
     }
     if args != [std::ffi::OsString::from("replay")] {
         eprintln!(
-            "Usage: lantern-host replay < request.json (transport smoke only; no gameplay)\n       lantern-host inspect-copy --help (read-only synthetic copies)\n       lantern-host save-convert --help (offline copy/recovery tools)"
+            "Usage: lantern-host replay < request.json (transport smoke only; no gameplay)\n       lantern-host inspect-copy --help (read-only synthetic copies)\n       lantern-host save-convert --help (offline copy/recovery tools)\n       lantern-host http-bootstrap --help (experimental no-world HTTP only)"
         );
         return ExitCode::FAILURE;
     }

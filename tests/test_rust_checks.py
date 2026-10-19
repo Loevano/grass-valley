@@ -40,6 +40,11 @@ class RustSelection(unittest.TestCase):
         self.assertEqual(set(self.selected('rust/core/src/lib.rs')), {'rust:core', 'rust:host'})
         self.assertEqual(set(self.selected('rust/host/src/lib.rs')), {'rust:host'})
 
+    def test_python_protocol_consumer_of_rust_source_is_selected(self):
+        self.write('tests/test_protocol.py', "source='rust/host/src/lib.rs'")
+        self.assertEqual(set(self.selected('rust/host/src/lib.rs')),
+                         {'rust:host', 'tests/test_protocol.py'})
+
     def test_transitive_and_cyclic_dependency_graph_terminates(self):
         self.workspace['other']['dependencies'] = [{'path': str(self.root / 'rust/host')}]
         self.workspace['core']['dependencies'] = [{'path': str(self.root / 'rust/other')}]

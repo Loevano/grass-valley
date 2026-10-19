@@ -72,6 +72,12 @@ restart, background saving, flush/shutdown, fallback/selected recovery and pendi
 cleanup. Approved Python archives preserve and restore original bytes/accounts/chunks
 but remain unplayable. Complete playable legacy actor hydration/live adapters and
 native gameplay reverse export remain explicit compatibility/cutover gates.
+R20 slice 1a adds an opt-in loopback Axum/Tokio bootstrap with static assets,
+no-world GET snapshots, catalogs and bounded background serialization, paired with
+Python on disposable roots. Slice 1 remains open for active-world DTO/chunk/version
+assembly and founder-command/serialization/socket/save contention. Account dispatch
+and world administration remain slices 2–3; the bootstrap refuses save loading and
+all mutations. See [R20 remaining work](RUST_MIGRATION.md#r20-slice-1a--no-world-http-bootstrap-slice-1-remains-open).
 Python remains the playable default; R19 owns durable persistence/recovery and R23
 retains target-platform math/release validation. Gameplay RNG stream adoption and
 R24 rollback acceptance remain gated by the contracts. Later navigation stages

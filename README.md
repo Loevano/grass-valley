@@ -873,7 +873,8 @@ Every destination must be new and separate; playable Python import and native
 reverse export are explicitly refused. The Python launch and its data are unchanged.
 The core has no external dependencies or I/O; it compiles and its test harness
 runs without a listener. The replay adapter supports only a transport smoke
-fixture; no gameplay rules or HTTP host are implemented. Start the playable game
+fixture. An experimental no-world HTTP bootstrap is available; active-world HTTP
+and playable gameplay integration remain unimplemented. Start the playable game
 with `python3 server/server.py` as before.
 
 Install [Rust with rustup](https://www.rust-lang.org/tools/install), then run
@@ -889,6 +890,30 @@ cargo test --workspace --locked --offline
 cargo clippy --workspace --all-targets --locked --offline -- -D warnings
 cargo run -p lantern-host --locked --offline -- replay < ../tests/replay/rust/transport_smoke_v1.json
 ```
+
+R20's opt-in bootstrap serves static assets and empty-registry snapshots only:
+
+```sh
+cargo run -p lantern-host --locked --offline -- http-bootstrap --experimental-empty --bind 127.0.0.1:8001
+```
+
+Use `--asset-root DIRECTORY` for an explicit root with `web/` and `icons/favicon.ico`.
+It requires loopback, never reads saves and returns a coverage error for every POST.
+It cannot play, login, create/open/delete/regenerate worlds or advance simulation.
+See [remaining R20 slice 1 work](docs/RUST_MIGRATION.md#r20-slice-1a--no-world-http-bootstrap-slice-1-remains-open).
+Run `python3 tools/check.py --tests tests/test_http_bootstrap.py` from the repository
+root for the shared disposable-root protocol tests (Cargo cache and local sockets
+required). Select `test_http_bootstrap.PythonBootstrap` or
+`test_http_bootstrap.RustBootstrap` to run one host's cases.
+
+The new HTTP dependencies are Axum 0.8.9 (MIT, Rust ≥1.80), Tokio 1.54.0 (MIT,
+Rust ≥1.85), tower-http 0.6.11 (MIT, Rust ≥1.64) and form_urlencoded 1.2.2
+(MIT OR Apache-2.0). The lockfile records transitive versions. APIs and declared
+requirements were checked against the downloaded manifests and official
+[Axum](https://docs.rs/axum/0.8.9/axum/),
+[Tokio](https://docs.rs/tokio/1.54.0/tokio/) and
+[ServeDir](https://docs.rs/tower-http/0.6.11/tower_http/services/struct.ServeDir.html)
+documentation. Only the local macOS target has been validated in this increment.
 
 The toolchain file pins Rust **1.99.0**, with rustfmt and Clippy, to the release
 validated for this slice; it does not track `stable`. The workspace uses edition

@@ -1,0 +1,222 @@
+{
+  "local_stories": {
+    "Moss": {
+      "title": "A Remedy Remembered",
+      "reward": 12,
+      "keepsake": "Moss\u2019s pressed willow leaf",
+      "stages": [
+        {
+          "dialogue": "A traveler is feverish, and my mentor\u2019s remedy has slipped from memory. Will you help me remember?",
+          "button": "Offer to help"
+        },
+        {
+          "dialogue": "Bring three herbs from the patches among the reeds. Their scent may bring the old lesson back. Allocate herb storage in a storehouse before gathering.",
+          "costs": {
+            "herbs": 3
+          },
+          "button": "Bring the herbs"
+        },
+        {
+          "dialogue": "Willow, of course! My mentor brewed it gently and always served a meal afterward. Two more herbs and four food will let me care for our visitor.",
+          "costs": {
+            "herbs": 2,
+            "food": 4
+          },
+          "button": "Deliver the remedy supplies"
+        },
+        {
+          "dialogue": "The traveler is resting comfortably. I remembered the recipe, but you reminded me why my mentor taught it. Keep this leaf from her willow."
+        }
+      ]
+    },
+    "Tobin": {
+      "title": "The Lantern Road",
+      "reward": 15,
+      "keepsake": "Tobin\u2019s brass lantern token",
+      "stages": [
+        {
+          "dialogue": "My old friend kept a lantern burning for travelers. Her light went dark last winter. Help me prepare to look for her?",
+          "button": "Help Tobin search"
+        },
+        {
+          "dialogue": "Four food will see me through the walk. I will follow the old route and bring back word.",
+          "costs": {
+            "food": 4
+          },
+          "button": "Pack provisions"
+        },
+        {
+          "dialogue": "She is safe! Her shelter fell apart, and she moved to stay with family. Let us keep her welcome alive: finish three road tiles in your town and bring six wood for a new lantern shelter.",
+          "costs": {
+            "wood": 6
+          },
+          "roads": 3,
+          "button": "Supply the lantern shelter"
+        },
+        {
+          "dialogue": "The shelter has a light again, and your road welcomes weary feet. My friend sent this token: a promise that someone will leave a lantern burning."
+        }
+      ]
+    },
+    "Flint": {
+      "title": "Marks Beneath the Stone",
+      "reward": 18,
+      "keepsake": "Flint\u2019s charcoal map",
+      "stages": [
+        {
+          "dialogue": "I found a carved line beneath the moss on an outcrop. It might be part of a map. Will you help survey the rocks?",
+          "button": "Join the survey"
+        },
+        {
+          "dialogue": "Examine three different rock outcrops and return with your notes. Walk beside each rock and select it to record its markings.",
+          "rocks": 3,
+          "button": "Compare the markings"
+        },
+        {
+          "dialogue": "The lines join! They mark a doorway beneath the ridge. Bring two wood for charcoal, and I will copy the route for you. We should gather companions before venturing inside.",
+          "costs": {
+            "wood": 2
+          },
+          "button": "Make a charcoal map"
+        },
+        {
+          "dialogue": "Here is our map. Gather a companion and open The Sealed Quarry from your You panel. The old gate needs two pairs of hands, and the carvings beyond it may explain what the quarry keepers left behind."
+        }
+      ]
+    }
+  },
+  "quarry_catalog": {
+    "title": "The Sealed Quarry",
+    "layout": [
+      "###########",
+      "#....#....#",
+      "#.P..#.SLM#",
+      "#....G....#",
+      "#....#.I.T#",
+      "#....#....#",
+      "###########"
+    ],
+    "runes": {
+      "sun": [
+        7,
+        2
+      ],
+      "leaf": [
+        8,
+        2
+      ],
+      "moon": [
+        9,
+        2
+      ]
+    },
+    "reward": 20,
+    "keepsake": "Quarry lantern stone",
+    "clue": "First comes the dawn. Then the leaf drinks its light. Last, the moon watches over the sleeping quarry."
+  },
+  "hall_upgrades": [
+    {
+      "level": 2,
+      "wood": 40,
+      "seconds": 30,
+      "coins": 30,
+      "milestone": "Completed cottage and completed farm or fishing hut within 10 tile steps of natural water or a completed well; at least 20 food (existing buildings count while upgrading)"
+    },
+    {
+      "level": 3,
+      "wood": 50,
+      "seconds": 60,
+      "coins": 40,
+      "production": {
+        "wheat": 20,
+        "eggs": 6
+      },
+      "milestone": "Harvest 20 wheat and produce 6 eggs from your barn"
+    },
+    {
+      "level": 4,
+      "wood": 60,
+      "planks": 15,
+      "seconds": 90,
+      "coins": 50,
+      "production": {
+        "planks": 20
+      },
+      "milestone": "Produce 20 planks at your sawpit"
+    },
+    {
+      "level": 5,
+      "wood": 70,
+      "planks": 20,
+      "tools": 5,
+      "seconds": 120,
+      "coins": 60,
+      "production": {
+        "tools": 5
+      },
+      "processed_food": 10,
+      "milestone": "Craft 5 tools and produce 10 baked goods, smoked fish, or prepared meat (any mix)"
+    },
+    {
+      "level": 6,
+      "wood": 80,
+      "planks": 25,
+      "leather": 4,
+      "seconds": 150,
+      "coins": 70,
+      "production": {
+        "leather": 6
+      },
+      "milestone": "Produce 6 leather at your tannery"
+    },
+    {
+      "level": 7,
+      "wood": 90,
+      "planks": 30,
+      "tools": 5,
+      "seconds": 180,
+      "coins": 80,
+      "production": {
+        "iron_ore": 20
+      },
+      "milestone": "Mine 20 iron ore"
+    },
+    {
+      "level": 8,
+      "wood": 100,
+      "planks": 35,
+      "iron": 10,
+      "seconds": 210,
+      "coins": 90,
+      "production": {
+        "iron": 10
+      },
+      "milestone": "Smelt 10 iron"
+    },
+    {
+      "level": 9,
+      "wood": 110,
+      "planks": 40,
+      "iron": 10,
+      "leather": 5,
+      "seconds": 240,
+      "coins": 100,
+      "production": {
+        "saddles": 2
+      },
+      "milestone": "Craft 2 saddles at your saddler (horse riding is optional)"
+    },
+    {
+      "level": 10,
+      "wood": 120,
+      "planks": 45,
+      "steel": 10,
+      "seconds": 270,
+      "coins": 120,
+      "production": {
+        "steel": 15
+      },
+      "milestone": "Produce 15 steel and complete a town trade or sell 10 goods at your market"
+    }
+  ]
+}

@@ -1,4 +1,4 @@
-//! Experimental offline model boundaries and legacy staging import. No HTTP support.
+//! Experimental offline models, legacy staging and no-world HTTP bootstrap.
 //!
 //! Authoritative state is deliberately not serializable:
 //! ```compile_fail
@@ -19,6 +19,7 @@ pub mod dto;
 pub mod farming;
 pub mod fishing;
 pub mod gathering;
+pub mod http;
 pub mod legacy;
 pub mod livestock;
 pub mod logistics;
