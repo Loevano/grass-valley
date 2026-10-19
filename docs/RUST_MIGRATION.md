@@ -255,7 +255,7 @@ only after work is performed. Keep unfinished stages visible in the roadmap.
 | R16 | Farming and orchards | R15 | All three code slices implemented offline: fields/claims/passes, water rounds, harvest returns, orchards/restock, crop edits, linked relocation and validated owner reload; integrated legacy actor/save/host adapters and acceptance remain R19–23 |
 | R17 | Fishing, boats, animals, and horses | R16 | Slices 1–3 implemented offline: saved piers, land fishing, boat/crew voyages, species cargo, exploration boats, barn growth/keepers and manual butchery; slice 4 (horses/riding) remains |
 | R18 | Residents, villages, trade, and adventures | R17 | Slices 1–3 implemented offline: population, village routines/restocks, NPC roster/gifts/stories/tools/equipment, town trades and founder activities with owner reload; slice 4 and durable/live integration remain |
-| R19 | Durable Rust saves and recovery | R18 | Not started |
+| R19 | Durable Rust saves and recovery | R18 | Slice 1 implemented at existing offline model/construction boundary: immutable private snapshot export/versioned reload; `feat: add immutable Rust save snapshots` (this change); [scope and rollback limits](RUST_SAVES.md). Atomic aggregate generations and conversion/recovery tools remain slices 2–3 |
 | R20 | HTTP, accounts, and world lifecycle | R19 | Not started |
 | R21 | Browser compatibility and playable Rust checkpoint | R20 | Not started |
 | R22 | Shared-destination routing | R21 | Not started |
@@ -4367,6 +4367,42 @@ outside authoritative mutation and protect the Python source data. Test interrup
 writes and mid-action reload. Document exact rollback limitations, update coverage/
 progress, run applicable checks, and commit the completed slice.
 ```
+
+### R19 slice 1 — Immutable snapshot export and versioned reload
+
+Implemented `ModelSaveSnapshot` and `BuildingSaveSnapshot`: capture owned private
+DTOs under the owner, then serialize/write after releasing it. Construction's
+nested model no longer serializes JSON during capture. Existing model versions
+1–3 and construction versions 1–2 migrate through strict readers; exports retain
+current schema versions. Fractional pose/cargo/tasks, private credentials, ID
+high-water marks and construction progress/claims/walks survive detached reload.
+
+Tests cover snapshot lifetime after owner destruction, background writes, owner
+mutation while a writer is blocked, sanitized I/O failures, rejection at every
+incomplete output prefix, retry, supported legacy versions and future-version
+refusal. Paired construction cases now restore through the snapshot boundary.
+No filesystem writer or Python data was used. See [exact scope](RUST_SAVES.md).
+
+R19 remains in progress. Slice 2 owns complete aggregate snapshot assembly across
+registry/worlds, ledger/profession/boat/social owners, clocks/RNG, credentials and
+external chunks, plus crash-safe generation publication, flush/shutdown and recovery.
+Slice 3 owns explicit copy-based conversion and recovery/rollback tooling. Neither
+playable conversion nor reverse export is supported; rollback to untouched Python
+copies loses all later Rust progress. Experimental disk work must use a separate
+root. Integrated host/save contention remains R20–23.
+
+Performance comparisons were not run: this is an offline ownership/schema behavior
+change without a runtime performance claim; slow-writer separation is tested with
+synchronization, not timing benchmarks.
+
+Validation: `python3 tools/check.py --list` selected only `rust:lantern-host`.
+`python3 tools/check.py` passed all three commands: locked offline host tests and
+22 doctests, formatting and all-target Clippy with warnings denied. The new boundary
+suite passed 19 cases and construction passed 28. Markdown/JSON report
+`performance-results/20261019-232003/report.md` was inspected: overall `pass`,
+performance `not_run`. `git diff --check` passed.
+
+Commit message: `feat: add immutable Rust save snapshots`.
 
 ## R20 — HTTP, accounts, and world lifecycle
 

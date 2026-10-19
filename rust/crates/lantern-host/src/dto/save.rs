@@ -43,7 +43,7 @@ enum Format {
 
 #[derive(Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
-struct SaveWorldDto {
+pub(crate) struct SaveWorldDto {
     format: Format,
     version: u32,
     world_id: String,
@@ -182,7 +182,7 @@ impl From<&ModelWorld> for SaveWorldDto {
 }
 
 impl SaveWorldDto {
-    fn into_world(self) -> Result<ModelWorld, BoundaryError> {
+    pub(crate) fn into_world(self) -> Result<ModelWorld, BoundaryError> {
         if ![1, 2, 3].contains(&self.version) {
             return Err(BoundaryError::invalid(
                 "$.version",
@@ -314,13 +314,67 @@ fn json_error(error: serde_json::Error) -> BoundaryError {
     )
 }
 
-/// Contains private credential material. Never send this output to a browser.
-pub fn encode_save(world: &ModelWorld) -> Result<String, BoundaryError> {
-    serde_json::to_string(&SaveWorldDto::from(world)).map_err(json_error)
+/// Owned private save facts, captured at one simulation-owner boundary.
+///
+/// Contains credentials. Deliberately has no Debug, Serialize or mutable access.
+/// Capture while holding the owner; move this value to the save worker before
+/// encoding or writing. No actor, route cache or live credential is borrowed.
+/// ```compile_fail
+/// use lantern_host::dto::ModelSaveSnapshot;
+/// fn leak(s: &ModelSaveSnapshot) { println!("{s:?}"); }
+/// ```
+/// ```compile_fail
+/// use lantern_host::dto::ModelSaveSnapshot;
+/// fn leak(s: &ModelSaveSnapshot) { serde_json::to_string(s).unwrap(); }
+/// ```
+pub struct ModelSaveSnapshot {
+    facts: SaveWorldDto,
 }
 
-/// In-memory R05 format only. Structural errors report $ + source line/column;
-/// semantic errors report schema paths. Raw parser messages/values are withheld.
+impl ModelSaveSnapshot {
+    pub fn capture(world: &ModelWorld) -> Self {
+        Self {
+            facts: SaveWorldDto::from(world),
+        }
+    }
+
+    /// Writes private JSON only. This does not flush, sync, or commit a file.
+    /// The caller owns publication and must discard interrupted output.
+    pub fn write_to(&self, writer: impl std::io::Write) -> Result<(), BoundaryError> {
+        serde_json::to_writer(writer, &self.facts).map_err(write_error)
+    }
+
+    pub fn encode(&self) -> Result<String, BoundaryError> {
+        serde_json::to_string(&self.facts).map_err(json_error)
+    }
+
+    /// Validates current or supported older model schemas before returning facts.
+    pub fn decode(json: &str) -> Result<Self, BoundaryError> {
+        let world = decode_save(json)?;
+        Ok(Self::capture(&world))
+    }
+
+    pub fn restore(self) -> Result<ModelWorld, BoundaryError> {
+        self.facts.into_world()
+    }
+}
+
+pub(crate) fn write_error(error: serde_json::Error) -> BoundaryError {
+    match error.io_error_kind() {
+        Some(kind) => BoundaryError::at("$", ErrorKind::Io(kind)),
+        None => json_error(error),
+    }
+}
+
+/// Contains private credential material. Never send this output to a browser.
+/// For background saves, capture ModelSaveSnapshot under the owner instead.
+pub fn encode_save(world: &ModelWorld) -> Result<String, BoundaryError> {
+    ModelSaveSnapshot::capture(world).encode()
+}
+
+/// Explicit model format only, not a complete playable world or Python save.
+/// Structural errors report $ + source line/column; semantic errors report paths.
+/// Raw parser messages/values are withheld.
 pub fn decode_save(json: &str) -> Result<ModelWorld, BoundaryError> {
     serde_json::from_str::<SaveWorldDto>(json)
         .map_err(json_error)?

@@ -66,6 +66,10 @@ for measured scope and remaining release gates. Completed R07
 terrain/chunk behavior and its compatibility evidence are recorded in the
 [terrain scope](RUST_TERRAIN.md) and [completion audit](RUST_MIGRATION.md#r07-slice-3civ-exact-clocks-and-completion-audit).
 The [state/DTO boundary audit](RUST_STATE_DTOS.md) identifies later gameplay work.
+R19 slice 1 adds [immutable private model/construction snapshots](RUST_SAVES.md)
+with versioned reload and background-writer ownership tests. Complete aggregate
+registry/chunk/actor generations, durable flush/shutdown/recovery and explicit
+copy-based conversion remain R19 slices 2–3; reverse export is unsupported.
 Python remains the playable default; R19 owns durable persistence/recovery and R23
 retains target-platform math/release validation. Gameplay RNG stream adoption and
 R24 rollback acceptance remain gated by the contracts. Later navigation stages

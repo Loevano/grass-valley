@@ -133,7 +133,10 @@ fn v1_migrates_explicitly_without_guessing_an_unsaved_leg_and_v2_requires_travel
             actor.as_object_mut().unwrap().remove("travel");
         }
     }
-    let migrated = decode_save(&old.to_string()).unwrap();
+    let migrated = lantern_host::dto::ModelSaveSnapshot::decode(&old.to_string())
+        .unwrap()
+        .restore()
+        .unwrap();
     for town in migrated.towns() {
         for actor in town.actors() {
             assert_eq!(actor.state().facing, Facing::Right);
@@ -862,4 +865,150 @@ fn oversized_integer_amounts_are_rejected_instead_of_silently_rounded() {
         world.towns()[0].actors()[0].state().cargo.goods()["wood"].get(),
         (1_u64 << 53) as f64
     );
+}
+
+#[test]
+fn immutable_save_snapshot_outlives_owner_and_preserves_private_fractional_facts() {
+    use lantern_host::dto::ModelSaveSnapshot;
+    let mut world = fixture();
+    let expected = encode_save(&world).unwrap();
+    let snapshot = ModelSaveSnapshot::capture(&world);
+    let town_id = world.towns()[0].owner().town.clone();
+    // Mutation and even destruction of the owner cannot change the saved facts.
+    world
+        .allocate::<lantern_core::ids::Actor>(&town_id)
+        .unwrap();
+    drop(world);
+    let bytes = std::thread::spawn(move || {
+        let mut output = Vec::new();
+        snapshot.write_to(&mut output).unwrap();
+        output
+    })
+    .join()
+    .unwrap();
+    assert_eq!(bytes, expected.as_bytes());
+    let restored = ModelSaveSnapshot::decode(std::str::from_utf8(&bytes).unwrap())
+        .unwrap()
+        .restore()
+        .unwrap();
+    assert_eq!(encode_save(&restored).unwrap(), expected);
+    assert_eq!(restored.credentials().players.len(), 1);
+    assert_eq!(restored.credentials().tokens.len(), 1);
+}
+
+#[test]
+fn blocked_and_failed_save_writer_never_borrows_simulation_owner() {
+    use lantern_host::{ErrorKind, dto::ModelSaveSnapshot};
+    use std::{io, sync::mpsc, time::Duration};
+    struct Blocked {
+        entered: Option<mpsc::Sender<()>>,
+        release: mpsc::Receiver<()>,
+    }
+    impl io::Write for Blocked {
+        fn write(&mut self, _: &[u8]) -> io::Result<usize> {
+            if let Some(entered) = self.entered.take() {
+                entered.send(()).unwrap();
+                self.release.recv().unwrap();
+            }
+            Err(io::Error::new(
+                io::ErrorKind::StorageFull,
+                "synthetic private error",
+            ))
+        }
+        fn flush(&mut self) -> io::Result<()> {
+            Ok(())
+        }
+    }
+    let mut world = fixture();
+    let snapshot = ModelSaveSnapshot::capture(&world);
+    let (entered_tx, entered_rx) = mpsc::channel();
+    let (release_tx, release_rx) = mpsc::channel();
+    let worker = std::thread::spawn(move || {
+        snapshot.write_to(Blocked {
+            entered: Some(entered_tx),
+            release: release_rx,
+        })
+    });
+    entered_rx.recv_timeout(Duration::from_secs(5)).unwrap();
+    let town = world.towns()[0].owner().town.clone();
+    world.allocate::<lantern_core::ids::Actor>(&town).unwrap();
+    let current = encode_save(&world).unwrap();
+    release_tx.send(()).unwrap();
+    let error = worker.join().unwrap().unwrap_err();
+    assert_eq!(error.kind, ErrorKind::Io(io::ErrorKind::StorageFull));
+    assert!(!format!("{error:?}").contains("synthetic private error"));
+    assert_eq!(encode_save(&world).unwrap(), current);
+}
+
+#[test]
+fn interrupted_snapshot_output_is_rejected_at_every_prefix_and_can_be_retried() {
+    use lantern_host::dto::ModelSaveSnapshot;
+    use std::io::{self, Write};
+    struct Cutoff {
+        bytes: Vec<u8>,
+        remaining: usize,
+    }
+    impl Write for Cutoff {
+        fn write(&mut self, input: &[u8]) -> io::Result<usize> {
+            if self.remaining == 0 {
+                return Err(io::ErrorKind::BrokenPipe.into());
+            }
+            let n = self.remaining.min(input.len());
+            self.bytes.extend_from_slice(&input[..n]);
+            self.remaining -= n;
+            Ok(n)
+        }
+        fn flush(&mut self) -> io::Result<()> {
+            Ok(())
+        }
+    }
+    let world = fixture();
+    let snapshot = ModelSaveSnapshot::capture(&world);
+    let complete = snapshot.encode().unwrap();
+    for remaining in 0..complete.len() {
+        let mut writer = Cutoff {
+            bytes: vec![],
+            remaining,
+        };
+        assert!(snapshot.write_to(&mut writer).is_err());
+        assert!(ModelSaveSnapshot::decode(&String::from_utf8_lossy(&writer.bytes)).is_err());
+    }
+    assert_eq!(snapshot.encode().unwrap(), complete);
+}
+
+#[test]
+fn snapshot_reader_migrates_each_supported_model_version_and_rejects_future_data() {
+    use lantern_host::dto::ModelSaveSnapshot;
+    for version in [1, 2, 3] {
+        let mut saved = value(&fixture());
+        saved["version"] = json!(version);
+        if version == 1 {
+            for town in saved["towns"].as_array_mut().unwrap() {
+                for actor in town["actors"].as_array_mut().unwrap() {
+                    actor.as_object_mut().unwrap().remove("facing");
+                    actor.as_object_mut().unwrap().remove("travel");
+                }
+            }
+        }
+        let snapshot = ModelSaveSnapshot::decode(&saved.to_string()).unwrap();
+        let current: Value = serde_json::from_str(&snapshot.encode().unwrap()).unwrap();
+        assert_eq!(current["version"], 3);
+        assert_eq!(current["credentials"], saved["credentials"]);
+        assert_eq!(current["high_water"], saved["high_water"]);
+        assert_eq!(
+            current["towns"][0]["actors"][0]["position"],
+            saved["towns"][0]["actors"][0]["position"]
+        );
+        assert_eq!(
+            current["towns"][0]["actors"][0]["cargo"],
+            saved["towns"][0]["actors"][0]["cargo"]
+        );
+    }
+    for saved in ["{}".to_owned(), "[]".to_owned(), "null".to_owned(), {
+        let mut saved = value(&fixture());
+        saved["version"] = json!(4);
+        saved.to_string()
+    }] {
+        assert!(ModelSaveSnapshot::decode(&saved).is_err());
+    }
 }

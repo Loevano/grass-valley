@@ -3,13 +3,12 @@ use super::*;
 use crate::{
     BoundaryError,
     dto::{
-        decode_save, encode_save,
         facts::{EntityIdDto, PositionDto},
+        save::{SaveWorldDto, write_error},
         wire::{Number, UniqueMap},
     },
 };
 use serde::{Deserialize, Serialize};
-use serde_json::value::RawValue;
 mod extensions;
 use extensions::Extensions;
 #[derive(Serialize)]
@@ -41,7 +40,7 @@ enum Format {
 struct Save {
     format: Format,
     version: u32,
-    model: Box<RawValue>,
+    model: SaveWorldDto,
     shared: bool,
     towns: Vec<TownDto>,
     landscape: LandscapeDto,
@@ -233,7 +232,7 @@ fn invalid(reason: &'static str) -> BoundaryError {
     BoundaryError::invalid("$.building_model", reason)
 }
 
-pub fn encode_building_save(world: &BuildingWorld) -> Result<Vec<u8>, BoundaryError> {
+fn capture(world: &BuildingWorld) -> Result<Save, BoundaryError> {
     for town in world.model.towns() {
         for actor in town.actors() {
             if matches!(
@@ -246,8 +245,7 @@ pub fn encode_building_save(world: &BuildingWorld) -> Result<Vec<u8>, BoundaryEr
             }
         }
     }
-    let raw = encode_save(&world.model)?;
-    let model = RawValue::from_string(raw).map_err(|_| invalid("invalid model encoding"))?;
+    let model = SaveWorldDto::from(&world.model);
     let towns = world
         .rules
         .iter()
@@ -317,7 +315,7 @@ pub fn encode_building_save(world: &BuildingWorld) -> Result<Vec<u8>, BoundaryEr
             }),
         })
         .collect();
-    serde_json::to_vec(&Save {
+    Ok(Save {
         format: Format::Building,
         version: 2,
         model,
@@ -327,11 +325,57 @@ pub fn encode_building_save(world: &BuildingWorld) -> Result<Vec<u8>, BoundaryEr
         builders,
         extensions: Added(Some(Extensions::from_world(world))),
     })
-    .map_err(|_| invalid("invalid construction encoding"))
 }
+/// Owned private construction/model facts. No serialization or I/O occurs during
+/// capture; the owner can continue while a worker writes this immutable value.
+/// This format covers BuildingWorld only, not the separate profession owners.
+/// ```compile_fail
+/// use lantern_host::building::BuildingSaveSnapshot;
+/// fn leak(s: &BuildingSaveSnapshot) { serde_json::to_string(s).unwrap(); }
+/// ```
+/// ```compile_fail
+/// use lantern_host::building::BuildingSaveSnapshot;
+/// fn leak(s: &BuildingSaveSnapshot) { println!("{s:?}"); }
+/// ```
+pub struct BuildingSaveSnapshot {
+    facts: Save,
+}
+impl BuildingSaveSnapshot {
+    pub fn capture(world: &BuildingWorld) -> Result<Self, BoundaryError> {
+        Ok(Self {
+            facts: capture(world)?,
+        })
+    }
+
+    /// Emits private JSON. Publication, flush and sync belong to the save worker.
+    pub fn write_to(&self, writer: impl std::io::Write) -> Result<(), BoundaryError> {
+        serde_json::to_writer(writer, &self.facts).map_err(write_error)
+    }
+
+    pub fn encode(&self) -> Result<Vec<u8>, BoundaryError> {
+        serde_json::to_vec(&self.facts).map_err(|_| invalid("invalid construction encoding"))
+    }
+
+    pub fn decode(source: &[u8]) -> Result<Self, BoundaryError> {
+        Self::capture(&decode_building_save(source)?)
+    }
+
+    pub fn restore(self) -> Result<BuildingWorld, BoundaryError> {
+        restore(self.facts)
+    }
+}
+
+pub fn encode_building_save(world: &BuildingWorld) -> Result<Vec<u8>, BoundaryError> {
+    BuildingSaveSnapshot::capture(world)?.encode()
+}
+
 pub fn decode_building_save(source: &[u8]) -> Result<BuildingWorld, BoundaryError> {
     let save: Save =
         serde_json::from_slice(source).map_err(|_| invalid("invalid construction schema"))?;
+    restore(save)
+}
+
+fn restore(save: Save) -> Result<BuildingWorld, BoundaryError> {
     if ![1, 2].contains(&save.version) {
         return Err(invalid("unsupported construction version"));
     }
@@ -340,7 +384,7 @@ pub fn decode_building_save(source: &[u8]) -> Result<BuildingWorld, BoundaryErro
     {
         return Err(invalid("version-gated construction extensions"));
     }
-    let model = decode_save(save.model.get())?;
+    let model = save.model.into_world()?;
     let mut rules = BTreeMap::new();
     let mut budget = 1_000_000_u64;
     for t in save.towns {

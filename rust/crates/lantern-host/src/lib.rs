@@ -36,6 +36,7 @@ pub mod state;
 pub enum ErrorKind {
     Invalid(&'static str),
     Json { line: usize, column: usize },
+    Io(std::io::ErrorKind),
     Identity(lantern_core::ids::IdentityError),
     Model(lantern_core::model::ModelError),
     Unit(lantern_core::units::UnitError),

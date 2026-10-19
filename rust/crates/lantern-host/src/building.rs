@@ -18,7 +18,7 @@ mod construction;
 mod save;
 mod upgrades;
 pub use construction::{Builder, Claim, Plan, PlanResult, Role, Suspended, Walk};
-pub use save::{decode_building_save, encode_building_save};
+pub use save::{BuildingSaveSnapshot, decode_building_save, encode_building_save};
 pub use upgrades::{ChildState, Progression, Upgrade};
 
 #[derive(Clone, Debug, PartialEq, Eq)]

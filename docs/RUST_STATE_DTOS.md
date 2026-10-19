@@ -313,3 +313,12 @@ intents come from owners; omitted/stale generations are cancelled and completion
 are drained between production updates. The pump introduces no persistent retry
 registry or gameplay thread. Travel/cargo/task integration remains R11 and later
 stages; no HTTP/API/save DTO changes are made.
+
+R19 slice 1 adds immutable `ModelSaveSnapshot` and `BuildingSaveSnapshot` private
+DTO owners. Capture copies facts without serialization/I/O; detached writers retain
+credentials and fractional progress after the live owner changes or is destroyed.
+Snapshot types deliberately omit Debug/Serialize. Readers normalize supported model
+v1–3/building v1–2 through existing validation. Construction embeds a typed model
+DTO instead of serializing nested JSON under the owner. Public DTOs are unchanged.
+[Scope, component exclusions and exact rollback limits](RUST_SAVES.md) distinguish
+this boundary from complete aggregate/durable saves, deferred to R19 slices 2–3.

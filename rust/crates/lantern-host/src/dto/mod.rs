@@ -4,9 +4,9 @@
 
 pub(crate) mod facts;
 mod public;
-mod save;
+pub(crate) mod save;
 pub(crate) mod wire;
 
 pub use facts::EntityIdDto;
 pub use public::{PublicWorldDto, public_snapshot};
-pub use save::{decode_save, encode_save};
+pub use save::{ModelSaveSnapshot, decode_save, encode_save};

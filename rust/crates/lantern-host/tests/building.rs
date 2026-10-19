@@ -848,8 +848,10 @@ fn paired_python_builder_claims_progress_walks_and_reload() {
                 &case["outcomes"][i],
                 &format!("{}[{i}]", case["name"]),
             );
-            let saved = encode_building_save(&world).unwrap();
-            let loaded = decode_building_save(&saved).unwrap();
+            let snapshot = lantern_host::building::BuildingSaveSnapshot::capture(&world).unwrap();
+            let saved = snapshot.encode().unwrap();
+            assert_eq!(encode_building_save(&world).unwrap(), saved);
+            let loaded = snapshot.restore().unwrap();
             assert_eq!(world.builders(), loaded.builders());
             assert_eq!(world.model().towns(), loaded.model().towns());
             assert_eq!(encode_building_save(&loaded).unwrap(), saved);
@@ -1306,8 +1308,10 @@ fn paired_python_upgrades_linked_groups_helpers_and_hall_rewards() {
                 &case["outcomes"][i]["state"],
                 &format!("{}[{i}]", case["name"]),
             );
-            let saved = encode_building_save(&world).unwrap();
-            let loaded = decode_building_save(&saved).unwrap();
+            let snapshot = lantern_host::building::BuildingSaveSnapshot::capture(&world).unwrap();
+            let saved = snapshot.encode().unwrap();
+            assert_eq!(encode_building_save(&world).unwrap(), saved);
+            let loaded = snapshot.restore().unwrap();
             assert_eq!(world.builders(), loaded.builders());
             assert_eq!(encode_building_save(&loaded).unwrap(), saved);
             world = loaded;
@@ -1676,7 +1680,10 @@ fn construction_v1_migration_and_v2_extension_validation_preserve_scope_and_rewa
     let mut old = raw.clone();
     old["version"] = json!(1);
     old.as_object_mut().unwrap().remove("extensions");
-    let restored = decode_building_save(old.to_string().as_bytes()).unwrap();
+    let restored = lantern_host::building::BuildingSaveSnapshot::decode(old.to_string().as_bytes())
+        .unwrap()
+        .restore()
+        .unwrap();
     assert_eq!(restored.rules(), world.rules());
     for mutation in 0..7 {
         let mut bad = raw.clone();
@@ -1735,4 +1742,36 @@ fn idle_upgrade_helpers_preserve_terminal_cancelled_intent_across_reload() {
     assert_eq!(state.task, Task::Idle);
     assert_eq!(state.travel, TravelIntent::Cancelled);
     decode_building_save(&encode_building_save(&world).unwrap()).unwrap();
+}
+
+#[test]
+fn detached_construction_snapshot_can_write_after_owner_is_destroyed() {
+    use lantern_host::building::BuildingSaveSnapshot;
+    let mut world = construction_world(&construction_vectors()[0]);
+    world
+        .advance_construction(&owner(), Seconds::new(0.375).unwrap(), route)
+        .unwrap();
+    let expected = encode_building_save(&world).unwrap();
+    let snapshot = BuildingSaveSnapshot::capture(&world).unwrap();
+    world
+        .advance_construction(&owner(), Seconds::new(2.).unwrap(), route)
+        .unwrap();
+    drop(world);
+    let bytes = std::thread::spawn(move || {
+        let mut bytes = vec![];
+        snapshot.write_to(&mut bytes).unwrap();
+        bytes
+    })
+    .join()
+    .unwrap();
+    assert_eq!(bytes, expected);
+    let restored = BuildingSaveSnapshot::decode(&bytes)
+        .unwrap()
+        .restore()
+        .unwrap();
+    assert_eq!(encode_building_save(&restored).unwrap(), expected);
+    assert!(BuildingSaveSnapshot::decode(&bytes[..bytes.len() - 1]).is_err());
+    let mut unknown: Value = serde_json::from_slice(&bytes).unwrap();
+    unknown["version"] = json!(999);
+    assert!(BuildingSaveSnapshot::decode(&serde_json::to_vec(&unknown).unwrap()).is_err());
 }
