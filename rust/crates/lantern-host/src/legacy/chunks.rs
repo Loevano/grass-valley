@@ -510,3 +510,60 @@ impl super::ImportedWorld {
         Ok(RawChunk::Generated(generated))
     }
 }
+
+pub(super) fn attach_records(
+    registry: &mut ImportedRegistry,
+    sources: &[super::ChunkRecordCopies],
+) -> Result<(), BoundaryError> {
+    let mut seen = BTreeSet::new();
+    for (id, records) in sources {
+        if !seen.insert(id.clone()) {
+            return Err(BoundaryError::invalid(
+                "$.archive.chunks",
+                "duplicate world binding",
+            ));
+        }
+        let world = registry
+            .worlds
+            .iter_mut()
+            .find(|w| &w.id == id)
+            .ok_or_else(|| BoundaryError::invalid("$.archive.chunks", "unknown world binding"))?;
+        let metadata = world.chunk_metadata.as_ref().ok_or_else(|| {
+            BoundaryError::invalid("$.archive.chunks", "ordinary world chunk binding")
+        })?;
+        let mut keys = BTreeSet::new();
+        for (key, bytes) in records {
+            key.validate(metadata, "$.archive.chunks")?;
+            if !keys.insert(*key) {
+                return Err(BoundaryError::invalid(
+                    "$.archive.chunks",
+                    "duplicate chunk",
+                ));
+            }
+            validate_record(
+                bytes,
+                *key,
+                metadata,
+                "$.archive.chunks",
+                &mut registry.preserved,
+                &mut world.versions,
+            )?;
+            world.chunks.push(ImportedChunk {
+                key: *key,
+                bytes: bytes.clone(),
+            });
+        }
+        world.chunks.sort_by_key(|c| c.key);
+    }
+    if registry
+        .worlds
+        .iter()
+        .any(|w| w.chunk_metadata.is_some() && !seen.contains(&w.id))
+    {
+        return Err(BoundaryError::invalid(
+            "$.archive.chunks",
+            "missing world binding",
+        ));
+    }
+    Ok(())
+}

@@ -1,7 +1,10 @@
 # R06 legacy staging import
 
 R06 implements read-only registry/account/ordinary-world and external-chunk
-staging in `lantern_host::legacy`, with an explicit inspection CLI. It does not
+staging in `lantern_host::legacy`, with an explicit inspection CLI.
+R19 slice 3 adds [separate lossless Python archive/restore tools](RUST_SAVES.md#preserved-only-python-archives)
+using this validation boundary. Their readiness remains preserved-only; they do
+not hydrate a playable native world. It does not
 create a playable core world, invoke Python, run migrations, generate terrain/names,
 advance clocks, authenticate players or write a destination save. Python remains the normal playable host.
 

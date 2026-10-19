@@ -322,7 +322,8 @@ v1–3/building v1–2 through existing validation. Construction embeds a typed 
 DTO instead of serializing nested JSON under the owner. Public DTOs are unchanged.
 [Scope, component exclusions and exact rollback limits](RUST_SAVES.md) distinguish
 these individual snapshot types from the aggregate native store in slice 2 below;
-explicit source conversion remains R19 slice 3.
+source archive/copy tooling is covered below, while complete playable source
+hydration remains a compatibility gate.
 
 
 R19 slice 2 adds strict private aggregate registry/generation/ledger v1 schemas and
@@ -336,3 +337,14 @@ capture freezes authority and pending intents; detached flush strips derived
 inline aggregates before external generation writes. [Protocol and recovery](RUST_SAVES.md)
 keep this experimental native store separate from unimplemented Python conversion
 and live HTTP adapters. Public DTOs remain unchanged.
+
+
+R19 slice 3 adds generation manifest v2 source provenance for native copies, while
+retaining v1 readers and exact older model payloads. Read-only source handles never
+create lock files or permit commits; conversion gates prevent incomplete roots from
+loading. Python archives have a distinct v1 preserved-only marker/schema, exact
+registry/provision/chunk bytes, checksums and stable binding overlay. They revalidate
+R06-supported structures but retain unported gameplay opaquely; native Store cannot
+load them. Archive restore exports original Python bytes only. No native gameplay
+reverse export or playable legacy actor adapter is inferred; [tool scope](RUST_SAVES.md)
+records the user-approved boundary and remaining cutover gates. Public DTOs are unchanged.

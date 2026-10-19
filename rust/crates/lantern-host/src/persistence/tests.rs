@@ -760,3 +760,300 @@ fn terrain_archives_validate_legacy_generators_and_current_resource_fields_witho
         );
     }
 }
+
+fn file_tree(path: &std::path::Path) -> Vec<(PathBuf, Vec<u8>, std::time::SystemTime)> {
+    let mut out = vec![];
+    let mut entries = fs::read_dir(path)
+        .unwrap()
+        .map(|entry| entry.unwrap())
+        .collect::<Vec<_>>();
+    entries.sort_by_key(|e| e.file_name());
+    for entry in entries {
+        let meta = fs::symlink_metadata(entry.path()).unwrap();
+        if meta.is_dir() {
+            out.extend(file_tree(&entry.path()));
+        } else {
+            out.push((
+                entry.path(),
+                fs::read(entry.path()).unwrap(),
+                meta.modified().unwrap(),
+            ));
+        }
+    }
+    out
+}
+#[test]
+fn native_copy_and_selected_recovery_validate_without_mutating_source() {
+    let temp = Scratch::new();
+    let mut store = Store::create(&temp.root()).unwrap();
+    store.commit(snapshot(1.)).unwrap();
+    store.commit(snapshot(2.)).unwrap();
+    drop(store);
+    let before = file_tree(&temp.root());
+    let target = temp.0.join("converted");
+    let report = tools::convert_native(&temp.root(), &target).unwrap();
+    assert_eq!(report.source_generation, Generation(2));
+    assert!(report.skipped.is_empty());
+    assert_eq!(file_tree(&temp.root()), before);
+    let copied = Store::open_read_only(&target).unwrap();
+    assert_eq!(coins(&copied.recover().unwrap()), 2.25);
+    drop(copied);
+    let manifest: serde_json::Value = serde_json::from_slice(
+        &fs::read(target.join("generation-00000000000000000001/manifest.json")).unwrap(),
+    )
+    .unwrap();
+    assert_eq!(manifest["version"], json!(2));
+    assert_eq!(
+        manifest["source"]["manifest_sha256"],
+        json!(report.source_manifest_sha256)
+    );
+    let selected = temp.0.join("rollback");
+    let report = tools::recover_native(&temp.root(), &selected, Some(Generation(1))).unwrap();
+    assert_eq!(report.source_generation, Generation(1));
+    assert_eq!(
+        coins(&Store::open_read_only(&selected).unwrap().recover().unwrap()),
+        1.25
+    );
+    assert_eq!(file_tree(&temp.root()), before);
+}
+#[test]
+fn native_conversion_refuses_corrupt_latest_but_recovery_copies_whole_previous_generation() {
+    let temp = Scratch::new();
+    let mut store = Store::create(&temp.root()).unwrap();
+    store.commit(snapshot(1.)).unwrap();
+    store.commit(snapshot(2.)).unwrap();
+    drop(store);
+    fs::remove_file(
+        temp.root()
+            .join("generation-00000000000000000002/00000001.bin"),
+    )
+    .unwrap();
+    let before = file_tree(&temp.root());
+    assert!(tools::convert_native(&temp.root(), &temp.0.join("conversion")).is_err());
+    assert!(!temp.0.join("conversion").exists());
+    let report = tools::recover_native(&temp.root(), &temp.0.join("recovered"), None).unwrap();
+    assert_eq!(report.skipped, vec![Generation(2)]);
+    let copied = Store::open_read_only(&temp.0.join("recovered")).unwrap();
+    let restored = copied.recover().unwrap();
+    assert_eq!(coins(&restored), 1.25);
+    assert_chunk_stamp(&restored);
+    assert_eq!(file_tree(&temp.root()), before);
+    assert!(
+        tools::recover_native(
+            &temp.root(),
+            &temp.0.join("invalid-selection"),
+            Some(Generation(2))
+        )
+        .is_err()
+    );
+    assert!(!temp.0.join("invalid-selection").exists());
+}
+#[test]
+fn native_copy_refuses_aliases_overlap_existing_destinations_and_live_writers() {
+    let temp = Scratch::new();
+    let mut store = Store::create(&temp.root()).unwrap();
+    store.commit(snapshot(1.)).unwrap();
+    assert!(tools::convert_native(&temp.root(), &temp.0.join("busy-copy")).is_err());
+    assert!(!temp.0.join("busy-copy").exists());
+    drop(store);
+    for target in [temp.root(), temp.root().join("nested"), temp.0.clone()] {
+        assert!(tools::convert_native(&temp.root(), &target).is_err());
+    }
+    assert!(!temp.root().join("nested").exists());
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::symlink;
+        symlink(temp.root(), temp.0.join("alias")).unwrap();
+        assert!(tools::convert_native(&temp.root(), &temp.0.join("alias/nested")).is_err());
+        symlink(temp.0.join("missing"), temp.0.join("dangling")).unwrap();
+        assert!(tools::convert_native(&temp.root(), &temp.0.join("dangling")).is_err());
+    }
+}
+#[test]
+fn incomplete_native_destination_is_never_opened_as_an_empty_or_partially_converted_save() {
+    let temp = Scratch::new();
+    let mut store = Store::create_copy(&temp.root()).unwrap();
+    assert!(Store::open_read_only(&temp.root()).is_err());
+    store.commit(snapshot(1.)).unwrap();
+    assert!(Store::open_read_only(&temp.root()).is_err());
+    store.finish_copy().unwrap();
+    drop(store);
+    assert_eq!(
+        coins(
+            &Store::open_read_only(&temp.root())
+                .unwrap()
+                .recover()
+                .unwrap()
+        ),
+        1.25
+    );
+}
+#[test]
+fn cleanup_removes_only_pending_work_and_read_only_handles_cannot_commit_or_create_locks() {
+    let temp = Scratch::new();
+    let mut store = Store::create(&temp.root()).unwrap();
+    store.commit(snapshot(1.)).unwrap();
+    store
+        .commit_inner(snapshot(2.), |phase| {
+            if phase == Checkpoint::Written(1) {
+                Err(Error::Io(std::io::ErrorKind::StorageFull))
+            } else {
+                Ok(())
+            }
+        })
+        .unwrap_err();
+    drop(store);
+    let committed = fs::read(
+        temp.root()
+            .join("generation-00000000000000000001/manifest.json"),
+    )
+    .unwrap();
+    assert_eq!(tools::cleanup_pending(&temp.root()).unwrap(), 1);
+    assert_eq!(
+        fs::read(
+            temp.root()
+                .join("generation-00000000000000000001/manifest.json")
+        )
+        .unwrap(),
+        committed
+    );
+    let before = file_tree(&temp.root());
+    let mut readonly = Store::open_read_only(&temp.root()).unwrap();
+    assert!(readonly.commit(snapshot(3.)).is_err());
+    drop(readonly);
+    assert_eq!(file_tree(&temp.root()), before);
+    fs::remove_file(temp.root().join(".writer.lock")).unwrap();
+    assert!(Store::open_read_only(&temp.root()).is_err());
+    assert!(!temp.root().join(".writer.lock").exists());
+}
+
+#[test]
+fn copy_interruption_at_every_boundary_never_changes_source_or_exposes_partial_destination() {
+    let temp = Scratch::new();
+    let mut store = Store::create(&temp.root()).unwrap();
+    store.commit(snapshot(1.)).unwrap();
+    drop(store);
+    let before = file_tree(&temp.root());
+    let mut checkpoints = vec![];
+    tools::copy_with_checkpoints(&temp.root(), &temp.0.join("probe"), None, false, |phase| {
+        checkpoints.push(phase);
+        Ok(())
+    })
+    .unwrap();
+    for (index, phase) in checkpoints.into_iter().enumerate() {
+        let target = temp.0.join(format!("failed-copy-{index}"));
+        let result = tools::copy_with_checkpoints(&temp.root(), &target, None, false, |p| {
+            if p == phase {
+                Err(Error::Io(std::io::ErrorKind::StorageFull))
+            } else {
+                Ok(())
+            }
+        });
+        assert!(result.is_err());
+        if phase == tools::CopyCheckpoint::Ready {
+            assert_eq!(
+                coins(&Store::open_read_only(&target).unwrap().recover().unwrap()),
+                1.25
+            );
+        } else {
+            assert!(Store::open_read_only(&target).is_err());
+        }
+        assert_eq!(file_tree(&temp.root()), before);
+    }
+}
+#[test]
+fn abrupt_copy_exit_keeps_source_exact_and_requires_completed_destination_publication() {
+    let temp = Scratch::new();
+    let mut store = Store::create(&temp.root()).unwrap();
+    store.commit(snapshot(1.)).unwrap();
+    drop(store);
+    let mut count = 0;
+    tools::copy_with_checkpoints(&temp.root(), &temp.0.join("probe"), None, false, |_| {
+        count += 1;
+        Ok(())
+    })
+    .unwrap();
+    let before = file_tree(&temp.root());
+    for phase in 0..count {
+        let target = temp.0.join(format!("crashed-copy-{phase}"));
+        let output = std::process::Command::new(std::env::current_exe().unwrap())
+            .args(["--exact", "persistence::tests::copy_crash_child"])
+            .env("LANTERN_TEST_COPY_SOURCE", temp.root())
+            .env("LANTERN_TEST_COPY_TARGET", &target)
+            .env("LANTERN_TEST_COPY_PHASE", phase.to_string())
+            .output()
+            .unwrap();
+        assert_eq!(
+            output.status.code(),
+            Some(73),
+            "{}",
+            String::from_utf8_lossy(&output.stderr)
+        );
+        if phase + 1 == count {
+            assert_eq!(
+                coins(&Store::open_read_only(&target).unwrap().recover().unwrap()),
+                1.25
+            );
+        } else {
+            assert!(Store::open_read_only(&target).is_err());
+        }
+        assert_eq!(file_tree(&temp.root()), before);
+    }
+}
+#[test]
+fn copy_crash_child() {
+    let Some(source) = std::env::var_os("LANTERN_TEST_COPY_SOURCE") else {
+        return;
+    };
+    let target = std::env::var_os("LANTERN_TEST_COPY_TARGET").unwrap();
+    let phase: usize = std::env::var("LANTERN_TEST_COPY_PHASE")
+        .unwrap()
+        .parse()
+        .unwrap();
+    let mut current = 0;
+    tools::copy_with_checkpoints(
+        &PathBuf::from(source),
+        &PathBuf::from(target),
+        None,
+        false,
+        |_| {
+            if current == phase {
+                std::process::exit(73)
+            }
+            current += 1;
+            Ok(())
+        },
+    )
+    .unwrap();
+    panic!("missing copy checkpoint");
+}
+
+#[test]
+fn native_tools_copy_supported_legacy_model_versions_without_rewriting_private_facts() {
+    for version in [1, 2, 3] {
+        let temp = Scratch::new();
+        let mut bundle = snapshot(1.).encode().unwrap();
+        let mut value: serde_json::Value = serde_json::from_slice(&bundle.registry).unwrap();
+        value["worlds"][0]["model"]["version"] = json!(version);
+        if version == 1 {
+            for actor in value["worlds"][0]["model"]["towns"][0]["actors"]
+                .as_array_mut()
+                .unwrap()
+            {
+                actor.as_object_mut().unwrap().remove("facing");
+                actor.as_object_mut().unwrap().remove("travel");
+            }
+        }
+        bundle.registry = serde_json::to_vec(&value).unwrap();
+        let expected = bundle.registry.clone();
+        let mut store = Store::create(&temp.root()).unwrap();
+        store.commit_bundle(bundle, |_| Ok(())).unwrap();
+        drop(store);
+        let target = temp.0.join("copy");
+        tools::convert_native(&temp.root(), &target).unwrap();
+        assert_eq!(
+            fs::read(target.join("generation-00000000000000000001/00000000.bin")).unwrap(),
+            expected
+        );
+    }
+}

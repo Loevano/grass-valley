@@ -2,18 +2,32 @@
 
 mod inspect;
 mod replay;
+mod save_tools;
 
 use std::io::{self, Read, Write};
 use std::process::ExitCode;
 
 fn main() -> ExitCode {
     let args: Vec<_> = std::env::args_os().skip(1).collect();
+    if let Some(command) = args.first().and_then(|arg| arg.to_str())
+        && [
+            "save-convert",
+            "save-inspect",
+            "save-recover",
+            "save-cleanup",
+            "save-export",
+            "save-restore-python",
+        ]
+        .contains(&command)
+    {
+        return save_tools::run(command, &args[1..]);
+    }
     if args.first().is_some_and(|arg| arg == "inspect-copy") {
         return inspect::run(&args[1..]);
     }
     if args != [std::ffi::OsString::from("replay")] {
         eprintln!(
-            "Usage: lantern-host replay < request.json (transport smoke only; no gameplay)\n       lantern-host inspect-copy --help (read-only synthetic copies)"
+            "Usage: lantern-host replay < request.json (transport smoke only; no gameplay)\n       lantern-host inspect-copy --help (read-only synthetic copies)\n       lantern-host save-convert --help (offline copy/recovery tools)"
         );
         return ExitCode::FAILURE;
     }

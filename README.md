@@ -867,9 +867,10 @@ conversion remains unfinished; the Rust launcher does not discover normal saves
 or rewrite source copies.
 R19 adds an [experimental native generation-store library](docs/RUST_SAVES.md) with
 private whole-state snapshots, atomic registry/chunk publication, a background
-writer and tested restart/recovery. It creates only new separate marked Rust roots;
-copy conversion and recovery/rollback CLIs remain unfinished. The Python launch
-and its data are unchanged.
+writer and tested restart/recovery. `lantern-host save-convert --help` describes
+explicit native copy/recovery and preserved-only Python archive/restore commands.
+Every destination must be new and separate; playable Python import and native
+reverse export are explicitly refused. The Python launch and its data are unchanged.
 The core has no external dependencies or I/O; it compiles and its test harness
 runs without a listener. The replay adapter supports only a transport smoke
 fixture; no gameplay rules or HTTP host are implemented. Start the playable game

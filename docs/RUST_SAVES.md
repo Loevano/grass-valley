@@ -1,8 +1,10 @@
 # Experimental Rust saves
 
-R19 slices 1–2 implement private snapshot export/versioned reload and a durable
-native generation store at the offline Rust model boundary. Python remains the
-playable default. There is no live Rust host save loop or Python conversion CLI.
+R19 slices 1–3 implement private snapshot export/versioned reload, durable native
+generations and explicit offline copy/recovery/archive tools. Python remains the
+playable default. The approved Python tooling scope is **lossless preserved-only
+archives**, not playable native conversion; complete actor adapters remain missing.
+There is no live Rust host save loop or native-to-Python gameplay exporter.
 
 ## Capture and ownership
 
@@ -46,7 +48,8 @@ still allocates/copies in proportion to saved facts; no latency claim is made.
 | `lantern-model` | 1, 2, 3 | 3 |
 | `lantern-building-model` | 1, 2 | 2, nested model 3 |
 | `lantern-registry` | 1 | 1 |
-| `lantern-generation` manifest | 1 | 1 |
+| `lantern-generation` manifest | 1, 2 | 1 normally; 2 for copies with source provenance |
+| `lantern-python-archive` | 1 | 1, `preserved-only` |
 | Ledger DTO | 1 | 1 |
 | Named RNG stream | `python-mt19937-v1` | Same; 624 words and index |
 
@@ -101,7 +104,7 @@ unit; it never borrows missing chunks from another generation or regenerates the
 If committed directories exist but none is usable, recovery errors rather than
 inventing an empty world. Valid pending directories are still uncommitted and are
 ignored. All old/pending directories are retained; inspection, repair, selection
-and cleanup tools remain slice 3.
+and cleanup tools are described below.
 
 ## Background save, flush and shutdown
 
@@ -121,25 +124,113 @@ final snapshot itself: submit the final owner revision first. Dropping the servi
 closes the queue but does not join/block the owner; explicit shutdown is required
 before process exit if accepted work must finish.
 
-## Conversion and rollback boundaries
+## Copy, recovery and archive commands
 
-Slice 3 remains unfinished: no Python-to-Rust playable conversion, Rust-to-Python
-reverse export, or recovery/rollback CLI exists. `inspect-copy` remains read-only.
-Conversion must take explicit source/destination paths, validate all supported
-source data and private account/provisioning records, include every world's external
-chunks, reject aliases/overlaps, and publish a complete new destination without
-mutating the source. Experimental Rust always uses its separate marked root.
+From `rust/`, invoke `cargo run --locked --offline -p lantern-host -- COMMAND ...`.
+`save-convert --help` lists all options. Every source and destination is explicit;
+parent directories must exist, and the destination directory must be new.
 
-Restarting native Rust restores the selected complete generation. Any mutations
-after its captured revision are lost. Fallback loses all progress after the chosen
-older generation; `Recovery.skipped` makes that boundary visible. An unacknowledged
-new generation can survive a crash, so a caller must inspect recovery rather than
-assuming a failed request could not have published.
+```text
+save-convert --source-format native --source RUST_ROOT --destination NEW_RUST_ROOT
+save-inspect --source RUST_ROOT
+save-recover --source RUST_ROOT --destination NEW_RUST_ROOT
+save-recover --source RUST_ROOT --destination NEW_RUST_ROOT --generation 1
+save-cleanup --source RUST_ROOT --pending-only
+```
 
-Returning to Python currently means using the untouched original Python registry,
-provisioning/accounts and entire chunk tree. It restores exactly that source
-backup's progress and loses **all** subsequent Rust-side play. No merge, downgrade
-or reverse export is supported. Keep the full source backup through rollback.
+Native conversion copies the newest generation byte-for-byte after complete
+native schema/reference/integrity validation. It refuses a damaged newest save;
+use `save-recover` explicitly to select the newest usable fallback or a specific
+valid generation. Recovery copies into a new root; it never edits/switches the
+source in place. Reports include chosen/skipped generation numbers and source
+manifest SHA-256, without paths, world/account names or credential material.
+Manifest v2 stores the source generation/hash and operation; v1 remains readable.
+Native copies retain model reader versions 1–3 without rewriting old facts.
+
+Native inspection/copy/recovery uses an existing read-only lock handle: it neither
+creates lock files nor opens source files writable, and it refuses a live writer.
+Canonical destination-parent checks reject overlaps/aliases; exclusive creation
+rejects existing directories, files and dangling links. A new native destination
+retains `.conversion-in-progress` until its complete generation is verified and
+synced. Readers refuse it until that gate is removed and the root is synced.
+Interrupted copies may leave an unusable new directory; choose another destination
+for retry. A failure after final publication may leave a complete valid destination.
+
+`save-inspect` reports each native generation's validity and selected fallback.
+`save-cleanup --pending-only` is the explicitly destructive operation: under the
+writer lock it prevalidates and removes only uncommitted `pending-N` directories,
+rejects symlinks/nonregular entries, and syncs the root. It never removes committed
+generations. There is no automatic deletion or in-place repair of corrupt commits.
+
+### Preserved-only Python archives
+
+```text
+save-convert --source-format python-archive --source COPY.json --destination NEW_ARCHIVE --provision COPY.players.json --chunks WORLD SEED_DIRECTORY --require-chunk WORLD 0 0
+save-inspect --source-format python-archive --source ARCHIVE
+save-restore-python --source ARCHIVE --destination NEW_PYTHON_ROOT
+```
+
+Provisioning is optional and never discovered automatically. Repeat `--chunks`
+for **every** chunked world, including inactive worlds; each directory's leaf must
+match its saved seed namespace. All files in each sparse directory are captured.
+`--require-chunk` optionally supplies known required coordinates. Original Python
+saves have no complete historical chunk manifest, so a file already missing before
+capture cannot otherwise be distinguished from an unvisited chunk. Every record
+actually archived becomes a required, checksummed archive member thereafter.
+
+Use quiescent/offline copies, or stop Python first. Python does not participate in
+the native writer lock. The tool rereads the entire selected input set and compares
+manifests before writing, detecting ordinary concurrent changes; that is not a
+replacement for an atomic filesystem snapshot of an actively changing Python host.
+Source files/directories are only read, never normalized, migrated, renamed or
+written. No Python process, simulation, terrain generation or clock catch-up runs.
+
+The distinct archive marker, versioned `preserved-only` manifest, per-file hashes,
+world/chunk membership, exact original registry/provision bytes and persistent
+identity overlay preserve all source data, private accounts and unknown extensions.
+Validation covers the R06 supported envelopes, private account ownership/merge
+policy, known version markers and references, complete selected directory sets and
+chunk structure. Unsupported gameplay payloads remain opaque, not semantically
+validated or playable. The persisted overlay must be checked by future adapters;
+entities are never reordered to invent new bindings.
+
+A Python archive cannot open as a native Store. `--source-format python` (playable
+import) is explicitly refused before destination creation. Archives use private
+0700 directories/0600 files and an incomplete-write gate; readers accept them only
+after all files/manifest are synced and the gate is removed. Missing, corrupt,
+extra, duplicate, symlinked or unsupported archive data rejects the whole archive.
+Different contents sharing one Python seed namespace are refused, because they
+could not be restored faithfully to Python's single namespace tree.
+
+`save-restore-python` exports **only the original Python archive** to a new root:
+`savegame.json`, optional `savegame.players.json`, and
+`savegame_chunks/SEED/X,Y.json`. Registry and provisioning bytes/chunks are exact;
+accounts are not rehashed, renormalized or reissued. Normal Python provisioning
+merging will therefore retain its original existing-account-wins behavior. Chunk
+and provisioning files are synced before the first main registry publication.
+This is safe because the destination is fresh; it is not a JSON-only replacement
+over mutable old chunks. Interrupted restores leave only a new incomplete target;
+when a registry has been published, all of its chunks are already complete. Wait
+for success before launching a host on that explicit root. Neither source archive
+nor original Python data is changed.
+
+### Progress-loss and remaining compatibility gates
+
+Native restart restores the selected complete generation. Mutations after its
+captured revision are lost. Fallback/explicit older-generation recovery loses all
+progress after that older generation; the chosen/skipped numbers make the boundary
+visible. A published but unacknowledged new generation may survive a crash, so
+inspect recovery instead of assuming a failed request could not have published.
+
+Archive restore is a byte-exact reversal of Python **archiving**, with no Rust
+play added or lost because archives are not playable native worlds. It is not
+native gameplay reverse export. `save-export` refuses native-to-Python export.
+Returning to Python after Rust play still means the untouched original Python
+backup, losing **all** subsequent Rust-side progress. No merge/downgrade adapter
+exists. This approved archive/tooling scope does not accept one-way production
+cutover or that rollback loss; R24's reverse-export/rollback decision remains open.
+Complete playable Python actor hydration and live host save invocation remain
+explicit compatibility gates for R20–21, not achievements of archival success.
 
 ## Verification
 
@@ -158,6 +249,12 @@ with cargo, supplies and worker progress intact, then unload exactly once.
 Construction work/claims also survive disk reload. Terrain capture keeps sleeping
 archives and exact scalars without mutating source files, authority or write intents.
 Compile-fail doctests protect private snapshots from implicit logging/serialization.
+Tool tests additionally cover exact native/legacy copy and source-file immutability,
+selected/fallback recovery, provenance manifests, pending-only cleanup, incomplete
+conversion gates, malformed/unsupported inputs, preserved-only Python archive and
+restore, and CLI privacy/refusals. Native copy and Python archive writes are both
+failure-injected and interrupted by child-process exit at each publication stage.
+Python restore failures verify that registry publication never precedes chunks.
 
 Performance comparisons are not run for this durability/ownership behavior slice.
 There is no runtime optimization or host-performance claim. Blocking-writer tests

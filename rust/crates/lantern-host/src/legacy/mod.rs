@@ -601,3 +601,17 @@ pub(crate) fn validate_provision_archive(bytes: &[u8]) -> Result<(), BoundaryErr
     json::Node::parse(bytes, "$.provision")?.object("$.provision")?;
     Ok(())
 }
+
+/// Archive tooling validation from already captured bytes; never writes scratch
+/// chunk files or rereads source paths while validating an archive.
+pub(crate) type ChunkRecordCopies = (WorldId, Vec<(ChunkKey, Vec<u8>)>);
+
+pub(crate) fn import_record_copies(
+    source: &[u8],
+    provision: Option<&[u8]>,
+    records: &[ChunkRecordCopies],
+) -> Result<ImportedRegistry, BoundaryError> {
+    let mut registry = parse_registry(Some(source), provision)?;
+    chunks::attach_records(&mut registry, records)?;
+    Ok(registry)
+}

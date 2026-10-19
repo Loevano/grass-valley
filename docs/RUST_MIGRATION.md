@@ -25,7 +25,7 @@ post-overlay water repair, private authoritative chunk lifecycle/resource renewa
 and exact Python integer/float clock arithmetic. See the [completion audit](#r07-slice-3civ-exact-clocks-and-completion-audit).
 Python remains the playable default. Rust's transport smoke and read-only copy
 inspection CLIs do not load playable gameplay. Platform libm compatibility remains
-an R23 release gate. R19 slices 1–2 implement offline native durable generations; conversion and public/live host integration remain later work.
+an R23 release gate. R19 slices 1–3 implement offline native durable generations and copy/recovery tools, including approved preserved-only Python archives. Playable Python conversion and public/live host integration remain later work.
 **Initial plan revision:** `445ddddd675a87eb7adb50442b2dbf3c14ea6c6f`.
 **R01 audit revision:** `935db7b95885c101c62dfd6bf9e16f39b6a7a8fe`.
 **Scope:** replace the Python host first. Keep the browser playable during that
@@ -255,7 +255,7 @@ only after work is performed. Keep unfinished stages visible in the roadmap.
 | R16 | Farming and orchards | R15 | All three code slices implemented offline: fields/claims/passes, water rounds, harvest returns, orchards/restock, crop edits, linked relocation and validated owner reload; integrated legacy actor/save/host adapters and acceptance remain R19–23 |
 | R17 | Fishing, boats, animals, and horses | R16 | Slices 1–3 implemented offline: saved piers, land fishing, boat/crew voyages, species cargo, exploration boats, barn growth/keepers and manual butchery; slice 4 (horses/riding) remains |
 | R18 | Residents, villages, trade, and adventures | R17 | Slices 1–3 implemented offline: population, village routines/restocks, NPC roster/gifts/stories/tools/equipment, town trades and founder activities with owner reload; slice 4 and durable/live integration remain |
-| R19 | Durable Rust saves and recovery | R18 | Slices 1–2 implemented offline: immutable snapshots (`9217d66`), aggregate registry/chunk generations, background writer, flush/shutdown and fallback recovery; `feat: persist atomic Rust save generations` (this change); [scope and rollback limits](RUST_SAVES.md). Explicit copy conversion and recovery/rollback tools remain slice 3 |
+| R19 | Durable Rust saves and recovery | R18 | Slices 1–3 implemented at offline native/tool boundary: snapshots `9217d66`, atomic generations `bb547bf`, `feat: add explicit save copy archive and recovery tools` (this change); [scope and rollback limits](RUST_SAVES.md). Python archival is explicitly approved as preserved-only; playable legacy actor hydration, live host integration and native reverse export remain compatibility gates |
 | R20 | HTTP, accounts, and world lifecycle | R19 | Not started |
 | R21 | Browser compatibility and playable Rust checkpoint | R20 | Not started |
 | R22 | Shared-destination routing | R21 | Not started |
@@ -4383,11 +4383,11 @@ incomplete output prefix, retry, supported legacy versions and future-version
 refusal. Paired construction cases now restore through the snapshot boundary.
 No filesystem writer or Python data was used. See [exact scope](RUST_SAVES.md).
 
-R19 remains in progress. Slice 2 below implements the native aggregate generation
-store; slice 3 still owns explicit copy-based conversion and recovery/rollback
-tooling. Neither playable conversion nor reverse export is supported; rollback to
-untouched Python copies loses all later Rust progress. Experimental disk work uses
-a separate marked root. Integrated host/save contention remains R20–23.
+Slices 2–3 below implement the native aggregate store and approved copy/archive
+recovery tooling. Playable Python conversion and native reverse export remain
+unsupported; rollback to untouched Python copies loses all later Rust progress.
+Experimental disk work uses a separate marked root. Integrated host/save contention
+remains R20–23.
 
 Performance comparisons were not run: this is an offline ownership/schema behavior
 change without a runtime performance claim; slow-writer separation is tested with
@@ -4412,7 +4412,8 @@ owners, shared resource supplies, explicit clocks, named MT19937 continuation st
 VillageLife and complete active/sleeping external chunk archives. Strict component
 reloads validate the complete native bundle before disk work. Population-owned
 workers cannot also have standalone progression ownership; construction restores
-one model authority. Source conversion/account merging remains slice 3.
+one model authority. Slice 3 below adds source archival and copy/recovery tooling;
+playable source actor hydration/account application remains a compatibility gate.
 
 `ChunkLifecycle::capture_save` does not drain write intents or mutate live clocks,
 records, caches or imports. Flush runs on the detached copy; active records override
@@ -4450,12 +4451,12 @@ unload exactly once. Construction progress/claims also survive disk reload, and
 terrain snapshot export preserves sleeping archives without touching authority or
 source files. Process exit tests do not claim physical power-loss qualification.
 
-Slice 3 remains: explicit source/destination conversion, complete supported source
-validation/account merging, recovery inspection/selection/cleanup and rollback tools.
-Reverse export is unsupported. Native restart loses changes after the selected
-snapshot revision; fallback loses progress after the older chosen generation.
-Returning to untouched Python backups loses all subsequent Rust play. See the
-[exact protocol and limitations](RUST_SAVES.md).
+Slice 3 below adds explicit native copy/recovery and approved preserved-only Python
+archive/restore tools. Complete playable Python actor hydration/account application
+and native reverse export remain compatibility gates. Native restart loses changes
+after the selected snapshot revision; fallback loses progress after the older chosen
+generation. Returning to untouched Python backups loses all subsequent Rust play.
+See the [exact protocol and limitations](RUST_SAVES.md).
 
 Performance comparisons were not run: this slice implements durability/ownership
 behavior, without an optimization or host-performance claim. A deterministic
@@ -4471,6 +4472,63 @@ terrain snapshot cases passed. `git diff --check` passed. No user Python save or
 provisioning file was read or modified; all I/O tests used disposable synthetic roots.
 
 Commit message: `feat: persist atomic Rust save generations`.
+
+### R19 slice 3 — Explicit copy, archive and recovery tools
+
+Implemented native `save-convert`, `save-inspect`, copy-based `save-recover` with
+explicit generation selection, and opt-in `save-cleanup --pending-only`. Sources
+use existing read-only OS lock handles, never writable handles or lock creation.
+Native conversion refuses a damaged newest generation; fallback recovery is a
+separate explicit operation. Complete schema/reference/chunk validation precedes
+new-destination creation. Canonical parent/overlap and exclusive-creation checks
+protect source roots, aliases, existing targets and dangling links. Copies retain
+exact private bytes; generation manifest v2 adds source generation/hash provenance,
+while readers still accept v1. A durable conversion gate prevents incomplete new
+roots from opening as empty/usable saves. Cleanup never removes committed history.
+
+**Approved scope:** the user explicitly selected native copy/recovery plus lossless
+Python archives, with playable imports refused until complete adapters exist.
+`save-convert --source-format python-archive` captures explicit current/legacy
+source, optional provisioning and all supplied active/inactive world chunk copies.
+A distinct preserved-only format stores exact private bytes, required membership,
+checksums and the identity overlay. In-memory archive revalidation checks supported
+R06 structures/versions/credentials/references without scratch source writes.
+Unported gameplay payloads remain opaque. Source sets are reread before writing;
+inputs must be quiescent/offline because Python has no cooperating lock.
+
+`save-restore-python` reverses only Python archiving into a new standard Python
+root, including exact private accounts/provisioning and external chunks. All
+chunk/provision files are synced before first registry publication. Conflicting
+same-seed archives, missing/corrupt files, malformed schemas, overlaps and existing
+destinations reject before restoration writes. Native Store rejects Python archive
+markers. Playable `--source-format python` and native `save-export` are explicitly
+refused, never defaulted to empty or guessed gameplay state.
+
+Tests exercise native and Python current/legacy input, old native model reader
+versions 1–3, full external chunk membership, account-byte preservation, malformed
+and future schemas, aliases/source safety, selected and fallback recovery, privacy,
+cleanup, failure injection and child-process exits during copy/archive publication.
+Interrupted Python restore cannot publish a registry referring to missing chunks.
+The CLI emits only safe counts, generation choices, readiness and manifest hashes.
+No real user save/account data was used.
+
+R19's offline native persistence and approved archive/tooling slices are implemented.
+This does not complete playable Python conversion: full legacy actor/claim/trip
+hydration, unported horses/adventures and live owner/HTTP adapters remain explicit
+R20–21/cutover compatibility gates. Archival success is never playable readiness.
+Native fallback loses progress after the selected snapshot. Python archive restore
+returns exactly the archive's original Python progress; it contains no Rust play.
+Returning from Rust play to Python still loses all post-backup Rust progress because
+native reverse export/merge is unavailable. No one-way production cutover or loss
+acceptance is inferred from the approved archive scope; R24 remains gated.
+
+Validation: `python3 tools/check.py` selected only `rust:lantern-host`; all three
+commands passed (formatting, host tests and all-target Clippy with warnings denied).
+The Markdown and JSON reports at `performance-results/20261020-002158/` were
+inspected. Commit: `feat: add explicit save copy archive and recovery tools`.
+
+Performance comparisons were not run: these are offline correctness/durability tools,
+not a performance investigation or runtime optimization. Integrated W6 remains R23.
 
 ## R20 — HTTP, accounts, and world lifecycle
 

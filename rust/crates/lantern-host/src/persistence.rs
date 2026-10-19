@@ -1,13 +1,14 @@
-//! Experimental private generation storage. No Python conversion or HTTP wiring.
+//! Experimental private generation storage. No playable Python import or HTTP wiring.
 //! Capture under one simulation owner; submit and wait outside that owner.
 mod snapshot;
 mod store;
+pub mod tools;
 mod worker;
 pub use snapshot::{
     RegistrySnapshot, Resources, RestoredModel, RestoredRegistry, RestoredWorld, TownState,
     WorldSnapshot,
 };
-pub use store::{Generation, Recovery, Store};
+pub use store::{Generation, GenerationInfo, Recovery, Store};
 pub use worker::{SaveService, SaveTicket};
 
 #[derive(Clone, Debug, PartialEq, Eq)]
