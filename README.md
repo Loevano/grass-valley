@@ -865,6 +865,11 @@ accounts and lossless unported payloads. Run `lantern-host inspect-copy --help`
 for the explicit read-only inspection command and capability report. Playable
 conversion remains unfinished; the Rust launcher does not discover normal saves
 or rewrite source copies.
+R19 adds an [experimental native generation-store library](docs/RUST_SAVES.md) with
+private whole-state snapshots, atomic registry/chunk publication, a background
+writer and tested restart/recovery. It creates only new separate marked Rust roots;
+copy conversion and recovery/rollback CLIs remain unfinished. The Python launch
+and its data are unchanged.
 The core has no external dependencies or I/O; it compiles and its test harness
 runs without a listener. The replay adapter supports only a transport smoke
 fixture; no gameplay rules or HTTP host are implemented. Start the playable game

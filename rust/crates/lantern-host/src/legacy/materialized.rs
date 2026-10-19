@@ -152,6 +152,14 @@ impl ImportedRegistry {
     }
 }
 impl PostOverlayTerrain<'_> {
+    pub(super) fn private_saved_records(&self) -> BTreeMap<ChunkKey, Vec<u8>> {
+        self.world
+            .chunks()
+            .iter()
+            .map(|c| (c.key(), c.private_bytes().to_vec()))
+            .collect()
+    }
+
     /// Whole registry source may contain credentials; never public output.
     pub fn private_source_bytes(&self) -> &[u8] {
         self.source
@@ -316,7 +324,12 @@ fn waters(node: &Node) -> Result<BTreeSet<Point>, BoundaryError> {
     }
     Ok(points)
 }
-fn validate(source: &[u8], key: ChunkKey, generator: u32, path: &str) -> Result<(), BoundaryError> {
+pub(super) fn validate(
+    source: &[u8],
+    key: ChunkKey,
+    generator: u32,
+    path: &str,
+) -> Result<(), BoundaryError> {
     let record = Node::parse(source, path)?;
     rows(&record, path)?;
     validate_resources(&record, key.x as i32 * 40, key.y as i32 * 40, path)?;

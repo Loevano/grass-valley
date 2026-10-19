@@ -4,11 +4,23 @@
 use alloc::vec::Vec;
 use sha2::{Digest, Sha512};
 
+#[derive(Clone)]
 pub struct PythonRandom {
     state: [u32; 624],
     index: usize,
 }
 impl PythonRandom {
+    /// Exact version-1 MT19937 continuation state. Host DTOs own versioning/privacy.
+    pub fn state(&self) -> (&[u32; 624], usize) {
+        (&self.state, self.index)
+    }
+    pub fn from_state(state: [u32; 624], index: usize) -> Option<Self> {
+        if index > 624 || state.iter().all(|word| *word == 0) {
+            return None;
+        }
+        Some(Self { state, index })
+    }
+
     /// Python integers seed from their absolute magnitude, without narrowing.
     pub fn from_integer(decimal: &str) -> Option<Self> {
         let digits = decimal.strip_prefix('-').unwrap_or(decimal);

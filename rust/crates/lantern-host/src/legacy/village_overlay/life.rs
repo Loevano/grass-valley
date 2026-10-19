@@ -133,6 +133,7 @@ impl Village {
 /// use lantern_host::legacy::VillageLife;
 /// fn leak(v: &VillageLife) { serde_json::to_string(v).unwrap(); }
 /// ```
+#[derive(Clone)]
 pub struct VillageLife {
     owner: WorldId,
     world: Node,

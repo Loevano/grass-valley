@@ -25,7 +25,7 @@ post-overlay water repair, private authoritative chunk lifecycle/resource renewa
 and exact Python integer/float clock arithmetic. See the [completion audit](#r07-slice-3civ-exact-clocks-and-completion-audit).
 Python remains the playable default. Rust's transport smoke and read-only copy
 inspection CLIs do not load playable gameplay. Platform libm compatibility remains
-an R23 release gate, real persistence remains R19, and public wire integration is later work.
+an R23 release gate. R19 slices 1–2 implement offline native durable generations; conversion and public/live host integration remain later work.
 **Initial plan revision:** `445ddddd675a87eb7adb50442b2dbf3c14ea6c6f`.
 **R01 audit revision:** `935db7b95885c101c62dfd6bf9e16f39b6a7a8fe`.
 **Scope:** replace the Python host first. Keep the browser playable during that
@@ -255,7 +255,7 @@ only after work is performed. Keep unfinished stages visible in the roadmap.
 | R16 | Farming and orchards | R15 | All three code slices implemented offline: fields/claims/passes, water rounds, harvest returns, orchards/restock, crop edits, linked relocation and validated owner reload; integrated legacy actor/save/host adapters and acceptance remain R19–23 |
 | R17 | Fishing, boats, animals, and horses | R16 | Slices 1–3 implemented offline: saved piers, land fishing, boat/crew voyages, species cargo, exploration boats, barn growth/keepers and manual butchery; slice 4 (horses/riding) remains |
 | R18 | Residents, villages, trade, and adventures | R17 | Slices 1–3 implemented offline: population, village routines/restocks, NPC roster/gifts/stories/tools/equipment, town trades and founder activities with owner reload; slice 4 and durable/live integration remain |
-| R19 | Durable Rust saves and recovery | R18 | Slice 1 implemented at existing offline model/construction boundary: immutable private snapshot export/versioned reload; `feat: add immutable Rust save snapshots` (this change); [scope and rollback limits](RUST_SAVES.md). Atomic aggregate generations and conversion/recovery tools remain slices 2–3 |
+| R19 | Durable Rust saves and recovery | R18 | Slices 1–2 implemented offline: immutable snapshots (`9217d66`), aggregate registry/chunk generations, background writer, flush/shutdown and fallback recovery; `feat: persist atomic Rust save generations` (this change); [scope and rollback limits](RUST_SAVES.md). Explicit copy conversion and recovery/rollback tools remain slice 3 |
 | R20 | HTTP, accounts, and world lifecycle | R19 | Not started |
 | R21 | Browser compatibility and playable Rust checkpoint | R20 | Not started |
 | R22 | Shared-destination routing | R21 | Not started |
@@ -4383,13 +4383,11 @@ incomplete output prefix, retry, supported legacy versions and future-version
 refusal. Paired construction cases now restore through the snapshot boundary.
 No filesystem writer or Python data was used. See [exact scope](RUST_SAVES.md).
 
-R19 remains in progress. Slice 2 owns complete aggregate snapshot assembly across
-registry/worlds, ledger/profession/boat/social owners, clocks/RNG, credentials and
-external chunks, plus crash-safe generation publication, flush/shutdown and recovery.
-Slice 3 owns explicit copy-based conversion and recovery/rollback tooling. Neither
-playable conversion nor reverse export is supported; rollback to untouched Python
-copies loses all later Rust progress. Experimental disk work must use a separate
-root. Integrated host/save contention remains R20–23.
+R19 remains in progress. Slice 2 below implements the native aggregate generation
+store; slice 3 still owns explicit copy-based conversion and recovery/rollback
+tooling. Neither playable conversion nor reverse export is supported; rollback to
+untouched Python copies loses all later Rust progress. Experimental disk work uses
+a separate marked root. Integrated host/save contention remains R20–23.
 
 Performance comparisons were not run: this is an offline ownership/schema behavior
 change without a runtime performance claim; slow-writer separation is tested with
@@ -4403,6 +4401,76 @@ suite passed 19 cases and construction passed 28. Markdown/JSON report
 performance `not_run`. `git diff --check` passed.
 
 Commit message: `feat: add immutable Rust save snapshots`.
+
+### R19 slice 2 — Atomic registry/chunk generations
+
+Implemented version-1 aggregate native registry, generation manifest and ledger
+DTOs. One detached copy captures every supplied active/inactive model or construction
+world, name/active selection, private credentials, optional exact provisioning
+archive, ledger inventory/cargo/caps/activity, worker progression, R14–R18 component
+owners, shared resource supplies, explicit clocks, named MT19937 continuation state,
+VillageLife and complete active/sleeping external chunk archives. Strict component
+reloads validate the complete native bundle before disk work. Population-owned
+workers cannot also have standalone progression ownership; construction restores
+one model authority. Source conversion/account merging remains slice 3.
+
+`ChunkLifecycle::capture_save` does not drain write intents or mutate live clocks,
+records, caches or imports. Flush runs on the detached copy; active records override
+sleeping archives, while derived inline aggregates and camera copies are excluded.
+Exact private clock lexemes/extensions remain preserved. SHA-256 uses the already
+locked sha2 0.10.9 dependency, now also direct in lantern-host; no package version
+was upgraded. PythonRandom exposes validated exact state without changing draws.
+
+The store creates only new explicit private roots and reopens only Rust-marked
+ones, refuses Python/unmarked roots and symlinked files, uses an OS writer lock,
+and writes self-contained numbered files plus checksummed manifest in a fresh
+pending directory. File syncs and directory sync precede atomic directory-rename
+publication and root sync. No committed generation is overwritten or removed.
+Recovery chooses the newest wholly valid committed generation, reports skipped
+ones, ignores pending work and errors when existing commits are all unusable.
+A post-publication/pre-acknowledgement failure may expose the complete new save;
+recovery must inspect it. This is not a main-JSON rename over mutable chunk files.
+
+The background service permits one queued request, returns Busy on overload, and
+exposes nonblocking completion polling. FIFO flush and shutdown drain accepted
+requests and report failures even for dropped tickets. Waiting/shutdown happen
+outside authority; shutdown requires the caller's final snapshot to be submitted
+first. Dropping the service deliberately does not block the owner. Final live host
+save-loop invocation remains R20–21, and integrated contention/soak remains R23.
+
+Evidence: 15 focused persistence tests cover aggregate schemas/ownership, private
+accounts/provision archives, all saved terrain generator versions 1–7, exact RNG
+continuation, missing/corrupt chunks, complete pending directories, root privacy,
+locks/symlinks, multiple worlds, queue saturation and flush/shutdown failures.
+Every write/sync/publication checkpoint is separately failure-injected and
+interrupted by child-process exit; registry/chunk stamps always come from one
+complete generation after reopen. New disk-close/reopen boat and loaded-hauler
+scenarios preserve fractional position, goods, practice and supplies, resume and
+unload exactly once. Construction progress/claims also survive disk reload, and
+terrain snapshot export preserves sleeping archives without touching authority or
+source files. Process exit tests do not claim physical power-loss qualification.
+
+Slice 3 remains: explicit source/destination conversion, complete supported source
+validation/account merging, recovery inspection/selection/cleanup and rollback tools.
+Reverse export is unsupported. Native restart loses changes after the selected
+snapshot revision; fallback loses progress after the older chosen generation.
+Returning to untouched Python backups loses all subsequent Rust play. See the
+[exact protocol and limitations](RUST_SAVES.md).
+
+Performance comparisons were not run: this slice implements durability/ownership
+behavior, without an optimization or host-performance claim. A deterministic
+blocked-file-writer test verifies authority separation; W6 remains R23.
+
+Validation: `python3 tools/check.py --list` selected only `rust:lantern-core` and
+`rust:lantern-host` (including their dependency edge). The completed affected run
+`python3 tools/check.py` passed all six commands: both locked offline package/test
+and doctest suites, formatting and all-target Clippy with warnings denied. The
+Markdown/JSON report `performance-results/20261020-000047/report.md` was inspected:
+overall `pass`, performance `not_run`; all new persistence, fractional restart and
+terrain snapshot cases passed. `git diff --check` passed. No user Python save or
+provisioning file was read or modified; all I/O tests used disposable synthetic roots.
+
+Commit message: `feat: persist atomic Rust save generations`.
 
 ## R20 — HTTP, accounts, and world lifecycle
 

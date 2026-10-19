@@ -29,7 +29,7 @@ pub use chunks::{
 pub use founder::PrivateFounderCopy;
 pub use founder_world::PrivateFounderWorldCopy;
 pub use landscapes::{HydratedLandscape, HydratedLandscapes};
-pub use lifecycle::{ChunkLifecycle, ChunkWriteIntent, PrivateChunkSnapshot};
+pub use lifecycle::{ChunkLifecycle, ChunkWriteIntent, PrivateChunkSnapshot, TerrainSaveSnapshot};
 pub use loaded::{
     ChunkReader, LoadedChunk, LoadedResource, LoadedStump, LoadedTile, MAX_LOADED_CHUNKS,
 };
@@ -538,4 +538,66 @@ fn read_inputs(source: &Path, provision: Option<&Path>) -> Result<InputCopies, B
         })
         .transpose()?;
     Ok((source, provision))
+}
+
+/// Private, complete terrain archive used inside a Rust committed generation.
+/// Exact payload/chunk bytes retain clock lexemes, NPC state and extensions.
+#[derive(Clone)]
+pub struct TerrainArchive {
+    payload: Vec<u8>,
+    records: std::collections::BTreeMap<ChunkKey, Vec<u8>>,
+}
+impl TerrainArchive {
+    pub fn decode(
+        payload: &[u8],
+        records: Vec<(ChunkKey, Vec<u8>)>,
+    ) -> Result<Self, BoundaryError> {
+        let node = json::Node::parse(payload, "$.terrain")?;
+        ordinary::versions(&node, "$.terrain")?;
+        if let Some(shared) = node.optional("shared_map", "$.terrain")? {
+            ordinary::versions(shared, "$.terrain.shared_map")?;
+        }
+        let metadata = chunks::metadata(&node, "$.terrain")?;
+        let mut seen = std::collections::BTreeMap::new();
+        for (key, bytes) in records {
+            let meta = metadata
+                .as_ref()
+                .ok_or_else(|| BoundaryError::invalid("$.terrain", "chunks in ordinary world"))?;
+            key.validate(meta, "$.terrain.chunks")?;
+            chunks::validate_record(
+                &bytes,
+                key,
+                meta,
+                "$.terrain.chunks",
+                &mut Vec::new(),
+                &mut Vec::new(),
+            )?;
+            materialized::validate(
+                &bytes,
+                key,
+                meta.report().generator_version,
+                "$.terrain.chunks",
+            )?;
+            if seen.insert(key, bytes).is_some() {
+                return Err(BoundaryError::invalid("$.terrain", "duplicate chunk"));
+            }
+        }
+        Ok(Self {
+            payload: payload.to_vec(),
+            records: seen,
+        })
+    }
+    pub fn private_world_bytes(&self) -> &[u8] {
+        &self.payload
+    }
+    pub fn records(&self) -> &std::collections::BTreeMap<ChunkKey, Vec<u8>> {
+        &self.records
+    }
+}
+
+/// Opaque provisioning archives are retained privately, never applied as native
+/// authentication records. Full import/merge remains the explicit conversion tool.
+pub(crate) fn validate_provision_archive(bytes: &[u8]) -> Result<(), BoundaryError> {
+    json::Node::parse(bytes, "$.provision")?.object("$.provision")?;
+    Ok(())
 }

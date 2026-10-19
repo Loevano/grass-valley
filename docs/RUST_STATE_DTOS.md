@@ -321,4 +321,18 @@ Snapshot types deliberately omit Debug/Serialize. Readers normalize supported mo
 v1–3/building v1–2 through existing validation. Construction embeds a typed model
 DTO instead of serializing nested JSON under the owner. Public DTOs are unchanged.
 [Scope, component exclusions and exact rollback limits](RUST_SAVES.md) distinguish
-this boundary from complete aggregate/durable saves, deferred to R19 slices 2–3.
+these individual snapshot types from the aggregate native store in slice 2 below;
+explicit source conversion remains R19 slice 3.
+
+
+R19 slice 2 adds strict private aggregate registry/generation/ledger v1 schemas and
+explicit named `python-mt19937-v1` continuation state. Model, construction, ledger,
+component owners, worker progression, shared resources, clocks, VillageLife and all
+active/sleeping chunk references commit together. Native accounts retain private
+hashes/salts/tokens; optional provisioning archives are exact private bytes, not
+implicitly applied authentication. Construction restores one model authority;
+population-owned progression cannot be duplicated in standalone workers. Chunk
+capture freezes authority and pending intents; detached flush strips derived
+inline aggregates before external generation writes. [Protocol and recovery](RUST_SAVES.md)
+keep this experimental native store separate from unimplemented Python conversion
+and live HTTP adapters. Public DTOs remain unchanged.

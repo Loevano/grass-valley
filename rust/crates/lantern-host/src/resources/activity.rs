@@ -20,6 +20,35 @@ pub struct Activity {
     buckets: VecDeque<Bucket>,
 }
 impl Activity {
+    pub(super) fn restore(seconds: f64, buckets: VecDeque<Bucket>) -> Result<Self, ResourceError> {
+        if !seconds.is_finite() || seconds < 0.0 {
+            return Err(ResourceError::Overflow);
+        }
+        let mut last = None;
+        for bucket in &buckets {
+            if !bucket.at.is_finite()
+                || bucket.at < 0.0
+                || bucket.at > seconds
+                || bucket.at <= seconds - 60.0
+                || last.is_some_and(|n| n >= bucket.at)
+            {
+                return Err(ResourceError::Overflow);
+            }
+            for (key, amount) in bucket.incoming.iter().chain(&bucket.outgoing) {
+                if key != "food" {
+                    ResourceKey::parse(key)?;
+                }
+                if !amount.is_finite() || *amount < 0.0 {
+                    return Err(ResourceError::Overflow);
+                }
+            }
+            last = Some(bucket.at);
+        }
+        let result = Self { seconds, buckets };
+        result.totals()?;
+        Ok(result)
+    }
+
     pub fn seconds(&self) -> f64 {
         self.seconds
     }

@@ -1192,3 +1192,90 @@ fn missing_water_releases_empty_voyage_without_losing_failed_catch_history() {
     assert_eq!(f.land.history(&a(1)).unwrap().last_batch, 1);
     assert_eq!(f.land.history(&a(1)).unwrap().attempts, 1);
 }
+
+#[test]
+fn durable_generation_restarts_fractional_boat_with_goods_practice_and_water_supply() {
+    use lantern_host::persistence::{
+        RegistrySnapshot, RestoredModel, Store as SaveStore, TownState, WorldSnapshot,
+    };
+    let mut f = Fixture::new(2);
+    f.offshore();
+    f.attempt(1, 1, 1);
+    f.boats.request_return(&f.town, &f.ledger, &b(1)).unwrap();
+    f.advance(3.2);
+    f.advance(0.2);
+    let before = f.town.actor(&a(1)).unwrap().state().position;
+    assert!(before.x.get().fract() != 0.);
+    let load = f.load();
+    assert!(load > 0.);
+    let world = ModelWorld::new(
+        owner().world,
+        TerrainSeed(0),
+        104,
+        vec![f.town.clone()],
+        PrivateCredentials::default(),
+    )
+    .unwrap();
+    let mut state = TownState::empty(f.ledger.clone());
+    state.boats = f.boats.clone();
+    state.fishers = f.land.clone();
+    state.workers = (1..=4)
+        .map(|n| (a(n), f.workers[n as usize - 1].clone()))
+        .collect();
+    let snapshot = RegistrySnapshot::capture(
+        Some(world.id()),
+        vec![WorldSnapshot::capture(&world, &[state]).with_resources(
+            &lantern_host::gathering::Trees::default(),
+            &f.water,
+            &lantern_host::processing::IronDeposits::default(),
+        )],
+    );
+    let root = std::env::temp_dir().join(format!("lantern-durable-boat-{}", std::process::id()));
+    let mut store = SaveStore::create(&root).unwrap();
+    store.commit(snapshot).unwrap();
+    drop(store);
+    drop(world);
+    let store = SaveStore::open(&root).unwrap();
+    let mut restored = store.recover().unwrap().registry.unwrap().worlds.remove(0);
+    drop(store);
+    std::fs::remove_dir_all(&root).unwrap();
+    let RestoredModel::Basic(world) = restored.model else {
+        panic!("basic model")
+    };
+    assert_eq!(world.towns()[0].buildings(), f.town.buildings());
+    assert_eq!(
+        world.towns()[0]
+            .actors()
+            .iter()
+            .map(|a| a.state())
+            .collect::<Vec<_>>(),
+        f.town
+            .actors()
+            .iter()
+            .map(|a| a.state())
+            .collect::<Vec<_>>()
+    );
+    let state = restored.towns.remove(0);
+    assert_eq!(state.ledger, f.ledger);
+    assert_eq!(restored.resources.water, f.water);
+    for n in 1..=4 {
+        assert_eq!(state.workers[&a(n)], f.workers[n as usize - 1]);
+    }
+    f.town = world.towns()[0].clone();
+    f.ledger = state.ledger;
+    f.boats = state.boats;
+    f.land = state.fishers;
+    f.water = restored.resources.water;
+    f.workers = (1..=4).map(|n| state.workers[&a(n)].clone()).collect();
+    assert_eq!(f.town.actor(&a(1)).unwrap().state().position, before);
+    close(f.load(), load);
+    for _ in 0..30 {
+        if matches!(f.advance(1.), BoatOutcome::Unloaded(_)) {
+            break;
+        }
+    }
+    close(f.ledger.free(&key("fish")).unwrap().get(), load);
+    close(f.load(), 0.);
+    f.advance(100.);
+    close(f.ledger.free(&key("fish")).unwrap().get(), load);
+}

@@ -24,6 +24,7 @@ pub mod livestock;
 pub mod logistics;
 pub mod navigation;
 pub mod orchards;
+pub mod persistence;
 pub mod population;
 pub mod processing;
 pub mod progression;

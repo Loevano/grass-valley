@@ -240,7 +240,7 @@ pub(super) fn metadata(payload: &Node, path: &str) -> Result<Option<ChunkMetadat
     }))
 }
 
-fn validate_record(
+pub(super) fn validate_record(
     bytes: &[u8],
     key: ChunkKey,
     metadata: &ChunkMetadata,

@@ -817,3 +817,83 @@ fn full_supply_destination_waits_before_the_empty_return_leg() {
     assert!(matches!(f.tick(1, 0., false), Outcome::Completed(_)));
     assert_eq!(f.hauler.practice_value("hauling"), 0.08);
 }
+
+#[test]
+fn durable_generation_restarts_loaded_fractional_hauler_without_crediting_goods_twice() {
+    use lantern_host::{
+        persistence::{
+            RegistrySnapshot, RestoredModel, Store as SaveStore, TownState, WorldSnapshot,
+        },
+        state::{ModelWorld, PrivateCredentials},
+    };
+    let mut f = Fixture::new(false);
+    f.start(1, HaulOperation::Collect);
+    f.route(1, Some(vec![p(8.)]));
+    assert!(matches!(f.tick(1, 10., false), Outcome::PickedUp(_)));
+    f.route(1, Some(vec![p(2.)]));
+    f.tick(1, 0.375, false);
+    let position = f.town.actor(&a(1)).unwrap().state().position;
+    assert!(position.x.get().fract() != 0.);
+    let world = ModelWorld::new(
+        owner().world,
+        TerrainSeed(0),
+        102,
+        vec![f.town.clone()],
+        PrivateCredentials::default(),
+    )
+    .unwrap();
+    let mut state = TownState::empty(f.ledger.clone());
+    state.trips = f.trips.clone();
+    state.workers = BTreeMap::from([(a(1), f.hauler.clone()), (a(2), f.producer_worker.clone())]);
+    let snapshot = RegistrySnapshot::capture(
+        Some(world.id()),
+        vec![WorldSnapshot::capture(&world, &[state])],
+    );
+    let root = std::env::temp_dir().join(format!("lantern-durable-hauler-{}", std::process::id()));
+    let mut store = SaveStore::create(&root).unwrap();
+    store.commit(snapshot).unwrap();
+    drop(store);
+    drop(world);
+    let store = SaveStore::open(&root).unwrap();
+    let mut restored = store.recover().unwrap().registry.unwrap().worlds.remove(0);
+    drop(store);
+    std::fs::remove_dir_all(&root).unwrap();
+    let RestoredModel::Basic(world) = restored.model else {
+        panic!("basic model")
+    };
+    let state = restored.towns.remove(0);
+    assert_eq!(state.ledger, f.ledger);
+    assert_eq!(world.towns()[0].buildings(), f.town.buildings());
+    assert_eq!(
+        world.towns()[0]
+            .actors()
+            .iter()
+            .map(|a| a.state())
+            .collect::<Vec<_>>(),
+        f.town
+            .actors()
+            .iter()
+            .map(|a| a.state())
+            .collect::<Vec<_>>()
+    );
+    f.town = world.towns()[0].clone();
+    f.ledger = state.ledger;
+    f.trips = state.trips;
+    f.hauler = state.workers[&a(1)].clone();
+    f.producer_worker = state.workers[&a(2)].clone();
+    assert_eq!(f.town.actor(&a(1)).unwrap().state().position, position);
+    assert_eq!(f.ledger.held()[&a(1)].goods, stock(&[("wood", 20.)]));
+    f.route(1, Some(vec![p(2.)]));
+    assert!(matches!(f.tick(1, 10., false), Outcome::Completed(_)));
+    assert_eq!(
+        f.ledger
+            .store(&b(2))
+            .unwrap()
+            .stored
+            .quantity(&k("wood"))
+            .get(),
+        20.
+    );
+    assert_eq!(f.tick(1, 99., false), Outcome::Idle);
+    f.conserved();
+}

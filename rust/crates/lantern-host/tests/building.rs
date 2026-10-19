@@ -1775,3 +1775,43 @@ fn detached_construction_snapshot_can_write_after_owner_is_destroyed() {
     unknown["version"] = json!(999);
     assert!(BuildingSaveSnapshot::decode(&serde_json::to_vec(&unknown).unwrap()).is_err());
 }
+
+#[test]
+fn durable_generation_restores_one_construction_owner_with_fractional_work_and_claims() {
+    use lantern_host::{
+        persistence::{
+            RegistrySnapshot, RestoredModel, Store as SaveStore, TownState, WorldSnapshot,
+        },
+        resources::Ledger,
+    };
+    let mut world = construction_world(&construction_vectors()[0]);
+    world
+        .advance_construction(&owner(), Seconds::new(0.375).unwrap(), route)
+        .unwrap();
+    let expected = encode_building_save(&world).unwrap();
+    let ledger = Ledger::new(owner(), Quantity::new(0.).unwrap(), vec![], vec![]).unwrap();
+    let snapshot = RegistrySnapshot::capture(
+        Some(world.model().id()),
+        vec![WorldSnapshot::capture_building(&world, &[TownState::empty(ledger)]).unwrap()],
+    );
+    let root = std::env::temp_dir().join(format!(
+        "lantern-durable-construction-{}",
+        std::process::id()
+    ));
+    let mut store = SaveStore::create(&root).unwrap();
+    store.commit(snapshot).unwrap();
+    drop(store);
+    drop(world);
+    let store = SaveStore::open(&root).unwrap();
+    let restored = store.recover().unwrap().registry.unwrap().worlds.remove(0);
+    drop(store);
+    std::fs::remove_dir_all(root).unwrap();
+    let RestoredModel::Building(mut world) = restored.model else {
+        panic!("construction owner")
+    };
+    assert_eq!(encode_building_save(&world).unwrap(), expected);
+    world
+        .advance_construction(&owner(), Seconds::new(30.).unwrap(), route)
+        .unwrap();
+    assert_ne!(encode_building_save(&world).unwrap(), expected);
+}

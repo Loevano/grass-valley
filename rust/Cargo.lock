@@ -139,6 +139,7 @@ dependencies = [
  "pathfinding",
  "serde",
  "serde_json",
+ "sha2",
 ]
 
 [[package]]

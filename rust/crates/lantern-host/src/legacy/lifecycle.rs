@@ -28,6 +28,34 @@ impl ChunkWriteIntent {
         &self.bytes
     }
 }
+/// Complete detached persistence copy, including sleeping imported archives.
+/// Active records override archive records; camera/cache copies are never saved.
+pub struct TerrainSaveSnapshot {
+    owner: WorldId,
+    state: Owned,
+    originals: BTreeMap<ChunkKey, Vec<u8>>,
+}
+impl TerrainSaveSnapshot {
+    pub fn world(&self) -> &WorldId {
+        &self.owner
+    }
+    pub fn encode(&self) -> Result<super::TerrainArchive, BoundaryError> {
+        let mut state = self.state.clone();
+        flush(&mut state)?;
+        let mut records = self.originals.clone();
+        records.extend(state.archive);
+        records.extend(state.active);
+        // These are derived active-window aggregates. The committed chunk files
+        // own their contents; retaining inline mirrors would be ambiguous on load.
+        if let Node::Object(shared) = landscape(&mut state.world)? {
+            shared.retain(|(name, _)| {
+                !["terrain", "map_resources", "tree_stumps"].contains(&name.as_str())
+            });
+        }
+        super::TerrainArchive::decode(&bytes(&state.world), records.into_iter().collect())
+    }
+}
+
 /// Independent derived private copy; public wire filtering/versioning is not implied.
 pub struct PrivateChunkSnapshot {
     records: BTreeMap<ChunkKey, Vec<u8>>,
@@ -151,6 +179,13 @@ impl<'a> ChunkLifecycle<'a> {
             )?;
         }
         Ok(result)
+    }
+    pub fn capture_save(&self) -> TerrainSaveSnapshot {
+        TerrainSaveSnapshot {
+            owner: self.owner.clone(),
+            state: self.state.clone(),
+            originals: self.terrain.private_saved_records(),
+        }
     }
     pub fn private_world_bytes(&self) -> Vec<u8> {
         bytes(&self.state.world)

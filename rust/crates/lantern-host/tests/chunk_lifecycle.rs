@@ -691,3 +691,37 @@ fn prepared_village_migrations_feed_ambient_owner_without_mutating_chunk_copies(
     assert_eq!(copy.disk(), disk);
     assert_eq!(imported.private_source_bytes().unwrap(), copy.source);
 }
+
+#[test]
+fn detached_save_freezes_active_records_and_keeps_every_sleeping_archive_without_acknowledging_io()
+{
+    let cases = oracle();
+    let case = &cases.cases[0];
+    let copy = Copy::new(case);
+    let disk = copy.disk();
+    let registry = copy.import();
+    let mut owner = ChunkLifecycle::prepare(&registry, &copy.owner, &[], &[]).unwrap();
+    owner.activate().unwrap();
+    owner.set_clock(b"1.2500e-1").unwrap();
+    owner.take_write_intents();
+    let before = state(&owner, true);
+    let snapshot = owner.capture_save();
+    assert_eq!(state(&owner, true), before);
+    let archive = std::thread::spawn(move || snapshot.encode().unwrap())
+        .join()
+        .unwrap();
+    assert_eq!(state(&owner, true), before);
+    assert!(owner.take_write_intents().is_empty());
+    for chunk in registry.worlds()[0].chunks() {
+        if !owner.active_keys().contains(&chunk.key()) {
+            assert_eq!(&archive.records()[&chunk.key()], chunk.private_bytes());
+        }
+    }
+    for key in owner.active_keys() {
+        assert!(archive.records().contains_key(&key));
+    }
+    assert!(String::from_utf8_lossy(archive.private_world_bytes()).contains("1.2500e-1"));
+    owner.set_clock(b"2.500e-1").unwrap();
+    assert!(String::from_utf8_lossy(archive.private_world_bytes()).contains("1.2500e-1"));
+    assert_eq!(copy.disk(), disk);
+}
