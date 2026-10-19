@@ -36,8 +36,8 @@ pub use loaded::{
 pub use materialized::{PostOverlayTerrain, ResidentChunkCopy, TerrainRecord};
 pub use spatial::PrivateSpatialCopy;
 pub use village_overlay::{
-    ActiveVillageChunk, LegacySwampOverlay, OrdinaryVillageMetadata, OrdinaryVillageOverlay,
-    SwampCachePlan, SwampOverlay, SwampVillageMetadata, VillageLife,
+    ActiveVillageChunk, LegacySwampOverlay, NpcRoster, OrdinaryVillageMetadata,
+    OrdinaryVillageOverlay, SwampCachePlan, SwampOverlay, SwampVillageMetadata, VillageLife,
 };
 
 use crate::{BoundaryError, ErrorKind, state::PrivateCredentials};
@@ -45,6 +45,40 @@ use json::Node;
 use lantern_core::ids::{ActorId, BuildingId, IdAllocator, Owner, TownId, WorldId};
 use serde::Serialize;
 use std::{collections::BTreeSet, fs, io::ErrorKind as IoErrorKind, path::Path};
+
+/// Social DTOs use typed JSON values for unknown visit metadata. Reject duplicate
+/// keys and integers too wide for that representation before any lossy conversion.
+pub(crate) fn validate_social_snapshot(source: &[u8]) -> Result<(), BoundaryError> {
+    fn check(node: &Node) -> Result<(), BoundaryError> {
+        match node {
+            Node::Object(fields) => {
+                for (_, v) in fields {
+                    check(v)?;
+                }
+            }
+            Node::Array(values) => {
+                for v in values {
+                    check(v)?;
+                }
+            }
+            Node::Scalar(raw) => {
+                let s = raw.get();
+                if matches!(s.as_bytes()[0], b'-' | b'0'..=b'9')
+                    && !s.contains(['.', 'e', 'E'])
+                    && s.parse::<u64>().is_err()
+                    && s.parse::<i64>().is_err()
+                {
+                    return Err(BoundaryError::invalid(
+                        "$.social_snapshot",
+                        "unsupported wide integer",
+                    ));
+                }
+            }
+        }
+        Ok(())
+    }
+    check(&Node::parse(source, "$.social_snapshot")?)
+}
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Serialize)]
 #[serde(rename_all = "snake_case")]

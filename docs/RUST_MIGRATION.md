@@ -13,9 +13,10 @@ recipe/workshop actors. R16 slices 1–3 implement shared offline field cycles, 
 harvest returns, orchards, crop edits, linked relocation and owner reload. R17 slices 1–3
 implement saved piers, land/boat fishing, shared crew voyages, species cargo and
 exploration boats, named barn growth, keeper rounds and manual butchery offline.
-R18 slices 1–2 implement offline population/housing/meals/assignments and local
-village routines, visitor pauses, saved visit identities and separate restocks.
-Remaining horse/NPC/adventure actors and playable integration remain in R17–R21;
+R18 slices 1–3 implement offline population/housing/meals/assignments, local
+village routines and restocks, NPC roster migration/gifts/stories/tools/equipment,
+town trade offers and founder gathering with owner-checked reload.
+Remaining horse/adventure actors and playable integration remain in R17–R21;
 complete W1–W6 acceptance remains R23.
 Integrated W2/W3 movement/accounting acceptance remains open. R08 spatial
 rules and founder movement is complete as an experimental private-copy foundation. R07 includes saved-first terrain versions 1–7,
@@ -253,7 +254,7 @@ only after work is performed. Keep unfinished stages visible in the roadmap.
 | R15 | Gathering and processing professions | R14 | All three slices implemented at the experimental offline boundary: woodcutters/claims, all 13 processor families/32 recipes, ordered workshop requests and recovery; durable/live integration and integrated acceptance remain R19–R23 |
 | R16 | Farming and orchards | R15 | All three code slices implemented offline: fields/claims/passes, water rounds, harvest returns, orchards/restock, crop edits, linked relocation and validated owner reload; integrated legacy actor/save/host adapters and acceptance remain R19–23 |
 | R17 | Fishing, boats, animals, and horses | R16 | Slices 1–3 implemented offline: saved piers, land fishing, boat/crew voyages, species cargo, exploration boats, barn growth/keepers and manual butchery; slice 4 (horses/riding) remains |
-| R18 | Residents, villages, trade, and adventures | R17 | Slices 1–2 implemented offline: population/housing/meals/assignments and local village routines, visitor pauses, anchor identities/restocks and owner reload; slices 3–4 and durable/live integration remain |
+| R18 | Residents, villages, trade, and adventures | R17 | Slices 1–3 implemented offline: population, village routines/restocks, NPC roster/gifts/stories/tools/equipment, town trades and founder activities with owner reload; slice 4 and durable/live integration remain |
 | R19 | Durable Rust saves and recovery | R18 | Not started |
 | R20 | HTTP, accounts, and world lifecycle | R19 | Not started |
 | R21 | Browser compatibility and playable Rust checkpoint | R20 | Not started |
@@ -4143,7 +4144,7 @@ unassigns without deleting. Reassignment/departure cancels R14 trips, returns he
 cargo to its source/hall, orphans completed output and invalidates the model task
 while retaining position. Departed valid worker tools enter a persisted receipt
 queue; owner-checked draining is exact-once. The founder tool inventory must consume
-that queue within the future aggregate transaction (R18 slice 3/R20).
+that queue within the future aggregate transaction (offline drain added in slice 3; live invocation R20).
 
 Explicit imported resident facts preserve named people, skills and saved empty
 talent maps; only absent talents get original resident-order defaults. Old unnamed
@@ -4244,7 +4245,7 @@ All fields compare exactly after numeric type normalization except routine x/y
 phase, job, facing, flags and visit progress are exact. Raw private lexeme checks
 independently cover quantities, unrelated adventure time and saved extensions.
 
-R18 remains in progress. Slice 3 also owns the non-village `ensure_npcs` roster
+Historical slice-2 boundary (superseded by slice 3 below): slice 3 owns the non-village `ensure_npcs` roster
 (version 3), placement (version 1), canopy-safe relocation and visit-key migration;
 R07's ordinary/swamp village migrations do not cover that separate local roster.
 Slice 3 owns `interact_local`, `claim_local_gift`,
@@ -4271,6 +4272,73 @@ lifecycle seam test. Reports `performance-results/20261019-092139/report.md` and
 `--check` and `git diff --check` passed. Performance was `not_run` in both reports.
 
 Commit message: `feat: port Rust local village routines and restocks`.
+
+### R18 slice 3 — NPC gifts, stories, trading and founder activities
+
+Implemented at the experimental offline admitted-facts boundary in
+`lantern-host::social`, `social::trading`, `social::activity` and the private-copy
+`legacy::NpcRoster`. Python remains the playable default. This does not hydrate an
+ordinary save into a complete playable aggregate or expose HTTP/browser commands.
+
+- Social commands preserve per-town visit keys, current routine proximity, once-only
+  gifts, all three local stories and their supplies/coins/keepsakes, unique surveyed
+  rocks and completed-road requirements. Local barter cooldowns advance only through
+  explicit economic intervals. Clothing purchases/sales, slots and unsafe swamp
+  unequip checks retain Python prices and access rules. Worker tool purchase,
+  give/take/transfer and crafted-stock fallback are atomic with the personal inventory,
+  population and ledger; returned departure tools drain once across reload.
+- Town offers preserve IDs/targets/terms without reserving goods. Creation/cancellation
+  enforce market/hall/owner/limit rules; acceptance rechecks both outgoing stocks and
+  incoming enabled capacity after spending, then commits both ledgers and completion
+  counts together. Imported goods and rewards do not become production or market sales.
+- Founder chop/gather/fish/stop arbitration, immediate stone/chest collection, practice,
+  clothing/boat bonuses, catch misses, connected water consumption and terrain-version
+  stump rules use explicit shared land facts. Monotonic economic batch IDs reject replay;
+  reload produces no work. R07 owns renewal. Adventure membership is supplied as an
+  authoritative gate until slice 4 implements its owner.
+- Non-village roster v3/placement v1 migration uses Python-compatible typed seed RNG,
+  biome order, canopy/stump exclusion, preserved names, saved founder/obstacle avoidance,
+  nearest relocation and visit-key moves. Source and changed town remain private copies;
+  raw extension values retain their lexemes. The returned move plan can be applied to
+  each shared town's private visit map without losing existing story progress.
+- Versioned social/trade/land snapshots check world/town ownership, required nullable
+  activity fields, finite values, duplicate JSON keys and unsupported state. Unknown
+  visit metadata preserves semantic values within i64/u64 and finite float bounds;
+  wider integers reject explicitly rather than silently losing precision.
+
+Evidence: nine Rust integration tests compare 71 actual Python cases (26 social,
+14 trade, 19 activity and 12 roster), including 207 social/trade/activity command or
+batch steps and repeated roster migrations. Catalogs and fixtures regenerate from
+Python and `--check` detects drift. Scenarios cover multiple founders/towns, absent
+trade targets, personal gifts, moved routine positions, story/reward replay, capacity
+and stale stock, failed-transaction rollback, reconnect, foreign ownership/worlds,
+shared chest depletion, departure receipts, disconnected water, imported stone caps,
+unsafe equipment removal and malformed/unsupported saved state. Quantities/practice
+compare within absolute `1e-9`; identities, flags, supplies, offers and progression
+compare exactly where represented by the source contract.
+
+R18 remains in progress. Slice 4 owns all quarry/lantern commands, expedition
+membership/arbitration, hazards, separate adventure clock semantics and one-time
+rewards, plus the complete R01 delegated-command audit. R17 horses/riding remain an
+explicit separate blocker. R19–R21 must hydrate and persist social, population,
+ledger, R07 land/supplies and R17 boat facts in the same generation, apply shared
+roster visit moves to every town, and keep supply/claim/index mutation under one
+owner. Aggregate command/index/auth/error/reply/catalog adapters, secure offer ID
+creation, production/restock ordering and live departure-receipt invocation remain
+cutover gates. No dual-authority playable host is introduced.
+
+Performance comparisons were not run: this is a behavior port without a performance
+investigation, optimization or performance claim.
+
+Validation: `python3 tools/check.py --list` selected only `rust:lantern-host`.
+The affected runner passed all three commands: locked offline host package/doc
+tests (including all nine social tests), formatting and all-target Clippy with
+warnings denied. The Markdown/JSON report at
+`performance-results/20261019-230456/report.md` was inspected; performance was
+`not_run`. Python fixture regeneration `--check` and `git diff --check` passed.
+This completed run supersedes the package check interrupted at the requested pause.
+
+Commit message: `feat: port Rust NPC stories trading and founder activities`.
 
 ## R19 — Durable Rust saves
 

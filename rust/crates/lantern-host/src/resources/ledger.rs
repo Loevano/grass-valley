@@ -97,6 +97,17 @@ pub struct Ledger {
     activity: Activity,
 }
 impl Ledger {
+    pub fn owner(&self) -> &Owner {
+        &self.owner
+    }
+    /// External rewards and exchanges do not count as production or market sales.
+    pub fn credit_coins(&mut self, amount: Quantity) -> Result<(), Error> {
+        self.apply(|l| {
+            l.coins = Quantity::new(l.coins.get() + amount.get()).map_err(|_| Error::Overflow)?;
+            l.activity
+                .record(&ResourceKey::parse("coins")?, amount, Direction::In)
+        })
+    }
     pub fn new(
         owner: Owner,
         coins: Quantity,
@@ -419,6 +430,11 @@ impl Ledger {
             self.caps.remove(&key);
         }
         Ok(())
+    }
+    /// Explicit saved-rule admission. Python honors saved stone caps even though
+    /// its configure_rule command does not expose stone in PRODUCTION_GOODS.
+    pub fn restore_caps(&mut self, caps: BTreeMap<ResourceKey, Quantity>) {
+        self.caps = caps;
     }
     pub fn production_room(&self, key: &ResourceKey) -> Result<f64, Error> {
         let Some(cap) = self.caps.get(key) else {

@@ -83,7 +83,7 @@ impl Waters {
     pub fn tiles(&self) -> BTreeSet<Tile> {
         self.water.iter().map(|w| w.tile).collect()
     }
-    fn component(&self, source: Tile) -> BTreeSet<Tile> {
+    pub(crate) fn component(&self, source: Tile) -> BTreeSet<Tile> {
         let all = self.tiles();
         if !all.contains(&source) {
             return BTreeSet::new();
@@ -99,7 +99,7 @@ impl Waters {
         }
         seen
     }
-    fn take(&mut self, source: Tile, amount: f64) -> f64 {
+    pub(crate) fn take(&mut self, source: Tile, amount: f64) -> f64 {
         let members = self.component(source);
         let available = self
             .water

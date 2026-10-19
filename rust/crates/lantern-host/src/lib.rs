@@ -29,6 +29,7 @@ pub mod processing;
 pub mod progression;
 pub mod references;
 pub mod resources;
+pub mod social;
 pub mod state;
 
 #[derive(Clone, Debug, PartialEq, Eq)]

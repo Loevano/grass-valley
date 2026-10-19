@@ -14,6 +14,8 @@ mod swamp;
 pub use swamp::SwampOverlay;
 mod life;
 pub use life::{ActiveVillageChunk, VillageLife};
+mod roster;
+pub use roster::NpcRoster;
 
 const PATH: &str = "$.ordinary_village_overlay";
 const BASE: [(&str, i32, i32); 4] = [
