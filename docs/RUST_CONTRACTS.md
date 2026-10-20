@@ -32,8 +32,9 @@ and boundary cases rather than assume file-level references prove all contracts.
 ## HTTP coverage matrix
 
 The runtime boundary is `server/server.py:Handler`, not the development profiler.
-R20 slices 1a–b implement static assets, no-world GET forms and guarded native
-uninhabited terrain snapshots. Populated-world and mutation coverage remains open. JSON replies carry `Content-Type: application/json`,
+R20 slice 1 implements static assets and guarded read-only snapshots for prepared
+shared landscapes and basic native towns. Progressed-town/independent-layout and
+mutation coverage remains open. JSON replies carry `Content-Type: application/json`,
 `Cache-Control: no-store`, and `Content-Length`. Successful mutation is HTTP 200.
 POST bodies must be JSON objects of 1–4096 bytes. Caught ValueError/TypeError maps
 to HTTP 400 with `{error: message}`; unknown POST routes return 404. Do not infer
@@ -42,10 +43,10 @@ mutation order. Invalid requests must never gain another town's authority.
 
 | Method / route | Input, authorization, and observable result | Existing evidence | Rust status / stage |
 | --- | --- | --- | --- |
-| GET `/api/world` | Public active-world snapshot; query `world_id`, `chunks`, `known`, `resources`; mismatched world ID clears known caches. Includes towns, shared map, quests, clock, catalogs and readiness. JSON frozen under lock; transmission outside lock. Invalid chunk queries: 400. | `tests/test_http.py`, `tests/test_chunk_world.py`, `tests/test_shared_world.py` | native uninhabited chunked snapshots/payloads/versions/cache invalidation paired at 480/1920 / R20 slice 1b; populated/ordinary/NPC/adventure assembly remains |
-| GET `/api/players` | Public `{world_id,sampled_at,players}`; current founder state by town, no ownership tokens. Exact raw path match. | `tests/test_http.py`, `tests/test_remote_players.js`, `tests/test_player_polling.js` | no-world and active uninhabited ID/empty players paired / R20 slices 1a–b; active founders remain |
-| GET `/api/lanterns` | Public `{world_id,quest}`; quest nullable, hazards and playing flag derived. URL path match allows query. | `tests/test_lanterns.py`, `tests/test_lanterns.js` | null no-world/active uninhabited forms paired / R20 slices 1a–b; adventure snapshots remain |
-| GET `/api/worlds` | Public `{active_world,can_manage,worlds:[{id,name,sandbox,town_count}]}`. Exact raw path match. | `tests/test_http.py`, `tests/test_world_creation.js` | native uninhabited registry names/modes/counts and peer-Host-Origin metadata paired / R20 slices 1a–b; populated registry admission remains |
+| GET `/api/world` | Public active-world snapshot; query `world_id`, `chunks`, `known`, `resources`; mismatched world ID clears known caches. Includes towns, shared map, quests, clock, catalogs and readiness. JSON frozen under lock; transmission outside lock. Invalid chunk queries: 400. | `tests/test_http.py`, `tests/test_chunk_world.py`, `tests/test_shared_world.py` | prepared shared ordinary/chunked frames, native basic towns/residents/founders, readiness, NPC/village routines and saved adventure views paired; progressed-town and independent-layout adapters remain / R20 slice 1 |
+| GET `/api/players` | Public `{world_id,sampled_at,players}`; current founder state by town, no ownership tokens. Exact raw path match. | `tests/test_http.py`, `tests/test_remote_players.js`, `tests/test_player_polling.js` | no-world and native basic-town founder poses paired; richer founder activity/equipment remains / R20 slice 1 |
+| GET `/api/lanterns` | Public `{world_id,quest}`; quest nullable, hazards and playing flag derived. URL path match allows query. | `tests/test_lanterns.py`, `tests/test_lanterns.js` | null and checked saved courier members/messages/phase hazards/playing/completion paired; adventure ticking/actions/rewards remain unported / R20 slice 1 |
+| GET `/api/worlds` | Public `{active_world,can_manage,worlds:[{id,name,sandbox,town_count}]}`. Exact raw path match. | `tests/test_http.py`, `tests/test_world_creation.js` | native registry names/modes/basic-town counts and peer-Host-Origin metadata paired; all inactive worlds require coverage / R20 slice 1 |
 | POST `/api/worlds/create` | Host only; trimmed name 1–24 chars, boolean sandbox; random ID, fresh explorable world, activate and save. | `tests/test_http.py`, `tests/test_world_creation.js` | unported / R20 |
 | POST `/api/worlds/open` | Host only; existing `world_id`; flush old chunks, switch state/tokens, save active selection. | `tests/test_http.py`, `tests/test_chunk_world.py` | unported / R20 |
 | POST `/api/worlds/delete` | Host only; existing ID and exact name `confirmation`; delete only selected world and its chunks, clear active selection if necessary, save registry. | `tests/test_http.py`, `tests/test_chunk_world.py` | unported / R20 |
@@ -53,7 +54,7 @@ mutation order. Invalid requests must never gain another town's authority.
 | POST `/api/login` | Active matching `world_id` or 409; `player_name,pin`, optional `town_name`, optional Authorization token for legacy claim. Returns `needs_town` or `{token,town_id}`; save after completed login. | `tests/test_http.py`, `tests/test_player_login.js` | unported / R20 |
 | POST `/api/join` | Legacy public town creation; active world match required; `name` string conversion, trim/truncate to 24; four-town limit. Returns private token and town ID; save. Retain even if current UI prefers login. | `tests/test_http.py`, `tests/test_shared_world.py` | unported / R20 |
 | POST `/api/command` | Active matching `world_id` or 409, raw Authorization token resolves owning town or 401; action rows below. Returns `{ok:true,...result}`. Saves after success except chunked `walk` (next tick persists it). | `tests/test_http.py`, `tests/test_command_response.js`, `tests/test_command_routing.py` | unported / R20–21 |
-| GET static / fallback | Serve `web/` including `/`, HTML/JS/CSS and `/favicon.ico` from `icons/`; unknown GET delegates to SimpleHTTPRequestHandler. Its HEAD/static MIME/cache/path behavior must be characterized before replacement. Other unsupported methods inherit HTTP-server behavior. | `tests/test_http.py`, `tests/test_http_bootstrap.py` | static bytes/MIME/HEAD/304/ranges/error fallback paired / R20 slice 1a; directory listing/fallback edge cases remain |
+| GET static / fallback | Serve `web/` including `/`, HTML/JS/CSS and `/favicon.ico` from `icons/`; unknown GET delegates to SimpleHTTPRequestHandler. Its HEAD/static MIME/cache/path behavior must be characterized before replacement. Other unsupported methods inherit HTTP-server behavior. | `tests/test_http.py`, `tests/test_http_bootstrap.py` | static bytes/MIME/HEAD/304/ranges/errors, indexes, UTF-8 directory listings, redirects, path normalization and conditional precedence paired / R20 slice 1 |
 
 Host-only means **all** of: connection peer is loopback, Host hostname is
 `localhost` or a loopback IP, and Origin is absent or exactly `http://` plus Host.

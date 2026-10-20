@@ -1,6 +1,6 @@
 //! Experimental R20 read-only HTTP boundary with explicit native coverage gates.
 //!
-//! Admitted native copies are read-only, uninhabited chunked landscapes. In particular,
+//! Admitted native copies have checked read-only landscape/town presentations. In particular,
 //! an offline model observation or preserved legacy archive is NOT a browser DTO.
 //! Serializers own detached values; neither serialization nor network backpressure
 //! holds an authoritative owner lock. Active-world adapters remain coverage gated.
@@ -14,6 +14,7 @@ use axum::{
 use serde::Serialize;
 use serde_json::{Value, json};
 mod read;
+mod static_assets;
 use crate::legacy::http_snapshot::PublicFrame;
 use read::ReadError;
 pub use read::ReadRegistry;
@@ -32,7 +33,7 @@ use std::{
     time::Instant,
 };
 use tokio::sync::Semaphore;
-use tower_http::services::{ServeDir, ServeFile};
+use tower_http::services::ServeFile;
 
 pub const UNSUPPORTED: &str =
     "Experimental Rust HTTP lacks coverage for this state or operation. Use the Python host.";
@@ -91,8 +92,17 @@ pub(crate) fn catalogs() -> &'static Value {
 async fn dispatch(
     State(state): State<Boundary>,
     ConnectInfo(peer): ConnectInfo<SocketAddr>,
-    request: Request,
+    mut request: Request,
 ) -> Response {
+    // BaseHTTPRequestHandler collapses an initial // before route dispatch.
+    if let Some(raw) = request
+        .uri()
+        .path_and_query()
+        .filter(|p| p.as_str().starts_with("//"))
+        && let Ok(uri) = format!("/{}", raw.as_str().trim_start_matches('/')).parse()
+    {
+        *request.uri_mut() = uri;
+    }
     let path = request.uri().path();
     let raw = request
         .uri()
@@ -126,15 +136,19 @@ async fn dispatch(
                 })
             }
             "/api/lanterns" => {
-                let active = state.registry.active().map(str::to_owned);
-                Box::new(move || Ok(Reply::Json(json!({"world_id": active, "quest": null}))))
+                let registry = state.registry.clone();
+                Box::new(move || {
+                    Ok(Reply::Json(
+                        json!({"world_id": registry.active(), "quest": registry.lanterns()}),
+                    ))
+                })
             }
             "/api/players" if raw == path => {
                 let sampled_at = state.started.elapsed().as_secs_f64();
-                let active = state.registry.active().map(str::to_owned);
+                let registry = state.registry.clone();
                 Box::new(move || {
                     Ok(Reply::Json(
-                        json!({"world_id": active, "sampled_at": sampled_at, "players": {}}),
+                        json!({"world_id": registry.active(), "sampled_at": sampled_at, "players": registry.players()}),
                     ))
                 })
             }
@@ -218,35 +232,8 @@ fn static_error(status: StatusCode, message: &str, explain: &str, head: bool) ->
         .into_response()
 }
 
-async fn static_response(state: Boundary, mut request: Request) -> Response {
-    let head = request.method() == Method::HEAD;
-    // Python SimpleHTTPRequestHandler ignores byte ranges.
-    request.headers_mut().remove(header::RANGE);
-    request.headers_mut().remove(header::IF_RANGE);
-    let result = if request.uri().path() == "/favicon.ico" {
-        ServeFile::new(state.favicon).try_call(request).await
-    } else {
-        ServeDir::new(state.web).try_call(request).await
-    };
-    match result {
-        Ok(response) if response.status() == StatusCode::NOT_FOUND => static_error(
-            StatusCode::NOT_FOUND,
-            "File not found",
-            "Nothing matches the given URI",
-            head,
-        ),
-        Ok(mut response) => {
-            response.headers_mut().remove(header::ACCEPT_RANGES);
-            if response.status() == StatusCode::TEMPORARY_REDIRECT {
-                *response.status_mut() = StatusCode::MOVED_PERMANENTLY;
-            }
-            response.map(Body::new)
-        }
-        Err(_) => error(
-            StatusCode::INTERNAL_SERVER_ERROR,
-            "Unable to read static asset.",
-        ),
-    }
+async fn static_response(state: Boundary, request: Request) -> Response {
+    static_assets::respond(state, request).await
 }
 
 /// Peer, Host and Origin are all required to agree. Forwarded headers never

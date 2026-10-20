@@ -1,14 +1,17 @@
 //! Disposable protocol fixture builder, never a playable-save conversion tool.
 //! Reads only synthetic test input on stdin and creates a NEW explicit native root.
 use lantern_core::{
-    ids::{Owner, TownId, WorldId},
-    model::Town,
-    units::{Quantity, TerrainSeed},
+    ids::{IdAllocator, Owner, TownId, WorldId},
+    model::{ActorState, Building, Cargo, ConstructionState, Task, Town},
+    units::{Position, Practice, Quantity, TerrainSeed, Tile},
 };
 use lantern_host::{
-    legacy::{ChunkKey, TerrainArchive},
+    building::{BuildingWorld, Landscape, Progression, Rules, Site},
+    legacy::{ChunkKey, TerrainArchive, VillageLife},
     persistence::{RegistrySnapshot, Store, TownState, WorldSnapshot},
-    resources::Ledger,
+    population::{History, Population, Resident},
+    progression::Worker,
+    resources::{Ledger, ResourceKey, Stock, StoragePolicy, Store as ResourceStore},
     state::{ModelWorld, PrivateCredentials},
 };
 use serde::Deserialize;
@@ -32,6 +35,14 @@ struct World {
     name: String,
     world: Box<RawValue>,
     records: BTreeMap<String, Box<RawValue>>,
+    #[serde(default)]
+    native_towns: bool,
+    #[serde(default)]
+    native_source: Option<Box<RawValue>>,
+    #[serde(default)]
+    native_work: bool,
+    #[serde(default)]
+    native_village: Option<Box<RawValue>>,
 }
 #[derive(Deserialize)]
 struct Ids {
@@ -81,14 +92,197 @@ fn main() {
             })
             .collect();
         let terrain = TerrainArchive::decode(w.world.get().as_bytes(), records).unwrap();
-        snapshots.push(
+        let snapshot = if w.native_towns {
+            populated(
+                model.id(),
+                w.native_source.as_ref().unwrap_or(&w.world).get(),
+                w.native_work,
+            )
+        } else {
             WorldSnapshot::capture(&model, &states)
-                .with_name(&w.name)
-                .with_archive(&terrain),
-        );
+        };
+        let snapshot = if let Some(source) = w.native_village {
+            snapshot.with_village(
+                &VillageLife::restore(model.id().clone(), source.get().as_bytes()).unwrap(),
+            )
+        } else {
+            snapshot
+        };
+        snapshots.push(snapshot.with_name(&w.name).with_archive(&terrain));
     }
     Store::create(&root)
         .unwrap()
         .commit(RegistrySnapshot::capture(Some(&active), snapshots))
         .unwrap();
+}
+
+fn q(value: f64) -> Quantity {
+    Quantity::new(value).unwrap()
+}
+fn tile(value: &serde_json::Value) -> Tile {
+    Tile {
+        x: value["x"].as_i64().unwrap() as i32,
+        y: value["y"].as_i64().unwrap() as i32,
+    }
+}
+fn populated(id: &WorldId, text: &str, work: bool) -> WorldSnapshot {
+    let world: serde_json::Value = serde_json::from_str(text).unwrap();
+    let catalog: serde_json::Value =
+        serde_json::from_str(include_str!("../src/resources/catalog.json")).unwrap();
+    let mut allocator = IdAllocator::new(id.clone());
+    let mut towns = Vec::new();
+    let mut states = Vec::new();
+    let mut all_rules = BTreeMap::new();
+    for (key, source) in world["towns"].as_object().unwrap() {
+        let owner = Owner {
+            world: id.clone(),
+            town: TownId::new(key).unwrap(),
+        };
+        let mut buildings = Vec::new();
+        let mut sites = BTreeMap::new();
+        let mut stores = Vec::new();
+        for source_building in source["buildings"].as_array().unwrap() {
+            let building_id = allocator.allocate(&owner).unwrap();
+            let kind = source_building["kind"].as_str().unwrap();
+            let footprint = source_building["footprint"].as_array().unwrap();
+            sites.insert(
+                building_id.clone(),
+                Site::new(
+                    kind,
+                    (
+                        footprint[0].as_u64().unwrap() as u32,
+                        footprint[1].as_u64().unwrap() as u32,
+                    ),
+                ),
+            );
+            buildings.push(Building {
+                id: building_id.clone(),
+                location: tile(source_building),
+                construction: ConstructionState::Complete,
+            });
+            let mut store = ResourceStore::new(building_id, StoragePolicy::new(kind));
+            let mut goods = BTreeMap::new();
+            if let Some(input) = source_building["stored_goods"].as_object() {
+                for (key, value) in input {
+                    goods.insert(key.clone(), value.as_f64().unwrap());
+                }
+            } else if kind == "hall" {
+                goods.insert("wood".into(), source["wood"].as_f64().unwrap_or(0.));
+            }
+            store.stored = Stock::from_entries(
+                goods
+                    .into_iter()
+                    .map(|(k, v)| (ResourceKey::parse(&k).unwrap(), q(v))),
+            )
+            .unwrap();
+            if kind == "hall" {
+                store.provisions = q(source["food"].as_f64().unwrap_or(0.));
+            }
+            stores.push(store);
+        }
+        let mut actors = Vec::new();
+        let mut residents = Vec::new();
+        for v in source["villagers"].as_array().unwrap() {
+            let actor = allocator.allocate(&owner).unwrap();
+            actors.push(ActorState::new(
+                actor.clone(),
+                Position::new(v["x"].as_f64().unwrap_or(0.), v["y"].as_f64().unwrap_or(0.))
+                    .unwrap(),
+                Cargo::default(),
+            ));
+            let mut worker = Worker::new(v["job"].as_str().unwrap()).unwrap();
+            let jobs = catalog["rules"]["jobs"].as_array().unwrap();
+            for job in jobs {
+                let job = job.as_str().unwrap();
+                if let Some(n) = v.get(job) {
+                    worker
+                        .set_practice(job, Practice::new(n.as_f64().unwrap()).unwrap())
+                        .unwrap();
+                }
+            }
+            if let Some(talents) = v["talents"].as_object() {
+                worker
+                    .set_talents(
+                        talents
+                            .iter()
+                            .map(|(k, v)| (k.clone(), v.as_f64().unwrap()))
+                            .collect(),
+                    )
+                    .unwrap();
+            }
+            worker.sandbox = v["sandbox"].as_bool().unwrap_or(false);
+            residents.push(Resident {
+                actor,
+                name: v["name"].as_str().unwrap().into(),
+                worker,
+                assignment: None,
+            });
+        }
+        if work && let Some(actor) = actors.first_mut() {
+            actor.task = Task::Move {
+                destination: Position::new(20., 20.).unwrap(),
+            };
+        }
+        let town = Town::restore(owner.clone(), buildings, actors).unwrap();
+        let ledger = Ledger::new(
+            owner.clone(),
+            q(source["coins"].as_f64().unwrap_or(0.)),
+            stores,
+            vec![],
+        )
+        .unwrap();
+        let mut state = TownState::empty(ledger);
+        let sandbox = source["sandbox"].as_bool().unwrap_or(false);
+        state.population =
+            Some(Population::restore(&town, sandbox, residents, History::default()).unwrap());
+        all_rules.insert(
+            owner.town,
+            Rules {
+                level: source["level"].as_u64().unwrap() as u8,
+                sandbox,
+                origin: tile(&source["town_origin"]),
+                player: Position::new(
+                    source["player"]["x"].as_f64().unwrap(),
+                    source["player"]["y"].as_f64().unwrap(),
+                )
+                .unwrap(),
+                coins: q(source["coins"].as_f64().unwrap()),
+                sites,
+                roads: vec![],
+                progression: Progression::default(),
+            },
+        );
+        towns.push(town);
+        states.push(state);
+    }
+    let credentials = PrivateCredentials {
+        tokens: BTreeMap::from([(
+            "SYNTHETIC_SECRET_TOKEN".into(),
+            TownId::new(world["towns"].as_object().unwrap().keys().next().unwrap()).unwrap(),
+        )]),
+        ..PrivateCredentials::default()
+    };
+    let model = ModelWorld::new(
+        id.clone(),
+        TerrainSeed(1),
+        allocator.high_water(),
+        towns,
+        credentials,
+    )
+    .unwrap();
+    let size = world["shared_map"]["map_size"].as_u64().unwrap() as u32;
+    let building = BuildingWorld::restore(
+        model,
+        all_rules,
+        Landscape {
+            size,
+            unavailable: Default::default(),
+            resources: vec![],
+            locals: vec![],
+            local_positions: vec![],
+        },
+        true,
+    )
+    .unwrap();
+    WorldSnapshot::capture_building(&building, &states).unwrap()
 }

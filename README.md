@@ -900,7 +900,7 @@ cargo run -p lantern-host --locked --offline -- http-bootstrap --experimental-em
 Use `--asset-root DIRECTORY` for an explicit root with `web/` and `icons/favicon.ico`.
 It requires loopback, never reads saves and returns a coverage error for every POST.
 It cannot play, login, create/open/delete/regenerate worlds or advance simulation.
-See [remaining R20 slice 1 work](docs/RUST_MIGRATION.md#r20-slice-1a--no-world-http-bootstrap-slice-1-remains-open).
+See [remaining R20 slice 1 work](docs/RUST_MIGRATION.md#r20-slice-1-continuation--checked-town-and-landscape-presentation).
 Run `python3 tools/check.py --tests tests/test_http_bootstrap.py` from the repository
 root for the shared disposable-root protocol tests (Cargo cache and local sockets
 required). Select `test_http_bootstrap.PythonBootstrap` or
@@ -912,13 +912,22 @@ R20 also provides a read-only endpoint adapter for **explicit native synthetic c
 cargo run -p lantern-host --locked --offline -- http-read-copy --experimental --source /tmp/explicit-native-copy --bind 127.0.0.1:8001
 ```
 
-The source must already exist as a valid R19 generation root. Currently only
-uninhabited chunked maps without NPCs/villages/independent resource owners are admitted;
-all worlds must pass coverage checks. Populated worlds, ordinary maps, unsupported
-fields and damaged/unsupported latest generations refuse startup. The source stays
-locked and byte-for-byte unchanged; there is no simulation, login, command dispatch
-or save worker. Reads include active/camera chunks, compatible resource versions and
-world-ID cache invalidation. Python remains the playable host.
+The source must already exist as a valid R19 generation root. Coverage now includes
+prepared shared ordinary maps and chunked maps, plus towns whose construction,
+population and ledger owners match their checked presentation. Initial resident
+rosters, founder positions, completed basic buildings, hall readiness, NPC/village
+routines and saved quarry/courier views are supported. Active production, transport,
+construction, advanced inventories/history, richer founder state and independent
+legacy town maps still refuse admission. Unknown nested fields, inconsistent owners
+and damaged/unsupported latest generations also refuse startup, including inactive
+worlds. The source stays locked and byte-for-byte unchanged; there is no simulation,
+login, command dispatch or save worker. Chunk reads retain compatible resource
+versions and world-ID cache invalidation. Python remains the playable host.
+
+`python3 tools/check.py --tests tests/test_http_populated.py tests/test_http_bootstrap.py`
+runs paired town/ordinary/adventure/static checks on disposable roots, including
+native-owner mismatches and populated slow-transfer cases. Static fallback includes
+directory listings, both HTML index names, normalized paths and conditional headers.
 
 `python3 tools/check.py --tests tests/test_http_snapshots.py` runs paired current/legacy
 terrain protocol checks and constructs its own disposable native roots. The Cargo

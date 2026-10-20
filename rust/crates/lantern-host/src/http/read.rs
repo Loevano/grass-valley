@@ -26,10 +26,7 @@ impl ReadRegistry {
     pub fn from_native(registry: RestoredRegistry) -> Result<Self, BoundaryError> {
         let mut worlds = Vec::new();
         for world in registry.worlds {
-            if !world.model.model().towns().is_empty()
-                || !world.towns.is_empty()
-                || world.village.is_some()
-                || !world.resources.trees.trees().is_empty()
+            if !world.resources.trees.trees().is_empty()
                 || !world.resources.water.water().is_empty()
                 || !world.resources.iron.veins().is_empty()
             {
@@ -42,7 +39,7 @@ impl ReadRegistry {
             let archive = world.terrain.as_ref().ok_or_else(|| {
                 BoundaryError::invalid("$.http_read", "missing HTTP terrain coverage")
             })?;
-            let terrain = TerrainView::new(id, archive)?;
+            let terrain = TerrainView::new(&world, archive)?;
             worlds.push(ReadWorld {
                 id: id.as_str().into(),
                 name: world.name,
@@ -67,7 +64,19 @@ impl ReadRegistry {
     pub(crate) fn worlds(&self, can_manage: bool) -> Value {
         json!({"active_world": self.active, "can_manage":can_manage,
             "worlds":self.worlds.iter().map(|world| json!({"id":world.id,"name":world.name,
-                "sandbox":world.terrain.sandbox(),"town_count":0})).collect::<Vec<_>>()})
+                "sandbox":world.terrain.sandbox(),"town_count":world.terrain.town_count()})).collect::<Vec<_>>()})
+    }
+    pub(crate) fn players(&self) -> Value {
+        self.worlds
+            .iter()
+            .find(|w| Some(w.id.as_str()) == self.active())
+            .map_or(json!({}), |w| w.terrain.players())
+    }
+    pub(crate) fn lanterns(&self) -> Value {
+        self.worlds
+            .iter()
+            .find(|w| Some(w.id.as_str()) == self.active())
+            .map_or(Value::Null, |w| w.terrain.lanterns())
     }
     pub(crate) fn frame(
         &self,

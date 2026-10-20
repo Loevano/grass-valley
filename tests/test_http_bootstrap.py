@@ -2,8 +2,10 @@
 
 This deliberately does not certify active-world/account/command coverage.
 """
+import html
 import http.client
 import json
+import mimetypes
 from pathlib import Path
 import select
 import shutil
@@ -26,6 +28,7 @@ ROOT = Path(__file__).resolve().parents[1]
 # Literal cross-language dependencies are consumed by tools/test_selection.py.
 HTTP_SOURCES = ('rust/crates/lantern-host/src/http.rs',
                 'rust/crates/lantern-host/src/http_bootstrap.rs',
+                'rust/crates/lantern-host/src/http/static_assets.rs',
                 'rust/crates/lantern-host/src/main.rs')
 
 
@@ -38,6 +41,18 @@ def assets(directory):
     # body leaves an actual transfer pending rather than merely delaying reads.
     with (root / 'web/slow.bin').open('wb') as stream:
         stream.truncate(16 * 1024 * 1024)
+    for name in ('probe.svg', 'probe.json', 'probe.wasm', 'probe.woff', 'probe.mjs', 'probe.UNKNOWN_EXTENSION'):
+        (root / 'web' / name).write_bytes(b'Synthetic MIME probe')
+    listing = root / 'web' / 'listing'
+    listing.mkdir()
+    for name in ('z.txt', 'A & <tag>.txt', 'Café 🌿.txt'):
+        (listing / name).write_text(name)
+    (listing / 'folder').mkdir()
+    (listing / 'link').symlink_to('z.txt')
+    (listing / 'directory-link').symlink_to('folder', target_is_directory=True)
+    index = root / 'web' / 'indexed'
+    index.mkdir()
+    (index / 'index.htm').write_bytes(b'<p>index.htm fallback</p>')
     return root
 
 
@@ -129,9 +144,56 @@ class BootstrapProtocol:
                 self.assertEqual(empty, b'')
                 self.assertEqual(head['content-type'], headers['content-type'])
                 self.assertEqual(head['content-length'], headers['content-length'])
-                self.assertEqual(self.call(path, headers={'If-Modified-Since': headers['last-modified']})[0], 304)
+                status, cached, empty = self.call(path, headers={'If-Modified-Since': headers['last-modified']})
+                self.assertEqual((status, empty), (304, b''))
+                for name in ('content-type', 'content-length', 'last-modified'):
+                    self.assertNotIn(name, cached)
         self.assertEqual(self.call('/api/world', 'HEAD')[0], 404)
+        self.assertEqual(self.call('//api/world')[0], 200)
+        self.assertEqual(self.call('//listing?x=1')[1]['location'], '/listing/?x=1')
         self.assertEqual(self.call('/%2e%2e/AGENTS.md')[0], 404)
+
+    def test_directory_indexes_listings_normalized_paths_and_cache_precedence(self):
+        for method in ('GET', 'HEAD'):
+            status, headers, body = self.call('/listing?keep=1', method)
+            self.assertEqual((status, headers['location'], headers['content-length'], body),
+                             (301, '/listing/?keep=1', '0', b''))
+        status, headers, body = self.call('/indexed/')
+        self.assertEqual((status, body), (200, b'<p>index.htm fallback</p>'))
+        self.assertEqual(headers['content-type'], 'text/html')
+        for path in ('/listing/../style.css', '/%2e%2e/style.css', '/listing/%2e%2e/style.css'):
+            self.assertEqual(self.call(path)[2], (ROOT / 'web/style.css').read_bytes())
+        self.assertEqual(self.call('/style.css/')[0], 404)
+        self.assertEqual(self.call('/style.css%2f')[0], 200)
+        path = '/listing/?q=%3Ctest%3E&keep=yes'
+        status, headers, body = self.call(path)
+        self.assertEqual(status, 200)
+        self.assertEqual(headers['content-type'], 'text/html; charset=utf-8')
+        title = 'Directory listing for /listing/?q=&lt;test&gt;&amp;keep=yes'
+        lines = ['<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">',
+                 '<html>\n<head>', '<meta http-equiv="Content-Type" content="text/html; charset=utf-8">',
+                 '<title>' + title + '</title>\n</head>', '<body>\n<h1>' + title + '</h1>', '<hr>\n<ul>']
+        entries = [('A & <tag>.txt', 'A & <tag>.txt'), ('Café 🌿.txt', 'Café 🌿.txt'),
+                   ('directory-link/', 'directory-link@'), ('folder/', 'folder/'), ('link', 'link@'), ('z.txt', 'z.txt')]
+        lines.extend('<li><a href="' + quote(link) + '">' + html.escape(display, quote=False) + '</a></li>'
+                     for link, display in entries)
+        lines.append('</ul>\n<hr>\n</body>\n</html>\n')
+        self.assertEqual(body, '\n'.join(lines).encode())
+        self.assertEqual(int(headers['content-length']), len(body))
+        status, head, empty = self.call(path, 'HEAD')
+        self.assertEqual((status, empty, head['content-length']), (200, b'', headers['content-length']))
+        modified = self.call('/style.css')[1]['last-modified']
+        for conditions in ({'If-Modified-Since': modified, 'If-None-Match': 'anything'},
+                           {'If-Match': 'anything'}, {'If-Unmodified-Since': 'Thu, 01 Jan 1970 00:00:00 GMT'}):
+            self.assertEqual(self.call('/style.css', headers=conditions)[0], 200)
+
+    def test_static_mime_types_match_the_existing_host(self):
+        for name in ('app.js', 'style.css', 'probe.svg', 'probe.json', 'probe.wasm',
+                     'probe.woff', 'probe.mjs', 'probe.UNKNOWN_EXTENSION', 'favicon.ico'):
+            with self.subTest(name=name):
+                status, headers, _ = self.call('/' + name)
+                self.assertEqual(status, 200)
+                self.assertEqual(headers['content-type'], mimetypes.guess_type(name)[0] or 'application/octet-stream')
 
     def test_unsupported_method_matches_static_server_error(self):
         status, headers, body = self.call('/api/world', 'PATCH')

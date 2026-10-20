@@ -14,6 +14,8 @@ use serde::Serialize;
 use serde_json::value::RawValue;
 use std::collections::BTreeSet;
 
+mod metadata;
+
 const PATH: &str = "$.http_terrain";
 fn invalid(reason: &'static str) -> BoundaryError {
     BoundaryError::invalid(PATH, reason)
@@ -52,16 +54,49 @@ pub(crate) struct TerrainView {
     sandbox: bool,
 }
 impl TerrainView {
-    /// This initial active-world adapter admits uninhabited maps only. Town,
-    /// founder, NPC and adventure owner assembly is not inferred from archives.
-    pub fn new(world: &WorldId, archive: &TerrainArchive) -> Result<Self, BoundaryError> {
-        let payload = Node::parse(archive.private_world_bytes(), PATH)?;
+    /// Admit a frozen shared landscape with an explicit public schema. Populated
+    /// presentation must agree with native construction/population/ledger owners;
+    /// feature state without a checked adapter refuses admission.
+    pub fn new(
+        native: &crate::persistence::RestoredWorld,
+        archive: &TerrainArchive,
+    ) -> Result<Self, BoundaryError> {
+        let world = native.model.model().id();
+        let mut payload = Node::parse(archive.private_world_bytes(), PATH)?;
+        if let Some(village) = &native.village {
+            let mut live = Node::parse(&village.private_world_bytes(), PATH)?;
+            check_world(&live)?;
+            let original_map = payload.required("shared_map", PATH)?.clone();
+            let live_map = live.required("shared_map", PATH)?.clone();
+            let mut merged_map = original_map.clone();
+            let mut unchanged_map = live_map.clone();
+            for key in ["npcs", "villages"] {
+                let original = original_map.required(key, PATH)?.clone();
+                set(&mut merged_map, key, live_map.required(key, PATH)?.clone());
+                set(&mut unchanged_map, key, original);
+            }
+            set(&mut live, "shared_map", unchanged_map);
+            if raw(&live) != raw(&payload) {
+                return Err(invalid("village owner has unprojected state"));
+            }
+            set(&mut payload, "shared_map", merged_map);
+        }
+        metadata::towns(native, &payload)?;
+        // Validate saved routine semantics through the existing read-only owner;
+        // its opaque extensions still require the separate public allowlist.
+        super::VillageLife::restore(world.clone(), &raw(&payload))?;
         check_world(&payload)?;
+        let chunked = super::chunks::metadata(&payload, PATH)?.is_some();
+        check_map(payload.required("shared_map", PATH)?, chunked)?;
+        // Even current rosters repair two historical clothing dialogues on GET.
+        let roster =
+            super::NpcRoster::materialize(&raw(payload.required("shared_map", PATH)?), &[], &[])?;
+        let map = Node::parse(roster.private_town_bytes(), PATH)?;
+        set(&mut payload, "shared_map", map);
         let source = format!(
             "{{\"worlds\":{{{}:{{\"name\":\"read view\",\"world\":{},\"tokens\":{{}}}}}},\"active_world\":{}}}",
             serde_json::to_string(world.as_str()).unwrap(),
-            std::str::from_utf8(archive.private_world_bytes())
-                .map_err(|_| invalid("world encoding"))?,
+            std::str::from_utf8(&raw(&payload)).map_err(|_| invalid("world encoding"))?,
             serde_json::to_string(world.as_str()).unwrap()
         );
         // Both archive records and registry ownership were validated by native
@@ -72,19 +107,40 @@ impl TerrainView {
             .iter()
             .map(|(k, v)| ImportedChunk::from_validated_archive(*k, v.clone()))
             .collect();
-        let chunked = imported.worlds[0].chunk_metadata().is_some();
         let base = if chunked {
             let mut owner = ChunkLifecycle::prepare(&imported, world, &[], &[])?;
             owner.activate()?;
+            for (key, _) in payload.required("towns", PATH)?.object(PATH)? {
+                let scene = owner.founder_scene(key)?;
+                if !scene.walkable(scene.state()?.position)? {
+                    return Err(invalid("founder repair requires missing coverage"));
+                }
+            }
             owner.private_world_bytes()
         } else {
+            for (key, _) in payload.required("towns", PATH)?.object(PATH)? {
+                let scene = super::PrivateFounderWorldCopy::decode(&raw(&payload), key)?;
+                if !scene.walkable(scene.state()?.position)? {
+                    return Err(invalid("founder repair requires missing coverage"));
+                }
+            }
             raw(&payload)
         };
         let base = Node::parse(&base, PATH)?;
         check_world(&base)?;
+        metadata::towns(native, &base)?;
         let map = base.required("shared_map", PATH)?;
         check_map(map, chunked)?;
         let size = map.required("map_size", PATH)?.unsigned(PATH)? as u32;
+        // The frozen view has a complete public schema, including owner overlays.
+        for npc in map.required("npcs", PATH)?.array(PATH)? {
+            for axis in ["x", "y"] {
+                let point = npc.required(axis, PATH)?.tile(PATH)?;
+                if point < 0 || point as u32 >= size {
+                    return Err(invalid("NPC outside world"));
+                }
+            }
+        }
         let sandbox = base
             .optional("sandbox", PATH)?
             .map(|n| n.boolean(PATH))
@@ -103,6 +159,39 @@ impl TerrainView {
             size,
             sandbox,
         })
+    }
+    pub fn town_count(&self) -> usize {
+        self.base
+            .required("towns", PATH)
+            .unwrap()
+            .object(PATH)
+            .unwrap()
+            .len()
+    }
+    pub fn players(&self) -> serde_json::Value {
+        let entries = self
+            .base
+            .required("towns", PATH)
+            .unwrap()
+            .object(PATH)
+            .unwrap();
+        let players = Node::Object(
+            entries
+                .iter()
+                .filter_map(|(key, town)| {
+                    town.optional("player", PATH)
+                        .unwrap()
+                        .map(|p| (key.clone(), p.clone()))
+                })
+                .collect(),
+        );
+        serde_json::from_slice(&raw(&players)).unwrap()
+    }
+    pub fn lanterns(&self) -> serde_json::Value {
+        serde_json::from_slice(&raw(
+            &metadata::lantern_snapshot(&self.base).expect("admitted lantern snapshot")
+        ))
+        .unwrap()
     }
     pub fn sandbox(&self) -> bool {
         self.sandbox
@@ -125,6 +214,7 @@ impl TerrainView {
         sampled_at: f64,
     ) -> Result<PublicFrame, BoundaryError> {
         let mut world = self.base.clone();
+        let ready = metadata::hall_ready(&world)?;
         if self.chunked {
             let keys: Vec<_> = query.chunks.iter().map(|k| key_from_text(k)).collect();
             let mut owner = ChunkLifecycle::prepare(&self.imported, &self.world, &[], &[])?;
@@ -176,7 +266,7 @@ impl TerrainView {
             "simulation_clock",
             scalar(serde_json::json!({"tick_seconds":3,"next_tick_in":3})),
         );
-        set(&mut world, "hall_ready", scalar(serde_json::json!({})));
+        set(&mut world, "hall_ready", ready);
         for key in ["hall_upgrades", "local_stories", "quarry_catalog"] {
             set(&mut world, key, scalar(&crate::http::catalogs()[key]));
         }
@@ -201,17 +291,15 @@ fn key_from_text(text: &str) -> ChunkKey {
 fn key_text(key: ChunkKey) -> String {
     format!("{},{}", key.x, key.y)
 }
-fn empty_array(node: &Node) -> Result<(), BoundaryError> {
-    if node.array(PATH)?.is_empty() {
-        Ok(())
-    } else {
-        Err(invalid("missing populated metadata coverage"))
-    }
-}
 fn check_world(world: &Node) -> Result<(), BoundaryError> {
     for (key, value) in world.object(PATH)? {
         match key.as_str() {
-            "towns" if value.object(PATH)?.is_empty() => {}
+            "towns" => {
+                value.object(PATH)?;
+            }
+            "lanterns" | "quarry" => {
+                metadata::adventure(value, key == "lanterns", world.required("towns", PATH)?)?
+            }
             "shared_map" => {}
             "sandbox" => {
                 value.boolean(PATH)?;
@@ -223,9 +311,6 @@ fn check_world(world: &Node) -> Result<(), BoundaryError> {
             }
             _ => return Err(invalid("missing world field coverage")),
         }
-    }
-    if !world.required("towns", PATH)?.object(PATH)?.is_empty() {
-        return Err(invalid("missing town coverage"));
     }
     let map = world.required("shared_map", PATH)?;
     map.object(PATH)?;
@@ -258,9 +343,27 @@ fn check_point(point: &Node) -> Result<(), BoundaryError> {
 fn check_map(map: &Node, chunked: bool) -> Result<(), BoundaryError> {
     for (key, value) in map.object(PATH)? {
         match key.as_str() {
-            "npcs" => empty_array(value)?,
-            "villages" => empty_array(value)?,
-            "forage_halls" => empty_array(value)?,
+            "npcs" => {
+                for npc in value.array(PATH)? {
+                    metadata::npc(npc)?;
+                }
+            }
+            "villages" => {
+                for village in value.array(PATH)? {
+                    metadata::village(village)?;
+                }
+            }
+            "forage_halls" => {
+                for point in value.array(PATH)? {
+                    let pair = point.array(PATH)?;
+                    if pair.len() != 2 {
+                        return Err(invalid("forage hall pair"));
+                    }
+                    for n in pair {
+                        n.tile(PATH)?;
+                    }
+                }
+            }
             "terrain_seed" => {
                 if value.string(PATH).is_err() {
                     value.unsigned(PATH)?;
@@ -285,16 +388,37 @@ fn check_map(map: &Node, chunked: bool) -> Result<(), BoundaryError> {
             "chunk_clock" => {
                 super::clock::Clock::parse(value, PATH)?;
             }
-            "terrain" | "map_resources" | "tree_stumps" if chunked => {
+            "terrain" | "map_resources" | "tree_stumps" => {
                 value.array(PATH)?;
             }
             _ => return Err(invalid("missing landscape field coverage")),
         }
     }
     if !chunked {
-        return Err(invalid(
-            "ordinary active-world HTTP coverage is not yet implemented",
-        ));
+        let size = map.required("map_size", PATH)?.unsigned(PATH)?;
+        if size == 0 || size > 1920 {
+            return Err(invalid("ordinary map bounds"));
+        }
+        let rows = map.required("terrain", PATH)?.array(PATH)?;
+        if rows.len() as u64 != size {
+            return Err(invalid("ordinary terrain height"));
+        }
+        for row in rows {
+            let row = row.string(PATH)?;
+            if row.len() as u64 != size || !row.bytes().all(|c| b"gfmsrbdivpwc".contains(&c)) {
+                return Err(invalid("ordinary terrain row"));
+            }
+        }
+        for field in ["map_resources", "tree_stumps"] {
+            for item in map.required(field, PATH)?.array(PATH)? {
+                check_resource_in(item, field == "tree_stumps", (0, 0), size as i32)?;
+            }
+        }
+        for (key, version) in [("industry_version", 2), ("mineral_version", 1)] {
+            if map.required(key, PATH)?.unsigned(PATH)? != version {
+                return Err(invalid("ordinary landscape migration coverage"));
+            }
+        }
     }
     // Never infer that an unversioned save has completed unsupported migrations.
     for (field, version) in [
@@ -307,7 +431,9 @@ fn check_map(map: &Node, chunked: bool) -> Result<(), BoundaryError> {
         }
     }
     map.required("npcs", PATH)?;
-    map.required("villages", PATH)?;
+    if chunked {
+        map.required("villages", PATH)?;
+    }
     Ok(())
 }
 fn project_record(bytes: &[u8], key: ChunkKey) -> Result<(Node, Node), BoundaryError> {
@@ -370,6 +496,14 @@ fn project_record(bytes: &[u8], key: ChunkKey) -> Result<(Node, Node), BoundaryE
     ))
 }
 fn check_resource(item: &Node, stump: bool, key: ChunkKey) -> Result<(), BoundaryError> {
+    check_resource_in(item, stump, (key.x as i32 * 40, key.y as i32 * 40), 40)
+}
+fn check_resource_in(
+    item: &Node,
+    stump: bool,
+    origin: (i32, i32),
+    size: i32,
+) -> Result<(), BoundaryError> {
     let kind = item.required("kind", PATH)?.string(PATH)?;
     if (stump && kind != "tree")
         || ![
@@ -390,9 +524,9 @@ fn check_resource(item: &Node, stump: bool, key: ChunkKey) -> Result<(), Boundar
     }
     for axis in ["x", "y"] {
         let value = item.required(axis, PATH)?.tile(PATH)?;
-        let origin = if axis == "x" { key.x } else { key.y } as i32 * 40;
-        if !(origin..origin + 40).contains(&value) {
-            return Err(invalid("resource outside chunk"));
+        let origin = if axis == "x" { origin.0 } else { origin.1 };
+        if !(origin..origin + size).contains(&value) {
+            return Err(invalid("resource outside landscape window"));
         }
     }
     for (field, value) in item.object(PATH)? {

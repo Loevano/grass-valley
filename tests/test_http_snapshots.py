@@ -26,6 +26,7 @@ RUST_SOURCES = ('rust/crates/lantern-host/src/http.rs',
                 'rust/crates/lantern-host/src/http/read.rs',
                 'rust/crates/lantern-host/src/http_bootstrap.rs',
                 'rust/crates/lantern-host/src/legacy/http_snapshot.rs',
+                'rust/crates/lantern-host/src/legacy/http_snapshot/metadata.rs',
                 'rust/crates/lantern-host/examples/http_fixture.rs')
 
 
@@ -81,8 +82,16 @@ def reference(config, query):
             versions = server.parse_versions(query.get('resources', ''))
             if query.get('world_id', config['active']) != config['active']:
                 known, versions = set(), {}
-            snapshot = dict(server.export_world(world), shared_map=world['_chunks'].snapshot(keys, known, versions))
-    return dict(snapshot, world_id=entry['id'], name=entry['name'], hall_ready={},
+            for town in world['towns'].values():
+                server.ensure_resources(town)
+                server.ensure_animal_names(town)
+                server.ensure_player(server.walking_map(world, town))
+            snapshot = server.export_world(world)
+            if world.get('_chunks'):
+                snapshot = dict(snapshot, shared_map=world['_chunks'].snapshot(keys, known, versions))
+            ready = {key: server.economy.milestone(town, town['level'] + 1)
+                     for key, town in world['towns'].items()}
+    return dict(snapshot, world_id=entry['id'], name=entry['name'], hall_ready=ready,
                 simulation_clock={'tick_seconds': 3, 'next_tick_in': 3},
                 hall_upgrades=json.loads(json.dumps(server.HALL_UPGRADES)),
                 progression=json.loads(json.dumps(server.economy.public_catalog())),

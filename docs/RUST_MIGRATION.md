@@ -256,7 +256,7 @@ only after work is performed. Keep unfinished stages visible in the roadmap.
 | R17 | Fishing, boats, animals, and horses | R16 | Slices 1–3 implemented offline: saved piers, land fishing, boat/crew voyages, species cargo, exploration boats, barn growth/keepers and manual butchery; slice 4 (horses/riding) remains |
 | R18 | Residents, villages, trade, and adventures | R17 | Slices 1–3 implemented offline: population, village routines/restocks, NPC roster/gifts/stories/tools/equipment, town trades and founder activities with owner reload; slice 4 and durable/live integration remain |
 | R19 | Durable Rust saves and recovery | R18 | Slices 1–3 implemented at offline native/tool boundary: snapshots `9217d66`, atomic generations `bb547bf`, `feat: add explicit save copy archive and recovery tools` (this change); [scope and rollback limits](RUST_SAVES.md). Python archival is explicitly approved as preserved-only; playable legacy actor hydration, live host integration and native reverse export remain compatibility gates |
-| R20 | HTTP, accounts, and world lifecycle | R19 | Slice 1 in progress: no-world bootstrap and guarded native uninhabited terrain HTTP implemented/paired, including chunk versions/cache invalidation; populated frames and contention acceptance remain; slices 2–3 not started |
+| R20 | HTTP, accounts, and world lifecycle | R19 | Slice 1 in progress: static fallback and guarded shared ordinary/chunked/basic-town/NPC/adventure snapshots paired; progressed-town/independent-layout projections remain; slices 2–3 not started |
 | R21 | Browser compatibility and playable Rust checkpoint | R20 | Not started |
 | R22 | Shared-destination routing | R21 | Not started |
 | R23 | Cross-host benchmarks and release readiness | R22, or documented deferral | Not started |
@@ -4602,8 +4602,8 @@ The affected selector follows literal Rust source references from protocol tests
 **Remaining after slice 1a (terrain work continues below):** assemble supported active-world browser DTOs from the
 separate native owners, publish actual founder/town/adventure state and chunk
 terrain/resources with Python-compatible content versions and cache invalidation,
-characterize directory-listing/fallback edge cases, and exercise founder commands
-under slow world serialization/socket/save contention on both hosts. Existing
+characterize directory-listing/fallback edge cases. Founder command/save contention
+is an overall R20 acceptance gate in slices 2–3, not a slice 1 closure requirement. Existing
 preserved-only legacy imports and missing horses/adventures/aggregate integration
 are not evidence of that coverage. Account PIN verification/Unicode normalization,
 private provisioning, tokens and per-town authorization remain slice 2; world
@@ -4690,9 +4690,8 @@ responsive. These are correctness checks; they do not establish founder-command,
 save-contention or W1–W6 latency acceptance.
 
 **Remaining in slice 1:** aggregate native town/founder presentation and actor DTOs,
-ordinary-map HTTP, NPC/village/adventure snapshots, complete static fallback edge
-characterization and protocol tests with actual founder commands under serialization,
-socket and save contention. Persisted town/founder presentation and aggregate owner
+ordinary-map HTTP, NPC/village/adventure snapshots and complete static fallback edge
+characterization. Command/save contention belongs to later R20 slices. Persisted town/founder presentation and aggregate owner
 coverage must be explicit; preserved legacy bytes must not stand in for model
 hydration. Accounts/PIN/Unicode normalization/token ownership remain slice 2; world
 administration/schedules/shutdown remain slice 3. Continue slice 1 next.
@@ -4712,6 +4711,83 @@ rustup-pinned 1.99.0. Reports remain ignored local artifacts.
 No performance comparison is claimed: this adds a read-only protocol feature and is not a performance fix;
 the starting revision `4fc43484ce5b25d2e45e5e4a7606624f6e88b464` has no admitted
 active-world workload. Public/gameplay/native-writer contention remains unmeasured.
+
+### R20 slice 1 continuation — Checked town and landscape presentation
+
+The existing `http-read-copy` mode now admits prepared **shared ordinary maps** and
+basic populated shared maps. It has no new discovery/import path and still holds
+R19's exclusive read-only lock, checks every inactive world and refuses a damaged
+latest generation. The synthetic example remains a disposable fixture builder;
+these tests do not turn ordinary Python saves into playable Rust state.
+
+Populated presentation requires a native `BuildingWorld`, matching town/ledger
+membership and a native `Population`. Town IDs, founder positions, building kinds,
+positions/footprints/orientations, resident identities/names/practice/talents and
+free inventories are checked against those owners. Unknown nested presentation
+fields and native/public owner mismatches fail before binding. Names and explicit
+wire field presence remain checked presentation metadata; they are not invented
+from the model-observation DTO. Existing credentials stay private. Founder geometry
+is checked through R08's real shared/active-chunk scene; copies needing unimplemented
+founder relocation refuse admission. Native work/storage/history owners without a
+projection also refuse instead of being replaced by empty public state.
+
+`/api/world` includes the admitted towns and their saved quarry/courier data,
+`/api/players` includes founder poses, and `/api/worlds` reports actual town counts.
+Hall readiness reuses native progression rules over the **active** landscape before
+camera/cache filtering removes resource aggregates. Both natural-water and well
+contexts are exercised. Ordinary snapshots retain full terrain/resources and ignore
+valid chunk-cache hints, matching Python; query syntax is still validated first.
+
+NPC and village metadata have finite public schemas, including nested routine
+paths/positions/timers. R18's read-only routine validation and R07's current-roster
+clothing-dialogue repair are reused. A saved native village owner supplies NPC and
+village overlays only when its remaining state agrees with the archive; unsupported
+visit/other changes cannot be silently dropped. Private extensions inside selected
+NPC/routine data fail coverage. `/api/lanterns` derives hazards and playing from the
+checked saved course, including warning/strike/clear boundaries, completion and
+membership. This is frozen adventure presentation, not adventure simulation,
+authorization or reward dispatch.
+
+Static fallback now matches the audited application/UTF-8 asset contracts for both
+index filenames, directory redirects with queries, escaped/sorted directory listings
+(including Unicode names and symlink markers), normalized percent-decoded paths,
+initial-double-slash handling, trailing slashes, HEAD and conditional precedence.
+The audited `.mjs` and `.woff` MIME differences from `mime_guess` are explicit.
+No extra static dependency or HTTP framework was introduced.
+
+Paired disposable-root tests compare complete snapshots (except opaque monotonic
+timestamp origins), native basic town inventories/rosters, positive/negative hall
+readiness, both landscape forms, NPC/village routines, courier phase boundaries and
+all read endpoints. Native/public owner/position/inventory/roster/building mismatches,
+unknown nested fields and unsupported active work refuse listener startup. Real
+49-chunk populated transfers with a nonreading socket leave founder and other small
+snapshot endpoints responsive. Source bytes remain unchanged.
+
+**Slice 1 remains open:** progressed-town browser projections for active production,
+transport and construction, advanced storage/history/population/social visits,
+richer founder activities/equipment and independent legacy-town landscapes. Those
+states still refuse; the new tests do not claim complete aggregate/native browser
+hydration. Accounts/PIN/Unicode normalization/token authorization stay in slice 2;
+world administration/schedules/shutdown and command/save contention stay in slice 3.
+Python remains the playable default. No runtime performance comparison is claimed:
+this adds a read-only contract feature, and the starting revision
+`23260bb4fc27bd8b6f8cc13f9d8a1d93e1a7fe7e` has no admitted populated workload.
+
+Validation: the affected selection was the three HTTP protocol suites and
+`lantern-host`. All 52 Python cases and 491 Rust host tests (including doctests)
+passed in `performance-results/20261020-093010/report.md`/`.json`; its Clippy command
+initially failed new collapsible-if style warnings. Those were corrected, and
+all-target Clippy with `-D warnings` and workspace formatting passed. Final review
+added explicit stale-actor-pose and omitted-store-content refusal guards; the final
+52-case protocol rerun passed in
+`performance-results/20261020-093637/report.md`/`.json`, including those negative
+cases. The six HTTP/projection/serialization unit cases also passed on the final
+code. Reports explicitly record performance as `not_run`; no skipped or unavailable
+measurements are claimed as passing. Local socket checks required sandbox escalation.
+Validation used macOS/Homebrew Rust and Cargo 1.99.1, rather than claiming the pinned
+rustup 1.99.0. No existing test failures remained; development fixture/MIME/readiness
+assertion failures were resolved. Final diff/whitespace review passed.
+
 
 ## R21 — Playable Rust browser checkpoint
 
