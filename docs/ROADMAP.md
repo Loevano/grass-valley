@@ -81,13 +81,16 @@ invalidation and populated slow transfers are paired with Python. Static directo
 index, path and conditional-header contracts are covered. Frozen construction,
 structural/capacity/equipment/hall upgrades, roads, lifetime production, caps, market
 sales and resource activity now have native checks and paired presentation tests.
+Checked founder inventories/equipment/practice/activity, local visits, exploration
+boat tiers, resident tools and population history now extend those snapshots;
+nondefault construction evidence is cross-checked against its native owners.
 Slice 1 remains open for active worker/builder playback and transport, linked
-fields/trees, advanced storage/population/social state, richer founder state and
-independent legacy town maps. These states still fail admission. Accounts/command
-dispatch remain slice 2; world administration,
-schedules, shutdown and command/save contention remain slice 3. Read copies never
-mutate their exclusively locked source or accept POST operations.
-See [R20 remaining work](RUST_MIGRATION.md#r20-slice-1-continuation--checked-town-and-landscape-presentation).
+fields/trees, advanced storage, mounted founder state and independent legacy town
+maps. These states and undrained tool receipts still fail admission. Accounts/command
+dispatch remain slice 2; world administration, schedules, shutdown and command/save
+contention remain slice 3. Read copies never mutate their exclusively locked source
+or accept POST operations.
+See [R20 remaining work](RUST_MIGRATION.md#r20-slice-1-continuation--personal-and-population-presentation).
 Python remains the playable default; R19 owns durable persistence/recovery and R23
 retains target-platform math/release validation. Gameplay RNG stream adoption and
 R24 rollback acceptance remain gated by the contracts. Later navigation stages

@@ -7,11 +7,13 @@ use lantern_core::{
 };
 use lantern_host::{
     building::{BuildingWorld, Landscape, Progression, Road, Rules, Site, Upgrade},
+    fishing::ExplorationBoat,
     legacy::{ChunkKey, TerrainArchive, VillageLife},
     persistence::{RegistrySnapshot, Store, TownState, WorldSnapshot},
     population::{History, Population, Resident},
     progression::Worker,
     resources::{Ledger, ResourceKey, Stock, StoragePolicy, Store as ResourceStore},
+    social::{Player, Social},
     state::{ModelWorld, PrivateCredentials},
 };
 use serde::Deserialize;
@@ -43,6 +45,18 @@ struct World {
     native_work: bool,
     #[serde(default)]
     native_village: Option<Box<RawValue>>,
+    #[serde(default)]
+    native_people: NativePeople,
+}
+#[derive(Default, Deserialize)]
+#[serde(default, deny_unknown_fields)]
+struct NativePeople {
+    social: bool,
+    boat: bool,
+    progression: bool,
+    stale_progression: bool,
+    returned_tool: bool,
+    last_batch: u64,
 }
 #[derive(Deserialize)]
 struct Ids {
@@ -97,6 +111,7 @@ fn main() {
                 model.id(),
                 w.native_source.as_ref().unwrap_or(&w.world).get(),
                 w.native_work,
+                &w.native_people,
             )
         } else {
             WorldSnapshot::capture(&model, &states)
@@ -125,7 +140,7 @@ fn tile(value: &serde_json::Value) -> Tile {
         y: value["y"].as_i64().unwrap() as i32,
     }
 }
-fn populated(id: &WorldId, text: &str, work: bool) -> WorldSnapshot {
+fn populated(id: &WorldId, text: &str, work: bool, people: &NativePeople) -> WorldSnapshot {
     let world: serde_json::Value = serde_json::from_str(text).unwrap();
     let catalog: serde_json::Value =
         serde_json::from_str(include_str!("../src/resources/catalog.json")).unwrap();
@@ -272,6 +287,7 @@ fn populated(id: &WorldId, text: &str, work: bool) -> WorldSnapshot {
                     .unwrap();
             }
             worker.sandbox = v["sandbox"].as_bool().unwrap_or(false);
+            worker.tool = v["worker_tool"].as_str().map(str::to_owned);
             residents.push(Resident {
                 actor,
                 name: v["name"].as_str().unwrap().into(),
@@ -326,8 +342,112 @@ fn populated(id: &WorldId, text: &str, work: bool) -> WorldSnapshot {
         let ledger = Ledger::decode(&saved.to_string(), &town).unwrap();
         let mut state = TownState::empty(ledger);
         let sandbox = source["sandbox"].as_bool().unwrap_or(false);
-        state.population =
-            Some(Population::restore(&town, sandbox, residents, History::default()).unwrap());
+        let history = History {
+            food_shortage_seconds: source["food_shortage_seconds"].as_f64().unwrap_or(0.),
+            housing_shortage_seconds: source["housing_shortage_seconds"].as_f64().unwrap_or(0.),
+            arrival_delay_seconds: source["arrival_delay_seconds"].as_f64().unwrap_or(0.),
+            departure_count: source["departure_count"].as_u64().unwrap_or(0),
+            last_departure: source
+                .get("last_departure")
+                .map(|v| serde_json::from_value(v.clone()).unwrap()),
+        };
+        let mut population = Population::restore(&town, sandbox, residents, history).unwrap();
+        if people.returned_tool {
+            let mut saved: serde_json::Value =
+                serde_json::from_str(&population.encode(&town).unwrap()).unwrap();
+            saved["returned_tools"] = serde_json::json!({"fine_axe": 1});
+            population = Population::decode(&saved.to_string(), &town).unwrap();
+        }
+        state.population = Some(population);
+        let mut founder = lantern_host::progression::Worker::new("idle").unwrap();
+        if people.social {
+            let p = &source["player"];
+            let value = |k: &str, default| p.get(k).cloned().unwrap_or(default);
+            let jobs = catalog["rules"]["jobs"].as_array().unwrap();
+            let practice = jobs
+                .iter()
+                .filter_map(|j| {
+                    let j = j.as_str().unwrap();
+                    p[j].as_f64().map(|n| (j.to_owned(), n))
+                })
+                .collect();
+            let activity = p.get("activity").filter(|v| !v.is_null()).map(|v| {
+                lantern_host::social::activity::Activity {
+                    job: v["job"].as_str().unwrap().into(),
+                    kind: v["kind"].as_str().unwrap().into(),
+                    tile: [
+                        v["x"].as_i64().unwrap() as i32,
+                        v["y"].as_i64().unwrap() as i32,
+                    ],
+                }
+            });
+            let player = Player {
+                items: serde_json::from_value(value("items", serde_json::json!({}))).unwrap(),
+                worker_tools: serde_json::from_value(value("worker_tools", serde_json::json!({})))
+                    .unwrap(),
+                equipment: serde_json::from_value(value("equipment", serde_json::json!({})))
+                    .unwrap(),
+                keepsakes: serde_json::from_value(value("keepsakes", serde_json::json!([])))
+                    .unwrap(),
+                practice,
+                activity,
+                activity_status: p["activity_status"].as_str().map(str::to_owned),
+                facing: p["facing"].as_i64().unwrap_or(1) as i8,
+                last_batch: people.last_batch,
+            };
+            for (job, n) in &player.practice {
+                founder
+                    .set_practice(job, Practice::new(*n).unwrap())
+                    .unwrap();
+            }
+            let visits = serde_json::from_value(
+                source
+                    .get("local_visits")
+                    .cloned()
+                    .unwrap_or(serde_json::json!({})),
+            )
+            .unwrap();
+            state.social = Some(Social::restore(owner.clone(), player, visits).unwrap());
+        }
+        if people.boat {
+            let p = &source["player"];
+            let tier = if p["boat"].as_bool().unwrap_or(false) {
+                p["boat_level"].as_u64().unwrap_or(1)
+            } else {
+                0
+            };
+            state.exploration = Some(
+                ExplorationBoat::decode(
+                    &serde_json::json!({"version":1, "world":id.as_str(), "town":key, "tier":tier})
+                        .to_string(),
+                    &town,
+                )
+                .unwrap(),
+            );
+        }
+        let mut progression = if people.progression {
+            let workers: Vec<_> = state
+                .population
+                .as_ref()
+                .unwrap()
+                .residents()
+                .iter()
+                .map(|r| r.worker.clone())
+                .collect();
+            lantern_host::progression::construction_evidence(
+                &state.ledger,
+                &workers,
+                people.social.then_some(&founder),
+                0,
+                state.ledger.market_sales(),
+            )
+            .unwrap()
+        } else {
+            Progression::default()
+        };
+        if people.stale_progression {
+            progression.food = Some(q(progression.food.unwrap().get() + 1.));
+        }
         all_rules.insert(
             owner.town,
             Rules {
@@ -359,7 +479,7 @@ fn populated(id: &WorldId, text: &str, work: bool) -> WorldSnapshot {
                             .collect()
                     })
                     .unwrap_or_default(),
-                progression: Progression::default(),
+                progression,
             },
         );
         towns.push(town);

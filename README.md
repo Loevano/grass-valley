@@ -900,7 +900,7 @@ cargo run -p lantern-host --locked --offline -- http-bootstrap --experimental-em
 Use `--asset-root DIRECTORY` for an explicit root with `web/` and `icons/favicon.ico`.
 It requires loopback, never reads saves and returns a coverage error for every POST.
 It cannot play, login, create/open/delete/regenerate worlds or advance simulation.
-See [remaining R20 slice 1 work](docs/RUST_MIGRATION.md#r20-slice-1-continuation--checked-town-and-landscape-presentation).
+See [remaining R20 slice 1 work](docs/RUST_MIGRATION.md#r20-slice-1-continuation--personal-and-population-presentation).
 Run `python3 tools/check.py --tests tests/test_http_bootstrap.py` from the repository
 root for the shared disposable-root protocol tests (Cargo cache and local sockets
 required). Select `test_http_bootstrap.PythonBootstrap` or
@@ -918,10 +918,15 @@ population and ledger owners match their checked presentation. Initial resident
 rosters, founder positions, building construction/upgrades, completed equipment,
 roads, lifetime production, production caps, market-sale counts, resource activity,
 hall readiness, NPC/village routines and saved quarry/courier views are supported.
-Active worker/builder playback, transport, linked fields/trees, storage buffers and
-filters, population/social history, richer founder state and independent legacy
-town maps still refuse admission. Unknown nested fields, inconsistent owners
-and damaged/unsupported latest generations also refuse startup, including inactive
+Founder inventories, equipment, practice, saved activity/status, local visits,
+exploration boat tiers, resident tools and population departure/shortage history
+also have checked native owners. Construction progression observations must agree
+with ledger and resident/founder evidence. Active worker/builder playback, transport,
+linked fields/trees, storage buffers/filters, mounted founder state and independent
+legacy town maps still refuse admission. Undrained population tool receipts also
+refuse; read snapshots do not transfer inventory or run gameplay. Unknown nested
+fields, inconsistent owners and damaged/unsupported latest generations also refuse
+startup, including inactive
 worlds. The source stays locked and byte-for-byte unchanged; there is no simulation,
 login, command dispatch or save worker. Chunk reads retain compatible resource
 versions and world-ID cache invalidation. Python remains the playable host.
@@ -931,10 +936,14 @@ runs paired town/ordinary/adventure/static checks on disposable roots, including
 native-owner mismatches and populated slow-transfer cases. Static fallback includes
 directory listings, both HTML index names, normalized paths and conditional headers.
 
+`python3 tools/check.py --tests tests/test_http_people.py` covers personal inventories,
+activity/visits, boats, resident tools and population history on both map forms,
+including stale/private data and missing-native-owner refusal.
+
 `python3 tools/check.py --tests tests/test_http_snapshots.py` runs paired current/legacy
 terrain protocol checks and constructs its own disposable native roots. The Cargo
 `http_fixture` example is solely a synthetic fixture builder, not a legacy converter.
-See [R20's admission limits and remaining work](docs/RUST_MIGRATION.md#r20-slice-1b--native-terrain-read-snapshots-slice-1-remains-open).
+See [R20's admission limits and remaining work](docs/RUST_MIGRATION.md#r20-slice-1-continuation--personal-and-population-presentation).
 
 The new HTTP dependencies are Axum 0.8.9 (MIT, Rust ≥1.80), Tokio 1.54.0 (MIT,
 Rust ≥1.85), tower-http 0.6.11 (MIT, Rust ≥1.64) and form_urlencoded 1.2.2

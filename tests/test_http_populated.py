@@ -21,6 +21,7 @@ from test_http_snapshots import TerrainProtocol, fixture, reference, write_chunk
 RUST_SOURCES = ('rust/crates/lantern-host/src/legacy/http_snapshot/metadata.rs',
                 'rust/crates/lantern-host/src/legacy/http_snapshot/metadata/buildings.rs',
                 'rust/crates/lantern-host/src/legacy/http_snapshot/metadata/ledger.rs',
+                'rust/crates/lantern-host/src/legacy/http_snapshot/metadata/people.rs',
                 'rust/crates/lantern-host/src/http/read.rs',
                 'rust/crates/lantern-host/src/legacy/http_snapshot.rs',
                 'rust/crates/lantern-host/examples/http_fixture.rs')

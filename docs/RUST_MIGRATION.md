@@ -4833,6 +4833,58 @@ used macOS/Homebrew Rust/Cargo 1.99.1, not the pinned rustup 1.99.0. No validati
 failures remain. Final diff/whitespace review passed.
 
 
+### R20 slice 1 continuation — Personal and population presentation
+
+The read-copy adapter now admits native Social, Population and ExplorationBoat
+owners alongside the existing checked town/ledger/building state. Public founder
+items, spare worker tools, equipped clothing, keepsakes, per-job practice, facing,
+saved activity/target/status and local visits must agree with those owners. Visit
+keys, gifts, story stages/rock lists and trade timers are checked, including saved
+visits without a current NPC. Unknown public fields and native-only visit extensions
+refuse admission. Native activity batch IDs remain private bookkeeping and never
+appear in `/api/world` or `/api/players`. Boat presence/tier is checked against the
+native boat owner before the existing R08 scene validates founder geometry.
+
+Population shortage/arrival clocks, departure counts and the last departed worker's
+identity/job/reason/practice agree with native history. Residents may retain native
+worker tools while idle; active assignments/tasks/playback still refuse admission.
+Undrained population tool receipts continue to refuse, so GET cannot duplicate a
+returned tool into a founder's bag. Nondefault construction progression observations
+are admitted only when the existing evidence adapter reproduces them from the
+ledger and resident/founder practice; town-trade evidence remains unsupported.
+
+All projections are frozen. GET does not progress founder work, consume a batch,
+transfer tools, decrement visits/shortage clocks or dispatch social commands. Saved
+activity targets can await revalidation by a later gameplay tick, matching Python's
+read contract. Source roots remain exclusively locked and byte-for-byte unchanged.
+Paired ordinary/chunked protocol fixtures compare complete world and founder DTOs,
+optional defaults, nullable activities, every saved gathering/fishing/chopping
+activity kind, boat tiers/on-water poses and exact u64 inventory/departure counts.
+Separate native facts cover stale/missing inventories, equipment, practice, facing,
+activities, boats, history and visits, plus private nested fields, unknown native
+visit extensions, missing owners, stale progression and undrained receipt refusal.
+
+**Slice 1 remains open:** active production/transport and worker/builder playback,
+linked fields/trees, storage buffers/filters, mounted founder state and independent
+legacy-town landscapes still require checked adapters. Pending tool receipts require
+an explicit integration transaction. Accounts/command dispatch remain slice 2;
+lifecycle/schedules/shutdown remain slice 3. Python remains the playable default.
+No runtime performance comparison is required or claimed for this frozen snapshot
+contract feature.
+
+Validation: `python3 tools/check.py` selected the personal, populated and terrain
+HTTP suites plus `lantern-host`. All 50 Python cases, 491 Rust host tests (including
+doctests) and formatting passed in
+`performance-results/20261020-113614/report.md`/`.json`. That report retains its
+initial Clippy failure for a redundant unit expression in the new helper. Removing
+that expression changed no behavior; final workspace formatting and locked/offline
+all-target `cargo clippy -p lantern-host --all-targets -- -D warnings` passed.
+No test failures remain. Reports record performance as `not_run`; no benchmark
+result is claimed. Local HTTP sockets required sandbox escalation. Validation used
+macOS/Homebrew Rust/Cargo 1.99.1 rather than the pinned rustup 1.99.0. Final diff and
+whitespace review passed.
+
+
 ## R21 — Playable Rust browser checkpoint
 
 **Slices:** (1) browser fixtures against Rust HTTP; (2) movement/playback integration;

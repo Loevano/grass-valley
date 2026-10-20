@@ -4,6 +4,7 @@ use super::*;
 use crate::persistence::{RestoredModel, RestoredWorld};
 mod buildings;
 mod ledger;
+mod people;
 
 use lantern_core::{
     model::{ConstructionState, Task, TravelIntent},
@@ -309,9 +310,7 @@ pub(super) fn towns(world: &RestoredWorld, payload: &Node) -> Result<(), Boundar
         if !building_world.builders().is_empty() {
             return Err(invalid("builder playback public coverage"));
         }
-        if rules.progression != crate::building::Progression::default() {
-            return Err(invalid("native progression presentation coverage"));
-        }
+        people::progression(state, rules)?;
         for store in state.ledger.stores() {
             let site = rules
                 .sites
@@ -348,9 +347,7 @@ pub(super) fn towns(world: &RestoredWorld, payload: &Node) -> Result<(), Boundar
                 != encoded(empty.orchards.encode(native, &state.ledger))?
             || encoded(state.fishers.encode(native))? != encoded(empty.fishers.encode(native))?
             || encoded(state.boats.encode(native))? != encoded(empty.boats.encode(native))?
-            || state.exploration.is_some()
             || state.livestock.is_some()
-            || state.social.is_some()
             || !state.ledger.held().is_empty()
         {
             return Err(invalid("missing active-work public coverage"));
@@ -375,6 +372,12 @@ pub(super) fn towns(world: &RestoredWorld, payload: &Node) -> Result<(), Boundar
             "market_sales",
             "rules",
             "resource_activity",
+            "local_visits",
+            "food_shortage_seconds",
+            "housing_shortage_seconds",
+            "arrival_delay_seconds",
+            "departure_count",
+            "last_departure",
         ];
         let resources: Vec<String> = crate::resources::catalog()["resources"]
             .as_array()
@@ -432,7 +435,8 @@ pub(super) fn towns(world: &RestoredWorld, payload: &Node) -> Result<(), Boundar
         }
         ledger::history(town, &state.ledger)?;
         let player = town.required("player", PATH)?;
-        fields(player, &["x", "y", "facing"])?;
+        people::founder(town, state.social.as_ref())?;
+        people::boat(player, state.exploration.as_ref())?;
         same_number(player, "x", rules.player.x.get())?;
         same_number(player, "y", rules.player.y.get())?;
         if ![-1., 1.].contains(&player.required("facing", PATH)?.number(PATH)?) {
@@ -500,10 +504,8 @@ pub(super) fn towns(world: &RestoredWorld, payload: &Node) -> Result<(), Boundar
             .population
             .as_ref()
             .ok_or_else(|| invalid("missing native population presentation"))?;
-        if population.residents().len() != villagers.len()
-            || population.history() != &crate::population::History::default()
-            || !population.returned_tools().is_empty()
-        {
+        people::population(town, population)?;
+        if population.residents().len() != villagers.len() {
             return Err(invalid("population history public coverage"));
         }
         for ((record, actor), resident) in villagers
@@ -511,7 +513,16 @@ pub(super) fn towns(world: &RestoredWorld, payload: &Node) -> Result<(), Boundar
             .zip(native.actors())
             .zip(population.residents())
         {
-            let mut allowed = vec!["name", "job", "x", "y", "facing", "talents", "sandbox"];
+            let mut allowed = vec![
+                "name",
+                "job",
+                "x",
+                "y",
+                "facing",
+                "talents",
+                "sandbox",
+                "worker_tool",
+            ];
             let jobs: Vec<_> = crate::resources::catalog()["rules"]["jobs"]
                 .as_array()
                 .unwrap()
@@ -527,9 +538,15 @@ pub(super) fn towns(world: &RestoredWorld, payload: &Node) -> Result<(), Boundar
                 || !actor.cargo.goods().is_empty()
                 || resident.assignment.is_some()
                 || resident.worker.job() != "idle"
-                || resident.worker.tool.is_some()
             {
                 return Err(invalid("active actor public coverage"));
+            }
+            let tool: Option<String> = record
+                .optional("worker_tool", PATH)?
+                .map(|n| n.string(PATH))
+                .transpose()?;
+            if tool != resident.worker.tool {
+                return Err(invalid("native/public resident tool mismatch"));
             }
             if record.required("name", PATH)?.string(PATH)? != resident.name
                 || record.required("job", PATH)?.string(PATH)? != resident.worker.job()
