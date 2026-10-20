@@ -88,9 +88,14 @@ Frozen advanced storage buffers, filters, reserved inputs, worker/orphan output 
 inventory mirrors now have checked native owners and paired ordinary/chunked snapshots.
 Frozen linked fields and orchard trees now agree with native building and agricultural
 owners, including saved parent indexes, crop/tree clocks, defaults and relocated
-groups on both map formats. Read-only milestones 1a–1h are implemented. The
+groups on both map formats. Native woodcutting claims now cross-check camp/task/
+assignment, phase clocks, source geometry and pending-output ownership, with frozen
+ordinary/chunked work, wait, return, depletion, deposit and cancellation coverage.
+Read-only milestones 1a–1h and 1i.a's claim/phase boundary are implemented. The
 [R20 milestone plan](RUST_MIGRATION.md#r20-milestone-plan) retains individual remaining
-tasks: next is 1i production, followed by transport/fishing/livestock, independent
+tasks: next is 1i.b processor/workshop production, then 1i.c agricultural activity
+and 1i.d source/status metadata, suspended gathering and the production audit.
+These are followed by transport/fishing/livestock, independent
 town maps, mounted founders and the snapshot completion audit. Mounted
 state is blocked on R17 slice 4. Unsupported states and undrained tool receipts
 still fail admission; read copies never mutate their exclusively locked source or

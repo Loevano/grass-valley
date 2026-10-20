@@ -54,6 +54,15 @@ struct World {
     native_storage: NativeStorage,
     #[serde(default)]
     native_agriculture: NativeAgriculture,
+    #[serde(default)]
+    native_gathering: NativeGathering,
+}
+#[derive(Default, Deserialize)]
+#[serde(default, deny_unknown_fields)]
+struct NativeGathering {
+    claims: bool,
+    missing: bool,
+    stale: bool,
 }
 #[derive(Default, Deserialize)]
 #[serde(default, deny_unknown_fields)]
@@ -140,6 +149,7 @@ fn main() {
                 &w.native_people,
                 &w.native_storage,
                 &w.native_agriculture,
+                &w.native_gathering,
             )
         } else {
             WorldSnapshot::capture(&model, &states)
@@ -178,6 +188,7 @@ fn stock_value(value: &serde_json::Value) -> Stock {
     )
     .unwrap()
 }
+#[allow(clippy::too_many_arguments)]
 fn populated(
     id: &WorldId,
     text: &str,
@@ -185,6 +196,7 @@ fn populated(
     people: &NativePeople,
     storage: &NativeStorage,
     agriculture: &NativeAgriculture,
+    gathering: &NativeGathering,
 ) -> WorldSnapshot {
     let world: serde_json::Value = serde_json::from_str(text).unwrap();
     let catalog: serde_json::Value =
@@ -951,6 +963,65 @@ fn populated(
                 } else {
                     *town = observed;
                 }
+            }
+        }
+    }
+    if gathering.claims {
+        for (town, state) in towns.iter().zip(&mut states) {
+            for resident in state.population.as_ref().unwrap().residents() {
+                let actor = &resident.actor;
+                let Task::Work {
+                    workplace, target, ..
+                } = &town.actor(actor).unwrap().state().task
+                else {
+                    continue;
+                };
+                if resident.worker.job() != "woodcutting" || gathering.missing {
+                    continue;
+                }
+                let lantern_core::model::Destination::Position(p) = target else {
+                    panic!("synthetic woodcutter requires a tree");
+                };
+                let mut detached = town.clone();
+                detached.set_task(actor, Task::Idle).unwrap();
+                let trees =
+                    lantern_host::gathering::Trees::new(vec![lantern_host::gathering::Tree {
+                        tile: Tile {
+                            x: p.x.get() as i32,
+                            y: p.y.get() as i32,
+                        },
+                        supply: q(1.),
+                    }])
+                    .unwrap();
+                state
+                    .woodcutters
+                    .assign(
+                        &mut detached,
+                        &mut state.ledger,
+                        &trees,
+                        actor,
+                        workplace,
+                        &resident.worker,
+                        lantern_core::model::NavigationRevision(1),
+                        |_| lantern_host::gathering::Access::Reachable,
+                    )
+                    .unwrap()
+                    .unwrap();
+            }
+            if gathering.stale {
+                let mut saved: serde_json::Value =
+                    serde_json::from_str(&state.woodcutters.encode(town).unwrap()).unwrap();
+                if let Some(claim) = saved["claims"].as_array_mut().unwrap().first_mut() {
+                    claim[1]["camp_x"] =
+                        serde_json::json!(claim[1]["camp_x"].as_i64().unwrap() + 1);
+                }
+                // Restart deliberately retains this stale claim for cancellation.
+                state.woodcutters = lantern_host::gathering::Woodcutters::decode(
+                    &saved.to_string(),
+                    town,
+                    &state.ledger,
+                )
+                .unwrap();
             }
         }
     }

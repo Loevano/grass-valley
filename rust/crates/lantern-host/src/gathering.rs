@@ -160,6 +160,40 @@ pub enum Outcome {
     Cancelled,
 }
 impl Woodcutters {
+    /// Frozen read admission is stricter than restart: stale claims may be
+    /// retained for cancellation on advance, but must never be presented as work.
+    pub fn validate_observation(&self, town: &Town, ledger: &Ledger) -> Result<(), Error> {
+        for (actor, claim) in &self.claims {
+            actor
+                .identity()
+                .validate_owner(town.owner())
+                .map_err(|_| Error::Invalid)?;
+            if !claim.available(town, ledger) || !claim.matches(town, actor) {
+                return Err(Error::Invalid);
+            }
+            let Task::Work { phase, elapsed, .. } = town.actor(actor)?.state().task else {
+                return Err(Error::Invalid);
+            };
+            let limit = match phase {
+                WorkPhase::Working => 3.2,
+                WorkPhase::Depositing => 0.65,
+                WorkPhase::Outbound | WorkPhase::Returning => 0.,
+                _ => return Err(Error::Invalid),
+            };
+            if elapsed.get() > limit {
+                return Err(Error::Invalid);
+            }
+            let camp = claim.building(town)?;
+            for store in ledger.stores() {
+                if let Some(output) = store.pending.get(&PendingOwner::Worker(actor.clone()))
+                    && (store.id != camp || output.entries().keys().any(|k| *k != wood()))
+                {
+                    return Err(Error::Invalid);
+                }
+            }
+        }
+        Ok(())
+    }
     pub fn target(&self, actor: &ActorId) -> Option<Tile> {
         self.claims.get(actor).map(|c| Tile { x: c.x, y: c.y })
     }

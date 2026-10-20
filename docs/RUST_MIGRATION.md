@@ -269,7 +269,7 @@ only after work is performed. Keep unfinished stages visible in the roadmap.
 | R17 | Fishing, boats, animals, and horses | R16 | Slices 1–3 implemented offline: saved piers, land fishing, boat/crew voyages, species cargo, exploration boats, barn growth/keepers and manual butchery; slice 4 (horses/riding) remains |
 | R18 | Residents, villages, trade, and adventures | R17 | Slices 1–3 implemented offline: population, village routines/restocks, NPC roster/gifts/stories/tools/equipment, town trades and founder activities with owner reload; slice 4 and durable/live integration remain |
 | R19 | Durable Rust saves and recovery | R18 | Slices 1–3 implemented at offline native/tool boundary: snapshots `9217d66`, atomic generations `bb547bf`, `feat: add explicit save copy archive and recovery tools` (this change); [scope and rollback limits](RUST_SAVES.md). Python archival is explicitly approved as preserved-only; playable legacy actor hydration, live host integration and native reverse export remain compatibility gates |
-| R20 | HTTP, accounts, and world lifecycle | R19; R17.4/R18.4 for dependent milestones | Read-only milestones 1a–1h implemented; next: 1i production projections. Remaining snapshot and live integration work is itemized in the R20 milestone plan; slices 2–3 not started |
+| R20 | HTTP, accounts, and world lifecycle | R19; R17.4/R18.4 for dependent milestones | Read-only milestones 1a–1h and 1i.a claim/phase boundary implemented; next: 1i.b processors/workshops. Remaining snapshot and live integration work is itemized in the R20 milestone plan; slices 2–3 not started |
 | R21 | Browser compatibility and playable Rust checkpoint | R20 | Not started |
 | R22 | Shared-destination routing | R21 | Not started |
 | R23 | Cross-host benchmarks and release readiness | R22, or documented deferral | Not started |
@@ -4592,7 +4592,7 @@ None claims live gameplay.
 
 | ID | Bounded deliverable and completion cases | Prerequisites / status |
 | --- | --- | --- |
-| 1i | Production projections: gathering/processor/workshop/farm/orchard activity, claims, clocks and queues agree with native owners; in-progress and interrupted/reloaded snapshots. | Pending; 1g–1h and R15/R16 owners |
+| 1i | Production projections: gathering/processor/workshop/farm/orchard activity, claims, clocks and queues agree with native owners; in-progress and interrupted/reloaded snapshots. | Open; named children 1i.a–1i.d below; 1g–1h and R15/R16 owners |
 | 1j | Transport/fishing/livestock projections: producer/hauler/merchant trips, cargo, crews and barn work agree with native owners; outward/return, blocked and loaded states. | Pending; 1h–1i and R14/R17 slices 1–3 |
 | 1k | Independent legacy-town landscapes: checked per-town scene assembly, bounds, resources, hall context and cache/query behavior; paired snapshots without mutating source copies. | Pending; 1c and existing R07/R08 geometry |
 | 1l | Mounted founder/horse projections with native ownership, equipment and geometry checks; mounted/dismounted and reload cases. | Blocked on R17 slice 4; do not invent a horse model inside this milestone |
@@ -4603,13 +4603,23 @@ child 1h.a and workplace children 1h.b.1–1h.b.2 have passed their acceptance c
 R12 retains construction walks; R11 deliberately discards derived worker routes,
 cursors and playback on model restoration. The separate immutable native observation
 checkpoint preserves already-confirmed presentation evidence without installing it
-into an actor, navigation service or gameplay clock. Next is **1i**, not live work.
+into an actor, navigation service or gameplay clock. Next is **1i.b** after the 1i.a claim/phase boundary below; live work remains deferred.
 
 | ID | Completed boundary | Status |
 | --- | --- | --- |
 | 1h.b | R18 explicit/omitted assignments, R11 generic work task/phase/pose/remaining path/confirmed playback, R12 profession helpers and suspended work, waiting/interruption/reload; production/activity and cargo remain under 1i–1j. | Implemented; 1h.b.1–1h.b.2 evidence below |
 | 1h.b.1 | Explicit index/null, stationary professionals and upgrade helpers with idle suspension. | Implemented |
 | 1h.b.2 | R18 omitted-index resolver; independent native observation checkpoint, generic worker movement/phase/history and non-idle helper suspension; ordinary/chunked parity, stale/private refusals and full 1h audit. | Implemented; evidence below |
+
+R20 **1i** is split into independently testable production boundaries. Each
+invocation implements one named child; the parent stays open until all pass.
+
+| ID | Deliverable and acceptance boundary | Status |
+| --- | --- | --- |
+| 1i.a | Woodcutting claims, camp/source identity and production phase clocks; active/waiting/interrupted/reloaded ordinary/chunked snapshots, stale/missing owners and private-field refusal. Pending output remains checked by R13 ledger; transport remains 1j. | Implemented at claim/phase boundary; labels remain 1i.d |
+| 1i.b | Processor/workshop production, recipes, input reservations, queues and clocks; active/interrupted/reloaded snapshots and stale/private refusal against R15 owners. | Pending; 1i.a |
+| 1i.c | Farm/orchard assignments, actions, claims, water rounds, clocks and feature playback; active/interrupted/reloaded snapshots against R16 owners. | Pending; 1i.b |
+| 1i.d | Public `work_target`/`production_status` metadata across production families, suspended gathering observations, and complete production-field/owner audit. Preserve strict refusal until independent evidence exists; no unchecked labels or source dictionaries. | Pending; 1i.a–1i.c |
 
 Every row includes public-field privacy, explicit optional/default behavior and
 unknown/stale-state rejection. GET remains frozen and read copies remain locked and
@@ -4660,6 +4670,65 @@ failure behavior. Do not treat read-only synthetic fixtures as playable-save evi
 Keep Python the default and Rust experimental. Record uncovered integration with a
 named owner; complete the parent audit only after its required cases actually pass.
 ```
+
+### R20 slice 1i.a — Frozen woodcutting claims and production phases
+
+Read admission now accepts nonempty native R14 woodcutting claims only when each
+claim agrees with its current native task, completed camp location, storage policy,
+worker job and R18 assignment. Every woodcutting work task requires a claim. Native
+restart intentionally admits stale claims for cancellation on a future advance;
+`Woodcutters::validate_observation` instead refuses them without changing the
+claim, actor or ledger. The same check enforces outbound/return zero clocks,
+working clocks through 3.2 seconds, deposit clocks through 0.65 seconds and pending
+wood belonging to the claimed camp. Source kind/coordinates and map bounds are
+checked against the task and prepared R07 resource geometry. Only a checked
+return/deposit claim may refer to a depleted tree absent from the landscape.
+
+R11's independent immutable observation still owns pose, phase, clock, path and
+confirmed playback; R13 still owns pending output, its workplace and inventory.
+The fixture creates native claims through the R14 assignment API on detached
+synthetic models, independently of the public archive. Durable generations reload
+these owners before HTTP admission. Repeated full Python/Rust snapshots cover
+ordinary/chunked outbound, working, pending/unreachable/blocked waits, return from
+a live/depleted tree, partial deposit and cancelled work. Refusal cases cover
+missing/stale claims, missing/wrong source, stale or invalid public clocks, missing
+observations and private/unknown nested fields. Native tests cover clock endpoints,
+restart-admitted stale claims and output assigned to another camp, including
+nonmutation assertions. Successful and refused reads preserve source bytes.
+
+This completes **1i.a's claim/phase boundary** only. Public `work_target` and
+`production_status` dictionaries/labels, and retained suspended gathering claims,
+still refuse under **1i.d**. Processor/workshop work is **1i.b**, agricultural
+work is **1i.c** and the production completion audit is **1i.d**. Transport/fishing/
+livestock remain **1j**. No GET ticks, produces goods, cancels a claim, trains a
+worker or drains receipts. This remains synthetic frozen compatibility evidence;
+live actor hydration/transactions and Python-default cutover gates are unchanged.
+
+Performance comparisons were not run: this implements compatibility and ownership
+validation without an optimization claim.
+
+Validation: `python3 tools/check.py --list` selected nine Python modules and the
+Rust host package. All **98 unique affected Python cases** passed across the final
+`performance-results/r20-1ia-{playback,world,people,agriculture,construction,remaining}/`
+runs and targeted reruns; case IDs were reconciled without skips. The native report
+`r20-1ia-native/` passed **496 host tests/doctests**, package formatting and
+all-target Clippy with warnings denied. Both Markdown/JSON reports and case logs
+were inspected. The world group passed its 42 cases together. The combined playback
+and people groups hit the unchanged 300-second command limit after passing 37
+additional cases; the 19 unfinished cases passed as agriculture (8), construction
+(8), and targeted storage/workplace (3). Those combined reports remain marked
+failed with exit 124; no assertion failure was hidden, no test excluded, and no
+limit or threshold changed. `r20-1ia-reconciliation.json` records the passing case
+IDs and evidence locations.
+
+The initial gathering run could not bind sandboxed loopback sockets; subsequent
+HTTP runs used sandbox escalation. Development fixture failures came from trying
+to persist intentionally invalid native clocks and a stale claim moved outside
+its decoder's range; public stale clocks now test admission while native boundary
+tests exercise invalid clocks directly, and the stale claim retains valid range.
+These new tests did not exist at starting revision `e28c863`; no existing test
+assertion failure was observed. Rust/Cargo were Homebrew 1.99.1. No browser/gameplay
+benchmark or full-suite check was run; every report records performance `not_run`.
 
 ### R20 slice 1h.b.2 — Checked native worker observations and completion audit
 

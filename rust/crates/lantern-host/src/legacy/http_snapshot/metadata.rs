@@ -322,8 +322,6 @@ pub(super) fn towns(
         let empty = crate::persistence::TownState::empty(state.ledger.clone());
         if encoded(state.trips.encode(native, &state.ledger))?
             != encoded(empty.trips.encode(native, &state.ledger))?
-            || encoded(state.woodcutters.encode(native))?
-                != encoded(empty.woodcutters.encode(native))?
             || encoded(state.processors.encode(native))?
                 != encoded(empty.processors.encode(native))?
             || encoded(state.fishers.encode(native))? != encoded(empty.fishers.encode(native))?
@@ -333,6 +331,10 @@ pub(super) fn towns(
         {
             return Err(invalid("missing active-work public coverage"));
         }
+        state
+            .woodcutters
+            .validate_observation(native, &state.ledger)
+            .map_err(|_| invalid("gathering claim observation coverage"))?;
         let mut allowed = vec![
             "name",
             "level",
@@ -552,7 +554,38 @@ pub(super) fn towns(
                 .and_then(|b| b.suspended.as_ref());
             let (task, travel) =
                 suspension.map_or((&actor.task, &actor.travel), |s| (&s.task, &s.travel));
-            work::target(record, task, resident.worker.job(), native, rules, sources)?;
+            let claim = state.woodcutters.target(&actor.id);
+            let gathering =
+                resident.worker.job() == "woodcutting" && matches!(task, Task::Work { .. });
+            if claim.is_some() != gathering || (claim.is_some() && suspension.is_some()) {
+                return Err(invalid("gathering claim membership coverage"));
+            }
+            if let Some(tile) = claim {
+                let size = payload
+                    .required("shared_map", PATH)?
+                    .required("map_size", PATH)?
+                    .unsigned(PATH)?;
+                if tile.x < 0 || tile.y < 0 || tile.x as u64 >= size || tile.y as u64 >= size {
+                    return Err(invalid("gathering source bounds coverage"));
+                }
+            }
+            work::target(
+                record,
+                task,
+                resident.worker.job(),
+                native,
+                rules,
+                sources,
+                claim.is_some()
+                    && matches!(
+                        task,
+                        Task::Work {
+                            phase: lantern_core::model::WorkPhase::Returning
+                                | lantern_core::model::WorkPhase::Depositing,
+                            ..
+                        }
+                    ),
+            )?;
             let animation = record.optional("work_animation", PATH)?.map(raw);
             let work_positioned = state.work_observations.check(
                 model_actor,

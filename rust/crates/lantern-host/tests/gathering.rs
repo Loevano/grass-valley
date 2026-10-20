@@ -656,3 +656,68 @@ fn python_interruption_accounting_trace() {
         );
     }
 }
+
+#[test]
+fn frozen_observation_rejects_restart_claims_pending_cancellation_without_mutation() {
+    let mut f = Fixture::new();
+    f.assign(1, 1);
+    f.cutters.validate_observation(&f.town, &f.ledger).unwrap();
+    f.work(0.125);
+    f.cutters.validate_observation(&f.town, &f.ledger).unwrap();
+    let bytes = f.cutters.encode(&f.town).unwrap();
+    let mut saved: serde_json::Value = serde_json::from_str(&bytes).unwrap();
+    saved["claims"][0][1]["camp_x"] = serde_json::json!(4);
+    let stale = Woodcutters::decode(&saved.to_string(), &f.town, &f.ledger).unwrap();
+    let before = stale.encode(&f.town).unwrap();
+    assert_eq!(
+        stale.validate_observation(&f.town, &f.ledger),
+        Err(Error::Invalid)
+    );
+    assert_eq!(before, stale.encode(&f.town).unwrap());
+    f.town.set_task(&a(1), Task::Idle).unwrap();
+    assert_eq!(
+        f.cutters.validate_observation(&f.town, &f.ledger),
+        Err(Error::Invalid)
+    );
+    assert_eq!(bytes, f.cutters.encode(&f.town).unwrap());
+}
+
+#[test]
+fn frozen_observation_enforces_all_production_clock_bounds() {
+    let mut f = Fixture::new();
+    f.assign(1, 1);
+    for (phase, limit) in [
+        (WorkPhase::Outbound, 0.),
+        (WorkPhase::Working, 3.2),
+        (WorkPhase::Returning, 0.),
+        (WorkPhase::Depositing, 0.65),
+    ] {
+        f.set_phase(phase, limit);
+        f.cutters.validate_observation(&f.town, &f.ledger).unwrap();
+        f.set_phase(phase, limit + 0.001);
+        assert_eq!(
+            f.cutters.validate_observation(&f.town, &f.ledger),
+            Err(Error::Invalid)
+        );
+    }
+}
+
+#[test]
+fn frozen_observation_refuses_output_owned_by_another_camp() {
+    let mut f = Fixture::new();
+    f.assign(1, 1);
+    f.ledger
+        .produce(
+            &b(2),
+            Some(&a(1)),
+            &Stock::default(),
+            &Stock::from_entries([(wood(), q(0.25))]).unwrap(),
+        )
+        .unwrap();
+    let before = f.ledger.encode(&f.town).unwrap();
+    assert_eq!(
+        f.cutters.validate_observation(&f.town, &f.ledger),
+        Err(Error::Invalid)
+    );
+    assert_eq!(before, f.ledger.encode(&f.town).unwrap());
+}

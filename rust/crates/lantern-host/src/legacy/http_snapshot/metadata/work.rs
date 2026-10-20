@@ -22,6 +22,7 @@ pub(in crate::legacy::http_snapshot) fn sources(
         })
         .collect()
 }
+#[allow(clippy::too_many_arguments)]
 pub(super) fn target(
     record: &Node,
     task: &Task,
@@ -29,6 +30,7 @@ pub(super) fn target(
     town: &lantern_core::model::Town,
     rules: &crate::building::Rules,
     sources: &[lantern_core::spatial::Resource],
+    returning_tree: bool,
 ) -> Result<(), BoundaryError> {
     let Task::Work {
         workplace, target, ..
@@ -53,6 +55,9 @@ pub(super) fn target(
         return Err(invalid("work task owner coverage"));
     }
     let kind = spec[4].string(PATH)?;
+    if job == "woodcutting" && (site.kind != "woodcutter" || kind != "tree") {
+        return Err(invalid("gathering source kind coverage"));
+    }
     let (x, y) = match target {
         lantern_core::model::Destination::Building(id) => {
             if rules.sites[id].kind != kind {
@@ -64,11 +69,13 @@ pub(super) fn target(
             (f64::from(b.location.x), f64::from(b.location.y))
         }
         lantern_core::model::Destination::Position(p) => {
-            if !sources.iter().any(|r| {
-                r.kind == kind
-                    && f64::from(r.footprint.origin().x) == p.x.get()
-                    && f64::from(r.footprint.origin().y) == p.y.get()
-            }) {
+            if !(returning_tree && kind == "tree")
+                && !sources.iter().any(|r| {
+                    r.kind == kind
+                        && f64::from(r.footprint.origin().x) == p.x.get()
+                        && f64::from(r.footprint.origin().y) == p.y.get()
+                })
+            {
                 return Err(invalid("work source geometry coverage"));
             }
             (p.x.get(), p.y.get())
