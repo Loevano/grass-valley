@@ -1,8 +1,8 @@
-//! Frozen R12 controller facts; workplace helpers/playback remain R20-1h.b.
+//! Frozen R12 controller facts, including checked R18 profession helpers.
 use super::*;
 use crate::building::{Builder, Claim, Role, Rules};
 use lantern_core::{
-    ids::ActorId,
+    ids::{ActorId, BuildingId},
     model::{ActorState, ConstructionPhase, Town},
 };
 use std::collections::BTreeMap;
@@ -51,6 +51,7 @@ pub(super) fn check(
     town: &Town,
     rules: &Rules,
     builders: &BTreeMap<ActorId, Builder>,
+    assignment: Option<&BuildingId>,
 ) -> Result<bool, BoundaryError> {
     let positioned = if let Some(p) = record.optional("construction_position", PATH)? {
         point(p, actor.position)?;
@@ -59,20 +60,33 @@ pub(super) fn check(
         false
     };
     let builder = builders.get(&actor.id);
-    if actor.travel != TravelIntent::None
-        || !actor.cargo.goods().is_empty()
-        || !matches!(job, "idle" | "building")
-    {
+    if actor.travel != TravelIntent::None || !actor.cargo.goods().is_empty() {
         return Err(invalid("workplace actor playback coverage"));
     }
     let expected_role = if job == "building" {
         Role::Dedicated
-    } else {
+    } else if job == "idle" {
         Role::Idle
+    } else {
+        Role::Busy
     };
     if let Some(b) = builder {
-        if b.role != expected_role || b.helper.is_some() || b.suspended.is_some() {
+        if b.role != expected_role
+            || b.helper.as_ref()
+                != if expected_role == Role::Busy {
+                    assignment
+                } else {
+                    None
+                }
+        {
             return Err(invalid("construction role/helper coverage"));
+        }
+        // Movement/activity retained under a profession suspension needs the
+        // separate 1h.b.2 work adapter. Never replace it with an idle placeholder.
+        if let Some(saved) = &b.suspended
+            && (saved.task != Task::Idle || saved.travel != TravelIntent::None)
+        {
+            return Err(invalid("suspended workplace playback coverage"));
         }
     } else if job == "building" {
         return Err(invalid("missing native construction controller coverage"));

@@ -464,6 +464,7 @@ pub(super) fn towns(world: &RestoredWorld, payload: &Node) -> Result<(), Boundar
             let mut allowed = vec![
                 "name",
                 "job",
+                "building_index",
                 "x",
                 "y",
                 "facing",
@@ -487,8 +488,31 @@ pub(super) fn towns(world: &RestoredWorld, payload: &Node) -> Result<(), Boundar
             fields(record, &allowed)?;
             ledger::worker(record, &resident.actor, &state.ledger, native, rules)?;
             let actor = actor.state();
-            if actor.id != resident.actor || resident.assignment.is_some() {
+            if actor.id != resident.actor {
                 return Err(invalid("active actor public coverage"));
+            }
+            // Explicit legacy indexes are wire references to R18's stable owner,
+            // never unchecked offsets used to create an assignment on GET.
+            let assignment = record.optional("building_index", PATH)?;
+            let public_assignment = match assignment {
+                Some(n) if !n.is_null() => Some(
+                    native
+                        .buildings()
+                        .get(
+                            usize::try_from(n.unsigned(PATH)?)
+                                .map_err(|_| invalid("workplace index range coverage"))?,
+                        )
+                        .ok_or_else(|| invalid("workplace index coverage"))?
+                        .id
+                        .clone(),
+                ),
+                _ => None,
+            };
+            if public_assignment != resident.assignment {
+                return Err(invalid("native/public workplace assignment coverage"));
+            }
+            if assignment.is_none() && !matches!(resident.worker.job(), "idle" | "building") {
+                return Err(invalid("implicit workplace assignment coverage"));
             }
             let positioned = construction::check(
                 record,
@@ -497,6 +521,7 @@ pub(super) fn towns(world: &RestoredWorld, payload: &Node) -> Result<(), Boundar
                 native,
                 rules,
                 building_world.builders(),
+                resident.assignment.as_ref(),
             )?;
             let tool: Option<String> = record
                 .optional("worker_tool", PATH)?

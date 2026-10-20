@@ -269,7 +269,7 @@ only after work is performed. Keep unfinished stages visible in the roadmap.
 | R17 | Fishing, boats, animals, and horses | R16 | Slices 1–3 implemented offline: saved piers, land fishing, boat/crew voyages, species cargo, exploration boats, barn growth/keepers and manual butchery; slice 4 (horses/riding) remains |
 | R18 | Residents, villages, trade, and adventures | R17 | Slices 1–3 implemented offline: population, village routines/restocks, NPC roster/gifts/stories/tools/equipment, town trades and founder activities with owner reload; slice 4 and durable/live integration remain |
 | R19 | Durable Rust saves and recovery | R18 | Slices 1–3 implemented at offline native/tool boundary: snapshots `9217d66`, atomic generations `bb547bf`, `feat: add explicit save copy archive and recovery tools` (this change); [scope and rollback limits](RUST_SAVES.md). Python archival is explicitly approved as preserved-only; playable legacy actor hydration, live host integration and native reverse export remain compatibility gates |
-| R20 | HTTP, accounts, and world lifecycle | R19; R17.4/R18.4 for dependent milestones | Read-only milestones 1a–1g and construction child 1h.a implemented; next: 1h.b workplace playback. Remaining snapshot and live integration work is itemized in the R20 milestone plan; slices 2–3 not started |
+| R20 | HTTP, accounts, and world lifecycle | R19; R17.4/R18.4 for dependent milestones | Read-only milestones 1a–1g and construction child 1h.a implemented; 1h.b.1 explicit assignments/helpers implemented; next: 1h.b.2 workplace playback. Remaining snapshot and live integration work is itemized in the R20 milestone plan; slices 2–3 not started |
 | R21 | Browser compatibility and playable Rust checkpoint | R20 | Not started |
 | R22 | Shared-destination routing | R21 | Not started |
 | R23 | Cross-host benchmarks and release readiness | R22, or documented deferral | Not started |
@@ -4600,15 +4600,27 @@ None claims live gameplay.
 | 1m | Slice-1 completion audit: reconcile every snapshot field/state with R01 coverage, run applicable paired protocol/slow-transfer/refusal cases, and name all remaining live integration gates. | Pending; 1a–1l; no unsupported state silently defaults to empty |
 
 Milestone 1h has two independently testable projection boundaries. Construction
-child 1h.a is implemented (evidence below). Implement the remaining named child
-1h.b next; the parent remains open until both acceptance sets pass. R12 retains
-construction walks in its durable controller, while R11 worker routes and confirmed
-playback are derived and rebuilt after restoration; their read/reload contract needs
+child 1h.a and assignment/helper grandchild 1h.b.1 are implemented (evidence below).
+Implement 1h.b.2 next; both 1h.b and 1h remain open until every acceptance set
+passes. R12 retains construction walks in its durable controller, while R11 worker
+routes and confirmed playback are derived and rebuilt after restoration; their read/reload contract needs
 its own checked adapter.
 
 | ID | Bounded deliverable and completion cases | Status |
 | --- | --- | --- |
-| 1h.b | Workplace assignment and worker movement/playback: checked R18 assignment, R11 task/phase, pose, route and confirmed playback; profession upgrade helpers and suspended work; waiting, interrupted and reload fixtures. Integrate the completed construction adapter, retaining R15–R17 activity/cargo gates under 1i–1j. | Pending; 1h.a and existing native owners |
+| 1h.b | Workplace assignment and worker movement/playback: checked R18 assignment, R11 task/phase, pose, route and confirmed playback; profession upgrade helpers and suspended work; waiting, interrupted and reload fixtures. Integrate the completed construction adapter, retaining R15–R17 activity/cargo gates under 1i–1j. | In progress; 1h.b.1 implemented, 1h.b.2 remains; 1h.a and existing native owners |
+
+Child 1h.b is divided at the durable/derived owner boundary. R12 retains its
+construction walks, helper workplace and suspended task/travel; R18 retains the
+resident assignment. R11 deliberately discards worker routes, route cursors and
+confirmed playback on restore (`lantern-core::model::Actor`, `dto/save.rs`). Do
+not infer that a retained Python animation is an independently confirmed native
+movement history or invent an idle task for unsupported work.
+
+| ID | Bounded deliverable and completion cases | Status |
+| --- | --- | --- |
+| 1h.b.1 | Explicit workplace index/null agrees with R18's stable assignment; stationary assigned/unassigned professionals; R12 profession upgrade helpers reuse 1h.a's construction target/pose/phase/walk checks, with checked helper membership and idle suspension; ordinary/chunked parity, waiting/interruption/reload and stale/private refusals. | Implemented; evidence below |
+| 1h.b.2 | Omitted legacy workplace selection through the existing R18 resolver; R11 work task/phase/elapsed, pose, derived route and confirmed playback reconstruction with independently checked native facts; non-idle suspended work; waiting, interrupted and reload parity/refusals. Preserve 1i–1j production/cargo gates and audit the full 1h acceptance set. | Pending; 1h.b.1 and an explicit read/reload reconstruction adapter over R11, without persisting derived navigation caches or ticking on GET |
 
 Every row includes public-field privacy, explicit optional/default behavior and
 unknown/stale-state rejection. GET remains frozen and read copies remain locked and
@@ -4659,6 +4671,53 @@ failure behavior. Do not treat read-only synthetic fixtures as playable-save evi
 Keep Python the default and Rust experimental. Record uncovered integration with a
 named owner; complete the parent audit only after its required cases actually pass.
 ```
+
+### R20 slice 1h.b.1 — Explicit workplace assignments and profession helpers
+
+Public `building_index` is an explicit saved-order wire reference, checked against
+R18's stable native resident assignment before admission. Integer range, membership,
+null and absence are checked independently; null preserves an explicitly unassigned
+professional. Omitted indexes for idle/building roles retain their existing default.
+Omitted professional assignment requires 1h.b.2's legacy resolver and still refuses;
+GET never chooses a workplace or changes the resident roster. This is explicit
+legacy membership, not new-job qualification/capacity enforcement.
+
+Stationary professional actors retain their real task, cargo/travel gates and pose.
+Profession upgrade helpers must have R12's busy role and a helper workplace equal
+to the R18 assignment. R12 restore checks the upgrading workplace or linked parent,
+claim and suspension membership; the integrated 1h.a adapter additionally checks
+public target geometry, phase, position and retained walk/cursor/job. An idle,
+non-travelling suspended task is supported; non-idle suspended work remains refused
+rather than discarded. Unsupported `work_animation` remains refused under 1h.b.2.
+Production/activity owners and cargo stay gated under 1i–1j.
+
+Synthetic ordinary/chunked fixtures build independent native owners, restore a
+durable generation and pair complete Python/Rust snapshots. Cases include assigned
+and explicitly unassigned professionals, helper walking/waiting/arrival/interruption,
+linked-acre parent upgrades, multiple residents sharing a workplace, repeated GETs,
+stale/missing/null/invalid indexes, controller-role drift, private data, implicit
+assignments and non-idle
+native suspension. Source bytes remain unchanged on refusal and successful reads.
+No commands, ticking, playable hydration or default-host changes are included.
+
+The parent **1h.b and 1h remain open** for **1h.b.2**. Performance comparisons were
+not run: this is frozen compatibility/ownership work without an optimization claim.
+
+Validation: `python3 tools/check.py --list` selected seven HTTP files and
+`rust:lantern-host`. The 50 agriculture/populated/terrain Python cases, all 491
+Rust tests/doctests, formatting and all-target Clippy with warnings denied passed
+in `performance-results/20261020-153633/`. The other group ran 32 cases in
+`performance-results/20261020-153634/`: construction/people/storage passed all 24;
+one new workplace subcase exposed eager fixture-only suspension construction for
+idle helpers. That task-introduced bug was fixed with lazy initialization, and the
+final eight workplace cases (including linked-parent upgrades and non-idle native
+suspension refusal) passed in `performance-results/workplace-final/`. The earlier
+report remains truthfully failed; the targeted final report covers the correction.
+No pre-existing assertion failures were observed. An initial sandbox-only socket
+failure was rerun with escalation; HTTP checks used local loopback sockets. Local
+Rust/Cargo were Homebrew 1.99.1. Markdown/JSON reports and logs were inspected;
+performance is `not_run`, no thresholds or baselines were changed, and no full-suite
+or gameplay/browser benchmark was run.
 
 ### R20 slice 1h.a — Frozen construction actor projections
 

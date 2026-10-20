@@ -92,8 +92,11 @@ groups on both map formats. Read-only milestones 1a–1g are implemented. The
 [R20 milestone plan](RUST_MIGRATION.md#r20-milestone-plan) replaces open-ended slice-1
 continuations with individual tasks. Child 1h.a now checks dedicated-builder and
 idle-helper construction targets, poses, phases and saved walks on both map formats.
-Parent 1h remains open: next is 1h.b workplace assignment/playback and profession
-upgrade helpers, followed by production, transport/fishing/livestock,
+Child 1h.b.1 now checks explicit R18 workplace assignments/nulls and R12 profession
+upgrade helpers with idle suspensions, reusing the construction adapter on both map
+formats. Parent 1h/1h.b remain open: next is 1h.b.2 omitted-assignment resolution,
+R11 worker task/route/confirmed playback reconstruction and non-idle suspended work,
+followed by production, transport/fishing/livestock,
 independent town maps, mounted founders and a snapshot completion audit. Mounted
 state is blocked on R17 slice 4. Unsupported states and undrained tool receipts
 still fail admission; read copies never mutate their exclusively locked source or

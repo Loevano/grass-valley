@@ -64,6 +64,7 @@ struct NativePeople {
     stale_progression: bool,
     returned_tool: bool,
     last_batch: u64,
+    suspended_work: bool,
 }
 #[derive(Default, Deserialize)]
 #[serde(default, deny_unknown_fields)]
@@ -385,8 +386,10 @@ fn populated(
             if v["job"] == "building" || v.get("construction_target").is_some() {
                 let role = if v["job"] == "building" {
                     Role::Dedicated
-                } else {
+                } else if v["job"] == "idle" {
                     Role::Idle
+                } else {
+                    Role::Busy
                 };
                 let claim = v.get("construction_target").map(|target| {
                     if target["kind"] == "road" {
@@ -444,8 +447,27 @@ fn populated(
                         role,
                         claim,
                         walk,
-                        helper: None,
-                        suspended: None,
+                        helper: (role == Role::Busy)
+                            .then(|| ids[v["building_index"].as_u64().unwrap() as usize].clone()),
+                        suspended: (role == Role::Busy).then(|| {
+                            lantern_host::building::Suspended {
+                                task: if people.suspended_work {
+                                    Task::Work {
+                                        workplace: ids
+                                            [v["building_index"].as_u64().unwrap() as usize]
+                                            .clone(),
+                                        target: lantern_core::model::Destination::Position(
+                                            actor_state.position,
+                                        ),
+                                        phase: lantern_core::model::WorkPhase::Working,
+                                        elapsed: lantern_core::units::Seconds::new(0.125).unwrap(),
+                                    }
+                                } else {
+                                    Task::Idle
+                                },
+                                travel: lantern_core::model::TravelIntent::None,
+                            }
+                        }),
                     },
                 );
             }
@@ -476,7 +498,9 @@ fn populated(
                 actor,
                 name: v["name"].as_str().unwrap().into(),
                 worker,
-                assignment: None,
+                assignment: v["building_index"]
+                    .as_u64()
+                    .map(|i| ids[i as usize].clone()),
             });
         }
         for (v, actor) in source["villagers"].as_array().unwrap().iter().zip(&actors) {
