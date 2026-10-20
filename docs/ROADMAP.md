@@ -86,10 +86,12 @@ boat tiers, resident tools and population history now extend those snapshots;
 nondefault construction evidence is cross-checked against its native owners.
 Frozen advanced storage buffers, filters, reserved inputs, worker/orphan output and
 inventory mirrors now have checked native owners and paired ordinary/chunked snapshots.
-Read-only milestones 1a–1f are implemented. The
+Frozen linked fields and orchard trees now agree with native building and agricultural
+owners, including saved parent indexes, crop/tree clocks, defaults and relocated
+groups on both map formats. Read-only milestones 1a–1g are implemented. The
 [R20 milestone plan](RUST_MIGRATION.md#r20-milestone-plan) replaces open-ended slice-1
-continuations with individual tasks: next is 1g linked fields/trees, followed by
-worker/builder playback, production, transport/fishing/livestock,
+continuations with individual tasks: next is 1h worker/builder playback, followed by
+production, transport/fishing/livestock,
 independent town maps, mounted founders and a snapshot completion audit. Mounted
 state is blocked on R17 slice 4. Unsupported states and undrained tool receipts
 still fail admission; read copies never mutate their exclusively locked source or

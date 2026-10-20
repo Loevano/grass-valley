@@ -2,6 +2,7 @@
 //! serialized on the strength of preservation alone. Unknown nested fields fail.
 use super::*;
 use crate::persistence::{RestoredModel, RestoredWorld};
+mod agriculture;
 mod buildings;
 mod ledger;
 mod people;
@@ -320,10 +321,6 @@ pub(super) fn towns(world: &RestoredWorld, payload: &Node) -> Result<(), Boundar
                 != encoded(empty.woodcutters.encode(native))?
             || encoded(state.processors.encode(native))?
                 != encoded(empty.processors.encode(native))?
-            || encoded(state.fields.encode(native, &state.ledger))?
-                != encoded(empty.fields.encode(native, &state.ledger))?
-            || encoded(state.orchards.encode(native, &state.ledger))?
-                != encoded(empty.orchards.encode(native, &state.ledger))?
             || encoded(state.fishers.encode(native))? != encoded(empty.fishers.encode(native))?
             || encoded(state.boats.encode(native))? != encoded(empty.boats.encode(native))?
             || state.livestock.is_some()
@@ -420,6 +417,7 @@ pub(super) fn towns(world: &RestoredWorld, payload: &Node) -> Result<(), Boundar
         if buildings.len() != native.buildings().len() {
             return Err(invalid("native/public building membership"));
         }
+        agriculture::check(buildings, native, rules, state)?;
         for (record, building) in buildings.iter().zip(native.buildings()) {
             buildings::check(record, building, &rules.sites[&building.id])?;
             let site = &rules.sites[&building.id];

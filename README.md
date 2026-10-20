@@ -945,6 +945,11 @@ terrain protocol checks and constructs its own disposable native roots. The Carg
 `http_fixture` example is solely a synthetic fixture builder, not a legacy converter.
 See [R20's admission limits and remaining work](docs/RUST_MIGRATION.md#r20-slice-1-continuation--personal-and-population-presentation).
 
+`python3 tools/check.py --tests tests/test_http_agriculture.py` covers frozen linked
+fields and orchard trees on ordinary/chunked maps, including agricultural stages,
+parent indexes, saved relocated groups, defaults, owner mismatches and private data.
+These are synthetic snapshot fixtures, not playable hydration or live commands.
+
 The new HTTP dependencies are Axum 0.8.9 (MIT, Rust ≥1.80), Tokio 1.54.0 (MIT,
 Rust ≥1.85), tower-http 0.6.11 (MIT, Rust ≥1.64) and form_urlencoded 1.2.2
 (MIT OR Apache-2.0). The lockfile records transitive versions. APIs and declared

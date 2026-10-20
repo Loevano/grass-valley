@@ -269,7 +269,7 @@ only after work is performed. Keep unfinished stages visible in the roadmap.
 | R17 | Fishing, boats, animals, and horses | R16 | Slices 1–3 implemented offline: saved piers, land fishing, boat/crew voyages, species cargo, exploration boats, barn growth/keepers and manual butchery; slice 4 (horses/riding) remains |
 | R18 | Residents, villages, trade, and adventures | R17 | Slices 1–3 implemented offline: population, village routines/restocks, NPC roster/gifts/stories/tools/equipment, town trades and founder activities with owner reload; slice 4 and durable/live integration remain |
 | R19 | Durable Rust saves and recovery | R18 | Slices 1–3 implemented at offline native/tool boundary: snapshots `9217d66`, atomic generations `bb547bf`, `feat: add explicit save copy archive and recovery tools` (this change); [scope and rollback limits](RUST_SAVES.md). Python archival is explicitly approved as preserved-only; playable legacy actor hydration, live host integration and native reverse export remain compatibility gates |
-| R20 | HTTP, accounts, and world lifecycle | R19; R17.4/R18.4 for dependent milestones | Read-only milestones 1a–1f implemented; next: 1g linked field/tree projections. Remaining snapshot and live integration work is itemized in the R20 milestone plan; slices 2–3 not started |
+| R20 | HTTP, accounts, and world lifecycle | R19; R17.4/R18.4 for dependent milestones | Read-only milestones 1a–1g implemented; next: 1h worker/builder playback projections. Remaining snapshot and live integration work is itemized in the R20 milestone plan; slices 2–3 not started |
 | R21 | Browser compatibility and playable Rust checkpoint | R20 | Not started |
 | R22 | Shared-destination routing | R21 | Not started |
 | R23 | Cross-host benchmarks and release readiness | R22, or documented deferral | Not started |
@@ -4583,16 +4583,15 @@ complete until every required milestone and its completion audit have passed.
 
 **Completed read-only foundation:** 1a bootstrap (`4fc4348`), 1b terrain
 (`23260bb`), 1c checked towns/landscape (`b5645ca`), 1d construction/history
-(`88ce275`), 1e personal/population (`c319e13`), and 1f advanced storage
-(implementation/evidence below). IDs 1c–1e name the historical
+(`88ce275`), 1e personal/population (`c319e13`), 1f advanced storage, and 1g linked
+agriculture (implementation/evidence below). IDs 1c–1e name the historical
 continuations below; their evidence is unchanged. None claims live gameplay.
 
 **Remaining slice 1 — frozen snapshot compatibility:**
 
 | ID | Bounded deliverable and completion cases | Prerequisites / status |
 | --- | --- | --- |
-| 1g | Linked field/tree projections: group membership, geometry and saved agricultural state agree with native building/farming/orchard owners; ordinary/chunked and relocation/reload fixtures. | Next; R12/R16 owners; 1f implemented |
-| 1h | Worker/builder playback projections: identity, assignments, task/phase, position, facing, route and construction walks agree with native movement/construction/population owners; waiting, interrupted and reloaded cases. | Pending; R11/R12/R18 owners |
+| 1h | Worker/builder playback projections: identity, assignments, task/phase, position, facing, route and construction walks agree with native movement/construction/population owners; waiting, interrupted and reloaded cases. | Next; R11/R12/R18 owners; 1g implemented |
 | 1i | Production projections: gathering/processor/workshop/farm/orchard activity, claims, clocks and queues agree with native owners; in-progress and interrupted/reloaded snapshots. | Pending; 1g–1h and R15/R16 owners |
 | 1j | Transport/fishing/livestock projections: producer/hauler/merchant trips, cargo, crews and barn work agree with native owners; outward/return, blocked and loaded states. | Pending; 1h–1i and R14/R17 slices 1–3 |
 | 1k | Independent legacy-town landscapes: checked per-town scene assembly, bounds, resources, hall context and cache/query behavior; paired snapshots without mutating source copies. | Pending; 1c and existing R07/R08 geometry |
@@ -4649,6 +4648,50 @@ Keep Python the default and Rust experimental. Record uncovered integration with
 named owner; complete the parent audit only after its required cases actually pass.
 ```
 
+### R20 slice 1g — Frozen linked agricultural projections
+
+Read admission checks complete field/tree membership and saved parent indexes
+against the R16 farming/orchard owners and the R12 site parent/state mirrors.
+Existing model/site checks establish kind, coordinates, footprint, orientation,
+construction and parent range. Selected crop, planted crop, stage, elapsed time,
+work progress, cycle, remaining yield and fruit must agree with the native owners.
+Absent field/tree state and selected crop use the existing native legacy defaults;
+optional crop/yield values retain their original omitted/null wire form. Unknown
+nested fields, unrelated agricultural fields on other kinds, stale/missing owners,
+invalid indexes and mismatched mirrors refuse the entire read host before listening.
+Complete canonical owner comparisons continue to reject assignments, claims, jobs,
+previous work and watering rounds pending milestones 1h–1i.
+
+Disposable ordinary/chunked fixtures install agricultural facts through existing
+native admission and save validation, then reload a durable native generation.
+Paired full Python/Rust snapshots cover every field/tree stage, fractional clocks,
+partial yield/fruit, defaults, optional/null forms, implicit planted crops, reordered
+indexes and saved translated farm/orchard groups. Relocation fixtures exercise
+frozen post-relocation geometry and reload, not live HTTP move commands. Repeated
+GETs preserve full snapshots and source bytes. Refusals independently vary public
+facts, native owner presence, assignments and R12 child mirrors; private canaries
+never enter output. No scheduling, goods transfer, receipt draining or commands
+were added. Worker playback remains **1h**, production **1i**, transport/fishing/
+livestock **1j**, independent maps **1k**, mounted founders **1l**, and the snapshot
+audit **1m**. Live transactions/hydration/scheduling remain **2b/3a/3b**.
+
+Performance comparisons were not run: this is frozen protocol compatibility work,
+without a performance investigation or optimization claim.
+
+Validation: `python3 tools/check.py --list` selected five affected HTTP files and
+`rust:lantern-host`. The affected run `performance-results/20261020-123946/`
+passed formatting, all 491 host tests/doctests and all-target Clippy with warnings
+denied (local Homebrew Rust 1.99.1). Its Python command reached the runner's
+300-second limit after 64 successful cases, during the remaining ordinary-storage
+checks; the report correctly retains failure/exit 124. Both unfinished cases passed
+in targeted run `performance-results/20261020-124526/`, completing all 66 affected
+Python cases. Markdown/JSON reports and individual logs were inspected; performance
+is `not_run`. No test assertion failures remain. Initial new-test runs needed local
+socket escalation and exposed two fixture-index errors on ordinary maps; selecting
+acres by state fixed those errors, as verified by the affected run. No application
+failure or pre-existing test failure was identified. The command timeout was not
+relabelled as a passing combined run, and no runner limits or thresholds changed.
+
 ### R20 slice 1f — Frozen advanced storage projections
 
 The read-only adapter checks saved `stored_goods` (including legacy provisions),
@@ -4677,7 +4720,7 @@ towns/buildings and public facts, migration markers and unknown/private nested
 fields. Existing actors retain their checked native state; non-idle native work
 still refuses. GET never transfers goods, ticks or drains founder tool receipts.
 
-Remaining frozen states retain named owners: linked fields/trees **1g**;
+Remaining frozen states retain named owners (linked fields/trees completed in **1g**):
 worker/builder assignment and playback **1h**; active production/claims/clocks/queues
 **1i**; carried cargo, trips, fishing crews and livestock **1j**; independent maps
 **1k**; mounted founders **1l** (R17.4 dependency); full snapshot audit **1m**.

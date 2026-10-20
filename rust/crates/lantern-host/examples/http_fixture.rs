@@ -49,6 +49,8 @@ struct World {
     native_people: NativePeople,
     #[serde(default)]
     native_storage: NativeStorage,
+    #[serde(default)]
+    native_agriculture: NativeAgriculture,
 }
 #[derive(Default, Deserialize)]
 #[serde(default, deny_unknown_fields)]
@@ -67,6 +69,14 @@ struct NativeStorage {
     stale_stored: bool,
     stale_pending: bool,
     missing_store: bool,
+}
+#[derive(Default, Deserialize)]
+#[serde(default, deny_unknown_fields)]
+struct NativeAgriculture {
+    missing_fields: bool,
+    missing_trees: bool,
+    stale_child: bool,
+    assigned: bool,
 }
 #[derive(Deserialize)]
 struct Ids {
@@ -123,6 +133,7 @@ fn main() {
                 w.native_work,
                 &w.native_people,
                 &w.native_storage,
+                &w.native_agriculture,
             )
         } else {
             WorldSnapshot::capture(&model, &states)
@@ -167,6 +178,7 @@ fn populated(
     work: bool,
     people: &NativePeople,
     storage: &NativeStorage,
+    agriculture: &NativeAgriculture,
 ) -> WorldSnapshot {
     let world: serde_json::Value = serde_json::from_str(text).unwrap();
     let catalog: serde_json::Value =
@@ -311,6 +323,44 @@ fn populated(
                 );
             }
             stores.push(store);
+        }
+        let ids: Vec<_> = buildings.iter().map(|b| b.id.clone()).collect();
+        for (b, id) in source["buildings"].as_array().unwrap().iter().zip(&ids) {
+            let site = sites.get_mut(id).unwrap();
+            let field = site.kind == "acre";
+            if field || site.kind == "orchard_tree" {
+                let key = if field { "farm_index" } else { "orchard_index" };
+                site.parent = Some(ids[b[key].as_u64().unwrap() as usize].clone());
+                site.child = Some(if field {
+                    lantern_host::building::ChildState::Field {
+                        stage: b["field"]["stage"].as_str().unwrap_or("unplowed").into(),
+                        elapsed: lantern_core::units::Seconds::new(
+                            b["field"]["elapsed"].as_f64().unwrap_or(0.),
+                        )
+                        .unwrap(),
+                        progress: Work::new(b["field"]["progress"].as_f64().unwrap_or(0.)).unwrap(),
+                        cycle: b["field"]["cycle"].as_u64().unwrap_or(0),
+                    }
+                } else {
+                    lantern_host::building::ChildState::Tree {
+                        stage: b["tree"]["stage"].as_str().unwrap_or("sapling").into(),
+                        elapsed: lantern_core::units::Seconds::new(
+                            b["tree"]["elapsed"].as_f64().unwrap_or(0.),
+                        )
+                        .unwrap(),
+                        fruit: q(b["tree"]["fruit"].as_f64().unwrap_or(8.)),
+                    }
+                });
+            }
+        }
+        if agriculture.stale_child {
+            for site in sites.values_mut() {
+                match site.child.as_mut() {
+                    Some(lantern_host::building::ChildState::Field { cycle, .. }) => *cycle += 1,
+                    Some(lantern_host::building::ChildState::Tree { fruit, .. }) => *fruit = q(1.),
+                    None => (),
+                }
+            }
         }
         let mut actors = Vec::new();
         let mut residents = Vec::new();
@@ -467,6 +517,47 @@ fn populated(
             population = Population::decode(&saved.to_string(), &town).unwrap();
         }
         state.population = Some(population);
+        if !storage.missing_store {
+            state.fields = lantern_host::farming::Fields::admit_legacy(
+                &town,
+                &state.ledger,
+                source["buildings"].as_array().unwrap(),
+                &ids,
+                BTreeMap::new(),
+            )
+            .unwrap();
+            state.orchards = lantern_host::orchards::Orchards::admit_legacy(
+                &town,
+                &state.ledger,
+                source["buildings"].as_array().unwrap(),
+                &ids,
+                BTreeMap::new(),
+            )
+            .unwrap();
+        }
+        if agriculture.missing_fields {
+            state.fields = lantern_host::farming::Fields::default();
+        }
+        if agriculture.missing_trees {
+            state.orchards = lantern_host::orchards::Orchards::default();
+        }
+        if agriculture.assigned
+            && let Some(b) = source["buildings"]
+                .as_array()
+                .unwrap()
+                .iter()
+                .position(|b| b["kind"] == "farm")
+        {
+            state
+                .fields
+                .set_assignment(
+                    &mut town.clone(),
+                    &state.ledger,
+                    &town.actors()[0].state().id,
+                    Some(&ids[b]),
+                )
+                .unwrap();
+        }
         let mut founder = lantern_host::progression::Worker::new("idle").unwrap();
         if people.social {
             let p = &source["player"];

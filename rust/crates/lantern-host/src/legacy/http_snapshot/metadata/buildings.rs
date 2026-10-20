@@ -92,13 +92,13 @@ pub(super) fn check(record: &Node, building: &Building, site: &Site) -> Result<(
             "level",
             "settler_level",
             "profession_upgrades",
+            "farm_index",
+            "orchard_index",
+            "crop",
+            "field",
+            "tree",
         ],
     )?;
-    if site.parent.is_some() || site.child.is_some() {
-        return Err(invalid(
-            "linked building or duplicated inventory public coverage",
-        ));
-    }
     default_number(record, "level", site.level as f64, 1.)?;
     default_number(record, "settler_level", site.capacity_level as f64, 1.)?;
     default_number(
