@@ -80,6 +80,12 @@ pub(super) fn check(record: &Node, building: &Building, site: &Site) -> Result<(
             "y",
             "footprint",
             "stored_goods",
+            "output_buffer",
+            "input_buffer",
+            "pending_output",
+            "orphaned_output",
+            "storage_enabled",
+            "storage_allocations",
             "orientation",
             "fence_orientation",
             "construction",
@@ -88,11 +94,7 @@ pub(super) fn check(record: &Node, building: &Building, site: &Site) -> Result<(
             "profession_upgrades",
         ],
     )?;
-    if site.parent.is_some()
-        || site.child.is_some()
-        || !site.pending.is_empty()
-        || !site.stored.is_empty()
-    {
+    if site.parent.is_some() || site.child.is_some() {
         return Err(invalid(
             "linked building or duplicated inventory public coverage",
         ));

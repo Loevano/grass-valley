@@ -311,27 +311,6 @@ pub(super) fn towns(world: &RestoredWorld, payload: &Node) -> Result<(), Boundar
             return Err(invalid("builder playback public coverage"));
         }
         people::progression(state, rules)?;
-        for store in state.ledger.stores() {
-            let site = rules
-                .sites
-                .get(&store.id)
-                .ok_or_else(|| invalid("store membership coverage"))?;
-            let mut expected = crate::resources::StoragePolicy::new(&site.kind);
-            expected.level = site.level;
-            expected.equipment = site.equipment.clone();
-            expected.construction = native
-                .building(&store.id)
-                .map_err(|_| invalid("store membership coverage"))?
-                .construction
-                != ConstructionState::Complete;
-            if store.policy != expected
-                || !store.output.entries().is_empty()
-                || !store.inputs.entries().is_empty()
-                || !store.pending.is_empty()
-            {
-                return Err(invalid("advanced storage presentation coverage"));
-            }
-        }
         // Every offline owner must have an explicit adapter before it can enter
         // the read host. Compare canonical owner saves, not a guessed empty list.
         let empty = crate::persistence::TownState::empty(state.ledger.clone());
@@ -372,6 +351,10 @@ pub(super) fn towns(world: &RestoredWorld, payload: &Node) -> Result<(), Boundar
             "market_sales",
             "rules",
             "resource_activity",
+            "goods",
+            "inventory_version",
+            "food_balance_version",
+            "market_storage_version",
             "local_visits",
             "food_shortage_seconds",
             "housing_shortage_seconds",
@@ -423,16 +406,7 @@ pub(super) fn towns(world: &RestoredWorld, payload: &Node) -> Result<(), Boundar
             .ledger
             .overview()
             .map_err(|_| invalid("native ledger coverage"))?;
-        for resource in resources {
-            let amount = overview[&resource].free;
-            if let Some(value) = town.optional(&resource, PATH)? {
-                if value.nonnegative_number(PATH)? != amount {
-                    return Err(invalid("native/public inventory mismatch"));
-                }
-            } else if amount != 0. {
-                return Err(invalid("missing public inventory"));
-            }
-        }
+        ledger::inventory(town, &overview)?;
         ledger::history(town, &state.ledger)?;
         let player = town.required("player", PATH)?;
         people::founder(town, state.social.as_ref())?;
@@ -470,29 +444,7 @@ pub(super) fn towns(world: &RestoredWorld, payload: &Node) -> Result<(), Boundar
             {
                 return Err(invalid("native/public orientation"));
             }
-            if record.optional("stored_goods", PATH)?.is_none()
-                && site.kind != "hall"
-                && let Ok(store) = state.ledger.store(&building.id)
-                && (!store.stored.entries().is_empty() || store.provisions.get() != 0.)
-            {
-                return Err(invalid("missing authoritative store presentation"));
-            }
-            if let Some(goods) = record.optional("stored_goods", PATH)? {
-                stock(goods)?;
-                let store = state
-                    .ledger
-                    .store(&building.id)
-                    .map_err(|_| invalid("native store coverage"))?;
-                for (key, amount) in goods.object(PATH)? {
-                    let resource = crate::resources::ResourceKey::parse(key).unwrap();
-                    if amount.number(PATH)? != store.stored.quantity(&resource).get() {
-                        return Err(invalid("native/public store mismatch"));
-                    }
-                }
-                if goods.object(PATH)?.len() != store.stored.entries().len() {
-                    return Err(invalid("native/public store membership"));
-                }
-            }
+            ledger::building(record, building, site, &state.ledger)?;
         }
         buildings::roads(town, &rules.roads)?;
         buildings::hall_remaining(town, native, rules)?;
@@ -522,6 +474,8 @@ pub(super) fn towns(world: &RestoredWorld, payload: &Node) -> Result<(), Boundar
                 "talents",
                 "sandbox",
                 "worker_tool",
+                "pending_output",
+                "pending_workplace",
             ];
             let jobs: Vec<_> = crate::resources::catalog()["rules"]["jobs"]
                 .as_array()
@@ -531,6 +485,7 @@ pub(super) fn towns(world: &RestoredWorld, payload: &Node) -> Result<(), Boundar
                 .collect();
             allowed.extend(jobs.iter().map(String::as_str));
             fields(record, &allowed)?;
+            ledger::worker(record, &resident.actor, &state.ledger, native, rules)?;
             let actor = actor.state();
             if actor.id != resident.actor
                 || actor.task != Task::Idle

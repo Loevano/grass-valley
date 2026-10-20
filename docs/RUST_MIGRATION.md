@@ -269,7 +269,7 @@ only after work is performed. Keep unfinished stages visible in the roadmap.
 | R17 | Fishing, boats, animals, and horses | R16 | Slices 1–3 implemented offline: saved piers, land fishing, boat/crew voyages, species cargo, exploration boats, barn growth/keepers and manual butchery; slice 4 (horses/riding) remains |
 | R18 | Residents, villages, trade, and adventures | R17 | Slices 1–3 implemented offline: population, village routines/restocks, NPC roster/gifts/stories/tools/equipment, town trades and founder activities with owner reload; slice 4 and durable/live integration remain |
 | R19 | Durable Rust saves and recovery | R18 | Slices 1–3 implemented at offline native/tool boundary: snapshots `9217d66`, atomic generations `bb547bf`, `feat: add explicit save copy archive and recovery tools` (this change); [scope and rollback limits](RUST_SAVES.md). Python archival is explicitly approved as preserved-only; playable legacy actor hydration, live host integration and native reverse export remain compatibility gates |
-| R20 | HTTP, accounts, and world lifecycle | R19; R17.4/R18.4 for dependent milestones | Read-only milestones 1a–1e implemented through `c319e13`; next: 1f storage projections. Remaining snapshot and live integration work is itemized in the R20 milestone plan; slices 2–3 not started |
+| R20 | HTTP, accounts, and world lifecycle | R19; R17.4/R18.4 for dependent milestones | Read-only milestones 1a–1f implemented; next: 1g linked field/tree projections. Remaining snapshot and live integration work is itemized in the R20 milestone plan; slices 2–3 not started |
 | R21 | Browser compatibility and playable Rust checkpoint | R20 | Not started |
 | R22 | Shared-destination routing | R21 | Not started |
 | R23 | Cross-host benchmarks and release readiness | R22, or documented deferral | Not started |
@@ -4583,15 +4583,15 @@ complete until every required milestone and its completion audit have passed.
 
 **Completed read-only foundation:** 1a bootstrap (`4fc4348`), 1b terrain
 (`23260bb`), 1c checked towns/landscape (`b5645ca`), 1d construction/history
-(`88ce275`), and 1e personal/population (`c319e13`). IDs 1c–1e name the historical
+(`88ce275`), 1e personal/population (`c319e13`), and 1f advanced storage
+(implementation/evidence below). IDs 1c–1e name the historical
 continuations below; their evidence is unchanged. None claims live gameplay.
 
 **Remaining slice 1 — frozen snapshot compatibility:**
 
 | ID | Bounded deliverable and completion cases | Prerequisites / status |
 | --- | --- | --- |
-| 1f | Advanced storage projections: buffers, filters, reservations and inventory mirrors agree with native ledger/building owners; paired full snapshots and stale/missing-owner refusal cases. | Next; 1d–1e implemented |
-| 1g | Linked field/tree projections: group membership, geometry and saved agricultural state agree with native building/farming/orchard owners; ordinary/chunked and relocation/reload fixtures. | Pending; R12/R16 owners |
+| 1g | Linked field/tree projections: group membership, geometry and saved agricultural state agree with native building/farming/orchard owners; ordinary/chunked and relocation/reload fixtures. | Next; R12/R16 owners; 1f implemented |
 | 1h | Worker/builder playback projections: identity, assignments, task/phase, position, facing, route and construction walks agree with native movement/construction/population owners; waiting, interrupted and reloaded cases. | Pending; R11/R12/R18 owners |
 | 1i | Production projections: gathering/processor/workshop/farm/orchard activity, claims, clocks and queues agree with native owners; in-progress and interrupted/reloaded snapshots. | Pending; 1g–1h and R15/R16 owners |
 | 1j | Transport/fishing/livestock projections: producer/hauler/merchant trips, cargo, crews and barn work agree with native owners; outward/return, blocked and loaded states. | Pending; 1h–1i and R14/R17 slices 1–3 |
@@ -4648,6 +4648,59 @@ failure behavior. Do not treat read-only synthetic fixtures as playable-save evi
 Keep Python the default and Rust experimental. Record uncovered integration with a
 named owner; complete the parent audit only after its required cases actually pass.
 ```
+
+### R20 slice 1f — Frozen advanced storage projections
+
+The read-only adapter checks saved `stored_goods` (including legacy provisions),
+`output_buffer`, reserved `input_buffer`, total `pending_output` and
+`orphaned_output` against the native ledger. Worker pending mirrors must agree
+with the native pending actor ID and exact building kind/coordinates; multiple
+workers and orphan output count once. Public `goods`, wood/food/coin balances
+match free ledger inventory, excluding reserved inputs and pending output.
+Explicit inventory migration markers must be current. Absent/empty buffers and
+zero-valued keys preserve Python's wire form without creating physical stock.
+
+Storage level, equipment and construction state agree with native building sites;
+explicit filters (including null/empty forms) and legacy allocations agree with the
+native policy. Disabled filters retain saved goods. Optional nonempty R12 native
+inventory mirrors must match physical free stock plus reserved ingredients and
+provisions; pending mirrors match aggregate ledger pending output. Empty R12 maps
+mean no duplicate mirror is retained, not permission to omit a ledger store.
+All buildings require their ledger owner, including empty stores.
+
+Disposable native fixtures install independently selected source facts through
+existing native constructors/validated save decoders and reload a durable generation.
+Paired Python/Rust ordinary and chunked cases compare complete public snapshots,
+repeat GETs, and verify source bytes. Refusal cases cover stale buffers, balances,
+filters, building mirrors and worker/workplace ownership, missing native stores,
+towns/buildings and public facts, migration markers and unknown/private nested
+fields. Existing actors retain their checked native state; non-idle native work
+still refuses. GET never transfers goods, ticks or drains founder tool receipts.
+
+Remaining frozen states retain named owners: linked fields/trees **1g**;
+worker/builder assignment and playback **1h**; active production/claims/clocks/queues
+**1i**; carried cargo, trips, fishing crews and livestock **1j**; independent maps
+**1k**; mounted founders **1l** (R17.4 dependency); full snapshot audit **1m**.
+Aggregate transactions/tool receipts remain **2b**, hydration **3a**, scheduling
+**3b** and live saving **3c**. No commands, accounts or gameplay activation were added.
+
+Performance comparisons were not run: this is frozen compatibility/ownership
+work without a performance investigation or optimization claim.
+
+Validation: `python3 tools/check.py --list` selected the four affected HTTP
+protocol files and `rust:lantern-host`. The affected run
+`performance-results/20261020-120028/` passed 56 Python cases, all 491 host tests/
+doctests, formatting and all-target Clippy with warnings denied. Two new refusal
+cases initially hit a disposable fixture construction error: removing the empty
+home store also attempted removal in the hall-only second town. The fixture now
+limits removal to towns containing that store; both complete refusal tests passed
+in the targeted rerun `performance-results/20261020-120803/`, completing all 58
+selected Python cases. No existing-test failures remain. Markdown/JSON reports
+were inspected; the first retains its Python failure and the rerun reports pass,
+both with performance `not_run`. Local HTTP sockets required sandbox escalation.
+`git diff --check` passed. No user save or account files were used or changed.
+
+Commit message: `feat: add frozen storage snapshot projections`.
 
 ### R20 slice 1a — No-world HTTP bootstrap (slice 1 remains open)
 

@@ -12,7 +12,7 @@ use lantern_host::{
     persistence::{RegistrySnapshot, Store, TownState, WorldSnapshot},
     population::{History, Population, Resident},
     progression::Worker,
-    resources::{Ledger, ResourceKey, Stock, StoragePolicy, Store as ResourceStore},
+    resources::{Ledger, PendingOwner, ResourceKey, Stock, StoragePolicy, Store as ResourceStore},
     social::{Player, Social},
     state::{ModelWorld, PrivateCredentials},
 };
@@ -47,6 +47,8 @@ struct World {
     native_village: Option<Box<RawValue>>,
     #[serde(default)]
     native_people: NativePeople,
+    #[serde(default)]
+    native_storage: NativeStorage,
 }
 #[derive(Default, Deserialize)]
 #[serde(default, deny_unknown_fields)]
@@ -57,6 +59,14 @@ struct NativePeople {
     stale_progression: bool,
     returned_tool: bool,
     last_batch: u64,
+}
+#[derive(Default, Deserialize)]
+#[serde(default, deny_unknown_fields)]
+struct NativeStorage {
+    mirrors: bool,
+    stale_stored: bool,
+    stale_pending: bool,
+    missing_store: bool,
 }
 #[derive(Deserialize)]
 struct Ids {
@@ -112,6 +122,7 @@ fn main() {
                 w.native_source.as_ref().unwrap_or(&w.world).get(),
                 w.native_work,
                 &w.native_people,
+                &w.native_storage,
             )
         } else {
             WorldSnapshot::capture(&model, &states)
@@ -140,7 +151,23 @@ fn tile(value: &serde_json::Value) -> Tile {
         y: value["y"].as_i64().unwrap() as i32,
     }
 }
-fn populated(id: &WorldId, text: &str, work: bool, people: &NativePeople) -> WorldSnapshot {
+fn stock_value(value: &serde_json::Value) -> Stock {
+    Stock::from_entries(
+        value
+            .as_object()
+            .into_iter()
+            .flatten()
+            .map(|(k, n)| (ResourceKey::parse(k).unwrap(), q(n.as_f64().unwrap()))),
+    )
+    .unwrap()
+}
+fn populated(
+    id: &WorldId,
+    text: &str,
+    work: bool,
+    people: &NativePeople,
+    storage: &NativeStorage,
+) -> WorldSnapshot {
     let world: serde_json::Value = serde_json::from_str(text).unwrap();
     let catalog: serde_json::Value =
         serde_json::from_str(include_str!("../src/resources/catalog.json")).unwrap();
@@ -230,6 +257,16 @@ fn populated(id: &WorldId, text: &str, work: bool, people: &NativePeople) -> Wor
             policy.level = site.level;
             policy.equipment = site.equipment.clone();
             policy.construction = construction != ConstructionState::Complete;
+            policy.enabled = source_building
+                .get("storage_enabled")
+                .filter(|v| !v.is_null())
+                .map(|v| serde_json::from_value(v.clone()).unwrap());
+            if let Some(values) = source_building["storage_allocations"].as_object() {
+                policy.legacy_allocations = values
+                    .iter()
+                    .map(|(k, n)| (k.clone(), q(n.as_f64().unwrap())))
+                    .collect();
+            }
             sites.insert(building_id.clone(), site);
             buildings.push(Building {
                 id: building_id.clone(),
@@ -240,10 +277,24 @@ fn populated(id: &WorldId, text: &str, work: bool, people: &NativePeople) -> Wor
             let mut goods = BTreeMap::new();
             if let Some(input) = source_building["stored_goods"].as_object() {
                 for (key, value) in input {
-                    goods.insert(key.clone(), value.as_f64().unwrap());
+                    if key == "food" {
+                        store.provisions = q(value.as_f64().unwrap());
+                    } else {
+                        goods.insert(key.clone(), value.as_f64().unwrap());
+                    }
                 }
             } else if kind == "hall" {
                 goods.insert("wood".into(), source["wood"].as_f64().unwrap_or(0.));
+                if let Some(values) = source["goods"].as_object() {
+                    for (k, n) in values {
+                        goods.insert(k.clone(), n.as_f64().unwrap());
+                    }
+                }
+                let edible: f64 = goods
+                    .iter()
+                    .map(|(k, n)| n * catalog["public"]["edible"][k].as_f64().unwrap_or(0.))
+                    .sum();
+                store.provisions = q((source["food"].as_f64().unwrap_or(0.) - edible).max(0.));
             }
             store.stored = Stock::from_entries(
                 goods
@@ -251,8 +302,13 @@ fn populated(id: &WorldId, text: &str, work: bool, people: &NativePeople) -> Wor
                     .map(|(k, v)| (ResourceKey::parse(&k).unwrap(), q(v))),
             )
             .unwrap();
-            if kind == "hall" {
-                store.provisions = q(source["food"].as_f64().unwrap_or(0.));
+            store.output = stock_value(&source_building["output_buffer"]);
+            store.inputs = stock_value(&source_building["input_buffer"]);
+            if source_building.get("orphaned_output").is_some() {
+                store.pending.insert(
+                    PendingOwner::Orphan,
+                    stock_value(&source_building["orphaned_output"]),
+                );
             }
             stores.push(store);
         }
@@ -294,6 +350,58 @@ fn populated(id: &WorldId, text: &str, work: bool, people: &NativePeople) -> Wor
                 worker,
                 assignment: None,
             });
+        }
+        for (v, actor) in source["villagers"].as_array().unwrap().iter().zip(&actors) {
+            if let Some(spec) = v.get("pending_workplace") {
+                let index = source["buildings"]
+                    .as_array()
+                    .unwrap()
+                    .iter()
+                    .position(|b| ["kind", "x", "y"].iter().all(|k| b[k] == spec[k]))
+                    .unwrap();
+                stores[index].pending.insert(
+                    PendingOwner::Worker(actor.id.clone()),
+                    stock_value(&v["pending_output"]),
+                );
+            }
+        }
+        if storage.mirrors {
+            for store in &stores {
+                let site = sites.get_mut(&store.id).unwrap();
+                for stock in [&store.stored, &store.output, &store.inputs] {
+                    for (k, n) in stock.entries() {
+                        let total = site.stored.get(k.as_str()).map_or(0., |v| v.get()) + n.get();
+                        site.stored.insert(k.as_str().into(), q(total));
+                    }
+                }
+                if store.provisions.get() != 0. {
+                    site.stored.insert("food".into(), store.provisions);
+                }
+                site.pending = store
+                    .pending_stock()
+                    .unwrap()
+                    .entries()
+                    .iter()
+                    .map(|(k, n)| (k.as_str().into(), *n))
+                    .collect();
+            }
+        }
+        if storage.stale_stored {
+            sites
+                .get_mut(&stores[0].id)
+                .unwrap()
+                .stored
+                .insert("wood".into(), q(999.));
+        }
+        if storage.stale_pending {
+            sites
+                .get_mut(&stores[0].id)
+                .unwrap()
+                .pending
+                .insert("wood".into(), q(999.));
+        }
+        if storage.missing_store && stores.len() > 1 {
+            stores.remove(1); // Empty home: balances alone cannot detect the missing owner.
         }
         if work && let Some(actor) = actors.first_mut() {
             actor.task = Task::Move {
