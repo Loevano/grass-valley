@@ -19,6 +19,8 @@ import test_http_snapshots as terrain
 from test_http_snapshots import TerrainProtocol, fixture, reference, write_chunks
 
 RUST_SOURCES = ('rust/crates/lantern-host/src/legacy/http_snapshot/metadata.rs',
+                'rust/crates/lantern-host/src/legacy/http_snapshot/metadata/buildings.rs',
+                'rust/crates/lantern-host/src/legacy/http_snapshot/metadata/ledger.rs',
                 'rust/crates/lantern-host/src/http/read.rs',
                 'rust/crates/lantern-host/src/legacy/http_snapshot.rs',
                 'rust/crates/lantern-host/examples/http_fixture.rs')
@@ -89,6 +91,25 @@ def populated_fixture(chunked=True, elapsed=2.1, completed=False, inside=True):
                 for field in ('terrain', 'map_resources', 'tree_stumps'):
                     entry['world']['shared_map'].pop(field, None)
     entry['native_towns'] = True
+    return config
+
+
+def progressed_fixture(chunked=True):
+    config = populated_fixture(chunked)
+    town = config['worlds'][0]['world']['towns']['first']
+    town['buildings'][1]['construction'] = {'progress': 7.125, 'total': 30,
+                                            'upgrade': {'level': 2}}
+    town['buildings'][1]['settler_level'] = 2
+    town['buildings'][2]['level'] = 2
+    town['buildings'][1]['profession_upgrades'] = ['timber_frame']
+    town['roads'] = [{'x': 14, 'y': 15}, {'x': 15, 'y': 15,
+                     'construction': {'progress': 1.125, 'total': 4}}]
+    town['produced'] = {'wheat': 20.5, 'eggs': 6, 'planks': 20}
+    town['market_sales'] = 10.25
+    town['rules'] = {'production_caps': {'wheat': 80.5}}
+    town['resource_activity'] = {'seconds': 66.25, 'buckets': [
+        {'at': 9.5, 'in': {'wheat': 20.5}, 'out': {}},
+        {'at': 66.25, 'in': {'coins': 10.25}, 'out': {'food': 1.5, 'bread': 1}}]}
     return config
 
 
@@ -289,6 +310,135 @@ class RustOrdinary(RustReadHarness, unittest.TestCase):
             self.assertNotEqual(result.returncode, 0)
             self.assertIn(b'coverage', result.stderr)
             self.assertNotIn(b'SYNTHETIC_PRIVATE_CANARY', result.stdout + result.stderr)
+
+
+class ProgressedProtocol:
+    call = TerrainProtocol.call
+    chunked = True
+
+    @classmethod
+    def configuration(cls):
+        return progressed_fixture(cls.chunked)
+
+    def test_progressed_construction_roads_and_history_match_python(self):
+        status, value = self.call('/api/world')
+        self.assertEqual(status, 200)
+        value.pop('players_sampled_at')
+        self.assertEqual(value, reference(self.config, {}))
+        self.assertTrue(value['hall_ready']['first'])  # Home still counts while upgrading.
+        town = value['towns']['first']
+        self.assertEqual(town['buildings'][1]['construction']['progress'], 7.125)
+        self.assertEqual(town['produced']['wheat'], 20.5)
+        self.assertEqual(town['resource_activity']['seconds'], 66.25)
+        self.assertEqual(town['roads'][1]['construction']['progress'], 1.125)
+
+
+class PythonProgressed(ProgressedProtocol, unittest.TestCase):
+    setUpClass = classmethod(terrain.PythonTerrain.setUpClass.__func__)
+    stop = classmethod(terrain.PythonTerrain.stop.__func__)
+
+
+class PythonProgressedOrdinary(PythonProgressed):
+    chunked = False
+
+
+class RustProgressed(ProgressedProtocol, unittest.TestCase):
+    setUpClass = classmethod(terrain.RustTerrain.setUpClass.__func__)
+    stop = classmethod(terrain.RustTerrain.stop.__func__)
+    make_native = classmethod(terrain.RustTerrain.make_native.__func__)
+    read_copy = RustReadHarness.read_copy
+
+    def test_construction_capacity_equipment_hall_and_milestone_boundaries(self):
+        for case in ('new-home', 'new-farm', 'capacity', 'equipment', 'hall', 'wheat-missing',
+                     'wheat-ready', 'processed-food', 'market-sales', 'complete-road'):
+            with self.subTest(case=case):
+                config = copy.deepcopy(self.config)
+                town = config['worlds'][0]['world']['towns']['first']
+                if case in ('new-home', 'new-farm'):
+                    index = 1 if case == 'new-home' else 2
+                    town['buildings'][index]['construction'] = {'progress': 1.5, 'total': 30}
+                elif case == 'capacity':
+                    town['buildings'][1]['construction']['upgrade'] = {'settler_level': 3}
+                elif case == 'equipment':
+                    town['buildings'][1]['profession_upgrades'] = []
+                    town['buildings'][1]['construction'] = {'progress': 2.75, 'total': 30,
+                        'upgrade': {'profession_upgrades': ['timber_frame']}}
+                elif case == 'hall':
+                    town['buildings'][0]['construction'] = {'progress': 12.125, 'total': 30}
+                    town['upgrade_remaining'] = 17.875
+                elif case in ('wheat-missing', 'wheat-ready'):
+                    town['level'] = 2
+                    town['produced']['wheat'] = 19.999 if case == 'wheat-missing' else 20
+                elif case == 'processed-food':
+                    town['level'] = 4
+                    town['produced'].update(tools=5, bread=10)
+                elif case == 'market-sales':
+                    town['level'] = 9
+                    town['produced']['steel'] = 15
+                elif case == 'complete-road':
+                    town['roads'][1].pop('construction')
+                value = self.read_copy(config, '/api/world')
+                value.pop('players_sampled_at')
+                self.assertEqual(value, reference(config, {}))
+
+    def test_progressed_mismatches_and_nested_private_fields_refuse_before_listening(self):
+        for case in ('work', 'construction-missing', 'upgrade', 'level', 'capacity', 'equipment',
+                     'road', 'road-work', 'road-omitted', 'produced', 'sales', 'cap', 'activity',
+                     'history-omitted', 'private-work', 'private-upgrade', 'private-road',
+                     'private-history', 'private-rules'):
+            with self.subTest(case=case):
+                config = copy.deepcopy(self.config)
+                entry = config['worlds'][0]
+                entry['native_source'] = copy.deepcopy(entry['world'])
+                town = entry['world']['towns']['first']
+                if case == 'work':
+                    town['buildings'][1]['construction']['progress'] += .25
+                elif case == 'construction-missing':
+                    town['buildings'][1].pop('construction')
+                elif case == 'upgrade':
+                    town['buildings'][1]['construction']['upgrade'] = {'settler_level': 3}
+                elif case == 'level':
+                    town['buildings'][2]['level'] = 3
+                elif case == 'capacity':
+                    town['buildings'][1]['settler_level'] = 1
+                elif case == 'equipment':
+                    town['buildings'][1]['profession_upgrades'] = []
+                elif case == 'road':
+                    town['roads'][0]['x'] += 1
+                elif case == 'road-work':
+                    town['roads'][1]['construction']['progress'] += .25
+                elif case == 'road-omitted':
+                    town.pop('roads')
+                elif case == 'produced':
+                    town['produced']['wheat'] += 1
+                elif case == 'sales':
+                    town['market_sales'] += 1
+                elif case == 'cap':
+                    town['rules']['production_caps']['wheat'] += 1
+                elif case == 'activity':
+                    town['resource_activity']['buckets'][0]['in']['wheat'] += 1
+                elif case == 'history-omitted':
+                    town.pop('resource_activity')
+                else:
+                    target = {'private-work': town['buildings'][1]['construction'],
+                              'private-upgrade': town['buildings'][1]['construction']['upgrade'],
+                              'private-road': town['roads'][0],
+                              'private-history': town['resource_activity']['buckets'][0],
+                              'private-rules': town['rules']}[case]
+                    target['credentials'] = 'SYNTHETIC_PRIVATE_CANARY'
+                with tempfile.TemporaryDirectory(dir=self.directory.name) as directory:
+                    native = Path(directory) / 'native'
+                    self.make_native(native, config)
+                    result = subprocess.run([str(self.binary), 'http-read-copy', '--experimental',
+                        '--source', str(native), '--bind', '127.0.0.1:0'], capture_output=True, timeout=10)
+                    self.assertNotEqual(result.returncode, 0)
+                    self.assertNotIn(b'listening', result.stdout)
+                    self.assertIn(b'coverage', result.stderr)
+                    self.assertNotIn(b'SYNTHETIC_PRIVATE_CANARY', result.stdout + result.stderr)
+
+
+class RustProgressedOrdinary(RustProgressed):
+    chunked = False
 
 
 

@@ -2,6 +2,9 @@
 //! serialized on the strength of preservation alone. Unknown nested fields fail.
 use super::*;
 use crate::persistence::{RestoredModel, RestoredWorld};
+mod buildings;
+mod ledger;
+
 use lantern_core::{
     model::{ConstructionState, Task, TravelIntent},
     units::Tile,
@@ -303,6 +306,9 @@ pub(super) fn towns(world: &RestoredWorld, payload: &Node) -> Result<(), Boundar
             .find(|s| s.ledger.owner() == native.owner())
             .ok_or_else(|| invalid("native/public ledger owner mismatch"))?;
         let rules = &building_world.rules()[&native.owner().town];
+        if !building_world.builders().is_empty() {
+            return Err(invalid("builder playback public coverage"));
+        }
         if rules.progression != crate::building::Progression::default() {
             return Err(invalid("native progression presentation coverage"));
         }
@@ -311,7 +317,15 @@ pub(super) fn towns(world: &RestoredWorld, payload: &Node) -> Result<(), Boundar
                 .sites
                 .get(&store.id)
                 .ok_or_else(|| invalid("store membership coverage"))?;
-            if store.policy != crate::resources::StoragePolicy::new(&site.kind)
+            let mut expected = crate::resources::StoragePolicy::new(&site.kind);
+            expected.level = site.level;
+            expected.equipment = site.equipment.clone();
+            expected.construction = native
+                .building(&store.id)
+                .map_err(|_| invalid("store membership coverage"))?
+                .construction
+                != ConstructionState::Complete;
+            if store.policy != expected
                 || !store.output.entries().is_empty()
                 || !store.inputs.entries().is_empty()
                 || !store.pending.is_empty()
@@ -356,6 +370,11 @@ pub(super) fn towns(world: &RestoredWorld, payload: &Node) -> Result<(), Boundar
             "harvested",
             "achievements",
             "roads",
+            "upgrade_remaining",
+            "produced",
+            "market_sales",
+            "rules",
+            "resource_activity",
         ];
         let resources: Vec<String> = crate::resources::catalog()["resources"]
             .as_array()
@@ -411,13 +430,7 @@ pub(super) fn towns(world: &RestoredWorld, payload: &Node) -> Result<(), Boundar
                 return Err(invalid("missing public inventory"));
             }
         }
-        if !state.ledger.produced().entries().is_empty()
-            || state.ledger.market_sales().get() != 0.
-            || !state.ledger.caps().is_empty()
-            || !state.ledger.activity().buckets().is_empty()
-        {
-            return Err(invalid("missing ledger-history presentation coverage"));
-        }
+        ledger::history(town, &state.ledger)?;
         let player = town.required("player", PATH)?;
         fields(player, &["x", "y", "facing"])?;
         same_number(player, "x", rules.player.x.get())?;
@@ -430,24 +443,8 @@ pub(super) fn towns(world: &RestoredWorld, payload: &Node) -> Result<(), Boundar
             return Err(invalid("native/public building membership"));
         }
         for (record, building) in buildings.iter().zip(native.buildings()) {
-            fields(
-                record,
-                &["kind", "x", "y", "footprint", "stored_goods", "orientation"],
-            )?;
-            if building.construction != ConstructionState::Complete {
-                return Err(invalid("construction public coverage"));
-            }
+            buildings::check(record, building, &rules.sites[&building.id])?;
             let site = &rules.sites[&building.id];
-            if site.parent.is_some()
-                || site.child.is_some()
-                || site.upgrade.is_some()
-                || site.level != 1
-                || site.capacity_level != 1
-                || !site.equipment.is_empty()
-                || !site.pending.is_empty()
-            {
-                return Err(invalid("advanced building public coverage"));
-            }
             if record.required("kind", PATH)?.string(PATH)? != site.kind {
                 return Err(invalid("native/public building kind"));
             }
@@ -493,13 +490,8 @@ pub(super) fn towns(world: &RestoredWorld, payload: &Node) -> Result<(), Boundar
                 }
             }
         }
-        if !rules.roads.is_empty()
-            || town
-                .optional("roads", PATH)?
-                .is_some_and(|n| n.array(PATH).map_or(true, |a| !a.is_empty()))
-        {
-            return Err(invalid("road public coverage"));
-        }
+        buildings::roads(town, &rules.roads)?;
+        buildings::hall_remaining(town, native, rules)?;
         let villagers = town.required("villagers", PATH)?.array(PATH)?;
         if villagers.len() != native.actors().len() {
             return Err(invalid("native/public actor membership"));
@@ -615,7 +607,15 @@ pub(super) fn hall_ready(world: &Node) -> Result<Node, BoundaryError> {
                         x: b.required("x", PATH)?.tile(PATH)?,
                         y: b.required("y", PATH)?.tile(PATH)?,
                     },
-                    status: crate::progression::BuildingStatus::Complete,
+                    status: if let Some(construction) = b.optional("construction", PATH)? {
+                        if construction.optional("upgrade", PATH)?.is_some() {
+                            crate::progression::BuildingStatus::Upgrade
+                        } else {
+                            crate::progression::BuildingStatus::InitialConstruction
+                        }
+                    } else {
+                        crate::progression::BuildingStatus::Complete
+                    },
                 })
             })
             .collect::<Result<Vec<_>, BoundaryError>>()?;
@@ -642,9 +642,15 @@ pub(super) fn hall_ready(world: &Node) -> Result<Node, BoundaryError> {
         let evidence = crate::progression::HallEvidence {
             food: lantern_core::units::Quantity::new(town.required("food", PATH)?.number(PATH)?)
                 .map_err(|_| invalid("food"))?,
-            produced: crate::resources::Stock::default(),
+            produced: ledger::produced(town)?,
             completed_trades: 0,
-            market_sales: lantern_core::units::Quantity::new(0.).unwrap(),
+            market_sales: lantern_core::units::Quantity::new(
+                town.optional("market_sales", PATH)?
+                    .map(|n| n.nonnegative_number(PATH))
+                    .transpose()?
+                    .unwrap_or(0.),
+            )
+            .unwrap(),
         };
         result.push((
             key.clone(),

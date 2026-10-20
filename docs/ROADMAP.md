@@ -78,10 +78,13 @@ Python on disposable roots. Native read-copy snapshots now include prepared shar
 ordinary/chunked maps, checked basic towns/residents/founders, hall readiness,
 NPC/village routines and saved adventure views. Chunk payloads, versions, cache
 invalidation and populated slow transfers are paired with Python. Static directory,
-index, path and conditional-header contracts are covered. Slice 1 remains open for
-progressed-town active work/construction/transport, advanced inventory/history and
-founder state, social visit DTOs and independent legacy town maps. These states
-still fail admission. Accounts/command dispatch remain slice 2; world administration,
+index, path and conditional-header contracts are covered. Frozen construction,
+structural/capacity/equipment/hall upgrades, roads, lifetime production, caps, market
+sales and resource activity now have native checks and paired presentation tests.
+Slice 1 remains open for active worker/builder playback and transport, linked
+fields/trees, advanced storage/population/social state, richer founder state and
+independent legacy town maps. These states still fail admission. Accounts/command
+dispatch remain slice 2; world administration,
 schedules, shutdown and command/save contention remain slice 3. Read copies never
 mutate their exclusively locked source or accept POST operations.
 See [R20 remaining work](RUST_MIGRATION.md#r20-slice-1-continuation--checked-town-and-landscape-presentation).

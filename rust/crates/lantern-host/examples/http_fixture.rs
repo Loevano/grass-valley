@@ -3,10 +3,10 @@
 use lantern_core::{
     ids::{IdAllocator, Owner, TownId, WorldId},
     model::{ActorState, Building, Cargo, ConstructionState, Task, Town},
-    units::{Position, Practice, Quantity, TerrainSeed, Tile},
+    units::{Position, Practice, Quantity, TerrainSeed, Tile, Work},
 };
 use lantern_host::{
-    building::{BuildingWorld, Landscape, Progression, Rules, Site},
+    building::{BuildingWorld, Landscape, Progression, Road, Rules, Site, Upgrade},
     legacy::{ChunkKey, TerrainArchive, VillageLife},
     persistence::{RegistrySnapshot, Store, TownState, WorldSnapshot},
     population::{History, Population, Resident},
@@ -145,22 +145,83 @@ fn populated(id: &WorldId, text: &str, work: bool) -> WorldSnapshot {
             let building_id = allocator.allocate(&owner).unwrap();
             let kind = source_building["kind"].as_str().unwrap();
             let footprint = source_building["footprint"].as_array().unwrap();
-            sites.insert(
-                building_id.clone(),
-                Site::new(
-                    kind,
-                    (
-                        footprint[0].as_u64().unwrap() as u32,
-                        footprint[1].as_u64().unwrap() as u32,
-                    ),
+            let mut site = Site::new(
+                kind,
+                (
+                    footprint[0].as_u64().unwrap() as u32,
+                    footprint[1].as_u64().unwrap() as u32,
                 ),
             );
+            site.level = source_building["level"].as_u64().unwrap_or(1) as u8;
+            site.capacity_level = source_building["settler_level"].as_u64().unwrap_or(1) as u8;
+            site.orientation = source_building["orientation"].as_u64().unwrap_or(0) as u8;
+            site.fence_orientation =
+                source_building["fence_orientation"].as_u64().unwrap_or(0) as u8;
+            site.equipment = source_building["profession_upgrades"]
+                .as_array()
+                .map(|items| {
+                    items
+                        .iter()
+                        .map(|v| v.as_str().unwrap().to_owned())
+                        .collect()
+                })
+                .unwrap_or_default();
+            let construction = if let Some(c) = source_building.get("construction") {
+                if let Some(upgrade) = c.get("upgrade") {
+                    site.upgrade = Some(if let Some(level) = upgrade["level"].as_u64() {
+                        Upgrade::Structure(level as u8)
+                    } else if let Some(level) = upgrade["settler_level"].as_u64() {
+                        Upgrade::Capacity(level as u8)
+                    } else {
+                        Upgrade::Equipment(
+                            upgrade["profession_upgrades"]
+                                .as_array()
+                                .unwrap()
+                                .iter()
+                                .map(|v| v.as_str().unwrap())
+                                .find(|key| !site.equipment.contains(*key))
+                                .unwrap()
+                                .into(),
+                        )
+                    });
+                } else if kind == "hall" {
+                    let level = source["level"].as_u64().unwrap() + 1;
+                    let hall_catalog: serde_json::Value =
+                        serde_json::from_str(include_str!("../src/building/upgrade_catalog.json"))
+                            .unwrap();
+                    let reward = hall_catalog["hall"]
+                        .as_array()
+                        .unwrap()
+                        .iter()
+                        .find(|v| v["level"].as_u64() == Some(level))
+                        .unwrap()["reward"]
+                        .as_f64()
+                        .unwrap();
+                    site.upgrade = Some(Upgrade::Hall {
+                        level: level as u8,
+                        reward: q(reward),
+                    });
+                }
+                ConstructionState::InProgress {
+                    remaining: Work::new(
+                        c["total"].as_f64().unwrap() - c["progress"].as_f64().unwrap(),
+                    )
+                    .unwrap(),
+                }
+            } else {
+                ConstructionState::Complete
+            };
+            let mut policy = StoragePolicy::new(kind);
+            policy.level = site.level;
+            policy.equipment = site.equipment.clone();
+            policy.construction = construction != ConstructionState::Complete;
+            sites.insert(building_id.clone(), site);
             buildings.push(Building {
                 id: building_id.clone(),
                 location: tile(source_building),
-                construction: ConstructionState::Complete,
+                construction,
             });
-            let mut store = ResourceStore::new(building_id, StoragePolicy::new(kind));
+            let mut store = ResourceStore::new(building_id, policy);
             let mut goods = BTreeMap::new();
             if let Some(input) = source_building["stored_goods"].as_object() {
                 for (key, value) in input {
@@ -231,6 +292,38 @@ fn populated(id: &WorldId, text: &str, work: bool) -> WorldSnapshot {
             vec![],
         )
         .unwrap();
+        // Synthetic history is installed through the real validated native save
+        // decoder, independently of the archive checked by HTTP admission.
+        let mut saved: serde_json::Value =
+            serde_json::from_str(&ledger.encode(&town).unwrap()).unwrap();
+        for (wire, field) in [("produced", "produced"), ("production_caps", "caps")] {
+            let value = if wire == "production_caps" {
+                &source["rules"][wire]
+            } else {
+                &source[wire]
+            };
+            if let Some(values) = value.as_object() {
+                saved[field] = serde_json::json!(
+                    values
+                        .iter()
+                        .map(|(k, n)| (k, n.as_f64().unwrap()))
+                        .collect::<Vec<_>>()
+                );
+            }
+        }
+        saved["market_sales"] = serde_json::json!(source["market_sales"].as_f64().unwrap_or(0.));
+        if let Some(activity) = source.get("resource_activity") {
+            saved["seconds"] = activity["seconds"].clone();
+            saved["buckets"] = serde_json::json!(
+                activity["buckets"]
+                    .as_array()
+                    .unwrap()
+                    .iter()
+                    .map(|b| (&b["at"], &b["in"], &b["out"]))
+                    .collect::<Vec<_>>()
+            );
+        }
+        let ledger = Ledger::decode(&saved.to_string(), &town).unwrap();
         let mut state = TownState::empty(ledger);
         let sandbox = source["sandbox"].as_bool().unwrap_or(false);
         state.population =
@@ -248,7 +341,24 @@ fn populated(id: &WorldId, text: &str, work: bool) -> WorldSnapshot {
                 .unwrap(),
                 coins: q(source["coins"].as_f64().unwrap()),
                 sites,
-                roads: vec![],
+                roads: source["roads"]
+                    .as_array()
+                    .map(|records| {
+                        records
+                            .iter()
+                            .map(|record| Road {
+                                tile: tile(record),
+                                remaining: record.get("construction").map(|c| {
+                                    Work::new(
+                                        c["total"].as_f64().unwrap()
+                                            - c["progress"].as_f64().unwrap(),
+                                    )
+                                    .unwrap()
+                                }),
+                            })
+                            .collect()
+                    })
+                    .unwrap_or_default(),
                 progression: Progression::default(),
             },
         );

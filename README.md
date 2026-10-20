@@ -915,10 +915,12 @@ cargo run -p lantern-host --locked --offline -- http-read-copy --experimental --
 The source must already exist as a valid R19 generation root. Coverage now includes
 prepared shared ordinary maps and chunked maps, plus towns whose construction,
 population and ledger owners match their checked presentation. Initial resident
-rosters, founder positions, completed basic buildings, hall readiness, NPC/village
-routines and saved quarry/courier views are supported. Active production, transport,
-construction, advanced inventories/history, richer founder state and independent
-legacy town maps still refuse admission. Unknown nested fields, inconsistent owners
+rosters, founder positions, building construction/upgrades, completed equipment,
+roads, lifetime production, production caps, market-sale counts, resource activity,
+hall readiness, NPC/village routines and saved quarry/courier views are supported.
+Active worker/builder playback, transport, linked fields/trees, storage buffers and
+filters, population/social history, richer founder state and independent legacy
+town maps still refuse admission. Unknown nested fields, inconsistent owners
 and damaged/unsupported latest generations also refuse startup, including inactive
 worlds. The source stays locked and byte-for-byte unchanged; there is no simulation,
 login, command dispatch or save worker. Chunk reads retain compatible resource

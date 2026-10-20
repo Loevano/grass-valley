@@ -4789,6 +4789,50 @@ rustup 1.99.0. No existing test failures remained; development fixture/MIME/read
 assertion failures were resolved. Final diff/whitespace review passed.
 
 
+### R20 slice 1 continuation — Construction and ledger history
+
+The read-copy adapter now admits frozen initial construction, structural/capacity/
+equipment upgrades, completed building levels/equipment, hall upgrades and roads
+with or without unfinished work. Public construction presence, remaining work,
+upgrade target, road order/coordinates and equipment membership must agree with
+native model/building owners. Saved total/progress spellings remain presentation
+metadata checked against native remaining work. Store construction flags, levels
+and equipment must also agree with those owners. Linked fields/trees, construction
+inventory mirrors and builder playback still refuse admission; no builder activity
+is invented from unfinished sites.
+
+Lifetime produced goods, market-sale counts, production caps and bounded resource
+activity now agree with the native ledger, including bucket times, incoming/outgoing
+amounts and explicit field coverage. Unsupported trade rules and private nested
+fields still fail before binding. Hall readiness uses checked lifetime production
+and sales and distinguishes initial construction from an upgrade, including the
+level-two housing/food/water rule. Saved state stays frozen; GET does not advance
+construction or activity, and the exclusively locked source remains unchanged.
+
+Paired disposable ordinary/chunked fixtures cover complete public snapshots,
+partial roads, all upgrade types, level-two initial/upgrade readiness and later
+production/processed-food/sales milestones. Separate native fixture facts exercise
+stale work, absent construction, wrong upgrades/levels/equipment/roads, omitted
+history, changed lifetime counts/caps/activity and private nested field refusal.
+The fixture builder remains synthetic-only and uses native ledger save validation.
+
+**Slice 1 remains open:** active production, transport and worker/builder playback,
+linked fields/trees, storage buffers/filters, population/social visits and history,
+richer founder activities/equipment, nondefault construction-progression observations
+and independent legacy-town landscapes still need checked adapters. Accounts and
+command dispatch remain slice 2; lifecycle/schedules/shutdown remain slice 3. Python
+remains the playable default. No performance comparison is required or claimed:
+this is additional frozen snapshot contract coverage, not a performance fix.
+
+Validation: `python3 tools/check.py` selected the populated and terrain HTTP
+protocol suites plus `lantern-host`. All 42 Python cases and 491 Rust host tests
+(including doctests), formatting and all-target Clippy with warnings denied passed
+in `performance-results/20261020-095447/report.md`/`.json`. Both reports record
+performance as `not_run`. Local socket tests required sandbox escalation; validation
+used macOS/Homebrew Rust/Cargo 1.99.1, not the pinned rustup 1.99.0. No validation
+failures remain. Final diff/whitespace review passed.
+
+
 ## R21 — Playable Rust browser checkpoint
 
 **Slices:** (1) browser fixtures against Rust HTTP; (2) movement/playback integration;
