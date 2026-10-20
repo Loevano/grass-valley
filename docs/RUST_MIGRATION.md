@@ -49,6 +49,19 @@ when it is independently testable; record the remaining slices and leave the sta
 in progress. A partial implementation must remain behind its experimental boundary.
 Do not claim an entire stage is finished because its first slice works.
 
+Where a slice has named milestones, execute one milestone per invocation. State its
+ID, prerequisites, supported states and acceptance cases before editing. Use the
+milestone prompt rather than treating the parent stage's deliverables as one task.
+If a prerequisite is missing, record the blocker and stop that milestone; do not
+silently implement another stage or weaken its acceptance. Newly discovered work
+must have a named owner and dependency before it is deferred.
+
+Progress must distinguish **offline model implemented**, **read-only projection
+verified**, **live host integrated**, and **browser/release accepted**. These are
+different completion boundaries. An offline owner or synthetic snapshot fixture
+does not prove ordinary-save hydration, live scheduling, command execution or
+browser playability. Historical evidence below retains its original scope.
+
 ## Intended migration boundary
 
 **Proposed:** a standalone Rust host, developed alongside the Python host.
@@ -256,7 +269,7 @@ only after work is performed. Keep unfinished stages visible in the roadmap.
 | R17 | Fishing, boats, animals, and horses | R16 | Slices 1–3 implemented offline: saved piers, land fishing, boat/crew voyages, species cargo, exploration boats, barn growth/keepers and manual butchery; slice 4 (horses/riding) remains |
 | R18 | Residents, villages, trade, and adventures | R17 | Slices 1–3 implemented offline: population, village routines/restocks, NPC roster/gifts/stories/tools/equipment, town trades and founder activities with owner reload; slice 4 and durable/live integration remain |
 | R19 | Durable Rust saves and recovery | R18 | Slices 1–3 implemented at offline native/tool boundary: snapshots `9217d66`, atomic generations `bb547bf`, `feat: add explicit save copy archive and recovery tools` (this change); [scope and rollback limits](RUST_SAVES.md). Python archival is explicitly approved as preserved-only; playable legacy actor hydration, live host integration and native reverse export remain compatibility gates |
-| R20 | HTTP, accounts, and world lifecycle | R19 | Slice 1 in progress: static fallback and guarded shared ordinary/chunked/basic-town/NPC/adventure snapshots paired; progressed-town/independent-layout projections remain; slices 2–3 not started |
+| R20 | HTTP, accounts, and world lifecycle | R19; R17.4/R18.4 for dependent milestones | Read-only milestones 1a–1e implemented through `c319e13`; next: 1f storage projections. Remaining snapshot and live integration work is itemized in the R20 milestone plan; slices 2–3 not started |
 | R21 | Browser compatibility and playable Rust checkpoint | R20 | Not started |
 | R22 | Shared-destination routing | R21 | Not started |
 | R23 | Cross-host benchmarks and release readiness | R22, or documented deferral | Not started |
@@ -4535,6 +4548,11 @@ not a performance investigation or runtime optimization. Integrated W6 remains R
 **Slices:** (1) static assets and snapshot endpoints; (2) accounts/command dispatch;
 (3) world administration, schedules, shutdown, and contention.
 
+These are work groups, not equally sized tasks. Slice 1 includes the accumulated
+browser projection work deferred by R11–R19, not just HTTP routing. Execute the
+named milestones below individually. This breakdown changes task sizing, not the
+existing R20 acceptance requirements or the experimental boundary.
+
 **Deliver:** Axum/Tokio boundary with the existing URLs, headers, JSON/query contracts,
 catalogs, status codes, errors, chunk versions, and simulation clock metadata.
 Cover `/api/world`, `/api/players`, `/api/worlds`, `/api/lanterns`, login/join/commands,
@@ -4551,12 +4569,84 @@ transfer/save does not block founder commands; a bounded queue returns truthful
 overload/failure feedback. Rust refuses unsupported saves and missing coverage.
 
 ```text
-Read AGENTS.md and docs/RUST_MIGRATION.md. Execute the first unfinished slice of
-R20 only. Implement the Rust HTTP/account/world-lifecycle boundary matching the
-audited existing contracts. Preserve PIN verification, Unicode name normalization,
-token privacy, town ownership, host-only administration, catalogs, and chunk queries.
-Run both-host protocol tests with disposable roots, including slow-transfer and
-ownership failures. Keep Rust experimental, update coverage/progress, and commit.
+Read AGENTS.md and docs/RUST_MIGRATION.md. Execute exactly one named R20 milestone:
+the first unfinished milestone in the plan below. State its ID, prerequisites and
+acceptance cases before editing. If blocked, document the missing prerequisite;
+do not expand into another milestone or stage. Apply the matching read-only or live
+integration prompt below. Preserve the audited contracts and experimental boundary.
+Update milestone status, coverage and roadmap with evidence, run applicable checks,
+review the diff and commit the completed milestone. Do not mark its parent slice
+complete until every required milestone and its completion audit have passed.
+```
+
+### R20 milestone plan
+
+**Completed read-only foundation:** 1a bootstrap (`4fc4348`), 1b terrain
+(`23260bb`), 1c checked towns/landscape (`b5645ca`), 1d construction/history
+(`88ce275`), and 1e personal/population (`c319e13`). IDs 1c–1e name the historical
+continuations below; their evidence is unchanged. None claims live gameplay.
+
+**Remaining slice 1 — frozen snapshot compatibility:**
+
+| ID | Bounded deliverable and completion cases | Prerequisites / status |
+| --- | --- | --- |
+| 1f | Advanced storage projections: buffers, filters, reservations and inventory mirrors agree with native ledger/building owners; paired full snapshots and stale/missing-owner refusal cases. | Next; 1d–1e implemented |
+| 1g | Linked field/tree projections: group membership, geometry and saved agricultural state agree with native building/farming/orchard owners; ordinary/chunked and relocation/reload fixtures. | Pending; R12/R16 owners |
+| 1h | Worker/builder playback projections: identity, assignments, task/phase, position, facing, route and construction walks agree with native movement/construction/population owners; waiting, interrupted and reloaded cases. | Pending; R11/R12/R18 owners |
+| 1i | Production projections: gathering/processor/workshop/farm/orchard activity, claims, clocks and queues agree with native owners; in-progress and interrupted/reloaded snapshots. | Pending; 1g–1h and R15/R16 owners |
+| 1j | Transport/fishing/livestock projections: producer/hauler/merchant trips, cargo, crews and barn work agree with native owners; outward/return, blocked and loaded states. | Pending; 1h–1i and R14/R17 slices 1–3 |
+| 1k | Independent legacy-town landscapes: checked per-town scene assembly, bounds, resources, hall context and cache/query behavior; paired snapshots without mutating source copies. | Pending; 1c and existing R07/R08 geometry |
+| 1l | Mounted founder/horse projections with native ownership, equipment and geometry checks; mounted/dismounted and reload cases. | Blocked on R17 slice 4; do not invent a horse model inside this milestone |
+| 1m | Slice-1 completion audit: reconcile every snapshot field/state with R01 coverage, run applicable paired protocol/slow-transfer/refusal cases, and name all remaining live integration gates. | Pending; 1a–1l; no unsupported state silently defaults to empty |
+
+Every row includes public-field privacy, explicit optional/default behavior and
+unknown/stale-state rejection. GET remains frozen and read copies remain locked and
+unchanged. Adventure presentation already covered by read fixtures does not prove
+R18 slice 4's clocks, commands or rewards. Undrained tool receipts remain rejected
+until the explicit aggregate transaction in 2b exists; a GET must never drain them.
+
+Read-only milestone prompt:
+
+```text
+Implement only the selected R20 slice-1 milestone's frozen projections and fixtures.
+Inspect Python's wire contract and the existing native owners first. Compare full
+public snapshots on disposable ordinary/chunked or independent-map fixtures as
+applicable; cover stale/missing owners and private/unknown fields. Never invent an
+empty actor state to bypass unsupported coverage. GET must not tick, transfer goods,
+drain receipts or mutate source saves. Do not implement commands, accounts, world
+activation or gameplay scheduling. Record remaining states under named milestones.
+```
+
+**Slices 2–3 — live integration explicitly deferred by earlier offline work:**
+
+| ID | Deliverable and acceptance boundary | Prerequisites / status |
+| --- | --- | --- |
+| 2a | Accounts, login/join and authorization: PBKDF2/PIN, Unicode normalization, token reuse/privacy, private provisioning and per-town ownership; paired success/failure contracts. | Pending; slice-1 audit |
+| 2b | Aggregate command transaction: assemble native owners; apply admitted commands atomically; coordinate profession/builder/boat/navigation cancellation and founder tool-receipt draining; no lost/duplicated goods on failure or reload. | Pending; 2a and relevant native owners; this is integration work, not another read adapter |
+| 2c | Command-family adapters and coverage audit: map all R01 actions to native transactions and truthful bounded-queue results, with owner/error/idempotency cases. | Pending; 2b; horses require R17.4 and adventures require R18.4 |
+| 3a | Ordinary-save actor hydration and world activation: reconstruct owners, claims, trips and references from supported legacy saves; validate active/inactive worlds and reject incomplete conversion before publication. | Pending; slice 1 and relevant native owners; R19 archives alone do not satisfy this |
+| 3b | World administration and host scheduling: create/open/delete/regenerate contracts, host-only validation, authoritative world switching and independent simulation/navigation/adventure clocks; no offline production. | Pending; 3a and slice 2; adventure scheduling requires R18.4 |
+| 3c | Live persistence and shutdown: connect aggregate snapshots to R19's writer, flush/recovery and shutdown; reload in-progress actors without duplicate work or rewards. | Pending; 3b and R19 |
+| 3d | R20 completion audit and contention: commands remain responsive through slow serialization/socket transfers/save; verify bounded admission, overload/failure feedback and complete both-host protocol coverage. | Pending; all R20 milestones and R17.4/R18.4 |
+
+Milestone 2c must first list the audited command families and their dependencies as
+named child milestones, then implement one family per invocation. Apply the same
+rule if another row cannot be completed as one independently testable task: record
+bounded child deliverables before implementation, keeping the parent open. Do not
+use another indefinite "slice continuation" or move unfinished work into R21
+without a named dependency and unchanged acceptance criteria.
+
+Live integration milestone prompt:
+
+```text
+Implement only the selected R20 live milestone (or one named child command family).
+Use the R01 contracts and native owners; identify the authoritative transaction,
+save and scheduling boundary. Preserve PIN/name/token/ownership/host-only contracts
+where applicable. Exercise disposable roots with success, refusal, interruption and
+reload cases relevant to that milestone; prove exact-once effects and bounded truthful
+failure behavior. Do not treat read-only synthetic fixtures as playable-save evidence.
+Keep Python the default and Rust experimental. Record uncovered integration with a
+named owner; complete the parent audit only after its required cases actually pass.
 ```
 
 ### R20 slice 1a — No-world HTTP bootstrap (slice 1 remains open)
@@ -4890,6 +4980,13 @@ whitespace review passed.
 **Slices:** (1) browser fixtures against Rust HTTP; (2) movement/playback integration;
 (3) full disposable-world playthrough and visibility latency.
 
+**Entry gate:** R20's live hydration, command, scheduler and persistence milestones
+must pass, including the dependent R17.4/R18.4 work. R21 verifies and fixes browser
+integration over those capabilities; it is not the default owner for missing host
+systems. Keep discovered host failures attached to their R20 milestone. Before each
+R21 slice, name its bounded browser scenarios and dependencies; record child
+milestones first if that slice cannot be completed as one testable task.
+
 **Deliver:** the existing browser works with the opt-in Rust host. Verify founding,
 login/reconnect, build/move/destroy, assignments, full production chains, map chunks,
 overview, boats, animals, trade, stories, adventures, and restart. Fix the appropriate
@@ -4907,9 +5004,12 @@ no unacknowledged missing feature. Python remains the default.
 
 ```text
 Read AGENTS.md and docs/RUST_MIGRATION.md. Execute the first unfinished slice of
-R21 only. Integrate the existing browser with the experimental Rust host and verify
-the named features on disposable worlds. Preserve authoritative playback, founder
-prediction, controls, catalogs, chunk loading, and reconnect. Measure visible status/
+R21 only, or one named child milestone if the slice has been subdivided. Verify
+the R20 entry gate first; document missing host prerequisites rather than silently
+absorbing them. State the selected browser scenarios and completion cases. Integrate
+the existing browser with the experimental Rust host on disposable worlds.
+Preserve authoritative playback, founder prediction, controls, catalogs, chunk
+loading, and reconnect. Measure visible status/
 movement delay and address transport only where evidence requires it. Update the
 playthrough evidence, coverage, and progress, validate applicable checks, and commit.
 ```

@@ -84,13 +84,21 @@ sales and resource activity now have native checks and paired presentation tests
 Checked founder inventories/equipment/practice/activity, local visits, exploration
 boat tiers, resident tools and population history now extend those snapshots;
 nondefault construction evidence is cross-checked against its native owners.
-Slice 1 remains open for active worker/builder playback and transport, linked
-fields/trees, advanced storage, mounted founder state and independent legacy town
-maps. These states and undrained tool receipts still fail admission. Accounts/command
-dispatch remain slice 2; world administration, schedules, shutdown and command/save
-contention remain slice 3. Read copies never mutate their exclusively locked source
-or accept POST operations.
-See [R20 remaining work](RUST_MIGRATION.md#r20-slice-1-continuation--personal-and-population-presentation).
+Read-only milestones 1a–1e are implemented through `c319e13`. The
+[R20 milestone plan](RUST_MIGRATION.md#r20-milestone-plan) replaces open-ended slice-1
+continuations with individual tasks: next is 1f advanced storage, followed by linked
+fields/trees, worker/builder playback, production, transport/fishing/livestock,
+independent town maps, mounted founders and a snapshot completion audit. Mounted
+state is blocked on R17 slice 4. Unsupported states and undrained tool receipts
+still fail admission; read copies never mutate their exclusively locked source or
+accept POST operations.
+Live work has separate owners: 2a accounts/authorization, 2b aggregate command
+transactions/cleanup/tool receipts, 2c audited command families; 3a ordinary-save
+actor hydration/activation, 3b world administration/scheduling, 3c live saving/shutdown
+and 3d protocol/contention acceptance. Horse/adventure behavior remains dependent on
+R17/R18 slice 4. R21 browser acceptance follows these host prerequisites. Each prompt
+executes one named milestone; offline models, read projections, live integration
+and browser/release acceptance retain separate completion boundaries.
 Python remains the playable default; R19 owns durable persistence/recovery and R23
 retains target-platform math/release validation. Gameplay RNG stream adoption and
 R24 rollback acceptance remain gated by the contracts. Later navigation stages
