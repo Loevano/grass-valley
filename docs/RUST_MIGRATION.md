@@ -269,7 +269,7 @@ only after work is performed. Keep unfinished stages visible in the roadmap.
 | R17 | Fishing, boats, animals, and horses | R16 | Slices 1–3 implemented offline: saved piers, land fishing, boat/crew voyages, species cargo, exploration boats, barn growth/keepers and manual butchery; slice 4 (horses/riding) remains |
 | R18 | Residents, villages, trade, and adventures | R17 | Slices 1–3 implemented offline: population, village routines/restocks, NPC roster/gifts/stories/tools/equipment, town trades and founder activities with owner reload; slice 4 and durable/live integration remain |
 | R19 | Durable Rust saves and recovery | R18 | Slices 1–3 implemented at offline native/tool boundary: snapshots `9217d66`, atomic generations `bb547bf`, `feat: add explicit save copy archive and recovery tools` (this change); [scope and rollback limits](RUST_SAVES.md). Python archival is explicitly approved as preserved-only; playable legacy actor hydration, live host integration and native reverse export remain compatibility gates |
-| R20 | HTTP, accounts, and world lifecycle | R19; R17.4/R18.4 for dependent milestones | Read-only milestones 1a–1g implemented; next: 1h worker/builder playback projections. Remaining snapshot and live integration work is itemized in the R20 milestone plan; slices 2–3 not started |
+| R20 | HTTP, accounts, and world lifecycle | R19; R17.4/R18.4 for dependent milestones | Read-only milestones 1a–1g and construction child 1h.a implemented; next: 1h.b workplace playback. Remaining snapshot and live integration work is itemized in the R20 milestone plan; slices 2–3 not started |
 | R21 | Browser compatibility and playable Rust checkpoint | R20 | Not started |
 | R22 | Shared-destination routing | R21 | Not started |
 | R23 | Cross-host benchmarks and release readiness | R22, or documented deferral | Not started |
@@ -4583,20 +4583,32 @@ complete until every required milestone and its completion audit have passed.
 
 **Completed read-only foundation:** 1a bootstrap (`4fc4348`), 1b terrain
 (`23260bb`), 1c checked towns/landscape (`b5645ca`), 1d construction/history
-(`88ce275`), 1e personal/population (`c319e13`), 1f advanced storage, and 1g linked
-agriculture (implementation/evidence below). IDs 1c–1e name the historical
-continuations below; their evidence is unchanged. None claims live gameplay.
+(`88ce275`), 1e personal/population (`c319e13`), 1f advanced storage, 1g linked
+agriculture, and 1h.a construction playback (implementation/evidence below).
+IDs 1c–1e name the historical continuations below; their evidence is unchanged.
+None claims live gameplay.
 
 **Remaining slice 1 — frozen snapshot compatibility:**
 
 | ID | Bounded deliverable and completion cases | Prerequisites / status |
 | --- | --- | --- |
-| 1h | Worker/builder playback projections: identity, assignments, task/phase, position, facing, route and construction walks agree with native movement/construction/population owners; waiting, interrupted and reloaded cases. | Next; R11/R12/R18 owners; 1g implemented |
+| 1h | Worker/builder playback projections: identity, assignments, task/phase, position, facing, route and construction walks agree with native movement/construction/population owners; waiting, interrupted and reloaded cases. | In progress; bounded children 1h.a–1h.b below; R11/R12/R18 owners |
 | 1i | Production projections: gathering/processor/workshop/farm/orchard activity, claims, clocks and queues agree with native owners; in-progress and interrupted/reloaded snapshots. | Pending; 1g–1h and R15/R16 owners |
 | 1j | Transport/fishing/livestock projections: producer/hauler/merchant trips, cargo, crews and barn work agree with native owners; outward/return, blocked and loaded states. | Pending; 1h–1i and R14/R17 slices 1–3 |
 | 1k | Independent legacy-town landscapes: checked per-town scene assembly, bounds, resources, hall context and cache/query behavior; paired snapshots without mutating source copies. | Pending; 1c and existing R07/R08 geometry |
 | 1l | Mounted founder/horse projections with native ownership, equipment and geometry checks; mounted/dismounted and reload cases. | Blocked on R17 slice 4; do not invent a horse model inside this milestone |
 | 1m | Slice-1 completion audit: reconcile every snapshot field/state with R01 coverage, run applicable paired protocol/slow-transfer/refusal cases, and name all remaining live integration gates. | Pending; 1a–1l; no unsupported state silently defaults to empty |
+
+Milestone 1h has two independently testable projection boundaries. Construction
+child 1h.a is implemented (evidence below). Implement the remaining named child
+1h.b next; the parent remains open until both acceptance sets pass. R12 retains
+construction walks in its durable controller, while R11 worker routes and confirmed
+playback are derived and rebuilt after restoration; their read/reload contract needs
+its own checked adapter.
+
+| ID | Bounded deliverable and completion cases | Status |
+| --- | --- | --- |
+| 1h.b | Workplace assignment and worker movement/playback: checked R18 assignment, R11 task/phase, pose, route and confirmed playback; profession upgrade helpers and suspended work; waiting, interrupted and reload fixtures. Integrate the completed construction adapter, retaining R15–R17 activity/cargo gates under 1i–1j. | Pending; 1h.a and existing native owners |
 
 Every row includes public-field privacy, explicit optional/default behavior and
 unknown/stale-state rejection. GET remains frozen and read copies remain locked and
@@ -4647,6 +4659,60 @@ failure behavior. Do not treat read-only synthetic fixtures as playable-save evi
 Keep Python the default and Rust experimental. Record uncovered integration with a
 named owner; complete the parent audit only after its required cases actually pass.
 ```
+
+### R20 slice 1h.a — Frozen construction actor projections
+
+This bounded child covers dedicated builders and idle construction helpers. Native
+R12 controller membership/role, model task and claim, resident identity/job, actor
+position/facing, building or road target, construction phase, arrived marker and
+entire retained construction walk must agree with the public archive. Target
+footprints and the saved walk footprint are checked against current building/road
+facts; stale target geometry refuses admission where the offline owner retains it for
+next-tick revalidation. Fractional walk origins, completed waypoint prefixes and
+cursors remain intact. Last-waypoint outbound state does not become building work
+on GET. Native construction task elapsed must be the controller's zero value;
+construction progress remains owned by the building/road, not a worker animation.
+
+`construction_position` supplies an explicitly checked actor pose; a retained
+position after interruption still matches the native actor. Optional top-level
+coordinates, if present, must agree too. Absent/false arrived markers and optional
+target footprint presence preserve the wire form. Missing/stale targets, native
+controllers, walks, positions, phases and private/unknown nested fields refuse
+before listening. Every actor remains real and checked; admission never replaces
+an unsupported actor with an idle placeholder.
+
+Synthetic ordinary/chunked fixtures install native model/controller facts separately
+from the public archive, validate them through R12 constructors and save decoders,
+and reload a durable generation. Full paired Python/Rust snapshots cover walking,
+waiting without a route, arrival, building/road work, unclaimed dedicated builders,
+idle helpers, interrupted poses, optional fields and repeated reads. Refusal cases
+vary public facts independently of native source facts. Source bytes remain
+unchanged, and GET never plans, walks, ticks, transfers goods or drains receipts.
+These are frozen snapshots of interrupted work, not live cancellation commands.
+
+The parent **1h remains open**. Child **1h.b** owns workplace assignments, worker
+routes and confirmed playback, profession upgrade helpers and suspended work.
+Production, claims and queues remain **1i**, cargo/fishing/livestock **1j**; all
+other R20 live/cutover gates are unchanged. No HTTP commands, scheduling or playable
+save hydration were added.
+
+Performance comparisons were not run: this is frozen compatibility/ownership work,
+without a performance investigation or optimization claim.
+
+Validation: `python3 tools/check.py --list` selected six HTTP files and
+`rust:lantern-host`. The exact affected set ran in two explicit groups to stay
+within the runner's per-command time limit: construction/people/storage passed
+24 Python cases in `performance-results/20261020-133448/`; agriculture/populated/
+terrain plus the host passed 50 Python cases, all 491 Rust tests/doctests,
+formatting and all-target Clippy with warnings denied in
+`performance-results/20261020-133838/`. Local validation used Homebrew Rust 1.99.1.
+Final fixture review separated the walk's target dictionary from the claim target
+so refusal cases exercise each independently; all eight construction cases passed
+again in `performance-results/20261020-135733/`. Markdown/JSON reports and individual
+logs were inspected; all report pass and performance `not_run`. No assertion or
+pre-existing test failures were found, no runner limits were changed, and local
+HTTP sockets used sandbox escalation. The parent 1h acceptance remains pending
+child 1h.b.
 
 ### R20 slice 1g — Frozen linked agricultural projections
 

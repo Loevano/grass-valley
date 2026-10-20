@@ -4,6 +4,7 @@ use super::*;
 use crate::persistence::{RestoredModel, RestoredWorld};
 mod agriculture;
 mod buildings;
+mod construction;
 mod ledger;
 mod people;
 
@@ -308,9 +309,6 @@ pub(super) fn towns(world: &RestoredWorld, payload: &Node) -> Result<(), Boundar
             .find(|s| s.ledger.owner() == native.owner())
             .ok_or_else(|| invalid("native/public ledger owner mismatch"))?;
         let rules = &building_world.rules()[&native.owner().town];
-        if !building_world.builders().is_empty() {
-            return Err(invalid("builder playback public coverage"));
-        }
         people::progression(state, rules)?;
         // Every offline owner must have an explicit adapter before it can enter
         // the read host. Compare canonical owner saves, not a guessed empty list.
@@ -474,6 +472,10 @@ pub(super) fn towns(world: &RestoredWorld, payload: &Node) -> Result<(), Boundar
                 "worker_tool",
                 "pending_output",
                 "pending_workplace",
+                "construction_position",
+                "construction_target",
+                "construction_arrived",
+                "construction_walk",
             ];
             let jobs: Vec<_> = crate::resources::catalog()["rules"]["jobs"]
                 .as_array()
@@ -485,15 +487,17 @@ pub(super) fn towns(world: &RestoredWorld, payload: &Node) -> Result<(), Boundar
             fields(record, &allowed)?;
             ledger::worker(record, &resident.actor, &state.ledger, native, rules)?;
             let actor = actor.state();
-            if actor.id != resident.actor
-                || actor.task != Task::Idle
-                || actor.travel != TravelIntent::None
-                || !actor.cargo.goods().is_empty()
-                || resident.assignment.is_some()
-                || resident.worker.job() != "idle"
-            {
+            if actor.id != resident.actor || resident.assignment.is_some() {
                 return Err(invalid("active actor public coverage"));
             }
+            let positioned = construction::check(
+                record,
+                actor,
+                resident.worker.job(),
+                native,
+                rules,
+                building_world.builders(),
+            )?;
             let tool: Option<String> = record
                 .optional("worker_tool", PATH)?
                 .map(|n| n.string(PATH))
@@ -530,7 +534,9 @@ pub(super) fn towns(world: &RestoredWorld, payload: &Node) -> Result<(), Boundar
             ] {
                 if record.optional(key, PATH)?.is_some() {
                     same_number(record, key, amount)?;
-                } else if amount != if key == "facing" { 1. } else { 0. } {
+                } else if !(positioned && key != "facing")
+                    && amount != if key == "facing" { 1. } else { 0. }
+                {
                     return Err(invalid("missing authoritative actor pose presentation"));
                 }
             }

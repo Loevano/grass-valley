@@ -90,8 +90,10 @@ Frozen linked fields and orchard trees now agree with native building and agricu
 owners, including saved parent indexes, crop/tree clocks, defaults and relocated
 groups on both map formats. Read-only milestones 1a–1g are implemented. The
 [R20 milestone plan](RUST_MIGRATION.md#r20-milestone-plan) replaces open-ended slice-1
-continuations with individual tasks: next is 1h worker/builder playback, followed by
-production, transport/fishing/livestock,
+continuations with individual tasks. Child 1h.a now checks dedicated-builder and
+idle-helper construction targets, poses, phases and saved walks on both map formats.
+Parent 1h remains open: next is 1h.b workplace assignment/playback and profession
+upgrade helpers, followed by production, transport/fishing/livestock,
 independent town maps, mounted founders and a snapshot completion audit. Mounted
 state is blocked on R17 slice 4. Unsupported states and undrained tool receipts
 still fail admission; read copies never mutate their exclusively locked source or

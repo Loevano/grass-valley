@@ -6,7 +6,10 @@ use lantern_core::{
     units::{Position, Practice, Quantity, TerrainSeed, Tile, Work},
 };
 use lantern_host::{
-    building::{BuildingWorld, Landscape, Progression, Road, Rules, Site, Upgrade},
+    building::{
+        Builder, BuildingWorld, Claim, Landscape, Progression, Road, Role, Rules, Site, Upgrade,
+        Walk,
+    },
     fishing::ExplorationBoat,
     legacy::{ChunkKey, TerrainArchive, VillageLife},
     persistence::{RegistrySnapshot, Store, TownState, WorldSnapshot},
@@ -187,6 +190,7 @@ fn populated(
     let mut towns = Vec::new();
     let mut states = Vec::new();
     let mut all_rules = BTreeMap::new();
+    let mut builders = BTreeMap::new();
     for (key, source) in world["towns"].as_object().unwrap() {
         let owner = Owner {
             world: id.clone(),
@@ -366,12 +370,86 @@ fn populated(
         let mut residents = Vec::new();
         for v in source["villagers"].as_array().unwrap() {
             let actor = allocator.allocate(&owner).unwrap();
-            actors.push(ActorState::new(
+            let position = v.get("construction_position").unwrap_or(v);
+            let mut actor_state = ActorState::new(
                 actor.clone(),
-                Position::new(v["x"].as_f64().unwrap_or(0.), v["y"].as_f64().unwrap_or(0.))
-                    .unwrap(),
+                Position::new(
+                    position["x"].as_f64().unwrap_or(0.),
+                    position["y"].as_f64().unwrap_or(0.),
+                )
+                .unwrap(),
                 Cargo::default(),
-            ));
+            );
+            actor_state.facing =
+                lantern_core::travel::Facing::new(v["facing"].as_i64().unwrap_or(1) as i8).unwrap();
+            if v["job"] == "building" || v.get("construction_target").is_some() {
+                let role = if v["job"] == "building" {
+                    Role::Dedicated
+                } else {
+                    Role::Idle
+                };
+                let claim = v.get("construction_target").map(|target| {
+                    if target["kind"] == "road" {
+                        Claim::Road(tile(target))
+                    } else {
+                        let index = source["buildings"]
+                            .as_array()
+                            .unwrap()
+                            .iter()
+                            .position(|b| ["kind", "x", "y"].iter().all(|k| b[k] == target[k]))
+                            .unwrap();
+                        Claim::Building(ids[index].clone())
+                    }
+                });
+                let phase = if v["construction_arrived"].as_bool().unwrap_or(false) {
+                    lantern_core::model::ConstructionPhase::Building
+                } else {
+                    lantern_core::model::ConstructionPhase::Outbound
+                };
+                if let Some(c) = &claim {
+                    actor_state.task = match c {
+                        Claim::Building(id) => Task::Construction {
+                            site: id.clone(),
+                            phase,
+                            elapsed: lantern_core::units::Seconds::new(0.).unwrap(),
+                        },
+                        Claim::Road(tile) => Task::RoadConstruction { tile: *tile, phase },
+                    };
+                }
+                let walk = v.get("construction_walk").map(|w| {
+                    let target = &w["target"];
+                    let footprint = target
+                        .get("footprint")
+                        .map(|d| (d[0].as_u64().unwrap() as u32, d[1].as_u64().unwrap() as u32));
+                    Walk {
+                        claim: claim.clone().unwrap(),
+                        footprint: lantern_core::spatial::Footprint::saved(tile(target), footprint)
+                            .unwrap(),
+                        role,
+                        path: w["path"]
+                            .as_array()
+                            .unwrap()
+                            .iter()
+                            .map(|p| {
+                                Position::new(p[0].as_f64().unwrap(), p[1].as_f64().unwrap())
+                                    .unwrap()
+                            })
+                            .collect(),
+                        step: w["step"].as_u64().unwrap() as usize,
+                    }
+                });
+                builders.insert(
+                    actor.clone(),
+                    Builder {
+                        role,
+                        claim,
+                        walk,
+                        helper: None,
+                        suspended: None,
+                    },
+                );
+            }
+            actors.push(actor_state);
             let mut worker = Worker::new(v["job"].as_str().unwrap()).unwrap();
             let jobs = catalog["rules"]["jobs"].as_array().unwrap();
             for job in jobs {
@@ -700,7 +778,7 @@ fn populated(
     )
     .unwrap();
     let size = world["shared_map"]["map_size"].as_u64().unwrap() as u32;
-    let building = BuildingWorld::restore(
+    let building = BuildingWorld::restore_with_builders(
         model,
         all_rules,
         Landscape {
@@ -711,6 +789,7 @@ fn populated(
             local_positions: vec![],
         },
         true,
+        builders,
     )
     .unwrap();
     WorldSnapshot::capture_building(&building, &states).unwrap()

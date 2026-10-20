@@ -950,6 +950,10 @@ fields and orchard trees on ordinary/chunked maps, including agricultural stages
 parent indexes, saved relocated groups, defaults, owner mismatches and private data.
 These are synthetic snapshot fixtures, not playable hydration or live commands.
 
+`python3 tools/check.py --tests tests/test_http_construction.py` covers frozen
+construction targets, phases, actor poses and saved walks for dedicated builders
+and idle helpers. Workplace playback and profession upgrade helpers remain R20-1h.b.
+
 The new HTTP dependencies are Axum 0.8.9 (MIT, Rust ≥1.80), Tokio 1.54.0 (MIT,
 Rust ≥1.85), tower-http 0.6.11 (MIT, Rust ≥1.64) and form_urlencoded 1.2.2
 (MIT OR Apache-2.0). The lockfile records transitive versions. APIs and declared
