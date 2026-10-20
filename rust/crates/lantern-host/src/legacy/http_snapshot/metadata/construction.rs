@@ -60,7 +60,9 @@ pub(super) fn check(
         false
     };
     let builder = builders.get(&actor.id);
-    if actor.travel != TravelIntent::None || !actor.cargo.goods().is_empty() {
+    if (!matches!(actor.task, Task::Work { .. }) && actor.travel != TravelIntent::None)
+        || !actor.cargo.goods().is_empty()
+    {
         return Err(invalid("workplace actor playback coverage"));
     }
     let expected_role = if job == "building" {
@@ -81,19 +83,12 @@ pub(super) fn check(
         {
             return Err(invalid("construction role/helper coverage"));
         }
-        // Movement/activity retained under a profession suspension needs the
-        // separate 1h.b.2 work adapter. Never replace it with an idle placeholder.
-        if let Some(saved) = &b.suspended
-            && (saved.task != Task::Idle || saved.travel != TravelIntent::None)
-        {
-            return Err(invalid("suspended workplace playback coverage"));
-        }
     } else if job == "building" {
         return Err(invalid("missing native construction controller coverage"));
     }
     let claim = builder.and_then(|b| b.claim.as_ref());
     let phase = match (&actor.task, claim) {
-        (Task::Idle, None) => None,
+        (Task::Idle | Task::Work { .. }, None) => None,
         (
             Task::Construction {
                 site,

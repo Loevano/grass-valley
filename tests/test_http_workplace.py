@@ -1,4 +1,4 @@
-"""R20-1h.b.1: explicit R18 assignments and stationary profession helpers."""
+"""R20-1h.b: R18 assignments and frozen profession upgrade helpers."""
 import copy
 import json
 from pathlib import Path
@@ -10,7 +10,8 @@ import test_http_construction as construction
 import test_http_populated as populated
 import test_http_snapshots as terrain
 
-RUST_SOURCES = construction.RUST_SOURCES
+RUST_SOURCES = construction.RUST_SOURCES + (
+    'rust/crates/lantern-host/src/legacy/http_snapshot/metadata/work.rs',)
 
 
 def workplace_fixture(chunked=True):
@@ -70,7 +71,7 @@ class RustWorkplace(WorkplaceProtocol, unittest.TestCase):
     read_copy = populated.RustReadHarness.read_copy
 
     def test_waiting_walking_interrupted_and_reload(self):
-        for case in ('walking', 'waiting', 'interrupted', 'unassigned', 'linked-parent'):
+        for case in ('walking', 'waiting', 'interrupted', 'unassigned', 'linked-parent', 'omitted-assignment'):
             with self.subTest(case=case):
                 config = copy.deepcopy(self.config)
                 worker = config['worlds'][0]['world']['towns']['first']['villagers'][0]
@@ -82,6 +83,11 @@ class RustWorkplace(WorkplaceProtocol, unittest.TestCase):
                     town['buildings'].append({'kind': 'acre', 'x': farm['x'] + 1,
                         'y': farm['y'] + 1, 'footprint': [1, 1], 'farm_index': 2})
                     worker['construction_arrived'] = True
+                elif case == 'omitted-assignment':
+                    entry = config['worlds'][0]
+                    worker['construction_arrived'] = True
+                    entry['native_source'] = copy.deepcopy(entry['world'])
+                    worker.pop('building_index')
                 elif case == 'walking':
                     worker['construction_walk']['step'] = 0
                     worker['construction_position']['x'] -= 1
@@ -96,7 +102,7 @@ class RustWorkplace(WorkplaceProtocol, unittest.TestCase):
                 self.assertEqual(value, terrain.reference(config, {}))
 
     def test_stale_assignment_controller_private_and_uncovered_work_refuse(self):
-        for case in ('different', 'absent', 'null', 'negative', 'fractional', 'out-of-range',
+        for case in ('different', 'null', 'negative', 'fractional', 'out-of-range',
                      'boolean', 'private-index', 'controller', 'work-animation', 'implicit', 'suspended-work'):
             with self.subTest(case=case):
                 config = copy.deepcopy(self.config)
@@ -104,7 +110,6 @@ class RustWorkplace(WorkplaceProtocol, unittest.TestCase):
                 entry['native_source'] = copy.deepcopy(entry['world'])
                 worker = entry['world']['towns']['first']['villagers'][0]
                 if case == 'different': worker['building_index'] = 1
-                elif case == 'absent': worker.pop('building_index')
                 elif case == 'null': worker['building_index'] = None
                 elif case == 'negative': worker['building_index'] = -1
                 elif case == 'fractional': worker['building_index'] = 2.5

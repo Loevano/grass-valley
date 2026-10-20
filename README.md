@@ -900,7 +900,7 @@ cargo run -p lantern-host --locked --offline -- http-bootstrap --experimental-em
 Use `--asset-root DIRECTORY` for an explicit root with `web/` and `icons/favicon.ico`.
 It requires loopback, never reads saves and returns a coverage error for every POST.
 It cannot play, login, create/open/delete/regenerate worlds or advance simulation.
-See [remaining R20 slice 1 work](docs/RUST_MIGRATION.md#r20-slice-1-continuation--personal-and-population-presentation).
+See [remaining R20 slice 1 work](docs/RUST_MIGRATION.md#r20-milestone-plan).
 Run `python3 tools/check.py --tests tests/test_http_bootstrap.py` from the repository
 root for the shared disposable-root protocol tests (Cargo cache and local sockets
 required). Select `test_http_bootstrap.PythonBootstrap` or
@@ -921,9 +921,12 @@ hall readiness, NPC/village routines and saved quarry/courier views are supporte
 Founder inventories, equipment, practice, saved activity/status, local visits,
 exploration boat tiers, resident tools and population departure/shortage history
 also have checked native owners. Construction progression observations must agree
-with ledger and resident/founder evidence. Active worker/builder playback, transport,
-linked fields/trees, storage buffers/filters, mounted founder state and independent
-legacy town maps still refuse admission. Undrained population tool receipts also
+with ledger and resident/founder evidence. Frozen linked fields/trees and advanced
+storage buffers/filters are supported. Builder walks, explicit/omitted workplace
+assignments, generic worker playback and suspended upgrade helpers now have checked
+native observations. Production-specific activity, transport/fishing/livestock,
+mounted founders and independent legacy town maps retain their named admission
+gates. Undrained population tool receipts also
 refuse; read snapshots do not transfer inventory or run gameplay. Unknown nested
 fields, inconsistent owners and damaged/unsupported latest generations also refuse
 startup, including inactive
@@ -943,7 +946,7 @@ including stale/private data and missing-native-owner refusal.
 `python3 tools/check.py --tests tests/test_http_snapshots.py` runs paired current/legacy
 terrain protocol checks and constructs its own disposable native roots. The Cargo
 `http_fixture` example is solely a synthetic fixture builder, not a legacy converter.
-See [R20's admission limits and remaining work](docs/RUST_MIGRATION.md#r20-slice-1-continuation--personal-and-population-presentation).
+See [R20's admission limits and remaining work](docs/RUST_MIGRATION.md#r20-milestone-plan).
 
 `python3 tools/check.py --tests tests/test_http_agriculture.py` covers frozen linked
 fields and orchard trees on ordinary/chunked maps, including agricultural stages,
@@ -952,7 +955,11 @@ These are synthetic snapshot fixtures, not playable hydration or live commands.
 
 `python3 tools/check.py --tests tests/test_http_construction.py` covers frozen
 construction targets, phases, actor poses and saved walks for dedicated builders
-and idle helpers. Workplace playback and profession upgrade helpers remain R20-1h.b.
+and idle helpers. `tests/test_http_workplace.py` and `tests/test_http_playback.py`
+cover profession helpers, omitted assignments, worker paths/confirmed history,
+waiting/interruption and reload, plus stale/private refusal on both map forms.
+The private [observation checkpoint](docs/RUST_SAVES.md#frozen-worker-observation-evidence)
+never restores routes or playback into authoritative navigation state.
 
 The new HTTP dependencies are Axum 0.8.9 (MIT, Rust ≥1.80), Tokio 1.54.0 (MIT,
 Rust ≥1.85), tower-http 0.6.11 (MIT, Rust ≥1.64) and form_urlencoded 1.2.2

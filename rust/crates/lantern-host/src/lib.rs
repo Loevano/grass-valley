@@ -33,6 +33,7 @@ pub mod references;
 pub mod resources;
 pub mod social;
 pub mod state;
+pub mod work_observation;
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum ErrorKind {

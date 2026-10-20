@@ -42,6 +42,7 @@ pub struct TownState {
     pub livestock: Option<Livestock>,
     pub population: Option<Population>,
     pub social: Option<Social>,
+    pub work_observations: crate::work_observation::Observations,
 }
 impl TownState {
     pub fn empty(ledger: Ledger) -> Self {
@@ -59,6 +60,7 @@ impl TownState {
             livestock: None,
             population: None,
             social: None,
+            work_observations: Default::default(),
         }
     }
 }
@@ -397,6 +399,8 @@ struct SavedTown {
     population: Option<Box<RawValue>>,
     #[serde(deserialize_with = "required")]
     social: Option<Box<RawValue>>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    work_observations: Option<Box<RawValue>>,
 }
 #[derive(Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -434,7 +438,18 @@ fn encode_town(s: &TownState, town: &Town) -> Result<SavedTown> {
         component(town.actor(actor))?;
     }
 
+    // Decode against membership before publishing; never restore observation
+    // routes/playback into the model or any navigation service.
+    let evidence = component(s.work_observations.encode())?;
+    component(crate::work_observation::Observations::decode(
+        &evidence, town,
+    ))?;
     Ok(SavedTown {
+        work_observations: if s.work_observations.is_empty() {
+            None
+        } else {
+            Some(raw(&evidence)?)
+        },
         town: town.owner().town.as_str().into(),
         ledger: raw(&component(s.ledger.encode(town))?)?,
         workers: s
@@ -553,6 +568,13 @@ impl Bundle {
                     }
                 }
                 towns.push(TownState {
+                    work_observations: s
+                        .work_observations
+                        .map(|v| {
+                            component(crate::work_observation::Observations::decode(v.get(), town))
+                        })
+                        .transpose()?
+                        .unwrap_or_default(),
                     trips: component(InputTrips::decode(s.trips.get(), town, &ledger))?,
                     woodcutters: component(Woodcutters::decode(
                         s.woodcutters.get(),

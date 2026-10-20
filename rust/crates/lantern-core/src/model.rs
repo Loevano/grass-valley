@@ -317,6 +317,14 @@ impl Actor {
     pub fn route(&self) -> &RouteState {
         &self.route
     }
+    /// Remaining confirmed waypoints for detached presentation observations.
+    /// Search requests and the cursor remain private derived navigation state.
+    pub fn remaining_waypoints(&self) -> &[Position] {
+        match &self.route {
+            RouteState::Ready { waypoints, .. } => &waypoints[self.route_step..],
+            _ => &[],
+        }
+    }
     pub fn travel_destination(&self) -> Option<&Destination> {
         self.state.travel.destination()
     }

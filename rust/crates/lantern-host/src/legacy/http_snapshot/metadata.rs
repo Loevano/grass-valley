@@ -7,6 +7,8 @@ mod buildings;
 mod construction;
 mod ledger;
 mod people;
+mod work;
+pub(super) use work::{sources as work_sources, terrain as work_terrain};
 
 use lantern_core::{
     model::{ConstructionState, Task, TravelIntent},
@@ -285,7 +287,12 @@ fn stock(node: &Node) -> Result<(), BoundaryError> {
 /// Native construction, population and ledger owners establish membership and
 /// values. Only absent presentation facts (names, wire field presence) come from
 /// the explicitly checked archive. Active work lacking a wire adapter refuses.
-pub(super) fn towns(world: &RestoredWorld, payload: &Node) -> Result<(), BoundaryError> {
+pub(super) fn towns(
+    world: &RestoredWorld,
+    payload: &Node,
+    sources: &[lantern_core::spatial::Resource],
+    terrain: &std::collections::BTreeMap<Tile, char>,
+) -> Result<(), BoundaryError> {
     let entries = payload.required("towns", PATH)?.object(PATH)?;
     let model = world.model.model();
     if entries.len() != model.towns().len() || entries.len() != world.towns.len() {
@@ -456,15 +463,41 @@ pub(super) fn towns(world: &RestoredWorld, payload: &Node) -> Result<(), Boundar
         if population.residents().len() != villagers.len() {
             return Err(invalid("population history public coverage"));
         }
-        for ((record, actor), resident) in villagers
+        let places: Vec<_> = native
+            .buildings()
+            .iter()
+            .map(|b| crate::population::Place {
+                id: b.id.clone(),
+                site: rules.sites[&b.id].clone(),
+            })
+            .collect();
+        let mut legacy_residents = population.residents().to_vec();
+        for (record, resident) in villagers.iter().zip(&mut legacy_residents) {
+            if record.optional("building_index", PATH)?.is_none() {
+                resident.assignment = None;
+            }
+        }
+        let mut legacy = crate::population::Population::restore(
+            native,
+            rules.sandbox,
+            legacy_residents,
+            population.history().clone(),
+        )
+        .map_err(|_| invalid("legacy assignment owner coverage"))?;
+        legacy
+            .resolve_legacy_assignments(native, &places, &state.ledger, sources)
+            .map_err(|_| invalid("legacy workplace resolution coverage"))?;
+        for (index, ((record, actor), resident)) in villagers
             .iter()
             .zip(native.actors())
             .zip(population.residents())
+            .enumerate()
         {
             let mut allowed = vec![
                 "name",
                 "job",
                 "building_index",
+                "work_animation",
                 "x",
                 "y",
                 "facing",
@@ -487,6 +520,7 @@ pub(super) fn towns(world: &RestoredWorld, payload: &Node) -> Result<(), Boundar
             allowed.extend(jobs.iter().map(String::as_str));
             fields(record, &allowed)?;
             ledger::worker(record, &resident.actor, &state.ledger, native, rules)?;
+            let model_actor = actor;
             let actor = actor.state();
             if actor.id != resident.actor {
                 return Err(invalid("active actor public coverage"));
@@ -506,14 +540,39 @@ pub(super) fn towns(world: &RestoredWorld, payload: &Node) -> Result<(), Boundar
                         .id
                         .clone(),
                 ),
+                None => legacy.residents()[index].assignment.clone(),
                 _ => None,
             };
             if public_assignment != resident.assignment {
                 return Err(invalid("native/public workplace assignment coverage"));
             }
-            if assignment.is_none() && !matches!(resident.worker.job(), "idle" | "building") {
-                return Err(invalid("implicit workplace assignment coverage"));
+            let suspension = building_world
+                .builders()
+                .get(&actor.id)
+                .and_then(|b| b.suspended.as_ref());
+            let (task, travel) =
+                suspension.map_or((&actor.task, &actor.travel), |s| (&s.task, &s.travel));
+            work::target(record, task, resident.worker.job(), native, rules, sources)?;
+            let animation = record.optional("work_animation", PATH)?.map(raw);
+            let work_positioned = state.work_observations.check(
+                model_actor,
+                task,
+                travel,
+                suspension.is_some(),
+                animation.as_deref(),
+            )?;
+            if let Task::Work { workplace, .. } = task
+                && resident.assignment.as_ref() != Some(workplace)
+            {
+                return Err(invalid("work task assignment coverage"));
             }
+            work::path(
+                record,
+                world,
+                sources,
+                payload.required("shared_map", PATH)?,
+                terrain,
+            )?;
             let positioned = construction::check(
                 record,
                 actor,
@@ -522,7 +581,7 @@ pub(super) fn towns(world: &RestoredWorld, payload: &Node) -> Result<(), Boundar
                 rules,
                 building_world.builders(),
                 resident.assignment.as_ref(),
-            )?;
+            )? || work_positioned;
             let tool: Option<String> = record
                 .optional("worker_tool", PATH)?
                 .map(|n| n.string(PATH))
@@ -559,7 +618,7 @@ pub(super) fn towns(world: &RestoredWorld, payload: &Node) -> Result<(), Boundar
             ] {
                 if record.optional(key, PATH)?.is_some() {
                     same_number(record, key, amount)?;
-                } else if !(positioned && key != "facing")
+                } else if !(positioned && (key != "facing" || work_positioned))
                     && amount != if key == "facing" { 1. } else { 0. }
                 {
                     return Err(invalid("missing authoritative actor pose presentation"));

@@ -65,6 +65,8 @@ struct NativePeople {
     returned_tool: bool,
     last_batch: u64,
     suspended_work: bool,
+    observations: bool,
+    missing_observation: bool,
 }
 #[derive(Default, Deserialize)]
 #[serde(default, deny_unknown_fields)]
@@ -371,7 +373,10 @@ fn populated(
         let mut residents = Vec::new();
         for v in source["villagers"].as_array().unwrap() {
             let actor = allocator.allocate(&owner).unwrap();
-            let position = v.get("construction_position").unwrap_or(v);
+            let position = v
+                .get("construction_position")
+                .or_else(|| v.get("work_animation"))
+                .unwrap_or(v);
             let mut actor_state = ActorState::new(
                 actor.clone(),
                 Position::new(
@@ -785,6 +790,169 @@ fn populated(
         );
         towns.push(town);
         states.push(state);
+    }
+    if people.observations {
+        for (town, state) in towns.iter_mut().zip(&mut states) {
+            let source = &world["towns"][town.owner().town.as_str()];
+            let rules = &all_rules[&town.owner().town];
+            for (index, v) in source["villagers"].as_array().unwrap().iter().enumerate() {
+                let Some(animation) = v.get("work_animation") else {
+                    continue;
+                };
+                let task = &animation["task"];
+                let find = |kind: &str, x: f64, y: f64| {
+                    town.buildings()
+                        .iter()
+                        .find(|b| {
+                            rules.sites[&b.id].kind == kind
+                                && f64::from(b.location.x) == x
+                                && f64::from(b.location.y) == y
+                        })
+                        .map(|b| b.id.clone())
+                };
+                let workplace = find(
+                    task[1].as_str().unwrap(),
+                    task[2].as_f64().unwrap(),
+                    task[3].as_f64().unwrap(),
+                )
+                .unwrap();
+                let target = find(
+                    task[4].as_str().unwrap(),
+                    task[5].as_f64().unwrap(),
+                    task[6].as_f64().unwrap(),
+                )
+                .map(lantern_core::model::Destination::Building)
+                .unwrap_or_else(|| {
+                    lantern_core::model::Destination::Position(
+                        Position::new(task[5].as_f64().unwrap(), task[6].as_f64().unwrap())
+                            .unwrap(),
+                    )
+                });
+                let phase = match animation["resume_phase"]
+                    .as_str()
+                    .or_else(|| animation["phase"].as_str())
+                    .unwrap()
+                {
+                    "walking" => lantern_core::model::WorkPhase::Outbound,
+                    "working" => lantern_core::model::WorkPhase::Working,
+                    "returning" => lantern_core::model::WorkPhase::Returning,
+                    "depositing" => lantern_core::model::WorkPhase::Depositing,
+                    _ => panic!("unsupported synthetic work phase"),
+                };
+                let id = town.actors()[index].state().id.clone();
+                let current = town.actors()[index].state().clone();
+                let mut prior = current.clone();
+                prior.task = Task::Work {
+                    workplace: workplace.clone(),
+                    target: target.clone(),
+                    phase,
+                    elapsed: lantern_core::units::Seconds::new(
+                        animation["elapsed"].as_f64().unwrap(),
+                    )
+                    .unwrap(),
+                };
+                prior.travel = lantern_core::model::TravelIntent::None;
+                let trace = v.get("_native_trace");
+                let origin = trace.map(|t| &t["origin"]);
+                prior.position = Position::new(
+                    origin.map_or(animation["x"].as_f64().unwrap(), |p| p[0].as_f64().unwrap()),
+                    origin.map_or(animation["y"].as_f64().unwrap(), |p| p[1].as_f64().unwrap()),
+                )
+                .unwrap();
+                prior.facing = lantern_core::travel::Facing::new(
+                    trace
+                        .and_then(|t| t["facing"].as_i64())
+                        .unwrap_or(animation["facing"].as_i64().unwrap()) as i8,
+                )
+                .unwrap();
+                let mut actors: Vec<_> = town.actors().iter().map(|a| a.state().clone()).collect();
+                actors[index] = prior;
+                let mut observed =
+                    Town::restore(town.owner().clone(), town.buildings().to_vec(), actors).unwrap();
+                if let Some(trace) = trace {
+                    let destination = if phase == lantern_core::model::WorkPhase::Returning {
+                        lantern_core::model::Destination::Building(workplace)
+                    } else {
+                        target
+                    };
+                    let request = observed
+                        .request_route(&id, destination, lantern_core::model::NavigationRevision(1))
+                        .unwrap();
+                    let mode = trace["mode"].as_str().unwrap();
+                    let outcome = match mode {
+                        "pending" => None,
+                        "arrived" => Some(lantern_core::model::RouteOutcome::Arrived),
+                        "unreachable" => Some(lantern_core::model::RouteOutcome::Unreachable),
+                        _ => Some(lantern_core::model::RouteOutcome::Ready(
+                            trace["path"]
+                                .as_array()
+                                .unwrap()
+                                .iter()
+                                .map(|p| {
+                                    Position::new(p[0].as_f64().unwrap(), p[1].as_f64().unwrap())
+                                        .unwrap()
+                                })
+                                .collect(),
+                        )),
+                    };
+                    if let Some(outcome) = outcome {
+                        observed
+                            .accept_route(
+                                &id,
+                                &request,
+                                lantern_core::model::NavigationRevision(1),
+                                outcome,
+                            )
+                            .unwrap();
+                    }
+                    if let Some(seconds) = trace["seconds"].as_f64() {
+                        observed
+                            .advance_travel(
+                                &id,
+                                lantern_core::units::Seconds::new(seconds).unwrap(),
+                                128,
+                                |_, _| {
+                                    if mode == "blocked" {
+                                        None
+                                    } else {
+                                        lantern_core::travel::Speed::new(1.8)
+                                    }
+                                },
+                            )
+                            .unwrap();
+                    }
+                }
+                if !people.missing_observation {
+                    state
+                        .work_observations
+                        .capture(
+                            &observed,
+                            &id,
+                            &state.population.as_ref().unwrap().residents()[index].worker,
+                            rules,
+                            lantern_host::work_observation::Labels {
+                                target_kind: task[4].as_str().unwrap().into(),
+                                version: animation["version"].as_u64().unwrap_or(0),
+                                relocation: animation["relocation"].as_u64().unwrap_or(0),
+                            },
+                        )
+                        .unwrap();
+                }
+                if matches!(
+                    current.task,
+                    Task::Construction { .. } | Task::RoadConstruction { .. }
+                ) {
+                    let saved = observed.actor(&id).unwrap().state();
+                    builders.get_mut(&id).unwrap().suspended =
+                        Some(lantern_host::building::Suspended {
+                            task: saved.task.clone(),
+                            travel: saved.travel.clone(),
+                        });
+                } else {
+                    *town = observed;
+                }
+            }
+        }
     }
     let credentials = PrivateCredentials {
         tokens: BTreeMap::from([(

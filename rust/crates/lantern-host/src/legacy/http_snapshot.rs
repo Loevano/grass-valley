@@ -81,7 +81,6 @@ impl TerrainView {
             }
             set(&mut payload, "shared_map", merged_map);
         }
-        metadata::towns(native, &payload)?;
         // Validate saved routine semantics through the existing read-only owner;
         // its opaque extensions still require the separate public allowlist.
         super::VillageLife::restore(world.clone(), &raw(&payload))?;
@@ -107,6 +106,8 @@ impl TerrainView {
             .iter()
             .map(|(k, v)| ImportedChunk::from_validated_archive(*k, v.clone()))
             .collect();
+        let mut sources = Vec::new();
+        let mut work_terrain = std::collections::BTreeMap::new();
         let base = if chunked {
             let mut owner = ChunkLifecycle::prepare(&imported, world, &[], &[])?;
             owner.activate()?;
@@ -116,8 +117,26 @@ impl TerrainView {
                     return Err(invalid("founder repair requires missing coverage"));
                 }
             }
+            for key in owner.active_keys() {
+                let record = Node::parse(owner.private_active_bytes(key).unwrap(), PATH)?;
+                sources.extend(metadata::work_sources(&record)?);
+                work_terrain.extend(metadata::work_terrain(
+                    &record,
+                    lantern_core::units::Tile {
+                        x: key.x as i32 * 40,
+                        y: key.y as i32 * 40,
+                    },
+                )?);
+            }
             owner.private_world_bytes()
         } else {
+            sources.extend(metadata::work_sources(
+                payload.required("shared_map", PATH)?,
+            )?);
+            work_terrain.extend(metadata::work_terrain(
+                payload.required("shared_map", PATH)?,
+                lantern_core::units::Tile { x: 0, y: 0 },
+            )?);
             for (key, _) in payload.required("towns", PATH)?.object(PATH)? {
                 let scene = super::PrivateFounderWorldCopy::decode(&raw(&payload), key)?;
                 if !scene.walkable(scene.state()?.position)? {
@@ -128,7 +147,8 @@ impl TerrainView {
         };
         let base = Node::parse(&base, PATH)?;
         check_world(&base)?;
-        metadata::towns(native, &base)?;
+        metadata::towns(native, &payload, &sources, &work_terrain)?;
+        metadata::towns(native, &base, &sources, &work_terrain)?;
         let map = base.required("shared_map", PATH)?;
         check_map(map, chunked)?;
         let size = map.required("map_size", PATH)?.unsigned(PATH)? as u32;

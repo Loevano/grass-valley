@@ -51,6 +51,7 @@ still allocates/copies in proportion to saved facts; no latency claim is made.
 | `lantern-generation` manifest | 1, 2 | 1 normally; 2 for copies with source provenance |
 | `lantern-python-archive` | 1 | 1, `preserved-only` |
 | Ledger DTO | 1 | 1 |
+| Worker observation evidence | 1, optional | 1, omitted when empty |
 | Named RNG stream | `python-mt19937-v1` | Same; 624 words and index |
 
 Aggregate load uses every subsystem's existing strict codec and validates owners,
@@ -68,6 +69,29 @@ Versions 2/3 retain intents. Route searches, cached paths and playback rebuild;
 construction-owned claims/walks retain their existing schema semantics. Reload
 neither awards goods nor advances any simulation clock. Supplied RNG streams resume
 exactly; automatic gameplay-stream adoption remains host integration work.
+
+## Frozen worker observation evidence
+
+R20-1h adds optional private `TownState.work_observations` records, with their own
+strict version-1 codec inside registry v1. Empty observations omit the new field,
+so existing generations still load without inventing history. Older binaries reject
+nonempty observation-bearing generations as an unknown schema extension; rollback
+and native-to-Python gameplay export remain separate acceptance gates.
+
+The checkpoint is captured from native R11 actors, then copied and encoded with the
+same detached whole-generation snapshot. It retains the already-confirmed public
+movement observation, bound to stable actor/task/workplace/travel facts and native
+generations. It is neither a navigation cache nor an authoritative actor restore
+format: queries, frontiers, ready routes, cursors and playback are never installed
+into a restored model. No ticks, goods transfers or receipt drains reconstruct it.
+Read-only admission compares it to current owners (or R12's suspended intent) and
+to the complete archived public animation before exposing any endpoint.
+
+Capture cannot accept arbitrary animation JSON as evidence. Checkpoint labels and
+public DTOs do not expose credentials or private extensions. The aggregate live
+host must refresh/discard this observation alongside task/assignment changes in
+R20 2b–3c; this frozen adapter does not provide ordinary-save actor hydration or
+live scheduling. Missing/stale evidence refuses snapshot admission.
 
 ## Dedicated root and commit protocol
 
